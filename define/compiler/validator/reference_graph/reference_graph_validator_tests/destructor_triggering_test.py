@@ -7,13 +7,12 @@ from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
-_MARKED = "position<my.domain.com:my_lib:/marked>"
+_MARKED = "action<my.domain.com:my_lib:/marked>"
 
 
 _DESTRUCTOR_NOOP = (
@@ -89,9 +88,11 @@ def test_destroy_fires_destructor_via_quality_implication(
                 "}\n"
             ),
             "marked.dfn": (
-                "define the potential position<my.domain.com:my_lib:/marked> {\n"
+                "define the potential action<my.domain.com:my_lib:/marked> {\n"
                 "    it also assigns the action</destructor>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in action</destructor>::position<slot>.\n"
                 "    }\n"
                 "}\n"
@@ -104,11 +105,10 @@ def test_destroy_fires_destructor_via_quality_implication(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</marked>.\n"
+                "                it has the action</marked>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</marked>.\n"
                 "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
@@ -200,15 +200,17 @@ def test_destroy_fires_multiple_destructors(
     ]
 
 
-def test_destructor_fired_from_position_init_block(
+def test_destructor_fired_from_constructor(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "destructor.dfn": _DESTRUCTOR_NOOP,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
@@ -222,7 +224,7 @@ def test_destructor_fired_from_position_init_block(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_POS_TEST, _DESTRUCTOR)]
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_empty_position_does_not_fire_destructor(

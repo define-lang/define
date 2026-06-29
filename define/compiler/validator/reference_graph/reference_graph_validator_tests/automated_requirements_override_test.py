@@ -107,18 +107,12 @@ def test_action_caller_empty_overrides_inner_occupied(
     assert result.program_result.all_diagnostics == []
 
 
-def test_init_block_occupied_overrides_triggered_action_empty(
+def test_constructor_occupied_overrides_triggered_action_empty(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "q.dfn": (
-                "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    it also assigns the position</q>.\n"
@@ -131,10 +125,13 @@ def test_init_block_occupied_overrides_triggered_action_empty(
                 "}\n"
             ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the action</inner>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
                 "        destroy the particle in position</q>.\n"
                 "        create a particle in action</inner>::position<trigger_pos>.\n"
                 "    }\n"
@@ -148,11 +145,10 @@ def test_init_block_occupied_overrides_triggered_action_empty(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -161,7 +157,7 @@ def test_init_block_occupied_overrides_triggered_action_empty(
     assert result.program_result.all_diagnostics == []
 
 
-def test_init_block_empty_overrides_triggered_action_occupied(
+def test_constructor_empty_overrides_triggered_action_occupied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -179,10 +175,12 @@ def test_init_block_empty_overrides_triggered_action_occupied(
                 "}\n"
             ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the action</inner>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</q>.\n"
                 "        create a particle in action</inner>::position<trigger_pos>.\n"
                 "    }\n"
@@ -196,11 +194,10 @@ def test_init_block_empty_overrides_triggered_action_occupied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

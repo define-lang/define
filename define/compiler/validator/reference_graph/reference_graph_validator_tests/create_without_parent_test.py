@@ -6,6 +6,9 @@ from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
+_TEST = "action<my.domain.com:my_lib:/test>"
+_CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
+
 
 def test_create_in_child_of_unoccupied_local_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
@@ -173,41 +176,75 @@ def test_interface_position_parent_succeeds(
     assert_no_errors(result.program_result)
 
 
-def test_position_init_create_self_then_child_succeeds(
+def test_constructor_create_implied_child_succeeds(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</x>.\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it also assigns the position</x>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</x>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::position</x>.\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
+    assert result.action_call_graph.edges() == [(_TEST, _CONSTRUCT)]
 
 
-def test_position_init_create_child_without_self_create(
+def test_constructor_create_in_child_of_unoccupied_local_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</x>.\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<child> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<child>::position</x>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>::position</x>.\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -216,10 +253,12 @@ def test_position_init_create_child_without_self_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].position_name == "position</test>::position</x>"
-    assert all_diags[0].parent_position_name == "position</test>"
+    assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
+    assert all_diags[0].position_name == "position<child>::position</x>"
+    assert all_diags[0].parent_position_name == "position<child>"
+    assert result.action_call_graph.edges() == [(_TEST, _CONSTRUCT)]
 
 
 def test_error_parent_suppresses_diagnostic(

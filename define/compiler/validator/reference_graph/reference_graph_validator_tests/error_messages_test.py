@@ -421,21 +421,27 @@ def test_move_violates_constraints_error_message(
           action<my.domain.com:my_lib:/y>""")
 
 
-def test_position_init_block_requires_empty_position_format(
+def test_constructor_requires_empty_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     files = {
-        "q.dfn": (
-            "define the potential position<my.domain.com:my_lib:/q> {\n"
-            "    after it is assigned {\n"
+        "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+        "filler.dfn": (
+            "define the potential action<my.domain.com:my_lib:/filler> {\n"
+            "    it also assigns the position</q>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
             "        create a particle in position</q>.\n"
             "    }\n"
             "}\n"
         ),
         "p.dfn": (
-            "define the potential position<my.domain.com:my_lib:/p> {\n"
+            "define the potential action<my.domain.com:my_lib:/p> {\n"
             "    it also assigns the position</q>.\n"
-            "    after it is assigned {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
             "        create a particle in position</q>.\n"
             "    }\n"
             "}\n"
@@ -448,11 +454,11 @@ def test_position_init_block_requires_empty_position_format(
             "    } and it does {\n"
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
-            "                it has the position</p>.\n"
+            "                it has the action</filler>.\n"
+            "                it has the action</p>.\n"
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
-            "        create a particle in position<box>::position</p>.\n"
             "    }\n"
             "}\n"
         ),
@@ -462,29 +468,31 @@ def test_position_init_block_requires_empty_position_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 11, column 30
+        File "test.dfn", line 12, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be empty before the Position Initialization Block of 'position<my.domain.com:my_lib:/p>' runs, and it is not empty.
+        'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/p>' runs, and it is not empty.
 
         This error happens because:
-          'action<my.domain.com:my_lib:/test>' creates a particle that runs the Position Initialization Block of 'position<my.domain.com:my_lib:/p>':
-            File "test.dfn", line 11, column 30
           'position<box>::position</q>' is filled here:
-            File "q.dfn", line 3, column 30
-          'position<my.domain.com:my_lib:/p>' infers this requirement:
-            File "p.dfn", line 4, column 30""")
+            File "filler.dfn", line 6, column 30
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/p>':
+            File "test.dfn", line 12, column 30
+          'action<my.domain.com:my_lib:/p>' infers this requirement:
+            File "p.dfn", line 6, column 30""")
 
 
-def test_position_init_block_requires_occupied_position_format(
+def test_constructor_requires_occupied_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     files = {
         "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
         "p.dfn": (
-            "define the potential position<my.domain.com:my_lib:/p> {\n"
+            "define the potential action<my.domain.com:my_lib:/p> {\n"
             "    it also assigns the position</q>.\n"
-            "    after it is assigned {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
             "        destroy the particle in position</q>.\n"
             "    }\n"
             "}\n"
@@ -497,11 +505,10 @@ def test_position_init_block_requires_occupied_position_format(
             "    } and it does {\n"
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
-            "                it has the position</p>.\n"
+            "                it has the action</p>.\n"
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
-            "        create a particle in position<box>::position</p>.\n"
             "    }\n"
             "}\n"
         ),
@@ -514,13 +521,13 @@ def test_position_init_block_requires_occupied_position_format(
         File "test.dfn", line 11, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be occupied before the Position Initialization Block of 'position<my.domain.com:my_lib:/p>' runs, and it is not occupied.
+        'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/p>' runs, and it is not occupied.
 
         This error happens because:
-          'action<my.domain.com:my_lib:/test>' creates a particle that runs the Position Initialization Block of 'position<my.domain.com:my_lib:/p>':
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/p>':
             File "test.dfn", line 11, column 30
-          'position<my.domain.com:my_lib:/p>' infers this requirement:
-            File "p.dfn", line 4, column 33""")
+          'action<my.domain.com:my_lib:/p>' infers this requirement:
+            File "p.dfn", line 6, column 33""")
 
 
 def test_destroy_in_emptied_interface_position_format(

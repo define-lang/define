@@ -14,7 +14,6 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _MID = "action<my.domain.com:my_lib:/mid>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
 _DELETE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_destructor>"
@@ -644,10 +643,10 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     ]
 
 
-def test_init_block_attaches_destructor_and_verifies_via_contract(
+def test_constructor_attaches_destructor_and_verifies_via_contract(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A Position Initialization Block attaches a destructor to a carrier particle and hands it to close_file; the init block verifies the caller-attached destructor through the Destruction Contract, reporting its unmet requirement."""
+    """A constructor attaches a destructor to a carrier particle and hands it to close_file; the constructor verifies the caller-attached destructor through the Destruction Contract, reporting its unmet requirement."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -683,9 +682,11 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
                 "}\n"
             ),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</carrier>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</close_file>.\n"
@@ -705,14 +706,14 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    # The init block of position</test> is the attacher (it created the carrier).
+    # The constructor action</test> is the attacher (it created the carrier).
     assert_propagation_chain(
         all_diags[0],
         {
@@ -727,15 +728,15 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 10,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _POS_TEST,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 12,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -758,14 +759,14 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
     )
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DELETE_DESTRUCTOR),
-        (_POS_TEST, _CLOSE_FILE),
+        (_TEST, _CLOSE_FILE),
     ]
 
 
-def test_init_block_attached_destructor_requirement_satisfied(
+def test_constructor_attached_destructor_requirement_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the init block fills the destructor's required position before handing the carrier to close_file, the caller-attached destructor verifies satisfied."""
+    """When the constructor fills the destructor's required position before handing the carrier to close_file, the caller-attached destructor verifies satisfied."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -801,9 +802,11 @@ def test_init_block_attached_destructor_requirement_satisfied(
                 "}\n"
             ),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</carrier>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</close_file>.\n"
@@ -822,14 +825,14 @@ def test_init_block_attached_destructor_requirement_satisfied(
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DELETE_DESTRUCTOR),
-        (_POS_TEST, _CLOSE_FILE),
+        (_TEST, _CLOSE_FILE),
     ]
 
 
-def test_init_block_resolves_implied_action_destruction_contract(
+def test_constructor_resolves_implied_action_destruction_contract(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A position init block triggers an implied action that destroys a particle the action is blind to; the init block resolves the destructor it knows through the action's Destruction Contract, reporting its unmet requirement."""
+    """A constructor triggers an implied action that destroys a particle the action is blind to; the constructor resolves the destructor it knows through the action's Destruction Contract, reporting its unmet requirement."""
     result = validate_project_with_reference_graph(
         {
             "item.dfn": "define the potential position<my.domain.com:my_lib:/item>.\n",
@@ -856,9 +859,11 @@ def test_init_block_resolves_implied_action_destruction_contract(
                 "}\n"
             ),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the action</callee>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</d>.\n"
@@ -876,7 +881,7 @@ def test_init_block_resolves_implied_action_destruction_contract(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_CALLEE}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -889,7 +894,7 @@ def test_init_block_resolves_implied_action_destruction_contract(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _D,
-            "line": 6,
+            "line": 8,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -897,15 +902,15 @@ def test_init_block_resolves_implied_action_destruction_contract(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</callee>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 9,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _POS_TEST,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CALLEE,
-            "line": 10,
+            "line": 12,
             "column": 47,
             "file_path": "test.dfn",
         },
@@ -928,7 +933,7 @@ def test_init_block_resolves_implied_action_destruction_contract(
     )
     assert result.action_call_graph.edges() == [
         (_CALLEE, _D),
-        (_POS_TEST, _CALLEE),
+        (_TEST, _CALLEE),
     ]
 
 

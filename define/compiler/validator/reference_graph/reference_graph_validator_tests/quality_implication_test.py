@@ -16,9 +16,11 @@ def test_single_level_transitivity_satisfies_move(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -28,7 +30,7 @@ def test_single_level_transitivity_satisfies_move(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -41,8 +43,6 @@ def test_single_level_transitivity_satisfies_move(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -58,9 +58,11 @@ def test_single_level_transitivity_does_not_include_unrelated(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -71,7 +73,7 @@ def test_single_level_transitivity_does_not_include_unrelated(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -84,8 +86,6 @@ def test_single_level_transitivity_does_not_include_unrelated(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier>.\n"
                 "        create a particle in position<dest>::position</unrelated>.\n"
                 "    }\n"
                 "}\n"
@@ -107,18 +107,23 @@ def test_multi_level_transitivity(
         {
             "transitive_implied.dfn": "define the potential position<my.domain.com:my_lib:/transitive_implied>.\n",
             "implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "define the potential action<my.domain.com:my_lib:/implied> {\n"
                 "    it also assigns the position</transitive_implied>.\n"
-                "    after it is assigned {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
                 "        create a particle in position</transitive_implied>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</implied>.\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
+                "    it also assigns the action</implied>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in action</implied>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -127,7 +132,7 @@ def test_multi_level_transitivity(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -140,8 +145,6 @@ def test_multi_level_transitivity(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -154,24 +157,28 @@ def test_diamond_transitivity_create_conflict_detected(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     # Two impliers both implying the same position and both creating in it
-    # via their init blocks is genuinely illegal: when the second implier's
-    # init block runs, the implied position has already been filled by the
+    # via their constructors is genuinely illegal: when the second implier's
+    # constructor runs, the implied position has already been filled by the
     # first, so the second's EMPTY-from-Create requirement is violated.
     result = validate_project_with_reference_graph(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier_one.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier_one> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier_one> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implier_two.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier_two> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier_two> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -181,8 +188,8 @@ def test_diamond_transitivity_create_conflict_detected(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier_one>.\n"
-                "            it has the position</implier_two>.\n"
+                "            it has the action</implier_one>.\n"
+                "            it has the action</implier_two>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -194,8 +201,6 @@ def test_diamond_transitivity_create_conflict_detected(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier_one>.\n"
-                "        destroy the particle in position<source>::position</implier_two>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
                 "    }\n"
                 "}\n"
@@ -207,10 +212,7 @@ def test_diamond_transitivity_create_conflict_detected(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_empty is True
-    assert (
-        diag.runner_description
-        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/implier_two>'"
-    )
+    assert diag.runner_description == "'action<my.domain.com:my_lib:/implier_two>'"
     assert diag.position_name == "position<source>::position</implied>"
     assert diag.location.line == 17
     assert diag.location.column == 30
@@ -218,26 +220,26 @@ def test_diamond_transitivity_create_conflict_detected(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<source>::position</implied>",
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "implier_one.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "position<my.domain.com:my_lib:/implier_two>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
             "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<source>::position</implied>",
-            "triggered_quality_name": None,
-            "line": 4,
-            "column": 30,
-            "file_path": "implier_one.dfn",
-        },
-        {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "position<my.domain.com:my_lib:/implier_two>",
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/implier_two>",
             "triggered_quality_name": None,
-            "line": 4,
+            "line": 6,
             "column": 30,
             "file_path": "implier_two.dfn",
         },
@@ -251,18 +253,22 @@ def test_diamond_transitivity_with_create_destroy_succeeds(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier_one.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier_one> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier_one> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "        destroy the particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implier_two.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier_two> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier_two> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "        destroy the particle in position</implied>.\n"
                 "    }\n"
@@ -273,8 +279,8 @@ def test_diamond_transitivity_with_create_destroy_succeeds(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier_one>.\n"
-                "            it has the position</implier_two>.\n"
+                "            it has the action</implier_one>.\n"
+                "            it has the action</implier_two>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -287,9 +293,6 @@ def test_diamond_transitivity_with_create_destroy_succeeds(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier_one>.\n"
-                "        destroy the particle in position<source>::position</implier_two>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -349,27 +352,22 @@ def test_matching_implied_but_not_matching_impliers_for_move(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "independent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/independent> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
+            "independent.dfn": "define the potential position<my.domain.com:my_lib:/independent>.\n",
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -382,8 +380,6 @@ def test_matching_implied_but_not_matching_impliers_for_move(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier>.\n"
                 "        create a particle in position<dest>::position</independent>.\n"
                 "    }\n"
                 "}\n"
@@ -405,9 +401,11 @@ def test_action_guarantee_preserves_transitive_qualities(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -436,7 +434,7 @@ def test_action_guarantee_preserves_transitive_qualities(
                 "        }\n"
                 "        define the position<source> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</implier>.\n"
+                "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<final_dest> {\n"
@@ -448,8 +446,6 @@ def test_action_guarantee_preserves_transitive_qualities(
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<box>::action</forwarder>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</forwarder>::position<output> to position<final_dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        create a particle in position<source>::position</implier>.\n"
                 "        destroy the particle in position<final_dest>::position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -466,9 +462,11 @@ def test_action_creates_particle_in_interface_position_with_implication_constrai
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -478,7 +476,7 @@ def test_action_creates_particle_in_interface_position_with_implication_constrai
                 "    define the position<run>.\n"
                 "    define the position<output> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -516,25 +514,28 @@ def test_action_creates_particle_in_interface_position_with_implication_constrai
     assert_no_errors(result.program_result)
 
 
-def test_trigger_position_has_implication_implied(
+def test_constructor_quality_with_implication_carried_into_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<stash> {\n"
@@ -545,8 +546,8 @@ def test_trigger_position_has_implication_implied(
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        destroy the particle in position<run>::position</implier>.\n"
-                "        move the particle in position<run> to position<stash>.\n"
+                "        create a particle in position<source>.\n"
+                "        move the particle in position<source> to position<stash>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -562,9 +563,11 @@ def test_inferred_occupied_interface_position_has_implication_implied(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -574,7 +577,7 @@ def test_inferred_occupied_interface_position_has_implication_implied(
                 "    define the position<run>.\n"
                 "    define the position<input> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<stash> {\n"
@@ -585,9 +588,8 @@ def test_inferred_occupied_interface_position_has_implication_implied(
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        move the particle in position<input> to position<stash>.\n"
                 "        create a particle in position<input>.\n"
-                "        destroy the particle in position<input>::position</implier>.\n"
+                "        move the particle in position<input> to position<stash>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -603,9 +605,11 @@ def test_propagated_requirement_particle_has_implication_implied(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
@@ -613,17 +617,17 @@ def test_propagated_requirement_particle_has_implication_implied(
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<run>.\n"
-                "    define the position<input> {\n"
+                "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<output>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        destroy the particle in position<input>::position</implier>.\n"
-                "        move the particle in position<input> to position<output>.\n"
+                "        create a particle in position<source>.\n"
+                "        move the particle in position<source> to position<output>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -659,8 +663,6 @@ def test_propagated_requirement_particle_has_implication_implied(
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a particle in position<wrapper>::action</middle>::position<box>.\n"
-                "        create a particle in position<wrapper>::action</middle>::position<box>::action</inner>::position<input>.\n"
                 "        create a particle in position<wrapper>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
@@ -681,9 +683,11 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
             "a/foo.dfn": f"define the potential position<{a_fqun}:/foo>.\n",
             "b/foo.dfn": f"define the potential position<{b_fqun}:/foo>.\n",
             "implier.dfn": (
-                f"define the potential position<{main_fqun}:/implier> {{\n"
+                f"define the potential action<{main_fqun}:/implier> {{\n"
                 f"    it also assigns the position<{a_fqun}:/foo>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 f"        create a particle in position<{a_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
@@ -693,7 +697,7 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
@@ -706,8 +710,6 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
                 "    } and it does {\n"
                 "        create a particle in position<source>.\n"
                 "        move the particle in position<source> to position<dest>.\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</implier>.\n"
                 f"        create a particle in position<dest>::position<{b_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
@@ -725,25 +727,19 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     ]
 
 
-def test_required_position_init_block_creates_particle_for_move(
+def test_constructor_fills_implied_position_for_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implied> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
-                "        define the position<_temp>.\n"
-                "        move the particle in position</implied> to position<_temp>.\n"
-                "        move the particle in position<_temp> to position</implied>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -752,7 +748,7 @@ def test_required_position_init_block_creates_particle_for_move(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest>.\n"
@@ -769,25 +765,19 @@ def test_required_position_init_block_creates_particle_for_move(
     assert_no_errors(result.program_result)
 
 
-def test_required_position_init_block_fills_position(
+def test_constructor_filled_position_blocks_caller_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implied> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied>.\n"
-                "    after it is assigned {\n"
-                "        define the position<_temp>.\n"
-                "        move the particle in position</implied> to position<_temp>.\n"
-                "        move the particle in position<_temp> to position</implied>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -796,7 +786,7 @@ def test_required_position_init_block_fills_position(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -818,11 +808,11 @@ def test_required_position_init_block_fills_position(
     assert all_diags[0].location.end_column == 66
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<source>::position</implied>"
-    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 48
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implied.dfn")
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 
 def test_unresolved_implication_target_is_skipped(
@@ -831,9 +821,11 @@ def test_unresolved_implication_target_is_skipped(
     result = validate_project_with_reference_graph(
         {
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</missing>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</missing>.\n"
                 "    }\n"
                 "}\n"
@@ -843,7 +835,7 @@ def test_unresolved_implication_target_is_skipped(
                 "    define the position<run>.\n"
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</implier>.\n"
+                "            it has the action</implier>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"

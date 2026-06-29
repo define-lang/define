@@ -14,7 +14,6 @@ _IMPLIER = "action<my.domain.com:my_lib:/implier>"
 _FORWARDER = "action<my.domain.com:my_lib:/forwarder>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
 
 
 _IMPLIED_ACTION_NOOP = (
@@ -77,16 +76,18 @@ def test_action_triggers_implied_action_via_move(
     assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
 
 
-def test_position_init_triggers_implied_action(
+def test_constructor_triggers_implied_action(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "implied_action.dfn": _IMPLIED_ACTION_NOOP,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the action</implied_action>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -94,7 +95,7 @@ def test_position_init_triggers_implied_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_POS_TEST, _IMPLIED)]
+    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_propagates_to_caller(

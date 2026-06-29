@@ -19,7 +19,7 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
+_CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
 
 
 def test_create_in_interface_position_starts_empty(
@@ -1030,10 +1030,10 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_position_init_trigger_applies_empty_guarantee(
+def test_constructor_trigger_applies_empty_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Trigger from a position init block applies the action's empty guarantee."""
+    """Trigger from within a constructor applies the action's empty guarantee."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -1047,16 +1047,35 @@ def test_position_init_trigger_applies_empty_guarantee(
                 "    }\n"
                 "}\n"
             ),
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<inner> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
                 "        define the position<to_pos>.\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position</test>::action</other>::position<trigger_pos> to position<to_pos>.\n"
+                "        create a particle in position<inner>.\n"
+                "        create a particle in position<inner>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<inner>::action</other>::position<trigger_pos> to position<to_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1067,24 +1086,24 @@ def test_position_init_trigger_applies_empty_guarantee(
     assert isinstance(
         all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
     assert (
         all_diags[0].position_name
-        == "position</test>::action</other>::position<trigger_pos>"
+        == "position<inner>::action</other>::position<trigger_pos>"
     )
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 30
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+    assert_action_calls(result.action_call_graph, _TEST, _CONSTRUCT, _OTHER)
 
 
-def test_position_init_trigger_applies_occupied_guarantee(
+def test_constructor_trigger_applies_occupied_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Trigger from a position init block applies the action's occupied guarantee."""
+    """Trigger from within a constructor applies the action's occupied guarantee."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -1098,15 +1117,34 @@ def test_position_init_trigger_applies_occupied_guarantee(
                 "    }\n"
                 "}\n"
             ),
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<inner> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<inner>.\n"
+                "        create a particle in position<inner>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<inner>::action</other>::position<item>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position</test>::action</other>::position<item>.\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1115,16 +1153,16 @@ def test_position_init_trigger_applies_occupied_guarantee(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
     assert (
-        all_diags[0].position_name == "position</test>::action</other>::position<item>"
+        all_diags[0].position_name == "position<inner>::action</other>::position<item>"
     )
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
-    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+    assert_action_calls(result.action_call_graph, _TEST, _CONSTRUCT, _OTHER)
 
 
 def test_trigger_chain_move_guarantee_empties_position(

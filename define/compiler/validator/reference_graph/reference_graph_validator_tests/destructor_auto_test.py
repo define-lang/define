@@ -11,7 +11,6 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_TEST_POS = "position<my.domain.com:my_lib:/test>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
@@ -74,15 +73,17 @@ def test_local_position_left_occupied_fires_destructor(
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
-def test_local_position_in_init_block_left_occupied_fires_destructor(
+def test_local_position_in_constructor_left_occupied_fires_destructor(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "destructor.dfn": _named_destructor_noop("destructor"),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
@@ -95,7 +96,7 @@ def test_local_position_in_init_block_left_occupied_fires_destructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST_POS, _DESTRUCTOR)]
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_auto_destruction_in_reverse_definition_order(
@@ -477,15 +478,17 @@ def test_auto_destruction_failing_occupied_requirement(
     )
 
 
-def test_init_block_auto_destruction_failing_requirement(
+def test_constructor_auto_destruction_failing_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
@@ -502,7 +505,7 @@ def test_init_block_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 8
+    assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
@@ -516,7 +519,7 @@ def test_init_block_auto_destruction_failing_requirement(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
-            "line": 5,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -524,7 +527,7 @@ def test_init_block_auto_destruction_failing_requirement(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 8,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -532,23 +535,23 @@ def test_init_block_auto_destruction_failing_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</destructor_empty>::position<item>",
             "triggered_quality_name": None,
-            "line": 9,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": _TEST_POS,
-            "line": 8,
+            "triggered_quality_name": _TEST,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _TEST_POS,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
-            "line": 8,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },

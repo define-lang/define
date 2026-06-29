@@ -459,15 +459,17 @@ def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_move
     assert all_diags[0].location.column == 24
 
 
-def test_dead_child_position_inside_position_init_block(
+def test_dead_child_position_inside_constructor(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "thing.dfn": "define the potential position<my.domain.com:my_lib:/thing>.\n",
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the position</thing>.\n"
@@ -484,7 +486,7 @@ def test_dead_child_position_inside_position_init_block(
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
-    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
 
 
@@ -529,10 +531,12 @@ def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
     result = validate_project_with_reference_graph(
         {
             "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
                 "    it also assigns the position</child>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</child>.\n"
                 "    }\n"
                 "}\n"
@@ -543,9 +547,14 @@ def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<box> {\n"
+                "        define the position<box1> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<box2> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest> {\n"
@@ -553,8 +562,9 @@ def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a particle in position<box>.\n"
-                "        move the particle in position<box> to position<dest>.\n"
+                "        create a particle in position<box1>.\n"
+                "        move the particle in position<box1> to position<box2>.\n"
+                "        move the particle in position<box2> to position<dest>.\n"
                 "        destroy the particle in position<dest>::position</child>.\n"
                 "    }\n"
                 "}\n"
@@ -563,23 +573,25 @@ def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
-    assert all_diags[0].constraint_name == "position</parent>"
-    assert all_diags[0].position_name == "position<box>"
-    assert all_diags[0].location.line == 8
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</construct>"
+    assert all_diags[0].position_name == "position<box2>"
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
 
 
-def test_unreferenced_implied_child_position_is_not_dead_when_parent_is_referenced(
+def test_implied_child_position_of_constructor_is_not_dead(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
                 "    it also assigns the position</child>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</child>.\n"
                 "    }\n"
                 "}\n"
@@ -592,11 +604,10 @@ def test_unreferenced_implied_child_position_is_not_dead_when_parent_is_referenc
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the action</construct>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</parent>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -864,10 +875,12 @@ def test_constraint_that_only_provides_a_triggered_action_by_implication_is_dead
                 "    }\n"
                 "}\n"
             ),
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
                 "    it also assigns the action</child>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in action</child>::position<go>.\n"
                 "    }\n"
                 "}\n"
@@ -878,13 +891,19 @@ def test_constraint_that_only_provides_a_triggered_action_by_implication_is_dead
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<box> {\n"
+                "        define the position<box1> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the action</construct>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</child>::position<go>.\n"
+                "        define the position<box2> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box1>.\n"
+                "        move the particle in position<box1> to position<box2>.\n"
+                "        create a particle in position<box2>::action</child>::position<go>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -892,14 +911,14 @@ def test_constraint_that_only_provides_a_triggered_action_by_implication_is_dead
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
-    assert all_diags[0].constraint_name == "position</parent>"
-    assert all_diags[0].position_name == "position<box>"
-    assert all_diags[0].location.line == 8
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</construct>"
+    assert all_diags[0].position_name == "position<box2>"
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
 
 
-def test_untriggered_implied_action_is_not_dead_when_parent_is_referenced(
+def test_implied_action_of_constructor_is_not_dead(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -914,10 +933,12 @@ def test_untriggered_implied_action_is_not_dead_when_parent_is_referenced(
                 "    }\n"
                 "}\n"
             ),
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
                 "    it also assigns the action</child>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in action</child>::position<go>.\n"
                 "    }\n"
                 "}\n"
@@ -930,11 +951,10 @@ def test_untriggered_implied_action_is_not_dead_when_parent_is_referenced(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the action</construct>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</parent>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1180,57 +1200,6 @@ def test_constructor_on_interface_position_dead_when_never_created(
     assert all_diags[0].position_name == "position<run>"
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
-
-
-def test_constructor_via_implication_alive_when_position_referenced(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    define the position<go>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        define the position<_holder>.\n"
-                "        move the particle in position<go> to position<_holder>.\n"
-                "        move the particle in position<_holder> to position<go>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "marked.dfn": (
-                "define the potential position<my.domain.com:my_lib:/marked> {\n"
-                "    it also assigns the action</construct>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in action</construct>::position<go>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</marked>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</marked>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    # box's particle gets the constructor through position</marked>'s implication;
-    # creating it triggers the constructor, and referencing box::position</marked>
-    # keeps the directly-written position constraint alive.
-    assert_no_errors(result.program_result)
 
 
 # --- Combined and cross-definition cases ---

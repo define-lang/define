@@ -11,7 +11,6 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _DELETE_FILE1 = "action<my.domain.com:my_lib:/delete_file1>"
 _DELETE_FILE2 = "action<my.domain.com:my_lib:/delete_file2>"
@@ -968,10 +967,10 @@ def test_declared_quality_destructor_satisfied(
     ]
 
 
-def test_position_init_block_consumer_caller_known_satisfied(
+def test_constructor_consumer_caller_known_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A position init block (the validation root) triggers close_file and verifies its caller-attached destructor through the Destruction Contract; filling position</file> satisfies it."""
+    """A constructor (the validation root) triggers close_file and verifies its caller-attached destructor through the Destruction Contract; filling position</file> satisfies it."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -999,8 +998,10 @@ def test_position_init_block_consumer_caller_known_satisfied(
                 "}\n"
             ),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</close_file>.\n"
@@ -1024,14 +1025,14 @@ def test_position_init_block_consumer_caller_known_satisfied(
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
-        (_POS_TEST, _CLOSE_FILE),
+        (_TEST, _CLOSE_FILE),
     ]
 
 
-def test_position_init_block_consumer_caller_known_violated(
+def test_constructor_consumer_caller_known_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """The same position-init-block consumer reports the unmet destructor requirement when position</file> is left empty; the chain names the position /test as the attacher."""
+    """The same constructor consumer reports the unmet destructor requirement when position</file> is left empty; the chain names the constructor /test as the attacher."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -1059,8 +1060,10 @@ def test_position_init_block_consumer_caller_known_violated(
                 "}\n"
             ),
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</close_file>.\n"
@@ -1083,7 +1086,7 @@ def test_position_init_block_consumer_caller_known_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -1092,14 +1095,14 @@ def test_position_init_block_consumer_caller_known_violated(
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    # The attacher is the position /test (its init block created my_file).
+    # The attacher is the constructor /test (its body created my_file).
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 10,
+            "line": 12,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1107,15 +1110,15 @@ def test_position_init_block_consumer_caller_known_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _POS_TEST,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 16,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1138,7 +1141,7 @@ def test_position_init_block_consumer_caller_known_violated(
     )
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
-        (_POS_TEST, _CLOSE_FILE),
+        (_TEST, _CLOSE_FILE),
     ]
 
 

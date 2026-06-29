@@ -3,16 +3,14 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
-from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
-    assert_propagation_chain,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _IMPLIED = "action<my.domain.com:my_lib:/implied_action>"
 _IMPLIER = "action<my.domain.com:my_lib:/implier>"
 _FORWARDER = "action<my.domain.com:my_lib:/forwarder>"
+_MIDDLE = "action<my.domain.com:my_lib:/middle>"
+_FILLER = "action<my.domain.com:my_lib:/filler>"
 
 
 def test_occupied_guarantee_propagates_through_transitive_implication(
@@ -783,24 +781,36 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     ]
 
 
-def test_implied_position_self_create_init_block_fires_on_caller_create(
+def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "first_implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/first_implied> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</first_implied>.\n"
+            "color.dfn": "define the potential position<my.domain.com:my_lib:/color>.\n",
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</color>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</color>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "slot.dfn": (
+                "define the potential position<my.domain.com:my_lib:/slot> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the action</filler>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
-                "    it also assigns the position</first_implied>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</first_implied>.\n"
-                "        destroy the particle in position</first_implied>.\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
+                "    it also assigns the position</slot>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</slot>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -812,101 +822,82 @@ def test_implied_position_self_create_init_block_fires_on_caller_create(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</implier>.\n"
+                "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</first_implied>.\n"
-                "        create a particle in position<box>::position</implier>.\n"
+                "        create a particle in position<box>::position</slot>::position</color>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    first = all_diags[0]
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 78
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
-        first.runner_description
-        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/implier>'"
+        all_diags[0].position_name == "position<box>::position</slot>::position</color>"
     )
-    assert first.required_empty is True
-    assert first.position_name == "position<box>::position</first_implied>"
-    assert first.location.line == 11
-    assert first.location.column == 30
-    assert first.location.end_line == 11
-    assert first.location.end_column == 43
-    assert first.location.file_path == PurePosixPath("test.dfn")
-    assert_propagation_chain(
-        first,
-        {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": "position<my.domain.com:my_lib:/implier>",
-            "line": 11,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</first_implied>",
-            "triggered_quality_name": None,
-            "line": 3,
-            "column": 30,
-            "file_path": "first_implied.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "position<my.domain.com:my_lib:/implier>",
-            "triggered_quality_name": None,
-            "line": 4,
-            "column": 30,
-            "file_path": "implier.dfn",
-        },
-    )
-    second = all_diags[1]
-    assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert second.location.line == 12
-    assert second.location.column == 30
-    assert second.location.end_line == 12
-    assert second.location.end_column == 69
-    assert second.location.file_path == PurePosixPath("test.dfn")
-    assert second.position_name == "position<box>::position</first_implied>"
-    assert second.populated_at.line == 3
-    assert second.populated_at.column == 30
-    assert second.populated_at.end_line == 3
-    assert second.populated_at.end_column == 54
-    assert second.populated_at.file_path == PurePosixPath("first_implied.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.end_line == 6
+    assert all_diags[0].populated_at.end_column == 46
+    assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert result.action_call_graph.edges() == [(_IMPLIER, _FILLER), (_TEST, _IMPLIER)]
 
 
-def test_transitively_implied_position_self_create_init_block_fires_on_caller_create(
+def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_chain(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "second_implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/second_implied> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</second_implied>.\n"
+            "color.dfn": "define the potential position<my.domain.com:my_lib:/color>.\n",
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</color>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</color>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "first_implied.dfn": (
-                "define the potential position<my.domain.com:my_lib:/first_implied> {\n"
-                "    it also assigns the position</second_implied>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</second_implied>.\n"
-                "        destroy the particle in position</second_implied>.\n"
+            "slot_inner.dfn": (
+                "define the potential position<my.domain.com:my_lib:/slot_inner> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the action</filler>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the position</slot_inner>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</slot_inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "slot_outer.dfn": (
+                "define the potential position<my.domain.com:my_lib:/slot_outer> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the action</middle>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
-                "    it also assigns the position</first_implied>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</first_implied>.\n"
-                "        destroy the particle in position</first_implied>.\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
+                "    it also assigns the position</slot_outer>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</slot_outer>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -918,72 +909,38 @@ def test_transitively_implied_position_self_create_init_block_fires_on_caller_cr
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</implier>.\n"
+                "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</second_implied>.\n"
-                "        create a particle in position<box>::position</implier>.\n"
+                "        create a particle in position<box>::position</slot_outer>::position</slot_inner>::position</color>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    first = all_diags[0]
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 107
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
-        first.runner_description
-        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/first_implied>'"
+        all_diags[0].position_name
+        == "position<box>::position</slot_outer>::position</slot_inner>::position</color>"
     )
-    assert first.required_empty is True
-    assert first.position_name == "position<box>::position</second_implied>"
-    assert first.location.line == 11
-    assert first.location.column == 30
-    assert first.location.end_line == 11
-    assert first.location.end_column == 43
-    assert first.location.file_path == PurePosixPath("test.dfn")
-    assert_propagation_chain(
-        first,
-        {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": "position<my.domain.com:my_lib:/first_implied>",
-            "line": 11,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</second_implied>",
-            "triggered_quality_name": None,
-            "line": 3,
-            "column": 30,
-            "file_path": "second_implied.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "position<my.domain.com:my_lib:/first_implied>",
-            "triggered_quality_name": None,
-            "line": 4,
-            "column": 30,
-            "file_path": "first_implied.dfn",
-        },
-    )
-    second = all_diags[1]
-    assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert second.location.line == 12
-    assert second.location.column == 30
-    assert second.location.end_line == 12
-    assert second.location.end_column == 70
-    assert second.location.file_path == PurePosixPath("test.dfn")
-    assert second.position_name == "position<box>::position</second_implied>"
-    assert second.populated_at.line == 3
-    assert second.populated_at.column == 30
-    assert second.populated_at.end_line == 3
-    assert second.populated_at.end_column == 55
-    assert second.populated_at.file_path == PurePosixPath("second_implied.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.end_line == 6
+    assert all_diags[0].populated_at.end_column == 46
+    assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert result.action_call_graph.edges() == [
+        (_MIDDLE, _FILLER),
+        (_IMPLIER, _MIDDLE),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_caller_prefix(

@@ -11,10 +11,10 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_P = "position<my.domain.com:my_lib:/p>"
+_P = "action<my.domain.com:my_lib:/p>"
 
 
-def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
+def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -28,9 +28,11 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
                 "}\n"
             ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<local> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the position</q_child>.\n"
@@ -49,11 +51,10 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -66,15 +67,12 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert (
-        all_diags[0].runner_description
-        == "the Position Initialization Block of '" + _P + "'"
-    )
+    assert all_diags[0].runner_name == _P
     assert all_diags[0].position_name == "position<box>::position</q>"
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
             "line": 11,
@@ -85,7 +83,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
-            "line": 9,
+            "line": 11,
             "column": 30,
             "file_path": "p.dfn",
         },
@@ -95,17 +93,14 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is False
-    assert (
-        all_diags[1].runner_description
-        == "the Position Initialization Block of '" + _P + "'"
-    )
+    assert all_diags[1].runner_name == _P
     assert (
         all_diags[1].position_name == "position<box>::position</q>::position</q_child>"
     )
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
             "line": 11,
@@ -116,14 +111,18 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
-            "line": 10,
+            "line": 12,
             "column": 33,
             "file_path": "p.dfn",
         },
     )
 
 
-def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
+# A separate "filler" constructor occupies the implied position before /p's
+# constructor runs, so the occupancy is a cross-definition guarantee /p must
+# account for -- the constructor-era analog of an implied position that used to
+# fill itself.
+def test_constructor_empty_requirement_via_create_in_child_of_moved_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -134,16 +133,25 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
                 "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
+                "}\n"
+            ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</q>.\n"
                 "        create a particle in position</q>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        define the position<local> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the position</q_child>.\n"
@@ -162,11 +170,11 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -176,44 +184,42 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 11
+    assert diag.required_empty is True
+    assert diag.runner_name == _P
+    assert diag.position_name == "position<box>::position</q>::position</q_child>"
+    assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.required_empty is True
-    assert (
-        diag.runner_description == "the Position Initialization Block of '" + _P + "'"
-    )
-    assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert_propagation_chain(
         diag,
-        {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _P,
-            "line": 11,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</q>::position</q_child>",
             "triggered_quality_name": None,
             "line": 7,
             "column": 30,
-            "file_path": "q.dfn",
+            "file_path": "filler.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
-            "line": 10,
+            "line": 12,
             "column": 30,
             "file_path": "p.dfn",
         },
     )
 
 
-def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implied(
+def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_to_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -224,9 +230,6 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
@@ -236,11 +239,23 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "    }\n"
                 "}\n"
             ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        move the particle in position</q> to position</q2>.\n"
                 "        destroy the particle in position</q2>::position</q_child>.\n"
                 "    }\n"
@@ -254,11 +269,11 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -268,21 +283,19 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 11
+    assert diag.required_empty is False
+    assert diag.runner_name == _P
+    assert diag.position_name == "position<box>::position</q>::position</q_child>"
+    assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.required_empty is False
-    assert (
-        diag.runner_description == "the Position Initialization Block of '" + _P + "'"
-    )
-    assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -290,14 +303,14 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
-            "line": 6,
+            "line": 8,
             "column": 33,
             "file_path": "p.dfn",
         },
     )
 
 
-def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
+def test_constructor_empty_requirement_via_create_in_child_of_moved_to_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -308,10 +321,6 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in position</q>::position</q_child>.\n"
-                "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
@@ -321,11 +330,24 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "    }\n"
                 "}\n"
             ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</q_child>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        move the particle in position</q> to position</q2>.\n"
                 "        create a particle in position</q2>::position</q_child>.\n"
                 "    }\n"
@@ -339,11 +361,11 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -353,44 +375,42 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 11
+    assert diag.required_empty is True
+    assert diag.runner_name == _P
+    assert diag.position_name == "position<box>::position</q>::position</q_child>"
+    assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.required_empty is True
-    assert (
-        diag.runner_description == "the Position Initialization Block of '" + _P + "'"
-    )
-    assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert_propagation_chain(
         diag,
-        {
-            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _P,
-            "line": 11,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</q>::position</q_child>",
             "triggered_quality_name": None,
             "line": 7,
             "column": 30,
-            "file_path": "q.dfn",
+            "file_path": "filler.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
-            "line": 6,
+            "line": 8,
             "column": 30,
             "file_path": "p.dfn",
         },
     )
 
 
-def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
+def test_constructor_occupied_requirement_satisfied_for_moved_to_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -401,10 +421,6 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in position</q>::position</q_child>.\n"
-                "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
@@ -414,11 +430,24 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "    }\n"
                 "}\n"
             ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</q_child>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        move the particle in position</q> to position</q2>.\n"
                 "        destroy the particle in position</q2>::position</q_child>.\n"
                 "    }\n"
@@ -432,11 +461,11 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -445,7 +474,7 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
     assert_no_errors(result.program_result)
 
 
-def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
+def test_constructor_empty_requirement_satisfied_for_moved_to_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -456,9 +485,6 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
@@ -468,11 +494,23 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "    }\n"
                 "}\n"
             ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        move the particle in position</q> to position</q2>.\n"
                 "        create a particle in position</q2>::position</q_child>.\n"
                 "    }\n"
@@ -486,11 +524,11 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

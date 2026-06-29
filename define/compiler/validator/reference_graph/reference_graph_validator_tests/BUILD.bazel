@@ -15,6 +15,17 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_constructor_implied_test",
+    size = "small",
+    srcs = ["automated_guarantees_constructor_implied_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_constructor_test",
     size = "small",
     srcs = ["automated_guarantees_constructor_test.py"],
@@ -120,6 +131,44 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_constructor_implied_test",
+    size = "small",
+    srcs = ["automated_requirements_constructor_implied_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_constructor_move_test",
+    size = "small",
+    srcs = ["automated_requirements_constructor_move_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_constructor_propagation_test",
+    size = "small",
+    srcs = ["automated_requirements_constructor_propagation_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -258,45 +307,6 @@ py_test(
     name = "automated_requirements_override_test",
     size = "small",
     srcs = ["automated_requirements_override_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_position_init_move_test",
-    size = "small",
-    srcs = ["automated_requirements_position_init_move_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_position_init_propagation_test",
-    size = "small",
-    srcs = ["automated_requirements_position_init_propagation_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_position_init_test",
-    size = "small",
-    srcs = ["automated_requirements_position_init_test.py"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -648,28 +658,6 @@ py_test(
 )
 
 py_test(
-    name = "automated_guarantees_position_init_test",
-    size = "small",
-    srcs = ["automated_guarantees_position_init_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "position_init_self_reference_test",
-    size = "small",
-    srcs = ["position_init_self_reference_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
     name = "quality_implication_particle_test",
     size = "small",
     srcs = ["quality_implication_particle_test.py"],
@@ -735,16 +723,19 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_triggering_test",
+        ":automated_guarantees_constructor_implied_test",
         ":automated_guarantees_constructor_test",
         ":automated_guarantees_destructor_test",
         ":automated_guarantees_error_test",
         ":automated_guarantees_implied_position_test",
         ":automated_guarantees_implied_to_interface_test",
         ":automated_guarantees_nested_action_test",
-        ":automated_guarantees_position_init_test",
         ":automated_guarantees_test",
         ":automated_guarantees_transitive_implied_identity_test",
         ":automated_guarantees_transitive_implied_occupancy_test",
+        ":automated_requirements_constructor_implied_test",
+        ":automated_requirements_constructor_move_test",
+        ":automated_requirements_constructor_propagation_test",
         ":automated_requirements_constructor_test",
         ":automated_requirements_destructor_implied_test",
         ":automated_requirements_destructor_move_test",
@@ -755,9 +746,6 @@ pyright_test(
         ":automated_requirements_nested_action_test",
         ":automated_requirements_nested_implied_test",
         ":automated_requirements_override_test",
-        ":automated_requirements_position_init_move_test",
-        ":automated_requirements_position_init_propagation_test",
-        ":automated_requirements_position_init_test",
         ":automated_requirements_test",
         ":chained_name_constraint_test",
         ":chained_name_global_start_test",
@@ -787,7 +775,6 @@ pyright_test(
         ":move_state_tracking_test",
         ":move_without_parent_test",
         ":particle_conflict_test",
-        ":position_init_self_reference_test",
         ":quality_implication_particle_test",
         ":quality_implication_test",
         ":reference_graph_validator_tests",

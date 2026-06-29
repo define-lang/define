@@ -15,7 +15,7 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
-_P = "position<my.domain.com:my_lib:/p>"
+_P = "action<my.domain.com:my_lib:/p>"
 
 # Moves its own interface position's particle out and back, so it requires
 # that position to be occupied while leaving it unchanged (no guarantee).
@@ -431,11 +431,11 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
-def test_destructor_in_init_block_checks_interface_requirement_locally(
+def test_destructor_in_constructor_checks_interface_requirement_locally(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    # position</p>'s init block creates and then destroys a particle in its
-    # implied position</carrier>. The init block owns that particle, so the
+    # action</p>'s constructor creates and then destroys a particle in its
+    # implied position</carrier>. The constructor owns that particle, so the
     # destructor's interface-position requirement is checked locally rather than
     # propagated: position</carrier> never came from a caller.
     result = validate_project_with_reference_graph(
@@ -449,9 +449,11 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
                 "}\n"
             ),
             "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</carrier>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</carrier>.\n"
                 "        destroy the particle in position</carrier>.\n"
                 "    }\n"
@@ -465,11 +467,10 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</p>.\n"
+                "                it has the action</p>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -478,7 +479,7 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
     assert all_diags[0].required_empty is False
@@ -501,7 +502,7 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position</carrier>",
             "triggered_quality_name": None,
-            "line": 4,
+            "line": 6,
             "column": 30,
             "file_path": "p.dfn",
         },
@@ -509,7 +510,7 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 5,
+            "line": 7,
             "column": 33,
             "file_path": "p.dfn",
         },

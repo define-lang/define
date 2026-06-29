@@ -432,74 +432,6 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
             File "destructor.dfn", line 7, column 30""")
 
 
-def test_auto_destruction_in_position_init_block_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    files = {
-        "child_q.dfn": (
-            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the action</destructor_empty>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "destructor_empty.dfn": (
-            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
-            "    define the position<item>.\n"
-            "    it happens when {\n"
-            "        this particle is being destroyed.\n"
-            "    } and it does {\n"
-            "        create a particle in position<item>.\n"
-            "        destroy the particle in position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "test.dfn": (
-            "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    after it is assigned {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
-            "        define the position<staging> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<staging>.\n"
-            "        create a particle in position<staging>::position</child_q>.\n"
-            "        move the particle in position<staging> to position<box>.\n"
-            "        create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-    }
-    result = validate_project_with_reference_graph(files)
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 15, column 51
-                move the particle in position<staging> to position<box>.
-                                                          ^
-        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
-
-        This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
-            File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' comes from here:
-            File "test.dfn", line 14, column 30
-          'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
-            File "test.dfn", line 16, column 30
-          the particle in 'position<box>' is automatically destroyed at the end of 'position<my.domain.com:my_lib:/test>':
-            File "test.dfn", line 15, column 51
-          'position<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "test.dfn", line 15, column 51
-          'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
-            File "destructor_empty.dfn", line 6, column 30""")
-
-
 def test_destructor_cascade_through_action_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -573,80 +505,6 @@ def test_destructor_cascade_through_action_format(
             File "inner.dfn", line 4, column 24
           'action<my.domain.com:my_lib:/inner>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
             File "inner.dfn", line 11, column 9
-          'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
-            File "destructor_empty.dfn", line 6, column 30""")
-
-
-def test_destructor_cascade_through_position_init_block_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    files = {
-        "destructor_empty.dfn": (
-            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
-            "    define the position<item>.\n"
-            "    it happens when {\n"
-            "        this particle is being destroyed.\n"
-            "    } and it does {\n"
-            "        create a particle in position<item>.\n"
-            "        destroy the particle in position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "q.dfn": (
-            "define the potential position<my.domain.com:my_lib:/q> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the action</destructor_empty>.\n"
-            "    }\n"
-            "    after it is assigned {\n"
-            "        create a particle in position</q>.\n"
-            "        create a particle in position</q>::action</destructor_empty>::position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "p.dfn": (
-            "define the potential position<my.domain.com:my_lib:/p> {\n"
-            "    it also assigns the position</q>.\n"
-            "    after it is assigned {\n"
-            "        destroy the particle in position</q>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "test.dfn": (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</p>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<box>.\n"
-            "        create a particle in position<box>::position</p>.\n"
-            "    }\n"
-            "}\n"
-        ),
-    }
-    result = validate_project_with_reference_graph(files)
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 11, column 30
-                create a particle in position<box>.
-                                     ^
-        'position<box>::position</q>::action</destructor_empty>::position<item>' must be empty before the Position Initialization Block of 'position<my.domain.com:my_lib:/p>' runs, and it is not empty.
-
-        This error happens because:
-          'action<my.domain.com:my_lib:/test>' creates a particle that runs the Position Initialization Block of 'position<my.domain.com:my_lib:/p>':
-            File "test.dfn", line 11, column 30
-          the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/q>':
-            File "q.dfn", line 3, column 20
-          'position<box>::position</q>::action</destructor_empty>::position<item>' is filled here:
-            File "q.dfn", line 7, column 30
-          'position<my.domain.com:my_lib:/p>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "p.dfn", line 4, column 33
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30""")
 
@@ -919,7 +777,7 @@ def test_destruction_contract_auto_destruction_format(
             File "delete_destructor.dfn", line 7, column 30""")
 
 
-def test_destruction_contract_init_block_attacher_format(
+def test_destruction_contract_constructor_attacher_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     files = {
@@ -956,9 +814,11 @@ def test_destruction_contract_init_block_attacher_format(
             "}\n"
         ),
         "test.dfn": (
-            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the position</carrier>.\n"
-            "    after it is assigned {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
             "                it has the action</close_file>.\n"
@@ -977,7 +837,7 @@ def test_destruction_contract_init_block_attacher_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 12, column 30
+        File "test.dfn", line 14, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
@@ -986,9 +846,9 @@ def test_destruction_contract_init_block_attacher_format(
           the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/carrier>':
             File "carrier.dfn", line 4, column 20
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
-            File "test.dfn", line 10, column 30
-          'position<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 12, column 30
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
+            File "test.dfn", line 14, column 30
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
             File "close_file.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:

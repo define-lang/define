@@ -436,7 +436,7 @@ def test_implied_position_guarantee_propagates_across_fqun(
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/inner.dfn")
 
 
-def test_init_block_create_in_transitive_implied(
+def test_constructor_create_in_transitive_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -445,9 +445,11 @@ def test_init_block_create_in_transitive_implied(
                 "define the potential position<my.domain.com:my_lib:/transitive_implied>.\n"
             ),
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</transitive_implied>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</transitive_implied>.\n"
                 "    }\n"
                 "}\n"
@@ -460,12 +462,11 @@ def test_init_block_create_in_transitive_implied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</implier>.\n"
+                "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</transitive_implied>.\n"
-                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -480,14 +481,14 @@ def test_init_block_create_in_transitive_implied(
     assert all_diags[0].location.end_column == 74
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</transitive_implied>"
-    assert all_diags[0].populated_at.line == 4
+    assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 4
+    assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 59
     assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 
-def test_init_block_move_between_implied_positions(
+def test_constructor_move_between_implied_positions(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -495,10 +496,12 @@ def test_init_block_move_between_implied_positions(
             "implied_a.dfn": "define the potential position<my.domain.com:my_lib:/implied_a>.\n",
             "implied_b.dfn": "define the potential position<my.domain.com:my_lib:/implied_b>.\n",
             "implier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "define the potential action<my.domain.com:my_lib:/implier> {\n"
                 "    it also assigns the position</implied_a>.\n"
                 "    it also assigns the position</implied_b>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</implied_a>.\n"
                 "        move the particle in position</implied_a> to position</implied_b>.\n"
                 "    }\n"
@@ -512,12 +515,11 @@ def test_init_block_move_between_implied_positions(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</implier>.\n"
+                "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</implied_b>.\n"
-                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -532,9 +534,9 @@ def test_init_block_move_between_implied_positions(
     assert all_diags[0].location.end_column == 65
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_b>"
-    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 54
-    assert all_diags[0].populated_at.end_line == 6
+    assert all_diags[0].populated_at.end_line == 8
     assert all_diags[0].populated_at.end_column == 74
     assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
@@ -665,14 +667,18 @@ def test_swap_two_implied_positions_via_local(
     assert all_diags[1].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
-def test_cross_fqun_implied_position_init_block(
+def test_cross_fqun_constructor_guarantee_propagates(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/a.dfn": (
-                f"define the potential position<{_CHILD_FQUN}:/a> {{\n"
-                f"    after it is assigned {{\n"
+            "lib/a.dfn": f"define the potential position<{_CHILD_FQUN}:/a>.\n",
+            "lib/a_ctor.dfn": (
+                f"define the potential action<{_CHILD_FQUN}:/a_ctor> {{\n"
+                f"    it also assigns the position</a>.\n"
+                f"    it happens when {{\n"
+                f"        this particle is created.\n"
+                f"    }} and it does {{\n"
                 f"        create a particle in position</a>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -680,9 +686,16 @@ def test_cross_fqun_implied_position_init_block(
             "lib/b.dfn": (
                 f"define the potential position<{_CHILD_FQUN}:/b> {{\n"
                 f"    it may only contain particles where {{\n"
-                f"        it has the position</a>.\n"
+                f"        it has the action</a_ctor>.\n"
                 f"    }}\n"
-                f"    after it is assigned {{\n"
+                f"}}\n"
+            ),
+            "lib/b_ctor.dfn": (
+                f"define the potential action<{_CHILD_FQUN}:/b_ctor> {{\n"
+                f"    it also assigns the position</b>.\n"
+                f"    it happens when {{\n"
+                f"        this particle is created.\n"
+                f"    }} and it does {{\n"
                 f"        create a particle in position</b>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -695,7 +708,7 @@ def test_cross_fqun_implied_position_init_block(
                 f"    }} and it does {{\n"
                 f"        define the position<box> {{\n"
                 f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD_FQUN}:/b>.\n"
+                f"                it has the action<{_CHILD_FQUN}:/b_ctor>.\n"
                 f"            }}\n"
                 f"        }}\n"
                 f"        create a particle in position<box>.\n"
@@ -720,11 +733,11 @@ def test_cross_fqun_implied_position_init_block(
         all_diags[0].position_name
         == f"position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>"
     )
-    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 42
-    assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a.dfn")
+    assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a_ctor.dfn")
 
 
 def test_callee_filled_then_destroyed_implied_position_reads_empty_in_caller(

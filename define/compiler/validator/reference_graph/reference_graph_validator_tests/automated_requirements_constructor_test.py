@@ -13,6 +13,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 _CONSUMER = "action<my.domain.com:my_lib:/consumer>"
 _INITIALIZER = "action<my.domain.com:my_lib:/initializer>"
+_P = "action<my.domain.com:my_lib:/p>"
 
 
 def test_occupied_interface_requirement_always_violated(
@@ -165,3 +166,179 @@ def test_empty_interface_requirement_satisfied_when_created_in_interface_positio
     # locally and never propagates to /test's callers.
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _INITIALIZER)]
+
+
+def test_constructor_empty_violation_via_create_in_implied(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+            # An earlier constructor fills the implied position, so the later
+            # constructor's empty requirement on it can never hold.
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.runner_name == _P
+    assert diag.required_empty is True
+    assert diag.position_name == "position<box>::position</q>"
+    assert diag.location.line == 12
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</q>",
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "filler.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "p.dfn",
+        },
+    )
+
+
+def test_constructor_empty_violation_via_create_in_child_of_implied(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "q.dfn": (
+                "define the potential position<my.domain.com:my_lib:/q> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential action<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</q>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</q>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</filler>.\n"
+                "                it has the action</p>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.runner_name == _P
+    assert diag.required_empty is True
+    assert diag.position_name == "position<box>::position</q>::position</child>"
+    assert diag.location.line == 12
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</q>::position</child>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "filler.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "p.dfn",
+        },
+    )

@@ -8,8 +8,7 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
-_POS_P = "position<my.domain.com:my_lib:/p>"
+_P = "action<my.domain.com:my_lib:/p>"
 
 
 class TestActionTriggering:
@@ -495,102 +494,103 @@ class TestUnknownGlobalNoTrigger:
         assert result.action_call_graph.edges() == []
 
 
-_OTHER_ACTION = (
-    "define the potential action<my.domain.com:my_lib:/other> {\n"
-    "    define the position<trigger_pos>.\n"
-    "    it happens when {\n"
-    "        the position<trigger_pos> has a particle.\n"
-    "    } and it does {\n"
-    "        define the position<_noop>.\n"
-    "        create a particle in position<_noop>.\n"
-    "    }\n"
-    "}\n"
-)
-
-
-class TestPositionInitTriggering:
-    def test_position_init_create_triggers_action(
+class TestConstructorTriggering:
+    def test_constructor_create_triggers_action(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):
         result = validate_project_with_reference_graph(
             {
                 "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the action</other>.\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
                     "    }\n"
-                    "    after it is assigned {\n"
-                    "        create a particle in position</test>.\n"
-                    "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<gateway>.\n"
+                    "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "other.dfn": _OTHER_ACTION,
+                "other.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
             },
         )
         assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
-        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
-    def test_position_init_move_triggers_action(
+    def test_constructor_move_triggers_action(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):
         result = validate_project_with_reference_graph(
             {
                 "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the action</other>.\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
                     "    }\n"
-                    "    after it is assigned {\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
                     "        define the position<tmp>.\n"
                     "        create a particle in position<tmp>.\n"
-                    "        create a particle in position</test>.\n"
-                    "        move the particle in position<tmp> to position</test>::action</other>::position<trigger_pos>.\n"
+                    "        create a particle in position<gateway>.\n"
+                    "        move the particle in position<tmp> to position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "other.dfn": _OTHER_ACTION,
-            },
-        )
-        assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
-        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
-
-    def test_position_init_self_reference_no_trigger_edge(
-        self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    after it is assigned {\n"
-                    "        create a particle in position</test>.\n"
+                "other.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
             },
         )
         assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == []
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
-    def test_position_init_no_edge_when_non_trigger_position(
+    def test_constructor_no_edge_when_non_trigger_position(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):
         result = validate_project_with_reference_graph(
             {
                 "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the action</other>.\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
                     "    }\n"
-                    "    after it is assigned {\n"
-                    "        create a particle in position</test>.\n"
-                    "        create a particle in position</test>::action</other>::position<non_trigger>.\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<gateway>.\n"
+                    "        create a particle in position<gateway>::action</other>::position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -612,83 +612,17 @@ class TestPositionInitTriggering:
         assert_no_errors(result.program_result)
         assert result.action_call_graph.edges() == []
 
-    def test_position_init_and_action_both_trigger_same_target(
-        self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the action</other>.\n"
-                    "    }\n"
-                    "    after it is assigned {\n"
-                    "        create a particle in position</test>.\n"
-                    "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<run>.\n"
-                    "    define the position<gateway> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</other>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position<gateway>.\n"
-                    "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "other.dfn": _OTHER_ACTION,
-            },
-        )
-        assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == [
-            (_POS_TEST, _OTHER),
-            (_TEST, _OTHER),
-        ]
-        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
-        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
-
-    def test_position_init_chained_through_self_triggers_action(
-        self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the action</other>.\n"
-                    "    }\n"
-                    "    after it is assigned {\n"
-                    "        define the position<local>.\n"
-                    "        create a particle in position<local>.\n"
-                    "        create a particle in position</test>.\n"
-                    "        move the particle in position<local> to position</test>::action</other>::position<trigger_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "other.dfn": _OTHER_ACTION,
-            },
-        )
-        assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
-        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
-
-    def test_constrained_position_init_block_records_edge(
+    def test_constructor_fired_via_constraint_records_edge(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):
         result = validate_project_with_reference_graph(
             {
                 "p.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/p> {\n"
-                    "    after it is assigned {\n"
+                    "define the potential action<my.domain.com:my_lib:/p> {\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
                     "    }\n"
@@ -702,19 +636,18 @@ class TestPositionInitTriggering:
                     "    } and it does {\n"
                     "        define the position<box> {\n"
                     "            it may only contain particles where {\n"
-                    "                it has the position</p>.\n"
+                    "                it has the action</p>.\n"
                     "            }\n"
                     "        }\n"
                     "        create a particle in position<box>.\n"
-                    "        create a particle in position<box>::position</p>.\n"
                     "    }\n"
                     "}\n"
                 ),
             },
         )
         assert_no_errors(result.program_result)
-        assert result.action_call_graph.edges() == [(_TEST, _POS_P)]
-        assert_action_calls(result.action_call_graph, _TEST, _POS_P)
+        assert result.action_call_graph.edges() == [(_TEST, _P)]
+        assert_action_calls(result.action_call_graph, _TEST, _P)
 
 
 class TestCircularDependencyTriggering:
@@ -742,10 +675,6 @@ class TestCircularDependencyTriggering:
                     "define the potential position<my.domain.com:my_lib:/pos> {\n"
                     "    it may only contain particles where {\n"
                     "        it has the action</test>.\n"
-                    "    }\n"
-                    "    after it is assigned {\n"
-                    "        create a particle in position</pos>.\n"
-                    "        create a particle in position</pos>::action</test>::position<run>.\n"
                     "    }\n"
                     "}\n"
                 ),

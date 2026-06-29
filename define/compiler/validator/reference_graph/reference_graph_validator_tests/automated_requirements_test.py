@@ -15,7 +15,6 @@ from define.compiler.validator.test_helpers import assert_action_calls, assert_n
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
 
 
 def test_satisfy_requirements_then_trigger(
@@ -621,21 +620,25 @@ _OTHER_WITH_EMPTY_REQUIREMENT = (
 )
 
 
-def test_position_init_violates_occupied_requirement(
+def test_constructor_violates_occupied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Triggering from a position init block without filling the required occupied position fails."""
+    """Triggering from a constructor without filling the required occupied position fails."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -644,21 +647,19 @@ def test_position_init_violates_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
     assert all_diags[0].required_empty is False
-    assert (
-        all_diags[0].position_name == "position</test>::action</other>::position<item>"
-    )
+    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _POS_TEST,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -671,25 +672,29 @@ def test_position_init_violates_occupied_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_position_init_violates_empty_requirement(
+def test_constructor_violates_empty_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Triggering from a position init block after filling a position the action requires empty fails."""
+    """Triggering from a constructor after filling a position the action requires empty fails."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_EMPTY_REQUIREMENT,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<item>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -698,29 +703,27 @@ def test_position_init_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
     assert all_diags[0].required_empty is True
-    assert (
-        all_diags[0].position_name == "position</test>::action</other>::position<item>"
-    )
+    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position</test>::action</other>::position<item>",
+            "enclosing_quality_name": "position<box>::action</other>::position<item>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _POS_TEST,
+            "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 8,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -733,32 +736,36 @@ def test_position_init_violates_empty_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_position_init_satisfies_requirements(
+def test_constructor_satisfies_requirements(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Triggering from a position init block with all requirements satisfied succeeds."""
+    """Triggering from a constructor with all requirements satisfied succeeds."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<item>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_no_requirement_check_on_unknown_global_chain_start(

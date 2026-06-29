@@ -305,20 +305,34 @@ def test_create_twice_in_local_chained_position(
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
-def test_create_in_chained_position_in_position_init(
+def test_create_in_chained_position_in_constructor(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</x>.\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it also assigns the position</x>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</x>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::position</x>.\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -327,21 +341,35 @@ def test_create_in_chained_position_in_position_init(
     assert_no_errors(result.program_result)
 
 
-def test_create_twice_in_chained_position_in_position_init(
+def test_create_twice_in_chained_position_in_constructor(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</x>.\n"
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it also assigns the position</x>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</x>.\n"
+                "        create a particle in position</x>.\n"
                 "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::position</x>.\n"
-                "        create a particle in position</test>::position</x>.\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -350,10 +378,10 @@ def test_create_twice_in_chained_position_in_position_init(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position</test>::position</x>"
-    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
+    assert all_diags[0].position_name == "position</x>"
+    assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == PurePosixPath("construct.dfn")
