@@ -60,9 +60,6 @@ class DefinitionPostorderValidator(abc.ABC):
     _action_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.ActionContract
     ]
-    _position_contracts: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_contract.PositionInitBlockContract
-    ]
     _definition_quality_cache: dict[
         tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
     ]
@@ -82,9 +79,6 @@ class DefinitionPostorderValidator(abc.ABC):
         action_contracts: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, action_contract.ActionContract
         ],
-        position_contracts: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_contract.PositionInitBlockContract
-        ],
         definition_quality_cache: dict[
             tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
         ],
@@ -93,7 +87,6 @@ class DefinitionPostorderValidator(abc.ABC):
         self._definition_result = definition_result
         self._definition_results = definition_results
         self._action_contracts = action_contracts
-        self._position_contracts = position_contracts
         self._definition_quality_cache = definition_quality_cache
         self._diagnostics = []
         self._action_edges = []
@@ -212,9 +205,9 @@ class DefinitionPostorderValidator(abc.ABC):
             return
         # If a position has been touched by a guarantee or any particle
         # statement already, no requirement should be emitted. This handles the
-        # situation where a position init block creates an EmptyGuarantee and
-        # another init block or caller tries to then destroy / move from that
-        # same position.
+        # situation where one triggered action creates an EmptyGuarantee and
+        # another action or caller tries to then destroy / move from that same
+        # position.
         if self._tracker.has_been_touched(requirement_key):
             return
         self._inferred_requirements[requirement_key] = (
@@ -350,40 +343,6 @@ class DefinitionPostorderValidator(abc.ABC):
             )
             previous_parent = parent
         self._maybe_infer_requirement(required_state, position, previous_parent, scope)
-
-    def _run_position_init_blocks(
-        self,
-        position: ast.PositionReference,
-        qualities: tuple[ast.GlobalTypedNameReference, ...],
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Run the caller-side effects of every implied position's init block."""
-        for quality in qualities:
-            if quality.name_type != ast.NameType.POSITION:
-                continue
-            init_block_contract = self._position_contracts.get(quality)
-            if init_block_contract is None:
-                continue
-            self._action_edges.append(
-                action_call_graph.ActionGraphEdge(
-                    source=self._definition.typed_name.source_typed_name,
-                    target=quality.full_typed_name,
-                )
-            )
-            self._propagate_init_block_requirements(
-                position, init_block_contract, scope
-            )
-            # Only the init block's requirements are checked here, never its
-            # Destruction Contracts (unlike a triggered action, where
-            # _fire_triggered_action also calls
-            # _check_destructor_requirements_from_contracts). A position init
-            # block can't possibly expose any: it always fully knows the
-            # destructor set of whatever it destroys, so it records none (see
-            # _records_destruction_contracts).
-            self._check_requirements(init_block_contract, position, position)
-            self._nested_guarantees.append(
-                self._tracker.apply_guarantees(position, init_block_contract.guarantees)
-            )
 
     def _run_constructors(
         self,
@@ -554,27 +513,6 @@ class DefinitionPostorderValidator(abc.ABC):
                 )
             )
 
-    def _propagate_init_block_requirements(
-        self,
-        create_target: ast.PositionReference,
-        init_block_contract: action_contract.PositionInitBlockContract,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Propagate the init block's requirements into the enclosing definition's contract."""
-        caller_path = self._chain_for_inferred_requirement(
-            create_target, create_target.parent_position()
-        )
-        if caller_path is None:
-            return
-        for inner_req in init_block_contract.requirements.values():
-            self._record_requirement(
-                required_state=inner_req.required_state,
-                contracted_chain=caller_path,
-                local_chain=create_target,
-                propagated_from=inner_req,
-                scope=scope,
-            )
-
     def _propagate_destructor_requirements(
         self,
         contract: action_contract.ActionContract,
@@ -695,15 +633,6 @@ class DefinitionPostorderValidator(abc.ABC):
         #     position<iface>::action</inner>::position<item>
         #   full_caller_chain:
         #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
-        # Init block:
-        #   prefix_chain:
-        #     position<box>
-        #   acting_on_position:
-        #     position<box>
-        #   req.full_propagation_position_chain():
-        #     position</q>::position</q_child>
-        #   full_caller_chain:
-        #     position<box>::position</q>::position</q_child>
         for req in contract.requirements.values():
             # TODO: This allocates a single-use ChainedName per requirement per
             # caller just so _check_one_requirement can read its
@@ -803,9 +732,6 @@ class DefinitionPostorderValidator(abc.ABC):
         scope: scope_tracker.ScopeTracker,
     ):
         """Verify caller-attached destructors that a triggered action's Destruction Contracts surfaced.
-
-        Only action triggers reach this: a position init block exposes no
-        Destruction Contracts (see _analyze_position_definition).
 
         Args:
             contract: The triggered action's contract, whose
@@ -1291,7 +1217,6 @@ class DefinitionPostorderValidator(abc.ABC):
         self._diagnostics.extend(diags)
         if diags:
             return
-        self._run_position_init_blocks(position, qualities, scope)
         self._run_constructors(position, qualities, scope)
         self._check_trigger(position, scope)
 
@@ -1930,73 +1855,12 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 class PositionPostorderValidator(DefinitionPostorderValidator):
     """Validates a position definition during a DFS post-order walk."""
 
-    @property
-    @typing.override
-    def _records_destruction_contracts(self) -> bool:
-        # A position init block runs synchronously at creation, so any particle it
-        # destroys was either created in its own body (full state known) or reached
-        # through a contracted position whose constraint it fully sees -- a caller
-        # can never hand a richer particle into one of its contracted positions. So
-        # it always knows the complete destructor set of what it destroys and
-        # handles those destructors itself; nothing is left for a caller to verify.
-        return False
-
     @typing.override
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics and edges."""
-        definition = typing.cast("ast.PositionDefinition", self._definition)
-        contract = self._analyze_position_definition(definition)
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             edges=self._action_edges,
-            contract=contract,
-        )
-
-    @typing.override
-    def _chain_for_inferred_requirement(
-        self,
-        position: ast.PositionReference,
-        parent: ast.PositionReference | None,
-    ) -> ast.PositionReference | None:
-        """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
-        # Doing things with the self-reference or any of its children
-        # doesn't create a requirement because _nothing_ could have run
-        # before the position's own init block. Thus, we know for sure
-        # that it's empty when it runs.
-        if (
-            position.typed_names[0].full_typed_name
-            == self._definition.typed_name.full_typed_name
-        ):
-            return None
-        return super()._chain_for_inferred_requirement(position, parent)
-
-    def _analyze_position_definition(
-        self, definition: ast.PositionDefinition
-    ) -> action_contract.PositionInitBlockContract | None:
-        if definition.initialization is None:
-            return None
-        scope = scope_tracker.ScopeTracker()
-        # The self-position lives in the outer scope (so we don't try to auto-destroy
-        # it at the end of the init block).
-        scope.add_definition(definition)
-        scope.enter_child_scope()
-        self._analyze_statements(definition.initialization, scope)
-        self._check_dead_constraints()
-        return action_contract.PositionInitBlockContract(
-            requirements=self._inferred_requirements,
-            guarantees=action_contract.Guarantees(
-                own=self._tracker.generate_own_guarantees(
-                    (definition.typed_name,),
-                    self._implied_quality_list,
-                    self._inferred_requirements,
-                ),
-                nested=tuple(self._nested_guarantees),
-            ),
-            # Kept empty for a position init block by the
-            # _records_destruction_contracts guard. Exposing the real recorded
-            # list (rather than a literal []) keeps "records none" under test
-            # instead of hardcoded.
-            destruction_contracts=self._destruction_contracts,
         )
 
 
@@ -2008,9 +1872,6 @@ def create_postorder_validator(
     action_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.ActionContract
     ],
-    position_contracts: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_contract.PositionInitBlockContract
-    ],
     definition_quality_cache: dict[
         tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
     ],
@@ -2021,7 +1882,6 @@ def create_postorder_validator(
             definition_result,
             definition_results,
             action_contracts,
-            position_contracts,
             definition_quality_cache,
         )
     if isinstance(definition_result.definition, ast.PositionDefinition):
@@ -2029,7 +1889,6 @@ def create_postorder_validator(
             definition_result,
             definition_results,
             action_contracts,
-            position_contracts,
             definition_quality_cache,
         )
     raise TypeError(f"Unexpected definition type: {type(definition_result.definition)}")

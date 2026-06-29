@@ -11,7 +11,7 @@ from define.compiler.conftest import (
 )
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_non_self_ref_global_in_action_body(
@@ -120,43 +120,6 @@ def test_constraint_does_not_make_global_available_as_chain_start(
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-
-
-def test_self_reference_in_position_init_is_valid(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</test>.\n"
-                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    assert_no_errors(result.program_result)
-    assert_action_calls(
-        result.action_call_graph,
-        "position<my.domain.com:my_lib:/test>",
-        "action<my.domain.com:my_lib:/other>",
-    )
 
 
 def test_two_distinct_used_quality_implication_statements():

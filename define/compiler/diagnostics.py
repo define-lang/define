@@ -542,10 +542,10 @@ class LocalActionNameDiagnostic(Diagnostic):
 
 
 # TODO: Inform the developer if the creation ocurred due to an inferred requirement
-# from the caller. That's also relevant when you have mutliple position init blocks
-# run on the same position that do something conflicting to one of the other positions,
-# and you need to refer to three things (the create statement that triggered the init
-# blocks and then the two different init blocks that are conflicting).
+# from the caller. That's also relevant when you have multiple constructors run on
+# the same position that do something conflicting to one of the other positions, and
+# you need to refer to three things (the create statement that triggered the
+# constructors and then the two different constructors that are conflicting).
 @dataclass
 class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a particle is created in a position that already has one."""
@@ -813,12 +813,6 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
             case action_contract.PropagationKind.ACTION_TRIGGER:
                 return (
                     f"'{step.enclosing_quality_name}' triggers"
-                    f" '{step.triggered_quality_name}'"
-                )
-            case action_contract.PropagationKind.INIT_BLOCK_TRIGGER:
-                return (
-                    f"'{step.enclosing_quality_name}' creates a particle that"
-                    f" runs the Position Initialization Block of"
                     f" '{step.triggered_quality_name}'"
                 )
             case action_contract.PropagationKind.PARTICLE_ORIGIN:

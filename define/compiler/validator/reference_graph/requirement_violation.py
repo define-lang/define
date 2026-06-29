@@ -35,7 +35,7 @@ def trigger_violation(
     acting_on_position: ast.PositionReference,
     occupant: particle_tracker.ParticleInfo | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
-    """Build the diagnostic for an unmet requirement of an action or block this body runs."""
+    """Build the diagnostic for an unmet requirement of an action this body runs."""
     originating = req.enclosing_quality
     runner_name = originating.typed_name.source_typed_name
     definition_name = definition.typed_name.source_typed_name
@@ -48,42 +48,28 @@ def trigger_violation(
         occupant.last_position.location if occupant is not None else None,
     )
     chain = req.propagation_chain()
-    if isinstance(originating, ast.ActionDefinition):
-        # The fill that violates an empty-requirement happens before the trigger.
-        steps = [
-            *fill,
-            action_contract.PropagationStep(
-                location=location,
-                kind=action_contract.PropagationKind.ACTION_TRIGGER,
-                enclosing_quality_name=definition_name,
-                triggered_quality_name=runner_name,
-            ),
-            *chain,
-        ]
-        runner_name_type = ast.NameType.ACTION
-    else:
-        # The block runs first; a destructor it attaches and the fill it performs
-        # both happen inside it, the attachment before the fill.
-        leading_attachments, rest = _split_leading_attachments(chain)
-        steps = [
-            action_contract.PropagationStep(
-                location=location,
-                kind=action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
-                enclosing_quality_name=definition_name,
-                triggered_quality_name=runner_name,
-            ),
-            *leading_attachments,
-            *fill,
-            *rest,
-        ]
-        runner_name_type = ast.NameType.POSITION
+    if not isinstance(originating, ast.ActionDefinition):
+        raise TypeError(
+            f"requirement originated from non-action quality: {type(originating).__name__}"
+        )
+    # The fill that violates an empty-requirement happens before the trigger.
+    steps = [
+        *fill,
+        action_contract.PropagationStep(
+            location=location,
+            kind=action_contract.PropagationKind.ACTION_TRIGGER,
+            enclosing_quality_name=definition_name,
+            triggered_quality_name=runner_name,
+        ),
+        *chain,
+    ]
     return _diagnostic(
         location=location,
         position_name=position_name,
         required_empty=req.required_state
         == action_contract.PositionOccupancyState.EMPTY,
         runner_name=runner_name,
-        runner_name_type=runner_name_type,
+        runner_name_type=ast.NameType.ACTION,
         steps=steps,
     )
 

@@ -97,7 +97,7 @@ class _PendingGuarantee:
     guarantee is applied; its own nested guarantees are prefixed one position deeper.
     """
 
-    # An action's chain or the position whose init block ran.
+    # The triggered action's chain.
     parent_chain: tuple[str, ...]
     guarantees: action_contract.Guarantees
     # The body operation number of the trigger that produced this nested guarantee.
@@ -115,8 +115,8 @@ class _PendingGuarantee:
 
         This is ``parent_chain`` with a trailing action stripped: an implied
         quality lives on the action's parent particle, one position shallower than
-        the action's interface positions. For a position init block (no trailing
-        action) it equals ``parent_chain``.
+        the action's interface positions. For a chain with no trailing action it
+        equals ``parent_chain``.
         """
         if self.parent_chain and self.parent_chain[-1].startswith(_ACTION_KEY_PREFIX):
             return self.parent_chain[:-1]
@@ -733,10 +733,9 @@ class ParticleTracker:
         parent_chain: ast.ChainedName,
         guarantees: action_contract.Guarantees,
     ) -> action_contract.NestedGuarantees:
-        """Apply the guarantees for a triggered action or position init block.
+        """Apply the guarantees for a triggered action.
 
-        ``parent_chain`` is a triggered action's chain, or the position whose
-        init block ran.
+        ``parent_chain`` is a triggered action's chain.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.

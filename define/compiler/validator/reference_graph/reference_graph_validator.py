@@ -16,10 +16,9 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-# TODO: We need a mode that forces a fake position init block as the parent
-# caller of any top-level action in this graph, to make sure that caller
-# requirements are detected. (Otherwise developers can write bad action
-# code and not realize it.)
+# TODO: We need a mode that forces a fake caller as the parent of any top-level
+# action in this graph, to make sure that caller requirements are detected.
+# (Otherwise developers can write bad action code and not realize it.)
 class ReferenceGraphValidator:
     """Verifies all definitions using the reference graph.
 
@@ -34,9 +33,6 @@ class ReferenceGraphValidator:
     ]
     _action_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.ActionContract
-    ]
-    _position_contracts: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_contract.PositionInitBlockContract
     ]
     _definition_quality_cache: dict[
         tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
@@ -53,7 +49,6 @@ class ReferenceGraphValidator:
         self._reference_graph = graph
         self._definition_results = definition_results
         self._action_contracts = typed_name_dict.TypedNameDict()
-        self._position_contracts = typed_name_dict.TypedNameDict()
         self._definition_quality_cache = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
@@ -68,7 +63,6 @@ class ReferenceGraphValidator:
                 definition_result,
                 self._definition_results,
                 self._action_contracts,
-                self._position_contracts,
                 self._definition_quality_cache,
             )
             result = analyzer.analyze()
@@ -78,6 +72,4 @@ class ReferenceGraphValidator:
                 call_graph.add_edge(edge.source, edge.target)
             if isinstance(result.contract, action_contract.ActionContract):
                 self._action_contracts[definition.typed_name] = result.contract
-            elif isinstance(result.contract, action_contract.PositionInitBlockContract):
-                self._position_contracts[definition.typed_name] = result.contract
         return call_graph

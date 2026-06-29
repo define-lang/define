@@ -49,9 +49,6 @@ class PropagationKind(enum.Enum):
     # The current definition's body triggered an action; the action's
     # requirements propagated up.
     ACTION_TRIGGER = enum.auto()
-    # The current definition's body created a particle in a position
-    # with an init block; the init block's requirements propagated up.
-    INIT_BLOCK_TRIGGER = enum.auto()
     # The particle whose destructor requirement is violated was originally
     # created here.
     PARTICLE_ORIGIN = enum.auto()
@@ -72,8 +69,8 @@ class PropagationStep:
     # The definition whose body did the thing this step describes (where
     # ``location`` points).
     enclosing_quality_name: str
-    # For non-root steps: the quality (destructor / triggered action / position
-    # whose init block ran) that the next step downward is inside.
+    # For non-root steps: the quality (destructor / triggered action) that the
+    # next step downward is inside.
     triggered_quality_name: str | None
 
 
@@ -195,13 +192,14 @@ class PositionRequirement:
                 triggered_quality_name=None,
             )
         other_quality = self.propagated_from.enclosing_quality
-        if isinstance(other_quality, ast.ActionDefinition):
-            if other_quality.is_destructor:
-                kind = PropagationKind.DESTRUCTOR_CASCADE
-            else:
-                kind = PropagationKind.ACTION_TRIGGER
+        if not isinstance(other_quality, ast.ActionDefinition):
+            raise TypeError(
+                f"requirement propagated from non-action quality: {type(other_quality).__name__}"
+            )
+        if other_quality.is_destructor:
+            kind = PropagationKind.DESTRUCTOR_CASCADE
         else:
-            kind = PropagationKind.INIT_BLOCK_TRIGGER
+            kind = PropagationKind.ACTION_TRIGGER
         return PropagationStep(
             location=self.inferred_from.location,
             kind=kind,
@@ -261,8 +259,7 @@ class NestedGuarantees:
     """A callee's guarantees, referenced at the position that triggers it.
 
     ```triggered_action``` is the chained name path at the actual trigger
-    site, for the triggered action (or parent position that by being filled
-    triggered the init block).
+    site, for the triggered action.
     """
 
     triggered_action: tuple[str, ...]
@@ -327,8 +324,3 @@ class ActionContract(ActionStatementsBlockContract):
 
     # TODO: Support triggering on chained names?
     trigger_position_name: str
-
-
-@dataclass(frozen=True)
-class PositionInitBlockContract(ActionStatementsBlockContract):
-    """Contract for a position initialization block."""
