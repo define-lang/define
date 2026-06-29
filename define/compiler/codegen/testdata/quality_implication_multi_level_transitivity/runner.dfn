@@ -2,7 +2,7 @@ define the potential action<my.domain.com:my_lib:/runner> {
     define the position<run>.
     define the position<source> {
         it may only contain particles where {
-            it has the position</implier>.
+            it has the action</implier>.
         }
     }
     define the position<dest> {
@@ -14,8 +14,6 @@ define the potential action<my.domain.com:my_lib:/runner> {
         the position<run> has a particle.
     } and it does {
         create a particle in position<source>.
-        create a particle in position<source>::position</implier>.
-        destroy the particle in position<source>::position</implier>.
         move the particle in position<source> to position<dest>.
     }
 }

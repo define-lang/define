@@ -1,8 +1,12 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</combiner>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</combiner>.
+        }
+    }
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</combiner>.
+        create a particle in position<box>.
     }
 }

@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<box> {
         it may only contain particles where {
-            it has the action</host>.
+            it has the action</other>.
         }
     }
     it happens when {

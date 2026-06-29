@@ -7,21 +7,6 @@ from define.runtime import literal
 
 
 class TestParticle:
-    def test_assign_position_triggers_after_assigned(self):
-        triggered: list[str] = []
-
-        class TrackingPosition(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<test_pos>"
-
-            @override
-            def after_assigned(self):
-                triggered.append(self.name)
-
-        particle = literal.Particle()
-        particle.assign_position(TrackingPosition)
-
-        assert triggered == ["position<test_pos>"]
-
     def test_assign_position_stores_position(self):
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<quality_pos>"
@@ -124,14 +109,6 @@ class TestGlobalPosition:
 
         assert pos._particle is not None
         assert "action<test.com:lib:/constraint>" in pos._particle._actions
-
-    def test_after_assigned_default_does_nothing(self):
-        class MyPosition(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<test>"
-
-        pos = MyPosition(literal.Particle())
-
-        pos.after_assigned()
 
 
 class TestLocalPosition:
@@ -1072,137 +1049,147 @@ class TestImpliedQualities:
     def test_implied_quality_attached_before_implying_quality(self):
         order: list[str] = []
 
-        class Implied(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<implied>"
+        class Implied(literal.Action):
+            typed_name: ClassVar[str] = "action<implied>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Implying(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<implying>"
+        class Implying(literal.Action):
+            typed_name: ClassVar[str] = "action<implying>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        particle = literal.Particle()
-        particle.assign_position(Implying)
+        position = literal.LocalPosition("test", constraints=(Implying,))
+        position.create_particle()
 
-        assert order == ["position<implied>", "position<implying>"]
-        assert "position<implied>" in particle._positions
-        assert "position<implying>" in particle._positions
+        assert order == ["action<implied>", "action<implying>"]
 
     def test_implied_qualities_processed_in_source_order(self):
         order: list[str] = []
 
-        class First(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<first>"
+        class First(literal.Action):
+            typed_name: ClassVar[str] = "action<first>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Second(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<second>"
+        class Second(literal.Action):
+            typed_name: ClassVar[str] = "action<second>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Implier(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<implier>"
+        class Implier(literal.Action):
+            typed_name: ClassVar[str] = "action<implier>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 First,
                 Second,
             )
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        particle = literal.Particle()
-        particle.assign_position(Implier)
+        position = literal.LocalPosition("test", constraints=(Implier,))
+        position.create_particle()
 
-        assert order == ["position<first>", "position<second>", "position<implier>"]
+        assert order == ["action<first>", "action<second>", "action<implier>"]
 
     def test_transitive_implied_qualities_attached(self):
         order: list[str] = []
 
-        class C(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<c>"
+        class C(literal.Action):
+            typed_name: ClassVar[str] = "action<c>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class B(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<b>"
+        class B(literal.Action):
+            typed_name: ClassVar[str] = "action<b>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (C,)
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class A(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<a>"
+        class A(literal.Action):
+            typed_name: ClassVar[str] = "action<a>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (B,)
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        particle = literal.Particle()
-        particle.assign_position(A)
+        position = literal.LocalPosition("test", constraints=(A,))
+        position.create_particle()
 
-        assert order == ["position<c>", "position<b>", "position<a>"]
+        assert order == ["action<c>", "action<b>", "action<a>"]
 
     def test_diamond_implied_quality_assigned_only_once(self):
         order: list[str] = []
 
-        class Shared(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<shared>"
+        class Shared(literal.Action):
+            typed_name: ClassVar[str] = "action<shared>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Left(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<left>"
+        class Left(literal.Action):
+            typed_name: ClassVar[str] = "action<left>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Right(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<right>"
+        class Right(literal.Action):
+            typed_name: ClassVar[str] = "action<right>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        class Top(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<top>"
+        class Top(literal.Action):
+            typed_name: ClassVar[str] = "action<top>"
+            is_constructor: ClassVar[bool] = True
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 Left,
                 Right,
             )
 
             @override
-            def after_assigned(self):
+            def execute(self):
                 order.append(self.name)
 
-        particle = literal.Particle()
-        particle.assign_position(Top)
+        position = literal.LocalPosition("test", constraints=(Top,))
+        position.create_particle()
 
         assert order == [
-            "position<shared>",
-            "position<left>",
-            "position<right>",
-            "position<top>",
+            "action<shared>",
+            "action<left>",
+            "action<right>",
+            "action<top>",
         ]
 
     def test_diamond_implied_action_assigned_only_once(self):
@@ -1268,14 +1255,8 @@ class TestImpliedQualities:
         assert "position<implying>" in particle._positions
 
     def test_assign_position_duplicate_raises(self):
-        triggered: list[str] = []
-
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
-
-            @override
-            def after_assigned(self):
-                triggered.append(self.name)
 
         particle = literal.Particle()
         particle.assign_position(MyPosition)
@@ -1283,7 +1264,6 @@ class TestImpliedQualities:
         with pytest.raises(literal.DuplicateQualityAssignmentError) as exc_info:
             particle.assign_position(MyPosition)
         assert exc_info.value.position_name == "position<test>"
-        assert triggered == ["position<test>"]
 
     def test_assign_action_duplicate_raises(self):
         class MyAction(literal.Action):
@@ -1354,20 +1334,3 @@ class TestImpliedQualities:
         particle.assign_action(MyAction)
 
         assert MyAction in particle.quality_types
-
-    def test_implied_quality_after_assigned_side_effects_run(self):
-        class Implied(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<implied>"
-
-            @override
-            def after_assigned(self):
-                self.create_particle()
-
-        class Implying(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
-
-        particle = literal.Particle()
-        particle.assign_position(Implying)
-
-        assert particle.get_position("position<implied>").has_particle

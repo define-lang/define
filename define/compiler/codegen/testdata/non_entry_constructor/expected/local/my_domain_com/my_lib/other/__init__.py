@@ -4,18 +4,18 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.other
+import local.my_domain_com.my_lib.filled
 
 
-class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
+class Other(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/other>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.filled.Filled,
     )
 
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/other>"
-        ).destroy_particle()
+            "position<my.domain.com:my_lib:/filled>"
+        ).create_particle()

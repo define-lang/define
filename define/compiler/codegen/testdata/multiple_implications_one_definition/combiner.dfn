@@ -1,7 +1,9 @@
-define the potential position<my.domain.com:my_lib:/combiner> {
+define the potential action<my.domain.com:my_lib:/combiner> {
     it also assigns the position</first_marker>.
     it also assigns the position</second_marker>.
-    after it is assigned {
+    it happens when {
+        this particle is created.
+    } and it does {
         create a particle in position</first_marker>.
         create a particle in position</second_marker>.
     }

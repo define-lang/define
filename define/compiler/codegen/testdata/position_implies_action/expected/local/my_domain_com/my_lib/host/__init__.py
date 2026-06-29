@@ -7,14 +7,15 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.helper
 
 
-class Host(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/host>"
+class Host(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/host>"
+    is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.helper.Helper,
     )
 
     @override
-    def after_assigned(self):
+    def execute(self):
         self.on_particle.get_action(
             "action<my.domain.com:my_lib:/helper>"
         ).get_interface_position(

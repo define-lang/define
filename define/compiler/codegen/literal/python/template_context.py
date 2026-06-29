@@ -115,16 +115,14 @@ class PositionDefinitionContext:
 
     class_name: str
     typed_name: str
-    has_init: bool
     module_name: str
     constraints: list[naming.ClassReference] = field(default_factory=list)
     implied_qualities: list[naming.ClassReference] = field(default_factory=list)
-    statements: list[ActionStatementContext] = field(default_factory=list)
 
     @property
     def needs_override(self) -> bool:
         """Whether the generated class needs the @override decorator."""
-        return self.has_init
+        return False
 
     @property
     def imports(self) -> list[naming.ClassReference]:
@@ -132,6 +130,4 @@ class PositionDefinitionContext:
         class_references: list[naming.ClassReference] = []
         class_references.extend(self.constraints)
         class_references.extend(self.implied_qualities)
-        for stmt in self.statements:
-            class_references.extend(stmt.constraints)
         return _compute_imports(class_references, self.module_name)

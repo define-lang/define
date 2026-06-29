@@ -1,3 +1,3 @@
-position<my.domain.com:my_lib:/first_marker>
-position<my.domain.com:my_lib:/second_marker>
-position<my.domain.com:my_lib:/combiner>
+action<my.domain.com:my_lib:/test>::position<box>
+action<my.domain.com:my_lib:/test>::position<box>::position<my.domain.com:my_lib:/first_marker>
+action<my.domain.com:my_lib:/test>::position<box>::position<my.domain.com:my_lib:/second_marker>

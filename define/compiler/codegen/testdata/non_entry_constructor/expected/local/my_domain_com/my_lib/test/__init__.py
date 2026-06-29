@@ -4,7 +4,7 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.combiner
+import local.my_domain_com.my_lib.other
 
 
 class Test(literal.Action):
@@ -18,7 +18,7 @@ class Test(literal.Action):
                 literal.InterfacePosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.combiner.Combiner,
+                        local.my_domain_com.my_lib.other.Other,
                     ),
                 ),
             ],

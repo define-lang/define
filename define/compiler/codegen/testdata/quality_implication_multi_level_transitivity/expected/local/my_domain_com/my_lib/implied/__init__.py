@@ -7,14 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.transitive_implied
 
 
-class Implied(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/implied>"
+class Implied(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/implied>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.transitive_implied.TransitiveImplied,
     )
 
+    def __init__(self, on_particle: literal.Particle):
+        super().__init__(
+            on_particle,
+            interface_positions=[
+                literal.InterfacePosition("position<run>"),
+            ],
+            trigger_position_name="position<run>",
+        )
+
     @override
-    def after_assigned(self):
+    def execute(self):
         self.on_particle.get_position(
             "position<my.domain.com:my_lib:/transitive_implied>"
         ).create_particle()

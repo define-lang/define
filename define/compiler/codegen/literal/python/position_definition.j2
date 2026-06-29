@@ -17,11 +17,3 @@ class {{ definition.class_name }}(literal.GlobalPosition):
 {% endfor %}
     )
 {% endif %}
-{% if definition.has_init %}
-
-    @override
-    def after_assigned(self):
-{% with statements=definition.statements %}
-{% include "action_statements.j2" %}
-{% endwith %}
-{% endif %}

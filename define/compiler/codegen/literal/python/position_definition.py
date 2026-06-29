@@ -2,7 +2,6 @@
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
-    action_statements,
     naming,
     template_context,
 )
@@ -25,7 +24,6 @@ class PositionDefinitionGenerator:
 
     def generate(self) -> template_context.PositionDefinitionContext:
         """Generate template context for the position definition."""
-        has_init = self._definition.initialization is not None
         name_content = self._definition.typed_name.name_content
         constraints = self._converter.constraints_to_class_references(
             self._definition.constraints,
@@ -34,24 +32,13 @@ class PositionDefinitionGenerator:
             self._definition.quality_implications,
         )
 
-        statements: list[template_context.ActionStatementContext] = []
-        if self._definition.initialization is not None:
-            block_gen = action_statements.ActionStatementsBlockGenerator(
-                self._definition.initialization,
-                self._definition.typed_name,
-                self._converter,
-            )
-            statements = block_gen.generate()
-
         class_name = self._converter.class_name(name_content.path.relative_path)
         module_name = self._converter.module_name(name_content)
 
         return template_context.PositionDefinitionContext(
             class_name=class_name,
             typed_name=self._definition.typed_name.source_typed_name,
-            has_init=has_init,
             module_name=module_name,
             constraints=constraints,
             implied_qualities=implied_qualities,
-            statements=statements,
         )

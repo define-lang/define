@@ -1,6 +1,8 @@
-define the potential position<my.domain.com:my_lib:/host> {
+define the potential action<my.domain.com:my_lib:/host> {
     it also assigns the action</helper>.
-    after it is assigned {
+    it happens when {
+        this particle is created.
+    } and it does {
         create a particle in action</helper>::position<run>.
     }
 }

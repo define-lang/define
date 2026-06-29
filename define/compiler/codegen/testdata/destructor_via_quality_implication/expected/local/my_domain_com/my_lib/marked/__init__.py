@@ -7,14 +7,15 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destructor
 
 
-class Marked(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/marked>"
+class Marked(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/marked>"
+    is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.destructor.Destructor,
     )
 
     @override
-    def after_assigned(self):
+    def execute(self):
         self.on_particle.get_action(
             "action<my.domain.com:my_lib:/destructor>"
         ).get_interface_position(

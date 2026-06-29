@@ -92,14 +92,13 @@ class Particle:
         self._assigned_qualities: list[Quality] = []
 
     def assign_position(self, position_class: type[GlobalPosition]):
-        """Assign a position to this particle, triggering after_assigned."""
+        """Assign a position to this particle."""
         if position_class.typed_name in self._positions:
             raise DuplicateQualityAssignmentError(position_class.typed_name)
         self._assign_implied_qualities(position_class)
         position = position_class(self)
         self._assigned_qualities.append(position)
         self._positions[position_class.typed_name] = position
-        position.after_assigned()
 
     def assign_action(self, action_class: type[Action]):
         """Assign an action to this particle."""
@@ -252,9 +251,6 @@ class GlobalPosition(Quality, Position):
     def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
-
-    def after_assigned(self):
-        """Run when this position is assigned as a quality. Override in subclasses."""
 
     @override
     def before_parent_particle_destroyed(self):
