@@ -1622,24 +1622,16 @@ Proposals:
 
 - [DLP 33: Starting Define Programs](../proposals/00033-starting-define-programs.md)
 
-Any global position definition may be the entry point of a program. Here is what
-logically occurs from the compiler's viewpoint when starting a program:
+Any constructor may be the entry point of a program. Here is what logically
+occurs from the compiler's viewpoint when starting a program:
 
 1. An anonymous position is created, called the "view point position."
-2. That anonymous position has exactly one constraint: it is assigned the
-   potential position that is the program's entry point.
+2. The view point position has exactly one constraint: it is assigned the
+   constructor that is the program's entry point.
 3. A particle is created in the view point position. This particle is called the
    "view point."
-
-The program may not otherwise interact with the view point or view point
-position in any way.
-
-This action follows the normal rules of particle creation in constrained
-positions. Thus, it triggers the Position Initialization Block of the potential
-position, and all code in the program executes from there.
-
-The potential position that is first assigned is called the "entry point
-position," and any particle created in it is called the "entry point."
+4. This triggers the constructor, and all code in the program executes from
+   there.
 
 ## Ending Define Programs
 
