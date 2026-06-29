@@ -73,7 +73,7 @@ def test_occupied_interface_requirement_satisfied(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_occupied_interface_requirement_violated(
@@ -147,7 +147,7 @@ def test_occupied_interface_requirement_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_empty_interface_requirement_satisfied(
@@ -175,7 +175,7 @@ def test_empty_interface_requirement_satisfied(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR_EMPTY)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_empty_interface_requirement_violated(
@@ -258,7 +258,7 @@ def test_empty_interface_requirement_violated(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR_EMPTY)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_intermediate_position_requirement_violated(
@@ -351,7 +351,7 @@ def test_intermediate_position_requirement_violated(
             "file_path": "nested_destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _NESTED_DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _NESTED_DESTRUCTOR)]
 
 
 def test_locally_created_interface_particle_fires_destructor_locally(
@@ -428,7 +428,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destructor_in_init_block_checks_interface_requirement_locally(
@@ -522,10 +522,10 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _P),
+    assert result.action_call_graph.edges() == [
         (_P, _DESTRUCTOR),
-    }
+        (_TEST, _P),
+    ]
 
 
 def test_callee_attached_destructor_requirement_verified_at_owning_caller(
@@ -613,7 +613,7 @@ def test_callee_attached_destructor_requirement_verified_at_owning_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
+    assert result.action_call_graph.edges() == [
         (_TEST, _MAKE_THING),
         (_TEST, _DESTRUCTOR),
-    }
+    ]

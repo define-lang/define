@@ -158,10 +158,10 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]
 
 
 def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
@@ -262,10 +262,10 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]
 
 
 def test_implied_requirement_propagates_and_is_violated_at_caller(
@@ -358,10 +358,10 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]
 
 
 def test_child_requirement_propagates_and_is_violated_at_caller(
@@ -455,10 +455,10 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]
 
 
 def test_requirement_follows_moved_in_particle_to_contracted_origin(
@@ -552,10 +552,10 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]
 
 
 def test_propagated_requirement_satisfied_at_caller_produces_no_error(
@@ -600,7 +600,7 @@ def test_propagated_requirement_satisfied_at_caller_produces_no_error(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MID),
+    assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),
-    }
+        (_TEST, _MID),
+    ]

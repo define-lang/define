@@ -54,7 +54,7 @@ def test_occupied_implied_requirement_satisfied(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_occupied_implied_requirement_violated(
@@ -137,7 +137,7 @@ def test_occupied_implied_requirement_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_empty_implied_requirement_satisfied(
@@ -176,7 +176,7 @@ def test_empty_implied_requirement_satisfied(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR_EMPTY)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_empty_implied_requirement_violated(
@@ -267,7 +267,7 @@ def test_empty_implied_requirement_violated(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR_EMPTY)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_destructor_in_init_block_checks_implied_requirement_locally(
@@ -370,7 +370,7 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _P),
+    assert result.action_call_graph.edges() == [
         (_P, _DESTRUCTOR),
-    }
+        (_TEST, _P),
+    ]

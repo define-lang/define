@@ -4,13 +4,6 @@ from pathlib import PurePosixPath
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
-
-def _edge_pairs(
-    result: conftest.FullValidationResult,
-) -> set[tuple[str, str]]:
-    return result.action_call_graph.unique_edges()
-
-
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
@@ -56,7 +49,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_create_and_move_trigger_other_action(
@@ -97,7 +90,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_move_from_trigger_position_to_itself_does_not_retrigger(
@@ -186,7 +179,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_cross_file_triggering(
         self,
@@ -224,7 +217,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _ACT_B)}
+        assert result.action_call_graph.edges() == [(_TEST, _ACT_B)]
         assert_action_calls(result.action_call_graph, _TEST, _ACT_B)
 
     def test_trigger_chain(
@@ -279,7 +272,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _ACT_B), (_ACT_B, _ACT_C)}
+        assert result.action_call_graph.edges() == [(_ACT_B, _ACT_C), (_TEST, _ACT_B)]
         assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _ACT_C)
 
     def test_self_trigger(
@@ -307,7 +300,7 @@ class TestActionTriggering:
             result.program_result.all_diagnostics[0],
             diagnostics.ActionSelfTriggerDiagnostic,
         )
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_duplicate_action_does_not_add_trigger_edges(
         self,
@@ -362,7 +355,7 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].first_definition_line == 1
         assert result.program_result.all_diagnostics[0].location.line == 10
         assert result.program_result.all_diagnostics[0].location.column == 1
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_local_prefix_before_action_trigger(
         self,
@@ -400,7 +393,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_no_body_effect_when_create_target_has_error_state(
@@ -499,7 +492,7 @@ class TestUnknownGlobalNoTrigger:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
 
 _OTHER_ACTION = (
@@ -537,7 +530,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_move_triggers_action(
@@ -563,7 +556,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_self_reference_no_trigger_edge(
@@ -582,7 +575,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_position_init_no_edge_when_non_trigger_position(
         self,
@@ -617,7 +610,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_position_init_and_action_both_trigger_same_target(
         self,
@@ -654,10 +647,10 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {
+        assert result.action_call_graph.edges() == [
             (_POS_TEST, _OTHER),
             (_TEST, _OTHER),
-        }
+        ]
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
@@ -684,7 +677,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
+        assert result.action_call_graph.edges() == [(_POS_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_constrained_position_init_block_records_edge(
@@ -720,7 +713,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_TEST, _POS_P)}
+        assert result.action_call_graph.edges() == [(_TEST, _POS_P)]
         assert_action_calls(result.action_call_graph, _TEST, _POS_P)
 
 

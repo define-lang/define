@@ -49,7 +49,7 @@ def test_action_triggers_implied_action_directly(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _IMPLIED)}
+    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
 
 
 def test_action_triggers_implied_action_via_move(
@@ -74,7 +74,7 @@ def test_action_triggers_implied_action_via_move(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _IMPLIED)}
+    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
 
 
 def test_position_init_triggers_implied_action(
@@ -94,7 +94,7 @@ def test_position_init_triggers_implied_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_POS_TEST, _IMPLIED)}
+    assert result.action_call_graph.edges() == [(_POS_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_propagates_to_caller(
@@ -182,10 +182,10 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "file_path": "implied_action.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _MIDDLE),
+    assert result.action_call_graph.edges() == [
         (_MIDDLE, _IMPLIED),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_implied_action_with_iface_routing_to_inner_action_propagates(
@@ -487,7 +487,7 @@ def test_implied_action_guarantees_propagate_to_caller(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _IMPLIED)}
+    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
 
 
 def test_transitive_implication_triggers_action(

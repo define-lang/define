@@ -64,7 +64,7 @@ def test_interface_to_local_occupied_satisfied(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_local_occupied_violated(
@@ -162,7 +162,7 @@ def test_interface_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_local_empty_violated(
@@ -268,7 +268,7 @@ def test_interface_to_local_empty_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_local_occupied_violated(
@@ -369,7 +369,7 @@ def test_implied_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_local_empty_violated(
@@ -478,7 +478,7 @@ def test_implied_to_local_empty_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_implied_occupied_violated(
@@ -579,7 +579,7 @@ def test_interface_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_implied_occupied_violated(
@@ -683,4 +683,4 @@ def test_implied_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]

@@ -66,7 +66,7 @@ def test_destroy_fires_destructor_via_constraint(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_fires_destructor_via_quality_implication(
@@ -116,10 +116,10 @@ def test_destroy_fires_destructor_via_quality_implication(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {
+    assert result.action_call_graph.edges() == [
         (_TEST, _MARKED),
         (_TEST, _DESTRUCTOR),
-    }
+    ]
 
 
 def test_destroy_does_not_fire_non_destructor_action_quality(
@@ -164,7 +164,7 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert result.action_call_graph.unique_edges() == set()
+    assert result.action_call_graph.edges() == []
 
 
 def test_destroy_fires_multiple_destructors(
@@ -194,10 +194,10 @@ def test_destroy_fires_multiple_destructors(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _DESTRUCTOR_A),
+    assert result.action_call_graph.edges() == [
         (_TEST, _DESTRUCTOR_B),
-    }
+        (_TEST, _DESTRUCTOR_A),
+    ]
 
 
 def test_destructor_fired_from_position_init_block(
@@ -222,7 +222,7 @@ def test_destructor_fired_from_position_init_block(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_POS_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_POS_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_empty_position_does_not_fire_destructor(
@@ -255,7 +255,7 @@ def test_destroy_empty_position_does_not_fire_destructor(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>"
-    assert result.action_call_graph.unique_edges() == set()
+    assert result.action_call_graph.edges() == []
 
 
 def test_destroy_parent_not_occupied_does_not_fire_destructor(
@@ -312,7 +312,7 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
-    assert result.action_call_graph.unique_edges() == set()
+    assert result.action_call_graph.edges() == []
 
 
 def test_destroy_destructor_with_unloaded_file_no_crash(
@@ -345,7 +345,7 @@ def test_destroy_destructor_with_unloaded_file_no_crash(
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 35
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert result.action_call_graph.unique_edges() == set()
+    assert result.action_call_graph.edges() == []
 
 
 def test_destroy_via_chained_interface_position_fires_destructor(
@@ -436,10 +436,10 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {
+    assert result.action_call_graph.edges() == [
         (_TEST, _MAKE_THING),
         (_TEST, _DESTRUCTOR),
-    }
+    ]
 
 
 def test_destroy_after_move_into_unconstrained_position_fires_destructor(
@@ -469,4 +469,4 @@ def test_destroy_after_move_into_unconstrained_position_fires_destructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]

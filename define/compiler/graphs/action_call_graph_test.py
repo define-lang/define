@@ -46,12 +46,6 @@ _ENTRY_POS_REFS_B_C = (
 )
 
 
-def _edge_pairs(
-    result: conftest.FullValidationResult,
-) -> set[tuple[str, str]]:
-    return result.action_call_graph.unique_edges()
-
-
 class TestActionCallGraph:
     def test_empty_graph(
         self,
@@ -73,7 +67,7 @@ class TestActionCallGraph:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_single_trigger_edge(
         self,
@@ -87,7 +81,7 @@ class TestActionCallGraph:
             entry_file="act_b.dfn",
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert result.action_call_graph.edges() == [(_ACT_B, _ACT_A)]
         assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_self_trigger(
@@ -116,7 +110,7 @@ class TestActionCallGraph:
             result.program_result.all_diagnostics[0],
             diagnostics.ActionSelfTriggerDiagnostic,
         )
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
 
     def test_duplicates_not_targeted_twice(
         self,
@@ -166,7 +160,7 @@ class TestActionCallGraph:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert result.action_call_graph.edges() == [(_ACT_B, _ACT_A)]
         assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_multiple_effects_to_same_target(
@@ -199,7 +193,7 @@ class TestActionCallGraph:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_ACT_B, _ACT_A), (_ACT_C, _ACT_A)}
+        assert result.action_call_graph.edges() == [(_ACT_B, _ACT_A), (_ACT_C, _ACT_A)]
         assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
         assert_action_calls(result.action_call_graph, _ACT_C, _ACT_A)
 
@@ -230,7 +224,7 @@ class TestActionCallGraph:
             entry_file="act_b.dfn",
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert result.action_call_graph.edges() == [(_ACT_B, _ACT_A)]
         assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_diamond_dependency(
@@ -309,12 +303,12 @@ class TestActionCallGraph:
             entry_file="act_a.dfn",
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {
-            (_ACT_A, _ACT_B),
-            (_ACT_A, _ACT_C),
+        assert result.action_call_graph.edges() == [
             (_ACT_B, _SHARED),
             (_ACT_C, _SHARED),
-        }
+            (_ACT_A, _ACT_B),
+            (_ACT_A, _ACT_C),
+        ]
         assert_action_calls(result.action_call_graph, _ACT_A, _ACT_B, _SHARED)
         assert_action_calls(result.action_call_graph, _ACT_A, _ACT_C, _SHARED)
 
@@ -355,4 +349,4 @@ class TestActionCallGraph:
             entry_file="act_b.dfn",
         )
         assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == set()
+        assert result.action_call_graph.edges() == []
