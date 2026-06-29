@@ -61,24 +61,6 @@ def test_unreferenced_local_position_error():
     assert diags[0].location.column == 29
 
 
-def test_unreferenced_local_position_in_init_block_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/p> {\n"
-        "    after it is assigned {\n"
-        "        define the position<used_local>.\n"
-        "        create a particle in position<used_local>.\n"
-        "        define the position<unused_local>.\n"
-        "    }\n"
-        "}\n"
-    )
-    diags = _diagnostics(source)
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
-    assert diags[0].position_name == "position<unused_local>"
-    assert diags[0].location.line == 5
-    assert diags[0].location.column == 29
-
-
 def test_trigger_only_interface_position_is_referenced():
     # TODO: Decide whether this is the right behavior.
     source = (

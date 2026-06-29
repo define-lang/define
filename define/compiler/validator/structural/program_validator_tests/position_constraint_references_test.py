@@ -32,34 +32,6 @@ def test_position_constraint_reference_with_invalid_path():
     assert diags[0].location.column == 30
 
 
-def test_global_position_validates_constraints_block_before_initialization_block():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</BadConstraint>.\n"
-        "    }\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</BadInit>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diags[0].segment == "BadConstraint"
-    assert diags[0].location.line == 3
-    assert isinstance(diags[1], diagnostics.UnknownGlobalNameDiagnostic)
-    assert diags[1].location.line == 6
-    assert isinstance(diags[2], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diags[2].segment == "BadInit"
-    assert diags[2].location.line == 6
-
-
 def test_same_fqun_constraint_reference_must_use_short_form():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"

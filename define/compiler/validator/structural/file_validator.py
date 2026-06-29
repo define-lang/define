@@ -341,14 +341,6 @@ class DefinitionStructuralValidator:
         self._validate_quality_implications(definition.quality_implications)
         if definition.constraints:
             self._validate_position_constraints(definition.constraints)
-        if definition.initialization is not None:
-            scope = scope_tracker.ScopeTracker()
-            scope.add_definition(definition)
-            self._validate_action_statements(
-                definition.initialization,
-                scope,
-                allow_self_reference=True,
-            )
         self._check_unreferenced_positions()
         self._check_unused_quality_implications()
 
@@ -367,38 +359,23 @@ class DefinitionStructuralValidator:
         self,
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
-        *,
-        allow_self_reference: bool = False,
     ):
         if not action_statements.statements:
-            if isinstance(action_statements, ast.PositionInitBlock):
-                self._diagnostics.append(
-                    diagnostics.EmptyPositionInitBlockDiagnostic(
-                        location=action_statements.location,
-                    )
+            self._diagnostics.append(
+                diagnostics.EmptyActionStatementsBlockDiagnostic(
+                    location=action_statements.location,
                 )
-            else:
-                self._diagnostics.append(
-                    diagnostics.EmptyActionStatementsBlockDiagnostic(
-                        location=action_statements.location,
-                    )
-                )
+            )
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
                     self._validate_local_position_definition(stmt, scope)
                 case ast.CreateParticleStatement():
-                    self._validate_create_particle(
-                        stmt, scope, allow_self_reference=allow_self_reference
-                    )
+                    self._validate_create_particle(stmt, scope)
                 case ast.MoveParticleStatement():
-                    self._validate_move_particle(
-                        stmt, scope, allow_self_reference=allow_self_reference
-                    )
+                    self._validate_move_particle(stmt, scope)
                 case ast.DestroyParticleStatement():
-                    self._validate_destroy_particle(
-                        stmt, scope, allow_self_reference=allow_self_reference
-                    )
+                    self._validate_destroy_particle(stmt, scope)
 
     def _validate_local_position_definition(
         self,
@@ -436,13 +413,10 @@ class DefinitionStructuralValidator:
         self,
         stmt: ast.CreateParticleStatement,
         scope: scope_tracker.ScopeTracker,
-        *,
-        allow_self_reference: bool = False,
     ):
         target_ok = self._validate_full_chained_name(
             stmt.target_position,
             scope,
-            allow_self_reference=allow_self_reference,
         )
         self._particle_statement_validity.append(
             validation_result.ParticleStatementValidity(
@@ -454,18 +428,14 @@ class DefinitionStructuralValidator:
         self,
         stmt: ast.MoveParticleStatement,
         scope: scope_tracker.ScopeTracker,
-        *,
-        allow_self_reference: bool = False,
     ):
         source_ok = self._validate_full_chained_name(
             stmt.source_position,
             scope,
-            allow_self_reference=allow_self_reference,
         )
         target_ok = self._validate_full_chained_name(
             stmt.target_position,
             scope,
-            allow_self_reference=allow_self_reference,
         )
         from_is_prefix_of_to = self._check_if_from_is_a_prefix_of_to(stmt)
         self._particle_statement_validity.append(
@@ -517,13 +487,10 @@ class DefinitionStructuralValidator:
         self,
         stmt: ast.DestroyParticleStatement,
         scope: scope_tracker.ScopeTracker,
-        *,
-        allow_self_reference: bool = False,
     ):
         target_ok = self._validate_full_chained_name(
             stmt.target_position,
             scope,
-            allow_self_reference=allow_self_reference,
         )
         self._particle_statement_validity.append(
             validation_result.ParticleStatementValidity(
@@ -535,8 +502,6 @@ class DefinitionStructuralValidator:
         self,
         chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
-        *,
-        allow_self_reference: bool = False,
     ) -> bool:
         """Validate a full chained name reference.
 
@@ -556,7 +521,7 @@ class DefinitionStructuralValidator:
             first.full_typed_name == self._definition.typed_name.source_typed_name
         )
         is_chained_self_reference = is_self_reference and len(chain.typed_names) > 1
-        if is_chained_self_reference and not allow_self_reference:
+        if is_chained_self_reference:
             self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
                     location=first.location,
@@ -591,9 +556,7 @@ class DefinitionStructuralValidator:
 
         previous_element = None
         for typed_name in chain.typed_names:
-            self._validate_chained_name_element(
-                typed_name, allow_self_reference=allow_self_reference
-            )
+            self._validate_chained_name_element(typed_name)
             # Local names in chains may only come right after global action names.
             if (
                 previous_element
@@ -628,8 +591,6 @@ class DefinitionStructuralValidator:
     def _validate_chained_name_element(
         self,
         chain_element: ast.TypedNameReference,
-        *,
-        allow_self_reference: bool = False,
     ):
         """Validate a single chain element.
 
@@ -643,9 +604,7 @@ class DefinitionStructuralValidator:
             return
 
         if isinstance(chain_element, ast.GlobalTypedNameReference):
-            self._process_reference(
-                chain_element, allow_self_reference=allow_self_reference
-            )
+            self._process_reference(chain_element)
         elif chain_element.name_type == ast.NameType.ACTION:
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
@@ -736,20 +695,14 @@ class DefinitionStructuralValidator:
     def _process_reference(
         self,
         typed_global_name: ast.GlobalTypedNameReference,
-        *,
-        allow_self_reference: bool = False,
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.name_content
 
-        # In Position Initialization Blocks, self-references don't cause us
-        # to do file loads. They are not actually external references.
         is_self_reference = (
             typed_global_name.full_typed_name
             == self._definition.typed_name.source_typed_name
         )
-        if is_self_reference and allow_self_reference:
-            return
         # Only the first reference site per target emits an edge; downstream
         # per-target diagnostics (missing file, cycle, wrong type) then fire
         # once per (definition, target) pair instead of once per source line.

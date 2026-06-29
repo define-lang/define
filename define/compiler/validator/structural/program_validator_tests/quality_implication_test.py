@@ -51,85 +51,16 @@ def test_non_self_ref_global_in_action_body(
     assert all_diags[0].location.column == 30
 
 
-def test_non_self_ref_global_in_position_init(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    after it is assigned {\n"
-                "        create a particle in action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].source_global_name == "action</other>"
-    assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 30
-
-
-def test_constraint_does_not_make_global_available_as_chain_start(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</other>.\n"
-                "    }\n"
-                "    after it is assigned {\n"
-                "        create a particle in action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].source_global_name == "action</other>"
-    assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].location.line == 6
-    assert all_diags[0].location.column == 30
-
-
 def test_two_distinct_used_quality_implication_statements():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
         "define the potential position<my.domain.com:my_lib:/bar>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</bar>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>.\n"
         "        create a particle in position</bar>.\n"
         "    }\n"
@@ -154,9 +85,11 @@ def test_action_implication_used_via_interface_position_chain():
         "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the action</foo>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in action</foo>::position<x>.\n"
         "    }\n"
         "}\n"
@@ -185,9 +118,11 @@ def test_position_implication_used_only_via_implied_position_chain():
         "        it has the action</bar>.\n"
         "    }\n"
         "}\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>::action</bar>::position<x>.\n"
         "    }\n"
         "}\n"
@@ -203,8 +138,10 @@ def test_position_implication_used_only_via_implied_position_chain():
 def test_global_used_without_implication_is_unknown():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    after it is assigned {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
@@ -219,33 +156,8 @@ def test_global_used_without_implication_is_unknown():
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].source_global_name == "position</foo>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/foo>"
-    assert diags[0].location.line == 4
+    assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-
-
-def test_duplicate_implication_in_global_position_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</foo>.\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
-    assert diags[0].implication_name == "position</foo>"
-    assert diags[0].first_implication_line == 3
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 25
 
 
 def test_duplicate_implication_in_action_error():
@@ -279,11 +191,13 @@ def test_duplicate_implication_in_action_error():
 def test_three_duplicate_implication_two_errors():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</foo>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
@@ -315,10 +229,12 @@ def test_duplicate_implication_full_fqun_cross_universe(
     result = validate_project(
         {
             "test.dfn": (
-                f"define the potential position<{implier_fqun}:/test> {{\n"
+                f"define the potential action<{implier_fqun}:/test> {{\n"
                 f"    it also assigns the position<{implied_fqun}:/foo>.\n"
                 f"    it also assigns the position<{implied_fqun}:/foo>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 f"        create a particle in position<{implied_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
@@ -353,10 +269,12 @@ def test_implication_same_path_different_fquns_are_not_duplicates(
             "a/foo.dfn": f"define the potential position<{a_fqun}:/foo>.\n",
             "b/foo.dfn": f"define the potential position<{b_fqun}:/foo>.\n",
             "test.dfn": (
-                f"define the potential position<{main_fqun}:/test> {{\n"
+                f"define the potential action<{main_fqun}:/test> {{\n"
                 f"    it also assigns the position<{a_fqun}:/foo>.\n"
                 f"    it also assigns the position<{b_fqun}:/foo>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 f"        create a particle in position<{a_fqun}:/foo>.\n"
                 f"        create a particle in position<{b_fqun}:/foo>.\n"
                 "    }\n"
@@ -373,10 +291,12 @@ def test_implication_same_path_different_fquns_are_not_duplicates(
 def test_duplicate_via_full_form_and_short_form_implication():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position<my.domain.com:my_lib:/foo>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
@@ -396,10 +316,13 @@ def test_duplicate_via_full_form_and_short_form_implication():
 
 def test_implication_with_invalid_path_format_error():
     source = (
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</bad/>.\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</root>.\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -418,11 +341,14 @@ def test_implication_with_invalid_path_format_error():
 
 def test_implication_invalid_name_does_not_become_duplicate():
     source = (
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</bad/>.\n"
         "    it also assigns the position</bad/>.\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</root>.\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -445,9 +371,11 @@ def test_implication_invalid_name_does_not_become_duplicate():
 
 def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
     source = (
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</bad/>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</bad/>.\n"
         "    }\n"
         "}\n"
@@ -466,11 +394,11 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
     assert isinstance(diags[1], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[1].source_global_name == "position</bad/>"
     assert diags[1].full_global_name == "position<my.domain.com:my_lib:/bad/>"
-    assert diags[1].location.line == 4
+    assert diags[1].location.line == 6
     assert diags[1].location.column == 30
     assert isinstance(diags[2], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[2].path == "/bad/"
-    assert diags[2].location.line == 4
+    assert diags[2].location.line == 6
     assert diags[2].location.column == 43
 
 
@@ -478,18 +406,24 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
     result = validate_project(
         {
             "foo.dfn": (
-                "define the potential position<my.domain.com:my_lib:/foo> {\n"
-                "    it also assigns the position</bar>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</bar>.\n"
+                "define the potential action<my.domain.com:my_lib:/foo> {\n"
+                "    it also assigns the action</bar>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</bar>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
             "bar.dfn": (
-                "define the potential position<my.domain.com:my_lib:/bar> {\n"
-                "    it also assigns the position</foo>.\n"
-                "    after it is assigned {\n"
-                "        create a particle in position</foo>.\n"
+                "define the potential action<my.domain.com:my_lib:/bar> {\n"
+                "    it also assigns the action</foo>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</foo>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -504,34 +438,11 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
-        "position<my.domain.com:my_lib:/foo>",
-        "position<my.domain.com:my_lib:/bar>",
-        "position<my.domain.com:my_lib:/foo>",
+        "action<my.domain.com:my_lib:/foo>",
+        "action<my.domain.com:my_lib:/bar>",
+        "action<my.domain.com:my_lib:/foo>",
     ]
     assert diags[0].location.line == 2
-    assert diags[0].location.column == 25
-
-
-def test_unused_implication_on_global_position_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</root>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
-    assert diags[0].implication_name == "position</foo>"
-    assert diags[0].location.line == 3
     assert diags[0].location.column == 25
 
 
@@ -570,35 +481,6 @@ def test_implication_used_only_in_constraint_block_is_unused():
         "    it may only contain particles where {\n"
         "        it has the position</foo>.\n"
         "    }\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</root>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
-    assert diags[0].implication_name == "position</foo>"
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
-
-
-def test_implication_used_only_mid_chain_via_self_ref_is_unused():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</foo>.\n"
-        "    }\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</root>::position</foo>.\n"
-        "    }\n"
         "}\n"
     )
     results = (
@@ -618,10 +500,12 @@ def test_two_implication_one_used_one_unused():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
         "define the potential position<my.domain.com:my_lib:/bar>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "define the potential action<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</bar>.\n"
-        "    after it is assigned {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
         "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
@@ -645,9 +529,11 @@ def test_implication_for_nonexistent_quality_used_in_body(
     result = validate_project(
         {
             "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</nonexistent>.\n"
-                "    after it is assigned {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
                 "        create a particle in position</nonexistent>.\n"
                 "    }\n"
                 "}\n"
