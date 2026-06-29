@@ -323,32 +323,61 @@ empty. Only after it is called do its guarantees apply.
 An action's trigger positions are also automatically considered constraints on
 positions that are treated as satisfied when compiling any individual action.
 
-### Position Init Block Guarantees
+### Constructor Guarantees
 
-In addition to generating guarantees on referenced quality-required positions,
-Position Initialization Blocks also have one special guarantee they create that
-other Action Statement Blocks cannot create: they create guarantees when they
-affect particles in their self-referenced position or children of that position.
+Constructors generate the same guarantees as any other action on the
+quality-required positions they fill. Because a constructor runs automatically
+the instant a particle is created, those guarantees apply to _every_ particle
+created in a position that has the constructor.
 
-Let's take an example where `position</a>` has an init block that creates a
-particle in itself. `position</a>` has the contract:
-`it has the position</dep>`, and `position</dep>` also has an init block that
-creates a particle in itself. So when I do:
+Let's take an example where `position</a>` has a constructor that fills its
+quality-required `position</dep>`, and a `position<local>` whose own constructor
+fills `position</a>`:
 
 ```define
+define the potential position<mv:example.com:example:/dep>.
+
+define the potential action<mv:example.com:example:/a/construct> {
+    it also assigns the position</dep>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</dep>.
+    }
+}
+
+define the potential position<mv:example.com:example:/a> {
+    it may only contain particles where {
+        it has the action</a/construct>.
+    }
+}
+
+define the potential action<mv:example.com:example:/local/construct> {
+    it also assigns the position</a>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</a>.
+    }
+}
+
 define the position<local> {
     it may only contain particles where {
-        it has the position</a>.
+        it has the action</local/construct>.
     }
 }
 create a particle in position<local>.
 ```
 
-Then I can _guarantee_ that `position<local>::position</a>` is filled, and also
-that `position<local>::position</a>::position</dep>` is filled. Also, the
-position init block of `position</a>` itself can guarantee that `position</dep>`
-is filled and could actually move or destroy that position, thus creating a
-_different_ guarantee than what `position</dep>` normally provides.
+Creating a particle in `position<local>` runs `local`'s constructor, which fills
+`position</a>`, which in turn runs `a`'s constructor, which fills
+`position</dep>`. So I can _guarantee_ that `position<local>::position</a>` is
+filled, and also that `position<local>::position</a>::position</dep>` is filled.
+Because `a`'s constructor operates on `position</dep>`, it could instead move or
+destroy that particle, thus creating a _different_ guarantee than what
+`position</dep>` normally provides.
 
 ### Requirements Follow Particles
 

@@ -34,25 +34,27 @@ define the potential position<mv:example.com:example:/file_name> {
     }
 }
 
-define the potential position<mv:example.com:example:/file_handle> {
+define the potential action<mv:example.com:example:/file_handle/construct> {
     it also assigns the position</file_system>.
 
-    it may only contain particles where {
-        it has a value that is an integer.
-    }
-    after it is assigned {
+    it happens when {
+        this particle is created.
+    } and it does {
         create a particle in position</file_system>.
         # Some code that interacts with position</file_system>.
+    }
+}
+
+define the potential position<mv:example.com:example:/file_handle> {
+    it may only contain particles where {
+        it has a value that is an integer.
+        it has the action</file_handle/construct>.
     }
 }
 
 define the potential position<mv:example.com:example:/buffer> {
     # Imagine we have some syntax to define a byte buffer that we
     # need to write to the disk before the program terminates.
-
-    after it is assigned {
-        create a particle in this position.
-    }
 }
 
 define the potential position<mv:example.com:example:/temp_file/create> {
@@ -73,13 +75,20 @@ define the potential position<mv:example.com:example:/temp_file/create> {
     }
 }
 
+define the potential action<mv:example.com:example:/temp_file/construct> {
+    it also assigns the position</buffer>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</buffer>.
+    }
+}
+
 define the potential position<mv:example.com:example:/temp_file> {
     it may only contain particles where {
-        it has the position</buffer>.
+        it has the action</temp_file/construct>.
         it has the action</temp_file/create>.
-    }
-    after it is assigned {
-        create a particle in this position.
     }
 }
 
@@ -89,6 +98,7 @@ define the position<x> {
     }
 }
 create a particle in position<x>.
+create a particle in position<x>::position</temp_file>.
 create a particle in position<x>::action</temp_file/create>::position<run>.
 wait until {
     the position<x>::action</temp_file/create>::position<completed> has a particle.
@@ -105,9 +115,12 @@ position<x>
 -- position</temp_file>
    |
    -- position</buffer>
+   -- action</temp_file/construct>
    -- position</file_name>
-   -- position</file_system>
    -- position</file_handle>
+   |  |
+   |  -- position</file_system>
+   |  -- action</file_handle/construct>
    -- action</temp_file/create>
       |
       -- position<run>
@@ -121,17 +134,20 @@ cascades like this:
 2. Destroy the particle in `action</temp_file/create>::position<run>`.
 3. Unassign `action</temp_file/create>` from
    `position<x>::position</temp_file>`.
-4. Destroy the particle in `position</file_handle>`.
-5. Unassign `position</file_handle>` from `position<x>::position</temp_file>`.
-6. Destroy the particle in `position</file_system>`.
-7. Unassign `position</file_system>` from `position<x>::position</temp_file>`.
-8. Destroy the particle in `position</file_name>`.
-9. Unassign `position</file_name>` from `position<x>::position</temp_file>`.
-10. Destroy the particle in `position</buffer>`.
-11. Unassign `position</buffer>` from `position<x>::position</temp_file>`.
-12. Destroy the particle in `position<x>::position</temp_file>`.
-13. Unassign `position</temp_file>` from `position<x>`.
-14. Destroy the particle in `position<x>`.
+4. Unassign `action</file_handle/construct>` from `position</file_handle>`.
+5. Destroy the particle in `position</file_handle>::position</file_system>`.
+6. Unassign `position</file_system>` from `position</file_handle>`.
+7. Destroy the particle in `position</file_handle>`.
+8. Unassign `position</file_handle>` from `position<x>::position</temp_file>`.
+9. Destroy the particle in `position</file_name>`.
+10. Unassign `position</file_name>` from `position<x>::position</temp_file>`.
+11. Unassign `action</temp_file/construct>` from
+    `position<x>::position</temp_file>`.
+12. Destroy the particle in `position</buffer>`.
+13. Unassign `position</buffer>` from `position<x>::position</temp_file>`.
+14. Destroy the particle in `position<x>::position</temp_file>`.
+15. Unassign `position</temp_file>` from `position<x>`.
+16. Destroy the particle in `position<x>`.
 
 However, during destruction, we need to do the following:
 
@@ -203,8 +219,8 @@ condition as a "destructor."
 Actions containing this condition may check any other condition they wish, as
 well, which allows for the implementation of conditional destructors.
 
-Note that unlike Position Assignment Blocks, destructors have normal Action
-Statement Blocks that may _not_ refer to `this particle`.
+Like constructors, destructors are ordinary actions with normal Action Statement
+Blocks, and so they may _not_ refer to the particle itself.
 
 ### When It Is Checked
 
@@ -259,7 +275,7 @@ define the potential action<mv:example.com:example:/temp_file/destroy> {
     } and it does {
         # All totally imaginary syntax that will never exist.
         flush the value in position</buffer> to the file in position</file_handle>.
-        close the file in position</file_system> using the value in position</file_handle>.
+        close the file in position</file_handle>::position</file_system> using the value in position</file_handle>.
         delete the file at the value in position</file_name>.
     }
 }
@@ -267,19 +283,17 @@ define the potential action<mv:example.com:example:/temp_file/destroy> {
 # And add it to temp_file.
 define the potential position<mv:example.com:example:/temp_file> {
     it may only contain particles where {
-        it has the position</buffer>.
+        it has the action</temp_file/construct>.
         it has the action</temp_file/create>.
         it has the action</temp_file/destroy>.
-    }
-    after it is assigned {
-        create a particle in this position.
     }
 }
 ```
 
-That would then trigger as Step 2 of the cascade described in the Problems
-section, because `/temp_file/destroy` is the last action assigned to the
-particle.
+That destructor fires at the very beginning of the cascade---before Step 1 of
+the sequence shown in the Problems section---because `/temp_file/destroy` is the
+last action assigned to the particle and is therefore the first quality
+unassigned during destruction.
 
 Local particles would be destroyed exactly the same way---by defining a
 potential action and assigning it to that particle. That does mean that anything

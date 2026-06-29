@@ -50,16 +50,15 @@ validation).
 `tools/generate_action_graph_source.py` (default
 `--layers 18 --width 64 --fan-out 32 --destructor-fraction 0.5`, ~124,000 lines,
 ~1,150 actions). A layered directed acyclic graph of potential actions rooted at
-the entry-point position `/test`; the root's Position Initialization Block
-triggers every layer-0 action, and each action wires up the next layer, so
-**every action is reachable from the init block** and gets validated. Each
-non-leaf action references `fan_out` next-layer actions through its `out`
-interface position's constraint (`it has the action</...>`) — a circulant target
-set, so every node has both fan-in and fan-out of exactly `fan_out`. Every
-action destroys the particle in its `src` interface position, which both infers
-an Action Requirement and records a Destruction Contract;
-`--destructor-fraction` of actions additionally carry a real destructor,
-exercising the destruction cascade.
+the entry-point constructor action `/test`; the root triggers every layer-0
+action, and each action wires up the next layer, so **every action is reachable
+from the root constructor** and gets validated. Each non-leaf action references
+`fan_out` next-layer actions through its `out` interface position's constraint
+(`it has the action</...>`) — a circulant target set, so every node has both
+fan-in and fan-out of exactly `fan_out`. Every action destroys the particle in
+its `src` interface position, which both infers an Action Requirement and
+records a Destruction Contract; `--destructor-fraction` of actions additionally
+carry a real destructor, exercising the destruction cascade.
 
 This profile is reference-graph-dominated: at the default size, validation
 (`reference_graph_validator.validate`) is ~70% of the run and parse only ~25%,
