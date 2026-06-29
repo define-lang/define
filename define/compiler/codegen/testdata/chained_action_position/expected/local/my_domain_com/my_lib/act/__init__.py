@@ -28,3 +28,13 @@ class Act(literal.Action):
     def execute(self):
         result = literal.LocalPosition("position<result>")
         result.create_particle()
+        self.get_interface_position(
+            "position<trigger_pos>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/inner>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<trigger_pos>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/inner>"
+        ).destroy_particle()

@@ -9,5 +9,7 @@ define the potential action<my.domain.com:my_lib:/act> {
     } and it does {
         define the position<result>.
         create a particle in position<result>.
+        create a particle in position<trigger_pos>::position</inner>.
+        destroy the particle in position<trigger_pos>::position</inner>.
     }
 }

@@ -43,6 +43,16 @@ class Runner(literal.Action):
         ).create_particle()
         self.get_interface_position(
             "position<input_a>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/quality_a>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<input_b>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/quality_b>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<input_a>"
         ).destroy_particle()
         self.get_interface_position(
             "position<input_b>"

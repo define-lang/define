@@ -9,5 +9,6 @@ define the potential action<mv:define-lang.org:test_init_requires_occupied:/test
             }
         }
         create a particle in position<box>.
+        create a particle in position<box>::position</p>.
     }
 }

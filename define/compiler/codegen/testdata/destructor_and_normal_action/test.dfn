@@ -7,6 +7,7 @@ define the potential position<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<box>.
+        create a particle in position<box>::action</beep>::position<trigger>.
         destroy the particle in position<box>.
     }
 }

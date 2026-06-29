@@ -7,6 +7,7 @@ define the potential action<mv:define-lang.org:test_dim_bad_action:/test> {
     it happens when {
         the position<pos_a> has a particle.
     } and it does {
+        create a particle in position<pos_a>::action</act_b>::position<inner>.
         create a particle in position<pos_a>::action</act_b>::position<no_such>.
     }
 }

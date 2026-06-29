@@ -9,5 +9,6 @@ define the potential action<mv:define-lang.org:test_dim_global:/test> {
             }
         }
         create a particle in position<dest>.
+        create a particle in position<dest>::position</target_pos>.
     }
 }

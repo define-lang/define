@@ -30,6 +30,16 @@ class Inner(literal.Action):
     def execute(self):
         self.get_interface_position(
             "position<input>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<input>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier>"
+        ).destroy_particle()
+        self.get_interface_position(
+            "position<input>"
         ).move_particle_to(
             self.get_interface_position(
                 "position<output>"

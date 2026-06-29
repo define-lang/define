@@ -41,6 +41,26 @@ class Runner(literal.Action):
         ).create_particle()
         self.get_interface_position(
             "position<source>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier_one>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<source>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier_one>"
+        ).destroy_particle()
+        self.get_interface_position(
+            "position<source>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier_two>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<source>"
+        ).particle.get_position(
+            "position<my.domain.com:my_lib:/implier_two>"
+        ).destroy_particle()
+        self.get_interface_position(
+            "position<source>"
         ).move_particle_to(
             self.get_interface_position(
                 "position<dest>"

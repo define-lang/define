@@ -11,5 +11,6 @@ define the potential action<mv:define-lang.org:test_dim_multi:/test> {
         }
         create a particle in position<local_pos>.
         create a particle in position<dest>.
+        create a particle in position<dest>::position</global_pos>.
     }
 }

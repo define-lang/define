@@ -14,6 +14,8 @@ define the potential position<mv:define-lang.org:test_pos_init_move_bad:/test> {
             }
         }
         create a particle in position<local>.
+        create a particle in position<local>::position</x>.
         move the particle in position<local> to position<bad_dest>.
+        create a particle in position<bad_dest>::position</y>.
     }
 }

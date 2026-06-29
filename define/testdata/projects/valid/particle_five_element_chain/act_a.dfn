@@ -9,5 +9,6 @@ define the potential action<mv:define-lang.org:test_dim_five_chain:/act_a> {
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
+        create a particle in position<pos_b>::action</act_b>::position<pos_c>.
     }
 }

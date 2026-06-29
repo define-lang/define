@@ -21,4 +21,9 @@ class Test(literal.GlobalPosition):
             ),
         )
         box.create_particle()
+        box.particle.get_action(
+            "action<my.domain.com:my_lib:/beep>"
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
         box.destroy_particle()

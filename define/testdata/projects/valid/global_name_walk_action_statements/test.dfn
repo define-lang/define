@@ -9,5 +9,6 @@ define the potential action<mv:define-lang.org:test_walk_action_statements:/test
             }
         }
         create a particle in position<inner_pos>.
+        create a particle in position<inner_pos>::position</target>.
     }
 }

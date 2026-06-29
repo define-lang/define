@@ -9,5 +9,6 @@ define the potential action<mv:define-lang.org:test_walk_scope_isolation:/test> 
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
+        create a particle in position<dup_local>::action</target>::position<dup_local>.
     }
 }

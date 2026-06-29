@@ -14,6 +14,8 @@ define the potential action<my.domain.com:my_lib:/runner> {
         the position<run> has a particle.
     } and it does {
         create a particle in position<source>.
+        create a particle in position<source>::position</implier>.
+        destroy the particle in position<source>::position</implier>.
         move the particle in position<source> to position<dest>.
     }
 }

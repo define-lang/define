@@ -19,4 +19,7 @@ class Test(literal.GlobalPosition):
             ),
         )
         box.create_particle()
+        box.particle.get_position(
+            "position<my.domain.com:my_lib:/marked>"
+        ).create_particle()
         box.destroy_particle()

@@ -15,6 +15,8 @@ define the potential action<mv:define-lang.org:test_files:/invalid/particles/mov
             }
         }
         create a particle in position<from_pos>.
+        create a particle in position<from_pos>::position</invalid/particles/move/violates_dest_constraints>.
         move the particle in position<from_pos> to position<to_pos>.
+        create a particle in position<to_pos>::position</valid/action_local_pos_requires_global>.
     }
 }

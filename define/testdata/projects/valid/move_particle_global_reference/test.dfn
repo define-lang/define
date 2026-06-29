@@ -13,5 +13,6 @@ define the potential action<mv:define-lang.org:test_move_dim_global:/test> {
             }
         }
         move the particle in position<local_pos> to position<dest>.
+        create a particle in position<dest>::position</target_pos>.
     }
 }

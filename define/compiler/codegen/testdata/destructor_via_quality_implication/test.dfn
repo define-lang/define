@@ -6,6 +6,7 @@ define the potential position<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<box>.
+        create a particle in position<box>::position</marked>.
         destroy the particle in position<box>.
     }
 }

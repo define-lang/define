@@ -5,5 +5,6 @@ define the potential action<mv:define-lang.org:test_dim_five_chain:/act_b> {
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
+        destroy the particle in position<pos_c>.
     }
 }

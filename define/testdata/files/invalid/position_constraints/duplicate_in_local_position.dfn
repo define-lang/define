@@ -10,5 +10,6 @@ define the potential action<mv:define-lang.org:test_files:/invalid/position_cons
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
+        create a particle in position<inner>::position</valid/action_local_pos_requires_global>.
     }
 }

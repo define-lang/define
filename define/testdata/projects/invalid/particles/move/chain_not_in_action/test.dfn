@@ -9,6 +9,7 @@ define the potential action<mv:define-lang.org:test_move_bad_action:/test> {
     it happens when {
         the position<run> has a particle.
     } and it does {
+        create a particle in position<pos_a>::action</act_b>::position<inner>.
         move the particle in position<pos_a>::action</act_b>::position<no_such> to position<dest>.
     }
 }
