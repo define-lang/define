@@ -280,8 +280,9 @@ def raise_token_error(
 
     # We are in a potential position definition block (global, not local).
     # This must come before the local position definition block check below,
-    # because AFTER_IT_IS_ASSIGNED distinguishes the potential block from local.
-    if "AFTER_IT_IS_ASSIGNED" in e.accepts:
+    # because IT_ALSO_ASSIGNS_THE (quality implications are only allowed in a
+    # potential position block) distinguishes the potential block from local.
+    if "IT_ALSO_ASSIGNS_THE" in e.accepts:
         if e.token == "}":
             raise parser_exceptions.MissingPotentialPositionDefinitionContent(
                 e, source, file_path

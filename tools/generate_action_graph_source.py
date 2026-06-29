@@ -7,10 +7,10 @@ machinery rather than a single huge Action Statements Block.
 
 The program is a layered directed acyclic graph of potential actions:
 
-  * The root is the entry-point position ``/test``. It assigns every
-    action in layer 0 and, in its Position Initialization Block, creates
-    a particle in each layer-0 action's ``src`` interface position and
-    triggers it.
+  * The root is the entry-point constructor action ``/test``. Its ``out``
+    interface position is constrained to every layer-0 action, and its
+    ``this particle is created`` body creates a particle in each layer-0
+    action's ``src`` and ``trigger`` interface positions, triggering it.
   * Each non-leaf action references ``fan_out`` actions in the next layer
     through the Position Constraint Block of its ``out`` interface
     position (``it has the action</...>``). Those constraint references
@@ -190,21 +190,17 @@ def _emit_action(
 
 def _emit_root(prefix: str, width: int) -> list[str]:
     name = _qualified(prefix, "/test")
+    target_paths = [_action_path(0, index) for index in range(width)]
     lines = [
-        f"define the potential position<{name}> {{",
-        f"{_OUTER_INDENT}it may only contain particles where {{",
+        f"define the potential action<{name}> {{",
+        *_emit_out_definition(target_paths),
+        f"{_OUTER_INDENT}it happens when {{",
+        f"{_INNER_INDENT}this particle is created.",
+        f"{_OUTER_INDENT}}} and it does {{",
+        f"{_INNER_INDENT}create a particle in position<out>.",
     ]
-    for index in range(width):
-        lines.append(f"{_INNER_INDENT}it has the action<{_action_path(0, index)}>.")
-    lines.extend(
-        [
-            f"{_OUTER_INDENT}}}",
-            f"{_OUTER_INDENT}after it is assigned {{",
-            f"{_INNER_INDENT}create a particle in position</test>.",
-        ]
-    )
-    for index in range(width):
-        chain = f"position</test>::action<{_action_path(0, index)}>"
+    for target_path in target_paths:
+        chain = f"position<out>::action<{target_path}>"
         lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<src>.")
         lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.")
     lines.extend(

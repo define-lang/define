@@ -413,8 +413,7 @@ class MissingPotentialPositionDefinitionContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Potential position definition blocks must contain an"
-        " 'it may only contain particles where' block"
-        " and/or an 'after it is assigned' block."
+        " 'it may only contain particles where' block."
         " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
     )
 

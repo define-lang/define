@@ -133,7 +133,6 @@ class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
     constraints: PositionConstraintBlock | None
-    initialization: PositionInitBlock | None
 
     def __init__(
         self,
@@ -142,7 +141,6 @@ class PositionDefinition(QualityDefinition):
         location: SourceLocation,
         quality_implications: tuple[QualityImplicationStatement, ...] | None = None,
         constraints: PositionConstraintBlock | None = None,
-        initialization: PositionInitBlock | None = None,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
@@ -155,7 +153,6 @@ class PositionDefinition(QualityDefinition):
             location=location,
         )
         object.__setattr__(self, "constraints", constraints)
-        object.__setattr__(self, "initialization", initialization)
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
@@ -659,11 +656,6 @@ class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
     statements: tuple[ActionStatement, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class PositionInitBlock(ActionStatementsBlock):
-    """Represents a position init block."""
 
 
 @dataclass(frozen=True, slots=True, init=False)

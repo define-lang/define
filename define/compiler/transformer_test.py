@@ -52,9 +52,6 @@ _FULL_POSITION = (
     + "        it has the position</child>.\n"
     + "        it has the action</other>.\n"
     + "    }\n"
-    + "    after it is assigned {\n"
-    + "        create a particle in position</other>.\n"
-    + "    }\n"
     + "}\n"
 )
 
@@ -578,24 +575,6 @@ def test_action_statements_block_empty_fields():
     # fmt: on
 
 
-def test_position_init_block_fields():
-    definition = _only_position(_FULL_POSITION)
-    assert definition.initialization is not None
-    block = definition.initialization
-    assert len(block.statements) == 1
-    assert isinstance(block.statements[0], ast.CreateParticleStatement)
-    assert block.location == ast.SourceLocation(
-        line=7, column=5, end_line=9, end_column=6
-    )
-    # fmt: off
-    assert _slice(_FULL_POSITION, block.location) == (
-        "after it is assigned {\n"
-        "        create a particle in position</other>.\n"
-        "    }"
-    )
-    # fmt: on
-
-
 # Local position definitions
 
 
@@ -635,7 +614,6 @@ def test_position_definition_bare_fields():
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
     assert definition.quality_implications == ()
     assert definition.constraints is None
-    assert definition.initialization is None
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=1, end_column=47
     )
@@ -653,9 +631,8 @@ def test_position_definition_full_fields():
         definition.quality_implications[0], ast.QualityImplicationStatement
     )
     assert isinstance(definition.constraints, ast.PositionConstraintBlock)
-    assert isinstance(definition.initialization, ast.PositionInitBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=10, end_column=2
+        line=1, column=1, end_line=7, end_column=2
     )
     assert _slice(_FULL_POSITION, definition.location) == (
         "define the potential position<standard:/path> {\n"
@@ -663,9 +640,6 @@ def test_position_definition_full_fields():
         "    it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"
-        "    }\n"
-        "    after it is assigned {\n"
-        "        create a particle in position</other>.\n"
         "    }\n"
         "}"
     )

@@ -114,37 +114,6 @@ def _position_with_requirements(
     return _join_lines(lines)
 
 
-def _position_with_init_block(
-    universe_name: str,
-    rel_def_file: str,
-    init_statements: list[str],
-    requirements: list[tuple[str, str]] | None = None,
-    *,
-    indent: str = "    ",
-    quality_implications: list[tuple[str, str]] | None = None,
-) -> str:
-    name = _global_name(universe_name, rel_def_file)
-    lines = [f"define the potential position<{name}> {{"]
-    if quality_implications:
-        for typed_kind, impl_name in quality_implications:
-            lines.append(f"{indent}it also assigns the {typed_kind}<{impl_name}>.")
-    if requirements is not None:
-        lines.append(f"{indent}it may only contain particles where {{")
-        for req_type, req_name in requirements:
-            lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
-        lines.append(f"{indent}}}")
-    lines.append(f"{indent}after it is assigned {{")
-    for stmt in init_statements:
-        lines.extend(stmt.rstrip("\n").splitlines())
-    lines.extend(
-        [
-            f"{indent}}}",
-            "}",
-        ]
-    )
-    return _join_lines(lines)
-
-
 def _local_position_simple(name: str, *, indent: str) -> str:
     return f"{indent}define the position<{name}>.\n"
 
@@ -401,50 +370,11 @@ def position_definitions(draw: st.DrawFn) -> str:
             [
                 "position_simple",
                 "position",
-                "position_init",
-                "position_constrained_init",
             ]
         )
     )
     if definition_kind == "position_simple":
         return f"define the potential position<{name}>.\n"
-    if definition_kind in ("position_init", "position_constrained_init"):
-        inner_indent = "        "
-        num_stmts = draw(st.integers(min_value=1, max_value=4))
-        init_stmts: list[str] = []
-        for _ in range(num_stmts):
-            ref = draw(create_particle_references())
-            init_stmts.append(_create_particle_statement(ref, indent=inner_indent))
-        if definition_kind == "position_constrained_init":
-            num_reqs = draw(st.integers(min_value=1, max_value=5))
-            reqs: list[tuple[str, str]] = []
-            for _ in range(num_reqs):
-                reqs.append(
-                    (
-                        draw(st.sampled_from(["position", "action"])),
-                        draw(global_names()),
-                    )
-                )
-            lines = [
-                f"define the potential position<{name}> {{",
-                "    it may only contain particles where {",
-            ]
-            for req_type, req_name in reqs:
-                lines.append(f"        it has the {req_type}<{req_name}>.")
-            lines.append("    }")
-            lines.append("    after it is assigned {")
-            for stmt in init_stmts:
-                lines.extend(stmt.rstrip("\n").splitlines())
-            lines.extend(["    }", "}"])
-            return _join_lines(lines)
-        lines = [
-            f"define the potential position<{name}> {{",
-            "    after it is assigned {",
-        ]
-        for stmt in init_stmts:
-            lines.extend(stmt.rstrip("\n").splitlines())
-        lines.extend(["    }", "}"])
-        return _join_lines(lines)
     num_requirements = draw(st.integers(min_value=1, max_value=5))
     requirements: list[tuple[str, str]] = []
     for _ in range(num_requirements):
@@ -701,93 +631,9 @@ def valid_sources(draw: st.DrawFn) -> str:
 
     fragments: list[str] = []
     if include_position:
-        position_kind = draw(
-            st.sampled_from(
-                ["simple", "constrained", "init_only", "constrained_with_init"]
-            )
-        )
+        position_kind = draw(st.sampled_from(["simple", "constrained"]))
         if position_kind == "simple":
             fragments.append(f"define the potential position<{_VALID_NAME}>.\n")
-        elif position_kind == "init_only":
-            inner_indent = "        "
-            init_stmts: list[str] = []
-            implications = draw(_valid_implications_strategy())
-            for impl_kind, impl_name in implications:
-                init_stmts.append(
-                    _create_particle_statement(
-                        _implication_chain_reference(impl_kind, impl_name),
-                        indent=inner_indent,
-                    )
-                )
-            use_self_ref = draw(st.booleans())
-            if use_self_ref:
-                init_stmts.append(
-                    _create_particle_statement("position</test>", indent=inner_indent)
-                )
-            num_local = draw(st.integers(min_value=0, max_value=4))
-            for i in range(num_local):
-                local_name = _LOCAL_NAMES[i]
-                init_stmts.append(
-                    _local_position_simple(local_name, indent=inner_indent)
-                )
-                init_stmts.append(
-                    _create_particle_statement(
-                        f"position<{local_name}>", indent=inner_indent
-                    )
-                )
-            if not init_stmts:
-                init_stmts.append(
-                    _create_particle_statement("position</test>", indent=inner_indent)
-                )
-            fragments.append(
-                _position_with_init_block(
-                    _PROJECT_FQUN,
-                    "test.dfn",
-                    init_stmts,
-                    quality_implications=implications or None,
-                )
-            )
-        elif position_kind == "constrained_with_init":
-            inner_indent = "        "
-            requirements = draw(_valid_reference_options())
-            implications_c = draw(_valid_implications_strategy())
-            init_stmts_c: list[str] = []
-            for impl_kind, impl_name in implications_c:
-                init_stmts_c.append(
-                    _create_particle_statement(
-                        _implication_chain_reference(impl_kind, impl_name),
-                        indent=inner_indent,
-                    )
-                )
-            use_self_ref_c = draw(st.booleans())
-            if use_self_ref_c:
-                init_stmts_c.append(
-                    _create_particle_statement("position</test>", indent=inner_indent)
-                )
-            num_local_c = draw(st.integers(min_value=0, max_value=4))
-            for i in range(num_local_c):
-                local_name = _LOCAL_NAMES[i]
-                init_stmts_c.append(
-                    _local_position_simple(local_name, indent=inner_indent)
-                )
-                init_stmts_c.append(
-                    _create_particle_statement(
-                        f"position<{local_name}>", indent=inner_indent
-                    )
-                )
-            if not init_stmts_c:
-                init_stmts_c.append(
-                    _create_particle_statement("position</test>", indent=inner_indent)
-                )
-            fragments.append(
-                _position_with_init_block(
-                    _PROJECT_FQUN,
-                    "test.dfn",
-                    init_stmts_c,
-                    requirements,
-                    quality_implications=implications_c or None,
-                )
-            )
         else:
             requirements = draw(_valid_reference_options())
             fragments.append(
@@ -948,16 +794,13 @@ def position_definitions_with_implications(draw: st.DrawFn) -> str:
     name = draw(global_names())
     impl_name = draw(global_names())
     impl_kind = draw(st.sampled_from(["position", "action"]))
-    body_ref = (
-        f"position<{impl_name}>"
-        if impl_kind == "position"
-        else f"action<{impl_name}>::position<_noop>"
-    )
+    constraint_name = draw(global_names())
+    constraint_kind = draw(st.sampled_from(["position", "action"]))
     return (
         f"define the potential position<{name}> {{\n"
         f"    it also assigns the {impl_kind}<{impl_name}>.\n"
-        f"    after it is assigned {{\n"
-        f"        create a particle in {body_ref}.\n"
+        f"    it may only contain particles where {{\n"
+        f"        it has the {constraint_kind}<{constraint_name}>.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -1061,7 +904,6 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "destroy the particle in",
             "it happens when",
             "and it does",
-            "after it is assigned",
             "it also assigns the",
         ]
         keyword = draw(st.sampled_from(keywords))
@@ -1362,50 +1204,6 @@ def _build_move_particle_project(root_universe: str) -> ProjectCase:
     )
 
 
-def _build_position_init_self_reference_project(
-    root_universe: str,
-) -> ProjectCase:
-    other_path = _definition_path("other.dfn")
-    root_files = {
-        "test.dfn": _position_with_init_block(
-            root_universe,
-            "test.dfn",
-            [
-                _create_particle_statement("position</test>", indent="        "),
-            ],
-            [("position", other_path)],
-        ),
-        "other.dfn": _position_simple(root_universe, "other.dfn"),
-    }
-    return ProjectCase(
-        entrypoint="test.dfn",
-        roots=(ProjectRootCase("", root_universe, root_files, {}),),
-    )
-
-
-def _build_position_quality_implication_project(
-    root_universe: str,
-) -> ProjectCase:
-    target_path = _definition_path("target.dfn")
-    root_files = {
-        "test.dfn": _position_with_init_block(
-            root_universe,
-            "test.dfn",
-            [
-                _create_particle_statement(
-                    f"position<{target_path}>", indent="        "
-                ),
-            ],
-            quality_implications=[("position", target_path)],
-        ),
-        "target.dfn": _position_simple(root_universe, "target.dfn"),
-    }
-    return ProjectCase(
-        entrypoint="test.dfn",
-        roots=(ProjectRootCase("", root_universe, root_files, {}),),
-    )
-
-
 def _build_action_quality_implication_project(
     root_universe: str,
     child_universe: str,
@@ -1479,8 +1277,6 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "cross_fqun_nested",
                 "cross_fqun_action_statements",
                 "move_local",
-                "position_init_self_reference",
-                "position_quality_implication",
                 "action_quality_implication",
                 "destroy_local",
             ]
@@ -1512,10 +1308,6 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         )
     elif project_kind == "move_local":
         project_case = _build_move_particle_project(root_universe)
-    elif project_kind == "position_init_self_reference":
-        project_case = _build_position_init_self_reference_project(root_universe)
-    elif project_kind == "position_quality_implication":
-        project_case = _build_position_quality_implication_project(root_universe)
     elif project_kind == "action_quality_implication":
         project_case = _build_action_quality_implication_project(
             root_universe, child_universe
@@ -1784,15 +1576,14 @@ def _global_name_context_template(context: str) -> str:
             ],
         )
     if context == "quality_impl_position_def":
-        return _position_with_init_block(
-            _PROJECT_FQUN,
-            "test.dfn",
-            [
-                _create_particle_statement(
-                    f"position<{_ANOTHER_VALID_PATH}>", indent="        "
-                ),
-            ],
-            quality_implications=[("position", _NAME_MARKER)],
+        name = _global_name(_PROJECT_FQUN, "test.dfn")
+        return (
+            f"define the potential position<{name}> {{\n"
+            f"    it also assigns the position<{_NAME_MARKER}>.\n"
+            f"    it may only contain particles where {{\n"
+            f"        it has the position<{_ANOTHER_VALID_PATH}>.\n"
+            f"    }}\n"
+            f"}}\n"
         )
     if context == "quality_impl_action_def":
         return _action_with_block(

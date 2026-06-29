@@ -58,7 +58,6 @@ class _ActionDefinitionBlockData:
 class _PotentialPositionBlockData:
     quality_implications: tuple[ast.QualityImplicationStatement, ...]
     constraints: ast.PositionConstraintBlock | None
-    initialization: ast.PositionInitBlock | None
     block_close: lark_standalone.Token
 
 
@@ -184,14 +183,12 @@ class DefineTransformer(
                 name=name,
                 quality_implications=block_data.quality_implications,
                 constraints=block_data.constraints,
-                initialization=block_data.initialization,
                 location=self._location(start=keyword, end=block_data.block_close),
             )
         return ast.PositionDefinition(
             name=name,
             quality_implications=(),
             constraints=None,
-            initialization=None,
             location=self._location_for_bare_definition(start=keyword, name=name),
         )
 
@@ -294,51 +291,24 @@ class DefineTransformer(
             lark_standalone.Token
             | ast.QualityImplicationStatement
             | ast.PositionConstraintBlock
-            | ast.PositionInitBlock
-            | None
         ],
     ) -> _PotentialPositionBlockData:
         """Bundle the block's contents with the outer ``}`` token.
 
-        items: [*quality_implications, position_constraint_block?, position_initialization_block?, CLOSE_BRACE token].
-        Lark's maybe_placeholders may insert ``None`` for the absent optional
-        position_initialization_block; those entries are skipped.
+        items: [*quality_implications, position_constraint_block, CLOSE_BRACE token].
         """
         close_brace = cast("lark_standalone.Token", items[-1])
         quality_implications: list[ast.QualityImplicationStatement] = []
         constraints: ast.PositionConstraintBlock | None = None
-        initialization: ast.PositionInitBlock | None = None
         for item in items[:-1]:
-            if item is None:
-                continue
             if isinstance(item, ast.QualityImplicationStatement):
                 quality_implications.append(item)
             elif isinstance(item, ast.PositionConstraintBlock):
                 constraints = item
-            elif isinstance(item, ast.PositionInitBlock):
-                initialization = item
         return _PotentialPositionBlockData(
             quality_implications=tuple(quality_implications),
             constraints=constraints,
-            initialization=initialization,
             block_close=close_brace,
-        )
-
-    @_strip_discard
-    def position_initialization_block(
-        self,
-        items: list[lark_standalone.Token | ast.ActionStatement],
-    ) -> ast.PositionInitBlock:
-        """Transform a position init block.
-
-        items: [AFTER_IT_IS_ASSIGNED token, *statements, CLOSE_BRACE token].
-        """
-        keyword = cast("lark_standalone.Token", items[0])
-        close_brace = cast("lark_standalone.Token", items[-1])
-        statements = cast("list[ast.ActionStatement]", items[1:-1])
-        return ast.PositionInitBlock(
-            statements=tuple(statements),
-            location=self._location(start=keyword, end=close_brace),
         )
 
     @_strip_discard

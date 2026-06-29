@@ -31,44 +31,6 @@ def test_implication_in_potential_position_before_constraint_block(
     ]
 
 
-def test_implication_in_potential_position_before_init_block_only(parse: Parse) -> None:
-    tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it also assigns the position</required>.\n"
-        + "    after it is assigned {\n"
-        + "        create a particle in position</other>.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/required",
-        "/other",
-    ]
-
-
-def test_implication_in_potential_position_before_constraint_and_init(
-    parse: Parse,
-) -> None:
-    tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it also assigns the position</required>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
-        + "    }\n"
-        + "    after it is assigned {\n"
-        + "        create a particle in position</other>.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/required",
-        "/implied",
-        "/other",
-    ]
-
-
 def test_multiple_implications_in_potential_position(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -428,41 +390,6 @@ def test_implication_after_constraint_block_in_potential_position(parse: Parse) 
     assert exc_info.value.column == 5
 
 
-def test_implication_after_init_block_in_potential_position(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    after it is assigned {\n"
-            + "        create a particle in position</other>.\n"
-            + "    }\n"
-            + "    it also assigns the position</required>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.token == "it also assigns the"
-    assert exc_info.value.token.type == "IT_ALSO_ASSIGNS_THE"
-    assert exc_info.value.line == 5
-    assert exc_info.value.column == 5
-
-
-def test_implication_between_constraint_and_init_block(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
-            + "    }\n"
-            + "    it also assigns the position</required>.\n"
-            + "    after it is assigned {\n"
-            + "        create a particle in position</other>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token == "it also assigns the"
-    assert exc_info.value.token.type == "IT_ALSO_ASSIGNS_THE"
-    assert exc_info.value.line == 5
-    assert exc_info.value.column == 5
-
-
 def test_implication_after_local_position_in_action_block(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
         parse(
@@ -512,21 +439,6 @@ def test_implication_inside_position_constraint_block(parse: Parse) -> None:
     assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.token.type == "IT_ALSO_ASSIGNS_THE"
     assert exc_info.value.line == 4
-    assert exc_info.value.column == 9
-
-
-def test_implication_inside_position_initialization_block(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    after it is assigned {\n"
-            + "        it also assigns the position</required>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token == "it also assigns the"
-    assert exc_info.value.token.type == "IT_ALSO_ASSIGNS_THE"
-    assert exc_info.value.line == 3
     assert exc_info.value.column == 9
 
 

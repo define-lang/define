@@ -47,7 +47,8 @@ class TestGenerateSourceLines:
         action_count = sum(
             1 for d in program.definitions if isinstance(d, ast.ActionDefinition)
         )
-        assert action_count == 3 * 4
+        # layers * width graph actions, plus the root constructor action.
+        assert action_count == 3 * 4 + 1
 
     def test_output_exercises_call_graph_syntax(self):
         source = "\n".join(gen.generate_source_lines(layers=3, width=3, fan_out=2))

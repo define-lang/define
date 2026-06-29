@@ -714,15 +714,6 @@ class EmptyActionStatementsBlockDiagnostic(Diagnostic):
 
 
 @dataclass
-class EmptyPositionInitBlockDiagnostic(Diagnostic):
-    """Diagnostic for when a position initialization block contains no statements."""
-
-    message_format: ClassVar[str] = (
-        "position initialization block must contain at least one action statement"
-    )
-
-
-@dataclass
 class EntryPointNotConstructorDiagnostic(Diagnostic):
     """Diagnostic for when the program entry point is not a constructor."""
 
