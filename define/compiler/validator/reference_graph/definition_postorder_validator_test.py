@@ -901,7 +901,7 @@ def test_interface_position_requirement_integration():
 
     assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
     assert (
-        req.enclosing_quality.typed_name.full_typed_name
+        req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/outer>"
     )
     assert (
@@ -914,7 +914,7 @@ def test_interface_position_requirement_integration():
     mid_req = req.propagated_from
     assert mid_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
     assert (
-        mid_req.enclosing_quality.typed_name.full_typed_name
+        mid_req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/middle>"
     )
     assert (
@@ -928,7 +928,7 @@ def test_interface_position_requirement_integration():
     inner_req = mid_req.propagated_from
     assert inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
     assert (
-        inner_req.enclosing_quality.typed_name.full_typed_name
+        inner_req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/inner>"
     )
     assert inner_req.inferred_from.source_chained_name == "position<item>"
@@ -936,8 +936,8 @@ def test_interface_position_requirement_integration():
     assert inner_req.inferred_from.location.file_path is None
     assert inner_req.propagated_from is None
 
-    assert req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
-    outer_fqun = req.enclosing_quality.typed_name.name_content.fqun
+    assert req.root_cause_action_name() == "action<my.domain.com:my_lib:/inner>"
+    outer_fqun = req.enclosing_action.typed_name.name_content.fqun
     assert _resolved(req, outer_fqun) == (
         "position<out_iface>::action</middle>"
         "::position<mid_iface>::action</inner>"
@@ -954,8 +954,8 @@ def test_interface_position_requirement_integration():
     assert outer_locs[1].line == 8
     assert outer_locs[1].file_path is None
 
-    assert mid_req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
-    middle_fqun = mid_req.enclosing_quality.typed_name.name_content.fqun
+    assert mid_req.root_cause_action_name() == "action<my.domain.com:my_lib:/inner>"
+    middle_fqun = mid_req.enclosing_action.typed_name.name_content.fqun
     assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
     )
@@ -967,8 +967,8 @@ def test_interface_position_requirement_integration():
     assert mid_locs[0].line == 8
     assert mid_locs[0].file_path is None
 
-    assert inner_req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
-    inner_fqun = inner_req.enclosing_quality.typed_name.name_content.fqun
+    assert inner_req.root_cause_action_name() == "action<my.domain.com:my_lib:/inner>"
+    inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
     assert _resolved(inner_req, inner_fqun) == "position<item>"
     assert (
         inner_req.full_propagation_position_chain().source_chained_name

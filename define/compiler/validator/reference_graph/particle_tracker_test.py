@@ -67,7 +67,7 @@ def _make_requirement(
     return action_contract.PositionRequirement(
         required_state=state,
         inferred_from=inferred_from,
-        enclosing_quality=_DUMMY_ACTION,
+        enclosing_action=_DUMMY_ACTION,
     )
 
 
@@ -557,9 +557,9 @@ def _apply_guarantees(
 ):
     """Apply a bare guarantee list (no triggered contracts) at for_position."""
     action_chain = for_position.get_chain_to_last_action()
-    parent_chain = action_chain if action_chain is not None else for_position
+    assert action_chain is not None
     tracker.apply_guarantees(
-        parent_chain,
+        action_chain,
         action_contract.Guarantees(own=guarantees, nested=()),
     )
 
@@ -1079,8 +1079,13 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
             nested=(),
         ),
     )
+    # The particle in position<box> has a triggered action whose guarantees
+    # carry the nested guarantee; apply_guarantees always gets that action chain.
+    box_trigger = ast.ActionReference(
+        typed_names=(box_name, _make_action_ref("/outer")), location=_LOC
+    )
     tracker.apply_guarantees(
-        box_ref, action_contract.Guarantees(own=[], nested=(nested,))
+        box_trigger, action_contract.Guarantees(own=[], nested=(nested,))
     )
     item_key = (*_ACTION_KEY_PREFIX, "position<item>")
 
@@ -1126,8 +1131,11 @@ def test_generate_flattened_guarantees_flattens_many_nested_levels():
     level3 = _make_nested_level("/c", "position<item_c>", ())
     level2 = _make_nested_level("/b", "position<item_b>", (level3,))
     level1 = _make_nested_level("/a", "position<item_a>", (level2,))
+    box_trigger = ast.ActionReference(
+        typed_names=(box_name, _make_action_ref("/outer")), location=_LOC
+    )
     tracker.apply_guarantees(
-        box_ref, action_contract.Guarantees(own=[], nested=(level1,))
+        box_trigger, action_contract.Guarantees(own=[], nested=(level1,))
     )
 
     interface_names = (box_name, marker_name)

@@ -113,14 +113,12 @@ class _PendingGuarantee:
     def parent_position(self) -> tuple[str, ...]:
         """The parent of the callee's implied (global) positions.
 
-        This is ``parent_chain`` with a trailing action stripped: an implied
+        This is ``parent_chain`` with its trailing action stripped: an implied
         quality lives on the action's parent particle, one position shallower than
-        the action's interface positions. For a chain with no trailing action it
-        equals ``parent_chain``.
+        the action's interface positions. ``parent_chain`` always ends in the
+        triggered action, since that is the only thing that produces guarantees.
         """
-        if self.parent_chain and self.parent_chain[-1].startswith(_ACTION_KEY_PREFIX):
-            return self.parent_chain[:-1]
-        return self.parent_chain
+        return self.parent_chain[:-1]
 
     def key_for(self, name: tuple[str, ...]) -> tuple[str, ...]:
         """Re-root a guarantee's local name to its absolute key under this guarantee.

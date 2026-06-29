@@ -36,7 +36,7 @@ def trigger_violation(
     occupant: particle_tracker.ParticleInfo | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of an action this body runs."""
-    originating = req.enclosing_quality
+    originating = req.enclosing_action
     runner_name = originating.typed_name.source_typed_name
     definition_name = definition.typed_name.source_typed_name
     position_name = full_caller_chain.source_form_in_universe(
@@ -48,10 +48,6 @@ def trigger_violation(
         occupant.last_position.location if occupant is not None else None,
     )
     chain = req.propagation_chain()
-    if not isinstance(originating, ast.ActionDefinition):
-        raise TypeError(
-            f"requirement originated from non-action quality: {type(originating).__name__}"
-        )
     # The fill that violates an empty-requirement happens before the trigger.
     steps = [
         *fill,
@@ -89,7 +85,7 @@ def direct_destructor(
         raise ValueError("a destructor violation must know its particle's origin")
     enclosing_fqun = definition.typed_name.name_content.fqun
     definition_name = definition.typed_name.source_typed_name
-    destructor_name = req.root_cause_quality_name()
+    destructor_name = req.root_cause_action_name()
     position_name = full_caller_chain.source_form_in_universe(enclosing_fqun)
     if auto_destruction_target is None:
         location = acting_on_position.location
@@ -157,7 +153,7 @@ def contract_destructor(
     cascade_req = action_contract.PositionRequirement(
         required_state=propagated_requirement.required_state,
         inferred_from=destruction_contract.destroyed_position_local,
-        enclosing_quality=destroying_definition,
+        enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
         destructor_attachment=attachment,
     )

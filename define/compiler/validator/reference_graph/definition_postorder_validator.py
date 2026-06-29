@@ -204,7 +204,7 @@ class ActionPostorderValidator:
             action_contract.PositionRequirement(
                 required_state=required_state,
                 inferred_from=inferred_from,
-                enclosing_quality=self._definition,
+                enclosing_action=self._action_definition,
                 propagated_from=propagated_from,
                 destructor_attachment=destructor_attachment,
             )

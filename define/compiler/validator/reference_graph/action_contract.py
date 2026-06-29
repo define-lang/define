@@ -114,20 +114,20 @@ class PositionRequirement:
     # just `position<iface>::action</inner>` (which is why it is a ChainedName
     # and not a PositionReference).
     inferred_from: ast.ChainedName
-    enclosing_quality: ast.QualityDefinition
+    enclosing_action: ast.ActionDefinition
     propagated_from: PositionRequirement | None = None
     destructor_attachment: DestructorAttachment | None = None
 
-    def root_cause_quality(self) -> ast.QualityDefinition:
-        """Return the quality definition that originally inferred this requirement."""
+    def root_cause_action(self) -> ast.ActionDefinition:
+        """Return the action definition that originally inferred this requirement."""
         current = self
         while current.propagated_from is not None:
             current = current.propagated_from
-        return current.enclosing_quality
+        return current.enclosing_action
 
-    def root_cause_quality_name(self) -> str:
-        """Return the canonical name of the quality that originally inferred this requirement."""
-        return self.root_cause_quality().typed_name.source_typed_name
+    def root_cause_action_name(self) -> str:
+        """Return the canonical name of the action that originally inferred this requirement."""
+        return self.root_cause_action().typed_name.source_typed_name
 
     def full_propagation_position_chain(self) -> ast.PositionReference:
         """Get the full chained name composed by walking propagated_from."""
@@ -174,7 +174,7 @@ class PositionRequirement:
             raise ValueError(
                 "destructor_attachment requires a propagated_from requirement"
             )
-        destructor = self.propagated_from.enclosing_quality
+        destructor = self.propagated_from.enclosing_action
         return PropagationStep(
             location=attachment.attached_at,
             kind=PropagationKind.DESTRUCTOR_ATTACHED,
@@ -183,7 +183,7 @@ class PositionRequirement:
         )
 
     def _propagation_step(self) -> PropagationStep:
-        enclosing_name = self.enclosing_quality.typed_name.source_typed_name
+        enclosing_name = self.enclosing_action.typed_name.source_typed_name
         if self.propagated_from is None:
             return PropagationStep(
                 location=self.inferred_from.location,
@@ -191,12 +191,8 @@ class PositionRequirement:
                 enclosing_quality_name=enclosing_name,
                 triggered_quality_name=None,
             )
-        other_quality = self.propagated_from.enclosing_quality
-        if not isinstance(other_quality, ast.ActionDefinition):
-            raise TypeError(
-                f"requirement propagated from non-action quality: {type(other_quality).__name__}"
-            )
-        if other_quality.is_destructor:
+        other_action = self.propagated_from.enclosing_action
+        if other_action.is_destructor:
             kind = PropagationKind.DESTRUCTOR_CASCADE
         else:
             kind = PropagationKind.ACTION_TRIGGER
@@ -204,7 +200,7 @@ class PositionRequirement:
             location=self.inferred_from.location,
             kind=kind,
             enclosing_quality_name=enclosing_name,
-            triggered_quality_name=other_quality.typed_name.source_typed_name,
+            triggered_quality_name=other_action.typed_name.source_typed_name,
         )
 
 
