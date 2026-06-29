@@ -15,6 +15,17 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_constructor_test",
+    size = "small",
+    srcs = ["automated_guarantees_constructor_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_destructor_test",
     size = "small",
     srcs = ["automated_guarantees_destructor_test.py"],
@@ -109,6 +120,19 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_constructor_test",
+    size = "small",
+    srcs = ["automated_requirements_constructor_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -344,6 +368,17 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "constructor_triggering_test",
+    size = "small",
+    srcs = ["constructor_triggering_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -700,6 +735,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_triggering_test",
+        ":automated_guarantees_constructor_test",
         ":automated_guarantees_destructor_test",
         ":automated_guarantees_error_test",
         ":automated_guarantees_implied_position_test",
@@ -709,6 +745,7 @@ pyright_test(
         ":automated_guarantees_test",
         ":automated_guarantees_transitive_implied_identity_test",
         ":automated_guarantees_transitive_implied_occupancy_test",
+        ":automated_requirements_constructor_test",
         ":automated_requirements_destructor_implied_test",
         ":automated_requirements_destructor_move_test",
         ":automated_requirements_destructor_test",
@@ -726,6 +763,7 @@ pyright_test(
         ":chained_name_global_start_test",
         ":chained_name_multi_element_test",
         ":chained_name_test",
+        ":constructor_triggering_test",
         ":create_particle_test",
         ":create_without_parent_test",
         ":dead_constraints_test",

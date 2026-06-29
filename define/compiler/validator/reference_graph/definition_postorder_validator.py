@@ -273,31 +273,31 @@ class DefinitionPostorderValidator(abc.ABC):
         """Return the cache key for a local-scope position, or None if uncacheable."""
         return None
 
-    def _propagate_inner_requirements(
+    def _propagate_action_requirements(
         self,
         contract: action_contract.ActionContract,
-        trigger_position: ast.PositionReference,
+        action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
-        (action_chain, parent_origin) = (
-            self._action_parent_comes_from_contracted_position(trigger_position)
+        parent_origin = self._parent_particle_comes_from_caller(
+            action_chain.parent_position()
         )
         if parent_origin is not None:
-            caller_path_to_inner_action = (
-                action_chain.replace_parent_position_with_prefix(parent_origin)
+            caller_path_to_action = action_chain.replace_parent_position_with_prefix(
+                parent_origin
             )
         elif (
             isinstance(action_chain.typed_names[0], ast.GlobalTypedNameReference)
             and action_chain.typed_names[0].name_type == ast.NameType.ACTION
         ):
-            caller_path_to_inner_action = action_chain
+            caller_path_to_action = action_chain
         else:
             return
         for inner_req in contract.requirements.values():
             self._record_requirement(
                 required_state=inner_req.required_state,
-                contracted_chain=caller_path_to_inner_action,
+                contracted_chain=caller_path_to_action,
                 local_chain=action_chain,
                 propagated_from=inner_req,
                 scope=scope,
@@ -323,19 +323,6 @@ class DefinitionPostorderValidator(abc.ABC):
         if not particle_info.from_caller:
             return None
         return particle_info.origin_position
-
-    def _action_parent_comes_from_contracted_position(
-        self,
-        trigger_position: ast.PositionReference,
-    ) -> tuple[ast.ActionReference, ast.PositionReference | None]:
-        """Return the action's parent particle's contracted-position origin chain if it is from the caller."""
-        action_chain = trigger_position.get_chain_to_last_action()
-        if action_chain is None:
-            raise ValueError("not an action")
-        return (
-            action_chain,
-            self._parent_particle_comes_from_caller(action_chain.parent_position()),
-        )
 
     def _maybe_infer_requirements_on_chain(
         self,
@@ -388,7 +375,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
             # Only the init block's requirements are checked here, never its
             # Destruction Contracts (unlike a triggered action, where
-            # _check_action_requirements also calls
+            # _fire_triggered_action also calls
             # _check_destructor_requirements_from_contracts). A position init
             # block can't possibly expose any: it always fully knows the
             # destructor set of whatever it destroys, so it records none (see
@@ -397,6 +384,32 @@ class DefinitionPostorderValidator(abc.ABC):
             self._nested_guarantees.append(
                 self._tracker.apply_guarantees(position, init_block_contract.guarantees)
             )
+
+    def _run_constructors(
+        self,
+        position: ast.PositionReference,
+        qualities: tuple[ast.GlobalTypedNameReference, ...],
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Trigger every constructor on the particle just created in position (DLP 32)."""
+        for quality in qualities:
+            if quality.name_type != ast.NameType.ACTION:
+                continue
+            definition_result = self._definition_results.get(quality)
+            # The constructor's file may have failed to load or parse, which is
+            # reported elsewhere; skipping it here keeps the cascade crash-free.
+            if definition_result is None or not isinstance(
+                definition_result.definition, ast.ActionDefinition
+            ):
+                continue
+            if not definition_result.definition.is_constructor:
+                continue
+            contract = self._action_contracts[quality]
+            # The constructor is a quality of the particle in `position`, so its
+            # interface positions hang off position::action</construct> while its
+            # implied qualities hang off the position itself.
+            action_chain = position.with_action_suffix(quality)
+            self._fire_triggered_action(contract, action_chain, position, scope)
 
     def _walk_destruction_cascade(
         self,
@@ -617,7 +630,6 @@ class DefinitionPostorderValidator(abc.ABC):
         action_ref = typing.cast(
             "ast.GlobalTypedNameReference", position.get_last_action()
         )
-        action_name = action_ref.full_typed_name
         # The action's file may have failed to load or parse.
         contract = self._action_contracts.get(action_ref)
         if contract is None:
@@ -632,33 +644,34 @@ class DefinitionPostorderValidator(abc.ABC):
         if action_chain is None:
             raise ValueError(f"no action in chain: {position.source_chained_name}")
 
-        self._dead_tracker.mark_alive(action_chain)
-        # We only propagate inner requirements if actions actually get called.
-        # (That's why this happens here in _check_trigger.)
-        self._propagate_inner_requirements(contract, position, scope)
-        self._check_action_requirements(position, action_chain, contract, scope)
+        self._fire_triggered_action(
+            contract,
+            action_chain,
+            self._tracker.get_occupant(position).last_position,
+            scope,
+        )
+
+    def _fire_triggered_action(
+        self,
+        contract: action_contract.ActionContract,
+        action_chain: ast.ActionReference,
+        acting_on_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        self._propagate_action_requirements(contract, action_chain, scope)
+        self._check_requirements(contract, action_chain, acting_on_position)
+        self._check_destructor_requirements_from_contracts(
+            contract, action_chain, scope
+        )
         self._nested_guarantees.append(
             self._tracker.apply_guarantees(action_chain, contract.guarantees)
         )
+        self._dead_tracker.mark_alive(action_chain)
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
-                target=action_name,
+                target=action_chain.typed_names[-1].full_typed_name,
             )
-        )
-
-    def _check_action_requirements(
-        self,
-        trigger_position: ast.PositionReference,
-        action_chain: ast.ActionReference,
-        contract: action_contract.ActionContract,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Check the triggered action's requirements and destruction contracts."""
-        particle = self._tracker.get_occupant(trigger_position)
-        self._check_requirements(contract, action_chain, particle.last_position)
-        self._check_destructor_requirements_from_contracts(
-            contract, action_chain, scope
         )
 
     def _check_requirements(
@@ -1279,6 +1292,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if diags:
             return
         self._run_position_init_blocks(position, qualities, scope)
+        self._run_constructors(position, qualities, scope)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(

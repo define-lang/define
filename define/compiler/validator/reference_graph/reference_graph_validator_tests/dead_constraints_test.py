@@ -1002,6 +1002,237 @@ def test_destructor_constraint_is_never_dead(
     assert all_diags[1].location.column == 28
 
 
+def test_constructor_constraint_reached_only_by_move_is_dead(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "cleanup.dfn": (
+                "define the potential action<my.domain.com:my_lib:/cleanup> {\n"
+                "    it happens when {\n"
+                "        this particle is being destroyed.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box1> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "                it has the action</cleanup>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<box2> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "                it has the action</cleanup>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box1>.\n"
+                "        move the particle in position<box1> to position<box2>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # Unlike a destructor, a constructor is only alive when triggered. Moving a
+    # particle into box2 does not trigger box2's constructor, so its constraint
+    # is dead, while box2's destructor constraint stays exempt.
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</construct>"
+    assert all_diags[0].position_name == "position<box2>"
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 28
+
+
+def test_constructor_on_local_position_alive_via_create(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</construct>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # Creating a particle in box triggers its constructor, keeping the
+    # constraint alive.
+    assert_no_errors(result.program_result)
+
+
+def test_constructor_on_interface_position_alive_via_create(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<slot> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</construct>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # Creating a particle in the interface position triggers its constructor.
+    assert_no_errors(result.program_result)
+
+
+def test_constructor_on_interface_position_dead_when_never_created(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</construct>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # The trigger particle is supplied by the caller, not created here, so its
+    # constructor never runs in /test, leaving the constraint dead.
+    #
+    # TODO: However, this means that actions can never demand a constructor
+    # on their interface positions, so maybe we should rethink this.
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</construct>"
+    assert all_diags[0].position_name == "position<run>"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 24
+
+
+def test_constructor_via_implication_alive_when_position_referenced(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "construct.dfn": (
+                "define the potential action<my.domain.com:my_lib:/construct> {\n"
+                "    define the position<go>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<_holder>.\n"
+                "        move the particle in position<go> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position<go>.\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "marked.dfn": (
+                "define the potential position<my.domain.com:my_lib:/marked> {\n"
+                "    it also assigns the action</construct>.\n"
+                "    after it is assigned {\n"
+                "        create a particle in action</construct>::position<go>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the position</marked>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</marked>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # box's particle gets the constructor through position</marked>'s implication;
+    # creating it triggers the constructor, and referencing box::position</marked>
+    # keeps the directly-written position constraint alive.
+    assert_no_errors(result.program_result)
+
+
 # --- Combined and cross-definition cases ---
 
 

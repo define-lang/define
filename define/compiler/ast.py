@@ -764,6 +764,13 @@ class ActionDefinition(QualityDefinition):
         return first_condition.position_reference
 
     @property
+    def is_constructor(self) -> bool:
+        """Whether this action triggers when its particle is created."""
+        return isinstance(
+            self.trigger_conditions.conditions[0], ConstructorConditionStatement
+        )
+
+    @property
     def is_destructor(self) -> bool:
         """Whether this action triggers when its particle is destroyed."""
         return isinstance(
