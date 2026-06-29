@@ -3,6 +3,9 @@
 
 class {{ definition.class_name }}(literal.Action):
     typed_name: ClassVar[str] = "{{ definition.typed_name }}"
+{% if definition.is_constructor %}
+    is_constructor: ClassVar[bool] = True
+{% endif %}
 {% if definition.is_destructor %}
     is_destructor: ClassVar[bool] = True
 {% endif %}
@@ -33,7 +36,7 @@ class {{ definition.class_name }}(literal.Action):
 {% endif %}
 {% endfor %}
             ],
-{% if definition.is_destructor %}
+{% if definition.is_constructor or definition.is_destructor %}
             trigger_position_name=None,
 {% else %}
             trigger_position_name="{{ definition.trigger_position_name }}",

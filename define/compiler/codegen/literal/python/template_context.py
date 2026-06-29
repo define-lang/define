@@ -87,6 +87,7 @@ class ActionDefinitionContext:
     module_name: str
     interface_positions: list[InterfacePositionContext] = field(default_factory=list)
     trigger_position_name: str = ""
+    is_constructor: bool = False
     is_destructor: bool = False
     body_statements: list[ActionStatementContext] = field(default_factory=list)
     implied_qualities: list[naming.ClassReference] = field(default_factory=list)

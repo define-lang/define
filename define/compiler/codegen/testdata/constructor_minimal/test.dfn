@@ -1,0 +1,8 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the action</constructor>.
+    }
+    after it is assigned {
+        create a particle in position</test>.
+    }
+}
