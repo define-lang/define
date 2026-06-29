@@ -1,9 +1,13 @@
-define the potential position<mv:define-lang.org:test_qual_impl_transitive:/test> {
-    it may only contain particles where {
-        it has the action</runner>.
-    }
-    after it is assigned {
-        create a particle in position</test>.
-        create a particle in position</test>::action</runner>::position<run>.
+define the potential action<mv:define-lang.org:test_qual_impl_transitive:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</runner>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</runner>::position<run>.
     }
 }

@@ -1,7 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_init/duplicate_create_in_init> {
-    after it is assigned {
-        define the position<local>.
-        create a particle in position<local>.
-        create a particle in position<local>.
-    }
-}

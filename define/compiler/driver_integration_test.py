@@ -292,16 +292,13 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "position_constraints/duplicate_in_local_position.dfn": [
         diagnostics.DuplicatePositionConstraintDiagnostic,
     ],
-    "position_init/empty_init_block.dfn": [
-        diagnostics.EmptyPositionInitBlockDiagnostic,
-    ],
-    "position_init/undefined_local_in_init.dfn": [
+    "constructors/undefined_local.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "position_init/duplicate_create_in_init.dfn": [
+    "constructors/duplicate_create.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "position_init/undefined_local_move_in_init.dfn": [
+    "constructors/undefined_local_move.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
@@ -384,13 +381,13 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
     "syntax/path_mismatch": [diagnostics.PathMismatchDiagnostic],
     "syntax/universe_uppercase": [diagnostics.UniverseNameInvalidCharDiagnostic],
-    "position_init/self_reference_in_constraints": [
+    "constructors/circular_self_constraint": [
         diagnostics.CircularGlobalReferenceDiagnostic,
     ],
-    "position_init/move_violates_constraints": [
+    "constructors/move_violates_constraints": [
         diagnostics.MoveViolatesConstraintsDiagnostic,
     ],
-    "position_init/chain_not_in_constraints": [
+    "constructors/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "action_contracts/action_requires_empty": [
@@ -399,10 +396,10 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "action_contracts/action_requires_occupied": [
         diagnostics.InferredRequirementViolationDiagnostic,
     ],
-    "action_contracts/init_requires_empty": [
+    "action_contracts/constructor_requires_empty": [
         diagnostics.InferredRequirementViolationDiagnostic,
     ],
-    "action_contracts/init_requires_occupied": [
+    "action_contracts/constructor_requires_occupied": [
         diagnostics.InferredRequirementViolationDiagnostic,
     ],
     "destroy/destroy_empty_interface": [

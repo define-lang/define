@@ -1,9 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_init/init_before_constraints> {
-    after it is assigned {
-        define the position<local>.
-        create a particle in position<local>.
-    }
-    it may only contain particles where {
-        it has the position</valid/minimal_position>.
-    }
-}

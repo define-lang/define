@@ -1,8 +1,0 @@
-# Comment before position definition
-define the potential position<mv:define-lang.org:test_files:/valid/position_init/position_init_with_comments> {
-    after it is assigned { # comment after open brace
-        define the position<local>.
-
-        create a particle in position<local>.
-    } # comment after close brace
-}

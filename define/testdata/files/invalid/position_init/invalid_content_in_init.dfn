@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_init/invalid_content_in_init> {
-    after it is assigned {
-        this is not valid syntax.
-    }
-}

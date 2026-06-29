@@ -1,6 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/valid/quality_implications/position_implies_position> {
-    it also assigns the position</valid/minimal_position>.
-    after it is assigned {
-        create a particle in position</valid/minimal_position>.
-    }
-}

@@ -1,7 +1,0 @@
-define the potential position<mv:define-lang.org:test_pos_init_move_self:/test> {
-    after it is assigned {
-        define the position<local>.
-        create a particle in position<local>.
-        move the particle in position<local> to position</test>.
-    }
-}

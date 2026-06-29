@@ -1,5 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/quality_implications/unused> {
-    it also assigns the position</valid/minimal_position>.
+define the potential action<mv:define-lang.org:test_files:/valid/constructors/construct_block_only> {
     it happens when {
         this particle is created.
     } and it does {

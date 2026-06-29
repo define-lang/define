@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_init_requires_empty:/q> {
-    after it is assigned {
-        create a particle in position</q>.
-    }
-}

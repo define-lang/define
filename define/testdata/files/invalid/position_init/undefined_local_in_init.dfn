@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_init/undefined_local_in_init> {
-    after it is assigned {
-        create a particle in position<no_such_pos>.
-    }
-}

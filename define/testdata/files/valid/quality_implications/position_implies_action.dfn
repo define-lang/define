@@ -1,6 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/valid/quality_implications/position_implies_action> {
-    it also assigns the action</valid/minimal_action>.
-    after it is assigned {
-        create a particle in action</valid/minimal_action>::position<pp>.
-    }
-}

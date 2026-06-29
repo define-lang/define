@@ -2,8 +2,8 @@ define the potential action<mv:define-lang.org:test_qual_impl_transitive:/runner
     define the position<run>.
     define the position<source> {
         it may only contain particles where {
-            it has the position</implier_one>.
-            it has the position</implier_two>.
+            it has the action</implier_one>.
+            it has the action</implier_two>.
         }
     }
     define the position<dest> {
@@ -15,10 +15,6 @@ define the potential action<mv:define-lang.org:test_qual_impl_transitive:/runner
         the position<run> has a particle.
     } and it does {
         create a particle in position<source>.
-        create a particle in position<source>::position</implier_one>.
-        destroy the particle in position<source>::position</implier_one>.
-        create a particle in position<source>::position</implier_two>.
-        destroy the particle in position<source>::position</implier_two>.
         move the particle in position<source> to position<dest>.
     }
 }

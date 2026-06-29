@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_init/undefined_local_move_in_init> {
-    after it is assigned {
-        move the particle in position<no_from> to position<no_to>.
-    }
-}

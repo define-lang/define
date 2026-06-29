@@ -1,9 +1,9 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/quality_implications/unused> {
-    it also assigns the position</valid/minimal_position>.
+define the potential action<mv:define-lang.org:test_files:/invalid/constructors/duplicate_create> {
     it happens when {
         this particle is created.
     } and it does {
         define the position<local>.
+        create a particle in position<local>.
         create a particle in position<local>.
     }
 }
