@@ -290,6 +290,116 @@ class TestMovePosition:
         assert not dest.has_particle
 
 
+class TestCreateConstructors:
+    def test_create_fires_constructor(self):
+        executed: list[str] = []
+
+        class MyConstructor(literal.Action):
+            typed_name: ClassVar[str] = "action<ctor>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                executed.append("constructed")
+
+        pos = literal.LocalPosition("test", constraints=(MyConstructor,))
+        pos.create_particle()
+
+        assert executed == ["constructed"]
+
+    def test_create_does_not_fire_non_constructor(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            @override
+            def execute(self):
+                executed.append("ran")
+
+        pos = literal.LocalPosition("test", constraints=(MyAction,))
+        pos.create_particle()
+
+        assert executed == []
+
+    def test_create_fires_constructors_in_assignment_order(self):
+        order: list[str] = []
+
+        class CtorA(literal.Action):
+            typed_name: ClassVar[str] = "action<a>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("A")
+
+        class CtorB(literal.Action):
+            typed_name: ClassVar[str] = "action<b>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("B")
+
+        pos = literal.LocalPosition("test", constraints=(CtorA, CtorB))
+        pos.create_particle()
+
+        assert order == ["A", "B"]
+
+    def test_move_into_position_does_not_fire_constructor(self):
+        executed: list[str] = []
+
+        class MyConstructor(literal.Action):
+            typed_name: ClassVar[str] = "action<ctor>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                executed.append("constructed")
+
+        source = literal.LocalPosition("source", constraints=(MyConstructor,))
+        dest = literal.LocalPosition("dest", constraints=(MyConstructor,))
+        source.create_particle()
+        executed.clear()
+
+        source.move_particle_to(dest)
+
+        assert executed == []
+
+    def test_constructor_creating_child_fires_child_constructor(self):
+        order: list[str] = []
+
+        class ChildConstructor(literal.Action):
+            typed_name: ClassVar[str] = "action<child_ctor>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("child")
+
+        class ChildPosition(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<child_pos>"
+            constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+                ChildConstructor,
+            )
+
+        class ParentConstructor(literal.Action):
+            typed_name: ClassVar[str] = "action<parent_ctor>"
+            is_constructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("parent")
+                self.on_particle.get_position("position<child_pos>").create_particle()
+
+        parent = literal.LocalPosition(
+            "test", constraints=(ChildPosition, ParentConstructor)
+        )
+        parent.create_particle()
+
+        assert order == ["parent", "child"]
+
+
 class TestDestroyParticle:
     def test_destroy_particle(self):
         pos = literal.LocalPosition("test")

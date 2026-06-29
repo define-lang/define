@@ -141,6 +141,12 @@ class Particle:
         for quality in reversed(self._assigned_qualities):
             quality.before_parent_particle_destroyed()
 
+    def run_constructors(self):
+        """Run each constructor quality, in the order it was assigned (DLP 32)."""
+        for quality in self._assigned_qualities:
+            if isinstance(quality, Action) and quality.is_constructor:
+                quality.execute()
+
     def occupied_position_names(self) -> list[str]:
         """Return chained names of occupied positions reachable from this particle.
 
@@ -205,6 +211,9 @@ class Position(ABC):
                 self._particle.assign_position(constraint_type)
             elif issubclass(constraint_type, Action):
                 self._particle.assign_action(constraint_type)
+        # Constructors fire on creation only, never on a move into this position
+        # (DLP 32), so they run here rather than in _after_particle_arrived.
+        self._particle.run_constructors()
         self._after_particle_arrived()
 
     def move_particle_to(self, destination: Position):
@@ -281,6 +290,7 @@ class LocalPosition(Position):
 class Action(Quality):
     """A globally-defined action with a class-level typed name."""
 
+    is_constructor: ClassVar[bool] = False
     is_destructor: ClassVar[bool] = False
 
     def __init__(
