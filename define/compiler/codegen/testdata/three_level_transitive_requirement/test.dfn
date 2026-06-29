@@ -1,11 +1,10 @@
-define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain particles where {
-        it has the action</outer>.
-    }
-    after it is assigned {
-        create a particle in position</test>.
-        create a particle in position</test>::action</outer>::position<middle_iface>.
-        create a particle in position</test>::action</outer>::position<middle_iface>::action</middle>::position<inner_iface>.
-        create a particle in position</test>::action</outer>::position<run>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</outer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</outer>::position<middle_iface>.
+        create a particle in action</outer>::position<middle_iface>::action</middle>::position<inner_iface>.
+        create a particle in action</outer>::position<run>.
     }
 }

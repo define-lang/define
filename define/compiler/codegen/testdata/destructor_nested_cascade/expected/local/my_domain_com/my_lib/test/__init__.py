@@ -8,11 +8,12 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.parent_destructor
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
+    is_constructor: ClassVar[bool] = True
 
     @override
-    def after_assigned(self):
+    def execute(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(

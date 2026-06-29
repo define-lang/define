@@ -209,31 +209,30 @@ class TestSourceValidation:
 
 
 class TestSourceCompilation:
-    def test_position_entry_point_writes_output(self, tmp_path: Path):
-        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+    def test_constructor_entry_point_writes_output(self, tmp_path: Path):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<output>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        create a particle in position<output>.\n"
+            "    }\n"
+            "}\n"
+        )
         driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
         assert_no_errors(driver_result.result)
         main_file = tmp_path / "__main__.py"
         assert main_file.exists()
         assert main_file.stat().st_size > 0
 
-    def test_action_entry_point_reports_diagnostic(self, tmp_path: Path):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<pp>.\n"
-            "    it happens when {\n"
-            "        the position<pp> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<noop>.\n"
-            "        create a particle in position<noop>.\n"
-            "    }\n"
-            "}\n"
-        )
+    def test_position_entry_point_reports_diagnostic(self, tmp_path: Path):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
         assert driver_result.result.all_exceptions == []
         all_diagnostics = driver_result.result.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
-        assert isinstance(diagnostic, diagnostics.EntryPointNotPositionDiagnostic)
+        assert isinstance(diagnostic, diagnostics.EntryPointNotConstructorDiagnostic)
         assert diagnostic.location.line == 1
         assert diagnostic.location.column == 1

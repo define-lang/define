@@ -5,11 +5,12 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
+    is_constructor: ClassVar[bool] = True
 
     @override
-    def after_assigned(self):
+    def execute(self):
         a = literal.LocalPosition("position<a>")
         b = literal.LocalPosition("position<b>")
         a.create_particle()

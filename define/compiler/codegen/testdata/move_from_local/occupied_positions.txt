@@ -1,6 +1,5 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<trigger>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<iface_dest>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<chain_dest>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<chain_dest>::position<my.domain.com:my_lib:/mid_dest>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<chain_dest>::position<my.domain.com:my_lib:/mid_dest>::position<my.domain.com:my_lib:/end_dest>
+action<my.domain.com:my_lib:/act>::position<trigger>
+action<my.domain.com:my_lib:/act>::position<iface_dest>
+action<my.domain.com:my_lib:/act>::position<chain_dest>
+action<my.domain.com:my_lib:/act>::position<chain_dest>::position<my.domain.com:my_lib:/mid_dest>
+action<my.domain.com:my_lib:/act>::position<chain_dest>::position<my.domain.com:my_lib:/mid_dest>::position<my.domain.com:my_lib:/end_dest>

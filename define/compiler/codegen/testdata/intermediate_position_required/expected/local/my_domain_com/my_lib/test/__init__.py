@@ -7,28 +7,28 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.runner
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
+    is_constructor: ClassVar[bool] = True
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.runner.Runner,
     )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
-        self.particle.get_action(
+    def execute(self):
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
         ).particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
@@ -37,7 +37,7 @@ class Test(literal.GlobalPosition):
         ).particle.get_position(
             "position<my.domain.com:my_lib:/leaf>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<run>"

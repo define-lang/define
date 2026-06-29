@@ -15,7 +15,6 @@ class Destructor(literal.Action):
             interface_positions=[
                 literal.InterfacePosition("position<slot>"),
             ],
-            trigger_position_name=None,
         )
 
     @override

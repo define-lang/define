@@ -723,11 +723,11 @@ class EmptyPositionInitBlockDiagnostic(Diagnostic):
 
 
 @dataclass
-class EntryPointNotPositionDiagnostic(Diagnostic):
-    """Diagnostic for when the program entry point is not a position."""
+class EntryPointNotConstructorDiagnostic(Diagnostic):
+    """Diagnostic for when the program entry point is not a constructor."""
 
     message_format: ClassVar[str] = (
-        "the entry point of a Define program must be a position"
+        "the entry point of a Define program must be a constructor"
     )
 
 

@@ -713,44 +713,49 @@ class TestDestroyParticle:
 
 
 class TestStart:
-    def test_start_triggers_after_assigned(self):
-        triggered: list[str] = []
+    def test_start_fires_entry_constructor(self):
+        fired: list[str] = []
 
-        class TrackingPosition(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<entry>"
+        class Entry(literal.Action):
+            typed_name: ClassVar[str] = "action<entry>"
+            is_constructor: ClassVar[bool] = True
 
             @override
-            def after_assigned(self):
-                triggered.append(self.name)
+            def execute(self):
+                fired.append(self.name)
 
-        literal.start(TrackingPosition)
+        literal.start(Entry)
 
-        assert triggered == ["position<entry>"]
+        assert fired == ["action<entry>"]
 
     def test_reports_occupied_positions_when_env_var_set(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ):
-        class Entry(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<entry>"
+        class Entry(literal.Action):
+            typed_name: ClassVar[str] = "action<entry>"
+            is_constructor: ClassVar[bool] = True
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[literal.InterfacePosition("position<output>")],
+                )
 
             @override
-            def after_assigned(self):
-                self.create_particle()
+            def execute(self):
+                self.get_interface_position("position<output>").create_particle()
 
         monkeypatch.setenv("DEFINE_REPORT_OCCUPIED_POSITIONS", "1")
         literal.start(Entry)
 
-        assert capsys.readouterr().out == "position<entry>\n"
+        assert capsys.readouterr().out == "action<entry>::position<output>\n"
 
     def test_no_report_when_env_var_unset(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ):
-        class Entry(literal.GlobalPosition):
-            typed_name: ClassVar[str] = "position<entry>"
-
-            @override
-            def after_assigned(self):
-                self.create_particle()
+        class Entry(literal.Action):
+            typed_name: ClassVar[str] = "action<entry>"
+            is_constructor: ClassVar[bool] = True
 
         monkeypatch.delenv("DEFINE_REPORT_OCCUPIED_POSITIONS", raising=False)
         literal.start(Entry)

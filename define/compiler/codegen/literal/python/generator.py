@@ -28,10 +28,10 @@ class PythonLiteralCodeGenerator:
     def generate(
         self,
         graph: reference_graph.ReferenceGraph,
-        entry_point: ast.PositionDefinition,
+        entry_point: ast.ActionDefinition,
         output_dir: Path,
     ):
-        """Generate Python files for the entry point position and its actions."""
+        """Generate Python files for the entry-point constructor and its references."""
         converter = naming.NameConverter()
         action_contexts: list[template_context.ActionDefinitionContext] = []
         position_contexts: list[template_context.PositionDefinitionContext] = []
@@ -62,7 +62,7 @@ class PythonLiteralCodeGenerator:
 
         self._write_init_files(all_module_names, output_dir)
 
-        entry_ctx = position_contexts[-1]
+        entry_ctx = action_contexts[-1]
         self._write_entry_point(entry_ctx, output_dir)
 
     def _write_definition_file(
@@ -105,7 +105,7 @@ class PythonLiteralCodeGenerator:
 
     def _write_entry_point(
         self,
-        entry_ctx: template_context.PositionDefinitionContext,
+        entry_ctx: template_context.ActionDefinitionContext,
         output_dir: Path,
     ):
         """Write the __main__.py entry point file."""

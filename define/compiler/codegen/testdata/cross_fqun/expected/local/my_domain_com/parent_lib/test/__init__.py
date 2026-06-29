@@ -8,22 +8,22 @@ import local.my_domain_com.child_lib.do_thing
 import local.my_domain_com.parent_lib.do_thing
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:parent_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:parent_lib:/test>"
+    is_constructor: ClassVar[bool] = True
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.parent_lib.do_thing.DoThing,
         local.my_domain_com.child_lib.do_thing.DoThing,
     )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
-        self.particle.get_action(
+    def execute(self):
+        self.on_particle.get_action(
             "action<my.domain.com:parent_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<my.domain.com:child_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"

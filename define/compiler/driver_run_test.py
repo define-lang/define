@@ -176,7 +176,7 @@ class TestRun:
     def test_compile_succeeds(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
+        monkeypatch.chdir(PROJECTS_ROOT / "valid" / "constructor_definition")
         result = driver.Driver(_PARSER).run(
             Path("test.dfn"),
             mode=driver.DriverMode.COMPILE,
@@ -212,5 +212,5 @@ class TestRun:
             'File "test.dfn", line 1, column 1\n'
             "define the potential action<mv:define-lang.org:test_action:/test> {\n"
             "^\n"
-            "the entry point of a Define program must be a position\n"
+            "the entry point of a Define program must be a constructor\n"
         )

@@ -1,10 +1,9 @@
-define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain particles where {
-        it has the action</process>.
-    }
-    after it is assigned {
-        create a particle in position</test>.
-        create a particle in position</test>::action</process>::position<input>.
-        create a particle in position</test>::action</process>::position<trigger>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</process>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</process>::position<input>.
+        create a particle in action</process>::position<trigger>.
     }
 }

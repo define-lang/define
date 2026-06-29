@@ -1,5 +1,4 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/implied>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/callee>::position<run>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/caller>::position<run>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/outer>::position<run>
+position<my.domain.com:my_lib:/implied>
+action<my.domain.com:my_lib:/callee>::position<run>
+action<my.domain.com:my_lib:/caller>::position<run>
+action<my.domain.com:my_lib:/outer>::position<run>

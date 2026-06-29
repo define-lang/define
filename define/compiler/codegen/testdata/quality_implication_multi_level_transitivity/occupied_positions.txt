@@ -1,5 +1,4 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<run>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<dest>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<dest>::position<my.domain.com:my_lib:/transitive_implied>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<dest>::position<my.domain.com:my_lib:/implied>
+action<my.domain.com:my_lib:/runner>::position<run>
+action<my.domain.com:my_lib:/runner>::position<dest>
+action<my.domain.com:my_lib:/runner>::position<dest>::position<my.domain.com:my_lib:/transitive_implied>
+action<my.domain.com:my_lib:/runner>::position<dest>::position<my.domain.com:my_lib:/implied>

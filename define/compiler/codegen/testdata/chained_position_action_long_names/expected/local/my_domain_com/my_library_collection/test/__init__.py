@@ -7,19 +7,19 @@ from define.runtime import literal
 import local.my_domain_com.my_library_collection.outer_position
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/test>"
+    is_constructor: ClassVar[bool] = True
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_library_collection.outer_position.OuterPosition,
     )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
-        self.particle.get_position(
+    def execute(self):
+        self.on_particle.get_position(
             "position<my.domain.com:my_library_collection:/outer_position>"
         ).create_particle()
-        self.particle.get_position(
+        self.on_particle.get_position(
             "position<my.domain.com:my_library_collection:/outer_position>"
         ).particle.get_action(
             "action<my.domain.com:my_library_collection:/perform_operation>"

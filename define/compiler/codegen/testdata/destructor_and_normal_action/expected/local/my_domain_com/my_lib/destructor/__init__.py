@@ -9,14 +9,6 @@ class Destructor(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/destructor>"
     is_destructor: ClassVar[bool] = True
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-            ],
-            trigger_position_name=None,
-        )
-
     @override
     def execute(self):
         _noop = literal.LocalPosition("position<_noop>")

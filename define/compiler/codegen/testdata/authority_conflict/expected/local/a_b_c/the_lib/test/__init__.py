@@ -10,9 +10,10 @@ import local.a_b_c__.the_lib.do_thing
 import mv.a_b_c.the_lib.do_thing
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<a.b.c:the_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<a.b.c:the_lib:/test>"
+    is_constructor: ClassVar[bool] = True
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b_c.the_lib.do_thing.DoThing,
         local.a_b_c_.the_lib.do_thing.DoThing,
         mv.a_b_c.the_lib.do_thing.DoThing,
@@ -20,24 +21,23 @@ class Test(literal.GlobalPosition):
     )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
-        self.particle.get_action(
+    def execute(self):
+        self.on_particle.get_action(
             "action<a.b.c:the_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<a-b.c:the_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<mv:a.b.c:the_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.particle.get_action(
+        self.on_particle.get_action(
             "action<a.b/c:the_lib:/do_thing>"
         ).get_interface_position(
             "position<trigger_pos>"

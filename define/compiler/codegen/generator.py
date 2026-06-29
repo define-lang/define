@@ -18,9 +18,9 @@ class CodeGenerator:
     ) -> list[diagnostics.Diagnostic]:
         """Generate code for a validated Define program.
 
-        Finds the entry point (a PositionDefinition) among the given
-        definitions. Returns diagnostics if entry point validation fails,
-        or an empty list on success.
+        Finds the entry point (a constructor) among the given definitions.
+        Returns diagnostics if entry point validation fails, or an empty list
+        on success.
 
         Expects a ReferenceGraph from a ProgramValidationResult with no
         errors. Has undefined behavior (including potentially crashing)
@@ -33,12 +33,15 @@ class CodeGenerator:
 
         entry_point = None
         for definition in entry_file_definitions:
-            if isinstance(definition, ast.PositionDefinition):
+            if (
+                isinstance(definition, ast.ActionDefinition)
+                and definition.is_constructor
+            ):
                 entry_point = definition
 
         if entry_point is None:
             return [
-                diagnostics.EntryPointNotPositionDiagnostic(
+                diagnostics.EntryPointNotConstructorDiagnostic(
                     location=entry_file_definitions[0].location
                 )
             ]

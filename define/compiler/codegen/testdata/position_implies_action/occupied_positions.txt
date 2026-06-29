@@ -1,3 +1,2 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/helper>::position<run>
-position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/host>
+action<my.domain.com:my_lib:/helper>::position<run>
+position<my.domain.com:my_lib:/host>

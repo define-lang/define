@@ -1,10 +1,9 @@
-define the potential position<my.domain.com:my_library_collection:/test> {
-    it may only contain particles where {
-        it has the position</outer_position>.
-    }
-    after it is assigned {
-        create a particle in position</test>.
-        create a particle in position</test>::position</outer_position>.
-        create a particle in position</test>::position</outer_position>::action</perform_operation>::position<operation_trigger>.
+define the potential action<my.domain.com:my_library_collection:/test> {
+    it also assigns the position</outer_position>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</outer_position>.
+        create a particle in position</outer_position>::action</perform_operation>::position<operation_trigger>.
     }
 }

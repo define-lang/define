@@ -1,3 +1,2 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/marker>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<run>
+position<my.domain.com:my_lib:/marker>
+action<my.domain.com:my_lib:/runner>::position<run>

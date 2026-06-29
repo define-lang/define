@@ -360,14 +360,17 @@ class InterfacePosition(LocalPosition):
             self._trigger_action.execute()
 
 
-def start(entry_point: type[GlobalPosition]):
-    """Execute the Define program startup sequence.
+def start(entry_point: type[Action]):
+    """Execute the Define program startup sequence (DLP 33).
 
-    Creates a particle (the view point) and assigns the entry point
-    position as a quality, which triggers entry_point.after_assigned().
+    Creates the anonymous view point position, whose only constraint is the
+    entry-point constructor, then creates the view point particle in it. The
+    creation assigns the constructor and fires it, running the program.
     """
-    view_point = Particle()
-    view_point.assign_position(entry_point)
+    view_point_position = LocalPosition(
+        "position<view_point>", constraints=(entry_point,)
+    )
+    view_point_position.create_particle()
     if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
-        for chained_name in view_point.occupied_position_names():
+        for chained_name in view_point_position.particle.occupied_position_names():
             print(chained_name)

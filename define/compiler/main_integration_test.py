@@ -14,6 +14,16 @@ from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 _USAGE_ERROR = 2
 _POSITION_SOURCE = "define the potential position<my.domain.com:my_lib:/test>.\n"
+_CONSTRUCTOR_SOURCE = (
+    "define the potential action<my.domain.com:my_lib:/test> {\n"
+    "    define the position<output>.\n"
+    "    it happens when {\n"
+    "        this particle is created.\n"
+    "    } and it does {\n"
+    "        create a particle in position<output>.\n"
+    "    }\n"
+    "}\n"
+)
 
 
 def _binary_path() -> Path:
@@ -28,14 +38,14 @@ def _binary_path() -> Path:
     return Path(resolved)
 
 
-def _setup_project(tmp_path: Path) -> None:
+def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE) -> None:
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     (config_dir / "config.defcl").write_text(
         'project: {\n  universe_name: "my.domain.com:my_lib"\n}\n',
         encoding="utf-8",
     )
-    (tmp_path / "test.dfn").write_text(_POSITION_SOURCE, encoding="utf-8")
+    (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
 
 
 class TestStdinPipe:
@@ -104,7 +114,7 @@ class TestStdinPipe:
         assert "no input" in result.stderr
 
     def test_file_compiles_to_output_dir(self, tmp_path: Path):
-        _setup_project(tmp_path)
+        _setup_project(tmp_path, _CONSTRUCTOR_SOURCE)
         output_dir = tmp_path / "out"
         result = subprocess.run(
             [str(_binary_path()), "compile", "test.dfn", "--out", str(output_dir)],
@@ -120,7 +130,7 @@ class TestStdinPipe:
         output_dir = tmp_path / "out"
         result = subprocess.run(
             [str(_binary_path()), "compile", "--out", str(output_dir)],
-            input=_POSITION_SOURCE,
+            input=_CONSTRUCTOR_SOURCE,
             capture_output=True,
             text=True,
             cwd=tmp_path,

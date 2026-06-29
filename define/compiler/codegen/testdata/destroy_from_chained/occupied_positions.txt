@@ -1,4 +1,3 @@
-position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<trigger>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<chain_src>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/act>::position<chain_src>::position<my.domain.com:my_lib:/mid>
+action<my.domain.com:my_lib:/act>::position<trigger>
+action<my.domain.com:my_lib:/act>::position<chain_src>
+action<my.domain.com:my_lib:/act>::position<chain_src>::position<my.domain.com:my_lib:/mid>

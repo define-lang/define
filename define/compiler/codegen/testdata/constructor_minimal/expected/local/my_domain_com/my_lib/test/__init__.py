@@ -7,12 +7,25 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.constructor
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.constructor.Constructor,
-    )
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
+    is_constructor: ClassVar[bool] = True
+
+    def __init__(self, on_particle: literal.Particle):
+        super().__init__(
+            on_particle,
+            interface_positions=[
+                literal.InterfacePosition(
+                    "position<box>",
+                    constraints=(
+                        local.my_domain_com.my_lib.constructor.Constructor,
+                    ),
+                ),
+            ],
+        )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
+    def execute(self):
+        self.get_interface_position(
+            "position<box>"
+        ).create_particle()

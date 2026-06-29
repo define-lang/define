@@ -1,8 +1,12 @@
-define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain particles where {
-        it has the action</constructor>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</constructor>.
+        }
     }
-    after it is assigned {
-        create a particle in position</test>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
     }
 }

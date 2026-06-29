@@ -1,13 +1,12 @@
-define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain particles where {
-        it has the action</class_var>.
-        it has the action</class_var_>.
-        it has the action</type_error>.
-    }
-    after it is assigned {
-        create a particle in position</test>.
-        create a particle in position</test>::action</class_var>::position<trigger_pos>.
-        create a particle in position</test>::action</class_var_>::position<trigger_pos>.
-        create a particle in position</test>::action</type_error>::position<pp>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</class_var>.
+    it also assigns the action</class_var_>.
+    it also assigns the action</type_error>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</class_var>::position<trigger_pos>.
+        create a particle in action</class_var_>::position<trigger_pos>.
+        create a particle in action</type_error>::position<pp>.
     }
 }

@@ -16,6 +16,7 @@ class {{ definition.class_name }}(literal.Action):
 {% endfor %}
     )
 {% endif %}
+{% if definition.interface_positions or definition.trigger_position_name %}
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -36,12 +37,11 @@ class {{ definition.class_name }}(literal.Action):
 {% endif %}
 {% endfor %}
             ],
-{% if definition.is_constructor or definition.is_destructor %}
-            trigger_position_name=None,
-{% else %}
+{% if definition.trigger_position_name %}
             trigger_position_name="{{ definition.trigger_position_name }}",
 {% endif %}
         )
+{% endif %}
 
     @override
     def execute(self):

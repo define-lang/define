@@ -21,7 +21,29 @@ def _generate(
 
 
 class TestCodeGenerator:
-    def test_position_entry_point_adds_no_diagnostics(
+    def test_constructor_entry_point_adds_no_diagnostics(
+        self, validate_project: ValidateProject, tmp_path: Path
+    ):
+        program_result = validate_project(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<output>.\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<output>.\n"
+                    "    }\n"
+                    "}\n"
+                )
+            },
+        )
+
+        result = _generate(program_result, tmp_path)
+
+        assert result == []
+
+    def test_position_entry_point_adds_diagnostic(
         self, validate_project: ValidateProject, tmp_path: Path
     ):
         program_result = validate_project(
@@ -32,9 +54,12 @@ class TestCodeGenerator:
 
         result = _generate(program_result, tmp_path)
 
-        assert result == []
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.EntryPointNotConstructorDiagnostic)
+        assert result[0].location.line == 1
+        assert result[0].location.column == 1
 
-    def test_action_entry_point_adds_diagnostic(
+    def test_non_constructor_action_entry_point_adds_diagnostic(
         self, validate_project: ValidateProject, tmp_path: Path
     ):
         program_result = validate_project(
@@ -56,11 +81,11 @@ class TestCodeGenerator:
         result = _generate(program_result, tmp_path)
 
         assert len(result) == 1
-        assert isinstance(result[0], diagnostics.EntryPointNotPositionDiagnostic)
+        assert isinstance(result[0], diagnostics.EntryPointNotConstructorDiagnostic)
         assert result[0].location.line == 1
         assert result[0].location.column == 1
 
-    def test_file_with_action_and_position_passes(
+    def test_file_with_position_and_constructor_passes(
         self, validate_project: ValidateProject, tmp_path: Path
     ):
         program_result = validate_project(
@@ -68,12 +93,40 @@ class TestCodeGenerator:
                 "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test>.\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pp>.\n"
+                    "    define the position<output>.\n"
                     "    it happens when {\n"
-                    "        the position<pp> has a particle.\n"
+                    "        this particle is created.\n"
                     "    } and it does {\n"
-                    "        define the position<noop>.\n"
-                    "        create a particle in position<noop>.\n"
+                    "        create a particle in position<output>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+
+        assert_no_errors(program_result)
+        assert _generate(program_result, tmp_path) == []
+        main_file = tmp_path / "__main__.py"
+        assert main_file.exists()
+        assert main_file.stat().st_size > 0
+
+    def test_constructor_chosen_when_position_constrains_it(
+        self, validate_project: ValidateProject, tmp_path: Path
+    ):
+        program_result = validate_project(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<output>.\n"
+                    "    it happens when {\n"
+                    "        this particle is created.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<output>.\n"
+                    "    }\n"
+                    "}\n"
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain particles where {\n"
+                    "        it has the action</test>.\n"
                     "    }\n"
                     "}\n"
                 ),

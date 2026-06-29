@@ -7,19 +7,19 @@ from define.runtime import literal
 import local.a_b.cd.a
 
 
-class Test(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<a.b:cd:/test>"
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+class Test(literal.Action):
+    typed_name: ClassVar[str] = "action<a.b:cd:/test>"
+    is_constructor: ClassVar[bool] = True
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b.cd.a.A,
     )
 
     @override
-    def after_assigned(self):
-        self.create_particle()
-        self.particle.get_position(
+    def execute(self):
+        self.on_particle.get_position(
             "position<a.b:cd:/a>"
         ).create_particle()
-        self.particle.get_position(
+        self.on_particle.get_position(
             "position<a.b:cd:/a>"
         ).particle.get_action(
             "action<a.b:cd:/b>"

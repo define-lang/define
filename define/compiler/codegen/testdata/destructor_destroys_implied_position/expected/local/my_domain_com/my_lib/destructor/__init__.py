@@ -14,14 +14,6 @@ class Destructor(literal.Action):
         local.my_domain_com.my_lib.marker.Marker,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-            ],
-            trigger_position_name=None,
-        )
-
     @override
     def execute(self):
         self.on_particle.get_position(

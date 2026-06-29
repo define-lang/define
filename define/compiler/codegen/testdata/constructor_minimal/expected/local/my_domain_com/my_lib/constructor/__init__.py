@@ -15,7 +15,6 @@ class Constructor(literal.Action):
             interface_positions=[
                 literal.InterfacePosition("position<output>"),
             ],
-            trigger_position_name=None,
         )
 
     @override
