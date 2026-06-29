@@ -51,7 +51,7 @@ class TestGenerateSourceLines:
         assert "define the potential action" in source
         assert "it may only contain particles where" in source
         assert "it also assigns the" in source
-        assert "after it is assigned" in source
+        assert "this particle is created" in source
         assert "this particle is being destroyed" in source
         assert "create a particle in " in source
         assert "move the particle in " in source

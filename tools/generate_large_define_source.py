@@ -20,9 +20,9 @@ broad slice of the grammar:
     path. They are not referenced from the main action because the
     validator's non-filesystem mode currently raises KeyError when
     processing a reference edge to a cross-universe target.
-  * Positions with constraint blocks, with quality implications, with
-    init blocks (paired creates-and-destroys so the init block is also
-    net-zero), and combinations.
+  * Positions with constraint blocks, and a constructor action carrying
+    quality implications whose ``this particle is created`` body pairs
+    every create with a destroy so the constructor runs net-zero.
   * A bulk action whose body interleaves blocks rooted in three kinds of
     names -- the action's interface positions, fresh inner local
     positions defined inside the action statements block, and implied
@@ -82,11 +82,10 @@ _INTERFACE_TO_G2 = "interface_to_g2"
 _INTERFACE_DST = "interface_dst"
 
 # Implied-target indices on the main action and on the
-# position-with-implications definition.
+# constructor-action-with-implications definition.
 _IMPLIED_POSITION_INDEX = 0
 _IMPLIED_INTERFACE_TO_G2_INDEX = 2
 _IMPLIED_INNER_CONSTRAINT_INDEX = 4
-_POSITION_IMPLICATIONS_REQUIRES_INDEX = 2
 _POSITION_IMPLICATIONS_IMPLIED_POSITION_INDEX = 0
 _POSITION_IMPLICATIONS_IMPLIED_ACTION_INDEX = 1
 
@@ -212,24 +211,24 @@ def _emit_constrained_position(prefix: str, index: int) -> list[str]:
     ]
 
 
-def _emit_position_with_implications_and_init(prefix: str, index: int) -> list[str]:
-    name = _qualified_global_name(prefix, index)
+def _emit_action_with_implications_and_constructor(
+    prefix: str, index: int
+) -> list[str]:
+    name = _qualified_global_name(prefix, index, is_action=True)
     implied_position = _short_global_name(_POSITION_IMPLICATIONS_IMPLIED_POSITION_INDEX)
     implied_action = _short_global_name(
         _POSITION_IMPLICATIONS_IMPLIED_ACTION_INDEX, is_action=True
     )
-    requires_position = _short_global_name(_POSITION_IMPLICATIONS_REQUIRES_INDEX)
     return [
-        f"define the potential position<{name}> {{",
+        f"define the potential action<{name}> {{",
         f"{_OUTER_INDENT}it also assigns the position<{implied_position}>.",
         f"{_OUTER_INDENT}it also assigns the action<{implied_action}>.",
-        f"{_OUTER_INDENT}it may only contain particles where {{",
-        f"{_INNER_INDENT}it has the position<{requires_position}>.",
-        f"{_OUTER_INDENT}}}",
-        f"{_OUTER_INDENT}after it is assigned {{",
+        f"{_OUTER_INDENT}it happens when {{",
+        f"{_INNER_INDENT}this particle is created.",
+        f"{_OUTER_INDENT}}} and it does {{",
         f"{_INNER_INDENT}create a particle in position<{implied_position}>.",
         f"{_INNER_INDENT}destroy the particle in position<{implied_position}>.",
-        f"{_INNER_INDENT}# Trailing comment in init block",
+        f"{_INNER_INDENT}# Trailing comment in constructor block",
         f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<_noop>.",
         f"{_INNER_INDENT}destroy the particle in action<{implied_action}>::position<_noop>.",
         f"{_OUTER_INDENT}}}",
@@ -476,7 +475,7 @@ def generate_source_lines(
     lines.extend(_emit_simple_action_pool(fqun_prefix, num_actions))
     lines.extend(_emit_constrained_position(fqun_prefix, num_globals))
     lines.extend(
-        _emit_position_with_implications_and_init(fqun_prefix, num_globals + 1)
+        _emit_action_with_implications_and_constructor(fqun_prefix, num_globals + 1)
     )
     lines.extend(_emit_main_action_header(fqun_main_action, num_actions))
 
