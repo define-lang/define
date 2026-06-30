@@ -837,6 +837,7 @@ position_requirement_statement = "it has the", " ", typed_global_name, terminato
 Proposals:
 
 - [DLP 23: Particles Define Other Positions](../proposals/00023-particles-define-other-positions.md)
+- [DLP 43: References Must Refer to Explicit Constraints](../proposals/00043-references-must-refer-to-explicit-constraints.md)
 
 A position reference is a single position name or a chained name that ends with
 the name of a position.
@@ -848,8 +849,8 @@ immediately before the name we are talking about. In
 Unless otherwise stated, the rules for all position references are:
 
 - The first name in the chain must have been defined _before_ it is referenced.
-- For global position or action names in the chain, those must be specified as a
-  constraint on their parent name.
+- For global position or action names in the chain, those must be specified as
+  an explicit (not implied) constraint on their parent name.
 - For local position names, the parent name must be an action and the local
   position must be defined in the Action Definition Block of that action.
 - Every position in the chain except the last must already contain a particle.
@@ -1194,10 +1195,17 @@ Inside the implying quality's definition, the implied quality is treated as
 already present on the particle. The implied quality and its child names may be
 referenced directly in the implying quality's definition.
 
+### No Transitive References
+
 Implying a quality does _not_ expose the transitively implied qualities of that
 quality. In order for any code within a global definition to reference a global
 name as the first typed name in a chain it must be listed in an explicit Quality
 Implication Statement at the top of the global definition.
+
+Implying a quality also does not expose that quality to consumers of the
+definition that implies it. If a line of code refers to a child name of a
+position, that child name must be listed as an explicit constraint on the
+position.
 
 ### Duplicate Assignments
 
