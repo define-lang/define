@@ -524,8 +524,9 @@ class ProgramStructuralValidator:
             source_definition.add_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     location=global_name.location,
-                    path=global_name.path.name,
-                    expected_type=edge.global_name_reference.name_type.value,
+                    path=str(global_name.path.relative_path)
+                    + constants.DEFINE_FILE_SUFFIX,
+                    expected_name=edge.global_name_reference.full_typed_name,
                 )
             )
 

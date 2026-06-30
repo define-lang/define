@@ -148,6 +148,42 @@ class TestRun:
             "definition path '/different' does not match file path '/wrong_file'\n"
         )
 
+    def test_multiple_errors_are_separated_by_divider(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "config.defcl").write_text(
+            'project: { universe_name: "mv:define-lang.org:test_path" }\n'
+        )
+        _ = (tmp_path / "wrong_file.dfn").write_text(
+            "define the potential position<mv:define-lang.org:test_path:/first>.\n"
+            + "define the potential position<mv:define-lang.org:test_path:/second>.\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        error_stream = io.StringIO()
+        result = driver.Driver(_PARSER).run(
+            Path("wrong_file.dfn"), error_stream=error_stream
+        )
+        assert result == driver.ExitCode.ERROR
+        assert error_stream.getvalue() == (
+            (
+                'File "wrong_file.dfn", line 1, column 60\n'
+                "define the potential position<mv:define-lang.org:test_path:/first>.\n"
+                "                                                           ^\n"
+                "definition path '/first' does not match file path '/wrong_file'"
+            )
+            + constants.ERROR_DIVIDER
+            + (
+                'File "wrong_file.dfn", line 2, column 60\n'
+                "define the potential position<mv:define-lang.org:test_path:/second>.\n"
+                "                                                           ^\n"
+                "definition path '/second' does not match file path '/wrong_file'"
+            )
+            + "\n"
+        )
+
     def test_stats_stream_receives_output(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

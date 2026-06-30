@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 from typing import TextIO
 
 from define.compiler import (
+    constants,
     exceptions,
     overall_stats,
     parser,
@@ -189,11 +190,10 @@ class Driver:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
-        had_errors = False
+        all_error_strings: list[str] = []
         for result in driver_result.result.file_results:
             if result.exception is not None:
-                print(str(result.exception), file=error_stream)
-                had_errors = True
+                all_error_strings.append(str(result.exception))
             if result.diagnostics:
                 if result.source is None:
                     raise ValueError(
@@ -201,8 +201,10 @@ class Driver:
                     )
                 source_lines = result.source.splitlines()
                 for diagnostic in result.diagnostics:
-                    print(diagnostic.format(source_lines), file=error_stream)
-                had_errors = True
+                    all_error_strings.append(diagnostic.format(source_lines))
+
+        if all_error_strings:
+            print(constants.ERROR_DIVIDER.join(all_error_strings), file=error_stream)
 
         if stats_stream is not None:
             stats_output = overall_stats.format_stats(
@@ -212,4 +214,4 @@ class Driver:
             )
             print(stats_output, file=stats_stream, end="")
 
-        return ExitCode.ERROR if had_errors else ExitCode.SUCCESS
+        return ExitCode.ERROR if all_error_strings else ExitCode.SUCCESS

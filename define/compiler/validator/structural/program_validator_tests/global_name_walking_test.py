@@ -515,8 +515,8 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[0].location.line == 3
     assert diags[0].location.column == 20
     assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diags[1].path == "/wrong_type"
-    assert diags[1].expected_type == "position"
+    assert diags[1].path == "wrong_type.dfn"
+    assert diags[1].expected_name == "position<my.domain.com:my_lib:/wrong_type>"
     assert diags[1].location.line == 4
     assert diags[1].location.column == 29
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")

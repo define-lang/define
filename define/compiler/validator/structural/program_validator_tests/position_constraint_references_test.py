@@ -142,8 +142,11 @@ def test_referenced_global_name_wrong_type_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diags[0].path == "/target"
-    assert diags[0].expected_type == "position"
+    assert diags[0].path == "target.dfn"
+    assert (
+        diags[0].expected_name
+        == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
+    )
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
 
@@ -193,11 +196,17 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diags[0].path == "/target"
-    assert diags[0].expected_type == "position"
+    assert diags[0].path == "target.dfn"
+    assert (
+        diags[0].expected_name
+        == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
+    )
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert diags[1].path == "/target"
-    assert diags[1].expected_type == "position"
+    assert diags[1].path == "target.dfn"
+    assert (
+        diags[1].expected_name
+        == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
+    )
     assert diags[1].location.line == 9
     assert diags[1].location.column == 33

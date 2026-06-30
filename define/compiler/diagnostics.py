@@ -383,10 +383,9 @@ class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
     """Diagnostic for when a referenced file lacks the referenced type at that path."""
 
     path: str
-    expected_type: str
+    expected_name: str
     message_format: ClassVar[str] = (
-        "path '{self.path}' does not define a global name with the type "
-        "'{self.expected_type}'"
+        "path '{self.path}' does not define '{self.expected_name}'"
     )
 
 
