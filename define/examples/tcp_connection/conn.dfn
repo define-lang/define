@@ -1,0 +1,11 @@
+define the potential position<define-lang.org:tcp:/conn> {
+    it may only contain particles where {
+        it has the action</construct>.
+        it has the action</transitions/closed_passive_open>.
+        it has the action</transitions/listen_recv_syn>.
+        it has the action</transitions/syn_received_recv_ack>.
+        it has the action</transitions/established_recv_fin>.
+        it has the action</transitions/close_wait_app_close>.
+        it has the action</transitions/last_ack_recv_ack>.
+    }
+}

@@ -1,5 +1,34 @@
-define the potential position<define-lang.org:tcp:/main> {
-    it may only contain particles where {
-        it has the action</driver>.
+# Drives one connection through a full passive-open (server) lifecycle:
+#
+#   CLOSED -> LISTEN -> SYN_RECEIVED -> ESTABLISHED
+#          -> CLOSE_WAIT -> LAST_ACK -> CLOSED
+#
+# This is intended to be an example of a simple state machine.
+#
+# Creating the connection places it into the "closed" state via a constructor
+# on /conn. Then we trigger actions to transition between each state.
+#
+# Behind the scenes, there is a particle transitioning between different states.
+# The actions create implicit requirements on the particle being in the right state,
+# so if you tried to call them out of order, the compiler would complain.
+define the potential action<define-lang.org:tcp:/main> {
+    it also assigns the position</conn>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</conn>.
+
+        # A peer connects: begin listening, receive its SYN, complete the
+        # handshake when its ACK arrives.
+        create a particle in position</conn>::action</transitions/closed_passive_open>::position<run>.
+        create a particle in position</conn>::action</transitions/listen_recv_syn>::position<run>.
+        create a particle in position</conn>::action</transitions/syn_received_recv_ack>::position<run>.
+
+        # The peer initiates teardown; we acknowledge, then close our own side.
+        create a particle in position</conn>::action</transitions/established_recv_fin>::position<run>.
+        create a particle in position</conn>::action</transitions/close_wait_app_close>::position<run>.
+        create a particle in position</conn>::action</transitions/last_ack_recv_ack>::position<run>.
+
+        # The connection is auto-destroyed at the end of the action.
     }
 }

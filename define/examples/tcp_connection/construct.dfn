@@ -1,0 +1,8 @@
+define the potential action<define-lang.org:tcp:/construct> {
+    it also assigns the position</states/closed>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</states/closed>.
+    }
+}
