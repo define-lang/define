@@ -1,0 +1,23 @@
+# Represents a safety interlock: The laser cannot fire unless
+# both keys are entered and the button is pressed down.
+define the potential action<define-lang.org:interlock:/main> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<laser> {
+            it may only contain particles where {
+                it has the action</fire>.
+            }
+        }
+
+        create a particle in position<laser>.
+        create a particle in position<laser>::action</fire>::position<key1>.
+        create a particle in position<laser>::action</fire>::position<key2>.
+        create a particle in position<laser>::action</fire>::position<fire>.
+
+        define the position<key1_storage>.
+        move the particle in position<laser>::action</fire>::position<key1_return> to position<key1_storage>.
+        define the position<key2_storage>.
+        move the particle in position<laser>::action</fire>::position<key2_return> to position<key2_storage>.
+    }
+}

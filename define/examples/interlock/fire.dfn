@@ -1,0 +1,15 @@
+define the potential action<define-lang.org:interlock:/fire> {
+    define the position<key1>.
+    define the position<key2>.
+    define the position<fire>.
+    define the position<key1_return>.
+    define the position<key2_return>.
+    it happens when {
+        the position<fire> has a particle.
+    } and it does {
+        # The other option here would be to simply destroy the two keys rather
+        # than return them.
+        move the particle in position<key1> to position<key1_return>.
+        move the particle in position<key2> to position<key2_return>.
+    }
+}
