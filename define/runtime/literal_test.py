@@ -1222,6 +1222,60 @@ class TestImpliedQualities:
             "position<top>",
         ]
 
+    def test_constraint_also_implied_by_an_earlier_constraint_assigned_once(self):
+        class Implied(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<implied>"
+
+        class Implier(literal.Action):
+            typed_name: ClassVar[str] = "action<implier>"
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
+
+        position = literal.LocalPosition("test", constraints=(Implier, Implied))
+        position.create_particle()
+
+        names = [quality.name for quality in position.particle._assigned_qualities]
+        assert names == ["position<implied>", "action<implier>"]
+
+    def test_directly_assigned_quality_implied_by_a_later_constraint_assigned_once(
+        self,
+    ):
+        class Implied(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<implied>"
+
+        class Implier(literal.Action):
+            typed_name: ClassVar[str] = "action<implier>"
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
+
+        position = literal.LocalPosition("test", constraints=(Implied, Implier))
+        position.create_particle()
+
+        names = [quality.name for quality in position.particle._assigned_qualities]
+        assert names == ["position<implied>", "action<implier>"]
+
+    def test_local_position_with_a_duplicate_constraint_raises(self):
+        class Implied(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<implied>"
+
+        class Implier(literal.Action):
+            typed_name: ClassVar[str] = "action<implier>"
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
+
+        with pytest.raises(literal.DuplicateConstraintError) as exc_info:
+            _ = literal.LocalPosition("test", constraints=(Implier, Implied, Implied))
+        assert exc_info.value.position_name == "position<implied>"
+
+    def test_global_position_with_a_duplicate_constraint_raises(self):
+        class Foo(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<foo>"
+
+        with pytest.raises(literal.DuplicateConstraintError) as exc_info:
+
+            class _Bad(literal.GlobalPosition):  # pyright: ignore[reportUnusedClass]
+                typed_name: ClassVar[str] = "position<bad>"
+                constraints: ClassVar[tuple[type[literal.Quality], ...]] = (Foo, Foo)
+
+        assert exc_info.value.position_name == "position<foo>"
+
     def test_action_processes_its_implied_qualities(self):
         class ImpliedPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implied>"
@@ -1254,27 +1308,29 @@ class TestImpliedQualities:
         assert "action<implied>" in particle._actions
         assert "position<implying>" in particle._positions
 
-    def test_assign_position_duplicate_raises(self):
+    def test_assign_position_twice_is_idempotent(self):
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
 
         particle = literal.Particle()
         particle.assign_position(MyPosition)
+        particle.assign_position(MyPosition)
 
-        with pytest.raises(literal.DuplicateQualityAssignmentError) as exc_info:
-            particle.assign_position(MyPosition)
-        assert exc_info.value.position_name == "position<test>"
+        assert [quality.name for quality in particle._assigned_qualities] == [
+            "position<test>"
+        ]
 
-    def test_assign_action_duplicate_raises(self):
+    def test_assign_action_twice_is_idempotent(self):
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
         particle = literal.Particle()
         particle.assign_action(MyAction)
+        particle.assign_action(MyAction)
 
-        with pytest.raises(literal.DuplicateQualityAssignmentError) as exc_info:
-            particle.assign_action(MyAction)
-        assert exc_info.value.position_name == "action<test>"
+        assert [quality.name for quality in particle._assigned_qualities] == [
+            "action<test>"
+        ]
 
     def test_create_particle_propagates_transitive_qualities(self):
         class Inner(literal.GlobalPosition):

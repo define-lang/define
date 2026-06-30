@@ -687,8 +687,8 @@ class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     element_name: str
     parent_name: str
     message_format: ClassVar[str] = (
-        "'{self.element_name}' is not declared as one of the"
-        " 'it has the' requirements in the definition of '{self.parent_name}'"
+        "'{self.element_name}' must be declared as an explicit 'it has the'"
+        " constraint in the definition of '{self.parent_name}'"
     )
 
 

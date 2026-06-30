@@ -792,6 +792,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -806,7 +807,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _OUTER
@@ -829,7 +830,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -903,6 +904,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -917,7 +919,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _OUTER
@@ -940,7 +942,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1020,6 +1022,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -1036,7 +1039,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 15
+    assert diag.location.line == 16
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
@@ -1051,7 +1054,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</implied>::position</child>::action</inner>::position<item>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1059,7 +1062,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 15,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1146,6 +1149,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -1163,7 +1167,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 16
+    assert diag.location.line == 17
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
@@ -1178,7 +1182,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>",
             "triggered_quality_name": None,
-            "line": 15,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1186,7 +1190,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 16,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1287,6 +1291,7 @@ def test_complex_chain_interaction_implied(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -1306,7 +1311,7 @@ def test_complex_chain_interaction_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 18
+    assert diag.location.line == 19
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
@@ -1321,7 +1326,7 @@ def test_complex_chain_interaction_implied(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>",
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1329,7 +1334,7 @@ def test_complex_chain_interaction_implied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1674,6 +1679,7 @@ def test_caller_sees_requirement_when_implied_moved_to_implied(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied_a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -1743,6 +1749,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
+                "                it has the position</implied_a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -1757,7 +1764,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 13
+    assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
@@ -1772,7 +1779,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },

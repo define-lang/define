@@ -50,11 +50,11 @@ class UnsatisfiedConstraintError(DefineRuntimeError):
         super().__init__(position_name)
 
 
-class DuplicateQualityAssignmentError(DefineRuntimeError):
-    """Raised when assigning a quality that is already on the particle."""
+class DuplicateConstraintError(DefineRuntimeError):
+    """Raised when a position declares the same quality as a constraint twice."""
 
     message_format: ClassVar[str] = (
-        "Quality '{self.position_name}' is already assigned to this particle."
+        "Quality '{self.position_name}' is declared as a constraint more than once."
     )
 
 
@@ -92,18 +92,21 @@ class Particle:
         self._assigned_qualities: list[Quality] = []
 
     def assign_position(self, position_class: type[GlobalPosition]):
-        """Assign a position to this particle."""
+        """Assign a position to this particle, or do nothing if already present."""
+        # A quality is set at most once; a repeat assignment (e.g. a constraint
+        # also reached through another constraint's implication) is a no-op.
+        # Genuinely duplicate constraints are rejected when a position is built.
         if position_class.typed_name in self._positions:
-            raise DuplicateQualityAssignmentError(position_class.typed_name)
+            return
         self._assign_implied_qualities(position_class)
         position = position_class(self)
         self._assigned_qualities.append(position)
         self._positions[position_class.typed_name] = position
 
     def assign_action(self, action_class: type[Action]):
-        """Assign an action to this particle."""
+        """Assign an action to this particle, or do nothing if already present."""
         if action_class.typed_name in self._actions:
-            raise DuplicateQualityAssignmentError(action_class.typed_name)
+            return
         self._assign_implied_qualities(action_class)
         action = action_class(self)
         self._assigned_qualities.append(action)
@@ -111,15 +114,9 @@ class Particle:
 
     def _assign_implied_qualities(self, quality_class: type[Quality]):
         for implied_class in quality_class.implied_qualities:
-            if (
-                issubclass(implied_class, GlobalPosition)
-                and implied_class.typed_name not in self._positions
-            ):
+            if issubclass(implied_class, GlobalPosition):
                 self.assign_position(implied_class)
-            elif (
-                issubclass(implied_class, Action)
-                and implied_class.typed_name not in self._actions
-            ):
+            elif issubclass(implied_class, Action):
                 self.assign_action(implied_class)
 
     def get_position(self, name: str) -> GlobalPosition:
@@ -242,10 +239,24 @@ class Position(ABC):
         """Run after a particle arrives. Override in subclasses."""
 
 
+def _reject_duplicate_constraints(constraints: tuple[type[Quality], ...]):
+    """Raise if the same quality appears more than once in a constraint list."""
+    seen: set[str] = set()
+    for constraint in constraints:
+        if constraint.typed_name in seen:
+            raise DuplicateConstraintError(constraint.typed_name)
+        seen.add(constraint.typed_name)
+
+
 class GlobalPosition(Quality, Position):
     """A globally-defined position with a class-level typed name and constraints."""
 
     constraints: ClassVar[tuple[type[Quality], ...]] = ()
+
+    def __init_subclass__(cls, **kwargs: object):
+        """Reject duplicate constraints when a global position class is defined."""
+        super().__init_subclass__(**kwargs)
+        _reject_duplicate_constraints(cls.constraints)
 
     @override
     def _get_constraints(self) -> tuple[type[Quality], ...]:
@@ -268,6 +279,7 @@ class LocalPosition(Position):
     ):
         """Initialize a local position with the given name and optional constraints."""
         super().__init__()
+        _reject_duplicate_constraints(constraints)
         self._name: str = name
         self._constraints: tuple[type[Quality], ...] = constraints
 

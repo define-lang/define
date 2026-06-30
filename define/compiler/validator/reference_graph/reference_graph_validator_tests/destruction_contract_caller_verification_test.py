@@ -799,6 +799,7 @@ def test_five_level_implied_requirements_resolved_across_actions_satisfied(
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</destructor>.\n"
+                "            it has the position</p2>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
@@ -823,6 +824,7 @@ def test_five_level_implied_requirements_resolved_across_actions_satisfied(
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</destructor>.\n"
+                "            it has the position</p1>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
@@ -914,6 +916,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</destructor>.\n"
+                "            it has the position</p2>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
@@ -937,6 +940,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</destructor>.\n"
+                "            it has the position</p1>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
@@ -984,7 +988,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].action_name == _MIDDLE
@@ -1007,7 +1011,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -1015,7 +1019,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -1023,7 +1027,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 19,
+            "line": 20,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -1045,7 +1049,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 20
+    assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].action_name == _MIDDLE
@@ -1070,7 +1074,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -1078,7 +1082,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -1086,7 +1090,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>::position</p2>",
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -1094,7 +1098,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 19,
+            "line": 20,
             "column": 30,
             "file_path": "middle.dfn",
         },

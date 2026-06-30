@@ -581,6 +581,18 @@ class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
     requirements: tuple[PositionRequirementStatement, ...]
+    as_set: frozenset[str] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        """Precompute the set of requirement names."""
+        object.__setattr__(
+            self,
+            "as_set",
+            frozenset(
+                requirement.typed_global_name.full_typed_name
+                for requirement in self.requirements
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -668,7 +680,6 @@ class ActionDefinition(QualityDefinition):
 
     # Computed properties
     interface_positions_by_name: dict[str, LocalPositionDefinition]
-    interface_position_constraints: dict[str, frozenset[str]]
     trigger_position: LocalPositionDefinition | None
 
     def __init__(
@@ -704,11 +715,6 @@ class ActionDefinition(QualityDefinition):
             "interface_positions_by_name",
             self._compute_interface_positions_by_name(),
         )
-        object.__setattr__(
-            self,
-            "interface_position_constraints",
-            self._compute_interface_position_constraints(),
-        )
         object.__setattr__(self, "trigger_position", self._compute_trigger_position())
 
     @property
@@ -724,18 +730,6 @@ class ActionDefinition(QualityDefinition):
             local_name = local_def.typed_name.source_typed_name
             if local_name not in result:
                 result[local_name] = local_def
-        return result
-
-    def _compute_interface_position_constraints(self) -> dict[str, frozenset[str]]:
-        result: dict[str, frozenset[str]] = {}
-        for local_name, local_def in self.interface_positions_by_name.items():
-            if local_def.constraints is None:
-                result[local_name] = frozenset()
-                continue
-            result[local_name] = frozenset(
-                requirement.typed_global_name.full_typed_name
-                for requirement in local_def.constraints.requirements
-            )
         return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:

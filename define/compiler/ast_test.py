@@ -277,15 +277,18 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_position_constraints == {
-            "position<pos_a>": frozenset({f"position<{_FQUN}:/child>"}),
-            "position<pos_b>": frozenset(
-                {
-                    f"position<{_FQUN}:/x>",
-                    f"position<{_FQUN}:/y>",
-                }
-            ),
-        }
+        by_name = action.interface_positions_by_name
+        pos_a_constraints = by_name["position<pos_a>"].constraints
+        assert pos_a_constraints is not None
+        assert pos_a_constraints.as_set == frozenset({f"position<{_FQUN}:/child>"})
+        pos_b_constraints = by_name["position<pos_b>"].constraints
+        assert pos_b_constraints is not None
+        assert pos_b_constraints.as_set == frozenset(
+            {
+                f"position<{_FQUN}:/x>",
+                f"position<{_FQUN}:/y>",
+            }
+        )
 
     def test_no_constraints(self):
         action = _parse_action(
@@ -299,9 +302,7 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_position_constraints == {
-            "position<pos_a>": frozenset(),
-        }
+        assert action.interface_positions_by_name["position<pos_a>"].constraints is None
 
     def test_ignore_later_duplicate_with_different_constraints(self):
         action = _parse_action(
@@ -324,9 +325,9 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_position_constraints == {
-            "position<pos_a>": frozenset({f"position<{_FQUN}:/first>"}),
-        }
+        constraints = action.interface_positions_by_name["position<pos_a>"].constraints
+        assert constraints is not None
+        assert constraints.as_set == frozenset({f"position<{_FQUN}:/first>"})
 
     def test_ignore_later_duplicate_that_adds_constraints(self):
         action = _parse_action(
@@ -345,9 +346,7 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_position_constraints == {
-            "position<pos_a>": frozenset(),
-        }
+        assert action.interface_positions_by_name["position<pos_a>"].constraints is None
 
 
 class TestActionIsDestructor:
@@ -397,6 +396,22 @@ class TestPositionConstraintTypedNames:
     def test_no_constraints(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
         assert position.constraint_typed_names == ()
+
+
+class TestPositionConstraintBlockAsSet:
+    def test_holds_constraint_names(self):
+        position = _parse_position(
+            f"define the potential position<{_FQUN}:/a> {{\n"
+            "    it may only contain particles where {\n"
+            "        it has the position</child>.\n"
+            "        it has the position</other>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert position.constraints is not None
+        assert position.constraints.as_set == frozenset(
+            {f"position<{_FQUN}:/child>", f"position<{_FQUN}:/other>"}
+        )
 
 
 class TestChainedNameConstruction:

@@ -37,6 +37,7 @@ def test_constructor_implied_position_guarantee_visible_to_caller(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</construct>.\n"
+                "                it has the position</color>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -77,6 +78,7 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</construct>.\n"
+                "                it has the position</color>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -91,7 +93,7 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</color>"

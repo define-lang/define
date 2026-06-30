@@ -312,6 +312,7 @@ def test_implied_to_local_occupied_violated(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
+                "                it has the position</marker>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -325,7 +326,7 @@ def test_implied_to_local_occupied_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -348,7 +349,7 @@ def test_implied_to_local_occupied_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -356,7 +357,7 @@ def test_implied_to_local_occupied_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 13,
+            "line": 14,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -412,6 +413,7 @@ def test_implied_to_local_empty_violated(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
+                "                it has the position</marker>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -426,7 +428,7 @@ def test_implied_to_local_empty_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -449,7 +451,7 @@ def test_implied_to_local_empty_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -457,7 +459,7 @@ def test_implied_to_local_empty_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</marker>::position</child>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -465,7 +467,7 @@ def test_implied_to_local_empty_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 14,
+            "line": 15,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -626,6 +628,7 @@ def test_implied_to_implied_occupied_violated(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
+                "                it has the position</source_marker>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -639,7 +642,7 @@ def test_implied_to_implied_occupied_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -662,7 +665,7 @@ def test_implied_to_implied_occupied_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -670,7 +673,7 @@ def test_implied_to_implied_occupied_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 13,
+            "line": 14,
             "column": 33,
             "file_path": "test.dfn",
         },

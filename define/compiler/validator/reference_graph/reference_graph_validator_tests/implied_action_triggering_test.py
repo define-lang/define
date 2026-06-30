@@ -350,10 +350,11 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
+                "                it has the action</implied_outer>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</implied_outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</implied_outer>::position<run>.\n"
                 "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
@@ -364,7 +365,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 13
+    assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _MIDDLE
@@ -379,7 +380,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -437,6 +438,7 @@ def test_caller_triggers_action_implied_by_constraint(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -528,6 +530,7 @@ def test_transitive_implication_triggers_action(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"

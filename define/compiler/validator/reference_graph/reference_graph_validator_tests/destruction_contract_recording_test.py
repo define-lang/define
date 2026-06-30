@@ -439,6 +439,7 @@ def test_destroyer_destroys_implied_position_requirement_satisfied(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
+                "                it has the position</slot>.\n"
                 "                it has the action</close_file>.\n"
                 "            }\n"
                 "        }\n"
@@ -510,6 +511,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
+                "                it has the position</slot>.\n"
                 "                it has the action</close_file>.\n"
                 "            }\n"
                 "        }\n"
@@ -531,7 +533,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -547,7 +549,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 14,
+            "line": 15,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -555,7 +557,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::position</slot>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -563,7 +565,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -815,11 +817,13 @@ def test_both_destructions_satisfied(
                 "        }\n"
                 "        define the position<one> {\n"
                 "            it may only contain particles where {\n"
+                "                it has the position</file>.\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<two> {\n"
                 "            it may only contain particles where {\n"
+                "                it has the position</file>.\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"

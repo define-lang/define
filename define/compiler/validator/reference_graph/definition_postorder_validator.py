@@ -1296,7 +1296,7 @@ class ActionPostorderValidator:
             self._check_chain_element_in_constraints(
                 chain,
                 elements[1],
-                scope.get_definition(first).constraint_typed_names,
+                scope.get_definition(first).constraints,
                 first.full_typed_name,
             )
             index = 1
@@ -1320,7 +1320,7 @@ class ActionPostorderValidator:
                     self._check_chain_element_in_constraints(
                         chain,
                         child,
-                        position_def.constraint_typed_names,
+                        position_def.constraints,
                         parent.full_typed_name,
                     )
                     index += 1
@@ -1369,7 +1369,7 @@ class ActionPostorderValidator:
         if not isinstance(child, ast.LocalTypedNameReference):
             self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
-        if child.full_typed_name not in action_def.interface_position_constraints:
+        if child.full_typed_name not in action_def.interface_positions_by_name:
             self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
@@ -1379,9 +1379,7 @@ class ActionPostorderValidator:
         self._check_chain_element_in_constraints(
             chain,
             next_child,
-            action_def.interface_positions_by_name[
-                child.full_typed_name
-            ].constraint_typed_names,
+            action_def.interface_positions_by_name[child.full_typed_name].constraints,
             child.source_typed_name,
         )
         return 2
@@ -1390,18 +1388,13 @@ class ActionPostorderValidator:
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
-        constraints: tuple[ast.GlobalTypedNameReference, ...],
+        constraints: ast.PositionConstraintBlock | None,
         parent_name: str,
     ):
-        """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
+        """Check that a chain element is an explicit constraint of its parent name."""
         element_name = element.full_typed_name
-        # TODO: This could be slightly more efficient by making _expand_with_implications_in_order
-        # a generator and just checking as we go through if we see the name or not, I think.
-        expanded = {
-            name.full_typed_name
-            for name in self._expand_with_implications_in_order(constraints)
-        }
-        if element_name not in expanded:
+        declared = constraints.as_set if constraints is not None else frozenset[str]()
+        if element_name not in declared:
             self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     location=element.location,

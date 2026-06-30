@@ -5,6 +5,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</destructor>.
+                it has the position</marker>.
             }
         }
         create a particle in position<box>.

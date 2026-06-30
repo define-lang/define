@@ -75,6 +75,9 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_a>.\n"
+                "                it has the position</implied_b>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -164,6 +167,9 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_a>.\n"
+                "                it has the position</implied_b>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -185,9 +191,9 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.line == 28
     assert all_diags[0].location.column == 69
-    assert all_diags[0].location.end_line == 25
+    assert all_diags[0].location.end_line == 28
     assert all_diags[0].location.end_column == 88
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position<box>::position</implied_b>"
@@ -266,6 +272,8 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -354,6 +362,8 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -375,9 +385,9 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 87
-    assert all_diags[0].location.end_line == 25
+    assert all_diags[0].location.end_line == 27
     assert all_diags[0].location.end_column == 106
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -459,6 +469,7 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -546,6 +557,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<my_secret_holder>.\n"
@@ -566,9 +578,9 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 87
-    assert all_diags[0].location.end_line == 25
+    assert all_diags[0].location.end_line == 26
     assert all_diags[0].location.end_column == 106
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (

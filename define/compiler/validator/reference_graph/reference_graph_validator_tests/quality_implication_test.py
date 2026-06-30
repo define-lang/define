@@ -749,6 +749,7 @@ def test_constructor_fills_implied_position_for_move(
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</implier>.\n"
+                "            it has the position</implied>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest>.\n"
@@ -787,6 +788,7 @@ def test_constructor_filled_position_blocks_caller_create(
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</implier>.\n"
+                "            it has the position</implied>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -802,9 +804,9 @@ def test_constructor_filled_position_blocks_caller_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 66
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<source>::position</implied>"

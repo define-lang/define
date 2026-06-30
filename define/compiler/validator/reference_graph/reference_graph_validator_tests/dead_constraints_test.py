@@ -860,64 +860,6 @@ def test_action_required_by_move_destination_is_alive(
     assert_no_errors(result.program_result)
 
 
-def test_constraint_that_only_provides_a_triggered_action_by_implication_is_dead(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "child.dfn": (
-                "define the potential action<my.domain.com:my_lib:/child> {\n"
-                "    define the position<go>.\n"
-                "    it happens when {\n"
-                "        the position<go> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<go>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    it also assigns the action</child>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in action</child>::position<go>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box1> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<box2> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box1>.\n"
-                "        move the particle in position<box1> to position<box2>.\n"
-                "        create a particle in position<box2>::action</child>::position<go>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].constraint_name == "action</construct>"
-    assert all_diags[0].position_name == "position<box2>"
-    assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 28
-
-
 def test_implied_action_of_constructor_is_not_dead(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

@@ -64,6 +64,7 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -135,6 +136,7 @@ def test_empty_guarantee_propagates_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -206,6 +208,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -221,9 +224,9 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 86
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -296,6 +299,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -313,9 +317,9 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert isinstance(
         all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 16
     assert all_diags[0].location.end_column == 85
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -388,6 +392,8 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_pos>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -460,6 +466,8 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_pos>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -532,6 +540,8 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_pos>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -547,9 +557,9 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 67
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
@@ -619,6 +629,8 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the action</implied_action>.\n"
+                "                it has the position</implied_pos>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -635,9 +647,9 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 17
     assert all_diags[0].location.end_column == 67
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
@@ -801,6 +813,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
                 "define the potential position<my.domain.com:my_lib:/slot> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</filler>.\n"
+                "        it has the position</color>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -823,6 +836,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the position</slot>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -835,9 +849,9 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 78
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -871,6 +885,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
                 "define the potential position<my.domain.com:my_lib:/slot_inner> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</filler>.\n"
+                "        it has the position</color>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -888,6 +903,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
                 "define the potential position<my.domain.com:my_lib:/slot_outer> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</middle>.\n"
+                "        it has the position</slot_inner>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -910,6 +926,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
+                "                it has the position</slot_outer>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -922,9 +939,9 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 107
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -991,6 +1008,7 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
                 "define the potential position<my.domain.com:my_lib:/mid> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</inner>.\n"
+                "        it has the action</nested>.\n"
                 "    }\n"
                 "}\n"
             ),

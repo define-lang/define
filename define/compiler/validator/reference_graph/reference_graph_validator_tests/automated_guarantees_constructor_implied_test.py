@@ -31,6 +31,7 @@ def test_nested_constructor_guarantees(
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</construct_dep>.\n"
+                "        it has the position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -53,6 +54,7 @@ def test_nested_constructor_guarantees(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</construct_a>.\n"
+                "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -93,6 +95,7 @@ def test_constructor_overrides_inner_guarantee(
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</construct_dep>.\n"
+                "        it has the position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -117,6 +120,7 @@ def test_constructor_overrides_inner_guarantee(
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</construct_a>.\n"
+                "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -182,6 +186,7 @@ def test_inferred_occupied_does_not_apply_constructor_guarantees(
                 "    define the position<item> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</construct_a>.\n"
+                "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -228,6 +233,7 @@ def test_caller_sees_constructor_child_guarantees_through_action(
                 "    define the position<item> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</construct_a>.\n"
+                "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -289,6 +295,7 @@ def test_nested_quality_guarantees_visible_through_action_chain(
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</construct_dep>.\n"
+                "        it has the position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -308,6 +315,7 @@ def test_nested_quality_guarantees_visible_through_action_chain(
                 "    define the position<item> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</construct_a>.\n"
+                "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -373,6 +381,7 @@ def test_cross_universe_constraint_triggers_constructor(
                 f"define the potential position<{_CHILD_FQUN}:/b> {{\n"
                 f"    it may only contain particles where {{\n"
                 f"        it has the action</construct_a>.\n"
+                f"        it has the position</a>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -395,6 +404,7 @@ def test_cross_universe_constraint_triggers_constructor(
                 f"        define the position<box> {{\n"
                 f"            it may only contain particles where {{\n"
                 f"                it has the action<{_CHILD_FQUN}:/construct_b>.\n"
+                f"                it has the position<{_CHILD_FQUN}:/b>.\n"
                 f"            }}\n"
                 f"        }}\n"
                 f"        create a particle in position<box>.\n"
@@ -411,9 +421,9 @@ def test_cross_universe_constraint_triggers_constructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 121
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -426,9 +436,9 @@ def test_cross_universe_constraint_triggers_constructor(
     assert all_diags[0].populated_at.end_column == 42
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/construct_a.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 13
+    assert all_diags[1].location.end_line == 14
     assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
@@ -478,6 +488,7 @@ def test_constructor_applies_after_non_constructor_action_in_constraints(
                 "    it may only contain particles where {\n"
                 "        it has the action</foo>.\n"
                 "        it has the action</construct_bar>.\n"
+                "        it has the position</bar>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -539,6 +550,7 @@ def test_constrained_constructor_assigns_implied_in_parent(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it may only contain particles where {\n"
                 "        it has the action</construct_q>.\n"
+                "        it has the position</r>.\n"
                 "    }\n"
                 "}\n"
             ),

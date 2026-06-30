@@ -5,6 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.destructor
+import local.my_domain_com.my_lib.marker
 
 
 class Test(literal.Action):
@@ -17,6 +18,7 @@ class Test(literal.Action):
             "position<box>",
             constraints=(
                 local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.marker.Marker,
             ),
         )
         box.create_particle()

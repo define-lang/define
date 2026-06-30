@@ -717,6 +717,7 @@ def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
                 "    define the position<source> {\n"
                 "        it may only contain particles where {\n"
                 "            it has the action</filler>.\n"
+                "            it has the position</emptier>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
@@ -734,9 +735,9 @@ def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert diag.location.line == 13
+    assert diag.location.line == 14
     assert diag.location.column == 33
-    assert diag.location.end_line == 13
+    assert diag.location.end_line == 14
     assert diag.location.end_column == 69
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == "position<source>::position</emptier>"

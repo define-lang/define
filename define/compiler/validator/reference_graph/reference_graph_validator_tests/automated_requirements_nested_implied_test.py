@@ -61,6 +61,7 @@ _TEST_PRE_FILLS_X = (
     "    } and it does {\n"
     "        define the position<box> {\n"
     "            it may only contain particles where {\n"
+    "                it has the position</x>.\n"
     "                it has the action</middle>.\n"
     "            }\n"
     "        }\n"
@@ -183,7 +184,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
@@ -195,7 +196,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</x>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -203,7 +204,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -276,6 +277,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
                 "    } and it does {\n"
                 "        define the position<box> {\n"
                 "            it may only contain particles where {\n"
+                "                it has the position</x>.\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
@@ -290,7 +292,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
@@ -305,7 +307,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },

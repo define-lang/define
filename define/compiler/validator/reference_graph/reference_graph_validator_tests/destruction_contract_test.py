@@ -66,6 +66,7 @@ def test_caller_known_child_state_requirement_satisfied(
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</delete_file_destructor>.\n"
+                "                it has the position</file>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -306,6 +307,7 @@ def test_caller_known_empty_requirement_violated(
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</delete_empty_destructor>.\n"
+                "                it has the position</file>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -321,7 +323,7 @@ def test_caller_known_empty_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -344,7 +346,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -352,7 +354,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -360,7 +362,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</file>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -445,6 +447,7 @@ def test_two_caller_attached_destructors_verified_independently(
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor_a>.\n"
                 "                it has the action</destructor_b>.\n"
+                "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -460,9 +463,9 @@ def test_two_caller_attached_destructors_verified_independently(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    # destructor_a's position</a> was filled (line 19); only destructor_b fails.
-    # The violation is observed at the line that triggered close_file (line 21).
-    assert all_diags[0].location.line == 21
+    # destructor_a's position</a> was filled (line 20); only destructor_b fails.
+    # The violation is observed at the line that triggered close_file (line 22).
+    assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -485,7 +488,7 @@ def test_two_caller_attached_destructors_verified_independently(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -493,7 +496,7 @@ def test_two_caller_attached_destructors_verified_independently(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 21,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -580,6 +583,8 @@ def test_all_caller_attached_destructors_satisfied(
                 "            it may only contain particles where {\n"
                 "                it has the action</destructor_a>.\n"
                 "                it has the action</destructor_b>.\n"
+                "                it has the position</a>.\n"
+                "                it has the position</b>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -673,6 +678,7 @@ def test_three_destructors_with_two_violated(
                 "                it has the action</destructor_a>.\n"
                 "                it has the action</destructor_b>.\n"
                 "                it has the action</destructor_c>.\n"
+                "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
@@ -710,7 +716,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -718,7 +724,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 22,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -760,7 +766,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -768,7 +774,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 22,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -951,9 +957,16 @@ def test_declared_quality_destructor_satisfied(
                 "                it has the action</close_file>.\n"
                 "            }\n"
                 "        }\n"
+                "        define the position<my_file> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</destructor>.\n"
+                "                it has the position</file>.\n"
+                "            }\n"
+                "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</close_file>::position<target>.\n"
-                "        create a particle in position<box>::action</close_file>::position<target>::position</file>.\n"
+                "        create a particle in position<my_file>.\n"
+                "        create a particle in position<my_file>::position</file>.\n"
+                "        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.\n"
                 "        create a particle in position<box>::action</close_file>::position<run>.\n"
                 "    }\n"
                 "}\n"
@@ -1010,6 +1023,7 @@ def test_constructor_consumer_caller_known_satisfied(
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
                 "                it has the action</delete_file_destructor>.\n"
+                "                it has the position</file>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"

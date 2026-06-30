@@ -116,7 +116,7 @@ def test_deferred_position_chain_error_format(
         File "test.dfn", line 10, column 65
                 create a particle in position<pos_a>::position</pos_b>::position</wrong>.
                                                                         ^
-        'position<my.domain.com:my_lib:/wrong>' is not declared as one of the 'it has the' requirements in the definition of 'position<my.domain.com:my_lib:/pos_b>'""")
+        'position<my.domain.com:my_lib:/wrong>' must be declared as an explicit 'it has the' constraint in the definition of 'position<my.domain.com:my_lib:/pos_b>'""")
     )
 
 
