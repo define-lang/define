@@ -131,6 +131,16 @@ class _PendingGuarantee:
         return self.parent_chain + name
 
 
+# Nested guarantees are deferred here instead of being flattened into every
+# caller's state, and this laziness is a critical performance optimization.
+# Eagerly flattening the whole guarantee list re-copies a callee's entire
+# guarantee subtree at each level of a deep call chain, so an action graph with
+# fan-out F and call depth D produces O(F^D) guarantees: an exponential blowup
+# that eventually makes compilation impossible.
+#
+# Deferring the resolution of guarantees keeps each contract at a size of
+# O(own guarantees + F references) and only materializes the guarantees a
+# specific callee actually depends on.
 class _PendingNestedGuarantees:
     """A prefix multimap of nested guarantees, keyed by a position prefix.
 
