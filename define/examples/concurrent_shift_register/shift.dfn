@@ -1,0 +1,34 @@
+# One clock of the register, run when a bit arrives on the input line.
+#
+# We copy every cell (and the input) into a scratch buffer first, then copy the
+# buffer back into the cells. Doing it in two passes means each cell is read
+# before it is overwritten, so no bit is lost (except the last bit, which is pushed
+# off the register).
+define the potential action<define-lang.org:shift_register:/shift> {
+    it also assigns the position</cell/bit0>.
+    it also assigns the position</cell/bit1>.
+    it also assigns the position</cell/bit2>.
+
+    define the position<input>.
+
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        # Drop the far cell's bit so this clock can refill it.
+        destroy the particle in position</cell/bit2>.
+
+        define the position<next0>.
+        define the position<next1>.
+        define the position<next2>.
+
+        # Compute: sample the input and current cells into the next buffer.
+        move the particle in position<input> to position<next0>. # waits on the input arriving
+        move the particle in position</cell/bit0> to position<next1>. # waits on cell 0
+        move the particle in position</cell/bit1> to position<next2>. # waits on cell 1
+
+        # Commit: pushed the next buffer into the register cells.
+        move the particle in position<next0> to position</cell/bit0>. # joins input and cell 0
+        move the particle in position<next1> to position</cell/bit1>. # joins cell 0 AND cell 1
+        move the particle in position<next2> to position</cell/bit2>. # joins cell 1 AND cell 2 destroy
+    }
+}

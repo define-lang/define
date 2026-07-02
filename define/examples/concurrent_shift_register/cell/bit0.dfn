@@ -1,0 +1,3 @@
+# Register cell 0 (nearest the input). A particle means the cell holds a 1; an
+# empty cell is a 0.
+define the potential position<define-lang.org:shift_register:/cell/bit0>.

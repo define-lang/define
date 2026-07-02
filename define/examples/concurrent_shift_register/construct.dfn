@@ -1,0 +1,16 @@
+# Sets the register up correctly when it is created. We put a bit into each
+# cell. (We don't yet specify what the values are in those bits, because this
+# example doesn't cover values.)
+define the potential action<define-lang.org:shift_register:/construct> {
+    it also assigns the position</cell/bit0>.
+    it also assigns the position</cell/bit1>.
+    it also assigns the position</cell/bit2>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</cell/bit0>.
+        create a particle in position</cell/bit1>.
+        create a particle in position</cell/bit2>.
+    }
+}

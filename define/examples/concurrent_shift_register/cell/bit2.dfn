@@ -1,0 +1,3 @@
+# Register cell 2 (the far end). Whatever it held before a tick is shifted out
+# and dropped.
+define the potential position<define-lang.org:shift_register:/cell/bit2>.

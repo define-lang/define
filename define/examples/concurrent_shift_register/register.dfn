@@ -1,0 +1,8 @@
+# The shift register itself. A register particle owns its behavior: it is
+# constructed into a known state and it knows how to shift.
+define the potential position<define-lang.org:shift_register:/register> {
+    it may only contain particles where {
+        it has the action</construct>.
+        it has the action</shift>.
+    }
+}

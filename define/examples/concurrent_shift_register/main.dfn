@@ -1,0 +1,12 @@
+# Create a register and clock it twice, placing a bit on the input line each time.
+define the potential action<define-lang.org:shift_register:/main> {
+    it also assigns the position</register>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</register>.
+        create a particle in position</register>::action</shift>::position<input>.
+        create a particle in position</register>::action</shift>::position<input>.
+    }
+}
