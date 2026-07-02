@@ -1543,6 +1543,57 @@ position and is not needed to satisfy any Move Particle Statement, that
 constraint is dead code. Exception: destructors listed as constraints on a
 position are never dead code.
 
+## Deterministic Automatic Concurrency
+
+Proposals:
+
+- [DLP 44: Deterministic Automatic Concurrency](../proposals/00044-deterministic-automatic-concurrency.md)
+
+Define makes no guarantees that code will be executed in the order it is
+written. Instead, the Define compiler automatically determines which operations
+can safely happen concurrently, by tracing how operations on particles depend on
+each other. It may then choose to generate code that runs those concurrent
+chains of operations in parallel, provided the other logical guarantees of
+Define are preserved.
+
+### The Particle Operation Dependency Graph
+
+Every Create Particle Statement, Move Particle Statement, and Destroy Particle
+Statement is a "Particle Operation." Create and Destroy each operate on a single
+position, and Move operates on both of its positions.
+
+These rules create a directed acyclic graph of dependencies between Particle
+Operations:
+
+1. Each Particle Operation depends on the previous Particle Operation on the
+   same position.
+2. Any Particle Operation on a child position additionally depends on the last
+   Particle Operation on every parent position.
+3. A move or destroy operation additionally depends on the last Particle
+   Operation on every transitive child position beneath the position(s) being
+   operated on.
+
+### Executing Particle Operations Concurrently
+
+Particle Operations are logically executed following the directed acyclic graph
+of Particle Operation dependencies. Whenever multiple Particle Operations may
+safely execute concurrently in the graph, the compiler may emit code that runs
+those operations in parallel.
+
+### Concurrency Between Actions
+
+Actions are not atomic units of execution at runtime. The instant an action
+completes its final Particle Operation on any of its contracted positions, any
+Particle Operation from the action's caller that is waiting on that contracted
+position may immediately execute, without waiting for later statements in the
+action to complete.
+
+### Parallelism is not Mandatory
+
+The compiler is not required emit code that actually runs operations in parallel
+just because it would be safe to do so. It may choose whatever execution
+strategy it judges best, as long as it respects this specification.
+
 ## Starting Define Programs
 
 Proposals:
