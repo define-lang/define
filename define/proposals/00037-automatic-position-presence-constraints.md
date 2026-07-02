@@ -548,10 +548,6 @@ define the potential action<mv:example.com:example:/valid_direct_example> {
         move the particle in position<spare_item> to position<drawer>::action</store_in_slot>::position<item>.
         create a particle in position<drawer>::action</store_in_slot>::position<run>.
 
-        wait until {
-            NOT position<drawer>::action</store_in_slot>::position<run> has a particle.
-        }
-
         # This is valid because the action guarantees that the same particle
         # now exists in position</slot>.
         move the particle in position<drawer>::position</slot> to position<spare_item>.
@@ -723,10 +719,6 @@ define the potential action<mv:example.com:example:/prepare_slot> {
         create a particle in position</slot>.
         create a particle in action</clear_slot>::position<run>.
 
-        wait until {
-            NOT action</clear_slot>::position<run> has a particle.
-        }
-
         # clear_slot guaranteed that position</slot> is empty again.
         destroy the particle in position<run>.
     }
@@ -742,10 +734,6 @@ define the potential action<mv:example.com:example:/invalid_after_prepare> {
         the position<run> has a particle.
     } and it does {
         create a particle in action</prepare_slot>::position<run>.
-
-        wait until {
-            NOT action</prepare_slot>::position<run> has a particle.
-        }
 
         # Compiler error: prepare_slot guarantees that position</slot> is empty
         # when it finishes. That fact originated in clear_slot, but it chains
@@ -793,10 +781,6 @@ define the potential action<mv:example.com:example:/request_slot_clear> {
         # request_slot_clear does not satisfy clear_slot's requirement itself.
         # That means the requirement on position</slot> chains upward.
         create a particle in action</clear_slot>::position<run>.
-
-        wait until {
-            NOT action</clear_slot>::position<run> has a particle.
-        }
 
         destroy the particle in position<run>.
     }

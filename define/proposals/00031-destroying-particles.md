@@ -122,9 +122,8 @@ In the future, if the compiler is uncertain about whether a position still
 contains a particle, the compiler will insert code that only destroys particles
 in positions if there is a particle there.
 
-Hitting a `wait until` statement does _not_ count as exiting the Action
-Statements Block, and does not trigger automatic destruction. Automatic
-destruction occurs only when a position can no longer possibly be referenced.
+The overall principle is: automatic destruction occurs when a position can no
+longer possibly be referenced.
 
 ### Optimization of Destruction
 
@@ -166,9 +165,9 @@ contained in positions defined in the Action Definition Block, in reverse order
 of when the positions were defined. (Reverse the order in which the position
 definitions are written in the Action Definition Block.) Destroying these
 particles may not trigger the action that we are mid removing (but may trigger
-another action or `wait until` block). Once we start removing an action from a
-particle (and thus have to destroy the particles it defines) it may no longer
-trigger or check its conditions.
+another action). Once we start removing an action from a particle (and thus have
+to destroy the particles it defines) it may no longer trigger or check its
+conditions.
 
 Destruction completes as though it were a written series of unassignment and
 destruction statements in code to perform all necessary unassignments and all
@@ -307,21 +306,9 @@ define the potential action<mv:example.com:example:/run_program> {
         # We are a magical person who can clean the kitchen and make the bed simultaneously.
         create a particle in position<person>::action</make_bed>::position<do_it>.
 
-        # Note that the entry into a wait until section does not count as
-        # exiting the current action, so destruction does not yet occur.
-        wait until {
-            NOT the position<person>::action</clean_kitchen>::position<remember_to_clean> has a particle.
-            AND
-            the position<person>::action</make_bed>::position<bed> has a particle.
-        }
-
         # This triggers get_angry.
         destroy the particle in position<person>::action</make_bed>::position<bed>.
         create a particle in position<person>::action</make_bed>::position<do_it>.
-
-        wait until {
-            the position<person>::action</make_bed>::position<bed> has a particle.
-        }
 
         destroy the particle in position<person>::position</house>::position</bedroom>.
         # Now automatically, at the end of the action, here is what happens:
@@ -347,7 +334,7 @@ define the potential action<mv:example.com:example:/run_program> {
         #       until" block).
         # 2. Destruction of the particle in position<person> completes. If any
         #    actions were watching for position<person> to become empty, they would now
-        #    fire (though this could only be a "wait until" block.)
+        #    fire.
         # 3. The particle in position<dog> is destroyed, and any relevant trigger
         #    conditions check themselves.
         # 4. position<person> and position<dog> simultaneously cease to exist and may no

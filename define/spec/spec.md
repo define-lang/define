@@ -1041,7 +1041,6 @@ Action statements are:
 - move particle statements
 - destroy particle statements
 - quality assignment statements
-- `wait until` statements
 
 ```ebnf
 action_statements_contents = action_statement, { action_statement } ;
@@ -1377,8 +1376,8 @@ check its conditions.
 Destruction completes as though it were a written series of unassignment and
 destruction statements. Any action that triggers due to destruction of a child
 particle fires immediately after that child's destruction is complete. This
-means that a child particle's destruction may trigger an action asynchronously
-before the destruction of the parent particle is complete.
+means that a child particle's destruction may trigger an action before the
+destruction of the parent particle is complete.
 
 Actions that would trigger due to the removal of a quality from a particle do
 not fire due to the automatic quality removal process that happens during
@@ -1401,9 +1400,6 @@ The compiler behaves as through there were destruction statements at the end of
 an Action Statements Block to implement this. If the compiler is uncertain about
 whether a position still contains a particle, it only destroys the particle if
 one is present.
-
-Hitting a `wait until` statement does not count as exiting the Action Statements
-Block, and does not trigger automatic destruction.
 
 ### Optimization of Destruction
 
@@ -1448,12 +1444,6 @@ during the cascade and completes before the cascade continues.
 
 This is an exception to the rule that actions may not trigger during the
 cascade.
-
-### Actions Triggered by Destructors
-
-Any action triggered by a destructor still runs asynchronously, exactly as
-actions triggered during normal execution do. A destructor that depends on such
-an action completing must use `wait until`.
 
 ### Destructors Produce No Guarantees
 

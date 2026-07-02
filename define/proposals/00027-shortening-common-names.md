@@ -48,19 +48,10 @@ define the potential action<mv:example.com:bank:/do_transfers> {
         set the value in position<account2>::action<mv:example.com:bank:/account/deposit>::position<amount> to 50.
         create a particle in position<account2>::action<mv:example.com:bank:/account/deposit>::position<run>.
 
-        wait until {
-            the position<account1>::action<mv:example.com:bank:/account/deposit>::position<run> is empty.
-            AND
-            the position<account2>::action<mv:example.com:bank:/account/deposit>::position<run> is empty.
-        }
         create a particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
         set the value in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<amount> to 50.
         move the particle in position<account2> to position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to>.
         create a particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<run>.
-
-        wait until {
-            the position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<run> is empty.
-        }
 
         move the particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to> to position<account2>.
         create a particle in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
@@ -127,19 +118,10 @@ define the potential action<mv:example.com:bank:/do_transfers> {
         set the value in position<account2>::action</account/deposit>::position<amount> to 50.
         create a particle in position<account2>::action</account/deposit>::position<run>.
 
-        wait until {
-            the position<account1>::action</account/deposit>::position<run> is empty.
-            AND
-            the position<account2>::action</account/deposit>::position<run> is empty.
-        }
         create a particle in position<account1>::action</account/transfer_to>::position<amount>.
         set the value in position<account1>::action</account/transfer_to>::position<amount> to 50.
         move the particle in position<account2> to position<account1>::action</account/transfer_to>::position<to>.
         create a particle in position<account1>::action</account/transfer_to>::position<run>.
-
-        wait until {
-            the position<account1>::action</account/transfer_to>::position<run> is empty.
-        }
 
         move the particle in position<account1>::action</account/transfer_to>::position<to> to position<account2>.
         create a particle in position<account2>::action</account/transfer_to>::position<amount>.

@@ -19,14 +19,8 @@ Action Statement Blocks may create, move, and destroy particles.
 
 Action Statement Blocks may contain quality assignment statements.
 
-Action Statement Blocks may contain `wait until` statements.
-
 Conceptually, when executing an Action Statements Block, all the code is
-considered to execute instantaneously in sequence, up until it hits a
-`wait until` statement, at which point it waits for that condition to be true
-and then continues executing statements instantaneously in sequence. (This
-matters conceptually for paradox detection and how the compiler implements
-concurrency.)
+considered to execute instantaneously in sequence.
 
 ## A Real Program
 
@@ -68,16 +62,10 @@ define the potential action<mv:example.com:bank:/account/transfer_to> {
         set the value in action</account/withdraw>::position<amount> to position<amount>. # Imaginary syntax
         create a particle in action</account/withdraw>::position<run>.
 
-        wait until {
-            NOT action</account/withdraw>::position<run> has a particle.
-        }
         create a particle in position<to>::action</account/deposit>::position<amount>.
         set the value in position<to>::action</account/deposit>::position<amount> to position<amount>.
         create a particle in position<to>::action</account/deposit>::position<run>.
 
-        wait until {
-            NOT position<to>::action</account/deposit>::position<run> has a particle.
-        }
         destroy the particle in position<run>. # Imaginary syntax.
     }
 }

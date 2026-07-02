@@ -100,9 +100,6 @@ define the position<x> {
 create a particle in position<x>.
 create a particle in position<x>::position</temp_file>.
 create a particle in position<x>::action</temp_file/create>::position<run>.
-wait until {
-    the position<x>::action</temp_file/create>::position<completed> has a particle.
-}
 destroy the particle in position<x>.
 ```
 
@@ -235,14 +232,6 @@ cascade.
 
 For clarity, this means destructors will trigger in the reverse order they were
 assigned to a particle (the cascade inherently behaves that way).
-
-Any actions triggered _by_ a destructor are still run asynchronously. This means
-they must detect the paradox of attempting to work on positions that may be in
-the middle of being deleted. (Attempting to destroy a particle and do any other
-action to it simultaneously is a paradox.) In reality, this means that
-essentially all actions triggered during a destructor will require appropriate
-`wait until` blocks, because actions can only reference positions the action
-knows about (which are inherently positions assigned to this particle).
 
 Note that these semantics make constructors and destructors somewhat mirror each
 other: constructors run _after_ a particle is _created_, and destructors run
