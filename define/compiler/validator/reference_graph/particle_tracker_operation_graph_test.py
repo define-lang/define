@@ -34,7 +34,7 @@ def _kinds(
 
 
 def _deps(tracker: particle_tracker.ParticleTracker, node_id: int) -> list[int]:
-    return list(tracker.operation_graph.dependency_identifiers(node_id))
+    return list(tracker.operation_graph.nodes[node_id].depends_on)
 
 
 def test_body_chain_depends_in_order():

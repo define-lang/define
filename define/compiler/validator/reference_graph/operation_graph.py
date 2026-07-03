@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -37,6 +37,9 @@ class OperationNode:
     target: ast.PositionReference
     # MOVE only: the particle's source position.
     source: ast.PositionReference | None = None
+    # The ids of the operations this node directly depends on (the operations
+    # that must complete before it).
+    depends_on: list[int] = field(default_factory=list)
 
 
 class OperationGraph:
@@ -44,11 +47,7 @@ class OperationGraph:
 
     def __init__(self):
         """Create an empty graph."""
-        # _nodes and _dependencies are parallel, both indexed by node id.
         self._nodes: list[OperationNode] = []
-        # For each node, the ids of the operations it directly depends on (the
-        # operations that must complete before it).
-        self._dependencies: list[list[int]] = []
         # A position's canonical chained name -> id of the last operation on it,
         # for every position the body touches.
         self._last_operation: dict[tuple[str, ...], int] = {}
@@ -57,10 +56,6 @@ class OperationGraph:
     def nodes(self) -> Sequence[OperationNode]:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
-
-    def dependency_identifiers(self, identifier: int) -> Sequence[int]:
-        """Return the identifiers this node directly depends on."""
-        return self._dependencies[identifier]
 
     def last_operation_identifier_for_key(self, key: tuple[str, ...]) -> int | None:
         """Return the last operation recorded under exactly this key, if any."""
@@ -82,7 +77,6 @@ class OperationGraph:
                 source=source,
             )
         )
-        self._dependencies.append([])
         return identifier
 
     def _add_dependencies(
@@ -113,7 +107,7 @@ class OperationGraph:
             child = self._last_operation.get(child_key)
             if child is not None:
                 dependencies.add(child)
-        self._dependencies[identifier] = sorted(dependencies)
+        self._nodes[identifier].depends_on.extend(sorted(dependencies))
 
     def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""

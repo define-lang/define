@@ -23,7 +23,7 @@ def _key(*names: str) -> tuple[str, ...]:
 
 
 def _deps(graph: operation_graph.OperationGraph, identifier: int) -> set[int]:
-    return set(graph.dependency_identifiers(identifier))
+    return set(graph.nodes[identifier].depends_on)
 
 
 def test_same_key_chain():
