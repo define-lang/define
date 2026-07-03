@@ -250,6 +250,20 @@ class StrictReparentingTrie[V]:
                 stack.append((full_child, relative_child))
         return result
 
+    def subtree_keys(self, key: TrieKey) -> list[TrieKey]:
+        """Return the full key of every descendant of key; key itself is excluded."""
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        result: list[TrieKey] = []
+        stack = [key]
+        while stack:
+            node = stack.pop()
+            for segment in self._children.get(node, ()):
+                child = (*node, segment)
+                result.append(child)
+                stack.append(child)
+        return result
+
     def existing_prefix(self, key: TrieKey) -> TrieKey:
         """Return the longest prefix of key whose nodes all exist in the trie."""
         if not key:
