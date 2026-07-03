@@ -115,20 +115,19 @@ class OperationGraph:
                 dependencies.add(child)
         self._dependencies[identifier] = sorted(dependencies)
 
-    def record_create(self, target: ast.PositionReference) -> int:
+    def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
         identifier = self._add_node(OperationKind.CREATE, target)
         self._add_dependencies(identifier, (key,))
         self._last_operation[key] = identifier
-        return identifier
 
     def record_move(
         self,
         source: ast.PositionReference,
         target: ast.PositionReference,
         previously_touched_child_positions: Iterable[tuple[str, ...]],
-    ) -> int:
+    ):
         """Record a body move from ``source`` to ``target``.
 
         ``previously_touched_child_positions`` are the keys in the source's trie
@@ -142,13 +141,12 @@ class OperationGraph:
         )
         self._last_operation[source_key] = identifier
         self._last_operation[target_key] = identifier
-        return identifier
 
     def record_destroy(
         self,
         target: ast.PositionReference,
         previously_touched_child_positions: Iterable[tuple[str, ...]],
-    ) -> int:
+    ):
         """Record a destroy of ``target``.
 
         The single node covers the whole cascade: everything the destroy also
@@ -159,4 +157,3 @@ class OperationGraph:
         identifier = self._add_node(OperationKind.DESTROY, target)
         self._add_dependencies(identifier, (key,), previously_touched_child_positions)
         self._last_operation[key] = identifier
-        return identifier

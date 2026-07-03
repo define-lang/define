@@ -122,9 +122,21 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":operation_graph",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_test(
+    name = "particle_tracker_operation_graph_test",
+    size = "small",
+    srcs = ["particle_tracker_operation_graph_test.py"],
+    deps = [
+        ":operation_graph",
+        ":particle_tracker",
+        "//define/compiler:ast",
     ],
 )
 
@@ -210,6 +222,7 @@ pyright_test(
         ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",
+        ":particle_tracker_operation_graph_test",
         ":particle_tracker_test",
         ":reference_graph",
         ":reference_graph_validator",

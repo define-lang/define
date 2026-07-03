@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.data_structures import trie
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -354,10 +354,11 @@ class _ParticleStateStore:
         Must run after the state subtree has moved to ``to_key``: it mirrors that
         move.
         """
-        for relative_key, _node in self._state.subtree_items(to_key):
-            record = self._write_record.pop(from_key + relative_key, None)
+        to_length = len(to_key)
+        for new_key in self._state.subtree_keys(to_key):
+            record = self._write_record.pop(from_key + new_key[to_length:], None)
             if record is not None:
-                self._write_record[to_key + relative_key] = record
+                self._write_record[new_key] = record
 
 
 class ParticleTracker:
@@ -370,6 +371,14 @@ class ParticleTracker:
         # Monotonic body-operation counter, advanced once per body mutation and
         # once per trigger.
         self._body_operation_number: int = 0
+        self._operation_graph: operation_graph.OperationGraph = (
+            operation_graph.OperationGraph()
+        )
+
+    @property
+    def operation_graph(self) -> operation_graph.OperationGraph:
+        """The DLP 44 dependency graph of this action's body operations."""
+        return self._operation_graph
 
     def _ensure_action_parent(self, key: tuple[str, ...]):
         """Create the action intermediate trie node if needed."""
@@ -486,6 +495,9 @@ class ParticleTracker:
         existing = self._store.state.get(key)
         if existing is not None and existing.particle_info is not None:
             raise ValueError(f"position {key} is already occupied")
+        # Only a body create becomes a node in the operation graph.
+        if from_caller is None:
+            self._operation_graph.record_create(in_position)
         info = ParticleInfo(
             last_position=in_position,
             qualities=qualities,
@@ -508,6 +520,10 @@ class ParticleTracker:
         existing = self._store.state.get(key)
         if existing is None or existing.particle_info is None:
             raise ValueError(f"position {key} is not occupied")
+        # Record before the subtree is deleted, so graph dependencies see the children.
+        self._operation_graph.record_destroy(
+            in_position, self._store.state.subtree_keys(key)
+        )
         del self._store.state[key]
         # Destroying puts all children back into a known state (they don't exist).
         if key in self._store.error:
@@ -540,6 +556,10 @@ class ParticleTracker:
                 f"cannot move between positions with error state: {from_key} -> {to_key}"
             )
         self._ensure_action_parent(to_key)
+        # Record before move_subtree relocates the children, so graph dependencies see them.
+        self._operation_graph.record_move(
+            source, target, self._store.state.subtree_keys(from_key)
+        )
         # Both positions are touched by this one move statement, so they share a
         # body operation number.
         self._record_body_write(from_key)
