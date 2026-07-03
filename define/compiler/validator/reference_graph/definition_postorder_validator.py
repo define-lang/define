@@ -198,7 +198,7 @@ class ActionPostorderValidator:
         # situation where one triggered action creates an EmptyGuarantee and
         # another action or caller tries to then destroy / move from that same
         # position.
-        if self._tracker.has_been_touched(requirement_key):
+        if self._tracker.has_been_touched(contracted_position):
             return
         self._inferred_requirements[requirement_key] = (
             action_contract.PositionRequirement(
@@ -265,16 +265,15 @@ class ActionPostorderValidator:
         """Return the parent particle's contracted-position origin chain if it came from the caller."""
         if parent is None:
             return None
-        parent_key = parent.canonical_chained_name_tuple
         # This check is necessary because we have to run _maybe_infer_requirement
         # before the executor runs its parent-occupancy check, so we can run into
         # situations where the developer has written a statement that operates on
         # the child of a non-existent particle. The executor's parent check
         # will later detect this situation, emit a diagnostic, and mark the
         # relevant position error.
-        if not self._tracker.is_occupied_by_key(parent_key):
+        if not self._tracker.is_occupied(parent):
             return None
-        particle_info = self._tracker.get_occupant_by_key(parent_key)
+        particle_info = self._tracker.get_occupant(parent)
         if not particle_info.from_caller:
             return None
         return particle_info.origin_position
@@ -626,12 +625,11 @@ class ActionPostorderValidator:
         destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
-        key = full_caller_chain.canonical_chained_name_tuple
-        if self._tracker.has_error_state_by_key(key):
+        if self._tracker.has_error_state(full_caller_chain):
             return
         occupant = (
-            self._tracker.get_occupant_by_key(key)
-            if self._tracker.is_occupied_by_key(key)
+            self._tracker.get_occupant(full_caller_chain)
+            if self._tracker.is_occupied(full_caller_chain)
             else None
         )
         empty_violation = (

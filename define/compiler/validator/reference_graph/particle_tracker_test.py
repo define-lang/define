@@ -579,9 +579,8 @@ def test_apply_guarantees_empty():
         [(("position<item>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
     )
 
-    key = (*_ACTION_KEY_PREFIX, "position<item>")
-    assert tracker.is_occupied_by_key(key) is False
-    assert tracker.has_error_state_by_key(key) is False
+    assert tracker.is_occupied(ref) is False
+    assert tracker.has_error_state(ref) is False
 
 
 def test_apply_guarantees_occupied_by_new():
@@ -606,9 +605,8 @@ def test_apply_guarantees_occupied_by_new():
         ],
     )
 
-    key = (*_ACTION_KEY_PREFIX, "position<item>")
-    assert tracker.is_occupied_by_key(key) is True
-    occupant = tracker.get_occupant_by_key(key)
+    assert tracker.is_occupied(ref) is True
+    occupant = tracker.get_occupant(ref)
     assert occupant.last_position.location == _LOC2
     assert occupant.qualities == (_make_global_ref("/x"),)
     assert occupant.origin_position is _POS2_REF
@@ -653,9 +651,11 @@ def test_apply_guarantees_occupied_by_existing():
         ],
     )
 
-    dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
-    assert tracker.is_occupied_by_key(dest_key) is True
-    occupant = tracker.get_occupant_by_key(dest_key)
+    dest_ref = _make_position_ref(
+        [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("dest")]
+    )
+    assert tracker.is_occupied(dest_ref) is True
+    occupant = tracker.get_occupant(dest_ref)
     assert occupant.last_position.location == _LOC2
     assert occupant.qualities == (_make_global_ref("/q"),)
     assert occupant.origin_position is item_ref
@@ -697,15 +697,16 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
         ],
     )
 
-    new_child_key = (
-        *_ACTION_KEY_PREFIX,
-        "position<dest>",
-        "position<my.domain.com:my_lib:/child>",
+    new_child_ref = _make_position_ref(
+        [
+            _make_local_ref("box"),
+            _make_action_ref("/other"),
+            _make_local_ref("dest"),
+            _make_global_ref("/child"),
+        ]
     )
-    assert tracker.is_occupied_by_key(new_child_key) is True
-    assert tracker.get_occupant_by_key(new_child_key).qualities == (
-        _make_global_ref("/r"),
-    )
+    assert tracker.is_occupied(new_child_ref) is True
+    assert tracker.get_occupant(new_child_ref).qualities == (_make_global_ref("/r"),)
 
 
 def test_apply_guarantees_occupied_by_existing_swap():
@@ -764,33 +765,33 @@ def test_apply_guarantees_occupied_by_existing_swap():
         ],
     )
 
-    dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
-    assert tracker.is_occupied_by_key(dest_key) is True
-    assert tracker.get_occupant_by_key(dest_key).qualities == (_make_global_ref("/q"),)
+    assert tracker.is_occupied(dest_ref) is True
+    assert tracker.get_occupant(dest_ref).qualities == (_make_global_ref("/q"),)
 
-    new_child_a_key = (
-        *_ACTION_KEY_PREFIX,
-        "position<dest>",
-        "position<my.domain.com:my_lib:/child_a>",
+    new_child_a_ref = _make_position_ref(
+        [
+            _make_local_ref("box"),
+            _make_action_ref("/other"),
+            _make_local_ref("dest"),
+            _make_global_ref("/child_a"),
+        ]
     )
-    assert tracker.is_occupied_by_key(new_child_a_key) is True
-    assert tracker.get_occupant_by_key(new_child_a_key).qualities == (
-        _make_global_ref("/r"),
-    )
+    assert tracker.is_occupied(new_child_a_ref) is True
+    assert tracker.get_occupant(new_child_a_ref).qualities == (_make_global_ref("/r"),)
 
-    item_key = (*_ACTION_KEY_PREFIX, "position<item>")
-    assert tracker.is_occupied_by_key(item_key) is True
-    assert tracker.get_occupant_by_key(item_key).qualities == (_make_global_ref("/s"),)
+    assert tracker.is_occupied(item_ref) is True
+    assert tracker.get_occupant(item_ref).qualities == (_make_global_ref("/s"),)
 
-    new_child_b_key = (
-        *_ACTION_KEY_PREFIX,
-        "position<item>",
-        "position<my.domain.com:my_lib:/child_b>",
+    new_child_b_ref = _make_position_ref(
+        [
+            _make_local_ref("box"),
+            _make_action_ref("/other"),
+            _make_local_ref("item"),
+            _make_global_ref("/child_b"),
+        ]
     )
-    assert tracker.is_occupied_by_key(new_child_b_key) is True
-    assert tracker.get_occupant_by_key(new_child_b_key).qualities == (
-        _make_global_ref("/t"),
-    )
+    assert tracker.is_occupied(new_child_b_ref) is True
+    assert tracker.get_occupant(new_child_b_ref).qualities == (_make_global_ref("/t"),)
 
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
@@ -819,9 +820,11 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
         ],
     )
 
-    dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
-    assert tracker.has_error_state_by_key(dest_key) is True
-    assert tracker.is_occupied_by_key(dest_key) is False
+    dest_ref = _make_position_ref(
+        [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("dest")]
+    )
+    assert tracker.has_error_state(dest_ref) is True
+    assert tracker.is_occupied(dest_ref) is False
 
 
 def test_apply_guarantees_error():
@@ -839,9 +842,8 @@ def test_apply_guarantees_error():
         [(("position<item>",), action_contract.ErrorGuarantee(caused_by=_POS2_REF))],
     )
 
-    key = (*_ACTION_KEY_PREFIX, "position<item>")
-    assert tracker.has_error_state_by_key(key) is True
-    assert tracker.is_occupied_by_key(key) is False
+    assert tracker.has_error_state(ref) is True
+    assert tracker.is_occupied(ref) is False
 
 
 def test_apply_guarantees_does_not_touch_unmentioned_positions():

@@ -411,33 +411,25 @@ class ParticleTracker:
 
     def has_error_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position or any ancestor has error occupancy state."""
-        return self.has_error_state_by_key(in_position.canonical_chained_name_tuple)
-
-    def has_error_state_by_key(self, key: tuple[str, ...]) -> bool:
-        """Return whether a position or any ancestor has error occupancy state."""
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_error_in_chain(key)
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
-        return self.is_occupied_by_key(in_position.canonical_chained_name_tuple)
-
-    def is_occupied_by_key(self, key: tuple[str, ...]) -> bool:
-        """Return whether a particle exists at this position, by raw key."""
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.is_occupied(key)
 
-    def has_been_touched(self, key: tuple[str, ...]) -> bool:
+    def has_been_touched(self, in_position: ast.PositionReference) -> bool:
         """Return whether a guarantee or particle statement has decided this position's state."""
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_been_touched(key)
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
-        return self.get_occupant_by_key(in_position.canonical_chained_name_tuple)
-
-    def get_occupant_by_key(self, key: tuple[str, ...]) -> ParticleInfo:
-        """Return the info for the particle at this position, by raw key."""
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.occupant(key)
 
@@ -527,10 +519,7 @@ class ParticleTracker:
         self, position: ast.PositionReference
     ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if any."""
-        return self.get_emptied_by_key(position.canonical_chained_name_tuple)
-
-    def get_emptied_by_key(self, key: tuple[str, ...]) -> ast.PositionReference | None:
-        """Return the position reference that emptied this position, by raw key."""
+        key = position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.emptied_by(key)
 
@@ -544,7 +533,9 @@ class ParticleTracker:
         to_key = target.canonical_chained_name_tuple
         self._fully_resolve_pending_guarantees(from_key)
         self._apply_pending_guarantees_up_to(to_key)
-        if self.has_error_state_by_key(from_key) or self.has_error_state_by_key(to_key):
+        if self._store.has_error_in_chain(from_key) or self._store.has_error_in_chain(
+            to_key
+        ):
             raise RuntimeError(
                 f"cannot move between positions with error state: {from_key} -> {to_key}"
             )
