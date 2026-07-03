@@ -67,6 +67,17 @@ def test_destroy_depends_on_touched_children():
     assert _deps(tracker, 2) == [0, 1]
 
 
+def test_destroy_depends_on_grandchildren():
+    tracker = particle_tracker.ParticleTracker()
+    tracker.create(_ref("box"), ())
+    tracker.create(_ref("box", "inner"), ())
+    tracker.create(_ref("box", "inner", "deep"), ())
+    tracker.destroy(_ref("box"))
+    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _DESTROY]
+    # subtree_keys hands the destroy the child (1) and the grandchild (2).
+    assert _deps(tracker, 3) == [0, 1, 2]
+
+
 def test_move_carries_child_transitively():
     tracker = particle_tracker.ParticleTracker()
     tracker.create(_ref("box"), ())
@@ -79,6 +90,21 @@ def test_move_carries_child_transitively():
     # basket::inner is recorded under its pre-move name, so the destroy reaches
     # it only transitively through the move node.
     assert _deps(tracker, 3) == [2]
+
+
+def test_move_carries_grandchild_subtree():
+    tracker = particle_tracker.ParticleTracker()
+    tracker.create(_ref("box"), ())
+    tracker.create(_ref("box", "inner"), ())
+    tracker.create(_ref("box", "inner", "deep"), ())
+    tracker.move(_ref("box"), _ref("basket"))
+    tracker.destroy(_ref("basket"))
+    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _MOVE, _DESTROY]
+    # The move pulls in the whole carried subtree: child (1) and grandchild (2).
+    assert _deps(tracker, 3) == [0, 1, 2]
+    # The carried subtree keeps its pre-move keys, so the destroy of the
+    # moved-to parent reaches it only through the move node.
+    assert _deps(tracker, 4) == [3]
 
 
 def test_from_caller_create_is_a_graph_root():
