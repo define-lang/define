@@ -134,6 +134,7 @@ py_test(
     size = "small",
     srcs = ["particle_tracker_operation_graph_test.py"],
     deps = [
+        ":action_contract",
         ":operation_graph",
         ":particle_tracker",
         "//define/compiler:ast",

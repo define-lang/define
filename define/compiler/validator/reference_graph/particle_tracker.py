@@ -104,6 +104,13 @@ class _PendingGuarantee:
     # All of a triggered contract's guarantees (own and nested) carry it, so a
     # body statement that executes later supersedes them.
     body_operation_number: int
+    # DLP 44: the operation-graph node of the caller op that fired this trigger.
+    # Each contracted position the guarantee touches has its last operation
+    # pointed here, so the caller's later ops on it chain via rule 1. Nested
+    # children inherit it verbatim (the whole callee subtree happens, from the
+    # caller's view, at the one trigger node). None when the trigger op was never
+    # recorded (e.g. tests that apply guarantees without a preceding body op).
+    trigger_node_id: int | None
     # Call-chain depth from the directly-applied contract: its own guarantees
     # are depth 0; each nested guarantee is one deeper. Within a single trigger
     # (same sequence) a shallower guarantee outranks a deeper one it resolved.
@@ -753,18 +760,17 @@ class ParticleTracker:
 
     def _position_was_touched(self, key: tuple[str, ...]) -> bool:
         """Whether the action ever touched ``key``."""
-        return self._operation_graph.last_operation_identifier_for_key(
+        return self._operation_graph.last_operation_node_id_for_key(
             key
         ) is not None or self._store.ever_set_by_callee(key)
 
     def apply_guarantees(
         self,
-        parent_chain: ast.ChainedName,
+        action_chain: ast.ActionReference,
         guarantees: action_contract.Guarantees,
+        acting_on_position: ast.PositionReference,
     ) -> action_contract.NestedGuarantees:
         """Apply the guarantees for a triggered action.
-
-        ``parent_chain`` is a triggered action's chain.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.
@@ -772,24 +778,39 @@ class ParticleTracker:
         Returns a nested guarantee for this action to record.
         """
         self._body_operation_number += 1
-        parent_chain_key = parent_chain.canonical_chained_name_tuple
+        action_chain_key = action_chain.canonical_chained_name_tuple
+        trigger_node_id = self._operation_graph.last_operation_node_id_for_key(
+            acting_on_position.canonical_chained_name_tuple
+        )
         callee_guarantees = _PendingGuarantee(
-            parent_chain_key, guarantees, self._body_operation_number
+            action_chain_key,
+            guarantees,
+            self._body_operation_number,
+            trigger_node_id,
         )
         self._apply_pending_guarantee(callee_guarantees)
+        if trigger_node_id is not None:
+            self._operation_graph.record_action_trigger(trigger_node_id, action_chain)
         return action_contract.NestedGuarantees(
-            triggered_action=parent_chain_key, guarantees=guarantees
+            triggered_action=action_chain_key, guarantees=guarantees
         )
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
-        """Apply a callee's own guarantees; prefix its own nested guarantees one position deeper."""
-        self._update_store_from_callee_direct_guarantees(pending_guarantee)
+        """Apply a callee's own guarantees and record each key it wrote against the trigger; prefix its own nested guarantees one position deeper."""
+        touched_positions = self._update_store_from_callee_direct_guarantees(
+            pending_guarantee
+        )
+        if pending_guarantee.trigger_node_id is not None:
+            self._operation_graph.record_guarantees(
+                pending_guarantee.trigger_node_id, touched_positions
+            )
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
             child_nested_guarantee = _PendingGuarantee(
                 child_position,
                 child.guarantees,
                 pending_guarantee.body_operation_number,
+                pending_guarantee.trigger_node_id,
                 pending_guarantee.call_chain_depth + 1,
             )
             self._pending.add(child_nested_guarantee)
@@ -807,8 +828,10 @@ class ParticleTracker:
 
     def _update_store_from_callee_direct_guarantees(
         self, pending_guarantee: _PendingGuarantee
-    ):
+    ) -> list[tuple[str, ...]]:
+        """Apply a callee's own guarantees; return the keys it wrote, in order."""
         guarantees = pending_guarantee.guarantees.own
+        touched_positions: list[tuple[str, ...]] = []
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
@@ -850,6 +873,8 @@ class ParticleTracker:
                     guarantee, action_contract.OccupiedByExistingGuarantee
                 ),
             )
+
+            touched_positions.append(key)
 
             if key in origin_keys:
                 # Save-before-overwrite: if this key is an origin for a later
@@ -907,6 +932,8 @@ class ParticleTracker:
                     pass
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
+
+        return touched_positions
 
     def _check_key_exists_for_guarantee(
         self,
