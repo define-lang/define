@@ -140,7 +140,7 @@ class _PendingGuarantee:
 #
 # Deferring the resolution of guarantees keeps each contract at a size of
 # O(own guarantees + F references) and only materializes the guarantees a
-# specific callee actually depends on.
+# specific caller actually depends on directly in their code.
 class _PendingNestedGuarantees:
     """A prefix multimap of nested guarantees, keyed by a position prefix.
 
