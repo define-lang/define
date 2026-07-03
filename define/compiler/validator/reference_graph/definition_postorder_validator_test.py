@@ -293,14 +293,22 @@ class TestGuaranteeGeneration:
         contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
-        assert len(contract.guarantees.own) == 1
-        assert contract.guarantees.own[0][0] == ("position<dest>",)
-        guarantee_dest = contract.guarantees.own[0][1]
-        assert isinstance(guarantee_dest, action_contract.OccupiedByNewGuarantee)
-        assert guarantee_dest.qualities == ()
-        assert guarantee_dest.caused_by.location.line == 9
-        assert guarantee_dest.caused_by.location.column == 48
-        assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
+        assert len(contract.guarantees.own) == 2
+        # position<item> was created and moved away: it ends empty, as required,
+        # but the body touched it, so it is guaranteed unchanged.
+        item_key, item_guarantee = contract.guarantees.own[0]
+        assert item_key == ("position<item>",)
+        assert isinstance(item_guarantee, action_contract.UnchangedGuarantee)
+        assert item_guarantee.caused_by.location.line == 9
+        assert item_guarantee.caused_by.location.column == 30
+        assert item_guarantee.caused_by.source_chained_name == "position<item>"
+        dest_key, dest_guarantee = contract.guarantees.own[1]
+        assert dest_key == ("position<dest>",)
+        assert isinstance(dest_guarantee, action_contract.OccupiedByNewGuarantee)
+        assert dest_guarantee.qualities == ()
+        assert dest_guarantee.caused_by.location.line == 9
+        assert dest_guarantee.caused_by.location.column == 48
+        assert dest_guarantee.caused_by.source_chained_name == "position<dest>"
 
     def test_created_particle_is_new(self):
         source = (
@@ -662,7 +670,7 @@ class TestChainedGuaranteeGeneration:
         assert guarantee.caused_by.location.column == 47
         assert guarantee.caused_by.source_chained_name == "position<dest>::position</x>"
 
-    def test_move_from_chain_away_and_back_preserves_existing_origin(self):
+    def test_move_from_chain_away_and_back_emits_unchanged(self):
         source = (
             "define the potential position<my.domain.com:my_lib:/x>.\n"
             "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -684,7 +692,15 @@ class TestChainedGuaranteeGeneration:
         contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
-        assert contract.guarantees.own == []
+        assert len(contract.guarantees.own) == 2
+        # position<tmp> is an interface scratch position moved through and left
+        # empty: touched but unchanged. It sorts first (shorter key).
+        tmp_key, tmp_guarantee = contract.guarantees.own[0]
+        assert tmp_key == ("position<tmp>",)
+        assert isinstance(tmp_guarantee, action_contract.UnchangedGuarantee)
+        chain_key, chain_guarantee = contract.guarantees.own[1]
+        assert chain_key == ("position<item>", "position<my.domain.com:my_lib:/x>")
+        assert isinstance(chain_guarantee, action_contract.UnchangedGuarantee)
 
     def test_chain_guarantee_qualities(self):
         source = (
@@ -741,7 +757,7 @@ class TestNoOpGuaranteeSuppression:
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
-    def test_empty_guarantee_suppressed_for_inferred_empty_position(self):
+    def test_unchanged_guarantee_for_touched_inferred_empty_position(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -761,7 +777,10 @@ class TestNoOpGuaranteeSuppression:
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
         )
-        assert contract.guarantees.own == []
+        assert len(contract.guarantees.own) == 1
+        key, guarantee = contract.guarantees.own[0]
+        assert key == ("position<item>",)
+        assert isinstance(guarantee, action_contract.UnchangedGuarantee)
 
     def test_empty_guarantee_emitted_for_inferred_occupied_position(self):
         source = (
@@ -790,7 +809,7 @@ class TestNoOpGuaranteeSuppression:
         assert guarantee.caused_by.location.column == 33
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
-    def test_move_iface_to_local_and_back_emits_no_guarantee(self):
+    def test_move_iface_to_local_and_back_emits_unchanged(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -811,7 +830,10 @@ class TestNoOpGuaranteeSuppression:
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.OCCUPIED
         )
-        assert contract.guarantees.own == []
+        assert len(contract.guarantees.own) == 1
+        key, guarantee = contract.guarantees.own[0]
+        assert key == ("position<item>",)
+        assert isinstance(guarantee, action_contract.UnchangedGuarantee)
 
     def test_trigger_guarantee_emitted_when_trigger_moves(self):
         source = (

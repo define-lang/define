@@ -231,6 +231,11 @@ class OccupiedByNewGuarantee(PositionGuarantee):
 
 
 @dataclass(frozen=True)
+class UnchangedGuarantee(PositionGuarantee):
+    """The action operated on the position but left it in the same state it was in at the start of the action."""
+
+
+@dataclass(frozen=True)
 class ErrorGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 

@@ -92,6 +92,100 @@ class TestActionTriggering:
         assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
+    def test_refilling_destroyed_trigger_position_retriggers(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a particle.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<gateway>.\n"
+                    "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                    "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a particle.\n"
+                    "    } and it does {\n"
+                    "        destroy the particle in position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER), (_TEST, _OTHER)]
+
+    def test_moving_between_two_trigger_positions_fires_both(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    define the position<gateway_other> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    define the position<gateway_b> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a particle.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<gateway_other>.\n"
+                    "        create a particle in position<gateway_b>.\n"
+                    "        create a particle in position<gateway_other>::action</other>::position<trigger_pos>.\n"
+                    "        move the particle in position<gateway_other>::action</other>::position<trigger_pos> to position<gateway_b>::action</act_b>::position<trigger_b>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<trigger_b>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_b> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER), (_TEST, _ACT_B)]
+
     def test_move_from_trigger_position_to_itself_does_not_retrigger(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,

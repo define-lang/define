@@ -368,6 +368,47 @@ def test_post_trigger_trigger_position_stays_occupied(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
+def test_post_trigger_untouched_trigger_allows_move_from(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An action that leaves its trigger untouched keeps the caller's particle, so the caller can move it out."""
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<box>::action</other>::position<trigger_pos> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+    assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
+
+
 def test_second_trigger_cycle_after_guarantee_empties_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

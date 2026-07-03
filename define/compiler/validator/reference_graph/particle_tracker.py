@@ -207,7 +207,7 @@ class _ParticleStateStore:
 
     Each position that gets touched during an Action Statements Block also
     carries a _WriteRecord that tells us about the order in which the operation
-    was performned and whether this particle came from a guarantee or was performed
+    was performed and whether this particle came from a guarantee or was performed
     directly. (This is necessary to generate ```action_contract.Guarantees``` for
     the action.)
 
@@ -703,49 +703,59 @@ class ParticleTracker:
         key: tuple[str, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> action_contract.PositionGuarantee | None:
-        """Build a guarantee from the current tracker state, or None for no-ops.
+        """Build a guarantee describing the current tracker state, or None for no-ops.
 
-        Returns None when the guarantee would describe state identical to the
-        action's starting state: a from-caller particle that never left its origin,
-        or an empty position that was inferred-empty at the start and never set by
-        a callee (with one exception: see the docstring of _WriteRecord.ever_set_by_callee).
+        A position whose state is identical to the action's starting state, but
+        that the action operated on, gets an UnchangedGuarantee. A position that
+        was left in its starting state without ever being touched produces None (this
+        can only happen to the trigger position of an action).
         """
         error_state = self._store.error.get(key)
         if error_state is not None and error_state.caused_by is not None:
             return action_contract.ErrorGuarantee(caused_by=error_state.caused_by)
+
         state = self._store.state.get(key)
         if state is not None and state.particle_info is not None:
             info = state.particle_info
-            if info.from_caller:
-                if key == info.origin_position.canonical_chained_name_tuple:
-                    return None
+            if not info.from_caller:
+                return action_contract.OccupiedByNewGuarantee(
+                    qualities=info.qualities,
+                    caused_by=info.last_position,
+                )
+            if key != info.origin_position.canonical_chained_name_tuple:
                 return action_contract.OccupiedByExistingGuarantee(
                     origin_position=info.origin_position,
                     caused_by=info.last_position,
                 )
-            return action_contract.OccupiedByNewGuarantee(
-                qualities=info.qualities,
-                caused_by=info.last_position,
-            )
+            # The caller's particle is right where it started.
+            if self._position_was_touched(key):
+                return action_contract.UnchangedGuarantee(caused_by=info.last_position)
+            # A trigger position was never touched inside the action.
+            #
+            # TODO: Should we simply require people to always touch the trigger
+            # position? It eliminates a lot of "more than one way to do it."
+            return None
+
         caused_by = state.emptied_by if state is not None else None
         if caused_by is None:
             raise ValueError(f"no caused_by for empty position {key}")
         requirement = requirements.get(key)
-
         if (
             requirement is not None
             and requirement.required_state
             == action_contract.PositionOccupancyState.EMPTY
-            # A callee that filled this key and then had it emptied still needs the
-            # EmptyGuarantee emitted, to override the callee's lingering fill
-            # guarantee (see _WriteRecord.ever_set_by_callee).
-            #
-            # TODO: I find this inconsistency frustrating but haven't been able
-            # to yet reason through a better solution.
-            and not self._store.ever_set_by_callee(key)
         ):
-            return None
+            # A required-empty requirement is only inferred from operating on the
+            # position, so a required-empty position that ends empty was always
+            # touched and so gets an UnchangedGuarantee.
+            return action_contract.UnchangedGuarantee(caused_by=caused_by)
         return action_contract.EmptyGuarantee(caused_by=caused_by)
+
+    def _position_was_touched(self, key: tuple[str, ...]) -> bool:
+        """Whether the action ever touched ``key``."""
+        return self._operation_graph.last_operation_identifier_for_key(
+            key
+        ) is not None or self._store.ever_set_by_callee(key)
 
     def apply_guarantees(
         self,
@@ -856,11 +866,15 @@ class ParticleTracker:
                     saved_state[key] = self._store.state.pop_subtree(key)
                 if key in self._store.error:
                     saved_error[key] = self._store.error.pop_subtree(key)
-            elif key in self._store.state:
+            elif key in self._store.state and not isinstance(
+                guarantee, action_contract.UnchangedGuarantee
+            ):
                 # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
                 # or creates in position<item> (OccupiedByNewGuarantee), any children
                 # the caller had under position<item> must disappear. We achieve this
                 # by deleting each key's entire subtree before applying its guarantee.
+                # An UnchangedGuarantee leaves the caller's state as it found it, so
+                # it keeps whatever subtree is there.
                 del self._store.state[key]
                 if key in self._store.error:
                     del self._store.error[key]
@@ -885,6 +899,12 @@ class ParticleTracker:
                     self._store.state[key] = _NodeState(particle_info=new_info)
                 case action_contract.ErrorGuarantee():
                     self._store.error[key] = _ErrorState(caused_by=guarantee.caused_by)
+                case action_contract.UnchangedGuarantee():
+                    # The position is unchanged from its entry state, which the
+                    # caller's store already reflects (the cleanup above kept any
+                    # occupant). The write record above still supersedes a
+                    # conflicting nested guarantee.
+                    pass
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 

@@ -908,7 +908,7 @@ def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
     assert occupied_guarantee.caused_by.location == _LOC2
 
 
-def test_generate_own_guarantees_skips_empty_when_inferred_empty():
+def test_generate_own_guarantees_emits_unchanged_for_touched_inferred_empty():
     tracker = particle_tracker.ParticleTracker()
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
@@ -922,7 +922,12 @@ def test_generate_own_guarantees_skips_empty_when_inferred_empty():
         )
     }
 
-    assert tracker.generate_own_guarantees((x_name,), (), requirements) == []
+    guarantees = tracker.generate_own_guarantees((x_name,), (), requirements)
+
+    assert len(guarantees) == 1
+    key, guarantee = guarantees[0]
+    assert key == ("position<x>",)
+    assert isinstance(guarantee, action_contract.UnchangedGuarantee)
 
 
 def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
