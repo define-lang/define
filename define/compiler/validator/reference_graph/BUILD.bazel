@@ -87,6 +87,25 @@ py_library(
 )
 
 py_library(
+    name = "operation_graph",
+    srcs = ["operation_graph.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+    ],
+)
+
+py_test(
+    name = "operation_graph_test",
+    size = "small",
+    srcs = ["operation_graph_test.py"],
+    deps = [
+        ":operation_graph",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "particle_operation",
     srcs = ["particle_operation.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -187,6 +206,8 @@ pyright_test(
         ":definition_postorder_validator",
         ":definition_postorder_validator_destruction_contract_test",
         ":definition_postorder_validator_test",
+        ":operation_graph",
+        ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",
         ":particle_tracker_test",
