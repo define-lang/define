@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
+    from define.compiler.validator.reference_graph import operation_graph
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
@@ -58,6 +59,9 @@ class DefinitionValidationResult:
     particle_statement_validity: list[ParticleStatementValidity] = field(
         default_factory=list
     )
+    # The DLP 44 operation dependency graph, set for actions during post-order
+    # validation so that codegen can build the concurrency wiring from it.
+    operation_graph: operation_graph.OperationGraph | None = None
 
     def add_diagnostic(self, diagnostic: diagnostics.Diagnostic):
         """Append a diagnostic to this definition's results."""

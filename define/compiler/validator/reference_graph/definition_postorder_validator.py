@@ -20,6 +20,7 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import operation_graph
 
 
 @dataclass
@@ -29,6 +30,7 @@ class PostorderValidationResult:
     diagnostics: list[diagnostics.Diagnostic]
     edges: list[action_call_graph.ActionGraphEdge]
     contract: action_contract.ActionContract
+    operation_graph: operation_graph.OperationGraph
 
 
 @dataclass(frozen=True, slots=True)
@@ -1604,6 +1606,7 @@ class ActionPostorderValidator:
             diagnostics=self._diagnostics,
             edges=self._action_edges,
             contract=contract,
+            operation_graph=self._tracker.operation_graph,
         )
 
     def _check_trigger(

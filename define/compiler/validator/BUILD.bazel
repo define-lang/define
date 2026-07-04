@@ -64,6 +64,7 @@ py_library(
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
+        "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
 

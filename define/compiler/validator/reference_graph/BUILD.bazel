@@ -75,6 +75,7 @@ py_library(
     deps = [
         ":action_contract",
         ":dead_constraint_tracker",
+        ":operation_graph",
         ":particle_operation",
         ":particle_tracker",
         ":requirement_violation",

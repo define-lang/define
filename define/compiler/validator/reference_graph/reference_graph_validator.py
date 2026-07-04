@@ -73,4 +73,5 @@ class ReferenceGraphValidator:
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
             self._action_contracts[definition.typed_name] = result.contract
+            definition_result.operation_graph = result.operation_graph
         return call_graph
