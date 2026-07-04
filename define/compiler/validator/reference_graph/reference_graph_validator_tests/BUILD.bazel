@@ -658,6 +658,17 @@ py_test(
 )
 
 py_test(
+    name = "operation_graph_integration_test",
+    size = "small",
+    srcs = ["operation_graph_integration_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:test_helpers",
+    ],
+)
+
+py_test(
     name = "quality_implication_particle_test",
     size = "small",
     srcs = ["quality_implication_particle_test.py"],
@@ -774,6 +785,7 @@ pyright_test(
         ":move_particle_test",
         ":move_state_tracking_test",
         ":move_without_parent_test",
+        ":operation_graph_integration_test",
         ":particle_conflict_test",
         ":quality_implication_particle_test",
         ":quality_implication_test",

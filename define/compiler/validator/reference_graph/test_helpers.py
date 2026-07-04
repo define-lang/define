@@ -3,13 +3,86 @@
 
 from unittest import mock
 
+from define.compiler import ast
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
+    operation_graph,
     reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+
+def _short_chained_name(reference: ast.PositionReference) -> str:
+    """Render a position reference as its bare ``::``-joined names, without the type wrappers."""
+    return "::".join(
+        element.name_content.source_name for element in reference.typed_names
+    )
+
+
+def _action_display_name(action_full_typed_name: str) -> str:
+    """Render an action's full typed name as its bare path, e.g. ``test`` for ``action<...:/test>``."""
+    inner = action_full_typed_name[
+        action_full_typed_name.index("<") + 1 : action_full_typed_name.rindex(">")
+    ]
+    return inner.rsplit(":", 1)[-1].lstrip("/")
+
+
+def _render_operation(action_name: str, node: operation_graph.OperationNode) -> str:
+    """Render one operation node as ``action.kind(target)`` (or ``action.move(source, target)``)."""
+    target = _short_chained_name(node.target)
+    match node.kind:
+        case operation_graph.OperationKind.CREATE:
+            return f"{action_name}.create({target})"
+        case operation_graph.OperationKind.DESTROY:
+            return f"{action_name}.destroy({target})"
+        case operation_graph.OperationKind.MOVE:
+            if node.source is None:
+                raise ValueError("a move node must have a source")
+            return f"{action_name}.move({_short_chained_name(node.source)}, {target})"
+
+
+def operation_graph_for(
+    program_result: validation_result.ProgramValidationResult,
+    action: str,
+) -> operation_graph.OperationGraph:
+    """Return the operation graph the reference-graph validator recorded for ``action``."""
+    for typed_name, definition_result in program_result.definition_results.items():
+        if typed_name.full_typed_name == action:
+            graph = definition_result.operation_graph
+            if graph is None:
+                raise ValueError(f"no operation graph recorded for {action}")
+            return graph
+    raise KeyError(action)
+
+
+def flatten_operation_graph(
+    graph: operation_graph.OperationGraph,
+    action: str,
+) -> list[str | tuple[str, list[str]]]:
+    """Render an action's operations in execution order.
+
+    An operation with dependents is paired with the operations that depend on it;
+    an operation with none is rendered on its own.
+    """
+    action_name = _action_display_name(action)
+    labels = [_render_operation(action_name, node) for node in graph.nodes]
+    dependents: list[list[int]] = [[] for _ in graph.nodes]
+    for node in graph.nodes:
+        for dependency in node.depends_on:
+            dependents[dependency].append(node.node_id)
+    flattened: list[str | tuple[str, list[str]]] = []
+    for node in graph.nodes:
+        node_dependents = dependents[node.node_id]
+        if node_dependents:
+            flattened.append(
+                (labels[node.node_id], [labels[d] for d in node_dependents])
+            )
+        else:
+            flattened.append(labels[node.node_id])
+    return flattened
 
 
 def get_results(

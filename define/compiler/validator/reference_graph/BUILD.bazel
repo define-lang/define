@@ -191,11 +191,15 @@ py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
         ":action_contract",
         ":definition_postorder_validator",
+        ":operation_graph",
         ":reference_graph_validator",
+        "//define/compiler:ast",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
