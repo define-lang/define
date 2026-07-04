@@ -9,9 +9,9 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 
-_CREATE = operation_graph.OperationKind.CREATE
-_MOVE = operation_graph.OperationKind.MOVE
-_DESTROY = operation_graph.OperationKind.DESTROY
+_CREATE = operation_graph.CreateNode
+_MOVE = operation_graph.MoveNode
+_DESTROY = operation_graph.DestroyNode
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -71,8 +71,8 @@ def _last_operation(
 
 def _kinds(
     tracker: particle_tracker.ParticleTracker,
-) -> list[operation_graph.OperationKind]:
-    return [node.kind for node in tracker.operation_graph.nodes]
+) -> list[type[operation_graph.OperationNode]]:
+    return [type(node) for node in tracker.operation_graph.nodes]
 
 
 def _deps(tracker: particle_tracker.ParticleTracker, node_id: int) -> list[int]:

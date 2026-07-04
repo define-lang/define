@@ -16,7 +16,6 @@ exist to support validation.
 
 from __future__ import annotations
 
-import enum
 import typing
 from dataclasses import dataclass, field
 
@@ -26,29 +25,37 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
-class OperationKind(enum.Enum):
-    """What a node in the operation graph represents."""
-
-    CREATE = enum.auto()
-    MOVE = enum.auto()
-    # A destroy statement or an auto-destruction at block end. One node covers
-    # the whole cascade.
-    DESTROY = enum.auto()
-
-
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OperationNode:
     """One operation in an action's dependency graph."""
 
     node_id: int
-    kind: OperationKind
     # The position reference as written (the statement target).
     target: ast.PositionReference
-    # MOVE only: the particle's source position.
-    source: ast.PositionReference | None = None
     # The ids of the operations this node directly depends on (the operations
     # that must complete before it).
     depends_on: list[int] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateNode(OperationNode):
+    """A body create in ``target``."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MoveNode(OperationNode):
+    """A body move of a particle from ``source`` to ``target``."""
+
+    source: ast.PositionReference
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DestroyNode(OperationNode):
+    """A destroy of ``target``.
+
+    A destroy statement or an auto-destruction at block end; one node covers the
+    whole cascade.
+    """
 
 
 class OperationGraph:
@@ -78,24 +85,6 @@ class OperationGraph:
     def triggered_actions(self, node_id: int) -> Sequence[ast.ActionReference]:
         """Return the triggered actions this operation fires (empty if none)."""
         return self._triggered_actions.get(node_id, ())
-
-    def _add_node(
-        self,
-        kind: OperationKind,
-        target: ast.PositionReference,
-        *,
-        source: ast.PositionReference | None = None,
-    ) -> int:
-        node_id = len(self._nodes)
-        self._nodes.append(
-            OperationNode(
-                node_id=node_id,
-                kind=kind,
-                target=target,
-                source=source,
-            )
-        )
-        return node_id
 
     def _add_dependencies(
         self,
@@ -130,7 +119,8 @@ class OperationGraph:
     def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
-        node_id = self._add_node(OperationKind.CREATE, target)
+        node_id = len(self._nodes)
+        self._nodes.append(CreateNode(node_id=node_id, target=target))
         self._add_dependencies(node_id, (key,))
         self._last_operation[key] = node_id
 
@@ -147,7 +137,8 @@ class OperationGraph:
         """
         source_key = source.canonical_chained_name_tuple
         target_key = target.canonical_chained_name_tuple
-        node_id = self._add_node(OperationKind.MOVE, target, source=source)
+        node_id = len(self._nodes)
+        self._nodes.append(MoveNode(node_id=node_id, target=target, source=source))
         self._add_dependencies(
             node_id, (source_key, target_key), previously_touched_child_positions
         )
@@ -166,7 +157,8 @@ class OperationGraph:
         child of ``target`` and comes in through ``previously_touched_child_positions``.
         """
         key = target.canonical_chained_name_tuple
-        node_id = self._add_node(OperationKind.DESTROY, target)
+        node_id = len(self._nodes)
+        self._nodes.append(DestroyNode(node_id=node_id, target=target))
         self._add_dependencies(node_id, (key,), previously_touched_child_positions)
         self._last_operation[key] = node_id
 

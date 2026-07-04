@@ -52,16 +52,16 @@ class _OperationGraphFlattener:
         self, action_name: str, node: operation_graph.OperationNode
     ) -> str:
         target = self._short_chained_name(node.target)
-        match node.kind:
-            case operation_graph.OperationKind.CREATE:
+        match node:
+            case operation_graph.CreateNode():
                 label = f"{action_name}.create({target})"
-            case operation_graph.OperationKind.DESTROY:
+            case operation_graph.DestroyNode():
                 label = f"{action_name}.destroy({target})"
-            case operation_graph.OperationKind.MOVE:
-                if node.source is None:
-                    raise ValueError("a move node must have a source")
+            case operation_graph.MoveNode():
                 source = self._short_chained_name(node.source)
                 label = f"{action_name}.move({source}, {target})"
+            case _:
+                raise TypeError(f"unexpected operation node {type(node).__name__}")
         return self._disambiguated(label)
 
     def _short_chained_name(self, reference: ast.PositionReference) -> str:
