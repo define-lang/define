@@ -11,6 +11,10 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
+_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED = "caller operations still wait on the trigger operation, not the callee output split point"
+_MOVE_TARGET_CHILDREN_NOT_RECORDED = (
+    "move operations do not record dependencies on touched children under their target"
+)
 
 
 def test_single_create(
@@ -315,6 +319,133 @@ def test_multiway_join_and_fan_out(
     }
 
 
+def test_move_parent_waits_on_touched_descendants(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<src> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<src>.\n"
+                "        create a particle in position<src>::position</child>.\n"
+                "        move the particle in position<src> to position<dest>.\n"
+                "        destroy the particle in position<dest>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(src)": [],
+        "test.create(src::/child)": ["test.create(src)"],
+        "test.move(src, dest)": ["test.create(src)", "test.create(src::/child)"],
+        "test.destroy(dest::/child)": ["test.move(src, dest)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_MOVE_TARGET_CHILDREN_NOT_RECORDED)
+def test_move_parent_waits_on_touched_target_descendants(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<src> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<dest>.\n"
+                "        create a particle in position<dest>::position</child>.\n"
+                "        destroy the particle in position<dest>::position</child>.\n"
+                "        destroy the particle in position<dest>.\n"
+                "        create a particle in position<src>.\n"
+                "        create a particle in position<src>::position</child>.\n"
+                "        move the particle in position<src> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(dest)": [],
+        "test.create(dest::/child)": ["test.create(dest)"],
+        "test.destroy(dest::/child)": [
+            "test.create(dest)",
+            "test.create(dest::/child)",
+        ],
+        "test.destroy(dest)": [
+            "test.create(dest)",
+            "test.destroy(dest::/child)",
+        ],
+        "test.create(src)": [],
+        "test.create(src::/child)": ["test.create(src)"],
+        "test.move(src, dest)": [
+            "test.destroy(dest::/child)",
+            "test.destroy(dest)",
+            "test.create(src)",
+            "test.create(src::/child)",
+        ],
+    }
+
+
+def test_auto_destruction_records_destroy_operations(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<first>.\n"
+                "        define the position<second>.\n"
+                "        create a particle in position<first>.\n"
+                "        create a particle in position<second>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(first)": [],
+        "test.create(second)": [],
+        "test.destroy(second)": ["test.create(second)"],
+        "test.destroy(first)": ["test.create(first)"],
+    }
+
+
 def test_trigger_inlines_callee(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -354,6 +485,159 @@ def test_trigger_inlines_callee(
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
+def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output>.\n"
+                "    define the position<late>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<output>.\n"
+                "        create a particle in position<late>.\n"
+                "        destroy the particle in position<late>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gateway>::action</other>::position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
+        "other.create(late)": ["test.create(gateway::/other::trigger_pos)"],
+        "other.destroy(late)": ["other.create(late)"],
+        "test.destroy(gateway::/other::output)": [
+            "test.create(gateway)",
+            "other.create(output)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
+def test_caller_operation_waits_on_callee_move_output(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<trigger_pos> to position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gateway>::action</other>::position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.move(trigger_pos, output)": [
+            "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway::/other::output)": [
+            "test.create(gateway)",
+            "other.move(trigger_pos, output)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
+def test_caller_operation_waits_on_callee_destroy_output(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<output>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<gateway>::action</other>::position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::output)": ["test.create(gateway)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(output)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.create(gateway::/other::output)#2": [
+            "test.create(gateway)",
+            "other.destroy(output)",
+        ],
     }
 
 
