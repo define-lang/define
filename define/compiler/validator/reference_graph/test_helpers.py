@@ -1,6 +1,7 @@
 # pyright: reportUnusedCallResult=false
 """Shared helpers for tests that inspect post-order validation results."""
 
+import collections
 from unittest import mock
 
 from define.compiler import ast
@@ -58,31 +59,36 @@ def operation_graph_for(
     raise KeyError(action)
 
 
-def flatten_operation_graph(
+def _disambiguated_labels(
+    action_name: str, graph: operation_graph.OperationGraph
+) -> list[str]:
+    """Render each node's label, suffixing repeats of a shared label (``#2``, ``#3``)."""
+    occurrences: collections.Counter[str] = collections.Counter()
+    labels: list[str] = []
+    for node in graph.nodes:
+        base_label = _render_operation(action_name, node)
+        occurrences[base_label] += 1
+        count = occurrences[base_label]
+        labels.append(base_label if count == 1 else f"{base_label}#{count}")
+    return labels
+
+
+def operation_dependencies(
     graph: operation_graph.OperationGraph,
     action: str,
-) -> list[str | tuple[str, list[str]]]:
-    """Render an action's operations in execution order.
+) -> dict[str, list[str]]:
+    """Map each of an action's operations to the operations it waits on.
 
-    An operation with dependents is paired with the operations that depend on it;
-    an operation with none is rendered on its own.
+    Operations are keyed in execution order and a root maps to an empty list.
+    Where operations share a label, repeats are suffixed (``#2``, ``#3``) so that
+    every operation remains a distinct key.
     """
     action_name = _action_display_name(action)
-    labels = [_render_operation(action_name, node) for node in graph.nodes]
-    dependents: list[list[int]] = [[] for _ in graph.nodes]
-    for node in graph.nodes:
-        for dependency in node.depends_on:
-            dependents[dependency].append(node.node_id)
-    flattened: list[str | tuple[str, list[str]]] = []
-    for node in graph.nodes:
-        node_dependents = dependents[node.node_id]
-        if node_dependents:
-            flattened.append(
-                (labels[node.node_id], [labels[d] for d in node_dependents])
-            )
-        else:
-            flattened.append(labels[node.node_id])
-    return flattened
+    labels = _disambiguated_labels(action_name, graph)
+    return {
+        labels[node.node_id]: [labels[dependency] for dependency in node.depends_on]
+        for node in graph.nodes
+    }
 
 
 def get_results(
