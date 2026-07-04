@@ -184,6 +184,100 @@ def test_fan_out_two_operations_depend_on_one(
     }
 
 
+def test_occupied_requirement_on_input_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<input>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    graph = operation_graph_for(result.program_result, _TEST)
+    assert operation_dependencies(graph, _TEST) == {
+        "test.destroy(input)": [],
+    }
+
+
+def test_occupied_requirement_on_parent_of_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    graph = operation_graph_for(result.program_result, _TEST)
+    assert operation_dependencies(graph, _TEST) == {
+        "test.destroy(input::/child)": [],
+    }
+
+
+def test_occupied_requirement_on_grandparent_of_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "grandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>::position</child>::position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    graph = operation_graph_for(result.program_result, _TEST)
+    assert operation_dependencies(graph, _TEST) == {
+        "test.destroy(input::/child::/grandchild)": [],
+    }
+
+
 def test_multiway_join_and_fan_out(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
