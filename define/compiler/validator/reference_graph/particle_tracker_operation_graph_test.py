@@ -138,7 +138,8 @@ def test_destroy_depends_on_touched_children():
     tracker.create(_ref("box", "inner"), ())
     tracker.destroy(_ref("box"))
     assert _kinds(tracker) == [_CREATE, _CREATE, _DESTROY]
-    assert _deps(tracker, 2) == [0, 1]
+    # The destroy waits on the child (1), which already reaches create box (0).
+    assert _deps(tracker, 2) == [1]
 
 
 def test_destroy_depends_on_grandchildren():
@@ -148,8 +149,9 @@ def test_destroy_depends_on_grandchildren():
     tracker.create(_ref("box", "inner", "deep"), ())
     tracker.destroy(_ref("box"))
     assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _DESTROY]
-    # subtree_keys hands the destroy the child (1) and the grandchild (2).
-    assert _deps(tracker, 3) == [0, 1, 2]
+    # subtree_keys hands the destroy the child (1) and the grandchild (2); the
+    # grandchild is the deepest and reaches the rest, so only it survives.
+    assert _deps(tracker, 3) == [2]
 
 
 def test_move_carries_child_transitively():
@@ -159,8 +161,9 @@ def test_move_carries_child_transitively():
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [_CREATE, _CREATE, _MOVE, _DESTROY]
-    # The move pulls in box::inner via the Child Rule.
-    assert _deps(tracker, 2) == [0, 1]
+    # The move pulls in box::inner via the Child Rule; box::inner already reaches
+    # create box (0), so that is not repeated.
+    assert _deps(tracker, 2) == [1]
     # basket::inner is recorded under its pre-move name, so the destroy reaches
     # it only transitively through the move node.
     assert _deps(tracker, 3) == [2]
@@ -174,8 +177,9 @@ def test_move_carries_grandchild_subtree():
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _MOVE, _DESTROY]
-    # The move pulls in the whole carried subtree: child (1) and grandchild (2).
-    assert _deps(tracker, 3) == [0, 1, 2]
+    # The move pulls in the carried subtree; the grandchild (2) is deepest and
+    # reaches the child (1) and the box (0), so only it survives.
+    assert _deps(tracker, 3) == [2]
     # The carried subtree keeps its pre-move keys, so the destroy of the
     # moved-to parent reaches it only through the move node.
     assert _deps(tracker, 4) == [3]

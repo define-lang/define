@@ -112,27 +112,38 @@ class OperationGraph:
     def _add_dependencies(
         self,
         node_id: int,
-        positions: Iterable[tuple[str, ...]],
+        fill_position: tuple[str, ...] | None = None,
+        empty_position: tuple[str, ...] | None = None,
         previously_touched_child_positions: Iterable[tuple[str, ...]] = (),
     ):
         """Create edges from previous operations to this node."""
-        # A single predecessor can be reached more than once (a move reads both
-        # its source and target, a destroy depends on every previous child
-        # operation including possibly duplicate parents), so the dependencies
-        # are collected in a set before being stored.
+        # A move fills its target and empties its source, so a single predecessor
+        # can be reached twice; the dependencies are collected in a set first.
         dependencies: set[int] = set()
-        for key in positions:
-            # Ancestor Rule: the most recent operation on the position itself or
-            # any of its ancestors.
-            ancestor_chain = self._most_recent_ancestor_chain_operation(key)
-            if ancestor_chain is not None:
-                dependencies.add(ancestor_chain)
-        # Child Rule: a move or destroy also depends on the last operation on
-        # each touched transitive child of the position it empties.
-        for child_key in previously_touched_child_positions:
-            child = self._last_operation.get(child_key)
-            if child is not None:
-                dependencies.add(child)
+        # Ancestor Rule: filling a position waits on the most recent operation on
+        # that position and its parents, so the parent is present to hold it.
+        if fill_position is not None:
+            filled_ancestor = self._most_recent_ancestor_chain_operation(fill_position)
+            if filled_ancestor is not None:
+                dependencies.add(filled_ancestor)
+        # Child Rule: emptying a position waits on the most recent operation in
+        # each touched child position (minus a shallower one a deeper touched
+        # position has already superseded), and on the emptied position's own
+        # chain only when that is more recent than every one of those child
+        # operations -- otherwise a child already reaches it.
+        child_operations = self._surviving_child_operations(
+            previously_touched_child_positions
+        )
+        dependencies.update(child_operations)
+        if empty_position is not None:
+            emptied_ancestor = self._most_recent_ancestor_chain_operation(
+                empty_position
+            )
+            if emptied_ancestor is not None and all(
+                emptied_ancestor > child_operation
+                for child_operation in child_operations
+            ):
+                dependencies.add(emptied_ancestor)
         self._nodes[node_id].depends_on.extend(sorted(dependencies))
 
     def _most_recent_ancestor_chain_operation(self, key: tuple[str, ...]) -> int | None:
@@ -146,12 +157,38 @@ class OperationGraph:
                 most_recent = operation
         return most_recent
 
+    def _surviving_child_operations(
+        self, touched_child_positions: Iterable[tuple[str, ...]]
+    ) -> set[int]:
+        """Return the touched child operations that no deeper touched one supersedes."""
+        last_operations: dict[tuple[str, ...], int] = {}
+        for key in touched_child_positions:
+            operation = self._last_operation.get(key)
+            if operation is not None:
+                last_operations[key] = operation
+        # The most recent operation among each touched child's touched descendants.
+        deepest_descendant: dict[tuple[str, ...], int] = {}
+        for key, operation in last_operations.items():
+            for length in range(1, len(key)):
+                ancestor = key[:length]
+                if ancestor in last_operations and operation > deepest_descendant.get(
+                    ancestor, -1
+                ):
+                    deepest_descendant[ancestor] = operation
+        # A touched child whose subtree holds a more recent operation is dropped:
+        # that deeper operation already waits on it, so a direct edge is redundant.
+        return {
+            operation
+            for key, operation in last_operations.items()
+            if operation > deepest_descendant.get(key, -1)
+        }
+
     def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
         node_id = len(self._nodes)
         self._nodes.append(CreateNode(node_id=node_id, target=target))
-        self._add_dependencies(node_id, (key,))
+        self._add_dependencies(node_id, fill_position=key)
         self._last_operation[key] = node_id
 
     def record_move(
@@ -170,7 +207,10 @@ class OperationGraph:
         node_id = len(self._nodes)
         self._nodes.append(MoveNode(node_id=node_id, target=target, source=source))
         self._add_dependencies(
-            node_id, (source_key, target_key), previously_touched_child_positions
+            node_id,
+            fill_position=target_key,
+            empty_position=source_key,
+            previously_touched_child_positions=previously_touched_child_positions,
         )
         self._last_operation[source_key] = node_id
         self._last_operation[target_key] = node_id
@@ -189,7 +229,11 @@ class OperationGraph:
         key = target.canonical_chained_name_tuple
         node_id = len(self._nodes)
         self._nodes.append(DestroyNode(node_id=node_id, target=target))
-        self._add_dependencies(node_id, (key,), previously_touched_child_positions)
+        self._add_dependencies(
+            node_id,
+            empty_position=key,
+            previously_touched_child_positions=previously_touched_child_positions,
+        )
         self._last_operation[key] = node_id
 
     def record_guarantees(

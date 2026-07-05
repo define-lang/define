@@ -1562,14 +1562,21 @@ Every Create Particle Statement, Move Particle Statement, and Destroy Particle
 Statement is a "Particle Operation." Create and Destroy each operate on a single
 position, and Move operates on both of its positions.
 
+A Particle Operation "fills" a position when it places a particle there (a
+create, or the target of a move) and "empties" a position when it removes one (a
+destroy, or the source of a move).
+
 These rules create a directed acyclic graph of dependencies between Particle
 Operations:
 
-1. Each Particle Operation depends on the most recent Particle Operation among
-   the ones on the position itself and on its transitive parent positions).
-2. A move or destroy additionally depends on the most recent Particle Operation
-   on every transitive child position beneath the position it empties: a
-   destroy's target, or a move's source.
+1. Filling a position depends on the most recent Particle Operation on that
+   position and its transitive parent positions.
+2. Emptying a position depends on the most recent Particle Operation on each
+   transitive child position beneath it, other than a child position that has a
+   more recent Particle Operation on a position beneath it.
+3. Emptying a position additionally depends on the most recent Particle
+   Operation on the emptied position and its transitive parent positions, but
+   only when that operation is more recent than all of those child operations.
 
 ### Executing Particle Operations Concurrently
 

@@ -308,14 +308,13 @@ def test_multiway_join_and_fan_out(
         "test.create(box::/a)": ["test.create(box)"],
         "test.create(box::/b)": ["test.create(box)"],
         "test.destroy(box)": [
-            "test.create(box)",
             "test.create(box::/a)",
             "test.create(box::/b)",
         ],
     }
 
 
-def test_destroy_keeps_a_redundant_shallow_descendant_edge(
+def test_destroy_reduces_to_the_deepest_touched_descendant(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -351,24 +350,20 @@ def test_destroy_keeps_a_redundant_shallow_descendant_edge(
         },
     )
     assert_no_errors(result.program_result)
-    # The Child Rule links the destroy to every touched descendant, but its
-    # edge to the child is redundant: the grandchild already reaches the child
-    # through its own ancestor edge. Only the deepest touched descendants are
-    # strictly needed; removing the shallower ones would need a transitive
-    # reduction.
+    # The Child Rule drops a touched descendant that a deeper touched one
+    # supersedes: the grandchild reaches the child and the box through its own
+    # ancestor chain, so the destroy needs only the grandchild.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
         "test.destroy(box)": [
-            "test.create(box)",
-            "test.create(box::/child)",
             "test.create(box::/child::/grandchild)",
         ],
     }
 
 
-def test_destroy_keeps_a_redundant_own_position_create_edge(
+def test_destroy_reduces_its_own_position_create_edge(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -394,16 +389,13 @@ def test_destroy_keeps_a_redundant_own_position_create_edge(
         },
     )
     assert_no_errors(result.program_result)
-    # The destroy's Ancestor Rule edge to create(box) is redundant: the Child
-    # Rule already links it to create(box::/child), which reaches create(box)
-    # through its own ancestor edge. The Ancestor Rule cannot see that -- box is
-    # top-level, so its own create is the most recent operation on box's chain --
-    # so the redundant edge stays.
+    # The destroy keeps its own-position edge to create(box) only when no touched
+    # child is more recent. Here create(box::/child) is more recent and already
+    # reaches create(box), so the destroy drops the edge and waits on the child.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box)": [
-            "test.create(box)",
             "test.create(box::/child)",
         ],
     }
@@ -493,19 +485,15 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move(
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box::/child)": ["test.create(box::/child)"],
-        "test.destroy(box)": ["test.create(box)", "test.destroy(box::/child)"],
+        "test.destroy(box)": ["test.destroy(box::/child)"],
         "test.create(source)": [],
         "test.create(source::/child)": ["test.create(source)"],
         "test.move(source, box)": [
             "test.destroy(box)",
-            "test.create(source)",
             "test.create(source::/child)",
         ],
         "test.destroy(box::/child)#2": ["test.move(source, box)"],
-        "test.destroy(box)#2": [
-            "test.move(source, box)",
-            "test.destroy(box::/child)#2",
-        ],
+        "test.destroy(box)#2": ["test.destroy(box::/child)#2"],
     }
 
 
@@ -567,32 +555,18 @@ def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
         "test.create(box::/mid)": ["test.create(box)"],
         "test.create(box::/mid::/leaf)": ["test.create(box::/mid)"],
         "test.destroy(box::/mid::/leaf)": ["test.create(box::/mid::/leaf)"],
-        "test.destroy(box::/mid)": [
-            "test.create(box::/mid)",
-            "test.destroy(box::/mid::/leaf)",
-        ],
-        "test.destroy(box)": [
-            "test.create(box)",
-            "test.destroy(box::/mid)",
-        ],
+        "test.destroy(box::/mid)": ["test.destroy(box::/mid::/leaf)"],
+        "test.destroy(box)": ["test.destroy(box::/mid)"],
         "test.create(source)": [],
         "test.create(source::/mid)": ["test.create(source)"],
         "test.create(source::/mid::/leaf)": ["test.create(source::/mid)"],
         "test.move(source, box)": [
             "test.destroy(box)",
-            "test.create(source)",
-            "test.create(source::/mid)",
             "test.create(source::/mid::/leaf)",
         ],
         "test.destroy(box::/mid::/leaf)#2": ["test.move(source, box)"],
-        "test.destroy(box::/mid)#2": [
-            "test.move(source, box)",
-            "test.destroy(box::/mid::/leaf)#2",
-        ],
-        "test.destroy(box)#2": [
-            "test.move(source, box)",
-            "test.destroy(box::/mid)#2",
-        ],
+        "test.destroy(box::/mid)#2": ["test.destroy(box::/mid::/leaf)#2"],
+        "test.destroy(box)#2": ["test.destroy(box::/mid)#2"],
     }
 
 
@@ -631,7 +605,7 @@ def test_move_parent_waits_on_touched_descendants(
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(src)": [],
         "test.create(src::/child)": ["test.create(src)"],
-        "test.move(src, dest)": ["test.create(src)", "test.create(src::/child)"],
+        "test.move(src, dest)": ["test.create(src::/child)"],
         "test.destroy(dest::/child)": ["test.move(src, dest)"],
     }
 
@@ -679,15 +653,11 @@ def test_move_into_emptied_target_waits_on_the_target_destroy(
         "test.create(dest)": [],
         "test.create(dest::/child)": ["test.create(dest)"],
         "test.destroy(dest::/child)": ["test.create(dest::/child)"],
-        "test.destroy(dest)": [
-            "test.create(dest)",
-            "test.destroy(dest::/child)",
-        ],
+        "test.destroy(dest)": ["test.destroy(dest::/child)"],
         "test.create(src)": [],
         "test.create(src::/child)": ["test.create(src)"],
         "test.move(src, dest)": [
             "test.destroy(dest)",
-            "test.create(src)",
             "test.create(src::/child)",
         ],
     }

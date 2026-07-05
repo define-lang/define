@@ -127,7 +127,9 @@ def test_destroy_depends_on_touched_children():
     graph.record_create(_ref("box"))  # 0
     graph.record_create(_ref("box", "inner"))  # 1
     graph.record_destroy(_ref("box"), [_key("box", "inner")])  # 2
-    assert _deps(graph, 2) == {0, 1}
+    # The destroy waits on the child (1); its own create (0) is not repeated,
+    # since the child already reaches it.
+    assert _deps(graph, 2) == {1}
 
 
 def test_destroy_depends_on_emptied_child():
@@ -148,7 +150,7 @@ def test_recreate_after_direct_destroy_depends_on_destroy():
     assert _deps(graph, 2) == {1}
 
 
-def test_destroy_depends_on_grandchild_not_only_child():
+def test_destroy_depends_on_deepest_touched_descendant_only():
     graph = operation_graph.OperationGraph()
     graph.record_create(_ref("box"))  # 0
     graph.record_create(_ref("box", "inner"))  # 1
@@ -156,9 +158,9 @@ def test_destroy_depends_on_grandchild_not_only_child():
     graph.record_destroy(
         _ref("box"), [_key("box", "inner"), _key("box", "inner", "deep")]
     )  # 3
-    # The child's create (1) precedes the grandchild's (2), so depending only on
-    # the child would not cover the grandchild; the destroy needs both directly.
-    assert _deps(graph, 3) == {0, 1, 2}
+    # The grandchild (2) is the deepest touched descendant and reaches both the
+    # child (1) and the box (0), so the destroy needs only it.
+    assert _deps(graph, 3) == {2}
 
 
 def test_move_depends_on_carried_grandchild_subtree():
@@ -171,7 +173,9 @@ def test_move_depends_on_carried_grandchild_subtree():
         _ref("basket"),
         [_key("box", "inner"), _key("box", "inner", "deep")],
     )  # 3
-    assert _deps(graph, 3) == {0, 1, 2}
+    # The deepest carried descendant (2) reaches the rest of the subtree, so the
+    # move needs only it.
+    assert _deps(graph, 3) == {2}
 
 
 def test_join_moving_into_emptied_position():
@@ -209,7 +213,8 @@ def test_child_refill_after_parent_destroy():
     graph.record_create(_ref("surprise"))  # 4
     graph.record_move(_ref("surprise"), _ref("box", "inner"), [])  # 5
     graph.record_create(_ref("box", "other"))  # 6
-    assert _deps(graph, 2) == {0, 1}
+    # The destroy waits on the child (1), which already reaches create box (0).
+    assert _deps(graph, 2) == {1}
     # The move fills the new box's inner: create surprise (4) and the new box (3),
     # the most recent operation on inner's ancestor chain. The stale old inner
     # create (1) is not repeated -- the new box create already reaches it.
@@ -243,14 +248,16 @@ def test_deep_grandchild_carried_through_two_moves():
     graph.record_move(_ref("d"), _ref("e"), [_key("d", "b"), _key("d", "b", "c")])  # 4
     graph.record_destroy(_ref("e", "b", "c"), [])  # 5
     graph.record_destroy(_ref("e"), [_key("e", "b"), _key("e", "b", "c")])  # 6
-    assert _deps(graph, 3) == {0, 1, 2}
+    # The deepest carried descendant (2) reaches the rest of the subtree.
+    assert _deps(graph, 3) == {2}
     # d's children keep their pre-move (a::) keys, so the Child Rule on the
     # second move misses them and reaches them through the first move (3).
     assert _deps(graph, 4) == {3}
     # e::b::c has no entry under that name, so this destroy hangs off e's move.
     assert _deps(graph, 5) == {4}
-    # The parent destroy sees the explicit destroy of e::b::c (5) directly.
-    assert _deps(graph, 6) == {4, 5}
+    # The parent destroy waits on the explicit destroy of e::b::c (5), which
+    # already reaches e's move (4).
+    assert _deps(graph, 6) == {5}
 
 
 def test_operation_records_the_actions_it_triggers():
@@ -337,9 +344,9 @@ def test_parent_destroy_reaches_a_triggered_child():
     graph.record_create(_ref("gadget"))  # 1: the trigger fill
     _trigger(graph, 1, "/brew", _key("box", "out"))  # 2: guarantee node fills box::out
     graph.record_destroy(_ref("box"), [_key("box", "out")])  # 3
-    # The destroy waits on its own create (0) and, via the Child Rule, on the
-    # guarantee node that filled its child (2).
-    assert _deps(graph, 3) == {0, 2}
+    # The destroy waits, via the Child Rule, on the guarantee node that filled its
+    # child (2); that node already reaches the box's create (0).
+    assert _deps(graph, 3) == {2}
 
 
 def test_triggered_outputs_get_separate_guarantee_nodes():
