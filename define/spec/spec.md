@@ -1573,10 +1573,11 @@ Operations:
    position and its transitive parent positions.
 2. Emptying a position depends on the most recent Particle Operation on each
    transitive child position beneath it, other than a child position that has a
-   more recent Particle Operation on a position beneath it.
+   more recent Particle Operation on one of its own transitive children.
 3. Emptying a position additionally depends on the most recent Particle
    Operation on the emptied position and its transitive parent positions, but
-   only when that operation is more recent than all of those child operations.
+   only when that operation is more recent than all of the child operations in
+   the rule above.
 
 ### Executing Particle Operations Concurrently
 
