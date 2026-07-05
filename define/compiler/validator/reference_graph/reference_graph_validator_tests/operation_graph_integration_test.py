@@ -497,6 +497,47 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move(
     }
 
 
+def test_second_move_of_a_carried_child_waits_on_the_first_move(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<basket>.\n"
+                "    define the position<crate>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child>.\n"
+                "        move the particle in position<box> to position<basket>.\n"
+                "        move the particle in position<basket> to position<crate>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The first move carries the child to basket::/child without operating on
+    # that key directly, so the second move empties basket without finding a
+    # direct operation on the carried child. It waits on the first move, the
+    # most recent operation on basket's ancestor chain.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.move(box, basket)": ["test.create(box::/child)"],
+        "test.move(basket, crate)": ["test.move(box, basket)"],
+    }
+
+
 def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

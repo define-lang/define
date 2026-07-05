@@ -384,3 +384,70 @@ def test_a_later_operation_overrides_a_guarantee():
     # The re-fill chains to the guarantee node; a later consumer chains to the re-fill.
     assert _deps(graph, 2) == {1}
     assert _deps(graph, 3) == {2}
+
+
+def test_touched_list_order_does_not_change_edges():
+    def build(touched: list[tuple[str, ...]]) -> operation_graph.OperationGraph:
+        graph = operation_graph.OperationGraph()
+        graph.record_create(_ref("box"))  # 0
+        graph.record_create(_ref("box", "inner"))  # 1
+        graph.record_create(_ref("box", "inner", "deep"))  # 2
+        graph.record_destroy(_ref("box"), touched)  # 3
+        return graph
+
+    touched = [_key("box", "inner"), _key("box", "inner", "deep")]
+    assert _deps(build(touched), 3) == _deps(build(list(reversed(touched))), 3) == {2}
+
+
+def test_gap_in_touched_list_still_drops_the_shallower_operation():
+    graph = operation_graph.OperationGraph()
+    graph.record_create(_ref("outer"))  # 0
+    graph.record_create(_ref("outer", "box"))  # 1
+    graph.record_create(_ref("outer", "box", "mid"))  # 2
+    graph.record_create(_ref("outer", "box", "mid", "deep"))  # 3
+    graph.record_destroy(
+        _ref("outer"), [_key("outer", "box"), _key("outer", "box", "mid", "deep")]
+    )  # 4
+    assert _deps(graph, 4) == {3}
+
+
+def test_last_operation_is_unset_for_an_ancestor_of_a_recorded_key():
+    graph = operation_graph.OperationGraph()
+    graph.record_create(_ref("box", "inner"))  # 0
+    assert graph.last_operation_node_id_for_key(_key("box", "inner")) == 0
+    assert graph.last_operation_node_id_for_key(_key("box")) is None
+    assert graph.last_operation_node_id_for_key(_key("box", "inner", "deep")) is None
+    assert graph.last_operation_node_id_for_key(_key("other")) is None
+    graph.record_destroy(_ref("box", "inner"), [])  # 1
+    assert _deps(graph, 1) == {0}
+
+
+def test_duplicate_touched_keys_and_shared_move_operation():
+    graph = operation_graph.OperationGraph()
+    graph.record_create(_ref("one"))  # 0
+    graph.record_move(_ref("one"), _ref("two"), [])  # 1
+    assert graph.last_operation_node_id_for_key(_key("one")) == 1
+    assert graph.last_operation_node_id_for_key(_key("two")) == 1
+    graph.record_destroy(_ref("holder"), [_key("one"), _key("one"), _key("two")])  # 2
+    assert _deps(graph, 2) == {1}
+
+
+def test_wide_touched_subtree_drops_every_superseded_shallow_child():
+    graph = operation_graph.OperationGraph()
+    graph.record_create(_ref("root"))  # 0
+    child_count = 40
+    touched: list[tuple[str, ...]] = []
+    surviving_deep_children: set[int] = set()
+    for index in range(child_count):
+        child = f"c{index}"
+        graph.record_create(_ref("root", child))
+        graph.record_create(_ref("root", child, "deep"))
+        touched.append(_key("root", child))
+        touched.append(_key("root", child, "deep"))
+        deep_id = graph.last_operation_node_id_for_key(_key("root", child, "deep"))
+        assert deep_id is not None
+        surviving_deep_children.add(deep_id)
+    graph.record_destroy(_ref("root"), touched)
+    # Every shallow child is superseded by its later, deeper child, so only the
+    # deep children survive.
+    assert _deps(graph, graph.nodes[-1].node_id) == surviving_deep_children

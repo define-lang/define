@@ -120,13 +120,13 @@ class OperationGraph:
         # A move fills its target and empties its source, so a single predecessor
         # can be reached twice; the dependencies are collected in a set first.
         dependencies: set[int] = set()
-        # Ancestor Rule: filling a position waits on the most recent operation on
+        # Fill Rule: filling a position waits on the most recent operation on
         # that position and its parents, so the parent is present to hold it.
         if fill_position is not None:
             filled_ancestor = self._most_recent_ancestor_chain_operation(fill_position)
             if filled_ancestor is not None:
                 dependencies.add(filled_ancestor)
-        # Child Rule: emptying a position waits on the most recent operation in
+        # Empty Rule: emptying a position waits on the most recent operation in
         # each touched child position (minus a shallower one a deeper touched
         # position has already superseded), and on the emptied position's own
         # chain only when that is more recent than every one of those child
@@ -161,27 +161,42 @@ class OperationGraph:
         self, touched_child_positions: Iterable[tuple[str, ...]]
     ) -> set[int]:
         """Return the touched child operations that no deeper touched one supersedes."""
-        last_operations: dict[tuple[str, ...], int] = {}
-        for key in touched_child_positions:
-            operation = self._last_operation.get(key)
-            if operation is not None:
-                last_operations[key] = operation
-        # The most recent operation among each touched child's touched descendants.
-        deepest_descendant: dict[tuple[str, ...], int] = {}
-        for key, operation in last_operations.items():
-            for length in range(1, len(key)):
-                ancestor = key[:length]
-                if ancestor in last_operations and operation > deepest_descendant.get(
-                    ancestor, -1
-                ):
-                    deepest_descendant[ancestor] = operation
+        # Touched positions without an operation never survive or suppress
+        # anything, so only the ones carrying an operation matter. This is almost
+        # always a single position (the one particle inside what is being emptied)
+        # or none, so the supersession search below is over a tiny set.
+        operated_positions = [
+            (key, operation)
+            for key in touched_child_positions
+            if (operation := self._last_operation.get(key)) is not None
+        ]
+        # With no deeper touched position to supersede it, a lone operation always
+        # survives, so the overwhelmingly common empty/single case needs no search.
+        if len(operated_positions) <= 1:
+            return {operation for _, operation in operated_positions}
         # A touched child whose subtree holds a more recent operation is dropped:
         # that deeper operation already waits on it, so a direct edge is redundant.
-        return {
-            operation
-            for key, operation in last_operations.items()
-            if operation > deepest_descendant.get(key, -1)
-        }
+        # The nested scan is quadratic in the number of operated positions, but
+        # that count is the breadth of a single destroy or move cascade -- the
+        # particles nested inside the one position being emptied -- which is a
+        # handful at most, so a flat scan beats building an index over it.
+        survivors: set[int] = set()
+        for key, operation in operated_positions:
+            depth = len(key)
+            superseded = False
+            for deeper_key, deeper_operation in operated_positions:
+                # A position is never a strict descendant of itself (its key is
+                # not longer), so it never suppresses itself or a duplicate.
+                if (
+                    len(deeper_key) > depth
+                    and deeper_operation >= operation
+                    and deeper_key[:depth] == key
+                ):
+                    superseded = True
+                    break
+            if not superseded:
+                survivors.add(operation)
+        return survivors
 
     def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""
