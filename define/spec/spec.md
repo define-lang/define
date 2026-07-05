@@ -1568,10 +1568,11 @@ Operations:
 1. Each Particle Operation depends on the previous Particle Operation on the
    same position.
 2. Any Particle Operation on a child position additionally depends on the last
-   Particle Operation on every parent position.
-3. A move or destroy operation additionally depends on the last Particle
-   Operation on every transitive child position beneath the position(s) being
-   operated on.
+   Particle Operation on its nearest ancestor position that had a particle
+   operation beforehand.
+3. A move or destroy additionally depends on the last Particle Operation on
+   every transitive child position beneath the position it empties: a destroy's
+   target, or a move's source.
 
 ### Executing Particle Operations Concurrently
 
