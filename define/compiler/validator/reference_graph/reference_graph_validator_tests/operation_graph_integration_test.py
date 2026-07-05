@@ -11,7 +11,6 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
-_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED = "caller operations still wait on the trigger operation, not the callee output split point"
 _MOVE_TARGET_CHILDREN_NOT_RECORDED = (
     "move operations do not record dependencies on touched children under their target"
 )
@@ -488,7 +487,6 @@ def test_trigger_inlines_callee(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -541,7 +539,6 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
 def test_caller_operation_waits_on_callee_move_output(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -591,7 +588,6 @@ def test_caller_operation_waits_on_callee_move_output(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRIGGER_OUTPUT_SPLITS_NOT_RECORDED)
 def test_caller_operation_waits_on_callee_destroy_output(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

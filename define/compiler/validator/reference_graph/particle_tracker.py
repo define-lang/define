@@ -802,7 +802,9 @@ class ParticleTracker:
         )
         if pending_guarantee.trigger_node_id is not None:
             self._operation_graph.record_guarantees(
-                pending_guarantee.trigger_node_id, touched_positions
+                pending_guarantee.trigger_node_id,
+                pending_guarantee.parent_chain[-1],
+                touched_positions,
             )
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
@@ -828,10 +830,10 @@ class ParticleTracker:
 
     def _update_store_from_callee_direct_guarantees(
         self, pending_guarantee: _PendingGuarantee
-    ) -> list[tuple[str, ...]]:
-        """Apply a callee's own guarantees; return the keys it wrote, in order."""
+    ) -> list[tuple[tuple[str, ...], tuple[str, ...]]]:
+        """Apply a callee's own guarantees; return the keys it wrote as (absolute, callee-local) pairs, in order."""
         guarantees = pending_guarantee.guarantees.own
-        touched_positions: list[tuple[str, ...]] = []
+        touched_positions: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
@@ -874,7 +876,7 @@ class ParticleTracker:
                 ),
             )
 
-            touched_positions.append(key)
+            touched_positions.append((key, name))
 
             if key in origin_keys:
                 # Save-before-overwrite: if this key is an origin for a later

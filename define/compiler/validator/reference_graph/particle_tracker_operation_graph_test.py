@@ -12,6 +12,7 @@ _LOC = ast.start_of_file_location()
 _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode
 _DESTROY = operation_graph.DestroyNode
+_GUARANTEE = operation_graph.GuaranteeNode
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -125,6 +126,7 @@ def test_child_create_depends_on_parent():
     assert [
         node.target.canonical_chained_name_tuple
         for node in tracker.operation_graph.nodes
+        if isinstance(node, operation_graph.PositionOperationNode)
     ] == [("position<box>",), ("position<box>", "position<inner>")]
     assert _deps(tracker, 0) == []
     assert _deps(tracker, 1) == [0]
@@ -196,7 +198,7 @@ def test_mark_empty_records_nothing():
     assert _deps(tracker, 0) == []
 
 
-def test_triggered_guarantee_output_last_operation_is_the_trigger():
+def test_triggered_guarantee_output_becomes_a_guarantee_node():
     tracker = particle_tracker.ParticleTracker()
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
@@ -210,16 +212,17 @@ def test_triggered_guarantee_output_last_operation_is_the_trigger():
         ),
         run,
     )
-    # The triggered action adds no node; its output's last op is the trigger.
-    assert _kinds(tracker) == [_CREATE, _CREATE]
-    assert _last_operation(tracker, out) == 1
-    # A caller operation on the output chains to the trigger (rule 1) and to the
-    # box that holds it (rule 2).
-    tracker.destroy(out)  # 2
-    assert _deps(tracker, 2) == [0, 1]
+    # The triggered action's output becomes a guarantee node hanging off the
+    # trigger; that node is the output's last operation.
+    assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE]
+    assert _last_operation(tracker, out) == 2
+    # A caller operation on the output chains to the guarantee node (rule 1) and
+    # to the box that holds it (rule 2).
+    tracker.destroy(out)  # 3
+    assert _deps(tracker, 3) == [0, 2]
 
 
-def test_triggered_guarantee_child_last_operation_is_the_trigger():
+def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
     tracker = particle_tracker.ParticleTracker()
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
@@ -236,16 +239,15 @@ def test_triggered_guarantee_child_last_operation_is_the_trigger():
         ),
         run,
     )
-    # The trigger is the last operation of both the callee's output parent and
-    # its child.
-    assert _kinds(tracker) == [_CREATE, _CREATE]
+    # Each of the callee's outputs becomes its own guarantee node.
+    assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE, _GUARANTEE]
     parent = _chain(_local("box"), box, _local("parent"))
     child = _chain(_local("box"), box, _local("parent"), _local("child"))
-    assert _last_operation(tracker, parent) == 1
-    assert _last_operation(tracker, child) == 1
+    assert _last_operation(tracker, parent) == 2
+    assert _last_operation(tracker, child) == 3
 
 
-def test_nested_triggered_guarantee_last_operation_is_the_trigger():
+def test_nested_triggered_guarantee_becomes_a_guarantee_node():
     tracker = particle_tracker.ParticleTracker()
     outer = _action("/outer")
     inner = _action("/inner")
@@ -270,12 +272,12 @@ def test_nested_triggered_guarantee_last_operation_is_the_trigger():
         action_contract.Guarantees(own=[], nested=(nested,)),
         run,
     )
-    # The nested guarantee is deferred; a query on its output drains it, making
-    # the trigger it inherited the output's last operation, and adds no node of
-    # its own.
+    # The nested guarantee is deferred; a query on its output drains it, adding a
+    # guarantee node (hanging off the trigger it inherited) that becomes the
+    # output's last operation.
     assert tracker.is_occupied(item)
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE]
-    assert _last_operation(tracker, item) == 1
+    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _GUARANTEE]
+    assert _last_operation(tracker, item) == 3
 
 
 def test_stale_nested_guarantee_keeps_the_later_last_operation():
@@ -311,12 +313,13 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
         action_contract.Guarantees(own=[(inner_item, _occupied_by_new())], nested=()),
         later_run,
     )
-    assert _last_operation(tracker, item) == 3
+    assert _last_operation(tracker, item) == 4
     # Draining the earlier trigger's stale guarantee finds the position already
-    # decided by the later write, so it does not change the last operation.
+    # decided by the later write, so it adds no node and does not change the last
+    # operation.
     assert tracker.is_occupied(item)
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _CREATE]
-    assert _last_operation(tracker, item) == 3
+    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _CREATE, _GUARANTEE]
+    assert _last_operation(tracker, item) == 4
 
 
 def test_apply_guarantees_tags_the_trigger_with_its_action():
@@ -393,9 +396,9 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
         action_contract.Guarantees(own=callee_guarantees, nested=()),
         run,
     )
-    caller.create(_chain(box, b, x), ())  # node 2
+    caller.create(_chain(box, b, x), ())  # node 3
 
-    # The caller's fill of x waits for the trigger (node 1) that transiently
-    # occupied x, and the enclosing box (node 0): the UnchangedGuarantee carried
-    # the ordering the caller must respect.
-    assert _deps(caller, 2) == [0, 1]
+    # The caller's fill of x waits for the guarantee node (node 2) that
+    # transiently occupied x, and the enclosing box (node 0): the
+    # UnchangedGuarantee carried the ordering the caller must respect.
+    assert _deps(caller, 3) == [0, 2]

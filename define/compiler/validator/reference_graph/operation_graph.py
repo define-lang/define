@@ -30,32 +30,55 @@ class OperationNode:
     """One operation in an action's dependency graph."""
 
     node_id: int
-    # The position reference as written (the statement target).
-    target: ast.PositionReference
     # The ids of the operations this node directly depends on (the operations
     # that must complete before it).
     depends_on: list[int] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CreateNode(OperationNode):
+class PositionOperationNode(OperationNode):
+    """An operation the body performs on a written position."""
+
+    # The position reference as written (the statement target).
+    target: ast.PositionReference
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreateNode(PositionOperationNode):
     """A body create in ``target``."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class MoveNode(OperationNode):
+class MoveNode(PositionOperationNode):
     """A body move of a particle from ``source`` to ``target``."""
 
     source: ast.PositionReference
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class DestroyNode(OperationNode):
+class DestroyNode(PositionOperationNode):
     """A destroy of ``target``.
 
     A destroy statement or an auto-destruction at block end; one node covers the
     whole cascade.
     """
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class GuaranteeNode(OperationNode):
+    """A triggered action's output, produced inside the callee.
+
+    This stands in for an operation whose details live in the callee's own graph.
+    ``depends_on`` holds the operation that fired the trigger; codegen resolves
+    this node to the callee's last operation on ``output_position`` when it
+    splices ``action`` in at that trigger. Caller operations that read the output
+    depend on this node with ordinary edges.
+    """
+
+    # The triggered action's full typed name (the key of the callee's graph).
+    action: str
+    # The callee's own position key for the output.
+    output_position: tuple[str, ...]
 
 
 class OperationGraph:
@@ -165,11 +188,27 @@ class OperationGraph:
     def record_guarantees(
         self,
         trigger_node_id: int,
-        guaranteed_positions: Iterable[tuple[str, ...]],
+        action: str,
+        outputs: Iterable[tuple[tuple[str, ...], tuple[str, ...]]],
     ):
-        """Point each contracted position's last operation at the trigger that guaranteed it."""
-        for key in guaranteed_positions:
-            self._last_operation[key] = trigger_node_id
+        """Record a triggered action's outputs as guarantee nodes hanging off the trigger.
+
+        Each ``outputs`` pair is a contracted position's absolute key and the
+        callee's own key for it. The absolute position's last operation becomes a
+        new guarantee node, so caller operations that read it depend on the
+        callee's split point rather than on the trigger operation itself.
+        """
+        for absolute_key, output_position in outputs:
+            node_id = len(self._nodes)
+            self._nodes.append(
+                GuaranteeNode(
+                    node_id=node_id,
+                    action=action,
+                    output_position=output_position,
+                    depends_on=[trigger_node_id],
+                )
+            )
+            self._last_operation[absolute_key] = node_id
 
     def record_action_trigger(
         self,

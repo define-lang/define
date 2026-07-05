@@ -1,3 +1,4 @@
+# pyright: reportUnusedCallResult=false
 """Renders DLP 44 operation graphs as readable adjacency dicts for tests."""
 
 from collections import Counter
@@ -5,6 +6,9 @@ from collections import Counter
 from define.compiler import ast
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import operation_graph
+
+# For a spliced-in triggered action: its graph, and its node-id -> rendered label.
+_CalleeSplice = tuple[operation_graph.OperationGraph, dict[int, str]]
 
 
 class _OperationGraphFlattener:
@@ -29,11 +33,20 @@ class _OperationGraphFlattener:
         action: str,
         trigger_label: str | None,
         dependencies: dict[str, list[str]],
-    ):
+    ) -> dict[int, str]:
         graph = self._registry[action]
         action_name = self._action_display_name(action)
         local_labels: dict[int, str] = {}
+        # Keyed by (trigger operation id, callee action), for resolving the
+        # guarantee nodes that stand in for those callees' outputs.
+        callee_splices: dict[tuple[int, str], _CalleeSplice] = {}
         for node in graph.nodes:
+            if isinstance(node, operation_graph.GuaranteeNode):
+                # A callee output: it renders as the callee's own split point.
+                local_labels[node.node_id] = self._split_point_label(
+                    node, callee_splices
+                )
+                continue
             label = self._operation_label(action_name, node)
             if node.depends_on:
                 predecessors = [local_labels[dep] for dep in node.depends_on]
@@ -44,22 +57,41 @@ class _OperationGraphFlattener:
             dependencies[label] = predecessors
             local_labels[node.node_id] = label
             for triggered in graph.triggered_actions(node.node_id):
-                self._flatten_action(
-                    triggered.typed_names[-1].full_typed_name, label, dependencies
+                callee_action = triggered.typed_names[-1].full_typed_name
+                callee_labels = self._flatten_action(callee_action, label, dependencies)
+                callee_splices[(node.node_id, callee_action)] = (
+                    self._registry[callee_action],
+                    callee_labels,
                 )
+        return local_labels
+
+    def _split_point_label(
+        self,
+        node: operation_graph.GuaranteeNode,
+        callee_splices: dict[tuple[int, str], _CalleeSplice],
+    ) -> str:
+        trigger_node_id = node.depends_on[0]
+        callee_graph, callee_labels = callee_splices[(trigger_node_id, node.action)]
+        split_point = callee_graph.last_operation_node_id_for_key(node.output_position)
+        if split_point is None:
+            raise ValueError(
+                f"no split point for {node.output_position} in {node.action}"
+            )
+        return callee_labels[split_point]
 
     def _operation_label(
         self, action_name: str, node: operation_graph.OperationNode
     ) -> str:
-        target = self._short_chained_name(node.target)
         match node:
             case operation_graph.CreateNode():
-                label = f"{action_name}.create({target})"
+                label = f"{action_name}.create({self._short_chained_name(node.target)})"
             case operation_graph.DestroyNode():
-                label = f"{action_name}.destroy({target})"
+                label = (
+                    f"{action_name}.destroy({self._short_chained_name(node.target)})"
+                )
             case operation_graph.MoveNode():
                 source = self._short_chained_name(node.source)
-                label = f"{action_name}.move({source}, {target})"
+                label = f"{action_name}.move({source}, {self._short_chained_name(node.target)})"
             case _:
                 raise TypeError(f"unexpected operation node {type(node).__name__}")
         return self._disambiguated(label)
@@ -89,7 +121,8 @@ def operation_dependencies(
 
     A triggered action is spliced in at the operation that fires it: its
     operations are rendered under its own action prefix and its roots wait on the
-    firing operation. Every operation is keyed once (repeats of a label are
-    suffixed ``#2``, ``#3``) and maps to the operations it waits on.
+    firing operation. A caller operation that reads a triggered action's output
+    waits on that callee's own split point. Every operation is keyed once
+    (repeats of a label are suffixed ``#2``, ``#3``) and maps to what it waits on.
     """
     return _OperationGraphFlattener(program_result).flatten(root_action)
