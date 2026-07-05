@@ -11,9 +11,6 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
-_MOVE_TARGET_CHILDREN_NOT_RECORDED = (
-    "move operations do not record dependencies on touched children under their target"
-)
 
 
 def test_single_create(
@@ -358,8 +355,7 @@ def test_move_parent_waits_on_touched_descendants(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MOVE_TARGET_CHILDREN_NOT_RECORDED)
-def test_move_parent_waits_on_touched_target_descendants(
+def test_move_into_emptied_target_waits_on_the_target_destroy(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -394,6 +390,9 @@ def test_move_parent_waits_on_touched_target_descendants(
         },
     )
     assert_no_errors(result.program_result)
+    # The move waits on the target's destroy (rule 1), which already waits on the
+    # destroy of the target's former child (rule 3). So the move is ordered after
+    # that child-destroy transitively -- no redundant direct edge to it.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(dest)": [],
         "test.create(dest::/child)": ["test.create(dest)"],
@@ -408,7 +407,6 @@ def test_move_parent_waits_on_touched_target_descendants(
         "test.create(src)": [],
         "test.create(src::/child)": ["test.create(src)"],
         "test.move(src, dest)": [
-            "test.destroy(dest::/child)",
             "test.destroy(dest)",
             "test.create(src)",
             "test.create(src::/child)",
