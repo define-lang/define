@@ -1569,15 +1569,15 @@ destroy, or the source of a move).
 These rules create a directed acyclic graph of dependencies between Particle
 Operations:
 
-1. Filling a position depends on the most recent Particle Operation on that
-   position and its transitive parent positions.
+1. Filling a position depends on the single most recent Particle Operation among
+   the ones on that position and its transitive parent positions.
 2. Emptying a position depends on the most recent Particle Operation on each
-   transitive child position beneath it, other than a child position that has a
-   more recent Particle Operation on one of its own transitive children.
-3. Emptying a position additionally depends on the most recent Particle
-   Operation on the emptied position and its transitive parent positions, but
-   only when that operation is more recent than all of the child operations in
-   the rule above.
+   transitive child position beneath it, excluding child positions that have a
+   more recent Particle Operation on one of their own transitive children.
+3. Emptying a position additionally depends on the single most recent Particle
+   Operation among the ones on the emptied position and its transitive parent
+   positions, but only when that operation is more recent than _all_ of the
+   child operations in Rule 2 above.
 
 ### Executing Particle Operations Concurrently
 
