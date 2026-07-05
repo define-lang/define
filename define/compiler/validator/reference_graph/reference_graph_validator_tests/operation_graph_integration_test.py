@@ -315,6 +315,287 @@ def test_multiway_join_and_fan_out(
     }
 
 
+def test_destroy_keeps_a_redundant_shallow_descendant_edge(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "grandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child>.\n"
+                "        create a particle in position<box>::position</child>::position</grandchild>.\n"
+                "        destroy the particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The Child Rule links the destroy to every touched descendant, but its
+    # edge to the child is redundant: the grandchild already reaches the child
+    # through its own ancestor edge. Only the deepest touched descendants are
+    # strictly needed; removing the shallower ones would need a transitive
+    # reduction.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
+        "test.destroy(box)": [
+            "test.create(box)",
+            "test.create(box::/child)",
+            "test.create(box::/child::/grandchild)",
+        ],
+    }
+
+
+def test_destroy_keeps_a_redundant_own_position_create_edge(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child>.\n"
+                "        destroy the particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The destroy's Ancestor Rule edge to create(box) is redundant: the Child
+    # Rule already links it to create(box::/child), which reaches create(box)
+    # through its own ancestor edge. The Ancestor Rule cannot see that -- box is
+    # top-level, so its own create is the most recent operation on box's chain --
+    # so the redundant edge stays.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.destroy(box)": [
+            "test.create(box)",
+            "test.create(box::/child)",
+        ],
+    }
+
+
+def test_refill_does_not_repeat_the_ancestor_edge(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<parent> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<parent>.\n"
+                "        create a particle in position<parent>::position</child>.\n"
+                "        destroy the particle in position<parent>::position</child>.\n"
+                "        create a particle in position<parent>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The refill needs no fresh ancestor edge to create(parent): the destroy it
+    # follows is more recent than create(parent) and already reaches it, so the
+    # refill inherits the ordering transitively.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(parent)": [],
+        "test.create(parent::/child)": ["test.create(parent)"],
+        "test.destroy(parent::/child)": ["test.create(parent::/child)"],
+        "test.create(parent::/child)#2": ["test.destroy(parent::/child)"],
+    }
+
+
+def test_empty_after_ancestor_move_refill_waits_on_the_move(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child>.\n"
+                "        destroy the particle in position<box>::position</child>.\n"
+                "        destroy the particle in position<box>.\n"
+                "        create a particle in position<source>.\n"
+                "        create a particle in position<source>::position</child>.\n"
+                "        move the particle in position<source> to position<box>.\n"
+                "        destroy the particle in position<box>::position</child>.\n"
+                "        destroy the particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The move refills box::/child without operating on that key directly, so it
+    # is the most recent operation on that position's ancestor chain. The
+    # second destroy of box::/child waits on the move and cannot run before the
+    # particle the move placed there arrives; the stale earlier destroy is not
+    # repeated, since the move already reaches it.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.destroy(box::/child)": ["test.create(box::/child)"],
+        "test.destroy(box)": ["test.create(box)", "test.destroy(box::/child)"],
+        "test.create(source)": [],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.move(source, box)": [
+            "test.destroy(box)",
+            "test.create(source)",
+            "test.create(source::/child)",
+        ],
+        "test.destroy(box::/child)#2": ["test.move(source, box)"],
+        "test.destroy(box)#2": [
+            "test.move(source, box)",
+            "test.destroy(box::/child)#2",
+        ],
+    }
+
+
+def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "leaf.dfn": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
+            "mid.dfn": (
+                "define the potential position<my.domain.com:my_lib:/mid> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</leaf>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</mid>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</mid>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</mid>.\n"
+                "        create a particle in position<box>::position</mid>::position</leaf>.\n"
+                "        destroy the particle in position<box>::position</mid>::position</leaf>.\n"
+                "        destroy the particle in position<box>::position</mid>.\n"
+                "        destroy the particle in position<box>.\n"
+                "        create a particle in position<source>.\n"
+                "        create a particle in position<source>::position</mid>.\n"
+                "        create a particle in position<source>::position</mid>::position</leaf>.\n"
+                "        move the particle in position<source> to position<box>.\n"
+                "        destroy the particle in position<box>::position</mid>::position</leaf>.\n"
+                "        destroy the particle in position<box>::position</mid>.\n"
+                "        destroy the particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The move refills the whole box::/mid::/leaf chain without operating on those
+    # keys directly, leaving stale operations on both box::/mid::/leaf and
+    # box::/mid. The second destroy of box::/mid::/leaf takes only the move -- the
+    # most recent operation on its chain -- dropping both the stale leaf and the
+    # stale intermediate mid, since the move reaches them transitively.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/mid)": ["test.create(box)"],
+        "test.create(box::/mid::/leaf)": ["test.create(box::/mid)"],
+        "test.destroy(box::/mid::/leaf)": ["test.create(box::/mid::/leaf)"],
+        "test.destroy(box::/mid)": [
+            "test.create(box::/mid)",
+            "test.destroy(box::/mid::/leaf)",
+        ],
+        "test.destroy(box)": [
+            "test.create(box)",
+            "test.destroy(box::/mid)",
+        ],
+        "test.create(source)": [],
+        "test.create(source::/mid)": ["test.create(source)"],
+        "test.create(source::/mid::/leaf)": ["test.create(source::/mid)"],
+        "test.move(source, box)": [
+            "test.destroy(box)",
+            "test.create(source)",
+            "test.create(source::/mid)",
+            "test.create(source::/mid::/leaf)",
+        ],
+        "test.destroy(box::/mid::/leaf)#2": ["test.move(source, box)"],
+        "test.destroy(box::/mid)#2": [
+            "test.move(source, box)",
+            "test.destroy(box::/mid::/leaf)#2",
+        ],
+        "test.destroy(box)#2": [
+            "test.move(source, box)",
+            "test.destroy(box::/mid)#2",
+        ],
+    }
+
+
 def test_move_parent_waits_on_touched_descendants(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -390,16 +671,14 @@ def test_move_into_emptied_target_waits_on_the_target_destroy(
         },
     )
     assert_no_errors(result.program_result)
-    # The move waits on the target's destroy (rule 1), which already waits on the
-    # destroy of the target's former child (rule 3). So the move is ordered after
-    # that child-destroy transitively -- no redundant direct edge to it.
+    # The move waits on the target's destroy (the most recent operation on the
+    # target's ancestor chain), which already waits on the destroy of the
+    # target's former child (the Child Rule). So the move is ordered after that
+    # child-destroy transitively -- no redundant direct edge to it.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(dest)": [],
         "test.create(dest::/child)": ["test.create(dest)"],
-        "test.destroy(dest::/child)": [
-            "test.create(dest)",
-            "test.create(dest::/child)",
-        ],
+        "test.destroy(dest::/child)": ["test.create(dest::/child)"],
         "test.destroy(dest)": [
             "test.create(dest)",
             "test.destroy(dest::/child)",
@@ -530,10 +809,7 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
         "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
         "other.create(late)": ["test.create(gateway::/other::trigger_pos)"],
         "other.destroy(late)": ["other.create(late)"],
-        "test.destroy(gateway::/other::output)": [
-            "test.create(gateway)",
-            "other.create(output)",
-        ],
+        "test.destroy(gateway::/other::output)": ["other.create(output)"],
     }
 
 
@@ -579,10 +855,7 @@ def test_caller_operation_waits_on_callee_move_output(
         "other.move(trigger_pos, output)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
-        "test.destroy(gateway::/other::output)": [
-            "test.create(gateway)",
-            "other.move(trigger_pos, output)",
-        ],
+        "test.destroy(gateway::/other::output)": ["other.move(trigger_pos, output)"],
     }
 
 
@@ -628,10 +901,7 @@ def test_caller_operation_waits_on_callee_destroy_output(
         "test.create(gateway::/other::output)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(output)": ["test.create(gateway::/other::trigger_pos)"],
-        "test.create(gateway::/other::output)#2": [
-            "test.create(gateway)",
-            "other.destroy(output)",
-        ],
+        "test.create(gateway::/other::output)#2": ["other.destroy(output)"],
     }
 
 

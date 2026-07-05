@@ -106,7 +106,8 @@ class _PendingGuarantee:
     body_operation_number: int
     # DLP 44: the operation-graph node of the caller op that fired this trigger.
     # Each contracted position the guarantee touches has its last operation
-    # pointed here, so the caller's later ops on it chain via rule 1. Nested
+    # pointed here, so the caller's later ops on it chain via the Ancestor Rule.
+    # Nested
     # children inherit it verbatim (the whole callee subtree happens, from the
     # caller's view, at the one trigger node). None when the trigger op was never
     # recorded (e.g. tests that apply guarantees without a preceding body op).

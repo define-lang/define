@@ -1565,14 +1565,11 @@ position, and Move operates on both of its positions.
 These rules create a directed acyclic graph of dependencies between Particle
 Operations:
 
-1. Each Particle Operation depends on the previous Particle Operation on the
-   same position.
-2. Any Particle Operation on a child position additionally depends on the last
-   Particle Operation on its nearest ancestor position that had a particle
-   operation beforehand.
-3. A move or destroy additionally depends on the last Particle Operation on
-   every transitive child position beneath the position it empties: a destroy's
-   target, or a move's source.
+1. Each Particle Operation depends on the most recent Particle Operation among
+   the ones on the position itself and on its transitive parent positions).
+2. A move or destroy additionally depends on the most recent Particle Operation
+   on every transitive child position beneath the position it empties: a
+   destroy's target, or a move's source.
 
 ### Executing Particle Operations Concurrently
 

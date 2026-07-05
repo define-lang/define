@@ -210,11 +210,28 @@ def test_child_refill_after_parent_destroy():
     graph.record_move(_ref("surprise"), _ref("box", "inner"), [])  # 5
     graph.record_create(_ref("box", "other"))  # 6
     assert _deps(graph, 2) == {0, 1}
-    # The move fills the new box's inner: create surprise (4) and, via parent,
-    # the new box (3). The edge to the old inner create (1) is a stale same-name
-    # rule-1 dependency, redundant with the path through 3.
-    assert _deps(graph, 5) == {1, 3, 4}
+    # The move fills the new box's inner: create surprise (4) and the new box (3),
+    # the most recent operation on inner's ancestor chain. The stale old inner
+    # create (1) is not repeated -- the new box create already reaches it.
+    assert _deps(graph, 5) == {3, 4}
     assert _deps(graph, 6) == {3}
+
+
+def test_empty_after_ancestor_move_refill_waits_on_the_move():
+    graph = operation_graph.OperationGraph()
+    graph.record_create(_ref("box"))  # 0
+    graph.record_create(_ref("box", "child"))  # 1
+    graph.record_destroy(_ref("box", "child"), [])  # 2
+    graph.record_destroy(_ref("box"), [_key("box", "child")])  # 3
+    graph.record_create(_ref("source"))  # 4
+    graph.record_create(_ref("source", "child"))  # 5
+    graph.record_move(_ref("source"), _ref("box"), [_key("source", "child")])  # 6
+    graph.record_destroy(_ref("box", "child"), [])  # 7
+    # The move (6) refilled box::child without operating on that key directly. It
+    # is the most recent operation on box::child's ancestor chain, so the new
+    # destroy waits on it and cannot run before the particle arrives. The stale
+    # earlier destroy (2) is not repeated -- the move already reaches it.
+    assert _deps(graph, 7) == {6}
 
 
 def test_deep_grandchild_carried_through_two_moves():
@@ -227,8 +244,8 @@ def test_deep_grandchild_carried_through_two_moves():
     graph.record_destroy(_ref("e", "b", "c"), [])  # 5
     graph.record_destroy(_ref("e"), [_key("e", "b"), _key("e", "b", "c")])  # 6
     assert _deps(graph, 3) == {0, 1, 2}
-    # d's children keep their pre-move (a::) keys, so rule 3 on the second move
-    # misses them and reaches them through the first move (3).
+    # d's children keep their pre-move (a::) keys, so the Child Rule on the
+    # second move misses them and reaches them through the first move (3).
     assert _deps(graph, 4) == {3}
     # e::b::c has no entry under that name, so this destroy hangs off e's move.
     assert _deps(graph, 5) == {4}
@@ -298,9 +315,10 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     _trigger(graph, 0, "/brew", _key("machine", "coffee"))  # 1: the guarantee node
     graph.record_destroy(_ref("machine", "coffee"), [])  # 2
-    # The consumer chains to the guarantee node (rule 1) and to the machine
-    # (rule 2), not to the trigger directly.
-    assert _deps(graph, 2) == {0, 1}
+    # The consumer chains to the guarantee node (the most recent operation on its
+    # ancestor chain), not to the trigger directly. The guarantee node already
+    # waits on the machine, so the consumer needs no separate ancestor edge.
+    assert _deps(graph, 2) == {1}
 
 
 def test_guarantee_overrides_an_earlier_operation():
@@ -319,8 +337,8 @@ def test_parent_destroy_reaches_a_triggered_child():
     graph.record_create(_ref("gadget"))  # 1: the trigger fill
     _trigger(graph, 1, "/brew", _key("box", "out"))  # 2: guarantee node fills box::out
     graph.record_destroy(_ref("box"), [_key("box", "out")])  # 3
-    # The destroy waits on its own create (0) and, via rule 3, on the guarantee
-    # node that filled its child (2).
+    # The destroy waits on its own create (0) and, via the Child Rule, on the
+    # guarantee node that filled its child (2).
     assert _deps(graph, 3) == {0, 2}
 
 
@@ -331,10 +349,10 @@ def test_triggered_outputs_get_separate_guarantee_nodes():
     _trigger(graph, 0, "/brew", _key("machine", "coffee"), _key("machine", "puck"))
     graph.record_destroy(_ref("machine", "coffee"), [])  # 3
     graph.record_destroy(_ref("machine", "puck"), [])  # 4
-    # Each consumer hangs off its own output's guarantee node (rule 1) and the
-    # machine (rule 2).
-    assert _deps(graph, 3) == {0, 1}
-    assert _deps(graph, 4) == {0, 2}
+    # Each consumer hangs off its own output's guarantee node, the most recent
+    # operation on its ancestor chain, which already waits on the machine.
+    assert _deps(graph, 3) == {1}
+    assert _deps(graph, 4) == {2}
 
 
 def test_a_move_can_be_the_trigger_fill():
@@ -345,8 +363,9 @@ def test_a_move_can_be_the_trigger_fill():
     graph.record_destroy(_ref("slot", "out"), [])  # 3
     assert list(graph.triggered_actions(1)) == [_action_chain("/brew")]
     assert graph.triggered_actions(0) == ()
-    # The destroy chains to the guarantee node (rule 1) and the slot (rule 2).
-    assert _deps(graph, 3) == {1, 2}
+    # The destroy chains to the guarantee node, the most recent operation on its
+    # ancestor chain, which already waits on the slot.
+    assert _deps(graph, 3) == {2}
 
 
 def test_a_later_operation_overrides_a_guarantee():

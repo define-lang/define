@@ -159,7 +159,7 @@ def test_move_carries_child_transitively():
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [_CREATE, _CREATE, _MOVE, _DESTROY]
-    # The move pulls in box::inner via rule 3.
+    # The move pulls in box::inner via the Child Rule.
     assert _deps(tracker, 2) == [0, 1]
     # basket::inner is recorded under its pre-move name, so the destroy reaches
     # it only transitively through the move node.
@@ -216,10 +216,11 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
     # trigger; that node is the output's last operation.
     assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE]
     assert _last_operation(tracker, out) == 2
-    # A caller operation on the output chains to the guarantee node (rule 1) and
-    # to the box that holds it (rule 2).
+    # A caller operation on the output chains to the guarantee node, the most
+    # recent operation on its ancestor chain, which already waits on the box
+    # that holds it.
     tracker.destroy(out)  # 3
-    assert _deps(tracker, 3) == [0, 2]
+    assert _deps(tracker, 3) == [2]
 
 
 def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
@@ -399,6 +400,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     caller.create(_chain(box, b, x), ())  # node 3
 
     # The caller's fill of x waits for the guarantee node (node 2) that
-    # transiently occupied x, and the enclosing box (node 0): the
-    # UnchangedGuarantee carried the ordering the caller must respect.
-    assert _deps(caller, 3) == [0, 2]
+    # transiently occupied x: the UnchangedGuarantee carried the ordering the
+    # caller must respect. That node already reaches the enclosing box (node 0),
+    # so the fill needs no separate edge to it.
+    assert _deps(caller, 3) == [2]

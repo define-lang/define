@@ -122,22 +122,29 @@ class OperationGraph:
         # are collected in a set before being stored.
         dependencies: set[int] = set()
         for key in positions:
-            # Rule 1: the previous operation on the same position.
-            same_position = self._last_operation.get(key)
-            if same_position is not None:
-                dependencies.add(same_position)
-            # Rule 2: the last operation on the nearest recorded ancestor.
-            for length in range(len(key) - 1, 0, -1):
-                ancestor = self._last_operation.get(key[:length])
-                if ancestor is not None:
-                    dependencies.add(ancestor)
-                    break
-        # Rule 3: the last operation on each touched transitive child.
+            # Ancestor Rule: the most recent operation on the position itself or
+            # any of its ancestors.
+            ancestor_chain = self._most_recent_ancestor_chain_operation(key)
+            if ancestor_chain is not None:
+                dependencies.add(ancestor_chain)
+        # Child Rule: a move or destroy also depends on the last operation on
+        # each touched transitive child of the position it empties.
         for child_key in previously_touched_child_positions:
             child = self._last_operation.get(child_key)
             if child is not None:
                 dependencies.add(child)
         self._nodes[node_id].depends_on.extend(sorted(dependencies))
+
+    def _most_recent_ancestor_chain_operation(self, key: tuple[str, ...]) -> int | None:
+        """Return the most recent operation on ``key`` or any of its ancestors."""
+        most_recent = None
+        for length in range(len(key), 0, -1):
+            operation = self._last_operation.get(key[:length])
+            if operation is not None and (
+                most_recent is None or operation > most_recent
+            ):
+                most_recent = operation
+        return most_recent
 
     def record_create(self, target: ast.PositionReference):
         """Record a body create in ``target``."""
