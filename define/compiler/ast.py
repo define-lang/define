@@ -311,7 +311,7 @@ def chain_starts_with_global(key: tuple[str, ...]) -> bool:
     return "/" in key[0]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
@@ -322,10 +322,26 @@ class ChainedName(ASTNode):
     )
     canonical_chained_name: str = field(init=False, repr=False, compare=False)
 
-    def __post_init__(self):
-        """Reject empty chains."""
-        if not self.typed_names:
+    def __init__(
+        self,
+        *,
+        typed_names: tuple[TypedNameReference, ...],
+        location: SourceLocation,
+        canonical_chained_name_tuple: tuple[str, ...] | None = None,
+    ):
+        """Initialize the chain, optionally seeding its cached canonical tuple.
+
+        canonical_chained_name_tuple is only pre-filled by other methods on
+        ChainedName itself as a performance optimization.
+        """
+        if not typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
+        super().__init__(location=location)
+        object.__setattr__(self, "typed_names", typed_names)
+        if canonical_chained_name_tuple is not None:
+            object.__setattr__(
+                self, "canonical_chained_name_tuple", canonical_chained_name_tuple
+            )
 
     # These are optimized because they were _the_ top hotspots in a CPU profile
     # of compilation when they were just computed always in __post_init__.
@@ -437,6 +453,14 @@ class ChainedName(ASTNode):
         return type(self)(
             location=self.location,
             typed_names=(*prefix.typed_names, *self.typed_names),
+            # Specifying this here shaves 10% of the time off a full compile of a complex
+            # multi-action compile, mostly because it saves recomputing the canonical
+            # chained_name_tuple over and over for requirement checks. (Concatenating
+            # these two tuples is much faster than generating the tuple from the typed
+            # names.)
+            canonical_chained_name_tuple=(
+                prefix.canonical_chained_name_tuple + self.canonical_chained_name_tuple
+            ),
         )
 
     def with_position_suffix(self, *names: TypedNameReference) -> PositionReference:
@@ -448,6 +472,10 @@ class ChainedName(ASTNode):
         return PositionReference(
             location=self.location,
             typed_names=(*self.typed_names, *names),
+            canonical_chained_name_tuple=(
+                self.canonical_chained_name_tuple
+                + tuple(name.full_typed_name for name in names)
+            ),
         )
 
     def with_action_suffix(self, *names: TypedNameReference) -> ActionReference:
@@ -459,6 +487,10 @@ class ChainedName(ASTNode):
         return ActionReference(
             location=self.location,
             typed_names=(*self.typed_names, *names),
+            canonical_chained_name_tuple=(
+                self.canonical_chained_name_tuple
+                + tuple(name.full_typed_name for name in names)
+            ),
         )
 
     def in_caller(self, caller_chain: ChainedName) -> Self:
@@ -499,9 +531,14 @@ class PositionReference(ChainedName):
         typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
         from_source: bool = False,
+        canonical_chained_name_tuple: tuple[str, ...] | None = None,
     ):
         """Initialize, optionally validating that the chain ends with a position."""
-        super().__init__(typed_names=typed_names, location=location)
+        super().__init__(
+            typed_names=typed_names,
+            location=location,
+            canonical_chained_name_tuple=canonical_chained_name_tuple,
+        )
         if not from_source and typed_names[-1].name_type != NameType.POSITION:
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
@@ -521,9 +558,14 @@ class ActionReference(ChainedName):
         *,
         typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
+        canonical_chained_name_tuple: tuple[str, ...] | None = None,
     ):
         """Initialize, validating that the chain ends with an action."""
-        super().__init__(typed_names=typed_names, location=location)
+        super().__init__(
+            typed_names=typed_names,
+            location=location,
+            canonical_chained_name_tuple=canonical_chained_name_tuple,
+        )
         if typed_names[-1].name_type != NameType.ACTION:
             raise ValueError(
                 f"Last element of an ActionReference must be an action: {self.source_chained_name}"
