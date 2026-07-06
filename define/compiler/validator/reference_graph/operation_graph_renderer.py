@@ -113,6 +113,22 @@ class _OperationGraphFlattener:
         return label if count == 1 else f"{label}#{count}"
 
 
+def action_graph(
+    program_result: validation_result.ProgramValidationResult,
+) -> list[tuple[str, str]]:
+    """Return each action's directly-triggered actions as (source, target) name pairs."""
+    edges: list[tuple[str, str]] = []
+    for typed_name, definition_result in program_result.definition_results.items():
+        graph = definition_result.operation_graph
+        if graph is None:
+            continue
+        source = typed_name.source_typed_name
+        for node in graph.nodes:
+            for action_ref in graph.triggered_actions(node.node_id):
+                edges.append((source, action_ref.typed_names[-1].full_typed_name))
+    return edges
+
+
 def operation_dependencies(
     program_result: validation_result.ProgramValidationResult,
     root_action: str,
