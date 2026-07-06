@@ -360,15 +360,16 @@ class ActionPostorderValidator:
         # An error-state position is opaque: we cannot claim its destructors
         # would fire and we cannot reason about its subtree, so the cascade
         # skips it entirely.
-        if self._tracker.has_error_state(position):
+        occupancy = self._tracker.get_occupancy_info(position)
+        if occupancy.has_error:
             return
-        if not self._tracker.is_occupied(position):
+        if occupancy.occupant is None:
             # Validation checks will throw an error later for this case,
             # if this is the root particle we are explicitly destroying.
             return
         # A particle keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
-        particle = self._tracker.get_occupant(position)
+        particle = occupancy.occupant
         # Here, we walk the tree of particles in a depth-frst post-order traversal
         # as required by the destruction cascade.
         for quality in reversed(particle.qualities):
@@ -629,13 +630,10 @@ class ActionPostorderValidator:
         destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
-        if self._tracker.has_error_state(full_caller_chain):
+        occupancy = self._tracker.get_occupancy_info(full_caller_chain)
+        if occupancy.has_error:
             return
-        occupant = (
-            self._tracker.get_occupant(full_caller_chain)
-            if self._tracker.is_occupied(full_caller_chain)
-            else None
-        )
+        occupant = occupancy.occupant
         empty_violation = (
             req.required_state == action_contract.PositionOccupancyState.EMPTY
             and occupant is not None
@@ -733,11 +731,10 @@ class ActionPostorderValidator:
         )
         # The action's requirement check already handles missing or
         # error-state particles, so there is nothing more to verify here.
-        if self._tracker.has_error_state(
-            caller_particle_position
-        ) or not self._tracker.is_occupied(caller_particle_position):
+        occupancy = self._tracker.get_occupancy_info(caller_particle_position)
+        if occupancy.has_error or occupancy.occupant is None:
             return
-        caller_particle = self._tracker.get_occupant(caller_particle_position)
+        caller_particle = occupancy.occupant
         destroying_definition_result = self._definition_results.get(
             destruction_contract.destroying_action
         )
@@ -826,9 +823,8 @@ class ActionPostorderValidator:
         created_in_this_action: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
     ):
-        if self._tracker.has_error_state(position) or not self._tracker.is_occupied(
-            position
-        ):
+        occupancy_info = self._tracker.get_occupancy_info(position)
+        if occupancy_info.has_error or occupancy_info.occupant is None:
             return
         relative_key = position.canonical_chained_name_tuple[caller_prefix_length:]
         occupancy = merged_child_state.get(relative_key)
@@ -840,7 +836,7 @@ class ActionPostorderValidator:
             and occupancy.state == action_contract.PositionOccupancyState.EMPTY
         ):
             return
-        particle = self._tracker.get_occupant(position)
+        particle = occupancy_info.occupant
         for quality in reversed(particle.qualities):
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
@@ -1145,11 +1141,10 @@ class ActionPostorderValidator:
             # Spec: "If the compiler is uncertain about whether a position still
             # contains a particle, it only destroys the particle if
             # one is present."
-            if self._tracker.has_error_state(position):
+            occupancy = self._tracker.get_occupancy_info(position)
+            if occupancy.has_error or occupancy.occupant is None:
                 continue
-            if not self._tracker.is_occupied(position):
-                continue
-            auto_destruction_target = self._tracker.get_occupant(position).last_position
+            auto_destruction_target = occupancy.occupant.last_position
             destructors = self._walk_destruction_cascade(
                 position, is_auto_destruction=True
             )

@@ -37,6 +37,16 @@ class ParticleInfo:
         return dataclasses.replace(self, last_position=target)
 
 
+@dataclass(frozen=True, slots=True)
+class OccupancyInfo:
+    """A position's error state and occupant, resolved together in one lookup."""
+
+    # When an ancestor is in an error condition we ignore the position entirely,
+    # so the occupant is meaningless and left None.
+    has_error: bool
+    occupant: ParticleInfo | None
+
+
 @dataclass
 class _NodeState:
     """Mutable state for a position in the state trie."""
@@ -256,6 +266,11 @@ class _ParticleStateStore:
             raise KeyError(key)
         return state.particle_info
 
+    def occupant_or_none(self, key: tuple[str, ...]) -> ParticleInfo | None:
+        """Return the particle at this position, or None if it is empty."""
+        state = self._state.get(key)
+        return state.particle_info if state is not None else None
+
     def emptied_by(self, key: tuple[str, ...]) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if it is known-empty."""
         state = self._state.get(key)
@@ -431,6 +446,26 @@ class ParticleTracker:
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_error_in_chain(key)
+
+    def get_occupancy_info(self, in_position: ast.PositionReference) -> OccupancyInfo:
+        """Return the error state and occupant of ``in_position`` together.
+
+        This is a performance optimization for the common case of needing both
+        whether a position is in an error condition and what particle occupies
+        it. It returns exactly what ``has_error_state`` and ``get_occupant``
+        would for the same position, so it is only correct to use when both
+        answers are about the same position at the same moment; for two different
+        positions, ask about each separately. The result is a snapshot of the
+        current state, so re-query after any operation that could change the
+        position rather than reusing an earlier result.
+        """
+        key = in_position.canonical_chained_name_tuple
+        self._apply_pending_guarantees_up_to(key)
+        if self._store.has_error_in_chain(key):
+            return OccupancyInfo(has_error=True, occupant=None)
+        return OccupancyInfo(
+            has_error=False, occupant=self._store.occupant_or_none(key)
+        )
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
