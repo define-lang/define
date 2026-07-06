@@ -12,6 +12,12 @@ _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
 
+_CALLER_REQUIREMENTS_NOT_RECORDED = (
+    "a caller requirement -- the caller operation that fills or empties a callee's"
+    " contracted position -- is not recorded as an operation-graph edge; the"
+    " callee operation should join the trigger and that caller operation"
+)
+
 
 def test_single_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -913,6 +919,164 @@ def test_caller_operation_waits_on_callee_destroy_output(
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(output)": ["test.create(gateway::/other::trigger_pos)"],
         "test.create(gateway::/other::output)#2": ["other.destroy(output)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_empty_requirement_waits_on_the_caller_destroy_that_clears_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<slot>.\n"
+                "        destroy the particle in position<gateway>::action</other>::position<slot>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # other.create(slot) needs <slot> empty, so it should join two independent
+    # caller operations: the trigger (so other runs at all) and test.destroy(slot),
+    # which clears the position. Neither implies the other.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::slot)": ["test.create(gateway)"],
+        "test.destroy(gateway::/other::slot)": ["test.create(gateway::/other::slot)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(slot)": [
+            "test.destroy(gateway::/other::slot)",
+            "test.create(gateway::/other::trigger_pos)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_occupied_requirement_waits_on_the_caller_create_that_fills_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<input>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<input>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Symmetric to the empty case: other.destroy(input) needs <input> occupied, so
+    # it should join the trigger and test.create(input), which fills it.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::input)": ["test.create(gateway)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(input)": [
+            "test.create(gateway::/other::input)",
+            "test.create(gateway::/other::trigger_pos)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<sink>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<slot>.\n"
+                "        move the particle in position<gateway>::action</other>::position<slot> to position<sink>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # A move-out clears the requirement just as a destroy does, so other.create(slot)
+    # should join the trigger and the move that empties <slot>.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::slot)": ["test.create(gateway)"],
+        "test.move(gateway::/other::slot, sink)": [
+            "test.create(gateway::/other::slot)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(slot)": [
+            "test.move(gateway::/other::slot, sink)",
+            "test.create(gateway::/other::trigger_pos)",
+        ],
     }
 
 
