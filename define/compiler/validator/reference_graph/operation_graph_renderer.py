@@ -116,10 +116,19 @@ class _OperationGraphFlattener:
 def action_graph(
     program_result: validation_result.ProgramValidationResult,
 ) -> list[tuple[str, str]]:
-    """Return each action's directly-triggered actions as (source, target) name pairs."""
+    """Return each action's directly-triggered actions as (source, target) name pairs.
+
+    Actions appear in reference-graph post-order and their triggers in
+    body-operation order, so the result is deterministic. A reference-graph
+    diamond can still make two sibling actions' relative order nondeterministic;
+    assertions spanning such actions should compare ``action_graph_set``.
+    """
     edges: list[tuple[str, str]] = []
-    for typed_name, definition_result in program_result.definition_results.items():
-        graph = definition_result.operation_graph
+    for definition in program_result.reference_graph.dfs_postorder_all():
+        typed_name = definition.typed_name
+        if typed_name not in program_result.definition_results:
+            continue
+        graph = program_result.definition_results[typed_name].operation_graph
         if graph is None:
             continue
         source = typed_name.source_typed_name
@@ -127,6 +136,13 @@ def action_graph(
             for action_ref in graph.triggered_actions(node.node_id):
                 edges.append((source, action_ref.typed_names[-1].full_typed_name))
     return edges
+
+
+def action_graph_set(
+    program_result: validation_result.ProgramValidationResult,
+) -> set[tuple[str, str]]:
+    """Return ``action_graph`` as a set, for assertions whose edge order is nondeterministic."""
+    return set(action_graph(program_result))
 
 
 def operation_dependencies(

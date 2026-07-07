@@ -3,6 +3,9 @@ from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -48,7 +51,7 @@ def test_action_triggers_implied_action_directly(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
+    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
 
 
 def test_action_triggers_implied_action_via_move(
@@ -73,7 +76,7 @@ def test_action_triggers_implied_action_via_move(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
+    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
 
 
 def test_constructor_triggers_implied_action(
@@ -95,7 +98,7 @@ def test_constructor_triggers_implied_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
+    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_propagates_to_caller(
@@ -183,7 +186,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "file_path": "implied_action.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_MIDDLE, _IMPLIED),
         (_TEST, _MIDDLE),
     ]
@@ -451,7 +454,7 @@ def test_caller_triggers_action_implied_by_constraint(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_IMPLIER, _IMPLIED),
         (_TEST, _IMPLIED),
         (_TEST, _IMPLIER),
@@ -490,7 +493,7 @@ def test_implied_action_guarantees_propagate_to_caller(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _IMPLIED)]
+    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
 
 
 def test_transitive_implication_triggers_action(
@@ -542,7 +545,7 @@ def test_transitive_implication_triggers_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),

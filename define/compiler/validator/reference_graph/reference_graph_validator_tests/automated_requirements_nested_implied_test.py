@@ -5,10 +5,12 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -102,7 +104,10 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violates(
@@ -152,7 +157,10 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfies(
@@ -167,7 +175,10 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violates(
@@ -225,7 +236,10 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 _X_HAS_INNER = (
@@ -328,7 +342,10 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implied_position(
@@ -397,7 +414,10 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_doubly_nested_implied_action_chain_propagates(
@@ -503,4 +523,8 @@ def test_doubly_nested_implied_action_chain_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }

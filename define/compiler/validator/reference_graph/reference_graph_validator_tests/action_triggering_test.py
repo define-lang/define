@@ -366,8 +366,8 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert action_graph(result.program_result) == [
-            (_TEST, _ACT_B),
             (_ACT_B, _ACT_C),
+            (_TEST, _ACT_B),
         ]
 
     def test_self_trigger(

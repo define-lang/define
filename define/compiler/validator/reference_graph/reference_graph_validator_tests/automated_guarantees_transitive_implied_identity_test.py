@@ -3,6 +3,9 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -94,7 +97,7 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -201,7 +204,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -290,7 +293,7 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -398,7 +401,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -485,7 +488,7 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -591,7 +594,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.program_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),

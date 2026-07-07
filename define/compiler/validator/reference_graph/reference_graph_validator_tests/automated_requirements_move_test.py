@@ -8,13 +8,13 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import (
-    assert_action_calls,
-    assert_no_errors,
-)
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -127,7 +127,11 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_local(
@@ -240,7 +244,10 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_requirement_inferred_when_trigger_moved_to_local(
@@ -359,7 +366,10 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
@@ -475,7 +485,10 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_local(
@@ -599,7 +612,10 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_complex_chain_interaction_iface(
@@ -739,7 +755,10 @@ def test_complex_chain_interaction_iface(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_implied_moved_to_local(
@@ -851,7 +870,11 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_implied_moved_to_interface(
@@ -963,7 +986,11 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
@@ -1083,7 +1110,10 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_local(
@@ -1211,7 +1241,10 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_complex_chain_interaction_implied(
@@ -1355,7 +1388,10 @@ def test_complex_chain_interaction_implied(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
@@ -1418,7 +1454,7 @@ def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OUTER)}
 
 
 def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
@@ -1511,7 +1547,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
             "file_path": "outer.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OUTER)}
 
 
 def test_caller_sees_requirement_when_interface_moved_to_implied(
@@ -1622,7 +1658,11 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_OUTER, _INNER),
+        (_TEST, _INNER),
+        (_TEST, _OUTER),
+    }
 
 
 def test_caller_sees_requirement_when_implied_moved_to_implied(
@@ -1692,7 +1732,7 @@ def test_caller_sees_requirement_when_implied_moved_to_implied(
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OUTER)}
 
 
 def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
@@ -1792,4 +1832,4 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
             "file_path": "outer.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OUTER)}

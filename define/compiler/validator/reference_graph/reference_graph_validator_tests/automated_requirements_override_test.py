@@ -5,10 +5,13 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_action_caller_occupied_overrides_inner_empty(
@@ -259,12 +262,10 @@ def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_act
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(
-        result.action_call_graph,
-        "action<my.domain.com:my_lib:/test>",
-        "action<my.domain.com:my_lib:/outer>",
-        "action<my.domain.com:my_lib:/inner>",
-    )
+    assert action_graph_set(result.program_result) == {
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
+        ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/inner>"),
+    }
 
 
 def test_doubly_nested_both_outer_and_caller_fill(
@@ -457,10 +458,8 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        "action<my.domain.com:my_lib:/test>",
-        "action<my.domain.com:my_lib:/outer>",
-        "action<my.domain.com:my_lib:/middle>",
-        "action<my.domain.com:my_lib:/inner>",
-    )
+    assert action_graph_set(result.program_result) == {
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
+        ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/middle>"),
+        ("action<my.domain.com:my_lib:/middle>", "action<my.domain.com:my_lib:/inner>"),
+    }

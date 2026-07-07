@@ -8,10 +8,13 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -119,7 +122,10 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_inner_chained_action_empty_requirement_propagates(
@@ -227,7 +233,10 @@ def test_inner_chained_action_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_inner_chained_action_empty_requirement_satisfied(
@@ -286,7 +295,10 @@ def test_inner_chained_action_empty_requirement_satisfied(
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_inner_chained_action_occupied_requirement_propagates(
@@ -384,7 +396,10 @@ def test_inner_chained_action_occupied_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_inner_chained_action_occupied_requirement_caller_fills(
@@ -445,7 +460,10 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
         }
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_doubly_nested_action_requirement_propagates(
@@ -620,7 +638,11 @@ def test_doubly_nested_action_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_MIDDLE, _INNER),
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+    }
 
 
 def test_four_deep_action_chain_requirement_propagates(
@@ -776,14 +798,12 @@ def test_four_deep_action_chain_requirement_propagates(
             "file_path": "d.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        _TEST,
-        "action<my.domain.com:my_lib:/a>",
-        "action<my.domain.com:my_lib:/b>",
-        "action<my.domain.com:my_lib:/c>",
-        "action<my.domain.com:my_lib:/d>",
-    )
+    assert action_graph_set(result.program_result) == {
+        ("action<my.domain.com:my_lib:/c>", "action<my.domain.com:my_lib:/d>"),
+        (_TEST, "action<my.domain.com:my_lib:/a>"),
+        ("action<my.domain.com:my_lib:/a>", "action<my.domain.com:my_lib:/b>"),
+        ("action<my.domain.com:my_lib:/b>", "action<my.domain.com:my_lib:/c>"),
+    }
 
 
 def test_both_requirements_propagate_when_inner_has_both(
@@ -892,7 +912,10 @@ def test_both_requirements_propagate_when_inner_has_both(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_trigger_position_child_empty_requirement_propagates(
@@ -1055,7 +1078,11 @@ def test_trigger_position_child_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _INNER),
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_trigger_position_child_occupied_requirement_propagates(
@@ -1265,7 +1292,10 @@ def test_inner_action_requirement_propagates_after_move(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 def test_doubly_nested_requirement_propagates_after_move(
@@ -1441,7 +1471,11 @@ def test_doubly_nested_requirement_propagates_after_move(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_MIDDLE, _INNER),
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+    }
 
 
 def test_no_propagation_when_action_not_triggered_on_interface_position(
@@ -1521,7 +1555,10 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
     assert all_diags[0].location.end_line == 5
     assert all_diags[0].location.end_column == 38
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
 
 
 _MAIN_FQUN = "mv:define-lang.org:main_lib"
@@ -1682,12 +1719,10 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        f"action<{_MAIN_FQUN}:/test>",
-        f"action<{_MAIN_FQUN}:/outer>",
-        f"action<{_DEP_FQUN}:/inner>",
-    )
+    assert action_graph_set(result.program_result) == {
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+        (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
+    }
 
 
 def test_cross_fqun_occupied_requirement_propagates(
@@ -1758,12 +1793,10 @@ def test_cross_fqun_occupied_requirement_propagates(
         sub_roots={"lib": _DEP_FQUN},
     )
     assert_no_errors(result.program_result)
-    assert_action_calls(
-        result.action_call_graph,
-        f"action<{_MAIN_FQUN}:/test>",
-        f"action<{_MAIN_FQUN}:/outer>",
-        f"action<{_DEP_FQUN}:/inner>",
-    )
+    assert action_graph_set(result.program_result) == {
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+        (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
+    }
 
 
 def test_cross_fqun_occupied_requirement_violated(
@@ -1871,12 +1904,10 @@ def test_cross_fqun_occupied_requirement_violated(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        f"action<{_MAIN_FQUN}:/test>",
-        f"action<{_MAIN_FQUN}:/outer>",
-        f"action<{_DEP_FQUN}:/inner>",
-    )
+    assert action_graph_set(result.program_result) == {
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+        (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
+    }
 
 
 def test_complex_chain_same_fqun_position_name(
@@ -2017,13 +2048,11 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "bar.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        _TEST,
-        "action<my.domain.com:my_lib:/foo>",
-        _MIDDLE,
-        "action<my.domain.com:my_lib:/bar>",
-    )
+    assert action_graph_set(result.program_result) == {
+        ("action<my.domain.com:my_lib:/foo>", _MIDDLE),
+        (_TEST, "action<my.domain.com:my_lib:/foo>"),
+        (_MIDDLE, "action<my.domain.com:my_lib:/bar>"),
+    }
 
 
 def test_complex_chain_cross_fqun_position_name(
@@ -2219,10 +2248,8 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "lib/bar.dfn",
         },
     )
-    assert_action_calls(
-        result.action_call_graph,
-        f"action<{_MAIN_FQUN}:/test>",
-        f"action<{_MAIN_FQUN}:/foo>",
-        f"action<{_MAIN_FQUN}:/middle>",
-        f"action<{_DEP_FQUN}:/bar>",
-    )
+    assert action_graph_set(result.program_result) == {
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/foo>"),
+        (f"action<{_MAIN_FQUN}:/foo>", f"action<{_MAIN_FQUN}:/middle>"),
+        (f"action<{_MAIN_FQUN}:/middle>", f"action<{_DEP_FQUN}:/bar>"),
+    }

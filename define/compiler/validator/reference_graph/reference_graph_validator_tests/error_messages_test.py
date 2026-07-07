@@ -7,7 +7,9 @@ from define.compiler.conftest import (
     ValidateProjectWithReferenceGraph,
 )
 from define.compiler.data_structures import define_path
-from define.compiler.validator.test_helpers import assert_action_calls
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
@@ -222,7 +224,7 @@ def test_action_requires_empty_position_format(
             File "test.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/other>' infers this requirement:
             File "other.dfn", line 7, column 30""")
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_action_requires_occupied_position_format(
@@ -361,7 +363,11 @@ def test_propagated_action_requires_empty_position_format(
             File "middle.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 7, column 30""")
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
 
 
 def test_move_violates_constraints_error_message(

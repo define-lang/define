@@ -5,13 +5,16 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_SUB = "action<my.domain.com:my_lib:/sub>"
 
 
 def test_caller_violates_empty_via_create_in_implied_position(
@@ -87,7 +90,7 @@ def test_caller_violates_empty_via_create_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_move_from_implied_position(
@@ -154,7 +157,7 @@ def test_caller_violates_occupied_via_move_from_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_destroy_in_implied_position(
@@ -220,7 +223,7 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_satisfies_empty_in_implied_position(
@@ -259,7 +262,7 @@ def test_caller_satisfies_empty_in_implied_position(
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_satisfies_occupied_in_implied_position(
@@ -300,7 +303,7 @@ def test_caller_satisfies_occupied_in_implied_position(
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_empty_via_create_in_child_of_implied_position(
@@ -387,7 +390,7 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_move_from_child_of_implied_position(
@@ -466,7 +469,7 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
@@ -544,7 +547,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_satisfies_empty_in_child_of_implied_position(
@@ -592,7 +595,7 @@ def test_caller_satisfies_empty_in_child_of_implied_position(
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_satisfies_occupied_in_child_of_implied_position(
@@ -641,7 +644,7 @@ def test_caller_satisfies_occupied_in_child_of_implied_position(
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_empty_via_create_in_iface_of_implied_action(
@@ -729,7 +732,7 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _SUB), (_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
@@ -808,7 +811,7 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
@@ -886,7 +889,7 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _INNER)}
 
 
 def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
@@ -983,7 +986,7 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _SUB), (_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action(
@@ -1072,7 +1075,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _SUB), (_TEST, _INNER)}
 
 
 def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_action(
@@ -1160,4 +1163,4 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
             "file_path": "inner.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _INNER)
+    assert action_graph_set(result.program_result) == {(_TEST, _SUB), (_TEST, _INNER)}

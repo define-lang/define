@@ -8,10 +8,12 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph_set,
+)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
@@ -74,7 +76,7 @@ def test_error_interface_position_stays_error_after_trigger(
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
     assert all_diags[1].occupied_at.column == 47
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_guarantee_suppresses_create_diagnostic(
@@ -123,7 +125,7 @@ def test_post_trigger_error_guarantee_suppresses_create_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_guarantee_suppresses_move_from_diagnostic(
@@ -173,7 +175,7 @@ def test_post_trigger_error_guarantee_suppresses_move_from_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_guarantee_suppresses_move_to_diagnostic(
@@ -224,7 +226,7 @@ def test_post_trigger_error_guarantee_suppresses_move_to_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_chain_guarantee_suppresses_create_diagnostic(
@@ -277,7 +279,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_create_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_chain_guarantee_suppresses_move_from_diagnostic(
@@ -331,7 +333,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_from_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_error_chain_guarantee_suppresses_move_to_diagnostic(
@@ -386,7 +388,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_to_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_error_from_move_to_occupied_interface_position(
@@ -434,7 +436,7 @@ def test_error_from_move_to_occupied_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 49
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_error_from_constraint_violation_on_interface_position(
@@ -487,7 +489,7 @@ def test_error_from_constraint_violation_on_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 57
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_error_propagation_from_local_to_interface_position(
@@ -536,7 +538,7 @@ def test_error_propagation_from_local_to_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_error_from_prefix_move_on_interface_position(
@@ -605,7 +607,7 @@ def test_error_from_prefix_move_on_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 66
-    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OUTER)}
 
 
 def test_unknown_global_chain_start_treats_action_guarantees_as_error(
@@ -712,7 +714,7 @@ def test_post_trigger_error_guarantee_on_child_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_existing_guarantee_error_origin_with_children(
@@ -781,7 +783,7 @@ def test_post_trigger_existing_guarantee_error_origin_with_children(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_caller_prefills_child_without_parent_then_triggers(
@@ -847,7 +849,7 @@ def test_caller_prefills_child_without_parent_then_triggers(
         all_diags[0].parent_position_name
         == "position<box>::action</other>::position<item>"
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_action_creates_child_but_caller_omits_parent(
@@ -899,7 +901,7 @@ def test_action_creates_child_but_caller_omits_parent(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 0
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_swap_guarantee_both_positions_unfilled(
@@ -1005,7 +1007,7 @@ def test_swap_guarantee_both_positions_unfilled(
             "file_path": "other.dfn",
         },
     )
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_swap_guarantee_one_position_unfilled(
@@ -1100,7 +1102,7 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[1].populated_at.end_line == 11
     assert all_diags[1].populated_at.end_column == 58
     assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
 
 
 def test_each_unfilled_required_parent_independently_makes_caller_position_error(
@@ -1535,4 +1537,4 @@ def test_swap_propagates_prior_error_state_from_origin_to_destination(
     assert all_diags[1].occupied_at.end_line == 13
     assert all_diags[1].occupied_at.end_column == 72
     assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
-    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
