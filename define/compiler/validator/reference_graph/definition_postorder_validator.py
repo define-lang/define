@@ -567,7 +567,13 @@ class ActionPostorderValidator:
         )
         self._nested_guarantees.append(
             self._tracker.apply_guarantees(
-                action_chain, contract.guarantees, acting_on_position
+                action_chain,
+                contract.guarantees,
+                acting_on_position,
+                [
+                    requirement.full_propagation_position_chain()
+                    for requirement in contract.requirements.values()
+                ],
             )
         )
         self._dead_tracker.mark_alive(action_chain)

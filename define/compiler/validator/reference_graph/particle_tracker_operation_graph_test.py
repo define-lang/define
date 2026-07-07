@@ -217,6 +217,7 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
             own=[(("position<out>",), _occupied_by_new())], nested=()
         ),
         run,
+        [],
     )
     # The triggered action's output becomes a guarantee node hanging off the
     # trigger; that node is the output's last operation.
@@ -245,6 +246,7 @@ def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
             nested=(),
         ),
         run,
+        [],
     )
     # Each of the callee's outputs becomes its own guarantee node.
     assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE, _GUARANTEE]
@@ -278,6 +280,7 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
         _action_chain(_local("box"), outer),
         action_contract.Guarantees(own=[], nested=(nested,)),
         run,
+        [],
     )
     # The nested guarantee is deferred; a query on its output drains it, adding a
     # guarantee node (hanging off the trigger it inherited) that becomes the
@@ -312,6 +315,7 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
         _action_chain(_local("box"), earlier),
         action_contract.Guarantees(own=[], nested=(nested,)),
         earlier_run,
+        [],
     )
     # The later trigger writes the same position eagerly, becoming its last
     # operation.
@@ -319,6 +323,7 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
         _action_chain(_local("box"), later),
         action_contract.Guarantees(own=[(inner_item, _occupied_by_new())], nested=()),
         later_run,
+        [],
     )
     assert _last_operation(tracker, item) == 4
     # Draining the earlier trigger's stale guarantee finds the position already
@@ -342,11 +347,14 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
             own=[(("position<out>",), _occupied_by_new())], nested=()
         ),
         run,
+        [],
     )
     # The fill that fired the trigger carries the action it fires; the box that
     # merely holds it fires nothing.
-    assert list(tracker.operation_graph.triggered_actions(1)) == [action_chain]
-    assert tracker.operation_graph.triggered_actions(0) == ()
+    assert tracker.operation_graph.nodes[1].satisfies == [
+        operation_graph.RequirementSatisfaction(action_chain, ())
+    ]
+    assert tracker.operation_graph.nodes[0].satisfies == []
 
 
 def test_from_caller_trigger_tags_no_action():
@@ -363,6 +371,7 @@ def test_from_caller_trigger_tags_no_action():
             own=[(("position<out>",), _occupied_by_new())], nested=()
         ),
         run,
+        [],
     )
     # The trigger position came from the caller, so there is no operation to tag
     # and the output has no producing operation in this graph.
@@ -402,6 +411,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
         _action_chain(box, b),
         action_contract.Guarantees(own=callee_guarantees, nested=()),
         run,
+        [],
     )
     caller.create(_chain(box, b, x), ())  # node 3
 

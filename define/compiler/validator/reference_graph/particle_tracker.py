@@ -11,7 +11,7 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Container, Iterator
+    from collections.abc import Container, Iterable, Iterator
 
 
 @dataclass(frozen=True, slots=True)
@@ -802,18 +802,25 @@ class ParticleTracker:
         action_chain: ast.ActionReference,
         guarantees: action_contract.Guarantees,
         acting_on_position: ast.PositionReference,
+        requirements: Iterable[ast.PositionReference],
     ) -> action_contract.NestedGuarantees:
         """Apply the guarantees for a triggered action.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.
 
+        ``requirements`` are the callee's own requirement chains; the operation
+        graph tags the caller operations that satisfy them.
+
         Returns a nested guarantee for this action to record.
         """
         self._body_operation_number += 1
         action_chain_key = action_chain.canonical_chained_name_tuple
-        trigger_node_id = self._operation_graph.last_operation_node_id_for_key(
-            acting_on_position.canonical_chained_name_tuple
+        # We have to record the action trigger when particles are still
+        # in their requirements positions, because applying pending guarantees
+        # will trigger the guarantees of the callee in the operation graph.
+        trigger_node_id = self._operation_graph.record_action_trigger(
+            action_chain, acting_on_position, requirements
         )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
@@ -822,8 +829,6 @@ class ParticleTracker:
             trigger_node_id,
         )
         self._apply_pending_guarantee(callee_guarantees)
-        if trigger_node_id is not None:
-            self._operation_graph.record_action_trigger(trigger_node_id, action_chain)
         return action_contract.NestedGuarantees(
             triggered_action=action_chain_key, guarantees=guarantees
         )

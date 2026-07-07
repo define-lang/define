@@ -78,19 +78,20 @@ def _deps(graph: operation_graph.OperationGraph, node_id: int) -> set[int]:
 
 def _trigger(
     graph: operation_graph.OperationGraph,
-    node_id: int,
+    acting_on_position: ast.PositionReference,
     action_path: str,
     *output_keys: tuple[str, ...],
 ):
-    """Fire ``action_path`` from operation ``node_id``, guaranteeing ``output_keys``.
+    """Fire ``action_path`` from the operation on ``acting_on_position``, guaranteeing ``output_keys``.
 
     Each output's callee-local key is taken to equal its absolute key, which is
     all these synthetic graphs (no real callee) need.
     """
     action_chain = _action_chain(action_path)
-    graph.record_action_trigger(node_id, action_chain)
+    trigger_node_id = graph.record_action_trigger(action_chain, acting_on_position, [])
+    assert trigger_node_id is not None
     graph.record_guarantees(
-        node_id,
+        trigger_node_id,
         action_chain.typed_names[-1].full_typed_name,
         [(key, key) for key in output_keys],
     )
@@ -291,11 +292,14 @@ def test_operation_records_the_actions_it_triggers():
     graph.record_create(_ref("basket"))  # 1
     brew = _action_chain("/brew")
     grind = _action_chain("/grind")
-    graph.record_action_trigger(0, brew)
-    graph.record_action_trigger(0, grind)
-    assert list(graph.triggered_actions(0)) == [brew, grind]
-    # An operation that fires nothing has no triggered actions.
-    assert graph.triggered_actions(1) == ()
+    _ = graph.record_action_trigger(brew, _ref("box"), [])
+    _ = graph.record_action_trigger(grind, _ref("box"), [])
+    assert graph.nodes[0].satisfies == [
+        operation_graph.RequirementSatisfaction(brew, ()),
+        operation_graph.RequirementSatisfaction(grind, ()),
+    ]
+    # An operation that fires nothing satisfies nothing.
+    assert graph.nodes[1].satisfies == []
 
 
 def test_each_operation_reports_only_its_own_triggers():
@@ -304,16 +308,21 @@ def test_each_operation_reports_only_its_own_triggers():
     graph.record_create(_ref("two"))  # 1
     brew = _action_chain("/brew")
     grind = _action_chain("/grind")
-    graph.record_action_trigger(0, brew)
-    graph.record_action_trigger(1, grind)
-    assert list(graph.triggered_actions(0)) == [brew]
-    assert list(graph.triggered_actions(1)) == [grind]
+    _ = graph.record_action_trigger(brew, _ref("one"), [])
+    _ = graph.record_action_trigger(grind, _ref("two"), [])
+    assert graph.nodes[0].satisfies == [
+        operation_graph.RequirementSatisfaction(brew, ())
+    ]
+    assert graph.nodes[1].satisfies == [
+        operation_graph.RequirementSatisfaction(grind, ())
+    ]
 
 
 def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
-    _trigger(graph, 0, "/brew", _key("machine", "coffee"))  # 1: the guarantee node
+    # 1: the guarantee node
+    _trigger(graph, _ref("machine"), "/brew", _key("machine", "coffee"))
     # The output becomes a guarantee node whose last operation is that node, and
     # the guarantee node itself waits on the trigger.
     assert len(graph.nodes) == 2
@@ -325,7 +334,7 @@ def test_guarantee_node_carries_the_callee_action_and_output_position():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     brew = _action_chain("/brew")
-    graph.record_action_trigger(0, brew)
+    _ = graph.record_action_trigger(brew, _ref("machine"), [])
     # The callee's own key for the output (``position<coffee>``) differs from
     # where it lands in the caller (``machine::coffee``); the node keeps the
     # callee's key so codegen can find the split point in the callee's graph.
@@ -345,7 +354,8 @@ def test_guarantee_node_carries_the_callee_action_and_output_position():
 def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
-    _trigger(graph, 0, "/brew", _key("machine", "coffee"))  # 1: the guarantee node
+    # 1: the guarantee node
+    _trigger(graph, _ref("machine"), "/brew", _key("machine", "coffee"))
     graph.record_destroy(_ref("machine", "coffee"), [])  # 2
     # The consumer chains to the guarantee node (the most recent operation on its
     # ancestor chain), not to the trigger directly. The guarantee node already
@@ -357,7 +367,8 @@ def test_guarantee_overrides_an_earlier_operation():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("cup"))  # 0: the caller already filled cup
     graph.record_create(_ref("machine"))  # 1: the trigger fill
-    _trigger(graph, 1, "/brew", _key("cup"))  # 2: guarantee node re-fills cup
+    # 2: guarantee node re-fills cup
+    _trigger(graph, _ref("machine"), "/brew", _key("cup"))
     graph.record_destroy(_ref("cup"), [])  # 3
     # A later operation chains to the guarantee node, not the stale earlier create.
     assert _deps(graph, 3) == {2}
@@ -367,7 +378,8 @@ def test_parent_destroy_reaches_a_triggered_child():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("box"))  # 0
     graph.record_create(_ref("gadget"))  # 1: the trigger fill
-    _trigger(graph, 1, "/brew", _key("box", "out"))  # 2: guarantee node fills box::out
+    # 2: guarantee node fills box::out
+    _trigger(graph, _ref("gadget"), "/brew", _key("box", "out"))
     graph.record_destroy(_ref("box"), [_key("box", "out")])  # 3
     # The destroy waits, via the Child Rule, on the guarantee node that filled its
     # child (2); that node already reaches the box's create (0).
@@ -378,7 +390,13 @@ def test_triggered_outputs_get_separate_guarantee_nodes():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     # 1: guarantee node for coffee, 2: guarantee node for puck
-    _trigger(graph, 0, "/brew", _key("machine", "coffee"), _key("machine", "puck"))
+    _trigger(
+        graph,
+        _ref("machine"),
+        "/brew",
+        _key("machine", "coffee"),
+        _key("machine", "puck"),
+    )
     graph.record_destroy(_ref("machine", "coffee"), [])  # 3
     graph.record_destroy(_ref("machine", "puck"), [])  # 4
     # Each consumer hangs off its own output's guarantee node, the most recent
@@ -391,10 +409,13 @@ def test_a_move_can_be_the_trigger_fill():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("src"))  # 0
     graph.record_move(_ref("src"), _ref("slot"), [])  # 1: the fill is a move
-    _trigger(graph, 1, "/brew", _key("slot", "out"))  # 2: the guarantee node
+    # 2: the guarantee node
+    _trigger(graph, _ref("slot"), "/brew", _key("slot", "out"))
     graph.record_destroy(_ref("slot", "out"), [])  # 3
-    assert list(graph.triggered_actions(1)) == [_action_chain("/brew")]
-    assert graph.triggered_actions(0) == ()
+    assert graph.nodes[1].satisfies == [
+        operation_graph.RequirementSatisfaction(_action_chain("/brew"), ())
+    ]
+    assert graph.nodes[0].satisfies == []
     # The destroy chains to the guarantee node, the most recent operation on its
     # ancestor chain, which already waits on the slot.
     assert _deps(graph, 3) == {2}
@@ -403,7 +424,8 @@ def test_a_move_can_be_the_trigger_fill():
 def test_a_later_operation_overrides_a_guarantee():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
-    _trigger(graph, 0, "/brew", _key("cup"))  # 1: guarantee node fills cup
+    # 1: guarantee node fills cup
+    _trigger(graph, _ref("machine"), "/brew", _key("cup"))
     graph.record_create(_ref("cup"))  # 2: the body re-fills cup after the guarantee
     graph.record_destroy(_ref("cup"), [])  # 3
     # The re-fill chains to the guarantee node; a later consumer chains to the re-fill.

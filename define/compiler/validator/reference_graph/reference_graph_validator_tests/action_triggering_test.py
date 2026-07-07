@@ -275,6 +275,70 @@ class TestActionTriggering:
         assert_no_errors(result.program_result)
         assert action_graph(result.program_result) == []
 
+    def test_assumed_occupied_trigger_position_does_not_fire_the_action(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+                "inner.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                    "    define the position<run> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the position</a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<start>.\n"
+                    "    define the position<box> {\n"
+                    "        it may only contain particles where {\n"
+                    "            it has the action</inner>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<start> has a particle.\n"
+                    "    } and it does {\n"
+                    "        create a particle in position<box>::action</inner>::position<run>::position</a>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        # position<box>::action</inner>::position<run> is only assumed occupied,
+        # as a requirement of the deep create, never filled by a body operation.
+        # An assumed occupancy does not fire a trigger, so /inner never runs.
+        assert action_graph(result.program_result) == []
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 2
+        untriggered = all_diags[0]
+        assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
+        assert untriggered.constraint_name == "action</inner>"
+        assert untriggered.position_name == "position<box>"
+        assert untriggered.location.line == 5
+        assert untriggered.location.column == 24
+        assert untriggered.location.end_line == 5
+        assert untriggered.location.end_column == 38
+        assert untriggered.location.file_path == PurePosixPath("test.dfn")
+        dead_child = all_diags[1]
+        assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
+        assert dead_child.constraint_name == "position</a>"
+        assert dead_child.position_name == "position<run>"
+        assert dead_child.location.line == 4
+        assert dead_child.location.column == 24
+        assert dead_child.location.end_line == 4
+        assert dead_child.location.end_column == 36
+        assert dead_child.location.file_path == PurePosixPath("inner.dfn")
+
     def test_cross_file_triggering(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,

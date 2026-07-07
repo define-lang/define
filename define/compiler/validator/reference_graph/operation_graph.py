@@ -17,12 +17,30 @@ exist to support validation.
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
-
-from define.compiler import ast
+from dataclasses import dataclass, field
 
 if typing.TYPE_CHECKING:
     from collections.abc import Container, Iterable, Sequence
+
+    from define.compiler import ast
+
+
+@dataclass(frozen=True, slots=True)
+class RequirementSatisfaction:
+    """A triggered callee's requirement that this caller operation satisfies.
+
+    Left on the caller operation that establishes the required state; codegen,
+    reaching the operation while walking, splices the callee's matching
+    RequirementNode here. A callee shows up in some operation's satisfactions
+    exactly when it is triggered, so this also stands in for the old triggered-
+    action bookkeeping.
+    """
+
+    # The triggered callee. codegen takes the graph key
+    # (callee.typed_names[-1].full_typed_name) only when it needs it.
+    callee: ast.ActionReference
+    # The callee's own key for the requirement this operation satisfies.
+    requirement_position: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -33,6 +51,11 @@ class OperationNode:
     # The ids of the operations this node directly depends on (the operations
     # that must complete before it).
     depends_on: list[int]
+    # Requirements of triggered callees this operation satisfies. Back-populated
+    # when a callee is triggered. A RequirementNode or GuaranteeNode can carry
+    # these too, which is what makes empty-by-default-via-parent and
+    # multi-level pass-through work.
+    satisfies: list[RequirementSatisfaction] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -95,10 +118,6 @@ class RequirementNode(OperationNode):
     # This action's own key for the caller-controlled contracted position.
     requirement_position: tuple[str, ...]
 
-    def caller_key(self, caller_chain: tuple[str, ...]) -> tuple[str, ...]:
-        """Return this requirement's absolute key in a caller that triggers it via ``caller_chain``."""
-        return ast.chain_in_caller(caller_chain, self.requirement_position)
-
 
 class OperationGraph:
     """An append-only dependency graph of one action's particle operations."""
@@ -137,11 +156,6 @@ class OperationGraph:
         #     new global max, so it invalidates the answer for its whole subtree,
         #     not just when a requirement node is added.)
         self._last_operation: dict[tuple[str, ...], int] = {}
-        # For each operation that fires triggered actions, the actions it fires.
-        # Codegen expands the operation into those actions' own graphs. We support
-        # triggering more than one action with a single operation because that's
-        # possible with constructors and destructors.
-        self._triggered_actions: dict[int, list[ast.ActionReference]] = {}
         self._requirements: Container[tuple[str, ...]] = requirements
 
     @property
@@ -164,9 +178,49 @@ class OperationGraph:
             self._nodes[node_id], RequirementNode
         )
 
-    def triggered_actions(self, node_id: int) -> Sequence[ast.ActionReference]:
-        """Return the triggered actions this operation fires (empty if none)."""
-        return self._triggered_actions.get(node_id, ())
+    def record_action_trigger(
+        self,
+        callee: ast.ActionReference,
+        acting_on_position: ast.PositionReference,
+        requirements: Iterable[ast.PositionReference],
+    ) -> int | None:
+        """Record that this action triggers ``callee``, returning the firing operation's id."""
+        firing_node_id = self._last_operation.get(
+            acting_on_position.canonical_chained_name_tuple
+        )
+        if firing_node_id is not None:
+            self._nodes[firing_node_id].satisfies.append(
+                RequirementSatisfaction(callee, ())
+            )
+        # TODO: This only finds a satisfier in the immediate caller. A requirement
+        # that propagates up several call levels is satisfied by an op further up
+        # the stack, so we need to re-propagate this callee's RequirementNodes into
+        # each of its own callers (as guarantees are re-propagated) and tag the
+        # satisfier there. The multi-level requirement tests are xfail on this.
+        for requirement in requirements:
+            absolute = requirement.in_caller(callee).canonical_chained_name_tuple
+            requirement_key = requirement.canonical_chained_name_tuple
+            satisfier = self._most_recent_chain_operation_below(
+                absolute, len(absolute) - len(requirement_key)
+            )
+            if satisfier is not None:
+                self._nodes[satisfier].satisfies.append(
+                    RequirementSatisfaction(callee, requirement_key)
+                )
+        return firing_node_id
+
+    def _most_recent_chain_operation_below(
+        self, key: tuple[str, ...], base_length: int
+    ) -> int | None:
+        """Most recent operation on ``key`` or an ancestor down to (not including) ``base_length``."""
+        most_recent: int | None = None
+        for length in range(len(key), base_length, -1):
+            operation = self._last_operation.get(key[:length])
+            if operation is not None and (
+                most_recent is None or operation > most_recent
+            ):
+                most_recent = operation
+        return most_recent
 
     def _compute_dependencies(
         self,
@@ -369,11 +423,3 @@ class OperationGraph:
                 )
             )
             self._last_operation[absolute_key] = node_id
-
-    def record_action_trigger(
-        self,
-        node_id: int,
-        action_chain: ast.ActionReference,
-    ):
-        """Record that operation ``node_id`` fires ``action_chain``."""
-        self._triggered_actions.setdefault(node_id, []).append(action_chain)

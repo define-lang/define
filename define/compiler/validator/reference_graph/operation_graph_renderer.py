@@ -2,7 +2,6 @@
 """Renders DLP 44 operation graphs as readable adjacency dicts for tests."""
 
 from collections import Counter
-from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.validator import validation_result
@@ -10,19 +9,6 @@ from define.compiler.validator.reference_graph import operation_graph
 
 # For a spliced-in triggered action: its graph, and its node-id -> rendered label.
 _CalleeSplice = tuple[operation_graph.OperationGraph, dict[int, str | None]]
-
-
-@dataclass(frozen=True, slots=True)
-class _CallerContext:
-    """The caller-side scope a spliced callee resolves its RequirementNodes against."""
-
-    graph: operation_graph.OperationGraph
-    # The caller's node-id -> rendered label, live as the caller is flattened.
-    labels: dict[int, str | None]
-    # The caller operation that fired this callee.
-    trigger_node_id: int
-    # The callee's absolute chain in the caller (the trigger's action chain).
-    callee_chain: tuple[str, ...]
 
 
 class _OperationGraphFlattener:
@@ -46,107 +32,89 @@ class _OperationGraphFlattener:
         self,
         action: str,
         trigger_label: str | None,
-        caller_context: _CallerContext | None,
+        satisfiers: dict[tuple[str, ...], str | None] | None,
         dependencies: dict[str, list[str]],
     ) -> dict[int, str | None]:
+        """Flatten ``action``, resolving each RequirementNode via ``satisfiers``.
+
+        ``satisfiers`` maps this action's own requirement keys to the caller
+        operations that satisfy them (None for the root action).
+        """
         graph = self._registry[action]
         action_name = self._action_display_name(action)
         local_labels: dict[int, str | None] = {}
         # Keyed by (trigger operation id, callee action), for resolving the
         # guarantee nodes that stand in for those callees' outputs.
         callee_splices: dict[tuple[int, str], _CalleeSplice] = {}
+        # (callee full typed name, callee requirement key) -> label of the
+        # operation that satisfies it, accumulated as each operation is passed.
+        outgoing: dict[tuple[str, tuple[str, ...]], str | None] = {}
         for node in graph.nodes:
             if isinstance(node, operation_graph.RequirementNode):
-                # A seam for the caller op that satisfies the requirement: the
-                # caller op on this exact position, or -- for a position the caller
-                # never touched (an empty-by-default child) -- whatever satisfies
-                # its parent requirement, reached through its own depends_on.
-                label = self._requirement_caller_label(node, caller_context)
+                # A seam for the caller op that satisfies the requirement, found in
+                # ``satisfiers``; an untouched empty-by-default position falls
+                # through to whatever satisfies its parent, via its own depends_on.
+                label = (
+                    satisfiers.get(node.requirement_position) if satisfiers else None
+                )
                 if label is None:
                     label = next((local_labels[dep] for dep in node.depends_on), None)
                 local_labels[node.node_id] = label
-                continue
-            if isinstance(node, operation_graph.GuaranteeNode):
-                # A callee output: it renders as the callee's own split point.
+            elif isinstance(node, operation_graph.GuaranteeNode):
+                # A callee output: splice the callee (once) and render its own
+                # split point.
+                self._splice_callee(
+                    node, local_labels, outgoing, callee_splices, dependencies
+                )
                 local_labels[node.node_id] = self._split_point_label(
                     node, callee_splices
                 )
-                continue
-            label = self._operation_label(action_name, node)
-            predecessors = [
-                resolved
-                for dep in node.depends_on
-                if (resolved := local_labels[dep]) is not None
-            ]
-            # An operation whose only dependencies were RequirementNodes with no
-            # satisfying caller op still waits on the trigger, so it runs after
-            # the callee's context exists.
-            if not predecessors and trigger_label is not None:
-                predecessors = [trigger_label]
-            dependencies[label] = predecessors
-            local_labels[node.node_id] = label
-            for triggered in graph.triggered_actions(node.node_id):
-                callee_action = triggered.typed_names[-1].full_typed_name
-                child_context = _CallerContext(
-                    graph=graph,
-                    labels=local_labels,
-                    trigger_node_id=node.node_id,
-                    callee_chain=triggered.canonical_chained_name_tuple,
-                )
-                callee_labels = self._flatten_action(
-                    callee_action, label, child_context, dependencies
-                )
-                callee_splices[(node.node_id, callee_action)] = (
-                    self._registry[callee_action],
-                    callee_labels,
-                )
+            else:
+                label = self._operation_label(action_name, node)
+                predecessors = [
+                    resolved
+                    for dep in node.depends_on
+                    if (resolved := local_labels[dep]) is not None
+                ]
+                # An operation whose only dependencies were RequirementNodes with
+                # no satisfying caller op still waits on the trigger, so it runs
+                # after the callee's context exists.
+                if not predecessors and trigger_label is not None:
+                    predecessors = [trigger_label]
+                dependencies[label] = predecessors
+                local_labels[node.node_id] = label
+            for satisfaction in node.satisfies:
+                callee = satisfaction.callee.typed_names[-1].full_typed_name
+                outgoing[(callee, satisfaction.requirement_position)] = local_labels[
+                    node.node_id
+                ]
         return local_labels
 
-    def _requirement_caller_label(
+    def _splice_callee(
         self,
-        node: operation_graph.RequirementNode,
-        caller_context: _CallerContext | None,
-    ) -> str | None:
-        """Resolve a RequirementNode to the caller op that most recently operated on its exact position before the trigger.
-
-        Ancestor positions are handled by the node's own ``depends_on`` (its parent
-        RequirementNode), not here. The root action's own requirements are program
-        inputs with no caller, so they resolve to nothing.
-        """
-        # TODO: This only resolves against the immediate caller. A requirement
-        # that propagates up several call levels is satisfied by an op further
-        # up the stack, so we need to re-propagate the callee's RequirementNodes
-        # into each caller (as we do guarantees) and resolve there. The
-        # test_occupied_requirement_two_levels_up_* tests are xfail on this.
-        if caller_context is None:
-            return None
-        requirement_key = node.caller_key(caller_context.callee_chain)
-        best_node_id: int | None = None
-        for caller_node in caller_context.graph.nodes:
-            if caller_node.node_id >= caller_context.trigger_node_id:
-                continue
-            if requirement_key in self._touched_keys(caller_node) and (
-                best_node_id is None or caller_node.node_id > best_node_id
-            ):
-                best_node_id = caller_node.node_id
-        if best_node_id is None:
-            return None
-        return caller_context.labels[best_node_id]
-
-    def _touched_keys(
-        self, node: operation_graph.OperationNode
-    ) -> tuple[tuple[str, ...], ...]:
-        """Return the position keys an operation reads or writes, in any role."""
-        match node:
-            case operation_graph.CreateNode() | operation_graph.DestroyNode():
-                return (node.target.canonical_chained_name_tuple,)
-            case operation_graph.MoveNode():
-                return (
-                    node.source.canonical_chained_name_tuple,
-                    node.target.canonical_chained_name_tuple,
-                )
-            case _:
-                return ()
+        guarantee_node: operation_graph.GuaranteeNode,
+        local_labels: dict[int, str | None],
+        outgoing: dict[tuple[str, tuple[str, ...]], str | None],
+        callee_splices: dict[tuple[int, str], _CalleeSplice],
+        dependencies: dict[str, list[str]],
+    ):
+        """Flatten the callee this guarantee comes from, once per (trigger, callee)."""
+        callee = guarantee_node.action
+        trigger_node_id = guarantee_node.depends_on[0]
+        if (trigger_node_id, callee) in callee_splices:
+            return
+        satisfiers = {
+            requirement_position: label
+            for (satisfied_callee, requirement_position), label in outgoing.items()
+            if satisfied_callee == callee
+        }
+        callee_labels = self._flatten_action(
+            callee, local_labels[trigger_node_id], satisfiers, dependencies
+        )
+        callee_splices[(trigger_node_id, callee)] = (
+            self._registry[callee],
+            callee_labels,
+        )
 
     def _split_point_label(
         self,
@@ -221,8 +189,13 @@ def action_graph(
             continue
         source = typed_name.source_typed_name
         for node in graph.nodes:
-            for action_ref in graph.triggered_actions(node.node_id):
-                edges.append((source, action_ref.typed_names[-1].full_typed_name))
+            for satisfaction in node.satisfies:
+                # The firing satisfaction (keyed to the callee's root) is recorded
+                # once per trigger, so it is the one that counts triggers -- an
+                # action that fires the same callee twice yields two edges.
+                if satisfaction.requirement_position == ():
+                    callee = satisfaction.callee.typed_names[-1].full_typed_name
+                    edges.append((source, callee))
     return edges
 
 
