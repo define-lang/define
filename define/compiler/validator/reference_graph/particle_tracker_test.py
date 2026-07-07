@@ -9,6 +9,8 @@ from define.compiler.validator.reference_graph import (
 )
 
 _LOC = ast.start_of_file_location()
+
+_NO_REQUIREMENTS: frozenset[tuple[str, ...]] = frozenset()
 _LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
 _POS2_REF = ast.PositionReference(
     typed_names=(
@@ -92,7 +94,7 @@ def _make_position_ref(
 
 
 def test_create_and_is_occupied():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, ())
@@ -101,13 +103,13 @@ def test_create_and_is_occupied():
 
 
 def test_not_occupied_initially():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
 
     assert tracker.is_occupied(_make_position_ref([_make_local_ref("my_pos")])) is False
 
 
 def test_get_occupant():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, (_make_global_ref("/x"),))
@@ -119,7 +121,7 @@ def test_get_occupant():
 
 
 def test_create_already_occupied_raises():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, ())
@@ -129,7 +131,7 @@ def test_create_already_occupied_raises():
 
 
 def test_destroy():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("pos_a")])
 
     tracker.create(ref, ())
@@ -139,14 +141,14 @@ def test_destroy():
 
 
 def test_destroy_from_empty_raises():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
 
     with pytest.raises(ValueError, match="not occupied"):
         tracker.destroy(_make_position_ref([_make_local_ref("pos_a")]))
 
 
 def test_move():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -158,7 +160,7 @@ def test_move():
 
 
 def test_move_from_empty_raises():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
 
     with pytest.raises(KeyError):
         tracker.move(
@@ -168,7 +170,7 @@ def test_move_from_empty_raises():
 
 
 def test_mark_error_state():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.mark_error(ref)
@@ -177,7 +179,7 @@ def test_mark_error_state():
 
 
 def test_no_error_state_initially():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
 
     assert (
         tracker.has_error_state(_make_position_ref([_make_local_ref("my_pos")]))
@@ -186,7 +188,7 @@ def test_no_error_state_initially():
 
 
 def test_error_state_does_not_affect_other_keys():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
 
     tracker.mark_error(_make_position_ref([_make_local_ref("pos_a")]))
 
@@ -199,7 +201,7 @@ def test_error_state_does_not_affect_other_keys():
 
 
 def test_error_state_propagates_to_descendants():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -213,7 +215,7 @@ def test_error_state_propagates_to_descendants():
 
 
 def test_move_to_occupied_raises():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -225,7 +227,7 @@ def test_move_to_occupied_raises():
 
 
 def test_create_stores_qualities():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, (_make_global_ref("/x"),))
@@ -234,7 +236,7 @@ def test_create_stores_qualities():
 
 
 def test_move_preserves_qualities():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
     qualities = (_make_global_ref("/x"), _make_global_ref("/y"))
@@ -246,7 +248,7 @@ def test_move_preserves_qualities():
 
 
 def test_move_updates_ref():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref(
         [_make_local_ref("pos_b", location=_LOC2)], location=_LOC2
@@ -260,7 +262,7 @@ def test_move_updates_ref():
 
 
 def test_create_empty_qualities():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, ())
@@ -269,7 +271,7 @@ def test_create_empty_qualities():
 
 
 def test_keys_use_separate_trie_levels():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_chain = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -282,7 +284,7 @@ def test_keys_use_separate_trie_levels():
 
 
 def test_move_preserves_origin_position():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -293,7 +295,7 @@ def test_move_preserves_origin_position():
 
 
 def test_create_at_global_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
@@ -305,7 +307,7 @@ def test_create_at_global_chain():
 
 
 def test_move_from_local_to_global_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     dest_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
@@ -322,7 +324,7 @@ def test_move_from_local_to_global_chain():
 
 
 def test_move_from_global_chain_to_local():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     chain_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
@@ -339,7 +341,7 @@ def test_move_from_global_chain_to_local():
 
 
 def test_move_between_global_chains():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_a = _make_position_ref([_make_local_ref("pos_a")])
     parent_b = _make_position_ref([_make_local_ref("pos_b")])
     chain_a = _make_position_ref(
@@ -360,7 +362,7 @@ def test_move_between_global_chains():
 
 
 def test_create_at_interface_position_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("item")]
@@ -374,7 +376,7 @@ def test_create_at_interface_position_chain():
 
 
 def test_action_parent_auto_created_for_single_action_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     item_ref = _make_position_ref([_make_local_ref("item")])
     ref = _make_position_ref(
         [_make_local_ref("item"), _make_action_ref("/foo"), _make_local_ref("trigger")]
@@ -387,7 +389,7 @@ def test_action_parent_auto_created_for_single_action_chain():
 
 
 def test_chained_position_without_intermediate_fails():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     local_ref = _make_position_ref([_make_local_ref("local")])
     ref = _make_position_ref(
         [_make_local_ref("local"), _make_global_ref("/mid"), _make_global_ref("/last")]
@@ -400,7 +402,7 @@ def test_chained_position_without_intermediate_fails():
 
 
 def test_action_chain_without_parent_position_fails():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref(
         [_make_local_ref("local"), _make_action_ref("/foo"), _make_local_ref("iface")]
     )
@@ -410,7 +412,7 @@ def test_action_chain_without_parent_position_fails():
 
 
 def test_nested_action_chain_without_intermediate_fails():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     item_ref = _make_position_ref([_make_local_ref("item")])
     ref = _make_position_ref(
         [
@@ -429,7 +431,7 @@ def test_nested_action_chain_without_intermediate_fails():
 
 
 def test_move_between_interface_position_chains():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref_a = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("src")]
@@ -448,7 +450,7 @@ def test_move_between_interface_position_chains():
 
 
 def test_destroy_at_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
@@ -460,7 +462,7 @@ def test_destroy_at_chain():
 
 
 def test_destroy_prunes_children():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -475,7 +477,7 @@ def test_destroy_prunes_children():
 
 
 def test_mark_error_at_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
     tracker.mark_error(ref)
@@ -484,7 +486,7 @@ def test_mark_error_at_chain():
 
 
 def test_destroy_clears_error_children():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -502,7 +504,7 @@ def test_destroy_clears_error_children():
 
 
 def test_destroy_parent_also_destroys_child():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     chain_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -521,7 +523,7 @@ def test_destroy_parent_also_destroys_child():
 
 
 def test_emptied_by_at_chain():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")], location=_LOC2
@@ -566,7 +568,7 @@ def _apply_guarantees(
 
 
 def test_apply_guarantees_empty():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -585,7 +587,7 @@ def test_apply_guarantees_empty():
 
 
 def test_apply_guarantees_occupied_by_new():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -615,7 +617,7 @@ def test_apply_guarantees_occupied_by_new():
 
 
 def test_apply_guarantees_occupied_by_existing():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
@@ -663,7 +665,7 @@ def test_apply_guarantees_occupied_by_existing():
 
 
 def test_apply_guarantees_occupied_by_existing_moves_children():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -711,7 +713,7 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
 
 
 def test_apply_guarantees_occupied_by_existing_swap():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -796,7 +798,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
 
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
@@ -829,7 +831,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
 
 
 def test_apply_guarantees_error():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -848,7 +850,7 @@ def test_apply_guarantees_error():
 
 
 def test_apply_guarantees_does_not_touch_unmentioned_positions():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
@@ -877,7 +879,7 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
 
 
 def test_generate_own_guarantees_skips_occupied_by_existing_at_origin():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     run_name = _make_local_ref("run")
     run_ref = _make_position_ref([run_name])
 
@@ -887,7 +889,7 @@ def test_generate_own_guarantees_skips_occupied_by_existing_at_origin():
 
 
 def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     a_name = _make_local_ref("a")
     b_name = _make_local_ref("b")
     a_ref = _make_position_ref([a_name])
@@ -910,7 +912,7 @@ def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
 
 
 def test_generate_own_guarantees_emits_unchanged_for_touched_inferred_empty():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
 
@@ -932,7 +934,7 @@ def test_generate_own_guarantees_emits_unchanged_for_touched_inferred_empty():
 
 
 def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
 
@@ -956,7 +958,7 @@ def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
 
 
 def test_snapshot_child_state_captures_each_occupancy_kind():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent = _make_position_ref([_make_local_ref("parent")])
     child = _make_position_ref([_make_local_ref("parent"), _make_local_ref("child")])
     grandchild = _make_position_ref(
@@ -998,7 +1000,7 @@ def test_snapshot_child_state_captures_each_occupancy_kind():
 
 
 def test_snapshot_child_state_is_decoupled_from_later_mutation():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     parent = _make_position_ref([_make_local_ref("parent")])
     child = _make_position_ref([_make_local_ref("parent"), _make_local_ref("child")])
     grandchild = _make_position_ref(
@@ -1038,7 +1040,7 @@ def test_snapshot_child_state_is_decoupled_from_later_mutation():
 
 
 def test_generate_flattened_guarantees_includes_callee_derived_key():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
     item_ref = _make_position_ref(
@@ -1069,7 +1071,7 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
 
 
 def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
     tracker.create(box_ref, (), from_caller=box_ref)
@@ -1130,7 +1132,7 @@ def _make_nested_level(
 
 
 def test_generate_flattened_guarantees_flattens_many_nested_levels():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
     tracker.create(box_ref, (), from_caller=box_ref)

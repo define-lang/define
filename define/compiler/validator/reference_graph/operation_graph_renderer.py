@@ -2,13 +2,27 @@
 """Renders DLP 44 operation graphs as readable adjacency dicts for tests."""
 
 from collections import Counter
+from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import operation_graph
 
 # For a spliced-in triggered action: its graph, and its node-id -> rendered label.
-_CalleeSplice = tuple[operation_graph.OperationGraph, dict[int, str]]
+_CalleeSplice = tuple[operation_graph.OperationGraph, dict[int, str | None]]
+
+
+@dataclass(frozen=True, slots=True)
+class _CallerContext:
+    """The caller-side scope a spliced callee resolves its RequirementNodes against."""
+
+    graph: operation_graph.OperationGraph
+    # The caller's node-id -> rendered label, live as the caller is flattened.
+    labels: dict[int, str | None]
+    # The caller operation that fired this callee.
+    trigger_node_id: int
+    # The callee's absolute chain in the caller (the trigger's action chain).
+    callee_chain: tuple[str, ...]
 
 
 class _OperationGraphFlattener:
@@ -25,22 +39,33 @@ class _OperationGraphFlattener:
     def flatten(self, root_action: str) -> dict[str, list[str]]:
         """Map each operation to the operations it waits on."""
         dependencies: dict[str, list[str]] = {}
-        self._flatten_action(root_action, None, dependencies)
+        self._flatten_action(root_action, None, None, dependencies)
         return dependencies
 
     def _flatten_action(
         self,
         action: str,
         trigger_label: str | None,
+        caller_context: _CallerContext | None,
         dependencies: dict[str, list[str]],
-    ) -> dict[int, str]:
+    ) -> dict[int, str | None]:
         graph = self._registry[action]
         action_name = self._action_display_name(action)
-        local_labels: dict[int, str] = {}
+        local_labels: dict[int, str | None] = {}
         # Keyed by (trigger operation id, callee action), for resolving the
         # guarantee nodes that stand in for those callees' outputs.
         callee_splices: dict[tuple[int, str], _CalleeSplice] = {}
         for node in graph.nodes:
+            if isinstance(node, operation_graph.RequirementNode):
+                # A seam for the caller op that satisfies the requirement: the
+                # caller op on this exact position, or -- for a position the caller
+                # never touched (an empty-by-default child) -- whatever satisfies
+                # its parent requirement, reached through its own depends_on.
+                label = self._requirement_caller_label(node, caller_context)
+                if label is None:
+                    label = next((local_labels[dep] for dep in node.depends_on), None)
+                local_labels[node.node_id] = label
+                continue
             if isinstance(node, operation_graph.GuaranteeNode):
                 # A callee output: it renders as the callee's own split point.
                 local_labels[node.node_id] = self._split_point_label(
@@ -48,22 +73,80 @@ class _OperationGraphFlattener:
                 )
                 continue
             label = self._operation_label(action_name, node)
-            if node.depends_on:
-                predecessors = [local_labels[dep] for dep in node.depends_on]
-            elif trigger_label is not None:
+            predecessors = [
+                resolved
+                for dep in node.depends_on
+                if (resolved := local_labels[dep]) is not None
+            ]
+            # An operation whose only dependencies were RequirementNodes with no
+            # satisfying caller op still waits on the trigger, so it runs after
+            # the callee's context exists.
+            if not predecessors and trigger_label is not None:
                 predecessors = [trigger_label]
-            else:
-                predecessors = []
             dependencies[label] = predecessors
             local_labels[node.node_id] = label
             for triggered in graph.triggered_actions(node.node_id):
                 callee_action = triggered.typed_names[-1].full_typed_name
-                callee_labels = self._flatten_action(callee_action, label, dependencies)
+                child_context = _CallerContext(
+                    graph=graph,
+                    labels=local_labels,
+                    trigger_node_id=node.node_id,
+                    callee_chain=triggered.canonical_chained_name_tuple,
+                )
+                callee_labels = self._flatten_action(
+                    callee_action, label, child_context, dependencies
+                )
                 callee_splices[(node.node_id, callee_action)] = (
                     self._registry[callee_action],
                     callee_labels,
                 )
         return local_labels
+
+    def _requirement_caller_label(
+        self,
+        node: operation_graph.RequirementNode,
+        caller_context: _CallerContext | None,
+    ) -> str | None:
+        """Resolve a RequirementNode to the caller op that most recently operated on its exact position before the trigger.
+
+        Ancestor positions are handled by the node's own ``depends_on`` (its parent
+        RequirementNode), not here. The root action's own requirements are program
+        inputs with no caller, so they resolve to nothing.
+        """
+        # TODO: This only resolves against the immediate caller. A requirement
+        # that propagates up several call levels is satisfied by an op further
+        # up the stack, so we need to re-propagate the callee's RequirementNodes
+        # into each caller (as we do guarantees) and resolve there. The
+        # test_occupied_requirement_two_levels_up_* tests are xfail on this.
+        if caller_context is None:
+            return None
+        requirement_key = node.caller_key(caller_context.callee_chain)
+        best_node_id: int | None = None
+        for caller_node in caller_context.graph.nodes:
+            if caller_node.node_id >= caller_context.trigger_node_id:
+                continue
+            if requirement_key in self._touched_keys(caller_node) and (
+                best_node_id is None or caller_node.node_id > best_node_id
+            ):
+                best_node_id = caller_node.node_id
+        if best_node_id is None:
+            return None
+        return caller_context.labels[best_node_id]
+
+    def _touched_keys(
+        self, node: operation_graph.OperationNode
+    ) -> tuple[tuple[str, ...], ...]:
+        """Return the position keys an operation reads or writes, in any role."""
+        match node:
+            case operation_graph.CreateNode() | operation_graph.DestroyNode():
+                return (node.target.canonical_chained_name_tuple,)
+            case operation_graph.MoveNode():
+                return (
+                    node.source.canonical_chained_name_tuple,
+                    node.target.canonical_chained_name_tuple,
+                )
+            case _:
+                return ()
 
     def _split_point_label(
         self,
@@ -77,7 +160,12 @@ class _OperationGraphFlattener:
             raise ValueError(
                 f"no split point for {node.output_position} in {node.action}"
             )
-        return callee_labels[split_point]
+        split_point_label = callee_labels[split_point]
+        if split_point_label is None:
+            raise ValueError(
+                f"unresolved split point for {node.output_position} in {node.action}"
+            )
+        return split_point_label
 
     def _operation_label(
         self, action_name: str, node: operation_graph.OperationNode

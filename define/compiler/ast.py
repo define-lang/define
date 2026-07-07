@@ -311,6 +311,15 @@ def chain_starts_with_global(key: tuple[str, ...]) -> bool:
     return "/" in key[0]
 
 
+def chain_in_caller(
+    caller_chain: tuple[str, ...], local_chain: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Re-root a callee-local chain into a caller that triggers it via ``caller_chain``."""
+    if chain_starts_with_global(local_chain):
+        return caller_chain[:-1] + local_chain
+    return caller_chain + local_chain
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""

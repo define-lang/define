@@ -5,6 +5,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
@@ -2253,3 +2255,88 @@ def test_complex_chain_cross_fqun_position_name(
         (f"action<{_MAIN_FQUN}:/foo>", f"action<{_MAIN_FQUN}:/middle>"),
         (f"action<{_MAIN_FQUN}:/middle>", f"action<{_DEP_FQUN}:/bar>"),
     }
+
+
+_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT = (
+    "a move that carries a child into a callee's interface position does not yet"
+    " satisfy the callee's propagated occupied requirement on that child, so a"
+    " spurious requirement violation is reported"
+)
+
+
+@pytest.mark.xfail(strict=True, reason=_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT)
+def test_move_carried_child_satisfies_inner_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """A move that carries </parent> into inner::input should satisfy inner's occupied requirement on it."""
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</a>.\n"
+                "        it has the position</b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<run>.\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</parent>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<input>::position</parent>::position</a>.\n"
+                "        create a particle in position<input>::position</parent>::position</b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<run>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</parent>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<gw> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<gw>.\n"
+                "        move the particle in position<iface> to position<gw>::action</inner>::position<input>.\n"
+                "        create a particle in position<gw>::action</inner>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<mw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<mw>.\n"
+                "        create a particle in position<mw>::action</middle>::position<iface>.\n"
+                "        create a particle in position<mw>::action</middle>::position<iface>::position</parent>.\n"
+                "        create a particle in position<mw>::action</middle>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)

@@ -11,7 +11,7 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Container, Iterator
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,14 +139,8 @@ class _PendingGuarantee:
         return self.parent_chain[:-1]
 
     def key_for(self, name: tuple[str, ...]) -> tuple[str, ...]:
-        """Re-root a guarantee's local name to its absolute key under this guarantee.
-
-        Implied (global) names hang off ``parent_position``; interface (local)
-        names hang off ``parent_chain``.
-        """
-        if ast.chain_starts_with_global(name):
-            return self.parent_position + name
-        return self.parent_chain + name
+        """Re-root a guarantee's local name to its absolute key under this guarantee."""
+        return ast.chain_in_caller(self.parent_chain, name)
 
 
 # Nested guarantees are deferred here instead of being flattened into every
@@ -387,15 +381,18 @@ class _ParticleStateStore:
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
 
-    def __init__(self):
-        """Initialize an empty particle tracker."""
+    def __init__(self, requirements: Container[tuple[str, ...]]):
+        """Initialize an empty particle tracker.
+
+        ``requirements`` is the validator's inferred-requirements map.
+        """
         self._store: _ParticleStateStore = _ParticleStateStore()
         self._pending: _PendingNestedGuarantees = _PendingNestedGuarantees()
         # Monotonic body-operation counter, advanced once per body mutation and
         # once per trigger.
         self._body_operation_number: int = 0
         self._operation_graph: operation_graph.OperationGraph = (
-            operation_graph.OperationGraph()
+            operation_graph.OperationGraph(requirements)
         )
 
     @property
@@ -796,9 +793,9 @@ class ParticleTracker:
 
     def _position_was_touched(self, key: tuple[str, ...]) -> bool:
         """Whether the action ever touched ``key``."""
-        return self._operation_graph.last_operation_node_id_for_key(
+        return self._operation_graph.body_touched_key(
             key
-        ) is not None or self._store.ever_set_by_callee(key)
+        ) or self._store.ever_set_by_callee(key)
 
     def apply_guarantees(
         self,

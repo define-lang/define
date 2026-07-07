@@ -106,7 +106,7 @@ class ActionPostorderValidator:
 
     @cached_property
     def _tracker(self) -> particle_tracker.ParticleTracker:
-        return particle_tracker.ParticleTracker()
+        return particle_tracker.ParticleTracker(self._inferred_requirements)
 
     @cached_property
     def _executor(self) -> particle_operation.ParticleOperationExecutor:
