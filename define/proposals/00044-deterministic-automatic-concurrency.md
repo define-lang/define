@@ -5,6 +5,8 @@
 - **Date Proposed:** July 2, 2026
 - **Date Finalized:**
 
+<!-- TODO: A lot of the examples in this proposal actually probably need to be fixed to not show dependencies on the trigger position, and to explain how the rule is more like "we see a requirement and then a trigger" or something like that. -->
+
 ## Problems
 
 Programs need some way to indicate that multiple things can happen at the same
@@ -966,9 +968,9 @@ flowchart
 
     Main1 --> Main2 --> Grind1 --> Main4 --> Brew3
     Main1 --> Main3 --> Heat1 --> Main5
-    Main5 --> Brew1 --> Main6 --> Main8
+    Main1 --> Brew1 --> Main6 --> Main8
     Main5 --> Brew2 --> Main8
-    Main5 --> Brew3 --> Main7 --> Main8
+    Brew3 --> Main7 --> Main8
 ```
 
 This one graph exercises everything in this proposal:
@@ -990,10 +992,10 @@ This one graph exercises everything in this proposal:
   `position<station>`, so the final destroy of the station depends on the last
   operation on every path through it: the empty cup, the discarded puck, and
   `action</brew>`'s own destroy of the water.
-- **Joins.** The graph has exactly two joins: `brew: move(grounds, spent_puck)`
-  (two edges) and the final destroy of the station (three edges). Those two
-  nodes are the only places in the entire compiled program that need an atomic
-  counter---every other edge is just one function calling another.
+- **Joins.** The graph has exactly one join: the final destroy of the station
+  (three edges). That node is the only place in the entire compiled program that
+  needs an atomic counter---every other edge is just one function calling
+  another.
 
 The program has thirteen operations, but its longest dependency chain is seven
 operations long, so almost half of the program's execution overlaps with some
