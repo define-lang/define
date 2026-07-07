@@ -18,7 +18,10 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
-    from define.compiler.validator.reference_graph import operation_graph
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+        operation_graph,
+    )
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
@@ -47,6 +50,9 @@ class ParticleStatementValidity:
     from_is_prefix_of_to: bool = False
 
 
+# TODO: We should probably have a more minimal output from the reference
+# graph validator that provides codegen only what it needs (instead of
+# modifying this data structure).
 @dataclass
 class DefinitionValidationResult:
     """Validation output for one definition within a file."""
@@ -62,6 +68,10 @@ class DefinitionValidationResult:
     # The DLP 44 operation dependency graph, set for actions during post-order
     # validation so that codegen can build the concurrency wiring from it.
     operation_graph: operation_graph.OperationGraph | None = None
+    # The action's inferred contract, set for actions during post-order
+    # validation; codegen reads its inputs (occupied requirements) and outputs
+    # (guarantees) as the cross-action interface for action splitting.
+    action_contract: action_contract.ActionContract | None = None
 
     def add_diagnostic(self, diagnostic: diagnostics.Diagnostic):
         """Append a diagnostic to this definition's results."""
