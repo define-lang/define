@@ -15,7 +15,7 @@ _DESTRUCTORS_NOT_RECORDED = (
 _CALLER_REQUIREMENTS_NOT_RECORDED = (
     "a caller requirement -- the caller operation that fills or empties a callee's"
     " contracted position -- is not recorded as an operation-graph edge; the"
-    " callee operation should join the trigger and that caller operation"
+    " callee operation should wait on that caller operation"
 )
 
 
@@ -960,18 +960,17 @@ def test_empty_requirement_waits_on_the_caller_destroy_that_clears_it(
         },
     )
     assert_no_errors(result.program_result)
-    # other.create(slot) needs <slot> empty, so it should join two independent
-    # caller operations: the trigger (so other runs at all) and test.destroy(slot),
-    # which clears the position. Neither implies the other.
+    # other.create(slot) needs <slot> empty, so it should wait on test.destroy(slot),
+    # which clears the position, and on nothing else. It needs no edge to the
+    # trigger: we know the action triggers, and the create's only precondition is that
+    # <slot> is empty. (The destroy transitively orders it after the callee's parent
+    # particle was created, since the destroy depends on it.)
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::slot)": ["test.create(gateway)"],
         "test.destroy(gateway::/other::slot)": ["test.create(gateway::/other::slot)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(slot)": [
-            "test.destroy(gateway::/other::slot)",
-            "test.create(gateway::/other::trigger_pos)",
-        ],
+        "other.create(slot)": ["test.destroy(gateway::/other::slot)"],
     }
 
 
@@ -1012,16 +1011,13 @@ def test_occupied_requirement_waits_on_the_caller_create_that_fills_it(
         },
     )
     assert_no_errors(result.program_result)
-    # Symmetric to the empty case: other.destroy(input) needs <input> occupied, so
-    # it should join the trigger and test.create(input), which fills it.
+    # other.destroy(input) needs only <input> occupied, so it should wait _only_
+    # test.create(input), which fills it -- and on nothing else.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::input)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.destroy(input)": [
-            "test.create(gateway::/other::input)",
-            "test.create(gateway::/other::trigger_pos)",
-        ],
+        "other.destroy(input)": ["test.create(gateway::/other::input)"],
     }
 
 
@@ -1065,7 +1061,7 @@ def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
     )
     assert_no_errors(result.program_result)
     # A move-out clears the requirement just as a destroy does, so other.create(slot)
-    # should join the trigger and the move that empties <slot>.
+    # should wait on the move that empties <slot>, and on nothing else.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::slot)": ["test.create(gateway)"],
@@ -1073,10 +1069,285 @@ def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
             "test.create(gateway::/other::slot)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(slot)": [
-            "test.move(gateway::/other::slot, sink)",
-            "test.create(gateway::/other::trigger_pos)",
+        "other.create(slot)": ["test.move(gateway::/other::slot, sink)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigger(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "helper.dfn": (
+                "define the potential action<my.domain.com:my_lib:/helper> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<slot> to position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source>.\n"
+                "    define the position<temp>.\n"
+                "    define the position<gw_a> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<gw_b> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</helper>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<source>.\n"
+                "        create a particle in position<gw_a>.\n"
+                "        create a particle in position<gw_b>.\n"
+                "        move the particle in position<source> to position<gw_a>::action</worker>::position<slot>.\n"
+                "        move the particle in position<gw_a>::action</worker>::position<slot> to position<temp>.\n"
+                "        move the particle in position<temp> to position<gw_b>::action</helper>::position<slot>.\n"
+                "        create a particle in position<gw_b>::action</helper>::position<trigger_pos>.\n"
+                "        move the particle in position<gw_b>::action</helper>::position<out> to position<gw_a>::action</worker>::position<slot>.\n"
+                "        create a particle in position<gw_a>::action</worker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The widget is moved into worker::slot, back out, through helper, then into
+    # worker::slot a second time before worker triggers. worker.destroy(slot) must
+    # resolve its requirement to that second fill -- the most recent caller op that
+    # leaves slot occupied before the trigger -- not the stale first fill; binding
+    # to the first fill would race the move that empties slot again. Likewise
+    # helper.move(slot, out) waits on the caller fill of helper::slot, not the
+    # helper trigger.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(source)": [],
+        "test.create(gw_a)": [],
+        "test.create(gw_b)": [],
+        "test.move(source, gw_a::/worker::slot)": [
+            "test.create(source)",
+            "test.create(gw_a)",
         ],
+        "test.move(gw_a::/worker::slot, temp)": [
+            "test.move(source, gw_a::/worker::slot)"
+        ],
+        "test.move(temp, gw_b::/helper::slot)": [
+            "test.create(gw_b)",
+            "test.move(gw_a::/worker::slot, temp)",
+        ],
+        "test.create(gw_b::/helper::trigger_pos)": ["test.create(gw_b)"],
+        "helper.move(slot, out)": ["test.move(temp, gw_b::/helper::slot)"],
+        "test.move(gw_b::/helper::out, gw_a::/worker::slot)": [
+            "test.move(gw_a::/worker::slot, temp)",
+            "helper.move(slot, out)",
+        ],
+        "test.create(gw_a::/worker::trigger_pos)": ["test.create(gw_a)"],
+        "worker.destroy(slot)": ["test.move(gw_b::/helper::out, gw_a::/worker::slot)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_empty_requirement_resolves_to_the_most_recent_empty_before_the_trigger(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</filler>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</filler>::position<slot>.\n"
+                "        destroy the particle in position<gw>::action</filler>::position<slot>.\n"
+                "        create a particle in position<gw>::action</filler>::position<slot>.\n"
+                "        destroy the particle in position<gw>::action</filler>::position<slot>.\n"
+                "        create a particle in position<gw>::action</filler>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # slot is filled and emptied twice before filler triggers. filler.create(slot)
+    # needs slot empty, so it must resolve to the second (most recent) destroy
+    # before the trigger, not the first -- picking the first would leave it racing
+    # the refill.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/filler::slot)": ["test.create(gw)"],
+        "test.destroy(gw::/filler::slot)": ["test.create(gw::/filler::slot)"],
+        "test.create(gw::/filler::slot)#2": ["test.destroy(gw::/filler::slot)"],
+        "test.destroy(gw::/filler::slot)#2": ["test.create(gw::/filler::slot)#2"],
+        "test.create(gw::/filler::trigger_pos)": ["test.create(gw)"],
+        "filler.create(slot)": ["test.destroy(gw::/filler::slot)#2"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_REQUIREMENTS_NOT_RECORDED)
+def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "move.dfn": (
+                "define the potential action<my.domain.com:my_lib:/move> {\n"
+                "    define the position<run>.\n"
+                "    define the position<input>.\n"
+                "    define the position<output>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<input> to position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box1> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<box2>.\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<action_holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</move>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<action_holder>.\n"
+                "        create a particle in position<box1>.\n"
+                "        create a particle in position<box2>.\n"
+                "        move the particle in position<box2> to position<action_holder>::action</move>::position<input>.\n"
+                "        move the particle in position<action_holder>::action</move>::position<input> to position<box2>.\n"
+                "        move the particle in position<box1> to position<action_holder>::action</move>::position<input>.\n"
+                "        create a particle in position<action_holder>::action</move>::position<run>.\n"
+                "        move the particle in position<action_holder>::action</move>::position<output> to position<dest>.\n"
+                "        create a particle in position<dest>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # move::input is filled from box2, emptied back to box2, then filled from box1
+    # before move triggers. move.move(input, output) must resolve its requirement to
+    # the box1 fill -- the most recent fill before the trigger -- not the box2 fill.
+    # The constraint makes this a safety issue, not just ordering: only box1's
+    # particle has position</a>, and the move feeds dest, which requires it. Binding
+    # to the box2 fill would let the move run with box2's particle and carry it into
+    # dest, violating the constraint.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(action_holder)": [],
+        "test.create(box1)": [],
+        "test.create(box2)": [],
+        "test.move(box2, action_holder::/move::input)": [
+            "test.create(action_holder)",
+            "test.create(box2)",
+        ],
+        "test.move(action_holder::/move::input, box2)": [
+            "test.move(box2, action_holder::/move::input)"
+        ],
+        "test.move(box1, action_holder::/move::input)": [
+            "test.create(box1)",
+            "test.move(action_holder::/move::input, box2)",
+        ],
+        "test.create(action_holder::/move::run)": ["test.create(action_holder)"],
+        "move.move(input, output)": ["test.move(box1, action_holder::/move::input)"],
+        "test.move(action_holder::/move::output, dest)": ["move.move(input, output)"],
+        "test.create(dest::/a)": ["test.move(action_holder::/move::output, dest)"],
+    }
+
+
+def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "consumer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/consumer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</consumer>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</consumer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # An operation that reads the trigger position genuinely depends on the caller
+    # op that fills it -- this trigger edge is a real data dependency.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/consumer::trigger_pos)": ["test.create(gw)"],
+        "consumer.destroy(trigger_pos)": ["test.create(gw::/consumer::trigger_pos)"],
     }
 
 
