@@ -31,6 +31,14 @@ _MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT = (
     " callee's operations to the carrying move"
 )
 
+_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE = (
+    "an operation that reads the trigger position falls back to the trigger edge"
+    " only when all of its requirement seams are unresolved; once another seam"
+    " resolves to a real caller operation, the trigger-position read keeps no"
+    " edge to the trigger fill and can run while the trigger position is still"
+    " empty"
+)
+
 
 def test_single_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -2097,6 +2105,72 @@ def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
     }
 
 
+def test_retriggered_action_resolves_requirements_within_each_invocation(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "maker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/maker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<first_result>.\n"
+                "    define the position<second_result>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</maker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "        move the particle in position<gw>::action</maker>::position<out> to position<first_result>.\n"
+                "        destroy the particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "        move the particle in position<gw>::action</maker>::position<out> to position<second_result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # maker is triggered twice: its trigger position is filled, emptied, and
+    # refilled, so both invocations are inlined. Each invocation's EMPTY
+    # requirement on <out> resolves within its own window, bounded by its own
+    # trigger: invocation 1's create(out) falls back to its trigger fill (the
+    # caller never touched <out> before it), while invocation 2's create(out)#2
+    # waits on the caller's drain of invocation 1's output -- the most recent op
+    # on <out> before the second trigger -- and not on the stale first window or
+    # on its own trigger. Without that edge, invocation 2 could race the drain
+    # and put two particles in <out>.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
+        "maker.create(out)": ["test.create(gw::/maker::trigger_pos)"],
+        "test.move(gw::/maker::out, first_result)": ["maker.create(out)"],
+        "test.destroy(gw::/maker::trigger_pos)": [
+            "test.create(gw::/maker::trigger_pos)"
+        ],
+        "test.create(gw::/maker::trigger_pos)#2": [
+            "test.destroy(gw::/maker::trigger_pos)"
+        ],
+        "maker.create(out)#2": ["test.move(gw::/maker::out, first_result)"],
+        "test.move(gw::/maker::out, second_result)": ["maker.create(out)#2"],
+    }
+
+
 def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -2137,6 +2211,120 @@ def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
         "test.create(gw)": [],
         "test.create(gw::/consumer::trigger_pos)": ["test.create(gw)"],
         "consumer.destroy(trigger_pos)": ["test.create(gw::/consumer::trigger_pos)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE)
+def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolves(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<in>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<in> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<in> to position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<out>.\n"
+                "        destroy the particle in position<gw>::action</worker>::position<out>.\n"
+                "        create a particle in position<gw>::action</worker>::position<in>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The move reads <in>, the trigger position, so it needs the trigger fill as
+    # a real data dependency -- just as in the trigger-read test above. But its
+    # EMPTY requirement on <out> resolves to the caller's destroy, and that
+    # resolved edge must not displace the trigger edge: with only the destroy
+    # edge, the move could run at destroy-time, while <in> is still empty.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/worker::out)": ["test.create(gw)"],
+        "test.destroy(gw::/worker::out)": ["test.create(gw::/worker::out)"],
+        "test.create(gw::/worker::in)": ["test.create(gw)"],
+        "worker.move(in, out)": [
+            "test.destroy(gw::/worker::out)",
+            "test.create(gw::/worker::in)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE)
+def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requirement_resolves(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<in>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</y>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<in> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<in> to position<box>::position</y>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<box>.\n"
+                "        create a particle in position<gw>::action</worker>::position<in>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The OCCUPIED counterpart of the test above: the move reads <in>, the
+    # trigger position, while its fill target needs <box> occupied -- a
+    # requirement that resolves (through the untouched <box>::</y> child seam's
+    # parent) to the caller's fill of <box>. That resolved edge must not
+    # displace the trigger edge: with only the <box> edge, the move could run
+    # as soon as <box> is filled, while <in> is still empty.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/worker::box)": ["test.create(gw)"],
+        "test.create(gw::/worker::in)": ["test.create(gw)"],
+        "worker.move(in, box::/y)": [
+            "test.create(gw::/worker::box)",
+            "test.create(gw::/worker::in)",
+        ],
     }
 
 
