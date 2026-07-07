@@ -1,5 +1,13 @@
 """Action call graph for tracking trigger relationships between actions."""
 
+# TODO: Delete this module once destructors are fully implemented in the
+# operation graph, including destruction contracts. It survives only so tests
+# can assert destructor firing, which the operation graph does not yet represent
+# (a destroy and its destructor cascade are still a single atomic node, and
+# caller-attached destructors from destruction contracts are not recorded there
+# at all). Once the operation graph carries that firing information, these
+# assertions move to action_graph()/action_graph_set() and this module goes away.
+
 from __future__ import annotations
 
 from dataclasses import dataclass
