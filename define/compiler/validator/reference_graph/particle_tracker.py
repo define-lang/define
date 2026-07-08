@@ -117,11 +117,9 @@ class _PendingGuarantee:
     # DLP 44: the operation-graph node of the caller op that fired this trigger.
     # Each contracted position the guarantee touches has its last operation
     # pointed here, so the caller's later ops on it chain via the Ancestor Rule.
-    # Nested
-    # children inherit it verbatim (the whole callee subtree happens, from the
-    # caller's view, at the one trigger node). None when the trigger op was never
-    # recorded (e.g. tests that apply guarantees without a preceding body op).
-    trigger_node_id: int | None
+    # Nested children inherit it verbatim (the whole callee subtree happens, from
+    # the caller's view, at the one trigger node).
+    trigger_node_id: int
     # Call-chain depth from the directly-applied contract: its own guarantees
     # are depth 0; each nested guarantee is one deeper. Within a single trigger
     # (same sequence) a shallower guarantee outranks a deeper one it resolved.
@@ -381,10 +379,15 @@ class _ParticleStateStore:
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
 
-    def __init__(self, requirements: Container[tuple[str, ...]]):
+    def __init__(
+        self,
+        requirements: Container[tuple[str, ...]],
+        trigger_position: ast.PositionReference | None = None,
+    ):
         """Initialize an empty particle tracker.
 
-        ``requirements`` is the validator's inferred-requirements map.
+        ``requirements`` is the validator's inferred-requirements map;
+        ``trigger_position`` is this action's own trigger position.
         """
         self._store: _ParticleStateStore = _ParticleStateStore()
         self._pending: _PendingNestedGuarantees = _PendingNestedGuarantees()
@@ -392,7 +395,7 @@ class ParticleTracker:
         # once per trigger.
         self._body_operation_number: int = 0
         self._operation_graph: operation_graph.OperationGraph = (
-            operation_graph.OperationGraph(requirements)
+            operation_graph.OperationGraph(requirements, trigger_position)
         )
 
     @property
@@ -838,12 +841,11 @@ class ParticleTracker:
         touched_positions = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
-        if pending_guarantee.trigger_node_id is not None:
-            self._operation_graph.record_guarantees(
-                pending_guarantee.trigger_node_id,
-                pending_guarantee.parent_chain[-1],
-                touched_positions,
-            )
+        self._operation_graph.record_guarantees(
+            pending_guarantee.trigger_node_id,
+            pending_guarantee.parent_chain[-1],
+            touched_positions,
+        )
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
             child_nested_guarantee = _PendingGuarantee(

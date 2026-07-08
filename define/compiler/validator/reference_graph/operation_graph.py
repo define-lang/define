@@ -122,12 +122,19 @@ class RequirementNode(OperationNode):
 class OperationGraph:
     """An append-only dependency graph of one action's particle operations."""
 
-    def __init__(self, requirements: Container[tuple[str, ...]]):
+    def __init__(
+        self,
+        requirements: Container[tuple[str, ...]],
+        trigger_position: ast.PositionReference | None = None,
+    ):
         """Create an empty graph.
 
         ``requirements`` is the validator's inferred-requirements map, shared by
         reference: it is empty at construction and fills in as the body is
         analyzed, one requirement recorded just before the operation that needs it.
+        ``trigger_position`` is this action's own trigger position: the body reads
+        it filled without an operation of its own, so like a requirement it gets a
+        RequirementNode standing in for the caller op that fired the trigger.
         """
         self._nodes: list[OperationNode] = []
         # A position's canonical chained name -> id of the last operation on it,
@@ -157,11 +164,21 @@ class OperationGraph:
         #     not just when a requirement node is added.)
         self._last_operation: dict[tuple[str, ...], int] = {}
         self._requirements: Container[tuple[str, ...]] = requirements
+        self._trigger_position_key: tuple[str, ...] | None = (
+            trigger_position.canonical_chained_name_tuple
+            if trigger_position is not None
+            else None
+        )
 
     @property
     def nodes(self) -> Sequence[OperationNode]:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
+
+    @property
+    def trigger_position_key(self) -> tuple[str, ...] | None:
+        """This action's own trigger position key, or None for a constructor/destructor."""
+        return self._trigger_position_key
 
     def last_operation_node_id_for_key(self, key: tuple[str, ...]) -> int | None:
         """Return the last operation recorded under exactly this key, if any."""
@@ -183,15 +200,34 @@ class OperationGraph:
         callee: ast.ActionReference,
         acting_on_position: ast.PositionReference,
         requirements: Iterable[ast.PositionReference],
-    ) -> int | None:
-        """Record that this action triggers ``callee``, returning the firing operation's id."""
-        firing_node_id = self._last_operation.get(
-            acting_on_position.canonical_chained_name_tuple
+    ) -> int:
+        """Record that this action triggers ``callee``, returning the firing operation's id.
+
+        The firing operation is the one that filled ``acting_on_position`` (a trigger position
+        for an action, or the action being operated on by a constructor/destructor).
+        """
+        acting_on_position_key = acting_on_position.canonical_chained_name_tuple
+        firing_node_id = self._last_operation[acting_on_position_key]
+        firing_node = self._nodes[firing_node_id]
+        callee_action_key = callee.canonical_chained_name_tuple
+        # Trigger positions are direct children of the callee chain.
+        acting_on_is_trigger_position = (
+            len(acting_on_position_key) == len(callee_action_key) + 1
+            and acting_on_position_key[: len(callee_action_key)] == callee_action_key
         )
-        if firing_node_id is not None:
-            self._nodes[firing_node_id].satisfies.append(
-                RequirementSatisfaction(callee, ())
+        if acting_on_is_trigger_position:
+            # If we see that we are filling a trigger position, we add the trigger
+            # position as a requirement node (becasue it doesn't show up in the
+            # normal requirements).
+            firing_node.satisfies.append(
+                RequirementSatisfaction(
+                    callee, acting_on_position_key[len(callee_action_key) :]
+                )
             )
+        else:
+            # We are firing a constructor or destructor, and this node needs
+            # to be in the graph in order for it to fire.
+            firing_node.satisfies.append(RequirementSatisfaction(callee, ()))
         # TODO: This only finds a satisfier in the immediate caller. A requirement
         # that propagates up several call levels is satisfied by an op further up
         # the stack, so we need to re-propagate this callee's RequirementNodes into
@@ -264,16 +300,7 @@ class OperationGraph:
     def _most_recent_ancestor_chain_operation(
         self, position: tuple[str, ...]
     ) -> int | None:
-        """Return the most recent operation on ``position``'s ancestor chain, materializing requirements as needed.
-
-        One shallow-to-deep pass, tracking the most recent operation seen so far
-        as ``ancestor``. An empty contracted position is caller territory and gets
-        a RequirementNode -- but only when no real operation above has established
-        it, which is exactly when ``ancestor`` is absent or is itself a
-        RequirementNode (a real operation always outranks the requirement nodes on
-        its chain). Each new node depends on ``ancestor`` via the Fill Rule. The
-        returned id is the fill/empty dependency.
-        """
+        """Return the most recent operation on ``position``'s ancestor chain, materializing requirements as needed."""
         ancestor: int | None = None
         for length in range(1, len(position) + 1):
             key = position[:length]
@@ -282,22 +309,34 @@ class OperationGraph:
                 if ancestor is None or existing > ancestor:
                     ancestor = existing
                 continue
-            if key not in self._requirements or (
-                ancestor is not None
-                and not isinstance(self._nodes[ancestor], RequirementNode)
-            ):
-                continue
-            node_id = len(self._nodes)
-            self._nodes.append(
-                RequirementNode(
-                    node_id=node_id,
-                    requirement_position=key,
-                    depends_on=[ancestor] if ancestor is not None else [],
-                )
-            )
-            self._last_operation[key] = node_id
-            ancestor = node_id
+            materialized_id = self._maybe_materialize_requirement_node(key, ancestor)
+            if materialized_id is not None:
+                ancestor = materialized_id
         return ancestor
+
+    def _maybe_materialize_requirement_node(
+        self, key: tuple[str, ...], ancestor: int | None
+    ) -> int | None:
+        """Materialize a RequirementNode standing in for the caller op on ``key``, or None."""
+        # The position isn't one of our inferred requirements, no need to worry abut it.
+        if key not in self._requirements and key != self._trigger_position_key:
+            return None
+        # There is an ancestor operation, and isn't a requirement node (meaning we are already
+        # past requirements on this position).
+        if ancestor is not None and not isinstance(
+            self._nodes[ancestor], RequirementNode
+        ):
+            return None
+        node_id = len(self._nodes)
+        self._nodes.append(
+            RequirementNode(
+                node_id=node_id,
+                requirement_position=key,
+                depends_on=[ancestor] if ancestor is not None else [],
+            )
+        )
+        self._last_operation[key] = node_id
+        return node_id
 
     def _surviving_child_operations(
         self, touched_child_positions: Iterable[tuple[str, ...]]

@@ -31,14 +31,6 @@ _MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT = (
     " callee's operations to the carrying move"
 )
 
-_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE = (
-    "an operation that reads the trigger position falls back to the trigger edge"
-    " only when all of its requirement seams are unresolved; once another seam"
-    " resolves to a real caller operation, the trigger-position read keeps no"
-    " edge to the trigger fill and can run while the trigger position is still"
-    " empty"
-)
-
 
 def test_single_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -2214,7 +2206,6 @@ def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE)
 def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolves(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -2269,7 +2260,6 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRIGGER_POSITION_READ_LOSES_ITS_TRIGGER_EDGE)
 def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requirement_resolves(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

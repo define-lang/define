@@ -556,14 +556,20 @@ def _apply_guarantees(
     tracker: particle_tracker.ParticleTracker,
     for_position: ast.PositionReference,
     guarantees: list[action_contract.GuaranteePair],
+    acting_on: ast.PositionReference | None = None,
 ):
-    """Apply a bare guarantee list (no triggered contracts) at for_position."""
+    """Apply a bare guarantee list (no triggered contracts) at for_position.
+
+    ``acting_on`` is the position whose fill fired the trigger; it defaults to
+    ``for_position`` but tests whose trigger position is not itself body-filled
+    pass a body-created position so the operation graph has a firing operation.
+    """
     action_chain = for_position.get_chain_to_last_action()
     assert action_chain is not None
     tracker.apply_guarantees(
         action_chain,
         action_contract.Guarantees(own=guarantees, nested=()),
-        for_position,
+        acting_on if acting_on is not None else for_position,
         [],
     )
 
@@ -607,6 +613,7 @@ def test_apply_guarantees_occupied_by_new():
                 ),
             )
         ],
+        acting_on=box_ref,
     )
 
     assert tracker.is_occupied(ref) is True
@@ -822,6 +829,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
                 ),
             ),
         ],
+        acting_on=box_ref,
     )
 
     dest_ref = _make_position_ref(
@@ -874,6 +882,7 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
         tracker,
         ref,
         [(("position<trigger>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
+        acting_on=box_ref,
     )
 
     assert tracker.is_occupied(untouched_ref) is True
@@ -1048,6 +1057,8 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
         [box_name, _make_action_ref("/other"), _make_local_ref("item")]
     )
     tracker.create(box_ref, (), from_caller=box_ref)
+    trigger_ref = _make_position_ref([_make_local_ref("trigger")])
+    tracker.create(trigger_ref, ())
     _apply_guarantees(
         tracker,
         item_ref,
@@ -1059,6 +1070,7 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
                 ),
             )
         ],
+        acting_on=trigger_ref,
     )
     item_key = (*_ACTION_KEY_PREFIX, "position<item>")
 
@@ -1076,6 +1088,8 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
     tracker.create(box_ref, (), from_caller=box_ref)
+    trigger_ref = _make_position_ref([_make_local_ref("trigger")])
+    tracker.create(trigger_ref, ())
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/other>",),
         guarantees=action_contract.Guarantees(
@@ -1098,7 +1112,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
     tracker.apply_guarantees(
         box_trigger,
         action_contract.Guarantees(own=[], nested=(nested,)),
-        _make_position_ref([box_name]),
+        trigger_ref,
         [],
     )
     item_key = (*_ACTION_KEY_PREFIX, "position<item>")
@@ -1139,7 +1153,8 @@ def test_generate_flattened_guarantees_flattens_many_nested_levels():
     box_ref = _make_position_ref([box_name])
     tracker.create(box_ref, (), from_caller=box_ref)
     marker_name = _make_local_ref("marker")
-    tracker.create(_make_position_ref([marker_name]), ())
+    marker_ref = _make_position_ref([marker_name])
+    tracker.create(marker_ref, ())
 
     # Three levels of nesting, each deferred behind the one above it.
     level3 = _make_nested_level("/c", "position<item_c>", ())
@@ -1151,7 +1166,7 @@ def test_generate_flattened_guarantees_flattens_many_nested_levels():
     tracker.apply_guarantees(
         box_trigger,
         action_contract.Guarantees(own=[], nested=(level1,)),
-        _make_position_ref([box_name]),
+        marker_ref,
         [],
     )
 

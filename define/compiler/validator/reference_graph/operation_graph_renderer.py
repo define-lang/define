@@ -179,6 +179,11 @@ def action_graph(
     diamond can still make two sibling actions' relative order nondeterministic;
     assertions spanning such actions should compare ``action_graph_set``.
     """
+    registry: dict[str, operation_graph.OperationGraph] = {
+        typed_name.full_typed_name: definition_result.operation_graph
+        for typed_name, definition_result in program_result.definition_results.items()
+        if definition_result.operation_graph is not None
+    }
     edges: list[tuple[str, str]] = []
     for definition in program_result.reference_graph.dfs_postorder_all():
         typed_name = definition.typed_name
@@ -190,11 +195,20 @@ def action_graph(
         source = typed_name.source_typed_name
         for node in graph.nodes:
             for satisfaction in node.satisfies:
-                # The firing satisfaction (keyed to the callee's root) is recorded
-                # once per trigger, so it is the one that counts triggers -- an
-                # action that fires the same callee twice yields two edges.
-                if satisfaction.requirement_position == ():
-                    callee = satisfaction.callee.typed_names[-1].full_typed_name
+                callee = satisfaction.callee.typed_names[-1].full_typed_name
+                callee_graph = registry.get(callee)
+                # The firing satisfaction is keyed to the callee's trigger position
+                # (or its root for a constructor); an inferred-requirement
+                # satisfaction never is, since the trigger is excluded from
+                # requirements. So this counts one edge per trigger -- an action
+                # that fires the same callee twice yields two edges.
+                firing_key = (
+                    callee_graph.trigger_position_key
+                    if callee_graph is not None
+                    and callee_graph.trigger_position_key is not None
+                    else ()
+                )
+                if satisfaction.requirement_position == firing_key:
                     edges.append((source, callee))
     return edges
 

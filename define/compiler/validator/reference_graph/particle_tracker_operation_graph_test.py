@@ -349,34 +349,13 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
         run,
         [],
     )
-    # The fill that fired the trigger carries the action it fires; the box that
-    # merely holds it fires nothing.
+    # The fill that filled the trigger position satisfies the callee's requirement
+    # on it, which is what records that it fires the callee; the box that merely
+    # holds it fires nothing.
     assert tracker.operation_graph.nodes[1].satisfies == [
-        operation_graph.RequirementSatisfaction(action_chain, ())
+        operation_graph.RequirementSatisfaction(action_chain, ("position<run>",)),
     ]
     assert tracker.operation_graph.nodes[0].satisfies == []
-
-
-def test_from_caller_trigger_tags_no_action():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
-    box = _action("/b")
-    box_position = _ref("box")
-    run = _chain(_local("box"), box, _local("run"))
-    out = _chain(_local("box"), box, _local("out"))
-    tracker.create(box_position, (), from_caller=box_position)
-    tracker.create(run, (), from_caller=run)
-    tracker.apply_guarantees(
-        _action_chain(_local("box"), box),
-        action_contract.Guarantees(
-            own=[(("position<out>",), _occupied_by_new())], nested=()
-        ),
-        run,
-        [],
-    )
-    # The trigger position came from the caller, so there is no operation to tag
-    # and the output has no producing operation in this graph.
-    assert _kinds(tracker) == []
-    assert _last_operation(tracker, out) is None
 
 
 def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position():
