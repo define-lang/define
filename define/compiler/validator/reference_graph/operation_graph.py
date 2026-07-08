@@ -228,35 +228,31 @@ class OperationGraph:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
             firing_node.satisfies.append(RequirementSatisfaction(callee, ()))
-        # TODO: This only finds a satisfier in the immediate caller. A requirement
-        # that propagates up several call levels is satisfied by an op further up
-        # the stack, so we need to re-propagate this callee's RequirementNodes into
-        # each of its own callers (as guarantees are re-propagated) and tag the
-        # satisfier there. The multi-level requirement tests are xfail on this.
         for requirement in requirements:
-            absolute = requirement.in_caller(callee).canonical_chained_name_tuple
+            in_callee_key = requirement.in_caller(callee).canonical_chained_name_tuple
             requirement_key = requirement.canonical_chained_name_tuple
-            satisfier = self._most_recent_chain_operation_below(
-                absolute, len(absolute) - len(requirement_key)
-            )
+            satisfier = self._requirement_satisfier(in_callee_key)
             if satisfier is not None:
                 self._nodes[satisfier].satisfies.append(
                     RequirementSatisfaction(callee, requirement_key)
                 )
         return firing_node_id
 
-    def _most_recent_chain_operation_below(
-        self, key: tuple[str, ...], base_length: int
-    ) -> int | None:
-        """Most recent operation on ``key`` or an ancestor down to (not including) ``base_length``."""
-        most_recent: int | None = None
-        for length in range(len(key), base_length, -1):
-            operation = self._last_operation.get(key[:length])
-            if operation is not None and (
-                most_recent is None or operation > most_recent
-            ):
-                most_recent = operation
-        return most_recent
+    def _requirement_satisfier(self, in_callee_key: tuple[str, ...]) -> int | None:
+        """Return the operation on ``in_callee_key`` that satisfies a callee's requirement, or None.
+
+        A real operation (or existing requirement node) on the exact position wins.
+        If there is none but the position is one of this action's own requirements,
+        it propagated down from further up the call stack: materialize a
+        RequirementNode for it here -- chaining it to its own ancestors -- so it
+        re-resolves against the right operation when this graph is spliced into its
+        caller, chaining requirement nodes across call levels. A position this
+        action never touches and does not require (an empty-by-default child) gets
+        no satisfier and resolves through its parent when rendered.
+        """
+        if in_callee_key not in self._last_operation:
+            _ = self._most_recent_ancestor_chain_operation(in_callee_key)
+        return self._last_operation.get(in_callee_key)
 
     def _compute_dependencies(
         self,

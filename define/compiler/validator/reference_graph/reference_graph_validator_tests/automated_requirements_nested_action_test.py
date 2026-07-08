@@ -2340,3 +2340,87 @@ def test_move_carried_child_satisfies_inner_occupied_requirement(
         }
     )
     assert_no_errors(result.program_result)
+
+
+@pytest.mark.xfail(strict=True, reason=_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT)
+def test_input_carried_through_two_moves_reaches_the_retriggered_inner(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """A box carried by two moves into a re-triggered inner should satisfy inner's occupied requirement on its input."""
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<input>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<input>::action</inner>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<middle_holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<middle_holder>.\n"
+                "        move the particle in position<input> to position<middle_holder>::action</middle>::position<input>.\n"
+                "        create a particle in position<middle_holder>::action</middle>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<outer_holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</outer>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<input>.\n"
+                "        create a particle in position<outer_holder>.\n"
+                "        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.\n"
+                "        create a particle in position<outer_holder>::action</outer>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)

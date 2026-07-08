@@ -16,13 +16,6 @@ _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
 
-_MULTI_LEVEL_REQUIREMENTS_NOT_PROPAGATED = (
-    "a caller requirement is resolved only against the immediate caller, so a"
-    " requirement that propagates up several call levels resolves to the trigger"
-    " instead of the op further up the stack that satisfies it; the callee's"
-    " RequirementNodes need re-propagating into each caller"
-)
-
 _MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT = (
     "a move that carries a child into a callee's interface position does not yet"
     " satisfy the callee's propagated occupied requirement on that child, so a"
@@ -1472,7 +1465,6 @@ def test_implied_position_grandchildren_wait_on_the_direct_caller_fill(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MULTI_LEVEL_REQUIREMENTS_NOT_PROPAGATED)
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1526,10 +1518,9 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     )
     assert_no_errors(result.program_result)
     # inner.destroy(slot) reads a position whose requirement propagates up through
-    # /middle (which never touches it) to /test. It must wait on the /test fill
-    # that satisfies it, not on /middle's trigger of /inner. It resolves to the
-    # trigger today because a RequirementNode is matched only against the
-    # immediate caller.
+    # /middle (which never touches it) to /test, so it waits on the /test fill that
+    # satisfies it -- reached through the RequirementNode /middle materializes for
+    # the propagated requirement.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
@@ -1537,14 +1528,11 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
             "test.create(box::/middle::gw)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.create(gw::/inner::trigger_pos)": [
-            "test.create(box::/middle::trigger_pos)"
-        ],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.destroy(slot)": ["test.create(box::/middle::gw::/inner::slot)"],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MULTI_LEVEL_REQUIREMENTS_NOT_PROPAGATED)
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1611,14 +1599,11 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
             "test.create(box::/middle::gw)",
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.create(gw::/inner::trigger_pos)": [
-            "test.create(box::/middle::trigger_pos)"
-        ],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.destroy(slot)": ["test.move(source, box::/middle::gw::/inner::slot)"],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MULTI_LEVEL_REQUIREMENTS_NOT_PROPAGATED)
 def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1686,7 +1671,6 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MULTI_LEVEL_REQUIREMENTS_NOT_PROPAGATED)
 def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1862,6 +1846,113 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
             "middle.move(iface, gw::/inner::input)",
             "middle.create(gw::/inner::run)",
         ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT)
+def test_input_carried_through_two_moves_reaches_the_retriggered_inner(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<input>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<input>::action</inner>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<middle_holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<middle_holder>.\n"
+                "        move the particle in position<input> to position<middle_holder>::action</middle>::position<input>.\n"
+                "        create a particle in position<middle_holder>::action</middle>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<outer_holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</outer>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<input>.\n"
+                "        create a particle in position<outer_holder>.\n"
+                "        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.\n"
+                "        create a particle in position<outer_holder>::action</outer>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /test fills box::/inner::input, then box is carried by two moves (into /outer
+    # then /middle) before /middle refills the trigger and /inner destroys the input
+    # that rode along. Each callee operation resolves to the move that most recently
+    # carried the particle, not to a trigger.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/inner::input)": ["test.create(box)"],
+        "test.create(outer_holder)": [],
+        "test.move(box, outer_holder::/outer::input)": [
+            "test.create(box::/inner::input)",
+            "test.create(outer_holder)",
+        ],
+        "test.create(outer_holder::/outer::run)": ["test.create(outer_holder)"],
+        "outer.create(middle_holder)": ["test.create(outer_holder::/outer::run)"],
+        "outer.move(input, middle_holder::/middle::input)": [
+            "outer.create(middle_holder)",
+            "test.move(box, outer_holder::/outer::input)",
+        ],
+        "outer.create(middle_holder::/middle::run)": ["outer.create(middle_holder)"],
+        "middle.create(input::/inner::run)": [
+            "outer.move(input, middle_holder::/middle::input)"
+        ],
+        "inner.destroy(input)": ["outer.move(input, middle_holder::/middle::input)"],
     }
 
 
