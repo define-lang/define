@@ -82,11 +82,14 @@ See [define/spec/spec.md] for the language specification.
 
 ## Terminology
 
-- Use Define Terms for Define Concepts: When writing or talking about a
-  Define-language concept, use the exact spec/code term and never coin a synonym
-  or label for it.
-- Do not use these words for concepts in the compiler or language: anchor, root,
-  rooted, re-rooted, carried, split point, establishing.
+- Use Define Terms for Define Concepts: In comments, code, names, and talking
+  use the exact term from define/spec/spec.md for all Define concepts. Do not
+  invent words for Define language concepts. Do not use industry-standard terms
+  for Define concepts when Define has its own word for that concept.
+- Never use these words for any Define concept: anchor, root, rooted, re-rooted,
+  carried, split point, establishing, frame, inside.
+- Example: For `in_caller`, say "from the caller's perspective", never
+  "re-rooted into the caller's frame"
 - Do not use abbreviations or acronyms for Define concepts unless the spec uses
   them. For example, do not use "PCB" as an abbreviation for "Position
   Constraint Block."
