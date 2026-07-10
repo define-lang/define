@@ -572,6 +572,7 @@ def _apply_guarantees(
         action_contract.Guarantees(own=guarantees, nested=()),
         acting_on if acting_on is not None else for_position,
         [],
+        [],
     )
 
 
@@ -1115,6 +1116,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
         action_contract.Guarantees(own=[], nested=(nested,)),
         trigger_ref,
         [],
+        [],
     )
     item_key = (*_ACTION_KEY_PREFIX, "position<item>")
 
@@ -1168,6 +1170,7 @@ def test_generate_flattened_guarantees_flattens_many_nested_levels():
         box_trigger,
         action_contract.Guarantees(own=[], nested=(level1,)),
         marker_ref,
+        [],
         [],
     )
 

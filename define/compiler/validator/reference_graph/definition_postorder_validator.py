@@ -212,6 +212,7 @@ class ActionPostorderValidator:
         contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
+        caller_positions: list[ast.PositionReference],
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
         action_parent = action_chain.parent_position()
@@ -228,9 +229,16 @@ class ActionPostorderValidator:
         else:
             # We created the action's parent particle in this action.
             caller_path_to_action = None
-        for inner_req in contract.requirements.values():
+        for inner_req, local_position in zip(
+            contract.requirements.values(), caller_positions, strict=True
+        ):
             self._maybe_propagate_one_requirement(
-                inner_req, action_chain, caller_path_to_action, action_parent, scope
+                inner_req,
+                action_chain,
+                caller_path_to_action,
+                action_parent,
+                scope,
+                local_position,
             )
 
     def _maybe_propagate_one_requirement(
@@ -240,6 +248,7 @@ class ActionPostorderValidator:
         caller_path_to_action: ast.ChainedName | None,
         action_parent: ast.PositionReference | None,
         scope: scope_tracker.ScopeTracker,
+        local_position: ast.PositionReference,
     ):
         """Propagate ``inner_req`` when the caller must satisfy it.
 
@@ -257,7 +266,6 @@ class ActionPostorderValidator:
         all we did in this action is "move our_interface to interface." We don't
         actually _know_ the state of "b" and its child "c". Only our caller knows.
         """
-        local_position = inner_req.position.in_caller(action_chain)
         moved_particle = None
         if not self._tracker.has_known_state(local_position):
             moved_particle = self._ancestor_from_contracted_position(
@@ -274,6 +282,11 @@ class ActionPostorderValidator:
                     *local_position.typed_names[len(owner_key) :],
                 ),
             )
+        elif caller_path_to_action is action_chain:
+            # local_position is already inner_req.position.in_caller(action_chain),
+            # so when the caller reaches the action through action_chain unchanged
+            # the contracted position is that same position.
+            contracted_position = local_position
         elif caller_path_to_action is not None:
             # inner_req.position:
             #   position<iface>::position</box_target>::position</q>
@@ -523,10 +536,14 @@ class ActionPostorderValidator:
             self._propagate_destructor_requirements(
                 contract, action_chain, scope, attachment
             )
+            caller_positions = [
+                requirement.position.in_caller(action_chain)
+                for requirement in contract.requirements.values()
+            ]
             self._check_requirements(
                 contract,
-                action_chain,
                 destructor.position,
+                caller_positions,
                 is_destructor=True,
                 destroy_target_origin_at=destructor.origin_position.location,
                 auto_destruction_target=auto_destruction_target,
@@ -625,8 +642,23 @@ class ActionPostorderValidator:
         acting_on_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        self._propagate_action_requirements(contract, action_chain, scope)
-        self._check_requirements(contract, action_chain, acting_on_position)
+        # Requirement propagation, requirement checking, and the operation graph
+        # each need every requirement's position from the caller's perspective
+        # (req.position.in_caller(action_chain)). Deriving it is a fresh
+        # allocation, so compute it once here and hand the same objects to all
+        # three rather than rebuilding it three times per requirement per trigger.
+        requirement_positions = [
+            requirement.position for requirement in contract.requirements.values()
+        ]
+        caller_requirement_positions = [
+            position.in_caller(action_chain) for position in requirement_positions
+        ]
+        self._propagate_action_requirements(
+            contract, action_chain, scope, caller_requirement_positions
+        )
+        self._check_requirements(
+            contract, acting_on_position, caller_requirement_positions
+        )
         self._check_destructor_requirements_from_contracts(
             contract, action_chain, scope
         )
@@ -635,10 +667,8 @@ class ActionPostorderValidator:
                 action_chain,
                 contract.guarantees,
                 acting_on_position,
-                [
-                    requirement.position
-                    for requirement in contract.requirements.values()
-                ],
+                requirement_positions,
+                caller_requirement_positions,
             )
         )
         self._dead_tracker.mark_alive(action_chain)
@@ -652,31 +682,31 @@ class ActionPostorderValidator:
     def _check_requirements(
         self,
         contract: action_contract.ActionContract,
-        prefix_chain: ast.ChainedName,
         acting_on_position: ast.PositionReference,
+        caller_positions: list[ast.PositionReference],
         *,
         is_destructor: bool = False,
         destroy_target_origin_at: ast.SourceLocation | None = None,
         auto_destruction_target: ast.PositionReference | None = None,
         destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
-        """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position."""
+        """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position.
+
+        ``caller_positions`` are the contract's requirement positions from the
+        caller's perspective, in ``contract.requirements`` order.
+        """
         # Action trigger:
-        #   prefix_chain:
+        #   the chain that fired the trigger:
         #     position<box>::action</outer>
         #   acting_on_position:
         #     position<box>::action</outer>::position<trigger>
         #   req.position:
         #     position<iface>::action</inner>::position<item>
-        #   full_caller_chain:
+        #   caller_positions entry (full_caller_chain):
         #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
-        for req in contract.requirements.values():
-            # TODO: This allocates a single-use ChainedName per requirement per
-            # caller just so _check_one_requirement can read its
-            # canonical_chained_name_tuple. Across a dense call graph this is one
-            # of the top compiler-own hotspots (the ChainedName.__getattr__ +
-            # in_caller cluster).
-            full_caller_chain = req.position.in_caller(prefix_chain)
+        for req, full_caller_chain in zip(
+            contract.requirements.values(), caller_positions, strict=True
+        ):
             self._check_one_requirement(
                 full_caller_chain,
                 acting_on_position,

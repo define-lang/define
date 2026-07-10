@@ -626,6 +626,37 @@ class TestParentPosition:
         ]
 
 
+class TestChainParentPosition:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        key = position_reference_for("position<local>").canonical_chained_name_tuple
+        assert ast.chain_parent_position(key) is None
+
+    def test_two_positions(self, position_reference_for: PositionReferenceFor):
+        key = position_reference_for(
+            "position<local>::position</x>"
+        ).canonical_chained_name_tuple
+        assert ast.chain_parent_position(key) == ("position<local>",)
+
+    def test_skips_action(self, position_reference_for: PositionReferenceFor):
+        key = position_reference_for(
+            "position<local>::action</act>::position<iface>"
+        ).canonical_chained_name_tuple
+        assert ast.chain_parent_position(key) == ("position<local>",)
+
+    def test_matches_object_form_including_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        object_parent = pos.parent_position()
+        assert object_parent is not None
+        assert (
+            ast.chain_parent_position(pos.canonical_chained_name_tuple)
+            == object_parent.canonical_chained_name_tuple
+        )
+
+
 class TestInCaller:
     def test_implied_quality_drops_action_segment(
         self, position_reference_for: PositionReferenceFor

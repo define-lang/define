@@ -6,7 +6,7 @@ import abc
 import enum
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Self, override
+from typing import TYPE_CHECKING, Final, Self, override
 
 from define.compiler import constants
 from define.compiler.data_structures import define_path
@@ -320,6 +320,22 @@ def chain_in_caller(
     return caller_chain + local_chain
 
 
+_ACTION_TYPED_NAME_PREFIX: Final = f"{NameType.ACTION.value}<"
+
+
+def chain_parent_position(key: tuple[str, ...]) -> tuple[str, ...] | None:
+    """Return the nearest parent position key, skipping actions, or None.
+
+    The tuple-space equivalent of ``ChainedName.parent_position`` for callers
+    that already hold a canonical chained-name tuple and only need the parent's
+    key, so no ``PositionReference`` has to be built to read it back off.
+    """
+    for i in range(len(key) - 2, -1, -1):
+        if not key[i].startswith(_ACTION_TYPED_NAME_PREFIX):
+            return key[: i + 1]
+    return None
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
@@ -438,6 +454,11 @@ class ChainedName(ASTNode):
                 return PositionReference(
                     location=self.location,
                     typed_names=names[: i + 1],
+                    # A prefix of self's canonical tuple is exactly the parent's,
+                    # so slice it here instead of making the parent recompute it.
+                    canonical_chained_name_tuple=self.canonical_chained_name_tuple[
+                        : i + 1
+                    ],
                 )
         return None
 

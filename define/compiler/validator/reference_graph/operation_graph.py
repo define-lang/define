@@ -226,11 +226,16 @@ class OperationGraph:
         callee: ast.ActionReference,
         acting_on_position: ast.PositionReference,
         requirements: Iterable[ast.PositionReference],
+        caller_requirement_positions: Iterable[ast.PositionReference],
     ) -> int:
         """Record that this action triggers ``callee``, returning the firing operation's id.
 
         The firing operation is the one that filled ``acting_on_position`` (a trigger position
         for an action, or the action being operated on by a constructor/destructor).
+
+        ``caller_requirement_positions`` are ``requirements`` already expressed
+        from the caller's perspective (``requirement.in_caller(callee)``), in the
+        same order.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_node_id = self._last_operation[acting_on_position_key]
@@ -254,8 +259,10 @@ class OperationGraph:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
             firing_node.satisfies.append(RequirementSatisfaction(callee, ()))
-        for requirement in requirements:
-            in_callee_key = requirement.in_caller(callee).canonical_chained_name_tuple
+        for requirement, caller_position in zip(
+            requirements, caller_requirement_positions, strict=True
+        ):
+            in_callee_key = caller_position.canonical_chained_name_tuple
             requirement_key = requirement.canonical_chained_name_tuple
             satisfier = self._requirement_satisfier(in_callee_key)
             if satisfier is not None:

@@ -89,7 +89,9 @@ def _trigger(
     the trigger was recorded with.
     """
     action_chain = _action_chain(action_path)
-    trigger_node_id = graph.record_action_trigger(action_chain, acting_on_position, [])
+    trigger_node_id = graph.record_action_trigger(
+        action_chain, acting_on_position, [], []
+    )
     assert trigger_node_id is not None
     graph.record_guarantees(
         trigger_node_id,
@@ -299,8 +301,8 @@ def test_operation_records_the_actions_it_triggers():
     graph.record_create(_ref("basket"))  # 1
     brew = _action_chain("/brew")
     grind = _action_chain("/grind")
-    _ = graph.record_action_trigger(brew, _ref("box"), [])
-    _ = graph.record_action_trigger(grind, _ref("box"), [])
+    _ = graph.record_action_trigger(brew, _ref("box"), [], [])
+    _ = graph.record_action_trigger(grind, _ref("box"), [], [])
     assert graph.nodes[0].satisfies == [
         operation_graph.RequirementSatisfaction(brew, ()),
         operation_graph.RequirementSatisfaction(grind, ()),
@@ -315,8 +317,8 @@ def test_each_operation_reports_only_its_own_triggers():
     graph.record_create(_ref("two"))  # 1
     brew = _action_chain("/brew")
     grind = _action_chain("/grind")
-    _ = graph.record_action_trigger(brew, _ref("one"), [])
-    _ = graph.record_action_trigger(grind, _ref("two"), [])
+    _ = graph.record_action_trigger(brew, _ref("one"), [], [])
+    _ = graph.record_action_trigger(grind, _ref("two"), [], [])
     assert graph.nodes[0].satisfies == [
         operation_graph.RequirementSatisfaction(brew, ())
     ]
@@ -352,7 +354,7 @@ def test_guarantee_node_carries_the_callee_action_and_output_position():
     machine = _ref("machine")
     graph.record_create(machine)  # 0: the trigger fill
     brew = _action_chain("/brew")
-    _ = graph.record_action_trigger(brew, machine, [])
+    _ = graph.record_action_trigger(brew, machine, [], [])
     # The callee's own key for the output (``position<coffee>``) differs from
     # where it lands in the caller (``machine::coffee``); the node keeps the
     # callee's key so codegen can find the last operation on it in the callee's

@@ -164,6 +164,7 @@ class _PendingNestedGuarantees:
 
     def __init__(self):
         self._by_prefix: dict[tuple[str, ...], list[_PendingGuarantee]] = {}
+        self._longest_pending_guarantee_key: int = 0
 
     def add(self, nested_guarantee: _PendingGuarantee):
         """Record a nested guarantee to apply once a query reaches at or under ``prefix``."""
@@ -173,24 +174,29 @@ class _PendingNestedGuarantees:
         # are prefixed with the parent_position itself). Using the trigger
         # position instead would leave the implied guarantees outside that
         # subtree, so a query on an implied position would never apply it.
-        self._by_prefix.setdefault(nested_guarantee.parent_position, []).append(
-            nested_guarantee
-        )
+        prefix = nested_guarantee.parent_position
+        self._by_prefix.setdefault(prefix, []).append(nested_guarantee)
+        if len(prefix) > self._longest_pending_guarantee_key:
+            self._longest_pending_guarantee_key = len(prefix)
 
     def drain_shortest_first(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""
-        # The common case is no pending guarantees; bail before slicing every prefix of key.
+        # The common case is no pending guarantees; bail before doing any work,
+        # as a performance optimization.
         if not self._by_prefix:
+            self._longest_pending_guarantee_key = 0
             return
-        # Walk the prefixes of key from shortest to longest. Length 0 is the empty
-        # prefix (the root): a top-level implied action's nested guarantee, whose
-        # parent_position is empty, applies to any key.
-        for length in range(len(key) + 1):
+        # Walk the prefixes of key from shortest to longest, but no deeper than the
+        # deepest pending guarantee.
+        key_len = len(key)
+        length = 0
+        while length <= key_len and length <= self._longest_pending_guarantee_key:
             prefix = key[:length]
             # Applying a yielded guarantee can re-add one at this same prefix, so
             # drain it fully before moving to a deeper prefix.
             while prefix in self._by_prefix:
                 yield from self._by_prefix.pop(prefix)
+            length += 1
 
     def drain_at_or_below(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield and remove any pending nested guarantees at any prefix at or below ``key``."""
@@ -491,12 +497,10 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         if self._store.has_been_touched(key):
             return True
-        parent = in_position.parent_position()
-        if parent is None:
+        parent_key = ast.chain_parent_position(key)
+        if parent_key is None:
             return False
-        parent_particle = self._store.occupant_or_none(
-            parent.canonical_chained_name_tuple
-        )
+        parent_particle = self._store.occupant_or_none(parent_key)
         return parent_particle is not None and not parent_particle.from_caller
 
     def nearest_particle_above(
@@ -844,14 +848,17 @@ class ParticleTracker:
         guarantees: action_contract.Guarantees,
         acting_on_position: ast.PositionReference,
         requirements: Iterable[ast.PositionReference],
+        caller_requirement_positions: Iterable[ast.PositionReference],
     ) -> action_contract.NestedGuarantees:
         """Apply the guarantees for a triggered action.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.
 
-        ``requirements`` are the callee's own requirement chains; the operation
-        graph tags the caller operations that satisfy them.
+        ``requirements`` are the callee's own requirement chains, and
+        ``caller_requirement_positions`` are those same chains from the caller's
+        perspective; the operation graph tags the caller operations that satisfy
+        them.
 
         Returns a nested guarantee for this action to record.
         """
@@ -861,7 +868,7 @@ class ParticleTracker:
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
         trigger_node_id = self._operation_graph.record_action_trigger(
-            action_chain, acting_on_position, requirements
+            action_chain, acting_on_position, requirements, caller_requirement_positions
         )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
