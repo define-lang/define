@@ -152,7 +152,10 @@ def contract_destructor(
     enclosing_fqun = definition.typed_name.name_content.fqun
     cascade_req = action_contract.PositionRequirement(
         required_state=propagated_requirement.required_state,
-        inferred_from=destruction_contract.destroyed_position_local,
+        position=propagated_requirement.position.in_caller(
+            destruction_contract.destroyed_position_local
+        ),
+        inferred_at=destruction_contract.destroyed_position_local.location,
         enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
         destructor_attachment=attachment,

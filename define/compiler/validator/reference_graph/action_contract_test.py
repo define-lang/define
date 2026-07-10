@@ -44,7 +44,7 @@ def _get_create_ref(
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
-    return req.full_propagation_position_chain().source_form_in_universe(fqun)
+    return req.position.source_form_in_universe(fqun)
 
 
 _EMPTY = action_contract.PositionOccupancyState.EMPTY
@@ -205,68 +205,39 @@ _DEP_FQUN = _get_fqun(_INNER)
 
 class TestRootCauseActionName:
     def test_non_propagated(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_OUTER),
-            enclosing_action=_OUTER,
-        )
+        req = _direct_requirement(_OUTER)
         assert req.root_cause_action_name() == f"action<{_MAIN_FQUN_NAME}:/outer>"
 
     def test_single_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_INNER)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF), _OUTER
         )
         assert propagated.root_cause_action_name() == f"action<{_DEP_FQUN_NAME}:/inner>"
 
     def test_double_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
+        leaf = _direct_requirement(_INNER)
+        middle = _propagated_requirement(
+            leaf, _make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF), _MIDDLE
         )
-        middle = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_MIDDLE,
-            propagated_from=leaf,
-        )
-        outer = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=middle,
+        outer = _propagated_requirement(
+            middle, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert outer.root_cause_action_name() == f"action<{_DEP_FQUN_NAME}:/inner>"
 
     def test_implied_position_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_MAIN_IMPLIES_POSITION)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert propagated.required_state == _EMPTY
         assert (
-            propagated.inferred_from.source_chained_name
-            == "position<iface>::action</middle>"
+            propagated.position.source_chained_name == "position<iface>::position</x>"
         )
         assert propagated.enclosing_action is _OUTER
         assert propagated.propagated_from is leaf
         assert leaf.required_state == _EMPTY
-        assert leaf.inferred_from.source_chained_name == "position</x>"
+        assert leaf.position.source_chained_name == "position</x>"
         assert leaf.enclosing_action is _MAIN_IMPLIES_POSITION
         assert leaf.propagated_from is None
         assert (
@@ -277,46 +248,27 @@ class TestRootCauseActionName:
 
 class TestResolvedChainedName:
     def test_non_propagated_same_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_OUTER),
-            enclosing_action=_OUTER,
-        )
+        req = _direct_requirement(_OUTER)
         assert (
             _resolved(req, _MAIN_FQUN)
             == "position<iface>::action</middle>::position<trigger_pos>"
         )
 
     def test_non_propagated_with_global_ref_same_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
+        req = _direct_requirement(_INNER)
         assert _resolved(req, _DEP_FQUN) == "position<item>::position</x>"
 
     def test_non_propagated_cross_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
+        req = _direct_requirement(_INNER)
         assert (
             _resolved(req, _MAIN_FQUN)
             == f"position<item>::position<{_DEP_FQUN_NAME}:/x>"
         )
 
     def test_single_propagation_same_fqun(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MIDDLE),
-            enclosing_action=_MIDDLE,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_MIDDLE)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert _resolved(propagated, _MAIN_FQUN) == (
             "position<iface>::action</middle>"
@@ -324,16 +276,9 @@ class TestResolvedChainedName:
         )
 
     def test_single_propagation_cross_fqun(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_INNER)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF), _OUTER
         )
         assert _resolved(propagated, _MAIN_FQUN) == (
             f"position<iface>::action</inner>"
@@ -341,22 +286,12 @@ class TestResolvedChainedName:
         )
 
     def test_double_propagation_mixed_fqun(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
+        leaf = _direct_requirement(_INNER)
+        middle = _propagated_requirement(
+            leaf, _make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF), _MIDDLE
         )
-        middle = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_MIDDLE,
-            propagated_from=leaf,
-        )
-        outer = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=middle,
+        outer = _propagated_requirement(
+            middle, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert _resolved(outer, _MAIN_FQUN) == (
             "position<iface>::action</middle>"
@@ -365,11 +300,7 @@ class TestResolvedChainedName:
         )
 
     def test_complex_chain_same_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_COMPLEX_CHAIN),
-            enclosing_action=_COMPLEX_CHAIN,
-        )
+        req = _direct_requirement(_COMPLEX_CHAIN)
         assert _resolved(req, _MAIN_FQUN) == (
             "position<local>"
             "::position</x>"
@@ -381,19 +312,11 @@ class TestResolvedChainedName:
         )
 
     def test_implied_position_non_propagated_same_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
+        req = _direct_requirement(_MAIN_IMPLIES_POSITION)
         assert _resolved(req, _MAIN_FQUN) == "position</x>"
 
     def test_implied_position_non_propagated_cross_fqun(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_DEP_IMPLIES_POSITION),
-            enclosing_action=_DEP_IMPLIES_POSITION,
-        )
+        req = _direct_requirement(_DEP_IMPLIES_POSITION)
         assert _resolved(req, _MAIN_FQUN) == f"position<{_DEP_FQUN_NAME}:/x>"
 
     def test_implied_position_propagation_same_fqun(self):
@@ -401,30 +324,16 @@ class TestResolvedChainedName:
         # caller-side prefix is just the interface position (no action
         # segment), since the implied quality lives on the same particle as the
         # interface position.
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_MAIN_IMPLIES_POSITION)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert _resolved(propagated, _MAIN_FQUN) == "position<iface>::position</x>"
 
     def test_implied_position_propagation_cross_fqun(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_DEP_IMPLIES_POSITION),
-            enclosing_action=_DEP_IMPLIES_POSITION,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_DEP_IMPLIES_POSITION)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert _resolved(propagated, _MAIN_FQUN) == (
             f"position<iface>::position<{_DEP_FQUN_NAME}:/x>"
@@ -438,6 +347,34 @@ def _make_chain(
     return ast.ChainedName(
         location=location_from.location,
         typed_names=typed_names,
+    )
+
+
+def _direct_requirement(
+    action: ast.ActionDefinition,
+) -> action_contract.PositionRequirement:
+    """Build the requirement ``action``'s first create statement imposes directly."""
+    create_target = _get_create_ref(action)
+    return action_contract.PositionRequirement(
+        required_state=_EMPTY,
+        position=create_target,
+        inferred_at=create_target.location,
+        enclosing_action=action,
+    )
+
+
+def _propagated_requirement(
+    inner: action_contract.PositionRequirement,
+    caller_path: ast.ChainedName,
+    enclosing_action: ast.ActionDefinition,
+) -> action_contract.PositionRequirement:
+    """Build ``inner`` propagated through ``caller_path``, as _record_requirement does."""
+    return action_contract.PositionRequirement(
+        required_state=inner.required_state,
+        position=inner.position.in_caller(caller_path),
+        inferred_at=caller_path.location,
+        enclosing_action=enclosing_action,
+        propagated_from=inner,
     )
 
 
@@ -458,127 +395,71 @@ _INNER_REF = _get_create_ref(_INNER)
 
 class TestPropagationChainChainedName:
     def test_non_propagated(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_OUTER),
-            enclosing_action=_OUTER,
-        )
+        req = _direct_requirement(_OUTER)
         assert (
-            req.full_propagation_position_chain().source_chained_name
+            req.position.source_chained_name
             == "position<iface>::action</middle>::position<trigger_pos>"
         )
 
     def test_single_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_INNER)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF), _OUTER
         )
         assert (
-            propagated.full_propagation_position_chain().source_chained_name
+            propagated.position.source_chained_name
             == "position<iface>::action</inner>::position<item>::position</x>"
         )
 
     def test_double_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
+        leaf = _direct_requirement(_INNER)
+        middle = _propagated_requirement(
+            leaf, _make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF), _MIDDLE
         )
-        middle = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_MIDDLE,
-            propagated_from=leaf,
+        outer = _propagated_requirement(
+            middle, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
-        outer = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=middle,
-        )
-        assert outer.full_propagation_position_chain().source_chained_name == (
+        assert outer.position.source_chained_name == (
             "position<iface>::action</middle>"
             "::position<mid_iface>::action</inner>"
             "::position<item>::position</x>"
         )
 
     def test_implied_position_non_propagated(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
-        assert (
-            req.full_propagation_position_chain().source_chained_name == "position</x>"
-        )
+        req = _direct_requirement(_MAIN_IMPLIES_POSITION)
+        assert req.position.source_chained_name == "position</x>"
 
     def test_implied_position_propagated(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_MAIN_IMPLIES_POSITION)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert (
-            propagated.full_propagation_position_chain().source_chained_name
-            == "position<iface>::position</x>"
+            propagated.position.source_chained_name == "position<iface>::position</x>"
         )
 
 
 class TestPropagatedFromLocations:
     def test_non_propagated(self):
-        req = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_OUTER),
-            enclosing_action=_OUTER,
-        )
+        req = _direct_requirement(_OUTER)
         assert req.propagated_from_locations() == []
 
     def test_single_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_INNER)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_INNER_REF), _OUTER
         )
         locs = propagated.propagated_from_locations()
         assert len(locs) == 1
         assert locs[0].line == _get_create_ref(_INNER).location.line
 
     def test_double_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_INNER),
-            enclosing_action=_INNER,
+        leaf = _direct_requirement(_INNER)
+        middle = _propagated_requirement(
+            leaf, _make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF), _MIDDLE
         )
-        middle = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_MIDDLE_REF, _MID_IFACE_REF, _ACTION_INNER_REF),
-            enclosing_action=_MIDDLE,
-            propagated_from=leaf,
-        )
-        outer = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=middle,
+        outer = _propagated_requirement(
+            middle, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         locs = outer.propagated_from_locations()
         assert len(locs) == 2
@@ -586,26 +467,18 @@ class TestPropagatedFromLocations:
         assert locs[1].line == _get_create_ref(_INNER).location.line
 
     def test_implied_position_propagation(self):
-        leaf = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_get_create_ref(_MAIN_IMPLIES_POSITION),
-            enclosing_action=_MAIN_IMPLIES_POSITION,
-        )
-        propagated = action_contract.PositionRequirement(
-            required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
-            enclosing_action=_OUTER,
-            propagated_from=leaf,
+        leaf = _direct_requirement(_MAIN_IMPLIES_POSITION)
+        propagated = _propagated_requirement(
+            leaf, _make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF), _OUTER
         )
         assert propagated.required_state == _EMPTY
         assert (
-            propagated.inferred_from.source_chained_name
-            == "position<iface>::action</middle>"
+            propagated.position.source_chained_name == "position<iface>::position</x>"
         )
         assert propagated.enclosing_action is _OUTER
         assert propagated.propagated_from is leaf
         assert leaf.required_state == _EMPTY
-        assert leaf.inferred_from.source_chained_name == "position</x>"
+        assert leaf.position.source_chained_name == "position</x>"
         assert leaf.enclosing_action is _MAIN_IMPLIES_POSITION
         assert leaf.propagated_from is None
         locs = propagated.propagated_from_locations()

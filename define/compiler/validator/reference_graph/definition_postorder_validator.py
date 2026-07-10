@@ -134,8 +134,9 @@ class ActionPostorderValidator:
             return
         self._record_requirement(
             required_state=required_state,
-            contracted_chain=inferred_from_chain,
-            local_chain=position,
+            contracted_position=inferred_from_chain,
+            local_position=position,
+            inferred_at=inferred_from_chain.location,
             propagated_from=None,
             scope=scope,
         )
@@ -144,8 +145,9 @@ class ActionPostorderValidator:
         self,
         *,
         required_state: action_contract.PositionOccupancyState,
-        contracted_chain: ast.ChainedName,
-        local_chain: ast.ChainedName,
+        contracted_position: ast.PositionReference,
+        local_position: ast.PositionReference,
+        inferred_at: ast.SourceLocation,
         propagated_from: action_contract.PositionRequirement | None,
         scope: scope_tracker.ScopeTracker,
         destructor_attachment: action_contract.DestructorAttachment | None = None,
@@ -154,44 +156,15 @@ class ActionPostorderValidator:
 
         Args:
             required_state: The state that the requirement says the position must be in.
-            contracted_chain: The contracted chain as we would expose it
-                in requirements for this action.
-            local_chain: The chain in this definition's local
-                namespace that we are actually operating on.
+            contracted_position: The requirement's position as we expose it in
+                this action's contract.
+            local_position: The position in this definition's local namespace
+                that we are actually operating on.
+            inferred_at: The statement this action inferred the requirement at.
             propagated_from: The inner requirement this was propagated
                 from, or None for a directly inferred requirement.
             scope: The scope tracker (for resolving qualities of local positions).
         """
-        inferred_from = contracted_chain
-        if propagated_from is not None:
-            # We are recording a requirement that is propagating from an action
-            # we are triggering.
-            #
-            # chain_in_requirement:
-            #   position<iface>::position</box_target>::position</q>
-            # contracted_position:
-            #   position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
-            # local_position:
-            #   position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
-            chain_in_requirement = propagated_from.full_propagation_position_chain()
-            contracted_position = chain_in_requirement.in_caller(contracted_chain)
-            local_position = chain_in_requirement.in_caller(local_chain)
-        else:
-            # We are recording a requirement that this action generates itself.
-            #
-            # contracted_position:
-            #   position<iface>::position</child>
-            # local_position:
-            #   position<some_local>::position</child>
-            if not (
-                isinstance(contracted_chain, ast.PositionReference)
-                and isinstance(local_chain, ast.PositionReference)
-            ):
-                raise TypeError(
-                    "directly-inferred requirements must be recorded with PositionReference chains"
-                )
-            contracted_position = contracted_chain
-            local_position = local_chain
         requirement_key = contracted_position.canonical_chained_name_tuple
         # This both prevents us from double-inferring requirements, and also
         # implements the "caller requirements override callee requirements" part
@@ -208,7 +181,8 @@ class ActionPostorderValidator:
         self._inferred_requirements[requirement_key] = (
             action_contract.PositionRequirement(
                 required_state=required_state,
-                inferred_from=inferred_from,
+                position=contracted_position,
+                inferred_at=inferred_at,
                 enclosing_action=self._action_definition,
                 propagated_from=propagated_from,
                 destructor_attachment=destructor_attachment,
@@ -255,10 +229,17 @@ class ActionPostorderValidator:
         else:
             return
         for inner_req in contract.requirements.values():
+            # inner_req.position:
+            #   position<iface>::position</box_target>::position</q>
+            # contracted_position:
+            #   position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
+            # local_position:
+            #   position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
             self._record_requirement(
                 required_state=inner_req.required_state,
-                contracted_chain=caller_path_to_action,
-                local_chain=action_chain,
+                contracted_position=inner_req.position.in_caller(caller_path_to_action),
+                local_position=inner_req.position.in_caller(action_chain),
+                inferred_at=caller_path_to_action.location,
                 propagated_from=inner_req,
                 scope=scope,
             )
@@ -507,8 +488,11 @@ class ActionPostorderValidator:
         for inner_req in contract.requirements.values():
             self._record_requirement(
                 required_state=inner_req.required_state,
-                contracted_chain=caller_path_to_destructor,
-                local_chain=action_chain,
+                contracted_position=inner_req.position.in_caller(
+                    caller_path_to_destructor
+                ),
+                local_position=inner_req.position.in_caller(action_chain),
+                inferred_at=caller_path_to_destructor.location,
                 propagated_from=inner_req,
                 scope=scope,
                 destructor_attachment=attachment,
@@ -574,7 +558,7 @@ class ActionPostorderValidator:
                 contract.guarantees,
                 acting_on_position,
                 [
-                    requirement.full_propagation_position_chain()
+                    requirement.position
                     for requirement in contract.requirements.values()
                 ],
             )
@@ -604,7 +588,7 @@ class ActionPostorderValidator:
         #     position<box>::action</outer>
         #   acting_on_position:
         #     position<box>::action</outer>::position<trigger>
-        #   req.full_propagation_position_chain():
+        #   req.position:
         #     position<iface>::action</inner>::position<item>
         #   full_caller_chain:
         #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
@@ -614,9 +598,7 @@ class ActionPostorderValidator:
             # canonical_chained_name_tuple. Across a dense call graph this is one
             # of the top compiler-own hotspots (the ChainedName.__getattr__ +
             # in_caller cluster).
-            full_caller_chain = req.full_propagation_position_chain().in_caller(
-                prefix_chain
-            )
+            full_caller_chain = req.position.in_caller(prefix_chain)
             self._check_one_requirement(
                 full_caller_chain,
                 acting_on_position,
@@ -1077,9 +1059,7 @@ class ActionPostorderValidator:
         #   position<box>::action</close_file>::position<target>::position</file>
         # relative_key:
         #   ("position</file>",)
-        required_position = inner_req.full_propagation_position_chain().in_caller(
-            action_chain
-        )
+        required_position = inner_req.position.in_caller(action_chain)
         relative_key = required_position.canonical_chained_name_tuple[
             caller_prefix_length:
         ]

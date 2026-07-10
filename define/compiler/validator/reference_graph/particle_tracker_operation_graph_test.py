@@ -103,11 +103,12 @@ _DUMMY_ACTION = ast.ActionDefinition(
 
 def _make_requirement(
     state: action_contract.PositionOccupancyState,
-    inferred_from: ast.PositionReference,
+    position: ast.PositionReference,
 ) -> action_contract.PositionRequirement:
     return action_contract.PositionRequirement(
         required_state=state,
-        inferred_from=inferred_from,
+        position=position,
+        inferred_at=position.location,
         enclosing_action=_DUMMY_ACTION,
     )
 

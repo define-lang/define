@@ -9,7 +9,7 @@ from define.compiler.validator.reference_graph.test_helpers import (
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
-    return req.full_propagation_position_chain().source_form_in_universe(fqun)
+    return req.position.source_form_in_universe(fqun)
 
 
 class TestRequirementInference:
@@ -33,9 +33,7 @@ class TestRequirementInference:
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
         )
-        assert (
-            contract.requirements[("position<item>",)].inferred_from.location.line == 7
-        )
+        assert contract.requirements[("position<item>",)].inferred_at.line == 7
 
     def test_move_source_infers_occupied(self):
         source = (
@@ -191,8 +189,8 @@ class TestImpliedPositionRequirementInference:
         assert key in contract.requirements
         req = contract.requirements[key]
         assert req.required_state == action_contract.PositionOccupancyState.EMPTY
-        assert req.inferred_from.source_chained_name == "position</implied>"
-        assert req.inferred_from.location.line == 8
+        assert req.position.source_chained_name == "position</implied>"
+        assert req.inferred_at.line == 8
 
     def test_destroy_in_implied_position_infers_occupied(self):
         source = (
@@ -248,7 +246,7 @@ class TestImpliedPositionRequirementInference:
         assert leaf_key in contract.requirements
         leaf = contract.requirements[leaf_key]
         assert leaf.required_state == action_contract.PositionOccupancyState.EMPTY
-        assert leaf.inferred_from.source_chained_name == "action</sub>::position<iface>"
+        assert leaf.position.source_chained_name == "action</sub>::position<iface>"
 
 
 class TestGuaranteeGeneration:
@@ -557,7 +555,7 @@ class TestChainedRequirementInference:
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert (
-            contract.requirements[chain_key].inferred_from.source_chained_name
+            contract.requirements[chain_key].position.source_chained_name
             == "position<item>::position</x>"
         )
 
@@ -926,11 +924,8 @@ def test_interface_position_requirement_integration():
         req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/outer>"
     )
-    assert (
-        req.inferred_from.source_chained_name == "position<out_iface>::action</middle>"
-    )
-    assert req.inferred_from.location.line == 34
-    assert req.inferred_from.location.file_path is None
+    assert req.inferred_at.line == 34
+    assert req.inferred_at.file_path is None
 
     assert req.propagated_from is not None
     mid_req = req.propagated_from
@@ -939,12 +934,8 @@ def test_interface_position_requirement_integration():
         mid_req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/middle>"
     )
-    assert (
-        mid_req.inferred_from.source_chained_name
-        == "position<mid_iface>::action</inner>"
-    )
-    assert mid_req.inferred_from.location.line == 21
-    assert mid_req.inferred_from.location.file_path is None
+    assert mid_req.inferred_at.line == 21
+    assert mid_req.inferred_at.file_path is None
 
     assert mid_req.propagated_from is not None
     inner_req = mid_req.propagated_from
@@ -953,9 +944,9 @@ def test_interface_position_requirement_integration():
         inner_req.enclosing_action.typed_name.full_typed_name
         == "action<my.domain.com:my_lib:/inner>"
     )
-    assert inner_req.inferred_from.source_chained_name == "position<item>"
-    assert inner_req.inferred_from.location.line == 8
-    assert inner_req.inferred_from.location.file_path is None
+    assert inner_req.position.source_chained_name == "position<item>"
+    assert inner_req.inferred_at.line == 8
+    assert inner_req.inferred_at.file_path is None
     assert inner_req.propagated_from is None
 
     assert req.root_cause_action_name() == "action<my.domain.com:my_lib:/inner>"
@@ -965,7 +956,7 @@ def test_interface_position_requirement_integration():
         "::position<mid_iface>::action</inner>"
         "::position<item>"
     )
-    assert req.full_propagation_position_chain().source_chained_name == (
+    assert req.position.source_chained_name == (
         "position<out_iface>::action</middle>"
         "::position<mid_iface>::action</inner>::position<item>"
     )
@@ -981,7 +972,7 @@ def test_interface_position_requirement_integration():
     assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
     )
-    assert mid_req.full_propagation_position_chain().source_chained_name == (
+    assert mid_req.position.source_chained_name == (
         "position<mid_iface>::action</inner>::position<item>"
     )
     mid_locs = mid_req.propagated_from_locations()
@@ -992,10 +983,7 @@ def test_interface_position_requirement_integration():
     assert inner_req.root_cause_action_name() == "action<my.domain.com:my_lib:/inner>"
     inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
     assert _resolved(inner_req, inner_fqun) == "position<item>"
-    assert (
-        inner_req.full_propagation_position_chain().source_chained_name
-        == "position<item>"
-    )
+    assert inner_req.position.source_chained_name == "position<item>"
     assert inner_req.propagated_from_locations() == []
 
 

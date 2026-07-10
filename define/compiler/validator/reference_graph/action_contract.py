@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import enum
+import typing
 from dataclasses import dataclass
 from functools import cached_property
 
-from define.compiler import ast
+if typing.TYPE_CHECKING:
+    from define.compiler import ast
 
 
 class PositionOccupancyState(enum.Enum):
@@ -98,22 +100,12 @@ class PositionRequirement:
     """
 
     required_state: PositionOccupancyState
-    # The chained name at the line of source where this action inferred the
-    # requirement.
-    #
-    # If this is a requirement imposed directly by this action,
-    # this contains the full chained name used in the statement that imposed
-    # the requirement (like `position<iface>::position</x>` for
-    # `create a particle in position<iface>::position</x>.`)
-    #
-    # If this is a requirement that has been propagated from a called
-    # action, then it contains only the prefix of the chain that is unique
-    # within this action. For example, imagine we trigger an action via
-    # `position<iface>::action</inner>::position<run>`, and it includes
-    # a requirement on action</inner>::position<item>. This will contain
-    # just `position<iface>::action</inner>` (which is why it is a ChainedName
-    # and not a PositionReference).
-    inferred_from: ast.ChainedName
+    # The position this requirement is on. Contains the full chained name
+    # that this requirement is on, starting from the contracted position.
+    position: ast.PositionReference
+    # The statement this action inferred the requirement at: the body statement
+    # that imposed it directly, or the trigger statement it propagated through.
+    inferred_at: ast.SourceLocation
     enclosing_action: ast.ActionDefinition
     propagated_from: PositionRequirement | None = None
     destructor_attachment: DestructorAttachment | None = None
@@ -129,23 +121,12 @@ class PositionRequirement:
         """Return the canonical name of the action that originally inferred this requirement."""
         return self.root_cause_action().typed_name.source_typed_name
 
-    def full_propagation_position_chain(self) -> ast.PositionReference:
-        """Get the full chained name composed by walking propagated_from."""
-        if self.propagated_from is None:
-            if not isinstance(self.inferred_from, ast.PositionReference):
-                raise TypeError(
-                    f"originating requirement's inferred_from must be a PositionReference, got {type(self.inferred_from).__name__}"
-                )
-            return self.inferred_from
-        inner_full = self.propagated_from.full_propagation_position_chain()
-        return inner_full.in_caller(self.inferred_from)
-
     def propagated_from_locations(self) -> list[ast.SourceLocation]:
         """Locations of intermediate propagation steps, ordered outer to inner."""
         locations: list[ast.SourceLocation] = []
         current = self.propagated_from
         while current is not None:
-            locations.append(current.inferred_from.location)
+            locations.append(current.inferred_at)
             current = current.propagated_from
         return locations
 
@@ -186,7 +167,7 @@ class PositionRequirement:
         enclosing_name = self.enclosing_action.typed_name.source_typed_name
         if self.propagated_from is None:
             return PropagationStep(
-                location=self.inferred_from.location,
+                location=self.inferred_at,
                 kind=PropagationKind.DIRECT_INFERENCE,
                 enclosing_quality_name=enclosing_name,
                 triggered_quality_name=None,
@@ -197,7 +178,7 @@ class PositionRequirement:
         else:
             kind = PropagationKind.ACTION_TRIGGER
         return PropagationStep(
-            location=self.inferred_from.location,
+            location=self.inferred_at,
             kind=kind,
             enclosing_quality_name=enclosing_name,
             triggered_quality_name=other_action.typed_name.source_typed_name,
