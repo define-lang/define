@@ -80,6 +80,17 @@ See [define/spec/spec.md] for the language specification.
 - Do not add `-> None` return annotations unless a type checker explicitly
   requires one.
 
+## Terminology
+
+- Use Define Terms for Define Concepts: When writing or talking about a
+  Define-language concept, use the exact spec/code term and never coin a synonym
+  or label for it.
+- Do not use these words for concepts in the compiler or language: anchor, root,
+  rooted, re-rooted.
+- Do not use abbreviations or acronyms for Define concepts unless the spec uses
+  them. For example, do not use "PCB" as an abbreviation for "Position
+  Constraint Block."
+
 ## Git
 
 - When renaming or moving files, always use `git mv` so that git records the
