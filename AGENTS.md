@@ -86,7 +86,7 @@ See [define/spec/spec.md] for the language specification.
   Define-language concept, use the exact spec/code term and never coin a synonym
   or label for it.
 - Do not use these words for concepts in the compiler or language: anchor, root,
-  rooted, re-rooted.
+  rooted, re-rooted, carried, split point, establishing.
 - Do not use abbreviations or acronyms for Define concepts unless the spec uses
   them. For example, do not use "PCB" as an abbreviation for "Position
   Constraint Block."
