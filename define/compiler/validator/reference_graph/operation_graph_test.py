@@ -81,11 +81,12 @@ def _trigger(
     acting_on_position: ast.PositionReference,
     action_path: str,
     *output_keys: tuple[str, ...],
-):
+) -> ast.ActionReference:
     """Fire ``action_path`` from the operation on ``acting_on_position``, guaranteeing ``output_keys``.
 
     Each output's callee-local key is taken to equal its absolute key, which is
-    all these synthetic graphs (no real callee) need.
+    all these synthetic graphs (no real callee) need. Returns the action chain
+    the trigger was recorded with.
     """
     action_chain = _action_chain(action_path)
     trigger_node_id = graph.record_action_trigger(action_chain, acting_on_position, [])
@@ -95,6 +96,7 @@ def _trigger(
         action_chain.typed_names[-1].full_typed_name,
         [(key, key) for key in output_keys],
     )
+    return action_chain
 
 
 def test_same_key_chain():
@@ -128,11 +130,16 @@ def test_child_depends_on_nearest_ancestor():
 
 def test_move_depends_on_both_ends():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    graph.record_create(_ref("one"))  # 0
-    graph.record_destroy(_ref("two"), [])  # 1
-    graph.record_move(_ref("one"), _ref("two"), [])  # 2
-    assert _deps(graph, 2) == {0, 1}
-    assert graph.last_operation_node_id_for_key(_key("two")) == 2
+    one = _ref("one")
+    two = _ref("two")
+    graph.record_create(one)  # 0
+    graph.record_destroy(two, [])  # 1
+    graph.record_move(one, two, [])  # 2
+    assert list(graph.nodes) == [
+        operation_graph.CreateNode(node_id=0, target=one, depends_on=[]),
+        operation_graph.DestroyNode(node_id=1, target=two, depends_on=[]),
+        operation_graph.MoveNode(node_id=2, source=one, target=two, depends_on=[0, 1]),
+    ]
 
 
 def test_move_carries_child_transitively():
@@ -320,42 +327,62 @@ def test_each_operation_reports_only_its_own_triggers():
 
 def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    graph.record_create(_ref("machine"))  # 0: the trigger fill
+    machine = _ref("machine")
+    graph.record_create(machine)  # 0: the trigger fill
     # 1: the guarantee node
-    _trigger(graph, _ref("machine"), "/brew", _key("machine", "coffee"))
-    # The output becomes a guarantee node whose last operation is that node, and
-    # the guarantee node itself waits on the trigger.
-    assert len(graph.nodes) == 2
-    assert graph.last_operation_node_id_for_key(_key("machine", "coffee")) == 1
-    assert _deps(graph, 1) == {0}
+    brew = _trigger(graph, machine, "/brew", _key("machine", "coffee"))
+    assert list(graph.nodes) == [
+        operation_graph.CreateNode(
+            node_id=0,
+            target=machine,
+            depends_on=[],
+            satisfies=[operation_graph.RequirementSatisfaction(brew, ())],
+        ),
+        operation_graph.GuaranteeNode(
+            node_id=1,
+            action=brew.typed_names[-1].full_typed_name,
+            output_position=_key("machine", "coffee"),
+            depends_on=[0],
+        ),
+    ]
 
 
 def test_guarantee_node_carries_the_callee_action_and_output_position():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    graph.record_create(_ref("machine"))  # 0: the trigger fill
+    machine = _ref("machine")
+    graph.record_create(machine)  # 0: the trigger fill
     brew = _action_chain("/brew")
-    _ = graph.record_action_trigger(brew, _ref("machine"), [])
+    _ = graph.record_action_trigger(brew, machine, [])
     # The callee's own key for the output (``position<coffee>``) differs from
     # where it lands in the caller (``machine::coffee``); the node keeps the
-    # callee's key so codegen can find the split point in the callee's graph.
+    # callee's key so codegen can find the last operation on it in the callee's
+    # graph.
     graph.record_guarantees(
         0,
         brew.typed_names[-1].full_typed_name,
         [(_key("machine", "coffee"), ("position<coffee>",))],
     )
-    node = graph.nodes[1]
-    assert isinstance(node, operation_graph.GuaranteeNode)
-    assert node.action == brew.typed_names[-1].full_typed_name
-    assert node.output_position == ("position<coffee>",)
-    assert node.depends_on == [0]
-    assert graph.last_operation_node_id_for_key(_key("machine", "coffee")) == 1
+    assert list(graph.nodes) == [
+        operation_graph.CreateNode(
+            node_id=0,
+            target=machine,
+            depends_on=[],
+            satisfies=[operation_graph.RequirementSatisfaction(brew, ())],
+        ),
+        operation_graph.GuaranteeNode(
+            node_id=1,
+            action=brew.typed_names[-1].full_typed_name,
+            output_position=("position<coffee>",),
+            depends_on=[0],
+        ),
+    ]
 
 
 def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     # 1: the guarantee node
-    _trigger(graph, _ref("machine"), "/brew", _key("machine", "coffee"))
+    _ = _trigger(graph, _ref("machine"), "/brew", _key("machine", "coffee"))
     graph.record_destroy(_ref("machine", "coffee"), [])  # 2
     # The consumer chains to the guarantee node (the most recent operation on its
     # ancestor chain), not to the trigger directly. The guarantee node already
@@ -368,7 +395,7 @@ def test_guarantee_overrides_an_earlier_operation():
     graph.record_create(_ref("cup"))  # 0: the caller already filled cup
     graph.record_create(_ref("machine"))  # 1: the trigger fill
     # 2: guarantee node re-fills cup
-    _trigger(graph, _ref("machine"), "/brew", _key("cup"))
+    _ = _trigger(graph, _ref("machine"), "/brew", _key("cup"))
     graph.record_destroy(_ref("cup"), [])  # 3
     # A later operation chains to the guarantee node, not the stale earlier create.
     assert _deps(graph, 3) == {2}
@@ -379,7 +406,7 @@ def test_parent_destroy_reaches_a_triggered_child():
     graph.record_create(_ref("box"))  # 0
     graph.record_create(_ref("gadget"))  # 1: the trigger fill
     # 2: guarantee node fills box::out
-    _trigger(graph, _ref("gadget"), "/brew", _key("box", "out"))
+    _ = _trigger(graph, _ref("gadget"), "/brew", _key("box", "out"))
     graph.record_destroy(_ref("box"), [_key("box", "out")])  # 3
     # The destroy waits, via the Child Rule, on the guarantee node that filled its
     # child (2); that node already reaches the box's create (0).
@@ -390,7 +417,7 @@ def test_triggered_outputs_get_separate_guarantee_nodes():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     # 1: guarantee node for coffee, 2: guarantee node for puck
-    _trigger(
+    _ = _trigger(
         graph,
         _ref("machine"),
         "/brew",
@@ -410,7 +437,7 @@ def test_a_move_can_be_the_trigger_fill():
     graph.record_create(_ref("src"))  # 0
     graph.record_move(_ref("src"), _ref("slot"), [])  # 1: the fill is a move
     # 2: the guarantee node
-    _trigger(graph, _ref("slot"), "/brew", _key("slot", "out"))
+    _ = _trigger(graph, _ref("slot"), "/brew", _key("slot", "out"))
     graph.record_destroy(_ref("slot", "out"), [])  # 3
     assert graph.nodes[1].satisfies == [
         operation_graph.RequirementSatisfaction(_action_chain("/brew"), ())
@@ -425,7 +452,7 @@ def test_a_later_operation_overrides_a_guarantee():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     graph.record_create(_ref("machine"))  # 0: the trigger fill
     # 1: guarantee node fills cup
-    _trigger(graph, _ref("machine"), "/brew", _key("cup"))
+    _ = _trigger(graph, _ref("machine"), "/brew", _key("cup"))
     graph.record_create(_ref("cup"))  # 2: the body re-fills cup after the guarantee
     graph.record_destroy(_ref("cup"), [])  # 3
     # The re-fill chains to the guarantee node; a later consumer chains to the re-fill.
@@ -458,25 +485,38 @@ def test_gap_in_touched_list_still_drops_the_shallower_operation():
     assert _deps(graph, 4) == {3}
 
 
-def test_last_operation_is_unset_for_an_ancestor_of_a_recorded_key():
+def test_child_create_records_no_operation_for_other_keys():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    graph.record_create(_ref("box", "inner"))  # 0
-    assert graph.last_operation_node_id_for_key(_key("box", "inner")) == 0
-    assert graph.last_operation_node_id_for_key(_key("box")) is None
-    assert graph.last_operation_node_id_for_key(_key("box", "inner", "deep")) is None
-    assert graph.last_operation_node_id_for_key(_key("other")) is None
-    graph.record_destroy(_ref("box", "inner"), [])  # 1
-    assert _deps(graph, 1) == {0}
+    inner = _ref("box", "inner")
+    box = _ref("box")
+    other = _ref("other")
+    graph.record_create(inner)  # 0
+    # Nothing was recorded for the ancestor or an unrelated position, so
+    # creates in them have no dependencies.
+    graph.record_create(other)  # 1
+    graph.record_create(box)  # 2
+    assert list(graph.nodes) == [
+        operation_graph.CreateNode(node_id=0, target=inner, depends_on=[]),
+        operation_graph.CreateNode(node_id=1, target=other, depends_on=[]),
+        operation_graph.CreateNode(node_id=2, target=box, depends_on=[]),
+    ]
 
 
 def test_duplicate_touched_keys_and_shared_move_operation():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    graph.record_create(_ref("one"))  # 0
-    graph.record_move(_ref("one"), _ref("two"), [])  # 1
-    assert graph.last_operation_node_id_for_key(_key("one")) == 1
-    assert graph.last_operation_node_id_for_key(_key("two")) == 1
-    graph.record_destroy(_ref("holder"), [_key("one"), _key("one"), _key("two")])  # 2
-    assert _deps(graph, 2) == {1}
+    one = _ref("one")
+    two = _ref("two")
+    holder = _ref("holder")
+    graph.record_create(one)  # 0
+    graph.record_move(one, two, [])  # 1
+    # The move is recorded for both its ends, and the destroy's duplicate
+    # touched keys all resolve to that one move.
+    graph.record_destroy(holder, [_key("one"), _key("one"), _key("two")])  # 2
+    assert list(graph.nodes) == [
+        operation_graph.CreateNode(node_id=0, target=one, depends_on=[]),
+        operation_graph.MoveNode(node_id=1, source=one, target=two, depends_on=[0]),
+        operation_graph.DestroyNode(node_id=2, target=holder, depends_on=[1]),
+    ]
 
 
 def test_wide_touched_subtree_drops_every_superseded_shallow_child():
@@ -491,9 +531,7 @@ def test_wide_touched_subtree_drops_every_superseded_shallow_child():
         graph.record_create(_ref("root", child, "deep"))
         touched.append(_key("root", child))
         touched.append(_key("root", child, "deep"))
-        deep_id = graph.last_operation_node_id_for_key(_key("root", child, "deep"))
-        assert deep_id is not None
-        surviving_deep_children.add(deep_id)
+        surviving_deep_children.add(graph.nodes[-1].node_id)
     graph.record_destroy(_ref("root"), touched)
     # Every shallow child is superseded by its later, deeper child, so only the
     # deep children survive.

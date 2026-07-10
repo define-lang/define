@@ -296,6 +296,24 @@ class StrictReparentingTrie[V]:
                 return prefix
         return None
 
+    def find_longest_prefix_where(
+        self, key: TrieKey, predicate: Callable[[V], bool]
+    ) -> TrieKey | None:
+        """Return the longest prefix of key whose value satisfies predicate.
+
+        Walks from the full key toward the root, skipping nodes that don't
+        exist. Returns the first prefix whose value satisfies predicate, or None
+        if no prefix matches.
+        """
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        for length in range(len(key), 0, -1):
+            prefix = key[:length]
+            value = self._values.get(prefix, _MISSING)
+            if value is not _MISSING and predicate(typing.cast("V", value)):
+                return prefix
+        return None
+
 
 class LenientReparentingTrie[V](StrictReparentingTrie[V]):
     """A trie that auto-creates intermediate nodes on write operations.

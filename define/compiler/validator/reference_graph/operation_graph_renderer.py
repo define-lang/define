@@ -123,7 +123,11 @@ class _OperationGraphFlattener:
     ) -> str:
         trigger_node_id = node.depends_on[0]
         callee_graph, callee_labels = callee_splices[(trigger_node_id, node.action)]
-        split_point = callee_graph.last_operation_node_id_for_key(node.output_position)
+        # A guaranteed output the callee only operated on by moving an ancestor
+        # resolves to that move.
+        split_point = callee_graph.last_operation_affecting_position(
+            node.output_position
+        )
         if split_point is None:
             raise ValueError(
                 f"no split point for {node.output_position} in {node.action}"

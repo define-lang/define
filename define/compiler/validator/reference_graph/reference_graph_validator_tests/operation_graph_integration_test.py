@@ -16,14 +16,6 @@ _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
 
-_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT = (
-    "a move that carries a child into a callee's interface position does not yet"
-    " satisfy the callee's propagated occupied requirement on that child, so a"
-    " spurious requirement violation is reported; this is a requirement-checking"
-    " limitation, not an operation-graph one -- the graph already resolves the"
-    " callee's operations to the carrying move"
-)
-
 
 def test_single_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -1750,7 +1742,6 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT)
 def test_moved_in_parent_children_branch_from_the_carrying_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1842,14 +1833,16 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
         "middle.create(gw::/inner::run)": ["middle.create(gw)"],
         "inner.create(input::/parent::/a)": ["middle.move(iface, gw::/inner::input)"],
         "inner.create(input::/parent::/b)": ["middle.move(iface, gw::/inner::input)"],
+        # The destroy waits on the callee's fills inside gw, which already reach
+        # the carrying move, so it needs no direct move edge.
         "middle.destroy(gw)": [
-            "middle.move(iface, gw::/inner::input)",
             "middle.create(gw::/inner::run)",
+            "inner.create(input::/parent::/a)",
+            "inner.create(input::/parent::/b)",
         ],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MOVE_CARRIED_CHILD_DOES_NOT_SATISFY_REQUIREMENT)
 def test_input_carried_through_two_moves_reaches_the_retriggered_inner(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

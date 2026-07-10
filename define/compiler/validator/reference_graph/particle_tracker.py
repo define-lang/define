@@ -479,6 +479,44 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_been_touched(key)
 
+    def has_known_state(self, in_position: ast.PositionReference) -> bool:
+        """Return whether something has decided this position's occupancy.
+
+        The state is known when either: (a) the current position was touched
+        in this action or (b) the parent particle was created in this action.
+        (If the parent was passed in from the caller, we don't know if this
+        position is occupied or empty.)
+        """
+        key = in_position.canonical_chained_name_tuple
+        self._apply_pending_guarantees_up_to(key)
+        if self._store.has_been_touched(key):
+            return True
+        parent = in_position.parent_position()
+        if parent is None:
+            return False
+        parent_particle = self._store.occupant_or_none(
+            parent.canonical_chained_name_tuple
+        )
+        return parent_particle is not None and not parent_particle.from_caller
+
+    def nearest_particle_above(
+        self, in_position: ast.PositionReference
+    ) -> tuple[tuple[str, ...], ParticleInfo] | None:
+        """Return the key and particle of the nearest occupied ancestor of this position."""
+        key = in_position.canonical_chained_name_tuple
+        if len(key) == 1:
+            return None
+        self._apply_pending_guarantees_up_to(key)
+        ancestor_key = self._store.state.find_longest_prefix_where(
+            key[:-1], lambda node_state: node_state.particle_info is not None
+        )
+        if ancestor_key is None:
+            return None
+        particle_info = self._store.state[ancestor_key].particle_info
+        if particle_info is None:
+            raise ValueError(f"position {ancestor_key} lost its particle")
+        return ancestor_key, particle_info
+
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
         key = in_position.canonical_chained_name_tuple

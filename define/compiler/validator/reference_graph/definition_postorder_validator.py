@@ -214,9 +214,8 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
-        parent_origin = self._parent_particle_comes_from_caller(
-            action_chain.parent_position()
-        )
+        action_parent = action_chain.parent_position()
+        parent_origin = self._parent_particle_comes_from_caller(action_parent)
         if parent_origin is not None:
             caller_path_to_action = action_chain.replace_parent_position_with_prefix(
                 parent_origin
@@ -227,22 +226,102 @@ class ActionPostorderValidator:
         ):
             caller_path_to_action = action_chain
         else:
-            return
+            # We created the action's parent particle in this action.
+            caller_path_to_action = None
         for inner_req in contract.requirements.values():
+            self._maybe_propagate_one_requirement(
+                inner_req, action_chain, caller_path_to_action, action_parent, scope
+            )
+
+    def _maybe_propagate_one_requirement(
+        self,
+        inner_req: action_contract.PositionRequirement,
+        action_chain: ast.ActionReference,
+        caller_path_to_action: ast.ChainedName | None,
+        action_parent: ast.PositionReference | None,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Propagate ``inner_req`` when the caller must satisfy it.
+
+        There are two different propagation situations:
+        1. The callee's parent position was created by our caller, in which case
+           we propagate all requirements that the current action did not satisfy.
+        2. The callee's parent position was created by us (the current action) in
+           which case we only propagate requirements when one of the particles
+           in the callee's contracted positions came from our caller.
+
+        To understand Case 2: it happens when the _parent_ particle of one of our
+        contracted positions was moved by us (the current action) from one of our
+        _own_ contracted positions. For example, let's say the requirement is on
+        interface::b::c. We had our_interface with ::b::c as child positions, but
+        all we did in this action is "move our_interface to interface." We don't
+        actually _know_ the state of "b" and its child "c". Only our caller knows.
+        """
+        local_position = inner_req.position.in_caller(action_chain)
+        moved_particle = None
+        if not self._tracker.has_known_state(local_position):
+            moved_particle = self._moved_particle_above(local_position, action_parent)
+        if moved_particle is not None:
+            owner_key, owner = moved_particle
+            # Make it the child of the contracted position, not the child of this
+            # action.
+            contracted_position = ast.PositionReference(
+                location=local_position.location,
+                typed_names=(
+                    *owner.origin_position.typed_names,
+                    *local_position.typed_names[len(owner_key) :],
+                ),
+            )
+        elif caller_path_to_action is not None:
             # inner_req.position:
             #   position<iface>::position</box_target>::position</q>
             # contracted_position:
             #   position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
-            # local_position:
-            #   position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
-            self._record_requirement(
-                required_state=inner_req.required_state,
-                contracted_position=inner_req.position.in_caller(caller_path_to_action),
-                local_position=inner_req.position.in_caller(action_chain),
-                inferred_at=caller_path_to_action.location,
-                propagated_from=inner_req,
-                scope=scope,
-            )
+            contracted_position = inner_req.position.in_caller(caller_path_to_action)
+        else:
+            return
+        self._record_requirement(
+            required_state=inner_req.required_state,
+            contracted_position=contracted_position,
+            local_position=local_position,
+            inferred_at=action_chain.location,
+            propagated_from=inner_req,
+            scope=scope,
+        )
+
+    # TODO: The moved and non-moved paths can probably be unified. Every
+    # from_caller particle's origin_position is stored in caller coordinates
+    # (each AssumeOccupied bakes one level of the caller mapping into the
+    # particle), so "substitute the nearest caller particle's position with its
+    # origin" gives the same contracted position as composing through
+    # caller_path_to_action wherever both apply. That one rule would replace the
+    # caller_path_to_action branching, this method's exclusions, and the
+    # has_known_state gate (a nearest particle of our own means locally
+    # decided). Two behavioral edges need the test suite's verdict first: a
+    # requirement under a particle we created inside a from-caller trigger
+    # (today wholesale-records a caller obligation and its assume masks a
+    # known-empty violation), and the touched-position gates on moved action
+    # parents (contracted key vs. local key).
+    def _moved_particle_above(
+        self,
+        position: ast.PositionReference,
+        action_parent: ast.PositionReference | None,
+    ) -> tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None:
+        """If any of our parents were moved from an origin position, return what position that is."""
+        nearest_particle = self._tracker.nearest_particle_above(position)
+        if nearest_particle is None:
+            return None
+        owner_key, owner = nearest_particle
+        if not owner.from_caller:
+            return None
+        if (
+            action_parent is not None
+            and owner_key == action_parent.canonical_chained_name_tuple
+        ):
+            return None
+        if owner_key == owner.origin_position.canonical_chained_name_tuple:
+            return None
+        return nearest_particle
 
     def _parent_particle_comes_from_caller(
         self,

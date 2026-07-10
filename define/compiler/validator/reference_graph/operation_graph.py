@@ -180,9 +180,35 @@ class OperationGraph:
         """This action's own trigger position key, or None for a constructor/destructor."""
         return self._trigger_position_key
 
-    def last_operation_node_id_for_key(self, key: tuple[str, ...]) -> int | None:
-        """Return the last operation recorded under exactly this key, if any."""
-        return self._last_operation.get(key)
+    def last_operation_affecting_position(self, key: tuple[str, ...]) -> int | None:
+        """Return the last operation that affected the position at ``key``.
+
+        An operation recorded under exactly this key wins. Otherwise, a move of
+        an ancestor position affected this one, because a move relocates every
+        position inside what it moves. Any other ancestor operation did not (a
+        create makes exactly one particle; the positions inside it start empty),
+        so the result is None.
+        """
+        operation = self._last_operation.get(key)
+        if operation is not None:
+            return operation
+        ancestor = self._most_recent_existing_ancestor_operation(key)
+        if ancestor is not None and isinstance(self._nodes[ancestor], MoveNode):
+            return ancestor
+        return None
+
+    def _most_recent_existing_ancestor_operation(
+        self, key: tuple[str, ...]
+    ) -> int | None:
+        """Return the most recent already-recorded operation on ``key``'s ancestor chain."""
+        most_recent: int | None = None
+        for length in range(len(key) - 1, 0, -1):
+            operation = self._last_operation.get(key[:length])
+            if operation is not None and (
+                most_recent is None or operation > most_recent
+            ):
+                most_recent = operation
+        return most_recent
 
     def body_touched_key(self, key: tuple[str, ...]) -> bool:
         """Return whether the body performed a real operation on exactly this key.
@@ -239,18 +265,9 @@ class OperationGraph:
         return firing_node_id
 
     def _requirement_satisfier(self, in_callee_key: tuple[str, ...]) -> int | None:
-        """Return the operation on ``in_callee_key`` that satisfies a callee's requirement, or None.
-
-        A real operation (or existing requirement node) on the exact position wins.
-        If there is none but the position is one of this action's own requirements,
-        it propagated down from further up the call stack: materialize a
-        RequirementNode for it here -- chaining it to its own ancestors -- so it
-        re-resolves against the right operation when this graph is spliced into its
-        caller, chaining requirement nodes across call levels. A position this
-        action never touches and does not require (an empty-by-default child) gets
-        no satisfier and resolves through its parent when rendered.
-        """
+        """Return the operation on ``in_callee_key`` that satisfies a callee's requirement, or None."""
         if in_callee_key not in self._last_operation:
+            # We need to materialize RequirementNodes to propagate to the caller.
             _ = self._most_recent_ancestor_chain_operation(in_callee_key)
         return self._last_operation.get(in_callee_key)
 

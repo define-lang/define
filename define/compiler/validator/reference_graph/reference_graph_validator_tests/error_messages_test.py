@@ -370,6 +370,230 @@ def test_propagated_action_requires_empty_position_format(
     }
 
 
+def test_requirement_carried_through_two_moves_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "inner.dfn": (
+            "define the potential action<my.domain.com:my_lib:/inner> {\n"
+            "    define the position<input>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        destroy the particle in position<input>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "middle.dfn": (
+            "define the potential action<my.domain.com:my_lib:/middle> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</inner>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        create a particle in position<input>::action</inner>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "outer.dfn": (
+            "define the potential action<my.domain.com:my_lib:/outer> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</inner>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<middle_holder> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</middle>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        create a particle in position<middle_holder>.\n"
+            "        move the particle in position<input> to position<middle_holder>::action</middle>::position<input>.\n"
+            "        create a particle in position<middle_holder>::action</middle>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<box> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</inner>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<outer_holder> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</outer>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<outer_holder>.\n"
+            "        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.\n"
+            "        create a particle in position<outer_holder>::action</outer>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    # The box moved through /outer into the re-triggered /middle never had its
+    # input filled. The position names where /test sees it (through /outer's
+    # interface, not the move destinations), and the chain traces both moves
+    # down to /inner's inference.
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 19, column 30
+                create a particle in position<outer_holder>::action</outer>::position<run>.
+                                     ^
+        'position<outer_holder>::action</outer>::position<input>::action</inner>::position<input>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
+
+        This error happens because:
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
+            File "test.dfn", line 19, column 30
+          'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
+            File "outer.dfn", line 18, column 30
+          'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
+            File "middle.dfn", line 11, column 30
+          'action<my.domain.com:my_lib:/inner>' infers this requirement:
+            File "inner.dfn", line 7, column 33""")
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
+
+
+def test_requirement_carried_through_actions_on_locals_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "marker.dfn": "define the potential position<my.domain.com:my_lib:/marker>.\n",
+        "inner.dfn": (
+            "define the potential action<my.domain.com:my_lib:/inner> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the position</marker>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        destroy the particle in position<input>::position</marker>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "middle.dfn": (
+            "define the potential action<my.domain.com:my_lib:/middle> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the position</marker>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<gw> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</inner>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<gw>.\n"
+            "        move the particle in position<input> to position<gw>::action</inner>::position<input>.\n"
+            "        create a particle in position<gw>::action</inner>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "outer.dfn": (
+            "define the potential action<my.domain.com:my_lib:/outer> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the position</marker>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<mid_holder> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</middle>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<mid_holder>.\n"
+            "        move the particle in position<input> to position<mid_holder>::action</middle>::position<input>.\n"
+            "        create a particle in position<mid_holder>::action</middle>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the position</marker>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<outer_holder> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</outer>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<outer_holder>.\n"
+            "        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.\n"
+            "        create a particle in position<outer_holder>::action</outer>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    # action</inner> and action</middle> exist only on body-local positions (gw
+    # and mid_holder); the particle with its /marker child is passed down
+    # through each action's input interface position. The missing child is
+    # reported on the path /test can act on, with the locals never appearing.
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 19, column 30
+                create a particle in position<outer_holder>::action</outer>::position<run>.
+                                     ^
+        'position<outer_holder>::action</outer>::position<input>::position</marker>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
+
+        This error happens because:
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
+            File "test.dfn", line 19, column 30
+          'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
+            File "outer.dfn", line 18, column 30
+          'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
+            File "middle.dfn", line 18, column 30
+          'action<my.domain.com:my_lib:/inner>' infers this requirement:
+            File "inner.dfn", line 11, column 33""")
+    assert action_graph_set(result.program_result) == {
+        (_TEST, _OUTER),
+        (_OUTER, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }
+
+
 def test_move_violates_constraints_error_message(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
