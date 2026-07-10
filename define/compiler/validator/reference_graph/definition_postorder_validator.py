@@ -260,7 +260,9 @@ class ActionPostorderValidator:
         local_position = inner_req.position.in_caller(action_chain)
         moved_particle = None
         if not self._tracker.has_known_state(local_position):
-            moved_particle = self._moved_particle_above(local_position, action_parent)
+            moved_particle = self._ancestor_from_contracted_position(
+                local_position, action_parent
+            )
         if moved_particle is not None:
             owner_key, owner = moved_particle
             # Make it the child of the contracted position, not the child of this
@@ -289,39 +291,36 @@ class ActionPostorderValidator:
             scope=scope,
         )
 
-    # TODO: The moved and non-moved paths can probably be unified. Every
-    # from_caller particle's origin_position is stored in caller coordinates
-    # (each AssumeOccupied bakes one level of the caller mapping into the
-    # particle), so "substitute the nearest caller particle's position with its
-    # origin" gives the same contracted position as composing through
-    # caller_path_to_action wherever both apply. That one rule would replace the
-    # caller_path_to_action branching, this method's exclusions, and the
-    # has_known_state gate (a nearest particle of our own means locally
-    # decided). Two behavioral edges need the test suite's verdict first: a
-    # requirement under a particle we created inside a from-caller trigger
-    # (today wholesale-records a caller obligation and its assume masks a
-    # known-empty violation), and the touched-position gates on moved action
-    # parents (contracted key vs. local key).
-    def _moved_particle_above(
+    def _ancestor_from_contracted_position(
         self,
         position: ast.PositionReference,
         action_parent: ast.PositionReference | None,
     ) -> tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None:
-        """If any of our parents were moved from an origin position, return what position that is."""
-        nearest_particle = self._tracker.nearest_particle_above(position)
-        if nearest_particle is None:
+        """If any of our parents were moved from a contracted position, return that ancestor's position and the particle in it."""
+        nearest_ancestor = self._tracker.nearest_particle_above(position)
+        if nearest_ancestor is None:
+            # The ancestor is an implied action with no parent name.
             return None
-        owner_key, owner = nearest_particle
-        if not owner.from_caller:
+        ancestor_position, ancestor_particle = nearest_ancestor
+        if not ancestor_particle.from_caller:
+            # This action created the ancestor, so it was not moved from a
+            # contracted position.
             return None
         if (
             action_parent is not None
-            and owner_key == action_parent.canonical_chained_name_tuple
+            and ancestor_position == action_parent.canonical_chained_name_tuple
         ):
+            # The ancestor is the direct parent of the action. It's from the caller,
+            # but that's what our normal propagation path handles, so
+            # _maybe_propagate_one_requirement will just handle it.
             return None
-        if owner_key == owner.origin_position.canonical_chained_name_tuple:
+        if (
+            ancestor_position
+            == ancestor_particle.origin_position.canonical_chained_name_tuple
+        ):
+            # The particle is still in its origin position, so it hasn't been moved.
             return None
-        return nearest_particle
+        return nearest_ancestor
 
     def _parent_particle_comes_from_caller(
         self,
