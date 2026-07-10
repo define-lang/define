@@ -16,7 +16,7 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, ItemsView
+    from collections.abc import Callable, ItemsView, Iterable
 
 type TrieKey = tuple[str, ...]
 
@@ -168,6 +168,26 @@ class StrictReparentingTrie[V]:
             raise EmptyKeyError("key must not be empty")
         if key not in self._values:
             raise KeyError(key)
+        return self._detach_subtree(key)
+
+    def pop_subtrees(
+        self, keys: Iterable[TrieKey]
+    ) -> dict[TrieKey, StrictReparentingTrie[V]]:
+        """Detach each present key's subtree, returning a map from key to its popped trie.
+
+        Keys not present in the trie are skipped. When one key is a descendant
+        of another, the descendant is popped first (deepest key first) so it is
+        returned as its own trie instead of only as part of its ancestor's
+        subtree.
+        """
+        result: dict[TrieKey, StrictReparentingTrie[V]] = {}
+        for key in sorted(keys, key=len, reverse=True):
+            if key in self._values:
+                result[key] = self._detach_subtree(key)
+        return result
+
+    def _detach_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
+        """Detach the subtree at key, which must already exist, and return it as a new trie."""
         result: StrictReparentingTrie[V] = StrictReparentingTrie()
         key_len = len(key)
         root_segment = key[-1]

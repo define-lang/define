@@ -270,6 +270,27 @@ class TestPopSubtree:
             t.pop_subtree(("a",))
 
 
+class TestPopSubtrees:
+    def test_pops_each_key_and_skips_missing(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("b",)] = 2
+        result = t.pop_subtrees([("a",), ("b",), ("missing",)])
+        assert set(result) == {("a",), ("b",)}
+        assert result[("a",)][("a",)] == 1
+        assert result[("b",)][("b",)] == 2
+        assert ("a",) not in t
+        assert ("b",) not in t
+
+    def test_descendant_saved_separately_from_ancestor(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "x")] = 2
+        result = t.pop_subtrees([("a",), ("a", "x")])
+        assert result[("a", "x")][("x",)] == 2
+        assert ("x",) not in result[("a",)]
+
+
 class TestRootChildren:
     def test_returns_children(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()

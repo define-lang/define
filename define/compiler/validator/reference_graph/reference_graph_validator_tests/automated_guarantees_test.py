@@ -5,8 +5,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
@@ -2589,16 +2587,6 @@ def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
     assert diag.location.file_path == PurePosixPath("test.dfn")
 
 
-_CHILD_TO_NEW_PARENT_BUG_REASON = (
-    "Moving a child to a new particle and then finalizing the original parent "
-    "loses the moved child's identity: the parent's guarantee sorts before the "
-    "OccupiedByExisting (length-primary order) and its subtree cleanup deletes "
-    "the origin child, which is only an origin (never a guarantee key) and so is "
-    "never saved. The destination resolves to ERROR instead of the child."
-)
-
-
-@pytest.mark.xfail(strict=True, reason=_CHILD_TO_NEW_PARENT_BUG_REASON)
 def test_existing_guarantee_on_child_survives_destroying_original_parent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -2661,7 +2649,6 @@ def test_existing_guarantee_on_child_survives_destroying_original_parent(
     )
 
 
-@pytest.mark.xfail(strict=True, reason=_CHILD_TO_NEW_PARENT_BUG_REASON)
 def test_existing_guarantee_on_child_survives_recreating_original_parent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -2724,3 +2711,83 @@ def test_existing_guarantee_on_child_survives_recreating_original_parent(
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
     )
+
+
+def test_nested_existing_guarantees_survive_destroying_original_parent(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """A callee moves a grandchild and its parent to separate destinations, then destroys the original parent; both moved particles must still read as occupied in the caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "grand.dfn": "define the potential position<my.domain.com:my_lib:/grand>.\n",
+            "child_q.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grand>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest2> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</grand>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<dest>.\n"
+                "        create a particle in position<dest2>.\n"
+                "        move the particle in position<item>::position</child_q>::position</grand> to position<dest2>::position</grand>.\n"
+                "        move the particle in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
+                "        destroy the particle in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a particle in position<box>::action</other>::position<item>::position</child_q>::position</grand>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<dest2>::position</grand>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<dest2>::position</grand>"
+    )
+    assert all_diags[0].populated_at.line == 23
+    assert all_diags[0].populated_at.column == 86
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")

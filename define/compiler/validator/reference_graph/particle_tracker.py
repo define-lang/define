@@ -963,24 +963,21 @@ class ParticleTracker:
 
             touched_positions.append((key, name))
 
-            if key in origin_keys:
-                # Save-before-overwrite: if this key is an origin for a later
-                # OccupiedByExisting, pop it and its children so the later guarantee
-                # can read from the saved copy.
-                #
-                # Two OccupiedByExisting guarantees can reference each other's positions
-                # as origins (e.g., the action swaps position<a> and position<b>). So we
-                # have to save the state of any position listed as an origin position
-                # that we _might_ be about to overwrite with any other guarantee. (Things
-                # like running OccupiedByNew accidentally before OccupiedByExisting are
-                # already handled by caused_by sorting, above.)
-                if key in self._store.state:
-                    saved_state[key] = self._store.state.pop_subtree(key)
-                if key in self._store.error:
-                    saved_error[key] = self._store.error.pop_subtree(key)
-            elif key in self._store.state and not isinstance(
-                guarantee, action_contract.UnchangedGuarantee
-            ):
+            overwrites_subtree = key in origin_keys or (
+                key in self._store.state
+                and not isinstance(guarantee, action_contract.UnchangedGuarantee)
+            )
+            # We are about to overwrite this key's subtree, and a later guarantee still
+            # needs to read a particle from an origin position that may live under it.
+            if origin_keys and overwrites_subtree:
+                self._save_origins_at_or_below(
+                    key, origin_keys, saved_state, saved_error
+                )
+
+            # We are overwriting this key's subtree, and this key is not itself an origin
+            # position that a later guarantee reads from, so its old contents can just be
+            # dropped.
+            if key not in origin_keys and overwrites_subtree:
                 # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
                 # or creates in position<item> (OccupiedByNewGuarantee), any children
                 # the caller had under position<item> must disappear. We achieve this
@@ -1021,6 +1018,22 @@ class ParticleTracker:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
         return touched_positions
+
+    def _save_origins_at_or_below(
+        self,
+        key: tuple[str, ...],
+        origin_keys: set[tuple[str, ...]],
+        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
+        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
+    ):
+        """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
+        key_len = len(key)
+        at_or_below: list[tuple[str, ...]] = []
+        for origin_key in origin_keys:
+            if len(origin_key) >= key_len and origin_key[:key_len] == key:
+                at_or_below.append(origin_key)
+        saved_state.update(self._store.state.pop_subtrees(at_or_below))
+        saved_error.update(self._store.error.pop_subtrees(at_or_below))
 
     def _check_key_exists_for_guarantee(
         self,

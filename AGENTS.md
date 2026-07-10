@@ -87,7 +87,7 @@ See [define/spec/spec.md] for the language specification.
   invent words for Define language concepts. Do not use industry-standard terms
   for Define concepts when Define has its own word for that concept.
 - Never use these words for any Define concept: anchor, root, rooted, re-rooted,
-  carried, split point, establishing, frame, inside.
+  carried, split point, establishing, frame, inside, enclosing.
 - Example: For `in_caller`, say "from the caller's perspective", never
   "re-rooted into the caller's frame"
 - Do not use abbreviations or acronyms for Define concepts unless the spec uses
