@@ -25,13 +25,12 @@ class _OperationGraphFlattener:
     def flatten(self, root_action: str) -> dict[str, list[str]]:
         """Map each operation to the operations it waits on."""
         dependencies: dict[str, list[str]] = {}
-        self._flatten_action(root_action, None, None, dependencies)
+        self._flatten_action(root_action, None, dependencies)
         return dependencies
 
     def _flatten_action(
         self,
         action: str,
-        trigger_label: str | None,
         satisfiers: dict[tuple[str, ...], str | None] | None,
         dependencies: dict[str, list[str]],
     ) -> dict[int, str | None]:
@@ -42,6 +41,12 @@ class _OperationGraphFlattener:
         """
         graph = self._registry[action]
         action_name = self._action_display_name(action)
+        # The caller operation that satisfies this action's own trigger-position
+        # requirement, which an operation with nothing else to wait on depends
+        # on.
+        trigger_label = (
+            satisfiers.get(graph.trigger_position_key) if satisfiers else None
+        )
         local_labels: dict[int, str | None] = {}
         # Keyed by (trigger operation id, callee action), for resolving the
         # guarantee nodes that stand in for those callees' outputs.
@@ -63,9 +68,7 @@ class _OperationGraphFlattener:
             elif isinstance(node, operation_graph.GuaranteeNode):
                 # A callee output: splice the callee (once) and render its own
                 # split point.
-                self._splice_callee(
-                    node, local_labels, outgoing, callee_splices, dependencies
-                )
+                self._splice_callee(node, outgoing, callee_splices, dependencies)
                 local_labels[node.node_id] = self._split_point_label(
                     node, callee_splices
                 )
@@ -76,9 +79,10 @@ class _OperationGraphFlattener:
                     for dep in node.depends_on
                     if (resolved := local_labels[dep]) is not None
                 ]
-                # An operation whose only dependencies were RequirementNodes with
-                # no satisfying caller op still waits on the trigger, so it runs
-                # after the callee's context exists.
+                # An operation whose requirements all hold by default has no
+                # satisfying caller op to wait on, so it waits on the
+                # trigger-position requirement's satisfier: it runs once the
+                # callee's context exists.
                 if not predecessors and trigger_label is not None:
                     predecessors = [trigger_label]
                 dependencies[label] = predecessors
@@ -93,7 +97,6 @@ class _OperationGraphFlattener:
     def _splice_callee(
         self,
         guarantee_node: operation_graph.GuaranteeNode,
-        local_labels: dict[int, str | None],
         outgoing: dict[tuple[str, tuple[str, ...]], str | None],
         callee_splices: dict[tuple[int, str], _CalleeSplice],
         dependencies: dict[str, list[str]],
@@ -108,9 +111,7 @@ class _OperationGraphFlattener:
             for (satisfied_callee, requirement_position), label in outgoing.items()
             if satisfied_callee == callee
         }
-        callee_labels = self._flatten_action(
-            callee, local_labels[trigger_node_id], satisfiers, dependencies
-        )
+        callee_labels = self._flatten_action(callee, satisfiers, dependencies)
         callee_splices[(trigger_node_id, callee)] = (
             self._registry[callee],
             callee_labels,
@@ -209,7 +210,6 @@ def action_graph(
                 firing_key = (
                     callee_graph.trigger_position_key
                     if callee_graph is not None
-                    and callee_graph.trigger_position_key is not None
                     else ()
                 )
                 if satisfaction.requirement_position == firing_key:

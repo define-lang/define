@@ -15,6 +15,7 @@ _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode
 _DESTROY = operation_graph.DestroyNode
 _GUARANTEE = operation_graph.GuaranteeNode
+_REQUIREMENT = operation_graph.RequirementNode
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -117,9 +118,10 @@ def test_body_chain_depends_in_order():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     tracker.create(_ref("one"), ())
     tracker.destroy(_ref("one"))
-    assert _kinds(tracker) == [_CREATE, _DESTROY]
-    assert _deps(tracker, 0) == []
+    # Node 0 is the trigger-position RequirementNode the first create waits on.
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _DESTROY]
     assert _deps(tracker, 1) == [0]
+    assert _deps(tracker, 2) == [1]
 
 
 def test_child_create_depends_on_parent():
@@ -131,8 +133,8 @@ def test_child_create_depends_on_parent():
         for node in tracker.operation_graph.nodes
         if isinstance(node, operation_graph.PositionOperationNode)
     ] == [("position<box>",), ("position<box>", "position<inner>")]
-    assert _deps(tracker, 0) == []
     assert _deps(tracker, 1) == [0]
+    assert _deps(tracker, 2) == [1]
 
 
 def test_destroy_depends_on_touched_children():
@@ -140,9 +142,9 @@ def test_destroy_depends_on_touched_children():
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.destroy(_ref("box"))
-    assert _kinds(tracker) == [_CREATE, _CREATE, _DESTROY]
-    # The destroy waits on the child (1), which already reaches create box (0).
-    assert _deps(tracker, 2) == [1]
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _DESTROY]
+    # The destroy waits on the child (2), which already reaches create box (1).
+    assert _deps(tracker, 3) == [2]
 
 
 def test_destroy_depends_on_grandchildren():
@@ -151,10 +153,10 @@ def test_destroy_depends_on_grandchildren():
     tracker.create(_ref("box", "inner"), ())
     tracker.create(_ref("box", "inner", "deep"), ())
     tracker.destroy(_ref("box"))
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _DESTROY]
-    # subtree_keys hands the destroy the child (1) and the grandchild (2); the
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _CREATE, _DESTROY]
+    # subtree_keys hands the destroy the child (2) and the grandchild (3); the
     # grandchild is the deepest and reaches the rest, so only it survives.
-    assert _deps(tracker, 3) == [2]
+    assert _deps(tracker, 4) == [3]
 
 
 def test_move_carries_child_transitively():
@@ -163,13 +165,13 @@ def test_move_carries_child_transitively():
     tracker.create(_ref("box", "inner"), ())
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
-    assert _kinds(tracker) == [_CREATE, _CREATE, _MOVE, _DESTROY]
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _MOVE, _DESTROY]
     # The move pulls in box::inner via the Child Rule; box::inner already reaches
-    # create box (0), so that is not repeated.
-    assert _deps(tracker, 2) == [1]
+    # create box (1), so that is not repeated.
+    assert _deps(tracker, 3) == [2]
     # basket::inner is recorded under its pre-move name, so the destroy reaches
     # it only transitively through the move node.
-    assert _deps(tracker, 3) == [2]
+    assert _deps(tracker, 4) == [3]
 
 
 def test_move_carries_grandchild_subtree():
@@ -179,30 +181,40 @@ def test_move_carries_grandchild_subtree():
     tracker.create(_ref("box", "inner", "deep"), ())
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _MOVE, _DESTROY]
-    # The move pulls in the carried subtree; the grandchild (2) is deepest and
-    # reaches the child (1) and the box (0), so only it survives.
-    assert _deps(tracker, 3) == [2]
+    assert _kinds(tracker) == [
+        _REQUIREMENT,
+        _CREATE,
+        _CREATE,
+        _CREATE,
+        _MOVE,
+        _DESTROY,
+    ]
+    # The move pulls in the carried subtree; the grandchild (3) is deepest and
+    # reaches the child (2) and the box (1), so only it survives.
+    assert _deps(tracker, 4) == [3]
     # The carried subtree keeps its pre-move keys, so the destroy of the
     # moved-to parent reaches it only through the move node.
-    assert _deps(tracker, 4) == [3]
+    assert _deps(tracker, 5) == [4]
 
 
-def test_from_caller_create_is_a_graph_root():
+def test_from_caller_create_records_no_operation():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     iface = _ref("iface")
     tracker.create(iface, (), from_caller=iface)
     tracker.destroy(iface)
-    assert _kinds(tracker) == [_DESTROY]
-    assert _deps(tracker, 0) == []
+    # The from-caller create is not a body operation, so the destroy has
+    # nothing of its own to wait on and waits on the trigger-position
+    # requirement.
+    assert _kinds(tracker) == [_REQUIREMENT, _DESTROY]
+    assert _deps(tracker, 1) == [0]
 
 
 def test_mark_empty_records_nothing():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     tracker.mark_empty(_ref("slot"))
     tracker.create(_ref("slot"), ())
-    assert _kinds(tracker) == [_CREATE]
-    assert _deps(tracker, 0) == []
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE]
+    assert _deps(tracker, 1) == [0]
 
 
 def test_triggered_guarantee_output_becomes_a_guarantee_node():
@@ -210,8 +222,8 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     out = _chain(_local("box"), box, _local("out"))
-    tracker.create(_ref("box"), ())  # 0
-    tracker.create(run, ())  # 1: the caller fill that fires the trigger
+    tracker.create(_ref("box"), ())  # requirement 0, create 1
+    tracker.create(run, ())  # 2: the caller fill that fires the trigger
     tracker.apply_guarantees(
         _action_chain(_local("box"), box),
         action_contract.Guarantees(
@@ -223,21 +235,21 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
     )
     # The triggered action's output becomes a guarantee node hanging off the
     # trigger; that node is the output's last operation.
-    assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE]
-    assert _last_operation(tracker, out) == 2
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _GUARANTEE]
+    assert _last_operation(tracker, out) == 3
     # A caller operation on the output chains to the guarantee node, the most
     # recent operation on its ancestor chain, which already waits on the box
     # that holds it.
-    tracker.destroy(out)  # 3
-    assert _deps(tracker, 3) == [2]
+    tracker.destroy(out)  # 4
+    assert _deps(tracker, 4) == [3]
 
 
 def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
-    tracker.create(_ref("box"), ())  # 0
-    tracker.create(run, ())  # 1: the trigger fill
+    tracker.create(_ref("box"), ())  # requirement 0, create 1
+    tracker.create(run, ())  # 2: the trigger fill
     tracker.apply_guarantees(
         _action_chain(_local("box"), box),
         action_contract.Guarantees(
@@ -252,11 +264,11 @@ def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
         [],
     )
     # Each of the callee's outputs becomes its own guarantee node.
-    assert _kinds(tracker) == [_CREATE, _CREATE, _GUARANTEE, _GUARANTEE]
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _GUARANTEE, _GUARANTEE]
     parent = _chain(_local("box"), box, _local("parent"))
     child = _chain(_local("box"), box, _local("parent"), _local("child"))
-    assert _last_operation(tracker, parent) == 2
-    assert _last_operation(tracker, child) == 3
+    assert _last_operation(tracker, parent) == 3
+    assert _last_operation(tracker, child) == 4
 
 
 def test_nested_triggered_guarantee_becomes_a_guarantee_node():
@@ -270,9 +282,9 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
     # guarantee's target is drained.
     sibling = _chain(_local("box"), inner, _local("sibling"))
     item = _chain(_local("box"), inner, _local("item"))
-    tracker.create(_ref("box"), ())  # 0
-    tracker.create(run, ())  # 1: the trigger fill
-    tracker.create(sibling, ())  # 2
+    tracker.create(_ref("box"), ())  # requirement 0, create 1
+    tracker.create(run, ())  # 2: the trigger fill
+    tracker.create(sibling, ())  # 3
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/inner>",),
         guarantees=action_contract.Guarantees(
@@ -290,8 +302,8 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
     # guarantee node (hanging off the trigger it inherited) that becomes the
     # output's last operation.
     assert tracker.is_occupied(item)
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _GUARANTEE]
-    assert _last_operation(tracker, item) == 3
+    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _CREATE, _GUARANTEE]
+    assert _last_operation(tracker, item) == 4
 
 
 def test_stale_nested_guarantee_keeps_the_later_last_operation():
@@ -304,10 +316,10 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
     sibling = _chain(_local("box"), inner, _local("sibling"))
     item = _chain(_local("box"), inner, _local("item"))
     inner_item = ("action<my.domain.com:my_lib:/inner>", "position<item>")
-    tracker.create(_ref("box"), ())  # 0
-    tracker.create(earlier_run, ())  # 1: the earlier trigger fill
-    tracker.create(sibling, ())  # 2
-    tracker.create(later_run, ())  # 3: the later trigger fill
+    tracker.create(_ref("box"), ())  # requirement 0, create 1
+    tracker.create(earlier_run, ())  # 2: the earlier trigger fill
+    tracker.create(sibling, ())  # 3
+    tracker.create(later_run, ())  # 4: the later trigger fill
     # The earlier trigger defers a nested guarantee for box::action</inner>::item.
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/inner>",),
@@ -331,13 +343,20 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
         [],
         [],
     )
-    assert _last_operation(tracker, item) == 4
+    assert _last_operation(tracker, item) == 5
     # Draining the earlier trigger's stale guarantee finds the position already
     # decided by the later write, so it adds no node and does not change the last
     # operation.
     assert tracker.is_occupied(item)
-    assert _kinds(tracker) == [_CREATE, _CREATE, _CREATE, _CREATE, _GUARANTEE]
-    assert _last_operation(tracker, item) == 4
+    assert _kinds(tracker) == [
+        _REQUIREMENT,
+        _CREATE,
+        _CREATE,
+        _CREATE,
+        _CREATE,
+        _GUARANTEE,
+    ]
+    assert _last_operation(tracker, item) == 5
 
 
 def test_apply_guarantees_tags_the_trigger_with_its_action():
@@ -345,8 +364,8 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     action_chain = _action_chain(_local("box"), box)
-    tracker.create(_ref("box"), ())  # 0
-    tracker.create(run, ())  # 1: the trigger fill
+    tracker.create(_ref("box"), ())  # requirement 0, create 1
+    tracker.create(run, ())  # 2: the trigger fill
     tracker.apply_guarantees(
         action_chain,
         action_contract.Guarantees(
@@ -359,10 +378,10 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # The fill that filled the trigger position satisfies the callee's requirement
     # on it, which is what records that it fires the callee; the box that merely
     # holds it fires nothing.
-    assert tracker.operation_graph.nodes[1].satisfies == [
+    assert tracker.operation_graph.nodes[2].satisfies == [
         operation_graph.RequirementSatisfaction(action_chain, ("position<run>",)),
     ]
-    assert tracker.operation_graph.nodes[0].satisfies == []
+    assert tracker.operation_graph.nodes[1].satisfies == []
 
 
 def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position():
@@ -384,15 +403,15 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     key, guarantee = callee_guarantees[0]
     assert key == ("position<x>",)
     assert isinstance(guarantee, action_contract.UnchangedGuarantee)
-    assert _last_operation(callee, x_ref) == 1
+    assert _last_operation(callee, x_ref) == 2
 
     # A caller triggers that action, then fills the position the callee touched.
     caller = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box = _local("box")
     b = _action("/b")
-    caller.create(_ref("box"), ())  # node 0: box
+    caller.create(_ref("box"), ())  # requirement node 0, box create node 1
     run = _chain(box, b, _local("run"))
-    caller.create(run, ())  # node 1: the fill that fires the trigger
+    caller.create(run, ())  # node 2: the fill that fires the trigger
     caller.apply_guarantees(
         _action_chain(box, b),
         action_contract.Guarantees(own=callee_guarantees, nested=()),
@@ -400,10 +419,10 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
         [],
         [],
     )
-    caller.create(_chain(box, b, x), ())  # node 3
+    caller.create(_chain(box, b, x), ())  # node 4
 
-    # The caller's fill of x waits for the guarantee node (node 2) that
+    # The caller's fill of x waits for the guarantee node (node 3) that
     # transiently occupied x: the UnchangedGuarantee carried the ordering the
-    # caller must respect. That node already reaches the enclosing box (node 0),
+    # caller must respect. That node already reaches the enclosing box (node 1),
     # so the fill needs no separate edge to it.
-    assert _deps(caller, 3) == [2]
+    assert _deps(caller, 4) == [3]

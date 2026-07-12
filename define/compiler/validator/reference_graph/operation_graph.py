@@ -164,11 +164,12 @@ class OperationGraph:
         #     not just when a requirement node is added.)
         self._last_operation: dict[tuple[str, ...], int] = {}
         self._requirements: Container[tuple[str, ...]] = requirements
-        self._trigger_position_key: tuple[str, ...] | None = (
+        self._trigger_position_key: tuple[str, ...] = (
             trigger_position.canonical_chained_name_tuple
             if trigger_position is not None
-            else None
+            else ()
         )
+        self._trigger_position_requirement_node_id: int | None = None
 
     @property
     def nodes(self) -> Sequence[OperationNode]:
@@ -176,8 +177,8 @@ class OperationGraph:
         return self._nodes
 
     @property
-    def trigger_position_key(self) -> tuple[str, ...] | None:
-        """This action's own trigger position key, or None for a constructor/destructor."""
+    def trigger_position_key(self) -> tuple[str, ...]:
+        """This action's own trigger position key; empty for a constructor/destructor."""
         return self._trigger_position_key
 
     def last_operation_affecting_position(self, key: tuple[str, ...]) -> int | None:
@@ -315,6 +316,11 @@ class OperationGraph:
                 for child_operation in child_operations
             ):
                 dependencies.add(emptied_ancestor)
+        if not dependencies:
+            # An operation with nothing else to wait on still happens only
+            # because this action triggered, so it waits on the
+            # trigger-position requirement like any other requirement.
+            return [self._trigger_position_requirement_node()]
         return sorted(dependencies)
 
     def _most_recent_ancestor_chain_operation(
@@ -356,7 +362,27 @@ class OperationGraph:
             )
         )
         self._last_operation[key] = node_id
+        if key == self._trigger_position_key:
+            self._trigger_position_requirement_node_id = node_id
         return node_id
+
+    def _trigger_position_requirement_node(self) -> int:
+        """Return the trigger-position RequirementNode's id, materializing it if needed."""
+        if self._trigger_position_requirement_node_id is None:
+            node_id = len(self._nodes)
+            self._nodes.append(
+                RequirementNode(
+                    node_id=node_id,
+                    requirement_position=self._trigger_position_key,
+                    depends_on=[],
+                )
+            )
+            # A later body operation on the trigger position must still chain
+            # onto this node, but an existing operation there stays the most
+            # recent one.
+            _ = self._last_operation.setdefault(self._trigger_position_key, node_id)
+            self._trigger_position_requirement_node_id = node_id
+        return self._trigger_position_requirement_node_id
 
     def _surviving_child_operations(
         self, touched_child_positions: Iterable[tuple[str, ...]]
