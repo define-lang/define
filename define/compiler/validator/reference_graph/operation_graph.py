@@ -181,14 +181,14 @@ class OperationGraph:
         """This action's own trigger position key; empty for a constructor/destructor."""
         return self._trigger_position_key
 
-    def last_operation_affecting_position(self, key: tuple[str, ...]) -> int | None:
+    def last_operation_affecting_position(self, key: tuple[str, ...]) -> int:
         """Return the last operation that affected the position at ``key``.
 
         An operation recorded under exactly this key wins. Otherwise, a move of
         an ancestor position affected this one, because a move relocates every
         position inside what it moves. Any other ancestor operation did not (a
         create makes exactly one particle; the positions inside it start empty),
-        so the result is None.
+        so a position nothing affected raises KeyError.
         """
         operation = self._last_operation.get(key)
         if operation is not None:
@@ -196,7 +196,7 @@ class OperationGraph:
         ancestor = self._most_recent_existing_ancestor_operation(key)
         if ancestor is not None and isinstance(self._nodes[ancestor], MoveNode):
             return ancestor
-        return None
+        raise KeyError(key)
 
     def _most_recent_existing_ancestor_operation(
         self, key: tuple[str, ...]

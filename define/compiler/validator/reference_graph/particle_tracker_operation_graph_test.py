@@ -67,7 +67,7 @@ def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
 
 def _last_operation(
     tracker: particle_tracker.ParticleTracker, position: ast.PositionReference
-) -> int | None:
+) -> int:
     return tracker.operation_graph.last_operation_affecting_position(
         position.canonical_chained_name_tuple
     )

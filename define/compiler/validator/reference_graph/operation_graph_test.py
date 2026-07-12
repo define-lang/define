@@ -1,3 +1,5 @@
+import pytest
+
 from define.compiler import ast
 from define.compiler.validator.reference_graph import operation_graph
 
@@ -840,6 +842,33 @@ def test_wide_touched_subtree_drops_every_superseded_shallow_child():
         )
     )
     assert list(graph.nodes) == expected
+
+
+def test_last_operation_affecting_position_resolves_a_move_of_an_ancestor():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    box = _ref("box")
+    inner = _ref("box", "inner")
+    basket = _ref("basket")
+    graph.record_create(box)
+    graph.record_create(inner)
+    graph.record_move(box, basket, [_key("box", "inner")])
+    # The move relocated the child without operating on its key, so the child's
+    # last operation is that move; the move's own ends resolve to it directly.
+    assert graph.last_operation_affecting_position(_key("basket", "inner")) == 3
+    assert graph.last_operation_affecting_position(_key("basket")) == 3
+    assert graph.last_operation_affecting_position(_key("box")) == 3
+
+
+def test_last_operation_affecting_position_raises_for_an_unaffected_position():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    box = _ref("box")
+    graph.record_create(box)
+    assert graph.last_operation_affecting_position(_key("box")) == 1
+    with pytest.raises(KeyError):
+        _ = graph.last_operation_affecting_position(_key("other"))
+    # A create makes exactly one particle; the positions inside it start empty.
+    with pytest.raises(KeyError):
+        _ = graph.last_operation_affecting_position(_key("box", "inner"))
 
 
 def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():

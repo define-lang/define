@@ -129,10 +129,6 @@ class _OperationGraphFlattener:
         split_point = callee_graph.last_operation_affecting_position(
             node.output_position
         )
-        if split_point is None:
-            raise ValueError(
-                f"no split point for {node.output_position} in {node.action}"
-            )
         split_point_label = callee_labels[split_point]
         if split_point_label is None:
             raise ValueError(
