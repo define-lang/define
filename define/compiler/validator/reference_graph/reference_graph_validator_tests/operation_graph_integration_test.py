@@ -16,6 +16,17 @@ _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
 
+_ZERO_GUARANTEE_CALLEES_NOT_RENDERED = (
+    "a triggered action that guarantees nothing has no GuaranteeNode to reach"
+    " it, so its operations are missing from the rendered graph"
+)
+
+_NESTED_OUTPUTS_NOT_RESOLVED = (
+    "a GuaranteeNode for an output produced deeper than the direct callee"
+    " names the deeper action, so it resolves outside the trigger that"
+    " produced it"
+)
+
 
 def test_single_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -915,7 +926,8 @@ def test_caller_operation_waits_on_callee_destroy_output(
     # callee leaves it empty), so the trigger's guarantee overwrites its last
     # operation in the caller graph. other.destroy(output) still resolves to the
     # caller fill that satisfies the requirement, not to the guarantee node or the
-    # trigger. The caller's refill then waits on the callee destroy's split point.
+    # trigger. The caller's refill then waits on the callee's destroy, its final
+    # operation on the position.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::output)": ["test.create(gateway)"],
@@ -2247,6 +2259,235 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
     }
 
 
+def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "c.dfn": "define the potential position<my.domain.com:my_lib:/c>.\n",
+            "maker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/maker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<held> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</c>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<held>::position</c>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</maker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</maker>::position<held>.\n"
+                "        create a particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gw>::action</maker>::position<held>::position</c>.\n"
+                "        destroy the particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</maker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The caller fills <held> once and it serves both invocations: each
+    # invocation's create waits on that one fill for its OCCUPIED <held>
+    # requirement. The EMPTY requirement on <held>::/c is satisfied by default
+    # in the first invocation (its RequirementNode falls through to the parent
+    # fill) and by the caller's destroy in the second -- and that destroy
+    # waits on the first invocation's create, so the two invocations' writes
+    # to <held>::/c cannot race.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/maker::held)": ["test.create(gw)"],
+        "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
+        "maker.create(held::/c)": ["test.create(gw::/maker::held)"],
+        "test.destroy(gw::/maker::held::/c)": ["maker.create(held::/c)"],
+        "test.destroy(gw::/maker::trigger_pos)": [
+            "test.create(gw::/maker::trigger_pos)"
+        ],
+        "test.create(gw::/maker::trigger_pos)#2": [
+            "test.destroy(gw::/maker::trigger_pos)"
+        ],
+        "maker.create(held::/c)#2": ["test.destroy(gw::/maker::held::/c)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_NESTED_OUTPUTS_NOT_RESOLVED)
+def test_caller_consumes_a_nested_output(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<result>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</middle>::position<trigger_pos>.\n"
+                "        move the particle in position<box>::action</middle>::position<gw>::action</inner>::position<out> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # middle triggers inner, and inner's <out> propagates to test as a nested
+    # guarantee, so test's move consumes an output produced two levels down.
+    # The move must wait on inner's final operation on <out>, resolved within
+    # the middle instance test triggered.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gw)": ["test.create(box)"],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        "inner.create(out)": ["test.create(box::/middle::gw)"],
+        "test.move(box::/middle::gw::/inner::out, result)": ["inner.create(out)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_NESTED_OUTPUTS_NOT_RESOLVED)
+def test_caller_consumes_an_output_nested_two_interfaces_down(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<igw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<igw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<result>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</outer>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<gw>.\n"
+                "        create a particle in position<box>::action</outer>::position<gw>::action</middle>::position<igw>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        move the particle in position<box>::action</outer>::position<gw>::action</middle>::position<igw>::action</inner>::position<out> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # outer never touches inner's <out>, so outer's graph has no guarantee node
+    # for it -- only the requirement-side pass-through at the same key. The
+    # guarantee reaches test straight from outer's contract references, and
+    # test's move resolves across outer's trigger of middle to inner's final
+    # operation on <out>, inside the instance chain test triggered.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/outer::gw)": ["test.create(box)"],
+        "test.create(box::/outer::gw::/middle::igw)": ["test.create(box::/outer::gw)"],
+        "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
+        "outer.create(gw::/middle::trigger_pos)": ["test.create(box::/outer::gw)"],
+        "middle.create(igw::/inner::trigger_pos)": [
+            "test.create(box::/outer::gw::/middle::igw)"
+        ],
+        # <out> is empty by default under test's fill of <igw>: its EMPTY
+        # requirement propagates to test as pass-through RequirementNodes and
+        # resolves to that fill.
+        "inner.create(out)": ["test.create(box::/outer::gw::/middle::igw)"],
+        "test.move(box::/outer::gw::/middle::igw::/inner::out, result)": [
+            "inner.create(out)"
+        ],
+    }
+
+
 def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -2399,6 +2640,114 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
             "test.create(gw::/worker::box)",
             "test.create(gw::/worker::in)",
         ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_ZERO_GUARANTEE_CALLEES_NOT_RENDERED)
+def test_triggered_action_with_no_guarantees_still_runs(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<scratch>.\n"
+                "        create a particle in position<scratch>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<note>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        create a particle in position<note>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # worker touches only a block-local position, so it guarantees nothing to
+    # its caller -- but it still runs. Its operations must appear, waiting on
+    # the trigger fill (the scratch destroy is the block-end auto-destruction),
+    # and the caller's unrelated create of <note> stays independent of it.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
+        "worker.create(scratch)": ["test.create(gw::/worker::trigger_pos)"],
+        "worker.destroy(scratch)": ["worker.create(scratch)"],
+        "test.create(note)": [],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_ZERO_GUARANTEE_CALLEES_NOT_RENDERED)
+def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<scratch>.\n"
+                "        create a particle in position<scratch>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # worker guarantees nothing, so each of its two triggers leaves no
+    # GuaranteeNode -- only the two distinct trigger fills. Each instance's
+    # operations wait on their own fill.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gw)": [],
+        "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
+        "test.destroy(gw::/worker::trigger_pos)": [
+            "test.create(gw::/worker::trigger_pos)"
+        ],
+        "test.create(gw::/worker::trigger_pos)#2": [
+            "test.destroy(gw::/worker::trigger_pos)"
+        ],
+        "worker.create(scratch)": ["test.create(gw::/worker::trigger_pos)"],
+        "worker.destroy(scratch)": ["worker.create(scratch)"],
+        "worker.create(scratch)#2": ["test.create(gw::/worker::trigger_pos)#2"],
+        "worker.destroy(scratch)#2": ["worker.create(scratch)#2"],
     }
 
 
