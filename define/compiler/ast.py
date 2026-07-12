@@ -306,15 +306,24 @@ class LocalTypedNameReference(TypedName):
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
-def chain_starts_with_global(key: tuple[str, ...]) -> bool:
+# A position's canonical chained name, as stored in tries, contracts, and the
+# operation graph.
+# TODO: Make this a real class with methods (starting with the chain_*
+# functions below) so that code computing with chained names stops having to
+# build ChainedName objects all the time.
+# TODO: Also, use this everywhere appropriate.
+type ChainedNameTuple = tuple[str, ...]
+
+
+def chain_starts_with_global(key: ChainedNameTuple) -> bool:
     """Return whether the leftmost element of a chained-name key is a global."""
     return "/" in key[0]
 
 
 def chain_in_caller(
-    caller_chain: tuple[str, ...], local_chain: tuple[str, ...]
-) -> tuple[str, ...]:
-    """Re-root a callee-local chain into a caller that triggers it via ``caller_chain``."""
+    caller_chain: ChainedNameTuple, local_chain: ChainedNameTuple
+) -> ChainedNameTuple:
+    """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
     if chain_starts_with_global(local_chain):
         return caller_chain[:-1] + local_chain
     return caller_chain + local_chain
@@ -323,7 +332,7 @@ def chain_in_caller(
 _ACTION_TYPED_NAME_PREFIX: Final = f"{NameType.ACTION.value}<"
 
 
-def chain_parent_position(key: tuple[str, ...]) -> tuple[str, ...] | None:
+def chain_parent_position(key: ChainedNameTuple) -> ChainedNameTuple | None:
     """Return the nearest parent position key, skipping actions, or None.
 
     The tuple-space equivalent of ``ChainedName.parent_position`` for callers
@@ -342,7 +351,7 @@ class ChainedName(ASTNode):
 
     typed_names: tuple[TypedNameReference, ...]
     # Filled lazily on first access by __getattr__ and cached in the slot.
-    canonical_chained_name_tuple: tuple[str, ...] = field(
+    canonical_chained_name_tuple: ChainedNameTuple = field(
         init=False, repr=False, compare=False
     )
     canonical_chained_name: str = field(init=False, repr=False, compare=False)
@@ -352,7 +361,7 @@ class ChainedName(ASTNode):
         *,
         typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
-        canonical_chained_name_tuple: tuple[str, ...] | None = None,
+        canonical_chained_name_tuple: ChainedNameTuple | None = None,
     ):
         """Initialize the chain, optionally seeding its cached canonical tuple.
 
@@ -376,7 +385,7 @@ class ChainedName(ASTNode):
     # a benign race across threads recomputes an equal value and the slot store
     # is atomic. Anything other than these two names must raise so copy/pickle's
     # dunder probing still fails cleanly.
-    def __getattr__(self, name: str) -> tuple[str, ...] | str:
+    def __getattr__(self, name: str) -> ChainedNameTuple | str:
         """Lazily compute and cache the canonical chained-name forms."""
         match name:
             case "canonical_chained_name_tuple":
@@ -561,7 +570,7 @@ class PositionReference(ChainedName):
         typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
         from_source: bool = False,
-        canonical_chained_name_tuple: tuple[str, ...] | None = None,
+        canonical_chained_name_tuple: ChainedNameTuple | None = None,
     ):
         """Initialize, optionally validating that the chain ends with a position."""
         super().__init__(
@@ -588,7 +597,7 @@ class ActionReference(ChainedName):
         *,
         typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
-        canonical_chained_name_tuple: tuple[str, ...] | None = None,
+        canonical_chained_name_tuple: ChainedNameTuple | None = None,
     ):
         """Initialize, validating that the chain ends with an action."""
         super().__init__(
