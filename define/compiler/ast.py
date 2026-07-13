@@ -6,7 +6,7 @@ import abc
 import enum
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Self, override
+from typing import TYPE_CHECKING, Final, Self, cast, override
 
 from define.compiler import constants
 from define.compiler.data_structures import define_path
@@ -624,6 +624,13 @@ class ActionReference(ChainedName):
             raise ValueError(
                 f"Last element of an ActionReference must be an action: {self.source_chained_name}"
             )
+
+    @override
+    def get_last_action(self) -> GlobalTypedNameReference:
+        """Return the action this chain ends with."""
+        # Every action name is global, and __init__ checked that the chain ends
+        # with an action, so its last element is that action.
+        return cast("GlobalTypedNameReference", self.typed_names[-1])
 
 
 @dataclass(frozen=True, slots=True)

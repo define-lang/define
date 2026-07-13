@@ -101,7 +101,7 @@ class _OperationGraphFlattener:
                 dependencies[label] = predecessors
                 local_labels[node.node_id] = label
             for satisfaction in node.satisfies:
-                callee = satisfaction.callee.typed_names[-1].full_typed_name
+                callee = satisfaction.callee.full_typed_name
                 trigger = (satisfaction.trigger_node_id, callee)
                 satisfiers.setdefault(trigger, {})[
                     satisfaction.requirement_position
@@ -210,9 +210,7 @@ def action_graph(
         for node in graph.nodes:
             for satisfaction in node.satisfies:
                 if satisfaction.trigger_node_id == node.node_id:
-                    edges.append(
-                        (source, satisfaction.callee.typed_names[-1].full_typed_name)
-                    )
+                    edges.append((source, satisfaction.callee.full_typed_name))
     return edges
 
 

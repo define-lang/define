@@ -5,6 +5,13 @@ from define.compiler.validator.reference_graph import operation_graph
 
 _LOC = ast.start_of_file_location()
 
+
+def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
+    typed_name = action_chain.get_last_action()
+    assert typed_name is not None
+    return typed_name
+
+
 _NO_REQUIREMENTS: frozenset[tuple[str, ...]] = frozenset()
 
 _FQUN = ast.Fqun(
@@ -482,8 +489,8 @@ def test_operation_records_the_actions_it_triggers():
             target=box,
             depends_on=[0],
             satisfies=[
-                operation_graph.RequirementSatisfaction(brew, (), 1),
-                operation_graph.RequirementSatisfaction(grind, (), 1),
+                operation_graph.RequirementSatisfaction(_callee(brew), (), 1),
+                operation_graph.RequirementSatisfaction(_callee(grind), (), 1),
             ],
         ),
         operation_graph.CreateNode(node_id=2, target=basket, depends_on=[0]),
@@ -506,13 +513,13 @@ def test_each_operation_reports_only_its_own_triggers():
             node_id=1,
             target=one,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.CreateNode(
             node_id=2,
             target=two,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(grind, (), 2)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(grind), (), 2)],
         ),
     ]
 
@@ -530,7 +537,7 @@ def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,
@@ -568,7 +575,9 @@ def test_guarantee_node_names_the_position_as_the_callee_does():
             target=trigger_position,
             depends_on=[1],
             satisfies=[
-                operation_graph.RequirementSatisfaction(brew, ("position<run>",), 2)
+                operation_graph.RequirementSatisfaction(
+                    _callee(brew), ("position<run>",), 2
+                )
             ],
         ),
         operation_graph.GuaranteeNode(
@@ -596,7 +605,7 @@ def test_guarantee_node_names_an_implied_position_as_the_callee_does():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,
@@ -635,7 +644,9 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
             target=trigger_position,
             depends_on=[1],
             satisfies=[
-                operation_graph.RequirementSatisfaction(brew, ("position<run>",), 2)
+                operation_graph.RequirementSatisfaction(
+                    _callee(brew), ("position<run>",), 2
+                )
             ],
         ),
         operation_graph.GuaranteeNode(
@@ -665,7 +676,7 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,
@@ -696,7 +707,7 @@ def test_guarantee_overrides_an_earlier_operation():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.CreateNode(node_id=2, target=grounds, depends_on=[1]),
         operation_graph.GuaranteeNode(
@@ -725,7 +736,7 @@ def test_parent_destroy_reaches_a_triggered_child():
             node_id=1,
             target=box,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,
@@ -761,7 +772,7 @@ def test_each_guaranteed_position_gets_its_own_guarantee_node():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,
@@ -804,7 +815,9 @@ def test_a_move_can_be_the_trigger_fill():
             target=trigger_position,
             depends_on=[1, 2],
             satisfies=[
-                operation_graph.RequirementSatisfaction(brew, ("position<run>",), 3)
+                operation_graph.RequirementSatisfaction(
+                    _callee(brew), ("position<run>",), 3
+                )
             ],
         ),
         operation_graph.GuaranteeNode(
@@ -834,7 +847,7 @@ def test_a_later_operation_overrides_a_guarantee():
             node_id=1,
             target=machine,
             depends_on=[0],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, (), 1)],
+            satisfies=[operation_graph.RequirementSatisfaction(_callee(brew), (), 1)],
         ),
         operation_graph.GuaranteeNode(
             node_id=2,

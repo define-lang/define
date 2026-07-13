@@ -35,9 +35,10 @@ class RequirementSatisfaction:
     that fills the trigger position satisfies the requirement on it.
     """
 
-    # The triggered callee. codegen takes the graph key
-    # (callee.typed_names[-1].full_typed_name) only when it needs it.
-    callee: ast.ActionReference
+    # The triggered callee, which is also the key of its graph. Which particle's
+    # action ran is not recorded here: the operation that fired the trigger
+    # names the trigger position, whose chain says which one.
+    callee: ast.GlobalTypedNameReference
     # The callee's own key for the requirement this operation satisfies.
     requirement_position: tuple[str, ...]
     # The operation that fired this trigger, which is what tells the
@@ -245,6 +246,7 @@ class OperationGraph:
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_node_id = self._last_operation[acting_on_position_key]
         firing_node = self._nodes[firing_node_id]
+        callee_action = callee.get_last_action()
         callee_action_key = callee.canonical_chained_name_tuple
         # Trigger positions are direct children of the callee chain.
         acting_on_is_trigger_position = (
@@ -257,7 +259,7 @@ class OperationGraph:
             # normal requirements).
             firing_node.satisfies.append(
                 RequirementSatisfaction(
-                    callee,
+                    callee_action,
                     acting_on_position_key[len(callee_action_key) :],
                     firing_node_id,
                 )
@@ -266,7 +268,7 @@ class OperationGraph:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
             firing_node.satisfies.append(
-                RequirementSatisfaction(callee, (), firing_node_id)
+                RequirementSatisfaction(callee_action, (), firing_node_id)
             )
         for requirement, caller_position in zip(
             requirements, caller_requirement_positions, strict=True
@@ -276,7 +278,9 @@ class OperationGraph:
             satisfier = self._requirement_satisfier(in_callee_key)
             if satisfier is not None:
                 self._nodes[satisfier].satisfies.append(
-                    RequirementSatisfaction(callee, requirement_key, firing_node_id)
+                    RequirementSatisfaction(
+                        callee_action, requirement_key, firing_node_id
+                    )
                 )
         return firing_node_id
 

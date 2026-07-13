@@ -9,6 +9,13 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 
+
+def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
+    typed_name = action_chain.get_last_action()
+    assert typed_name is not None
+    return typed_name
+
+
 _NO_REQUIREMENTS: frozenset[tuple[str, ...]] = frozenset()
 
 _CREATE = operation_graph.CreateNode
@@ -379,7 +386,9 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # on it, which is what records that it fires the callee; the box that merely
     # holds it fires nothing.
     assert tracker.operation_graph.nodes[2].satisfies == [
-        operation_graph.RequirementSatisfaction(action_chain, ("position<run>",), 2),
+        operation_graph.RequirementSatisfaction(
+            _callee(action_chain), ("position<run>",), 2
+        ),
     ]
     assert tracker.operation_graph.nodes[1].satisfies == []
 
