@@ -723,3 +723,388 @@ def test_auto_destruction_records_destroy_operations(
         "test.destroy(second)": ["test.create(second)"],
         "test.destroy(first)": ["test.create(first)"],
     }
+
+
+def test_destroy_of_the_trigger_particle(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The destroy waits on the caller operation that filled the trigger position,
+    # which is not an operation of this action.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.destroy(run)": [],
+    }
+
+
+def test_move_of_the_trigger_particle(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<run> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.move(run, dest)": [],
+    }
+
+
+def test_operation_on_a_child_of_the_trigger_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<run>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.destroy(run::/child)": [],
+    }
+
+
+def test_destroy_of_the_trigger_position_waits_on_its_child_destroy(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<run>::position</child>.\n"
+                "        destroy the particle in position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.destroy(run::/child)": [],
+        "test.destroy(run)": ["test.destroy(run::/child)"],
+    }
+
+
+def test_create_and_destroy_of_an_implied_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(/implied)": [],
+        "test.destroy(/implied)": ["test.create(/implied)"],
+    }
+
+
+def test_operations_on_a_child_of_an_implied_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
+                "        create a particle in position</implied>::position</child>.\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(/implied)": [],
+        "test.create(/implied::/child)": ["test.create(/implied)"],
+        "test.destroy(/implied)": ["test.create(/implied::/child)"],
+    }
+
+
+def test_occupied_requirement_on_an_implied_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.destroy(/implied)": [],
+    }
+
+
+def test_move_from_an_interface_position_to_an_implied_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    define the position<source>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<source>.\n"
+                "        move the particle in position<source> to position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.move(source, /implied)": ["test.create(source)"],
+    }
+
+
+def test_move_from_an_implied_position_to_an_interface_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position</implied> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.move(/implied, dest)": [],
+    }
+
+
+def test_move_of_an_implied_position_carries_its_child(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position</implied> to position<dest>.\n"
+                "        destroy the particle in position<dest>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The move carries the child to dest::/child without operating on that key
+    # directly, so the destroy waits on the move.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.move(/implied, dest)": [],
+        "test.destroy(dest::/child)": ["test.move(/implied, dest)"],
+    }
+
+
+def test_auto_destruction_leaves_the_implied_position_alone(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<local>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The implied position belongs to the particle the action is assigned to, not
+    # to the action's body, so the block end destroys only position<local>.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(local)": [],
+        "test.create(/implied)": [],
+        "test.destroy(local)": ["test.create(local)"],
+    }
+
+
+def test_move_of_the_trigger_particle_into_a_local_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<local>.\n"
+                "        move the particle in position<run> to position<local>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The trigger particle ends the block in a position the block defined, so the
+    # block end destroys it.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.move(run, local)": [],
+        "test.destroy(local)": ["test.move(run, local)"],
+    }
+
+
+def test_move_of_the_trigger_particle_into_an_implied_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<run> to position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.move(run, /implied)": [],
+    }
