@@ -450,10 +450,10 @@ def test_requirement_carried_through_two_moves_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    # The box moved through /outer into the re-triggered /middle never had its
-    # input filled. The position names where /test sees it (through /outer's
-    # interface, not the move destinations), and the chain traces both moves
-    # down to /inner's inference.
+    # The box moved through /outer into /middle never had its input filled.
+    # The position names where /test sees it (through /outer's interface, not
+    # the move destinations), and the chain traces both moves down to /inner's
+    # inference.
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 19, column 30
                 create a particle in position<outer_holder>::action</outer>::position<run>.

@@ -2458,10 +2458,10 @@ def test_move_without_the_carried_child_violates_inner_occupied_requirement(
     }
 
 
-def test_input_carried_through_two_moves_reaches_the_retriggered_inner(
+def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A box carried by two moves into a re-triggered inner should satisfy inner's occupied requirement on its input."""
+    """A box carried by two moves into a triggered inner should satisfy inner's occupied requirement on its input."""
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
@@ -2541,10 +2541,10 @@ def test_input_carried_through_two_moves_reaches_the_retriggered_inner(
     assert_no_errors(result.program_result)
 
 
-def test_two_moves_without_the_input_violate_the_retriggered_inner(
+def test_two_moves_without_the_input_violate_the_triggered_inner(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """The box carried through two moves never had its input filled, so the re-triggered inner's occupied requirement is genuinely violated."""
+    """The box carried through two moves never had its input filled, so the triggered inner's occupied requirement is genuinely violated."""
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
@@ -2623,8 +2623,8 @@ def test_two_moves_without_the_input_violate_the_retriggered_inner(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    # The box moved through /outer into the re-triggered /middle never had its
-    # input filled. /outer recorded the missing child as its requirement on
+    # The box moved through /outer into /middle never had its input filled.
+    # /outer recorded the missing child as its requirement on
     # input::/inner::input, so the violation lands on /test, which never fills
     # it. The chain traces through both moves to /inner's inference.
     assert all_diags[0].location.line == 19
@@ -2680,10 +2680,10 @@ def test_two_moves_without_the_input_violate_the_retriggered_inner(
     }
 
 
-def test_input_carried_into_the_implied_middle_reaches_the_retriggered_inner(
+def test_input_carried_into_the_implied_middle_reaches_the_triggered_inner(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Outer moves its input into a /middle implied on its own parent particle, so filling box's input in the caller satisfies the retriggered inner."""
+    """Outer moves its input into a /middle implied on its own parent particle, so filling box's input in the caller satisfies the triggered inner."""
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
@@ -2758,7 +2758,7 @@ def test_input_carried_into_the_implied_middle_reaches_the_retriggered_inner(
     assert_no_errors(result.program_result)
 
 
-def test_carrying_no_input_into_the_implied_middle_violates_the_retriggered_inner(
+def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     """The box moved into a /middle implied on outer's parent particle never had its input filled, so the violation lands on the caller."""
