@@ -46,9 +46,11 @@ py_library(
     deps = [
         ":diagnostics",
         ":parser",
+        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",

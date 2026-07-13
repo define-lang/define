@@ -2,6 +2,9 @@ from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
+from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
+    operation_dependencies_new,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -26,7 +29,7 @@ def test_single_create(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(item)": [],
     }
 
@@ -52,7 +55,7 @@ def test_two_dependent_operations(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(item)": [],
         "test.move(item, dest)": ["test.create(item)"],
     }
@@ -80,7 +83,7 @@ def test_three_operation_chain(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(item)": [],
         "test.move(item, dest)": ["test.create(item)"],
         "test.destroy(dest)": ["test.move(item, dest)"],
@@ -138,7 +141,7 @@ def test_join_operation_waits_on_two_predecessors(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(a)": [],
         "test.create(b)": [],
         "test.destroy(b)": ["test.create(b)"],
@@ -196,7 +199,7 @@ def test_occupied_requirement_on_input_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.destroy(input)": [],
     }
 
@@ -225,7 +228,7 @@ def test_occupied_requirement_on_parent_of_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.destroy(input::/child)": [],
     }
 
@@ -263,7 +266,7 @@ def test_occupied_requirement_on_grandparent_of_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.destroy(input::/child::/grandchild)": [],
     }
 
@@ -297,7 +300,7 @@ def test_multiway_join_and_fan_out(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/a)": ["test.create(box)"],
         "test.create(box::/b)": ["test.create(box)"],
@@ -347,7 +350,7 @@ def test_destroy_reduces_to_the_deepest_touched_descendant(
     # The Child Rule drops a touched descendant that a deeper touched one
     # supersedes: the grandchild reaches the child and the box through its own
     # ancestor chain, so the destroy needs only the grandchild.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
@@ -386,7 +389,7 @@ def test_destroy_reduces_its_own_position_create_edge(
     # The destroy keeps its own-position edge to create(box) only when no touched
     # child is more recent. Here create(box::/child) is more recent and already
     # reaches create(box), so the destroy drops the edge and waits on the child.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box)": [
@@ -524,7 +527,7 @@ def test_second_move_of_a_carried_child_waits_on_the_first_move(
     # that key directly, so the second move empties basket without finding a
     # direct operation on the carried child. It waits on the first move, the
     # most recent operation on basket's ancestor chain.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.move(box, basket)": ["test.create(box::/child)"],
@@ -637,7 +640,7 @@ def test_move_parent_waits_on_touched_descendants(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(src)": [],
         "test.create(src::/child)": ["test.create(src)"],
         "test.move(src, dest)": ["test.create(src::/child)"],
@@ -684,7 +687,7 @@ def test_move_into_emptied_target_waits_on_the_target_destroy(
     # target's ancestor chain), which already waits on the destroy of the
     # target's former child (the Child Rule). So the move is ordered after that
     # child-destroy transitively -- no redundant direct edge to it.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(dest)": [],
         "test.create(dest::/child)": ["test.create(dest)"],
         "test.destroy(dest::/child)": ["test.create(dest::/child)"],
@@ -719,7 +722,7 @@ def test_auto_destruction_records_destroy_operations(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(first)": [],
         "test.create(second)": [],
         "test.destroy(second)": ["test.create(second)"],

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
@@ -14,6 +15,18 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import operation_graph
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceGraphValidationResult:
+    """What reference graph validation produces, beyond the diagnostics it reports."""
+
+    action_call_graph: action_call_graph.ActionCallGraph
+    # The DLP 44 operation dependency graph of every action.
+    operation_graphs: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, operation_graph.OperationGraph
+    ]
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -51,9 +64,12 @@ class ReferenceGraphValidator:
         self._action_contracts = typed_name_dict.TypedNameDict()
         self._definition_quality_cache = {}
 
-    def validate(self) -> action_call_graph.ActionCallGraph:
+    def validate(self) -> ReferenceGraphValidationResult:
         """Run analysis for all definitions in a depth-first-search, post-order."""
         call_graph = action_call_graph.ActionCallGraph()
+        operation_graphs: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, operation_graph.OperationGraph
+        ] = typed_name_dict.TypedNameDict()
         # We use dfs_postorder_all rather than dfs_postorder_from because the
         # reference graph can contain multiple roots (any action or position
         # that is not referenced by anything else creates a new graph).
@@ -73,6 +89,11 @@ class ReferenceGraphValidator:
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
             self._action_contracts[definition.typed_name] = result.contract
+            operation_graphs[definition.typed_name] = result.operation_graph
+            # TODO: Remove this once the old operation_graph_renderer, the only
+            # reader of DefinitionValidationResult.operation_graph, is replaced.
             definition_result.operation_graph = result.operation_graph
-            definition_result.action_contract = result.contract
-        return call_graph
+        return ReferenceGraphValidationResult(
+            action_call_graph=call_graph,
+            operation_graphs=operation_graphs,
+        )

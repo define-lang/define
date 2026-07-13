@@ -10,9 +10,13 @@ from typing import Protocol, overload
 import pytest
 
 from define.compiler import ast, diagnostics, parser
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
-from define.compiler.validator.reference_graph import reference_graph_validator
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    reference_graph_validator,
+)
 from define.compiler.validator.structural import program_validator
 
 _PARSER = parser.Parser()
@@ -83,7 +87,21 @@ class FullValidationResult:
     """Result of running both structural and reference graph validation."""
 
     program_result: validation_result.ProgramValidationResult
-    action_call_graph: action_call_graph.ActionCallGraph
+    reference_graph_result: reference_graph_validator.ReferenceGraphValidationResult
+
+    @property
+    def action_call_graph(self) -> action_call_graph.ActionCallGraph:
+        """The actions this program's actions trigger."""
+        return self.reference_graph_result.action_call_graph
+
+    @property
+    def operation_graphs(
+        self,
+    ) -> typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, operation_graph.OperationGraph
+    ]:
+        """Every action's operation dependency graph."""
+        return self.reference_graph_result.operation_graphs
 
 
 type ParseAndValidateFile = Callable[
@@ -264,13 +282,13 @@ def validate_non_filesystem_with_reference_graph() -> (
 def _run_reference_graph_validation(
     structural_result: validation_result.ProgramValidationResult,
 ) -> FullValidationResult:
-    call_graph = reference_graph_validator.ReferenceGraphValidator(
+    reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
         structural_result.reference_graph,
         structural_result.definition_results,
     ).validate()
     return FullValidationResult(
         program_result=structural_result,
-        action_call_graph=call_graph,
+        reference_graph_result=reference_graph_result,
     )
 
 
