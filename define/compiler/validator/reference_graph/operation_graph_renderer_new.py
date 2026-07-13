@@ -97,6 +97,38 @@ class _GraphLabelDict:
         )
 
 
+class _ForwardDependencyGraph:
+    """A forward dependency graph for each action, starting at the root nodes and going downward.
+
+    Querying this dictionary with a node_id gives you all the nodes that
+    are waiting on this node. This is here, currently, instead of in the
+    operation_graph, because right now I believe only the renderer needs this.
+    """
+
+    def __init__(self, graphs: _OperationGraphs):
+        """Map the dependents of every node in ``graphs``."""
+        self._dependents: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, dict[int, list[int]]
+        ] = typed_name_dict.TypedNameDict()
+        for action, graph in graphs.items():
+            self._dependents[action] = self._graph_dependents(graph)
+
+    def __getitem__(self, action: ast.GlobalTypedName) -> dict[int, list[int]]:
+        """Return the ids of the operations waiting on each node of ``action``, by node id."""
+        return self._dependents[action]
+
+    @staticmethod
+    def _graph_dependents(
+        graph: operation_graph.OperationGraph,
+    ) -> dict[int, list[int]]:
+        """Return the ids of the nodes of ``graph`` that wait directly on each node, by node id."""
+        dependents: dict[int, list[int]] = {}
+        for node in graph.nodes:
+            for depends_on_node_id in node.depends_on:
+                dependents.setdefault(depends_on_node_id, []).append(node.node_id)
+        return dependents
+
+
 class _GraphRenderer:
     """Renders one action's operation graph, and the operations of the actions it triggers."""
 
@@ -109,6 +141,10 @@ class _GraphRenderer:
     def _labels(self) -> _GraphLabelDict:
         return _GraphLabelDict(self._graphs)
 
+    @cached_property
+    def _nodes_waiting_on(self) -> _ForwardDependencyGraph:
+        return _ForwardDependencyGraph(self._graphs)
+
     def to_scheduling_table(self) -> dict[str, list[str]]:
         """Return a label for each operation, mapped to the labels it depends on."""
         table: dict[str, list[str]] = {}
@@ -117,13 +153,11 @@ class _GraphRenderer:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
             table[labels[node.node_id]] = self._dependency_labels(node.depends_on)
-            # An operation that fills a callee's trigger position runs that
-            # callee, whose operations belong in the table right here.
+            # This operation satisfies a requirement, so the callee operations that
+            # were waiting on that requirement now run.
             for satisfaction in node.satisfies:
                 table.update(
-                    self._triggered_operations(
-                        satisfaction.callee, labels[satisfaction.trigger_node_id]
-                    )
+                    self._satisfied_operations(satisfaction, labels[node.node_id])
                 )
         return table
 
@@ -138,20 +172,45 @@ class _GraphRenderer:
                 dependency_labels.append(labels[depends_on_node_id])
         return dependency_labels
 
-    def _triggered_operations(
-        self, callee: ast.GlobalTypedNameReference, firing_operation: str
+    def _satisfied_operations(
+        self,
+        satisfaction: operation_graph.RequirementSatisfaction,
+        satisfier: str,
     ) -> dict[str, list[str]]:
-        """Return the operations of ``callee``, which the operation labeled ``firing_operation`` fires."""
-        labels = self._labels[callee]
+        """Return the callee operations that wait on the requirement the operation labeled ``satisfier`` satisfies."""
+        graph = self._graphs[satisfaction.callee]
+        labels = self._labels[satisfaction.callee]
+        requirement = graph.requirement_node(satisfaction.requirement_position)
         table: dict[str, list[str]] = {}
-        for node in self._graphs[callee].nodes:
-            if not isinstance(node, operation_graph.PositionOperationNode):
-                continue
-            table[labels[node.node_id]] = [
-                # A requirement stands in for the caller operation that left the
-                # position in the state the callee needs, and the callee runs only
-                # once its trigger is filled, so both wait on the firing operation.
-                labels.get(depends_on_node_id, firing_operation)
-                for depends_on_node_id in node.depends_on
-            ]
+        for node_id in self._waiting_on(satisfaction.callee, requirement.node_id):
+            node = graph.nodes[node_id]
+            dependency_labels: list[str] = []
+            for depends_on_node_id in node.depends_on:
+                if depends_on_node_id == requirement.node_id:
+                    # We replace the requirement node with the label of the operation
+                    # that fulfilled it.
+                    dependency_labels.append(satisfier)
+                else:
+                    dependency_labels.append(labels[depends_on_node_id])
+            table[labels[node_id]] = dependency_labels
         return table
+
+    def _waiting_on(self, action: ast.GlobalTypedName, node_id: int) -> list[int]:
+        """Return the operations of ``action`` that wait on the node at ``node_id``, directly or through another."""
+        graph = self._graphs[action]
+        dependents = self._nodes_waiting_on[action]
+        reached: set[int] = set()
+        to_visit = [node_id]
+        while to_visit:
+            for dependent in dependents.get(to_visit.pop(), ()):
+                if dependent not in reached:
+                    reached.add(dependent)
+                    to_visit.append(dependent)
+        # An operation only ever depends on an earlier one, so id order is an
+        # order the operations can run in.
+        waiting: list[int] = []
+        for reached_node_id in sorted(reached):
+            reached_node = graph.nodes[reached_node_id]
+            if isinstance(reached_node, operation_graph.PositionOperationNode):
+                waiting.append(reached_node_id)
+        return waiting

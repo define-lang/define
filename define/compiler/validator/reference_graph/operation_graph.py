@@ -121,7 +121,12 @@ class RequirementNode(OperationNode):
     """
 
     # This action's own key for the caller-controlled contracted position.
-    requirement_position: tuple[str, ...]
+    # TODO: Remove this once the old operation_graph_renderer, its last reader,
+    # is gone. A caller that holds a satisfaction reaches the node through
+    # requirement_node(), so nothing else has to read a position back off a node.
+    # Inverting the old renderer needs a lookup that tolerates a position no
+    # requirement node stands for, which is why it still reads this.
+    requirement_position: tuple[str, ...] = field(default=(), compare=False)
 
 
 class OperationGraph:
@@ -175,11 +180,19 @@ class OperationGraph:
             else ()
         )
         self._trigger_position_requirement_node_id: int | None = None
+        # A requirement's position -> the RequirementNode for that position.
+        self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
 
     @property
     def nodes(self) -> Sequence[OperationNode]:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
+
+    def requirement_node(
+        self, requirement_position: tuple[str, ...]
+    ) -> RequirementNode:
+        """Return the RequirementNode on the named position."""
+        return self._requirement_nodes[requirement_position]
 
     @property
     def trigger_position_key(self) -> tuple[str, ...]:
@@ -366,14 +379,14 @@ class OperationGraph:
         ):
             return None
         node_id = len(self._nodes)
-        self._nodes.append(
-            RequirementNode(
-                node_id=node_id,
-                requirement_position=key,
-                depends_on=[ancestor] if ancestor is not None else [],
-            )
+        node = RequirementNode(
+            node_id=node_id,
+            requirement_position=key,
+            depends_on=[ancestor] if ancestor is not None else [],
         )
+        self._nodes.append(node)
         self._last_operation[key] = node_id
+        self._requirement_nodes[key] = node
         if key == self._trigger_position_key:
             self._trigger_position_requirement_node_id = node_id
         return node_id
@@ -382,17 +395,17 @@ class OperationGraph:
         """Return the trigger-position RequirementNode's id, materializing it if needed."""
         if self._trigger_position_requirement_node_id is None:
             node_id = len(self._nodes)
-            self._nodes.append(
-                RequirementNode(
-                    node_id=node_id,
-                    requirement_position=self._trigger_position_key,
-                    depends_on=[],
-                )
+            node = RequirementNode(
+                node_id=node_id,
+                requirement_position=self._trigger_position_key,
+                depends_on=[],
             )
+            self._nodes.append(node)
             # A later body operation on the trigger position must still chain
             # onto this node, but an existing operation there stays the most
             # recent one.
             _ = self._last_operation.setdefault(self._trigger_position_key, node_id)
+            self._requirement_nodes[self._trigger_position_key] = node
             self._trigger_position_requirement_node_id = node_id
         return self._trigger_position_requirement_node_id
 

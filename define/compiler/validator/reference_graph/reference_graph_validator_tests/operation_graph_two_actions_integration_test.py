@@ -10,6 +10,48 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
+def test_triggered_action_destroys_its_own_trigger_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    """The simplest possible cross-action test, since an occupied requirement is simpler than an empty one."""
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+    }
+
+
 def test_trigger_inlines_callee(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -45,7 +87,7 @@ def test_trigger_inlines_callee(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
@@ -866,49 +908,6 @@ def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
         "move.move(input, output)": ["test.move(box1, action_holder::/move::input)"],
         "test.move(action_holder::/move::output, dest)": ["move.move(input, output)"],
         "test.create(dest::/a)": ["test.move(action_holder::/move::output, dest)"],
-    }
-
-
-def test_operation_reading_the_trigger_position_depends_on_the_trigger_fill(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "consumer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/consumer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<gw> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</consumer>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<gw>.\n"
-                "        create a particle in position<gw>::action</consumer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    assert_no_errors(result.program_result)
-    # An operation that reads the trigger position genuinely depends on the caller
-    # op that fills it -- this trigger edge is a real data dependency.
-    assert operation_dependencies(result.program_result, _TEST) == {
-        "test.create(gw)": [],
-        "test.create(gw::/consumer::trigger_pos)": ["test.create(gw)"],
-        "consumer.destroy(trigger_pos)": ["test.create(gw::/consumer::trigger_pos)"],
     }
 
 

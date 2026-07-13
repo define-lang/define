@@ -151,9 +151,7 @@ def _trigger(
 # Every graph below has no trigger position, so its trigger-position
 # RequirementNode carries the empty key: the operations with nothing else to
 # wait on depend on it.
-_TRIGGER_POSITION = operation_graph.RequirementNode(
-    node_id=0, requirement_position=(), depends_on=[]
-)
+_TRIGGER_POSITION = operation_graph.RequirementNode(node_id=0, depends_on=[])
 
 
 def test_same_key_chain():
@@ -1026,11 +1024,10 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
     # stands in for the earlier caller op that filled the position.
     graph.record_destroy(input_position, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("input"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.DestroyNode(node_id=1, target=input_position, depends_on=[0]),
     ]
+    assert graph.requirement_node(_key("input")).node_id == 0
 
 
 def test_fill_of_empty_requirement_waits_on_a_requirement_node():
@@ -1038,11 +1035,10 @@ def test_fill_of_empty_requirement_waits_on_a_requirement_node():
     slot = _ref("slot")
     graph.record_create(slot)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("slot"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.CreateNode(node_id=1, target=slot, depends_on=[0]),
     ]
+    assert graph.requirement_node(_key("slot")).node_id == 0
 
 
 def test_local_fill_with_no_requirement_waits_on_the_trigger_position_requirement():
@@ -1065,12 +1061,11 @@ def test_operations_with_nothing_else_to_wait_on_share_the_trigger_position_requ
     graph.record_create(scratch)
     graph.record_create(note)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("run"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.CreateNode(node_id=1, target=scratch, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=note, depends_on=[0]),
     ]
+    assert graph.requirement_node(graph.trigger_position_key).node_id == 0
 
 
 def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
@@ -1082,12 +1077,11 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
     graph.record_destroy(run, [])
     graph.record_create(scratch)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("run"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.DestroyNode(node_id=1, target=run, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=scratch, depends_on=[0]),
     ]
+    assert graph.requirement_node(graph.trigger_position_key).node_id == 0
 
 
 def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
@@ -1098,12 +1092,11 @@ def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
     # create), so it waits on that rather than minting a fresh requirement node.
     graph.record_destroy(slot, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("slot"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.CreateNode(node_id=1, target=slot, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=slot, depends_on=[1]),
     ]
+    assert graph.requirement_node(_key("slot")).node_id == 0
 
 
 def test_requirement_node_attaches_to_the_nearest_requirement_ancestor():
@@ -1113,11 +1106,10 @@ def test_requirement_node_attaches_to_the_nearest_requirement_ancestor():
     # their own and the create waits on box's RequirementNode.
     graph.record_create(deep)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("box"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
         operation_graph.CreateNode(node_id=1, target=deep, depends_on=[0]),
     ]
+    assert graph.requirement_node(_key("box")).node_id == 0
 
 
 def test_two_children_of_required_parent_share_the_parent_requirement_node():
@@ -1134,18 +1126,15 @@ def test_two_children_of_required_parent_share_the_parent_requirement_node():
     graph.record_create(box_a)
     graph.record_create(box_b)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("box"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1, requirement_position=_key("box", "a"), depends_on=[0]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=box_a, depends_on=[1]),
-        operation_graph.RequirementNode(
-            node_id=3, requirement_position=_key("box", "b"), depends_on=[0]
-        ),
+        operation_graph.RequirementNode(node_id=3, depends_on=[0]),
         operation_graph.CreateNode(node_id=4, target=box_b, depends_on=[3]),
     ]
+    assert graph.requirement_node(_key("box")).node_id == 0
+    assert graph.requirement_node(_key("box", "a")).node_id == 1
+    assert graph.requirement_node(_key("box", "b")).node_id == 3
 
 
 def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
@@ -1162,19 +1151,14 @@ def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
     grandchild = _ref("box", "child", "grandchild")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("box"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1, requirement_position=_key("box", "child"), depends_on=[0]
-        ),
-        operation_graph.RequirementNode(
-            node_id=2,
-            requirement_position=_key("box", "child", "grandchild"),
-            depends_on=[1],
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=grandchild, depends_on=[2]),
     ]
+    assert graph.requirement_node(_key("box")).node_id == 0
+    assert graph.requirement_node(_key("box", "child")).node_id == 1
+    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 2
 
 
 def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
@@ -1191,19 +1175,14 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
     grandchild = _ref("box", "child", "grandchild")
     graph.record_destroy(grandchild, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("box"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1, requirement_position=_key("box", "child"), depends_on=[0]
-        ),
-        operation_graph.RequirementNode(
-            node_id=2,
-            requirement_position=_key("box", "child", "grandchild"),
-            depends_on=[1],
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=grandchild, depends_on=[2]),
     ]
+    assert graph.requirement_node(_key("box")).node_id == 0
+    assert graph.requirement_node(_key("box", "child")).node_id == 1
+    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 2
 
 
 def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
@@ -1214,14 +1193,12 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
     parent = _ref("input", "parent")
     graph.record_destroy(parent, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_key("input"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1, requirement_position=_key("input", "parent"), depends_on=[0]
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=parent, depends_on=[1]),
     ]
+    assert graph.requirement_node(_key("input")).node_id == 0
+    assert graph.requirement_node(_key("input", "parent")).node_id == 1
 
 
 def test_implied_position_children_share_the_global_parent_requirement_node():
@@ -1240,22 +1217,15 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
     graph.record_create(child1)
     graph.record_create(child2)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_global_key("/parent"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1,
-            requirement_position=_global_key("/parent", "/child1"),
-            depends_on=[0],
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=child1, depends_on=[1]),
-        operation_graph.RequirementNode(
-            node_id=3,
-            requirement_position=_global_key("/parent", "/child2"),
-            depends_on=[0],
-        ),
+        operation_graph.RequirementNode(node_id=3, depends_on=[0]),
         operation_graph.CreateNode(node_id=4, target=child2, depends_on=[3]),
     ]
+    assert graph.requirement_node(_global_key("/parent")).node_id == 0
+    assert graph.requirement_node(_global_key("/parent", "/child1")).node_id == 1
+    assert graph.requirement_node(_global_key("/parent", "/child2")).node_id == 3
 
 
 def test_move_joins_an_in_body_source_with_a_requirement_target():
@@ -1273,11 +1243,10 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
         operation_graph.CreateNode(node_id=1, target=src, depends_on=[0]),
-        operation_graph.RequirementNode(
-            node_id=2, requirement_position=_key("dest"), depends_on=[]
-        ),
+        operation_graph.RequirementNode(node_id=2, depends_on=[]),
         operation_graph.MoveNode(node_id=3, source=src, target=dest, depends_on=[1, 2]),
     ]
+    assert graph.requirement_node(_key("dest")).node_id == 2
 
 
 def test_implied_position_grandchild_builds_the_global_requirement_chain():
@@ -1294,18 +1263,14 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
     grandchild = _global_ref("/parent", "/child", "/grandchild1")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, requirement_position=_global_key("/parent"), depends_on=[]
-        ),
-        operation_graph.RequirementNode(
-            node_id=1,
-            requirement_position=_global_key("/parent", "/child"),
-            depends_on=[0],
-        ),
-        operation_graph.RequirementNode(
-            node_id=2,
-            requirement_position=_global_key("/parent", "/child", "/grandchild1"),
-            depends_on=[1],
-        ),
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=grandchild, depends_on=[2]),
     ]
+    assert graph.requirement_node(_global_key("/parent")).node_id == 0
+    assert graph.requirement_node(_global_key("/parent", "/child")).node_id == 1
+    assert (
+        graph.requirement_node(_global_key("/parent", "/child", "/grandchild1")).node_id
+        == 2
+    )
