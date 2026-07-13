@@ -7,6 +7,54 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
+def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # other empties its own trigger position, so the caller's second fill of that
+    # position triggers it again, and both invocations are rendered. The refill
+    # waits on the first invocation's destroy, which is what empties the position
+    # it fills.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        "other.destroy(trigger_pos)#2": ["test.create(gateway::/other::trigger_pos)#2"],
+    }
+
+
 def test_retriggered_action_resolves_requirements_within_each_invocation(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -193,4 +241,119 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
         "worker.destroy(scratch)": ["worker.create(scratch)"],
         "worker.create(scratch)#2": ["test.create(gw::/worker::trigger_pos)#2"],
         "worker.destroy(scratch)#2": ["worker.create(scratch)#2"],
+    }
+
+
+def test_two_actions_each_triggering_one_action_twice_number_its_invocations_across_the_program(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<scratch>.\n"
+                "        create a particle in position<scratch>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "first.dfn": (
+                "define the potential action<my.domain.com:my_lib:/first> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "second.dfn": (
+                "define the potential action<my.domain.com:my_lib:/second> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</worker>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<holder_first> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</first>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder_second> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</second>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<holder_first>.\n"
+                "        create a particle in position<holder_first>::action</first>::position<trigger_pos>.\n"
+                "        create a particle in position<holder_second>.\n"
+                "        create a particle in position<holder_second>::action</second>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # first and second each empty and refill worker's trigger position, so worker
+    # runs four times across the program. The four runs are numbered as one
+    # sequence, not per caller: second's first run of worker is #3, not #1.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(holder_first)": [],
+        "test.create(holder_first::/first::trigger_pos)": ["test.create(holder_first)"],
+        "test.create(holder_second)": [],
+        "test.create(holder_second::/second::trigger_pos)": [
+            "test.create(holder_second)"
+        ],
+        "first.create(gw)": ["test.create(holder_first::/first::trigger_pos)"],
+        "first.create(gw::/worker::trigger_pos)": ["first.create(gw)"],
+        "first.destroy(gw::/worker::trigger_pos)": [
+            "first.create(gw::/worker::trigger_pos)"
+        ],
+        "first.create(gw::/worker::trigger_pos)#2": [
+            "first.destroy(gw::/worker::trigger_pos)"
+        ],
+        "second.create(gw)": ["test.create(holder_second::/second::trigger_pos)"],
+        "second.create(gw::/worker::trigger_pos)": ["second.create(gw)"],
+        "second.destroy(gw::/worker::trigger_pos)": [
+            "second.create(gw::/worker::trigger_pos)"
+        ],
+        "second.create(gw::/worker::trigger_pos)#2": [
+            "second.destroy(gw::/worker::trigger_pos)"
+        ],
+        "worker.create(scratch)": ["first.create(gw::/worker::trigger_pos)"],
+        "worker.destroy(scratch)": ["worker.create(scratch)"],
+        "worker.create(scratch)#2": ["first.create(gw::/worker::trigger_pos)#2"],
+        "worker.destroy(scratch)#2": ["worker.create(scratch)#2"],
+        "worker.create(scratch)#3": ["second.create(gw::/worker::trigger_pos)"],
+        "worker.destroy(scratch)#3": ["worker.create(scratch)#3"],
+        "worker.create(scratch)#4": ["second.create(gw::/worker::trigger_pos)#2"],
+        "worker.destroy(scratch)#4": ["worker.create(scratch)#4"],
     }
