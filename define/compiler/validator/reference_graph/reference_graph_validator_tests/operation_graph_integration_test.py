@@ -16,11 +16,6 @@ _DESTRUCTORS_NOT_RECORDED = (
     "destructor triggers are not recorded in the operation graph"
 )
 
-_ZERO_GUARANTEE_CALLEES_NOT_RENDERED = (
-    "a triggered action that guarantees nothing has no GuaranteeNode to reach"
-    " it, so its operations are missing from the rendered graph"
-)
-
 _UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED = (
     "an action that never touches a position it passes along from an action it"
     " triggers has no guarantee node for it in its own graph, only the"
@@ -2644,7 +2639,6 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_ZERO_GUARANTEE_CALLEES_NOT_RENDERED)
 def test_triggered_action_with_no_guarantees_still_runs(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -2695,7 +2689,6 @@ def test_triggered_action_with_no_guarantees_still_runs(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_ZERO_GUARANTEE_CALLEES_NOT_RENDERED)
 def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

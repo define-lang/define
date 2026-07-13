@@ -379,7 +379,7 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # on it, which is what records that it fires the callee; the box that merely
     # holds it fires nothing.
     assert tracker.operation_graph.nodes[2].satisfies == [
-        operation_graph.RequirementSatisfaction(action_chain, ("position<run>",)),
+        operation_graph.RequirementSatisfaction(action_chain, ("position<run>",), 2),
     ]
     assert tracker.operation_graph.nodes[1].satisfies == []
 

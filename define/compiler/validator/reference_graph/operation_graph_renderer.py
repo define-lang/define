@@ -31,13 +31,13 @@ class _OperationGraphFlattener:
     def _flatten_action(
         self,
         action: str,
-        satisfiers: dict[tuple[str, ...], str | None] | None,
+        caller_satisfiers: dict[tuple[str, ...], str | None] | None,
         dependencies: dict[str, list[str]],
     ) -> dict[int, str | None]:
-        """Flatten ``action``, resolving each RequirementNode via ``satisfiers``.
+        """Flatten ``action``, resolving each RequirementNode via ``caller_satisfiers``.
 
-        ``satisfiers`` maps this action's own requirement keys to the caller
-        operations that satisfy them (None for the root action).
+        ``caller_satisfiers`` maps this action's own requirement keys to the
+        caller operations that satisfy them (None for the root action).
         """
         graph = self._registry[action]
         action_name = self._action_display_name(action)
@@ -45,23 +45,30 @@ class _OperationGraphFlattener:
         # requirement, which an operation with nothing else to wait on depends
         # on.
         trigger_label = (
-            satisfiers.get(graph.trigger_position_key) if satisfiers else None
+            caller_satisfiers.get(graph.trigger_position_key)
+            if caller_satisfiers
+            else None
         )
         local_labels: dict[int, str | None] = {}
         # Keyed by (trigger operation id, callee action), for resolving the
         # guarantee nodes that stand in for the positions those callees
         # guarantee.
         callee_splices: dict[tuple[int, str], _CalleeSplice] = {}
-        # (callee full typed name, callee requirement key) -> label of the
-        # operation that satisfies it, accumulated as each operation is passed.
-        outgoing: dict[tuple[str, tuple[str, ...]], str | None] = {}
+        # Per trigger, the callee's requirement keys mapped to the label of the
+        # operation that satisfies each, accumulated as each operation is
+        # passed. An action can trigger one callee more than once, and each
+        # trigger has its own satisfiers.
+        satisfiers: dict[tuple[int, str], dict[tuple[str, ...], str | None]] = {}
         for node in graph.nodes:
             if isinstance(node, operation_graph.RequirementNode):
-                # A seam for the caller op that satisfies the requirement, found in
-                # ``satisfiers``; an untouched empty-by-default position falls
-                # through to whatever satisfies its parent, via its own depends_on.
+                # The caller operation that satisfies the requirement, found in
+                # ``caller_satisfiers``; a required-EMPTY position no caller
+                # operation satisfies falls through to whatever satisfies its
+                # parent requirement, via its own depends_on.
                 label = (
-                    satisfiers.get(node.requirement_position) if satisfiers else None
+                    caller_satisfiers.get(node.requirement_position)
+                    if caller_satisfiers
+                    else None
                 )
                 if label is None:
                     label = next((local_labels[dep] for dep in node.depends_on), None)
@@ -69,7 +76,12 @@ class _OperationGraphFlattener:
             elif isinstance(node, operation_graph.GuaranteeNode):
                 # A position the callee guarantees: splice the callee (once)
                 # and render the callee's final operation on that position.
-                self._splice_callee(node, outgoing, callee_splices, dependencies)
+                self._splice_trigger(
+                    (node.depends_on[0], node.action),
+                    satisfiers,
+                    callee_splices,
+                    dependencies,
+                )
                 local_labels[node.node_id] = self._final_operation_label(
                     node, callee_splices
                 )
@@ -90,33 +102,34 @@ class _OperationGraphFlattener:
                 local_labels[node.node_id] = label
             for satisfaction in node.satisfies:
                 callee = satisfaction.callee.typed_names[-1].full_typed_name
-                outgoing[(callee, satisfaction.requirement_position)] = local_labels[
-                    node.node_id
-                ]
+                trigger = (satisfaction.trigger_node_id, callee)
+                satisfiers.setdefault(trigger, {})[
+                    satisfaction.requirement_position
+                ] = local_labels[node.node_id]
+        # A callee that guarantees nothing has no guarantee node to reach it,
+        # and it still runs, so splice in every trigger not yet spliced.
+        for trigger in sorted(satisfiers):
+            self._splice_trigger(trigger, satisfiers, callee_splices, dependencies)
         return local_labels
 
-    def _splice_callee(
+    def _splice_trigger(
         self,
-        guarantee_node: operation_graph.GuaranteeNode,
-        outgoing: dict[tuple[str, tuple[str, ...]], str | None],
+        trigger: tuple[int, str],
+        satisfiers: dict[tuple[int, str], dict[tuple[str, ...], str | None]],
         callee_splices: dict[tuple[int, str], _CalleeSplice],
         dependencies: dict[str, list[str]],
     ):
-        """Flatten the callee this guarantee comes from, once per (trigger, callee)."""
-        callee = guarantee_node.action
-        trigger_node_id = guarantee_node.depends_on[0]
-        if (trigger_node_id, callee) in callee_splices:
+        """Flatten the callee of ``trigger``, exactly once.
+
+        Every satisfier of a trigger's requirements is an earlier operation than
+        the callee's first guarantee node, so the callee is spliced with all of
+        its satisfiers in hand.
+        """
+        if trigger in callee_splices:
             return
-        satisfiers = {
-            requirement_position: label
-            for (satisfied_callee, requirement_position), label in outgoing.items()
-            if satisfied_callee == callee
-        }
-        callee_labels = self._flatten_action(callee, satisfiers, dependencies)
-        callee_splices[(trigger_node_id, callee)] = (
-            self._registry[callee],
-            callee_labels,
-        )
+        _, callee = trigger
+        callee_labels = self._flatten_action(callee, satisfiers[trigger], dependencies)
+        callee_splices[trigger] = (self._registry[callee], callee_labels)
 
     def _final_operation_label(
         self,
@@ -181,11 +194,6 @@ def action_graph(
     diamond can still make two sibling actions' relative order nondeterministic;
     assertions spanning such actions should compare ``action_graph_set``.
     """
-    registry: dict[str, operation_graph.OperationGraph] = {
-        typed_name.full_typed_name: definition_result.operation_graph
-        for typed_name, definition_result in program_result.definition_results.items()
-        if definition_result.operation_graph is not None
-    }
     edges: list[tuple[str, str]] = []
     for definition in program_result.reference_graph.dfs_postorder_all():
         typed_name = definition.typed_name
@@ -195,22 +203,16 @@ def action_graph(
         if graph is None:
             continue
         source = typed_name.source_typed_name
+        # One edge per trigger: an action that fires the same callee twice
+        # yields two edges. The operation that fires a trigger is the one that
+        # satisfies the callee's requirement on its trigger position, so it is
+        # the only satisfier whose satisfaction names itself.
         for node in graph.nodes:
             for satisfaction in node.satisfies:
-                callee = satisfaction.callee.typed_names[-1].full_typed_name
-                callee_graph = registry.get(callee)
-                # The firing satisfaction is keyed to the callee's trigger position
-                # (or its root for a constructor); an inferred-requirement
-                # satisfaction never is, since the trigger is excluded from
-                # requirements. So this counts one edge per trigger -- an action
-                # that fires the same callee twice yields two edges.
-                firing_key = (
-                    callee_graph.trigger_position_key
-                    if callee_graph is not None
-                    else ()
-                )
-                if satisfaction.requirement_position == firing_key:
-                    edges.append((source, callee))
+                if satisfaction.trigger_node_id == node.node_id:
+                    edges.append(
+                        (source, satisfaction.callee.typed_names[-1].full_typed_name)
+                    )
     return edges
 
 

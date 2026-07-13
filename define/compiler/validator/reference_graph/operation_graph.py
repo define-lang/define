@@ -27,13 +27,12 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class RequirementSatisfaction:
-    """A triggered callee's requirement that this caller operation satisfies.
+    """One requirement of one trigger of a callee, satisfied by the operation that carries this.
 
-    Left on the caller operation that establishes the required state; codegen,
-    reaching the operation while walking, splices the callee's matching
-    RequirementNode here. A callee shows up in some operation's satisfactions
-    exactly when it is triggered, so this also stands in for the old triggered-
-    action bookkeeping.
+    Codegen, reaching the operation while walking, splices the matching
+    RequirementNode of the callee's graph here. A callee appears in some
+    operation's satisfactions exactly once per trigger, since the operation
+    that fills the trigger position satisfies the requirement on it.
     """
 
     # The triggered callee. codegen takes the graph key
@@ -41,6 +40,11 @@ class RequirementSatisfaction:
     callee: ast.ActionReference
     # The callee's own key for the requirement this operation satisfies.
     requirement_position: tuple[str, ...]
+    # The operation that fired this trigger, which is what tells the
+    # satisfactions of one trigger of a callee from those of the next: an
+    # action can trigger the same callee any number of times, and one operation
+    # can satisfy the same requirement for more than one of those triggers.
+    trigger_node_id: int
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -253,13 +257,17 @@ class OperationGraph:
             # normal requirements).
             firing_node.satisfies.append(
                 RequirementSatisfaction(
-                    callee, acting_on_position_key[len(callee_action_key) :]
+                    callee,
+                    acting_on_position_key[len(callee_action_key) :],
+                    firing_node_id,
                 )
             )
         else:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
-            firing_node.satisfies.append(RequirementSatisfaction(callee, ()))
+            firing_node.satisfies.append(
+                RequirementSatisfaction(callee, (), firing_node_id)
+            )
         for requirement, caller_position in zip(
             requirements, caller_requirement_positions, strict=True
         ):
@@ -268,7 +276,7 @@ class OperationGraph:
             satisfier = self._requirement_satisfier(in_callee_key)
             if satisfier is not None:
                 self._nodes[satisfier].satisfies.append(
-                    RequirementSatisfaction(callee, requirement_key)
+                    RequirementSatisfaction(callee, requirement_key, firing_node_id)
                 )
         return firing_node_id
 
