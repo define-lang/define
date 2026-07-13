@@ -2,6 +2,9 @@ from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
+from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
+    operation_dependencies_new,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -226,9 +229,9 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
     )
     assert_no_errors(result.program_result)
     # worker guarantees nothing, so each of its two triggers leaves no
-    # GuaranteeNode -- only the two distinct trigger fills. Each instance's
+    # GuaranteeNode -- only the two distinct trigger fills. Each invocation's
     # operations wait on their own fill.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
         "test.destroy(gw::/worker::trigger_pos)": [
@@ -239,8 +242,8 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
         ],
         "worker.create(scratch)": ["test.create(gw::/worker::trigger_pos)"],
         "worker.destroy(scratch)": ["worker.create(scratch)"],
-        "worker.create(scratch)#2": ["test.create(gw::/worker::trigger_pos)#2"],
-        "worker.destroy(scratch)#2": ["worker.create(scratch)#2"],
+        "worker#2.create(scratch)": ["test.create(gw::/worker::trigger_pos)#2"],
+        "worker#2.destroy(scratch)": ["worker#2.create(scratch)"],
     }
 
 

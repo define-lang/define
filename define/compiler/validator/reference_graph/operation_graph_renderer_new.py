@@ -18,9 +18,17 @@ _ENTRY_POINT_ACTION_PATH = "/test"
 type _OperationGraphs = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, operation_graph.OperationGraph
 ]
-type _ActionLabels = typed_name_dict.TypedNameDict[
+type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
+type _ActionInvocations = typed_name_dict.TypedNameDict[
+    ast.GlobalTypedName, _InvocationLabels
+]
+
+
+def _action_name(action: ast.GlobalTypedName) -> str:
+    """Return an action's name without its universe or path, such as ``test``."""
+    return action.name_content.path.name.removeprefix("/")
 
 
 def operation_dependencies_new(
@@ -77,6 +85,29 @@ class _OperationLabels:
         )
 
 
+class _InvocationLabels:
+    """A map from trigger_node_id to a short name for that callee."""
+
+    def __init__(self, graph: operation_graph.OperationGraph):
+        """Name the invocation every trigger operation in ``graph`` fires."""
+        self._names: dict[int, str] = {}
+        times_invoked: dict[str, int] = {}
+        for node in graph.nodes:
+            for satisfaction in node.satisfies:
+                if satisfaction.trigger_node_id in self._names:
+                    continue
+                action_name = _action_name(satisfaction.callee)
+                count = times_invoked.get(action_name, 0) + 1
+                times_invoked[action_name] = count
+                self._names[satisfaction.trigger_node_id] = (
+                    action_name if count == 1 else f"{action_name}#{count}"
+                )
+
+    def __getitem__(self, trigger_node_id: int) -> str:
+        """Return the name of the invocation the trigger operation at ``trigger_node_id`` fires."""
+        return self._names[trigger_node_id]
+
+
 class _ForwardDependencyGraph:
     """A forward dependency graph for each action, starting at the root nodes and going downward.
 
@@ -118,22 +149,29 @@ class _GraphRenderer:
         self._graphs: _OperationGraphs = graphs
 
     @cached_property
-    def _labels(self) -> _ActionLabels:
+    def _operation_labels(self) -> _ActionOperationLabels:
         # A triggered action's operations are labeled with its own name for them,
         # so every graph is labeled, not only the one being rendered.
-        labels: _ActionLabels = typed_name_dict.TypedNameDict()
+        labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
         for action, graph in self._graphs.items():
             labels[action] = _OperationLabels(graph)
         return labels
 
+    @cached_property
+    def _invocation_labels(self) -> _ActionInvocations:
+        invocations: _ActionInvocations = typed_name_dict.TypedNameDict()
+        for action, graph in self._graphs.items():
+            invocations[action] = _InvocationLabels(graph)
+        return invocations
+
     def _label(
         self,
+        invocation: str,
         action: ast.GlobalTypedName,
         node: operation_graph.PositionOperationNode,
     ) -> str:
-        """Return the label of ``node``, an operation of ``action``, such as ``test.move(item, dest)``."""
-        action_name = action.name_content.path.name.removeprefix("/")
-        return f"{action_name}.{self._labels[action][node.node_id]}"
+        """Return the label of ``node``, an operation ``action`` performs in ``invocation``, such as ``test.move(item, dest)``."""
+        return f"{invocation}.{self._operation_labels[action][node.node_id]}"
 
     @cached_property
     def _nodes_waiting_on(self) -> _ForwardDependencyGraph:
@@ -142,25 +180,30 @@ class _GraphRenderer:
     def to_scheduling_table(self) -> dict[str, list[str]]:
         """Return a label for each operation, mapped to the labels it depends on."""
         table: dict[str, list[str]] = {}
+        invocation = _action_name(self._action)
         for node in self._graphs[self._action].nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            label = self._label(self._action, node)
-            table[label] = self._dependency_labels(node.depends_on)
+            label = self._label(invocation, self._action, node)
+            table[label] = self._dependency_labels(invocation, node.depends_on)
             # This operation satisfies a requirement, so the callee operations that
             # were waiting on that requirement now run.
             for satisfaction in node.satisfies:
                 table.update(self._satisfied_operations(satisfaction, label))
         return table
 
-    def _dependency_labels(self, depends_on: Iterable[int]) -> list[str]:
+    def _dependency_labels(
+        self, invocation: str, depends_on: Iterable[int]
+    ) -> list[str]:
         """Return the labels of the operations the ids in ``depends_on`` name."""
         graph = self._graphs[self._action]
         dependency_labels: list[str] = []
         for depends_on_node_id in depends_on:
             depends_on_node = graph.nodes[depends_on_node_id]
             if isinstance(depends_on_node, operation_graph.PositionOperationNode):
-                dependency_labels.append(self._label(self._action, depends_on_node))
+                dependency_labels.append(
+                    self._label(invocation, self._action, depends_on_node)
+                )
         return dependency_labels
 
     def _satisfied_operations(
@@ -171,6 +214,7 @@ class _GraphRenderer:
         """Return the callee operations that wait on the requirement the operation labeled ``satisfier`` satisfies."""
         graph = self._graphs[satisfaction.callee]
         requirement = graph.requirement_node(satisfaction.requirement_position)
+        invocation = self._invocation_labels[self._action][satisfaction.trigger_node_id]
         table: dict[str, list[str]] = {}
         for node in self._waiting_on(satisfaction.callee, requirement.node_id):
             dependency_labels: list[str] = []
@@ -182,9 +226,11 @@ class _GraphRenderer:
                     dependency_labels.append(satisfier)
                 elif isinstance(depends_on_node, operation_graph.PositionOperationNode):
                     dependency_labels.append(
-                        self._label(satisfaction.callee, depends_on_node)
+                        self._label(invocation, satisfaction.callee, depends_on_node)
                     )
-            table[self._label(satisfaction.callee, node)] = dependency_labels
+            table[self._label(invocation, satisfaction.callee, node)] = (
+                dependency_labels
+            )
         return table
 
     def _waiting_on(
