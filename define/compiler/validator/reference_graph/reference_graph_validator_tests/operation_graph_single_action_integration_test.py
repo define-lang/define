@@ -1,13 +1,8 @@
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
-)
 from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
     operation_dependencies_new,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
-
-_TEST = "action<my.domain.com:my_lib:/test>"
 
 
 def test_single_create(
@@ -111,7 +106,7 @@ def test_repeated_operation_on_same_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(item)": [],
         "test.destroy(item)": ["test.create(item)"],
         "test.create(item)#2": ["test.destroy(item)"],
@@ -172,7 +167,7 @@ def test_fan_out_two_operations_depend_on_one(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(a)": [],
         "test.move(a, b)": ["test.create(a)"],
         "test.create(a)#2": ["test.move(a, b)"],
@@ -428,7 +423,7 @@ def test_refill_does_not_repeat_the_ancestor_edge(
     # The refill needs no fresh ancestor edge to create(parent): the destroy it
     # follows is more recent than create(parent) and already reaches it, so the
     # refill inherits the ordering transitively.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(parent)": [],
         "test.create(parent::/child)": ["test.create(parent)"],
         "test.destroy(parent::/child)": ["test.create(parent::/child)"],
@@ -478,7 +473,7 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move(
     # second destroy of box::/child waits on the move and cannot run before the
     # particle the move placed there arrives; the stale earlier destroy is not
     # repeated, since the move already reaches it.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box::/child)": ["test.create(box::/child)"],
@@ -588,7 +583,7 @@ def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
     # box::/mid. The second destroy of box::/mid::/leaf takes only the move -- the
     # most recent operation on its chain -- dropping both the stale leaf and the
     # stale intermediate mid, since the move reaches them transitively.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/mid)": ["test.create(box)"],
         "test.create(box::/mid::/leaf)": ["test.create(box::/mid)"],

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from functools import cached_property
 
 from define.compiler.validator.reference_graph import operation_graph
 
@@ -45,19 +46,33 @@ class _GraphRenderer:
         for node in self._graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            table[self._operation_label(node)] = self._dependency_labels(
-                node.depends_on
-            )
+            table[self._labels[node.node_id]] = self._dependency_labels(node.depends_on)
         return table
+
+    @cached_property
+    def _labels(self) -> dict[int, str]:
+        """The label of every operation, numbered so that no two share one."""
+        labels: dict[int, str] = {}
+        times_seen: dict[str, int] = {}
+        for node in self._graph.nodes:
+            if not isinstance(node, operation_graph.PositionOperationNode):
+                continue
+            label = self._operation_label(node)
+            # An action can perform the same operation on the same position more
+            # than once, which every operation after the first says in its label.
+            count = times_seen.get(label, 0) + 1
+            times_seen[label] = count
+            labels[node.node_id] = label if count == 1 else f"{label}#{count}"
+        return labels
 
     def _dependency_labels(self, depends_on: Iterable[int]) -> list[str]:
         """Return the labels of the operations the ids in ``depends_on`` name."""
-        labels: list[str] = []
+        dependency_labels: list[str] = []
         for depends_on_node_id in depends_on:
             depends_on_node = self._graph.nodes[depends_on_node_id]
             if isinstance(depends_on_node, operation_graph.PositionOperationNode):
-                labels.append(self._operation_label(depends_on_node))
-        return labels
+                dependency_labels.append(self._labels[depends_on_node_id])
+        return dependency_labels
 
     def _operation_label(self, node: operation_graph.PositionOperationNode) -> str:
         """Return the label of one operation, such as ``test.move(item, dest)``."""
