@@ -122,7 +122,7 @@ def _make_requirement(
 
 
 def test_body_chain_depends_in_order():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("one"), ())
     tracker.destroy(_ref("one"))
     # Node 0 is the trigger-position RequirementNode the first create waits on.
@@ -132,7 +132,7 @@ def test_body_chain_depends_in_order():
 
 
 def test_child_create_depends_on_parent():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     assert [
@@ -145,7 +145,7 @@ def test_child_create_depends_on_parent():
 
 
 def test_destroy_depends_on_touched_children():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.destroy(_ref("box"))
@@ -155,7 +155,7 @@ def test_destroy_depends_on_touched_children():
 
 
 def test_destroy_depends_on_grandchildren():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.create(_ref("box", "inner", "deep"), ())
@@ -167,7 +167,7 @@ def test_destroy_depends_on_grandchildren():
 
 
 def test_move_carries_child_transitively():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.move(_ref("box"), _ref("basket"))
@@ -182,7 +182,7 @@ def test_move_carries_child_transitively():
 
 
 def test_move_carries_grandchild_subtree():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.create(_ref("box", "inner", "deep"), ())
@@ -205,7 +205,7 @@ def test_move_carries_grandchild_subtree():
 
 
 def test_from_caller_create_records_no_operation():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     iface = _ref("iface")
     tracker.create(iface, (), from_caller=iface)
     tracker.destroy(iface)
@@ -217,7 +217,7 @@ def test_from_caller_create_records_no_operation():
 
 
 def test_mark_empty_records_nothing():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.mark_empty(_ref("slot"))
     tracker.create(_ref("slot"), ())
     assert _kinds(tracker) == [_REQUIREMENT, _CREATE]
@@ -225,7 +225,7 @@ def test_mark_empty_records_nothing():
 
 
 def test_triggered_guarantee_output_becomes_a_guarantee_node():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     out = _chain(_local("box"), box, _local("out"))
@@ -252,7 +252,7 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
 
 
 def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     tracker.create(_ref("box"), ())  # requirement 0, create 1
@@ -279,7 +279,7 @@ def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
 
 
 def test_nested_triggered_guarantee_becomes_a_guarantee_node():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     outer = _action("/outer")
     inner = _action("/inner")
     run = _chain(_local("box"), outer, _local("run"))
@@ -314,7 +314,7 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
 
 
 def test_stale_nested_guarantee_keeps_the_later_last_operation():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     earlier = _action("/earlier")
     later = _action("/later")
     inner = _action("/inner")
@@ -367,7 +367,7 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
 
 
 def test_apply_guarantees_tags_the_trigger_with_its_action():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     action_chain = _action_chain(_local("box"), box)
@@ -397,7 +397,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     # A callee creates and destroys its own required-empty position: it touches
     # the position but ends it empty, so its contract carries an
     # UnchangedGuarantee -- unchanged, but operated on.
-    callee = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    callee = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     x = _local("x")
     x_ref = _ref("x")
     callee.create(x_ref, ())
@@ -415,7 +415,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     assert _last_operation(callee, x_ref) == 2
 
     # A caller triggers that action, then fills the position the callee touched.
-    caller = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
+    caller = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _local("box")
     b = _action("/b")
     caller.create(_ref("box"), ())  # requirement node 0, box create node 1

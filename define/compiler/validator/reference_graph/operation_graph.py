@@ -179,9 +179,18 @@ class OperationGraph:
             if trigger_position is not None
             else ()
         )
-        self._trigger_position_requirement_node_id: int | None = None
         # A requirement's position -> the RequirementNode for that position.
         self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
+        # An action with a trigger position always gets an occupied requirement on
+        # it. This simplifies splicing together graphs, because the satisfaction
+        # of the trigger position always has a requirement to map to. A
+        # constructor or destructor has no trigger position, so it has no such
+        # node, and its operations with nothing else to wait on wait on nothing.
+        self._trigger_position_requirement_node_id: int | None = (
+            self._add_requirement_node(self._trigger_position_key, ancestor=None)
+            if trigger_position is not None
+            else None
+        )
 
     @property
     def nodes(self) -> Sequence[OperationNode]:
@@ -341,11 +350,11 @@ class OperationGraph:
                 for child_operation in child_operations
             ):
                 dependencies.add(emptied_ancestor)
-        if not dependencies:
+        if not dependencies and self._trigger_position_requirement_node_id is not None:
             # An operation with nothing else to wait on still happens only
             # because this action triggered, so it waits on the
             # trigger-position requirement like any other requirement.
-            return [self._trigger_position_requirement_node()]
+            return [self._trigger_position_requirement_node_id]
         return sorted(dependencies)
 
     def _most_recent_ancestor_chain_operation(
@@ -370,7 +379,7 @@ class OperationGraph:
     ) -> int | None:
         """Materialize a RequirementNode standing in for the caller op on ``key``, or None."""
         # The position isn't one of our inferred requirements, no need to worry abut it.
-        if key not in self._requirements and key != self._trigger_position_key:
+        if key not in self._requirements:
             return None
         # There is an ancestor operation, and isn't a requirement node (meaning we are already
         # past requirements on this position).
@@ -378,6 +387,10 @@ class OperationGraph:
             self._nodes[ancestor], RequirementNode
         ):
             return None
+        return self._add_requirement_node(key, ancestor)
+
+    def _add_requirement_node(self, key: tuple[str, ...], ancestor: int | None) -> int:
+        """Add a RequirementNode standing in for the caller op on ``key``, returning its id."""
         node_id = len(self._nodes)
         node = RequirementNode(
             node_id=node_id,
@@ -385,29 +398,11 @@ class OperationGraph:
             depends_on=[ancestor] if ancestor is not None else [],
         )
         self._nodes.append(node)
-        self._last_operation[key] = node_id
+        # A later body operation on the position must still chain onto this node,
+        # but an existing operation there stays the most recent one.
+        _ = self._last_operation.setdefault(key, node_id)
         self._requirement_nodes[key] = node
-        if key == self._trigger_position_key:
-            self._trigger_position_requirement_node_id = node_id
         return node_id
-
-    def _trigger_position_requirement_node(self) -> int:
-        """Return the trigger-position RequirementNode's id, materializing it if needed."""
-        if self._trigger_position_requirement_node_id is None:
-            node_id = len(self._nodes)
-            node = RequirementNode(
-                node_id=node_id,
-                requirement_position=self._trigger_position_key,
-                depends_on=[],
-            )
-            self._nodes.append(node)
-            # A later body operation on the trigger position must still chain
-            # onto this node, but an existing operation there stays the most
-            # recent one.
-            _ = self._last_operation.setdefault(self._trigger_position_key, node_id)
-            self._requirement_nodes[self._trigger_position_key] = node
-            self._trigger_position_requirement_node_id = node_id
-        return self._trigger_position_requirement_node_id
 
     def _surviving_child_operations(
         self, touched_child_positions: Iterable[tuple[str, ...]]

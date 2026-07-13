@@ -959,8 +959,8 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
         "test.destroy(gw::/worker::out)": ["test.create(gw::/worker::out)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
         "worker.move(in, out)": [
-            "test.destroy(gw::/worker::out)",
             "test.create(gw::/worker::in)",
+            "test.destroy(gw::/worker::out)",
         ],
     }
 
@@ -1017,8 +1017,8 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
         "test.create(gw::/worker::box)": ["test.create(gw)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
         "worker.move(in, box::/y)": [
-            "test.create(gw::/worker::box)",
             "test.create(gw::/worker::in)",
+            "test.create(gw::/worker::box)",
         ],
     }
 

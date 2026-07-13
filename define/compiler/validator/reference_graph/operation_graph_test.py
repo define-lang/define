@@ -148,14 +148,14 @@ def _trigger(
     )
 
 
-# Every graph below has no trigger position, so its trigger-position
-# RequirementNode carries the empty key: the operations with nothing else to
-# wait on depend on it.
+# Every graph below is an action triggered by position<run>, so its first node
+# stands in for the caller operation that filled that position: the operations
+# with nothing else to wait on depend on it.
 _TRIGGER_POSITION = operation_graph.RequirementNode(node_id=0, depends_on=[])
 
 
 def test_same_key_chain():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     graph.record_create(one)
     graph.record_destroy(one, [])
@@ -167,7 +167,7 @@ def test_same_key_chain():
 
 
 def test_independent_positions_do_not_depend():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     graph.record_create(one)
@@ -186,7 +186,7 @@ def test_independent_positions_do_not_depend():
 
 
 def test_child_depends_on_nearest_ancestor():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     deep = _ref("box", "inner", "deep")
@@ -202,7 +202,7 @@ def test_child_depends_on_nearest_ancestor():
 
 
 def test_move_depends_on_both_ends():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     graph.record_create(one)
@@ -217,7 +217,7 @@ def test_move_depends_on_both_ends():
 
 
 def test_move_carries_child_transitively():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     basket = _ref("basket")
@@ -239,7 +239,7 @@ def test_move_carries_child_transitively():
 
 
 def test_destroy_depends_on_touched_children():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     graph.record_create(box)
@@ -256,7 +256,7 @@ def test_destroy_depends_on_touched_children():
 
 
 def test_destroy_depends_on_emptied_child():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     graph.record_create(box)
@@ -274,7 +274,7 @@ def test_destroy_depends_on_emptied_child():
 
 
 def test_recreate_after_direct_destroy_depends_on_destroy():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     graph.record_create(one)
     graph.record_destroy(one, [])
@@ -288,7 +288,7 @@ def test_recreate_after_direct_destroy_depends_on_destroy():
 
 
 def test_destroy_depends_on_deepest_touched_descendant_only():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     deep = _ref("box", "inner", "deep")
@@ -308,7 +308,7 @@ def test_destroy_depends_on_deepest_touched_descendant_only():
 
 
 def test_move_depends_on_carried_grandchild_subtree():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     deep = _ref("box", "inner", "deep")
@@ -329,7 +329,7 @@ def test_move_depends_on_carried_grandchild_subtree():
 
 
 def test_join_moving_into_emptied_position():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     graph.record_create(one)
@@ -348,7 +348,7 @@ def test_join_moving_into_emptied_position():
 
 
 def test_rebranch_after_join():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     graph.record_create(one)
@@ -373,7 +373,7 @@ def test_rebranch_after_join():
 
 
 def test_child_refill_after_parent_destroy():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     other = _ref("box", "other")
@@ -404,7 +404,7 @@ def test_child_refill_after_parent_destroy():
 
 
 def test_empty_after_ancestor_move_refill_waits_on_the_move():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     box_child = _ref("box", "child")
     source = _ref("source")
@@ -437,7 +437,7 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move():
 
 
 def test_deep_grandchild_carried_through_two_moves():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     a = _ref("a")
     a_b = _ref("a", "b")
     a_b_c = _ref("a", "b", "c")
@@ -470,7 +470,7 @@ def test_deep_grandchild_carried_through_two_moves():
 
 
 def test_operation_records_the_actions_it_triggers():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     basket = _ref("basket")
     graph.record_create(box)
@@ -496,7 +496,7 @@ def test_operation_records_the_actions_it_triggers():
 
 
 def test_each_operation_reports_only_its_own_triggers():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     graph.record_create(one)
@@ -523,7 +523,7 @@ def test_each_operation_reports_only_its_own_triggers():
 
 
 def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     coffee = _interface_ref(brew, "coffee")
@@ -547,7 +547,7 @@ def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
 
 
 def test_guarantee_node_names_the_position_as_the_callee_does():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     trigger_position = _interface_ref(brew, "run")
@@ -588,7 +588,7 @@ def test_guarantee_node_names_the_position_as_the_callee_does():
 
 
 def test_guarantee_node_names_an_implied_position_as_the_callee_does():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     # A position the callee implies is a child name of the particle its action
@@ -615,7 +615,7 @@ def test_guarantee_node_names_an_implied_position_as_the_callee_does():
 
 
 def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     trigger_position = _interface_ref(brew, "run")
@@ -657,7 +657,7 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
 
 
 def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     coffee = _interface_ref(brew, "coffee")
@@ -687,7 +687,7 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
 
 
 def test_guarantee_overrides_an_earlier_operation():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     # The caller fills a position the callee implies on the machine, and the
@@ -719,7 +719,7 @@ def test_guarantee_overrides_an_earlier_operation():
 
 
 def test_parent_destroy_reaches_a_triggered_child():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     brew = _action_chain_under("box", "/brew")
     out = _interface_ref(brew, "out")
@@ -747,7 +747,7 @@ def test_parent_destroy_reaches_a_triggered_child():
 
 
 def test_each_guaranteed_position_gets_its_own_guarantee_node():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     coffee = _interface_ref(brew, "coffee")
@@ -790,7 +790,7 @@ def test_each_guaranteed_position_gets_its_own_guarantee_node():
 
 
 def test_a_move_can_be_the_trigger_fill():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     src = _ref("src")
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
@@ -829,7 +829,7 @@ def test_a_move_can_be_the_trigger_fill():
 
 
 def test_a_later_operation_overrides_a_guarantee():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")
     brew = _action_chain_under("machine", "/brew")
     cup = _interface_ref(brew, "cup")
@@ -864,7 +864,7 @@ def test_touched_list_order_does_not_change_edges():
     deep = _ref("box", "inner", "deep")
 
     def build(touched: list[tuple[str, ...]]) -> list[operation_graph.OperationNode]:
-        graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+        graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
         graph.record_create(box)
         graph.record_create(inner)
         graph.record_create(deep)
@@ -884,7 +884,7 @@ def test_touched_list_order_does_not_change_edges():
 
 
 def test_gap_in_touched_list_still_drops_the_shallower_operation():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     outer = _ref("outer")
     box = _ref("outer", "box")
     mid = _ref("outer", "box", "mid")
@@ -909,7 +909,7 @@ def test_gap_in_touched_list_still_drops_the_shallower_operation():
 
 
 def test_child_create_records_no_operation_for_other_keys():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     inner = _ref("box", "inner")
     box = _ref("box")
     other = _ref("other")
@@ -927,7 +927,7 @@ def test_child_create_records_no_operation_for_other_keys():
 
 
 def test_duplicate_touched_keys_and_shared_move_operation():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")
     two = _ref("two")
     holder = _ref("holder")
@@ -945,7 +945,7 @@ def test_duplicate_touched_keys_and_shared_move_operation():
 
 
 def test_wide_touched_subtree_drops_every_superseded_shallow_child():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     root = _ref("root")
     graph.record_create(root)
     child_count = 40
@@ -989,7 +989,7 @@ def test_wide_touched_subtree_drops_every_superseded_shallow_child():
 
 
 def test_last_operation_affecting_position_resolves_a_move_of_an_ancestor():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     inner = _ref("box", "inner")
     basket = _ref("basket")
@@ -1004,7 +1004,7 @@ def test_last_operation_affecting_position_resolves_a_move_of_an_ancestor():
 
 
 def test_last_operation_affecting_position_raises_for_an_unaffected_position():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
     graph.record_create(box)
     assert graph.last_operation_affecting_position(_key("box")) == 1
@@ -1017,32 +1017,34 @@ def test_last_operation_affecting_position_raises_for_an_unaffected_position():
 
 
 def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
-    graph = operation_graph.OperationGraph({_key("input")})
+    graph = operation_graph.OperationGraph({_key("input")}, _ref("run"))
     input_position = _ref("input")
     # The destroy reads a caller-filled position that no earlier body operation
     # acted on, so it waits on a RequirementNode minted at the lower id -- it
     # stands in for the earlier caller op that filled the position.
     graph.record_destroy(input_position, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.DestroyNode(node_id=1, target=input_position, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.DestroyNode(node_id=2, target=input_position, depends_on=[1]),
     ]
-    assert graph.requirement_node(_key("input")).node_id == 0
+    assert graph.requirement_node(_key("input")).node_id == 1
 
 
 def test_fill_of_empty_requirement_waits_on_a_requirement_node():
-    graph = operation_graph.OperationGraph({_key("slot")})
+    graph = operation_graph.OperationGraph({_key("slot")}, _ref("run"))
     slot = _ref("slot")
     graph.record_create(slot)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.CreateNode(node_id=1, target=slot, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
     ]
-    assert graph.requirement_node(_key("slot")).node_id == 0
+    assert graph.requirement_node(_key("slot")).node_id == 1
 
 
 def test_local_fill_with_no_requirement_waits_on_the_trigger_position_requirement():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     item = _ref("item")
     # No position requirement applies, so the create waits on the
     # trigger-position requirement alone -- the empty key, since this graph has
@@ -1085,31 +1087,33 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
 
 
 def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
-    graph = operation_graph.OperationGraph({_key("slot")})
+    graph = operation_graph.OperationGraph({_key("slot")}, _ref("run"))
     slot = _ref("slot")
     graph.record_create(slot)
     # The destroy follows an earlier body operation on the position (the
     # create), so it waits on that rather than minting a fresh requirement node.
     graph.record_destroy(slot, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.CreateNode(node_id=1, target=slot, depends_on=[0]),
-        operation_graph.DestroyNode(node_id=2, target=slot, depends_on=[1]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
+        operation_graph.DestroyNode(node_id=3, target=slot, depends_on=[2]),
     ]
-    assert graph.requirement_node(_key("slot")).node_id == 0
+    assert graph.requirement_node(_key("slot")).node_id == 1
 
 
 def test_requirement_node_attaches_to_the_nearest_requirement_ancestor():
-    graph = operation_graph.OperationGraph({_key("box")})
+    graph = operation_graph.OperationGraph({_key("box")}, _ref("run"))
     deep = _ref("box", "mid", "deep")
     # Only box is a requirement, so the intermediate positions mint no nodes of
     # their own and the create waits on box's RequirementNode.
     graph.record_create(deep)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.CreateNode(node_id=1, target=deep, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.CreateNode(node_id=2, target=deep, depends_on=[1]),
     ]
-    assert graph.requirement_node(_key("box")).node_id == 0
+    assert graph.requirement_node(_key("box")).node_id == 1
 
 
 def test_two_children_of_required_parent_share_the_parent_requirement_node():
@@ -1119,22 +1123,23 @@ def test_two_children_of_required_parent_share_the_parent_requirement_node():
     # shared: each child's own RequirementNode depends on it, so the two creates
     # transitively wait on whatever fills box.
     graph = operation_graph.OperationGraph(
-        {_key("box"), _key("box", "a"), _key("box", "b")}
+        {_key("box"), _key("box", "a"), _key("box", "b")}, _ref("run")
     )
     box_a = _ref("box", "a")
     box_b = _ref("box", "b")
     graph.record_create(box_a)
     graph.record_create(box_b)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
-        operation_graph.CreateNode(node_id=2, target=box_a, depends_on=[1]),
-        operation_graph.RequirementNode(node_id=3, depends_on=[0]),
-        operation_graph.CreateNode(node_id=4, target=box_b, depends_on=[3]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.CreateNode(node_id=3, target=box_a, depends_on=[2]),
+        operation_graph.RequirementNode(node_id=4, depends_on=[1]),
+        operation_graph.CreateNode(node_id=5, target=box_b, depends_on=[4]),
     ]
-    assert graph.requirement_node(_key("box")).node_id == 0
-    assert graph.requirement_node(_key("box", "a")).node_id == 1
-    assert graph.requirement_node(_key("box", "b")).node_id == 3
+    assert graph.requirement_node(_key("box")).node_id == 1
+    assert graph.requirement_node(_key("box", "a")).node_id == 2
+    assert graph.requirement_node(_key("box", "b")).node_id == 4
 
 
 def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
@@ -1146,19 +1151,21 @@ def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
             _key("box"),
             _key("box", "child"),
             _key("box", "child", "grandchild"),
-        }
+        },
+        _ref("run"),
     )
     grandchild = _ref("box", "child", "grandchild")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
         operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.CreateNode(node_id=3, target=grandchild, depends_on=[2]),
+        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.CreateNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
-    assert graph.requirement_node(_key("box")).node_id == 0
-    assert graph.requirement_node(_key("box", "child")).node_id == 1
-    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 2
+    assert graph.requirement_node(_key("box")).node_id == 1
+    assert graph.requirement_node(_key("box", "child")).node_id == 2
+    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 3
 
 
 def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
@@ -1170,35 +1177,40 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
             _key("box"),
             _key("box", "child"),
             _key("box", "child", "grandchild"),
-        }
+        },
+        _ref("run"),
     )
     grandchild = _ref("box", "child", "grandchild")
     graph.record_destroy(grandchild, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
         operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.DestroyNode(node_id=3, target=grandchild, depends_on=[2]),
+        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.DestroyNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
-    assert graph.requirement_node(_key("box")).node_id == 0
-    assert graph.requirement_node(_key("box", "child")).node_id == 1
-    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 2
+    assert graph.requirement_node(_key("box")).node_id == 1
+    assert graph.requirement_node(_key("box", "child")).node_id == 2
+    assert graph.requirement_node(_key("box", "child", "grandchild")).node_id == 3
 
 
 def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
     # The callee-graph shape behind the moved-in-parent integration case: inner
     # reads input::/parent (provided by a caller move that carries the child), so
     # the destroy waits on the input::/parent requirement, which waits on input.
-    graph = operation_graph.OperationGraph({_key("input"), _key("input", "parent")})
+    graph = operation_graph.OperationGraph(
+        {_key("input"), _key("input", "parent")}, _ref("run")
+    )
     parent = _ref("input", "parent")
     graph.record_destroy(parent, [])
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
-        operation_graph.DestroyNode(node_id=2, target=parent, depends_on=[1]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.DestroyNode(node_id=3, target=parent, depends_on=[2]),
     ]
-    assert graph.requirement_node(_key("input")).node_id == 0
-    assert graph.requirement_node(_key("input", "parent")).node_id == 1
+    assert graph.requirement_node(_key("input")).node_id == 1
+    assert graph.requirement_node(_key("input", "parent")).node_id == 2
 
 
 def test_implied_position_children_share_the_global_parent_requirement_node():
@@ -1210,22 +1222,24 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
             _global_key("/parent"),
             _global_key("/parent", "/child1"),
             _global_key("/parent", "/child2"),
-        }
+        },
+        _ref("run"),
     )
     child1 = _global_ref("/parent", "/child1")
     child2 = _global_ref("/parent", "/child2")
     graph.record_create(child1)
     graph.record_create(child2)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
-        operation_graph.CreateNode(node_id=2, target=child1, depends_on=[1]),
-        operation_graph.RequirementNode(node_id=3, depends_on=[0]),
-        operation_graph.CreateNode(node_id=4, target=child2, depends_on=[3]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.CreateNode(node_id=3, target=child1, depends_on=[2]),
+        operation_graph.RequirementNode(node_id=4, depends_on=[1]),
+        operation_graph.CreateNode(node_id=5, target=child2, depends_on=[4]),
     ]
-    assert graph.requirement_node(_global_key("/parent")).node_id == 0
-    assert graph.requirement_node(_global_key("/parent", "/child1")).node_id == 1
-    assert graph.requirement_node(_global_key("/parent", "/child2")).node_id == 3
+    assert graph.requirement_node(_global_key("/parent")).node_id == 1
+    assert graph.requirement_node(_global_key("/parent", "/child1")).node_id == 2
+    assert graph.requirement_node(_global_key("/parent", "/child2")).node_id == 4
 
 
 def test_move_joins_an_in_body_source_with_a_requirement_target():
@@ -1235,7 +1249,7 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     # caller-controlled empty-requirement <dest> (Fill Rule, no in-body op -> a
     # RequirementNode). This is the shape a real /test produces for
     # `create <src>; move <src> to <dest>` with <dest> an empty-by-default guarantee.
-    graph = operation_graph.OperationGraph({_key("dest")})
+    graph = operation_graph.OperationGraph({_key("dest")}, _ref("run"))
     src = _ref("src")
     dest = _ref("dest")
     graph.record_create(src)
@@ -1258,19 +1272,21 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
             _global_key("/parent"),
             _global_key("/parent", "/child"),
             _global_key("/parent", "/child", "/grandchild1"),
-        }
+        },
+        _ref("run"),
     )
     grandchild = _global_ref("/parent", "/child", "/grandchild1")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[0]),
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
         operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.CreateNode(node_id=3, target=grandchild, depends_on=[2]),
+        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.CreateNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
-    assert graph.requirement_node(_global_key("/parent")).node_id == 0
-    assert graph.requirement_node(_global_key("/parent", "/child")).node_id == 1
+    assert graph.requirement_node(_global_key("/parent")).node_id == 1
+    assert graph.requirement_node(_global_key("/parent", "/child")).node_id == 2
     assert (
         graph.requirement_node(_global_key("/parent", "/child", "/grandchild1")).node_id
-        == 2
+        == 3
     )
