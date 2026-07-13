@@ -49,7 +49,8 @@ class _OperationGraphFlattener:
         )
         local_labels: dict[int, str | None] = {}
         # Keyed by (trigger operation id, callee action), for resolving the
-        # guarantee nodes that stand in for those callees' outputs.
+        # guarantee nodes that stand in for the positions those callees
+        # guarantee.
         callee_splices: dict[tuple[int, str], _CalleeSplice] = {}
         # (callee full typed name, callee requirement key) -> label of the
         # operation that satisfies it, accumulated as each operation is passed.
@@ -66,10 +67,10 @@ class _OperationGraphFlattener:
                     label = next((local_labels[dep] for dep in node.depends_on), None)
                 local_labels[node.node_id] = label
             elif isinstance(node, operation_graph.GuaranteeNode):
-                # A callee output: splice the callee (once) and render its own
-                # split point.
+                # A position the callee guarantees: splice the callee (once)
+                # and render the callee's final operation on that position.
                 self._splice_callee(node, outgoing, callee_splices, dependencies)
-                local_labels[node.node_id] = self._split_point_label(
+                local_labels[node.node_id] = self._final_operation_label(
                     node, callee_splices
                 )
             else:
@@ -117,24 +118,24 @@ class _OperationGraphFlattener:
             callee_labels,
         )
 
-    def _split_point_label(
+    def _final_operation_label(
         self,
         node: operation_graph.GuaranteeNode,
         callee_splices: dict[tuple[int, str], _CalleeSplice],
     ) -> str:
         trigger_node_id = node.depends_on[0]
         callee_graph, callee_labels = callee_splices[(trigger_node_id, node.action)]
-        # A guaranteed output the callee only operated on by moving an ancestor
+        # A guaranteed position the callee only affected by moving an ancestor
         # resolves to that move.
-        split_point = callee_graph.last_operation_affecting_position(
-            node.output_position
+        final_operation = callee_graph.last_operation_affecting_position(
+            node.guaranteed_position
         )
-        split_point_label = callee_labels[split_point]
-        if split_point_label is None:
+        final_operation_label = callee_labels[final_operation]
+        if final_operation_label is None:
             raise ValueError(
-                f"unresolved split point for {node.output_position} in {node.action}"
+                f"unresolved final operation on {node.guaranteed_position} in {node.action}"
             )
-        return split_point_label
+        return final_operation_label
 
     def _operation_label(
         self, action_name: str, node: operation_graph.OperationNode
@@ -227,9 +228,10 @@ def operation_dependencies(
     """Map each operation of ``root_action`` (and the actions it triggers) to what it waits on.
 
     A triggered action is spliced in at the operation that fires it: its
-    operations are rendered under its own action prefix and its roots wait on the
-    firing operation. A caller operation that reads a triggered action's output
-    waits on that callee's own split point. Every operation is keyed once
-    (repeats of a label are suffixed ``#2``, ``#3``) and maps to what it waits on.
+    operations are rendered under its own action prefix, and an operation with
+    nothing else to wait on waits on the firing operation. A caller operation
+    that reads a position a triggered action guarantees waits on that callee's
+    final operation on the position. Every operation is keyed once (repeats of a
+    label are suffixed ``#2``, ``#3``) and maps to what it waits on.
     """
     return _OperationGraphFlattener(program_result).flatten(root_action)

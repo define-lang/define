@@ -4,9 +4,9 @@ Every create, move, and destroy an action performs becomes a node. Edges encode
 the spec's dependency rules for position operations (the section "Deterministic
 Automatic Concurrency" in the spec).
 
-A create or move that fires a triggered action is also tagged with that action,
-so codegen can expand the operation into the callee's own graph and splice each
-of its outputs' split points in for the caller operations that depend on them.
+The graph also holds nodes that represent requirements and guarantees, to allow
+splicing graphs together (connecting a caller's operation to the actual operations
+it triggers in the callee).
 
 It is worth understanding the difference between this and the validator's other
 mechanisms that track particle states, requirements, and guarantees: this data
@@ -19,10 +19,10 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass, field
 
+from define.compiler import ast
+
 if typing.TYPE_CHECKING:
     from collections.abc import Container, Iterable, Sequence
-
-    from define.compiler import ast
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,19 +89,19 @@ class DestroyNode(PositionOperationNode):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GuaranteeNode(OperationNode):
-    """A triggered action's output, produced inside the callee.
+    """A position a triggered action guarantees, which the callee itself operates on.
 
     This stands in for an operation whose details live in the callee's own graph.
     ``depends_on`` holds the operation that fired the trigger; codegen resolves
-    this node to the callee's last operation on ``output_position`` when it
-    splices ``action`` in at that trigger. Caller operations that read the output
-    depend on this node with ordinary edges.
+    this node to the callee's last operation on ``guaranteed_position`` when it
+    splices ``action`` in at that trigger. Caller operations that read the
+    position depend on this node with ordinary edges.
     """
 
     # The triggered action's full typed name (the key of the callee's graph).
     action: str
-    # The callee's own position key for the output.
-    output_position: tuple[str, ...]
+    # The guaranteed position, by the callee's own key for it.
+    guaranteed_position: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -487,23 +487,25 @@ class OperationGraph:
     def record_guarantees(
         self,
         trigger_node_id: int,
-        action: str,
-        outputs: Iterable[tuple[tuple[str, ...], tuple[str, ...]]],
+        callee_chain: tuple[str, ...],
+        guaranteed_keys: Iterable[tuple[str, ...]],
     ):
-        """Record a triggered action's outputs as guarantee nodes hanging off the trigger.
+        """Record the positions the trigger of ``callee_chain`` guarantees, as nodes hanging off it.
 
-        Each ``outputs`` pair is a contracted position's absolute key and the
-        callee's own key for it. The absolute position's last operation becomes a
-        new guarantee node, so caller operations that read it depend on the
-        callee's split point rather than on the trigger operation itself.
+        Each key in ``guaranteed_keys`` is a contracted position's absolute key.
+        That position's last operation becomes a new guarantee node, so caller
+        operations that read it depend on the callee's final operation on it
+        rather than on the trigger operation itself. The node names the position
+        as the callee's own graph names it, including a position the callee in
+        turn took from an action it triggered.
         """
-        for absolute_key, output_position in outputs:
+        for absolute_key in guaranteed_keys:
             node_id = len(self._nodes)
             self._nodes.append(
                 GuaranteeNode(
                     node_id=node_id,
-                    action=action,
-                    output_position=output_position,
+                    action=callee_chain[-1],
+                    guaranteed_position=ast.chain_in_callee(callee_chain, absolute_key),
                     depends_on=[trigger_node_id],
                 )
             )

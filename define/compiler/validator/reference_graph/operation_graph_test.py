@@ -29,11 +29,58 @@ def _ref(*names: str) -> ast.PositionReference:
     )
 
 
-def _action_chain(path: str) -> ast.ActionReference:
+def _action_chain_under(position_name: str, path: str) -> ast.ActionReference:
+    """Return the chain of the action ``path`` on the particle in ``position_name``."""
     return ast.ActionReference(
         typed_names=(
+            ast.LocalTypedNameReference(
+                name_type=ast.NameType.POSITION,
+                name_content=ast.LocalNameContent(name=position_name, location=_LOC),
+                location=_LOC,
+            ),
             ast.GlobalTypedNameReference(
                 name_type=ast.NameType.ACTION,
+                name_content=ast.ReferenceGlobalNameContent(
+                    fqun=None,
+                    path=ast.GlobalPathName(name=path, location=_LOC),
+                    location=_LOC,
+                ),
+                enclosing_fqun=_FQUN,
+                location=_LOC,
+            ),
+        ),
+        location=_LOC,
+    )
+
+
+def _interface_ref(
+    action_chain: ast.ActionReference, name: str
+) -> ast.PositionReference:
+    """Return a reference to the interface position ``name`` of ``action_chain``."""
+    return ast.PositionReference(
+        typed_names=(
+            *action_chain.typed_names,
+            ast.LocalTypedNameReference(
+                name_type=ast.NameType.POSITION,
+                name_content=ast.LocalNameContent(name=name, location=_LOC),
+                location=_LOC,
+            ),
+        ),
+        location=_LOC,
+    )
+
+
+def _implied_ref(position_name: str, path: str) -> ast.PositionReference:
+    """Return a reference to the position ``path`` that an action implies on the particle in ``position_name``."""
+    return ast.PositionReference(
+        typed_names=(
+            ast.LocalTypedNameReference(
+                name_type=ast.NameType.POSITION,
+                name_content=ast.LocalNameContent(name=position_name, location=_LOC),
+                location=_LOC,
+            ),
+            ast.GlobalTypedNameReference(
+                name_type=ast.NameType.POSITION,
                 name_content=ast.ReferenceGlobalNameContent(
                     fqun=None,
                     path=ast.GlobalPathName(name=path, location=_LOC),
@@ -76,26 +123,22 @@ def _global_key(*paths: str) -> tuple[str, ...]:
 
 def _trigger(
     graph: operation_graph.OperationGraph,
+    action_chain: ast.ActionReference,
     acting_on_position: ast.PositionReference,
-    action_path: str,
-    *output_keys: tuple[str, ...],
-) -> ast.ActionReference:
-    """Fire ``action_path`` from the operation on ``acting_on_position``, guaranteeing ``output_keys``.
+    *guaranteed_keys: tuple[str, ...],
+) -> None:
+    """Fire ``action_chain`` from the operation on ``acting_on_position``, guaranteeing ``guaranteed_keys``.
 
-    Each output's callee-local key is taken to equal its absolute key, which is
-    all these synthetic graphs (no real callee) need. Returns the action chain
-    the trigger was recorded with.
+    ``guaranteed_keys`` are absolute keys, so each is either an interface position
+    of the triggered action or a position it implies on the particle the action
+    is assigned to.
     """
-    action_chain = _action_chain(action_path)
     trigger_node_id = graph.record_action_trigger(
         action_chain, acting_on_position, [], []
     )
     graph.record_guarantees(
-        trigger_node_id,
-        action_chain.typed_names[-1].full_typed_name,
-        [(key, key) for key in output_keys],
+        trigger_node_id, action_chain.canonical_chained_name_tuple, guaranteed_keys
     )
-    return action_chain
 
 
 # Every graph below has no trigger position, so its trigger-position
@@ -427,12 +470,11 @@ def test_operation_records_the_actions_it_triggers():
     basket = _ref("basket")
     graph.record_create(box)
     graph.record_create(basket)
-    brew = _action_chain("/brew")
-    grind = _action_chain("/grind")
+    # Two constructors of the box's particle: creating it fires both.
+    brew = _action_chain_under("box", "/brew")
+    grind = _action_chain_under("box", "/grind")
     _ = graph.record_action_trigger(brew, box, [], [])
     _ = graph.record_action_trigger(grind, box, [], [])
-    # The create of box fires both actions; the create of basket fires nothing,
-    # so it satisfies nothing.
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
         operation_graph.CreateNode(
@@ -454,8 +496,8 @@ def test_each_operation_reports_only_its_own_triggers():
     two = _ref("two")
     graph.record_create(one)
     graph.record_create(two)
-    brew = _action_chain("/brew")
-    grind = _action_chain("/grind")
+    brew = _action_chain_under("one", "/brew")
+    grind = _action_chain_under("two", "/grind")
     _ = graph.record_action_trigger(brew, one, [], [])
     _ = graph.record_action_trigger(grind, two, [], [])
     assert list(graph.nodes) == [
@@ -478,8 +520,10 @@ def test_each_operation_reports_only_its_own_triggers():
 def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    coffee = _interface_ref(brew, "coffee")
     graph.record_create(machine)
-    brew = _trigger(graph, machine, "/brew", _key("machine", "coffee"))
+    _trigger(graph, brew, machine, coffee.canonical_chained_name_tuple)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
         operation_graph.CreateNode(
@@ -491,27 +535,61 @@ def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
         operation_graph.GuaranteeNode(
             node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("machine", "coffee"),
+            guaranteed_position=("position<coffee>",),
             depends_on=[1],
         ),
     ]
 
 
-def test_guarantee_node_carries_the_callee_action_and_output_position():
+def test_guarantee_node_names_the_position_as_the_callee_does():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
     graph.record_create(machine)
-    brew = _action_chain("/brew")
-    _ = graph.record_action_trigger(brew, machine, [], [])
-    # The callee's own key for the output (``position<coffee>``) differs from
-    # where it lands in the caller (``machine::coffee``); the node keeps the
-    # callee's key so codegen can find the last operation on it in the callee's
-    # graph.
+    graph.record_create(trigger_position)
+    # The callee's interface positions are child names of its action. The node
+    # names the position as the callee's own graph does (``position<coffee>``),
+    # not by where it lands in this caller (``machine::/brew::coffee``), so
+    # codegen can find the last operation on it in that graph.
+    trigger_node_id = graph.record_action_trigger(brew, trigger_position, [], [])
     graph.record_guarantees(
-        1,
-        brew.typed_names[-1].full_typed_name,
-        [(_key("machine", "coffee"), ("position<coffee>",))],
+        trigger_node_id,
+        brew.canonical_chained_name_tuple,
+        [
+            (*brew.canonical_chained_name_tuple, "position<coffee>"),
+        ],
     )
+    assert list(graph.nodes) == [
+        _TRIGGER_POSITION,
+        operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
+        operation_graph.CreateNode(
+            node_id=2,
+            target=trigger_position,
+            depends_on=[1],
+            satisfies=[
+                operation_graph.RequirementSatisfaction(brew, ("position<run>",))
+            ],
+        ),
+        operation_graph.GuaranteeNode(
+            node_id=3,
+            action=brew.typed_names[-1].full_typed_name,
+            guaranteed_position=("position<coffee>",),
+            depends_on=[2],
+        ),
+    ]
+
+
+def test_guarantee_node_names_an_implied_position_as_the_callee_does():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    # A position the callee implies is a child name of the particle its action
+    # is assigned to -- the action's parent position -- and the callee names it
+    # by the position's global name alone.
+    grounds = _implied_ref("machine", "/grounds")
+    graph.record_create(machine)
+    _trigger(graph, brew, machine, grounds.canonical_chained_name_tuple)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
         operation_graph.CreateNode(
@@ -523,8 +601,48 @@ def test_guarantee_node_carries_the_callee_action_and_output_position():
         operation_graph.GuaranteeNode(
             node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=("position<coffee>",),
+            guaranteed_position=("position<my.domain.com:my_lib:/grounds>",),
             depends_on=[1],
+        ),
+    ]
+
+
+def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(machine)
+    graph.record_create(trigger_position)
+    # A position the callee itself took from an action it triggered still reaches
+    # this caller through the callee's own guarantees, so the node names it the
+    # way the callee does: by the action the caller actually triggered, with the
+    # key the callee's own graph knows it as.
+    grinder = ("position<grinder>", "action<my.domain.com:my_lib:/grind>")
+    trigger_node_id = graph.record_action_trigger(brew, trigger_position, [], [])
+    graph.record_guarantees(
+        trigger_node_id,
+        brew.canonical_chained_name_tuple,
+        [
+            (*brew.canonical_chained_name_tuple, *grinder, "position<grounds>"),
+        ],
+    )
+    assert list(graph.nodes) == [
+        _TRIGGER_POSITION,
+        operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
+        operation_graph.CreateNode(
+            node_id=2,
+            target=trigger_position,
+            depends_on=[1],
+            satisfies=[
+                operation_graph.RequirementSatisfaction(brew, ("position<run>",))
+            ],
+        ),
+        operation_graph.GuaranteeNode(
+            node_id=3,
+            action=brew.typed_names[-1].full_typed_name,
+            guaranteed_position=(*grinder, "position<grounds>"),
+            depends_on=[2],
         ),
     ]
 
@@ -532,9 +650,10 @@ def test_guarantee_node_carries_the_callee_action_and_output_position():
 def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     machine = _ref("machine")
-    coffee = _ref("machine", "coffee")
+    brew = _action_chain_under("machine", "/brew")
+    coffee = _interface_ref(brew, "coffee")
     graph.record_create(machine)
-    brew = _trigger(graph, machine, "/brew", _key("machine", "coffee"))
+    _trigger(graph, brew, machine, coffee.canonical_chained_name_tuple)
     # The consumer chains to the guarantee node (the most recent operation on
     # its ancestor chain), not to the trigger directly. The guarantee node
     # already waits on the machine, so the consumer needs no separate ancestor
@@ -551,7 +670,7 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
         operation_graph.GuaranteeNode(
             node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("machine", "coffee"),
+            guaranteed_position=("position<coffee>",),
             depends_on=[1],
         ),
         operation_graph.DestroyNode(node_id=3, target=coffee, depends_on=[2]),
@@ -560,72 +679,79 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
 
 def test_guarantee_overrides_an_earlier_operation():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
-    cup = _ref("cup")
     machine = _ref("machine")
-    graph.record_create(cup)
+    brew = _action_chain_under("machine", "/brew")
+    # The caller fills a position the callee implies on the machine, and the
+    # callee's guarantee re-fills it.
+    grounds = _implied_ref("machine", "/grounds")
     graph.record_create(machine)
-    brew = _trigger(graph, machine, "/brew", _key("cup"))
+    graph.record_create(grounds)
+    _trigger(graph, brew, machine, grounds.canonical_chained_name_tuple)
     # A later operation chains to the guarantee node, not the stale earlier
     # create.
-    graph.record_destroy(cup, [])
+    graph.record_destroy(grounds, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.CreateNode(node_id=1, target=cup, depends_on=[0]),
         operation_graph.CreateNode(
-            node_id=2,
+            node_id=1,
             target=machine,
             depends_on=[0],
             satisfies=[operation_graph.RequirementSatisfaction(brew, ())],
         ),
+        operation_graph.CreateNode(node_id=2, target=grounds, depends_on=[1]),
         operation_graph.GuaranteeNode(
             node_id=3,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("cup"),
-            depends_on=[2],
+            guaranteed_position=("position<my.domain.com:my_lib:/grounds>",),
+            depends_on=[1],
         ),
-        operation_graph.DestroyNode(node_id=4, target=cup, depends_on=[3]),
+        operation_graph.DestroyNode(node_id=4, target=grounds, depends_on=[3]),
     ]
 
 
 def test_parent_destroy_reaches_a_triggered_child():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     box = _ref("box")
-    gadget = _ref("gadget")
+    brew = _action_chain_under("box", "/brew")
+    out = _interface_ref(brew, "out")
     graph.record_create(box)
-    graph.record_create(gadget)
-    brew = _trigger(graph, gadget, "/brew", _key("box", "out"))
+    _trigger(graph, brew, box, out.canonical_chained_name_tuple)
     # The destroy waits, via the Child Rule, on the guarantee node that filled
-    # its child; that node already reaches the box's create.
-    graph.record_destroy(box, [_key("box", "out")])
+    # the box's child position; that node already reaches the box's create.
+    graph.record_destroy(box, [out.canonical_chained_name_tuple])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(
-            node_id=2,
-            target=gadget,
+            node_id=1,
+            target=box,
             depends_on=[0],
             satisfies=[operation_graph.RequirementSatisfaction(brew, ())],
         ),
         operation_graph.GuaranteeNode(
-            node_id=3,
+            node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("box", "out"),
-            depends_on=[2],
+            guaranteed_position=("position<out>",),
+            depends_on=[1],
         ),
-        operation_graph.DestroyNode(node_id=4, target=box, depends_on=[3]),
+        operation_graph.DestroyNode(node_id=3, target=box, depends_on=[2]),
     ]
 
 
-def test_triggered_outputs_get_separate_guarantee_nodes():
+def test_each_guaranteed_position_gets_its_own_guarantee_node():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     machine = _ref("machine")
-    coffee = _ref("machine", "coffee")
-    puck = _ref("machine", "puck")
+    brew = _action_chain_under("machine", "/brew")
+    coffee = _interface_ref(brew, "coffee")
+    puck = _interface_ref(brew, "puck")
     graph.record_create(machine)
-    brew = _trigger(
-        graph, machine, "/brew", _key("machine", "coffee"), _key("machine", "puck")
+    _trigger(
+        graph,
+        brew,
+        machine,
+        coffee.canonical_chained_name_tuple,
+        puck.canonical_chained_name_tuple,
     )
-    # Each consumer hangs off its own output's guarantee node, the most recent
+    # Each consumer hangs off its own position's guarantee node, the most recent
     # operation on its ancestor chain, which already waits on the machine.
     graph.record_destroy(coffee, [])
     graph.record_destroy(puck, [])
@@ -640,13 +766,13 @@ def test_triggered_outputs_get_separate_guarantee_nodes():
         operation_graph.GuaranteeNode(
             node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("machine", "coffee"),
+            guaranteed_position=("position<coffee>",),
             depends_on=[1],
         ),
         operation_graph.GuaranteeNode(
             node_id=3,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("machine", "puck"),
+            guaranteed_position=("position<puck>",),
             depends_on=[1],
         ),
         operation_graph.DestroyNode(node_id=4, target=coffee, depends_on=[2]),
@@ -657,40 +783,47 @@ def test_triggered_outputs_get_separate_guarantee_nodes():
 def test_a_move_can_be_the_trigger_fill():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     src = _ref("src")
-    slot = _ref("slot")
-    out = _ref("slot", "out")
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
+    out = _interface_ref(brew, "out")
+    graph.record_create(machine)
     graph.record_create(src)
     # The fill that fires the trigger is a move, so the move carries the
     # satisfaction and the create that only supplied the particle carries none.
-    graph.record_move(src, slot, [])
-    brew = _trigger(graph, slot, "/brew", _key("slot", "out"))
+    graph.record_move(src, trigger_position, [])
+    _trigger(graph, brew, trigger_position, out.canonical_chained_name_tuple)
     graph.record_destroy(out, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.CreateNode(node_id=1, target=src, depends_on=[0]),
+        operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
+        operation_graph.CreateNode(node_id=2, target=src, depends_on=[0]),
         operation_graph.MoveNode(
-            node_id=2,
+            node_id=3,
             source=src,
-            target=slot,
-            depends_on=[1],
-            satisfies=[operation_graph.RequirementSatisfaction(brew, ())],
+            target=trigger_position,
+            depends_on=[1, 2],
+            satisfies=[
+                operation_graph.RequirementSatisfaction(brew, ("position<run>",))
+            ],
         ),
         operation_graph.GuaranteeNode(
-            node_id=3,
+            node_id=4,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("slot", "out"),
-            depends_on=[2],
+            guaranteed_position=("position<out>",),
+            depends_on=[3],
         ),
-        operation_graph.DestroyNode(node_id=4, target=out, depends_on=[3]),
+        operation_graph.DestroyNode(node_id=5, target=out, depends_on=[4]),
     ]
 
 
 def test_a_later_operation_overrides_a_guarantee():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS)
     machine = _ref("machine")
-    cup = _ref("cup")
+    brew = _action_chain_under("machine", "/brew")
+    cup = _interface_ref(brew, "cup")
     graph.record_create(machine)
-    brew = _trigger(graph, machine, "/brew", _key("cup"))
+    _trigger(graph, brew, machine, cup.canonical_chained_name_tuple)
     # The re-fill chains to the guarantee node; a later consumer chains to the
     # re-fill.
     graph.record_create(cup)
@@ -706,7 +839,7 @@ def test_a_later_operation_overrides_a_guarantee():
         operation_graph.GuaranteeNode(
             node_id=2,
             action=brew.typed_names[-1].full_typed_name,
-            output_position=_key("cup"),
+            guaranteed_position=("position<cup>",),
             depends_on=[1],
         ),
         operation_graph.CreateNode(node_id=3, target=cup, depends_on=[2]),
@@ -866,7 +999,8 @@ def test_last_operation_affecting_position_raises_for_an_unaffected_position():
     assert graph.last_operation_affecting_position(_key("box")) == 1
     with pytest.raises(KeyError):
         _ = graph.last_operation_affecting_position(_key("other"))
-    # A create makes exactly one particle; the positions inside it start empty.
+    # A create makes exactly one particle; that particle's child positions start
+    # empty.
     with pytest.raises(KeyError):
         _ = graph.last_operation_affecting_position(_key("box", "inner"))
 
@@ -1117,7 +1251,7 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     # the in-body-created <src> (Empty Rule -> the create) and fills the
     # caller-controlled empty-requirement <dest> (Fill Rule, no in-body op -> a
     # RequirementNode). This is the shape a real /test produces for
-    # `create <src>; move <src> to <dest>` with <dest> an empty-by-default output.
+    # `create <src>; move <src> to <dest>` with <dest> an empty-by-default guarantee.
     graph = operation_graph.OperationGraph({_key("dest")})
     src = _ref("src")
     dest = _ref("dest")

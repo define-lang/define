@@ -657,6 +657,49 @@ class TestChainParentPosition:
         )
 
 
+class TestChainInCallee:
+    def test_interface_position_is_a_child_of_the_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        caller = position_reference_for(
+            "position<box>::action</b>"
+        ).canonical_chained_name_tuple
+        absolute = position_reference_for(
+            "position<box>::action</b>::position<iface>"
+        ).canonical_chained_name_tuple
+        assert ast.chain_in_callee(caller, absolute) == ("position<iface>",)
+
+    def test_implied_position_is_a_child_of_the_actions_parent_position(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        caller = position_reference_for(
+            "position<box>::action</b>"
+        ).canonical_chained_name_tuple
+        absolute = position_reference_for(
+            "position<box>::position</x>"
+        ).canonical_chained_name_tuple
+        assert ast.chain_in_callee(caller, absolute) == (
+            "position<my.domain.com:my_lib:/x>",
+        )
+
+    def test_inverts_chain_in_caller(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        caller = position_reference_for(
+            "position<box>::action</b>"
+        ).canonical_chained_name_tuple
+        for source in (
+            "position<iface>",
+            "position</x>",
+            "position</x>::position</y>",
+            "action</c>::position<iface>",
+        ):
+            local = position_reference_for(source).canonical_chained_name_tuple
+            assert (
+                ast.chain_in_callee(caller, ast.chain_in_caller(caller, local)) == local
+            )
+
+
 class TestInCaller:
     def test_implied_quality_drops_action_segment(
         self, position_reference_for: PositionReferenceFor

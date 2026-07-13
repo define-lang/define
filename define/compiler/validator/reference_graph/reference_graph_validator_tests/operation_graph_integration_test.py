@@ -21,10 +21,12 @@ _ZERO_GUARANTEE_CALLEES_NOT_RENDERED = (
     " it, so its operations are missing from the rendered graph"
 )
 
-_NESTED_OUTPUTS_NOT_RESOLVED = (
-    "a GuaranteeNode for an output produced deeper than the direct callee"
-    " names the deeper action, so it resolves outside the trigger that"
-    " produced it"
+_UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED = (
+    "an action that never touches a position it passes along from an action it"
+    " triggers has no guarantee node for it in its own graph, only the"
+    " requirement node at the same key, so a consumer resolves the position to"
+    " its state before the trigger rather than to the nested action's final"
+    " operation on it"
 )
 
 
@@ -2326,8 +2328,7 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_NESTED_OUTPUTS_NOT_RESOLVED)
-def test_caller_consumes_a_nested_output(
+def test_caller_consumes_a_nested_guarantee(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -2394,8 +2395,8 @@ def test_caller_consumes_a_nested_output(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_NESTED_OUTPUTS_NOT_RESOLVED)
-def test_caller_consumes_an_output_nested_two_interfaces_down(
+@pytest.mark.xfail(strict=True, reason=_UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED)
+def test_caller_consumes_a_guarantee_from_two_triggers_down(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -2465,10 +2466,10 @@ def test_caller_consumes_an_output_nested_two_interfaces_down(
     )
     assert_no_errors(result.program_result)
     # outer never touches inner's <out>, so outer's graph has no guarantee node
-    # for it -- only the requirement-side pass-through at the same key. The
-    # guarantee reaches test straight from outer's contract references, and
-    # test's move resolves across outer's trigger of middle to inner's final
-    # operation on <out>, inside the instance chain test triggered.
+    # for it -- only the requirement node at the same key. The guarantee reaches
+    # test straight from outer's contract references, and test's move resolves
+    # across outer's trigger of middle to inner's final operation on <out>, in
+    # the chain of triggers test fired.
     assert operation_dependencies(result.program_result, _TEST) == {
         "test.create(box)": [],
         "test.create(box::/outer::gw)": ["test.create(box)"],

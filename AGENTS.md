@@ -87,9 +87,11 @@ See [define/spec/spec.md] for the language specification.
   invent words for Define language concepts. Do not use industry-standard terms
   for Define concepts when Define has its own word for that concept.
 - Never use these words for any Define concept: anchor, root, rooted, re-rooted,
-  carried, split point, establishing, frame, inside, enclosing.
+  carried, split point, establishing, frame, inside, enclosing, output, slot.
 - Example: For `in_caller`, say "from the caller's perspective", never
   "re-rooted into the caller's frame"
+- Positions are not "nested", "enclosed", "inside", "contained" or "containers"
+  of other positions. They are parent names and child names, as the spec says.
 - Do not use abbreviations or acronyms for Define concepts unless the spec uses
   them. For example, do not use "PCB" as an abbreviation for "Position
   Constraint Block."

@@ -329,6 +329,21 @@ def chain_in_caller(
     return caller_chain + local_chain
 
 
+def chain_in_callee(
+    caller_chain: ChainedNameTuple, absolute_chain: ChainedNameTuple
+) -> ChainedNameTuple:
+    """Return a caller's chain from the perspective of the callee it triggers via ``caller_chain``.
+
+    The inverse of ``chain_in_caller``: an interface position of the callee is a
+    child name of its action, while a position the action implies is a child
+    name of the particle the action is assigned to, which is the action's parent
+    position.
+    """
+    if absolute_chain[: len(caller_chain)] == caller_chain:
+        return absolute_chain[len(caller_chain) :]
+    return absolute_chain[len(caller_chain) - 1 :]
+
+
 _ACTION_TYPED_NAME_PREFIX: Final = f"{NameType.ACTION.value}<"
 
 

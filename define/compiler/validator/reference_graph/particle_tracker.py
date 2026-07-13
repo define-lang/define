@@ -1,5 +1,10 @@
 """Tracks particle occupancy for positions within an action block."""
 
+# TODO: The comments and docstrings in this file describe positions with words
+# this project bans for Define concepts -- "inside", "under", "nested",
+# "shallower" and "deeper" -- where the spec says parent name and child name.
+# Rewrite them in the spec's terms.
+
 from __future__ import annotations
 
 import dataclasses
@@ -120,6 +125,11 @@ class _PendingGuarantee:
     # Nested children inherit it verbatim (the whole callee subtree happens, from
     # the caller's view, at the one trigger node).
     trigger_node_id: int
+    # DLP 44: the chain of the action the caller directly triggered. The
+    # operation graph names every position this trigger guarantees by the name
+    # that action gives it, since it is the only action the caller triggered, so
+    # nested children inherit this chain verbatim, like the trigger node.
+    trigger_chain: tuple[str, ...]
     # Call-chain depth from the directly-applied contract: its own guarantees
     # are depth 0; each nested guarantee is one deeper. Within a single trigger
     # (same sequence) a shallower guarantee outranks a deeper one it resolved.
@@ -137,7 +147,7 @@ class _PendingGuarantee:
         return self.parent_chain[:-1]
 
     def key_for(self, name: tuple[str, ...]) -> tuple[str, ...]:
-        """Re-root a guarantee's local name to its absolute key under this guarantee."""
+        """Return the absolute key for a guarantee this action names ``name``."""
         return ast.chain_in_caller(self.parent_chain, name)
 
 
@@ -875,6 +885,7 @@ class ParticleTracker:
             guarantees,
             self._body_operation_number,
             trigger_node_id,
+            trigger_chain=action_chain_key,
         )
         self._apply_pending_guarantee(callee_guarantees)
         return action_contract.NestedGuarantees(
@@ -883,13 +894,13 @@ class ParticleTracker:
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
         """Apply a callee's own guarantees and record each key it wrote against the trigger; prefix its own nested guarantees one position deeper."""
-        touched_positions = self._update_store_from_callee_direct_guarantees(
+        touched_keys = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
         self._operation_graph.record_guarantees(
             pending_guarantee.trigger_node_id,
-            pending_guarantee.parent_chain[-1],
-            touched_positions,
+            pending_guarantee.trigger_chain,
+            touched_keys,
         )
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
@@ -898,7 +909,8 @@ class ParticleTracker:
                 child.guarantees,
                 pending_guarantee.body_operation_number,
                 pending_guarantee.trigger_node_id,
-                pending_guarantee.call_chain_depth + 1,
+                trigger_chain=pending_guarantee.trigger_chain,
+                call_chain_depth=pending_guarantee.call_chain_depth + 1,
             )
             self._pending.add(child_nested_guarantee)
 
@@ -915,10 +927,10 @@ class ParticleTracker:
 
     def _update_store_from_callee_direct_guarantees(
         self, pending_guarantee: _PendingGuarantee
-    ) -> list[tuple[tuple[str, ...], tuple[str, ...]]]:
-        """Apply a callee's own guarantees; return the keys it wrote as (absolute, callee-local) pairs, in order."""
+    ) -> list[tuple[str, ...]]:
+        """Apply a callee's own guarantees; return the absolute keys it wrote, in order."""
         guarantees = pending_guarantee.guarantees.own
-        touched_positions: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+        touched_keys: list[tuple[str, ...]] = []
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
@@ -961,7 +973,7 @@ class ParticleTracker:
                 ),
             )
 
-            touched_positions.append((key, name))
+            touched_keys.append(key)
 
             overwrites_subtree = key in origin_keys or (
                 key in self._store.state
@@ -1017,7 +1029,7 @@ class ParticleTracker:
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
-        return touched_positions
+        return touched_keys
 
     def _save_origins_at_or_below(
         self,
