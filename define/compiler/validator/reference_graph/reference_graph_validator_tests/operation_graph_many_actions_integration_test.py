@@ -76,7 +76,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     # /middle (which never touches it) to /test, so it waits on the /test fill that
     # satisfies it -- reached through the RequirementNode /middle materializes for
     # the propagated requirement.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -145,7 +145,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
     # A move that lands the particle two call levels up satisfies the propagated
     # requirement, so inner.destroy(slot) must wait on that move rather than on
     # /middle's trigger of /inner.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(source)": [],
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
@@ -636,7 +636,7 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     # /middle, which triggers /inner, which fills its children. Each child fill
     # needs only /parent present, so it should wait on /test's fill of /parent --
     # two call levels up -- not on /middle's trigger of /inner.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(/parent)": [],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/inner::trigger_pos)": ["test.create(/middle::trigger_pos)"],
@@ -714,7 +714,7 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     # /test fills /parent and /parent::/child; /inner (two levels down) fills the
     # grandchildren. Each grandchild fill needs /parent::/child present, so it
     # should wait on /test's fill of /parent::/child, not on /middle's trigger.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],

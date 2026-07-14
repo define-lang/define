@@ -269,10 +269,23 @@ class _SplicedAction:
             label = self._label(node)
             if label in table:
                 raise ValueError(f"two operations are labeled {label}")
-            table[label] = self._dependency_labels(node.depends_on)
+            table[label] = self._operation_dependency_labels(node)
         # Triggering an action splices the operations of that action in here.
         for trigger in self._graph.triggers:
             self._spliced_callee(trigger).render(table)
+
+    def _operation_dependency_labels(
+        self, node: operation_graph.PositionOperationNode
+    ) -> list[str]:
+        """Return the labels of the operations ``node`` waits on."""
+        dependency_labels = self._dependency_labels(node.depends_on)
+        if dependency_labels or self.trigger is None or self.spliced_by is None:
+            return dependency_labels
+        # An operation with nothing else to wait on still only happens because the
+        # action was triggered, so it waits on the operation that triggered it.
+        return self.spliced_by._node_labels(
+            self.spliced_by._graph.nodes[self.trigger.trigger_node_id]
+        )
 
     def _spliced_callee(self, trigger: operation_graph.ActionTrigger) -> _SplicedAction:
         """Return the copy of the action ``trigger`` fires, which this copy splices in."""
@@ -336,5 +349,6 @@ class _SplicedAction:
             )
         # Nothing the caller did made the position empty: it is empty because
         # nothing was ever put in it. What left it that way is the fill of the
-        # position above it, which is the requirement this one waits on.
+        # position above it, which is the requirement this one waits on. With no
+        # position above it, no operation made it empty and it waits on nothing.
         return self._dependency_labels(requirement.depends_on)

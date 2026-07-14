@@ -87,7 +87,7 @@ def test_trigger_inlines_callee(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
@@ -545,7 +545,7 @@ def test_move_joins_an_in_body_source_and_a_requirement_target(
     # predecessor at once: it empties the in-body-created <src> (an ordinary
     # operation) and fills the caller-controlled empty-requirement <dest> (a
     # requirement the caller satisfies by emptying it before the trigger).
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::dest)": ["test.create(gateway)"],
         "test.destroy(gateway::/other::dest)": ["test.create(gateway::/other::dest)"],
@@ -665,7 +665,7 @@ def test_empty_by_default_child_requirements_branch_from_the_caller_parent_fill(
     # box::/a and box::/b are empty by default, so the caller never touches them.
     # The callee's fills only need box present, so they branch straight from the
     # caller's fill of box rather than waiting on a caller empty or the trigger.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
@@ -877,7 +877,7 @@ def test_implied_position_grandchildren_wait_on_the_direct_caller_fill(
     # implied /inner directly. /inner's grandchild fills need /parent::/child
     # present, so they resolve to /test's fill of it -- the implied position hangs
     # off the callee's parent particle, not under its action chain.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/inner::trigger_pos)": [],
@@ -1066,7 +1066,7 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
     # EMPTY requirement on <out> resolves to the caller's destroy, and that
     # resolved edge must not displace the trigger edge: with only the destroy
     # edge, the move could run at destroy-time, while <in> is still empty.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/worker::out)": ["test.create(gw)"],
         "test.destroy(gw::/worker::out)": ["test.create(gw::/worker::out)"],
@@ -1125,7 +1125,7 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
     # parent) to the caller's fill of <box>. That resolved edge must not
     # displace the trigger edge: with only the <box> edge, the move could run
     # as soon as <box> is filled, while <in> is still empty.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/worker::box)": ["test.create(gw)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
@@ -1224,7 +1224,7 @@ def test_trigger_inlines_callee_internal_dependencies(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(scratch)": ["test.create(gateway::/other::trigger_pos)"],
