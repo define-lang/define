@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from dataclasses import dataclass
 from functools import cached_property
 
 from define.compiler import ast
@@ -21,6 +22,16 @@ type _OperationGraphs = typed_name_dict.TypedNameDict[
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class _SplicedRequirement:
+    """The requirement one triggering of an action waits on, and the caller operation that fulfilled it."""
+
+    # The requirement's node in the triggered action's own graph.
+    requirement_node_id: int
+    # The label of the caller operation that fulfilled it.
+    satisfier: str
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -221,12 +232,12 @@ class _GraphRenderer:
 
     def _label(
         self,
-        invocation: str,
+        action_short_name: str,
         action: ast.GlobalTypedName,
         node: operation_graph.PositionOperationNode,
     ) -> str:
-        """Return the label of ``node``, an operation ``action`` performs in ``invocation``, such as ``test.move(item, dest)``."""
-        return f"{invocation}.{self._operation_labels[action][node.node_id]}"
+        """Return the label of ``node``, an operation ``action`` performs, such as ``test.move(item, dest)``."""
+        return f"{action_short_name}.{self._operation_labels[action][node.node_id]}"
 
     @cached_property
     def _nodes_waiting_on(self) -> _ForwardDependencyGraph:
@@ -235,73 +246,80 @@ class _GraphRenderer:
     def to_scheduling_table(self) -> dict[str, list[str]]:
         """Return a label for each operation, mapped to the labels it depends on."""
         table: dict[str, list[str]] = {}
-        invocation = _action_name(self._action)
-        for node in self._graphs[self._action].nodes:
-            if not isinstance(node, operation_graph.PositionOperationNode):
-                continue
-            label = self._label(invocation, self._action, node)
-            table[label] = self._dependency_labels(invocation, node.depends_on)
+        operations = [
+            node
+            for node in self._graphs[self._action].nodes
+            if isinstance(node, operation_graph.PositionOperationNode)
+        ]
+        # The entry-point action has no caller, so it splices in no requirement.
+        self._render(table, self._action, _action_name(self._action), operations, None)
+        return table
+
+    def _render(
+        self,
+        table: dict[str, list[str]],
+        action: ast.GlobalTypedName,
+        action_short_name: str,
+        operations: Iterable[operation_graph.PositionOperationNode],
+        spliced_requirement: _SplicedRequirement | None,
+    ):
+        """Add ``operations``, which ``action`` performs in the invocation named ``action_short_name``, and every operation they trigger, to ``table``."""
+        for node in operations:
+            label = self._label(action_short_name, action, node)
+            table[label] = self._dependency_labels(
+                action, action_short_name, spliced_requirement, node.depends_on
+            )
             # This operation satisfies a requirement, so the callee operations that
             # were waiting on that requirement now run.
             for satisfaction in node.satisfies:
-                table.update(
-                    self._satisfied_operations(
-                        self._action, invocation, satisfaction, label
-                    )
+                self._render_triggered(
+                    table, action, action_short_name, satisfaction, label
                 )
-        return table
+
+    def _render_triggered(
+        self,
+        table: dict[str, list[str]],
+        caller: ast.GlobalTypedName,
+        caller_short_name: str,
+        satisfaction: operation_graph.RequirementSatisfaction,
+        satisfier: str,
+    ):
+        """Add the callee operations that wait on the requirement the operation labeled ``satisfier`` satisfies."""
+        requirement = self._graphs[satisfaction.callee].requirement_node(
+            satisfaction.requirement_position
+        )
+        self._render(
+            table,
+            satisfaction.callee,
+            self._invocation_labels.name(
+                caller, caller_short_name, satisfaction.trigger_node_id
+            ),
+            self._waiting_on(satisfaction.callee, requirement.node_id),
+            _SplicedRequirement(requirement.node_id, satisfier),
+        )
 
     def _dependency_labels(
-        self, invocation: str, depends_on: Iterable[int]
+        self,
+        action: ast.GlobalTypedName,
+        invocation: str,
+        spliced_requirement: _SplicedRequirement | None,
+        depends_on: Iterable[int],
     ) -> list[str]:
         """Return the labels of the operations the ids in ``depends_on`` name."""
-        graph = self._graphs[self._action]
+        graph = self._graphs[action]
         dependency_labels: list[str] = []
         for depends_on_node_id in depends_on:
             depends_on_node = graph.nodes[depends_on_node_id]
-            if isinstance(depends_on_node, operation_graph.PositionOperationNode):
+            if (
+                spliced_requirement is not None
+                and depends_on_node_id == spliced_requirement.requirement_node_id
+            ):
+                dependency_labels.append(spliced_requirement.satisfier)
+            elif isinstance(depends_on_node, operation_graph.PositionOperationNode):
                 dependency_labels.append(
-                    self._label(invocation, self._action, depends_on_node)
+                    self._label(invocation, action, depends_on_node)
                 )
         return dependency_labels
-
-    def _satisfied_operations(
-        self,
-        caller: ast.GlobalTypedName,
-        caller_invocation: str,
-        satisfaction: operation_graph.RequirementSatisfaction,
-        satisfier: str,
-    ) -> dict[str, list[str]]:
-        """Return the callee operations that wait on the requirement the operation labeled ``satisfier`` satisfies."""
-        graph = self._graphs[satisfaction.callee]
-        requirement = graph.requirement_node(satisfaction.requirement_position)
-        invocation = self._invocation_labels.name(
-            caller, caller_invocation, satisfaction.trigger_node_id
-        )
-        table: dict[str, list[str]] = {}
-        for node in self._waiting_on(satisfaction.callee, requirement.node_id):
-            dependency_labels: list[str] = []
-            for depends_on_node_id in node.depends_on:
-                depends_on_node = graph.nodes[depends_on_node_id]
-                if depends_on_node_id == requirement.node_id:
-                    # We replace the requirement node with the label of the operation
-                    # that fulfilled it.
-                    dependency_labels.append(satisfier)
-                elif isinstance(depends_on_node, operation_graph.PositionOperationNode):
-                    dependency_labels.append(
-                        self._label(invocation, satisfaction.callee, depends_on_node)
-                    )
-            label = self._label(invocation, satisfaction.callee, node)
-            table[label] = dependency_labels
-            # The callee triggers actions of its own, whose operations run in this
-            # triggering of the callee and in no other triggering of it.
-            for callee_satisfaction in node.satisfies:
-                table.update(
-                    self._satisfied_operations(
-                        satisfaction.callee, invocation, callee_satisfaction, label
-                    )
-                )
-        return table
 
     def _waiting_on(
         self, action: ast.GlobalTypedName, node_id: int
