@@ -47,6 +47,27 @@ def operation_dependencies_new(
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
 
 
+def action_graph(operation_graphs: _OperationGraphs) -> list[tuple[str, str]]:
+    """Return each action's directly-triggered actions as (source, target) name pairs.
+
+    An action that triggers the same action twice yields two edges. Actions appear
+    in reference-graph post-order and their triggerings in the order they perform
+    them, so the result is deterministic. A reference-graph diamond can still make
+    two sibling actions' relative order nondeterministic; assertions spanning such
+    actions should compare ``action_graph_set``.
+    """
+    edges: list[tuple[str, str]] = []
+    for action, graph in operation_graphs.items():
+        for trigger in graph.triggers:
+            edges.append((action.source_typed_name, trigger.callee.full_typed_name))
+    return edges
+
+
+def action_graph_set(operation_graphs: _OperationGraphs) -> set[tuple[str, str]]:
+    """Return ``action_graph`` as a set, for assertions whose edge order is nondeterministic."""
+    return set(action_graph(operation_graphs))
+
+
 class _OperationLabels:
     """The label of every operation of one graph, by node id."""
 

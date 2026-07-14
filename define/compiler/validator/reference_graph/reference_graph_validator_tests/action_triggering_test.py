@@ -2,7 +2,7 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -51,7 +51,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_create_and_move_trigger_other_action(
         self,
@@ -91,7 +91,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_refilling_destroyed_trigger_position_retriggers(
         self,
@@ -129,7 +129,10 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER), (_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [
+            (_TEST, _OTHER),
+            (_TEST, _OTHER),
+        ]
 
     def test_moving_between_two_trigger_positions_fires_both(
         self,
@@ -185,7 +188,10 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER), (_TEST, _ACT_B)]
+        assert action_graph(result.operation_graphs) == [
+            (_TEST, _OTHER),
+            (_TEST, _ACT_B),
+        ]
 
     def test_move_from_trigger_position_to_itself_does_not_retrigger(
         self,
@@ -233,7 +239,7 @@ class TestActionTriggering:
             all_diags[0].position_name
             == "position<gateway>::action</other>::position<trigger_pos>"
         )
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,
@@ -273,7 +279,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
 
     def test_assumed_occupied_trigger_position_does_not_fire_the_action(
         self,
@@ -317,7 +323,7 @@ class TestActionTriggering:
         # position<box>::action</inner>::position<run> is only assumed occupied,
         # as a requirement of the deep create, never filled by a body operation.
         # An assumed occupancy does not fire a trigger, so /inner never runs.
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         untriggered = all_diags[0]
@@ -375,7 +381,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _ACT_B)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _ACT_B)]
 
     def test_trigger_chain(
         self,
@@ -429,7 +435,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [
+        assert action_graph(result.operation_graphs) == [
             (_ACT_B, _ACT_C),
             (_TEST, _ACT_B),
         ]
@@ -459,7 +465,7 @@ class TestActionTriggering:
             result.program_result.all_diagnostics[0],
             diagnostics.ActionSelfTriggerDiagnostic,
         )
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
 
     def test_duplicate_action_does_not_add_trigger_edges(
         self,
@@ -514,7 +520,7 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].first_definition_line == 1
         assert result.program_result.all_diagnostics[0].location.line == 10
         assert result.program_result.all_diagnostics[0].location.column == 1
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
 
     def test_local_prefix_before_action_trigger(
         self,
@@ -552,7 +558,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_no_body_effect_when_create_target_has_error_state(
         self,
@@ -650,7 +656,7 @@ class TestUnknownGlobalNoTrigger:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
 
 
 class TestConstructorTriggering:
@@ -689,7 +695,7 @@ class TestConstructorTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_constructor_move_triggers_action(
         self,
@@ -728,7 +734,7 @@ class TestConstructorTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _OTHER)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
     def test_constructor_no_edge_when_non_trigger_position(
         self,
@@ -767,7 +773,7 @@ class TestConstructorTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == []
+        assert action_graph(result.operation_graphs) == []
 
     def test_constructor_fired_via_constraint_records_edge(
         self,
@@ -803,7 +809,7 @@ class TestConstructorTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert action_graph(result.program_result) == [(_TEST, _P)]
+        assert action_graph(result.operation_graphs) == [(_TEST, _P)]
 
 
 class TestCircularDependencyTriggering:
