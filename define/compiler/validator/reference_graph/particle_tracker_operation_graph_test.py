@@ -382,15 +382,12 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
         [],
         [],
     )
-    # The fill that filled the trigger position satisfies the callee's requirement
-    # on it, which is what records that it fires the callee; the box that merely
-    # holds it fires nothing.
-    assert tracker.operation_graph.nodes[2].satisfies == [
-        operation_graph.RequirementSatisfaction(
-            _callee(action_chain), ("position<run>",), 2
-        ),
+    # The fill of the trigger position is the operation that fires the callee, and
+    # is what satisfies the callee's requirement on that position; the box that
+    # merely holds it fires nothing.
+    assert list(tracker.operation_graph.triggers) == [
+        operation_graph.ActionTrigger(_callee(action_chain), 2, {("position<run>",): 2})
     ]
-    assert tracker.operation_graph.nodes[1].satisfies == []
 
 
 def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position():

@@ -27,34 +27,6 @@ if typing.TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
-class RequirementSatisfaction:
-    """One requirement of one trigger of a callee, satisfied by the operation that carries this.
-
-    Codegen, reaching the operation while walking, splices the matching
-    RequirementNode of the callee's graph here. A callee appears in some
-    operation's satisfactions exactly once per trigger, since the operation
-    that fills the trigger position satisfies the requirement on it.
-
-    TODO: Remove this, along with OperationNode.satisfies, once both renderers
-    read the triggers instead. An ActionTrigger says the same thing from the
-    other side: its callee and trigger_node_id are these, and the node this would
-    hang off is the one its satisfiers map the requirement to.
-    """
-
-    # The triggered callee, which is also the key of its graph. Which particle's
-    # action ran is not recorded here: the operation that fired the trigger
-    # names the trigger position, whose chain says which one.
-    callee: ast.GlobalTypedNameReference
-    # The callee's own key for the requirement this operation satisfies.
-    requirement_position: tuple[str, ...]
-    # The operation that fired this trigger, which is what tells the
-    # satisfactions of one trigger of a callee from those of the next: an
-    # action can trigger the same callee any number of times, and one operation
-    # can satisfy the same requirement for more than one of those triggers.
-    trigger_node_id: int
-
-
-@dataclass(frozen=True, slots=True)
 class ActionTrigger:
     """One triggering of a callee, and what satisfies each requirement of the callee.
 
@@ -81,11 +53,6 @@ class OperationNode:
     # The ids of the operations this node directly depends on (the operations
     # that must complete before it).
     depends_on: list[int]
-    # Requirements of triggered callees this operation satisfies. Back-populated
-    # when a callee is triggered. A RequirementNode or GuaranteeNode can carry
-    # these too, which is what makes empty-by-default-via-parent and
-    # multi-level pass-through work.
-    satisfies: list[RequirementSatisfaction] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -133,15 +100,6 @@ class GuaranteeNode(OperationNode):
     # The guaranteed position, by the callee's own key for it.
     guaranteed_position: tuple[str, ...]
 
-    @property
-    def action(self) -> str:
-        """The full typed name of the action that guarantees the position.
-
-        TODO: Remove this once the old operation_graph_renderer, its last reader,
-        is gone. The triggering names the action it fires.
-        """
-        return self.trigger.callee.full_typed_name
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RequirementNode(OperationNode):
@@ -156,12 +114,9 @@ class RequirementNode(OperationNode):
 
     # The state this action needs the position to be in.
     required_state: action_contract.PositionOccupancyState
-    # This action's own key for the caller-controlled contracted position.
-    # TODO: Remove this once the old operation_graph_renderer, its last reader,
-    # is gone. A caller that holds a satisfaction reaches the node through
-    # requirement_node(), so nothing else has to read a position back off a node.
-    # Inverting the old renderer needs a lookup that tolerates a position no
-    # requirement node stands for, which is why it still reads this.
+    # This action's own key for the caller-controlled contracted position. Two
+    # requirement nodes on different positions are otherwise identical, so it is
+    # left out of equality to keep the tests' expected nodes readable.
     requirement_position: tuple[str, ...] = field(default=(), compare=False)
 
 
@@ -212,24 +167,22 @@ class OperationGraph:
         self._requirements: Mapping[
             tuple[str, ...], action_contract.PositionRequirement
         ] = requirements
-        self._trigger_position_key: tuple[str, ...] = (
-            trigger_position.canonical_chained_name_tuple
-            if trigger_position is not None
-            else ()
-        )
-        # A requirement's position -> the RequirementNode for that position.
-        self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
         # Every triggering this action performs, in the order it performs them.
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
         self._triggers: list[ActionTrigger] = []
         # Every action gets an occupied requirement on the position that triggers
-        # it. This simplifies splicing together graphs, because the satisfaction
-        # of the trigger always has a requirement to map to. A constructor or
+        # it. This simplifies splicing together graphs, because the triggering
+        # always has a requirement to map its firing operation to. A constructor or
         # destructor gets a RequirementNode with an empty key as a symbolic stand-in
         # for "the action got triggered."
+        trigger_position_key = (
+            trigger_position.canonical_chained_name_tuple
+            if trigger_position is not None
+            else ()
+        )
         self._trigger_position_requirement_node_id: int = self._add_requirement_node(
-            self._trigger_position_key,
+            trigger_position_key,
             ancestor=None,
             required_state=action_contract.PositionOccupancyState.OCCUPIED,
         )
@@ -238,17 +191,6 @@ class OperationGraph:
     def nodes(self) -> Sequence[OperationNode]:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
-
-    def requirement_node(
-        self, requirement_position: tuple[str, ...]
-    ) -> RequirementNode:
-        """Return the RequirementNode on the named position."""
-        return self._requirement_nodes[requirement_position]
-
-    @property
-    def trigger_position_key(self) -> tuple[str, ...]:
-        """This action's own trigger position key; empty for a constructor/destructor."""
-        return self._trigger_position_key
 
     def last_operation_on_position(self, key: tuple[str, ...]) -> int:
         """Return the last operation this action performed on the position at ``key``."""
@@ -313,7 +255,6 @@ class OperationGraph:
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_node_id = self._last_operation[acting_on_position_key]
-        firing_node = self._nodes[firing_node_id]
         callee_action = callee.get_last_action()
         callee_action_key = callee.canonical_chained_name_tuple
         satisfiers: dict[tuple[str, ...], int] = {}
@@ -331,9 +272,6 @@ class OperationGraph:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
             trigger_position_key = ()
-        firing_node.satisfies.append(
-            RequirementSatisfaction(callee_action, trigger_position_key, firing_node_id)
-        )
         satisfiers[trigger_position_key] = firing_node_id
         for requirement, caller_position in zip(
             requirements, caller_requirement_positions, strict=True
@@ -342,11 +280,6 @@ class OperationGraph:
             requirement_key = requirement.canonical_chained_name_tuple
             satisfier = self._requirement_satisfier(in_callee_key)
             if satisfier is not None:
-                self._nodes[satisfier].satisfies.append(
-                    RequirementSatisfaction(
-                        callee_action, requirement_key, firing_node_id
-                    )
-                )
                 satisfiers[requirement_key] = satisfier
         trigger = ActionTrigger(callee_action, firing_node_id, satisfiers)
         self._triggers.append(trigger)
@@ -462,7 +395,6 @@ class OperationGraph:
         # A later body operation on the position must still chain onto this node,
         # but an existing operation there stays the most recent one.
         _ = self._last_operation.setdefault(key, node_id)
-        self._requirement_nodes[key] = node
         return node_id
 
     def _surviving_child_operations(
