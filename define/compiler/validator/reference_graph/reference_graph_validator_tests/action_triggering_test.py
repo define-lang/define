@@ -2,7 +2,7 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors

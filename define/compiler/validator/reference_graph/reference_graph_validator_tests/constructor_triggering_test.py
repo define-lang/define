@@ -49,7 +49,7 @@ def test_create_fires_constructor_via_constraint_on_local_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_fires_constructor_via_constraint_on_interface_position(
@@ -85,7 +85,7 @@ def test_create_fires_constructor_via_constraint_on_interface_position(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_position_child_fires_constructor(
@@ -129,7 +129,7 @@ def test_create_in_position_child_fires_constructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_action_child_interface_fires_constructor(
@@ -181,7 +181,7 @@ def test_create_in_action_child_interface_fires_constructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [
+    assert action_graph(result.operation_graphs) == [
         (_INNER, _CONSTRUCT),
         (_TEST, _INNER),
     ]
@@ -231,7 +231,7 @@ def test_create_fires_multiple_constructors(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [
+    assert action_graph(result.operation_graphs) == [
         (_TEST, _CONSTRUCT_A),
         (_TEST, _CONSTRUCT_B),
     ]
@@ -275,7 +275,7 @@ def test_create_does_not_fire_non_constructor_action_quality(
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert action_graph(result.program_result) == []
+    assert action_graph(result.operation_graphs) == []
 
 
 def test_move_into_position_does_not_fire_constructor(
@@ -315,7 +315,7 @@ def test_move_into_position_does_not_fire_constructor(
     assert_no_errors(result.program_result)
     # The constructor fires exactly once, when the particle is created in box;
     # moving it into plain does not fire it again.
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_constructor_with_unloaded_file_no_crash(
@@ -345,7 +345,7 @@ def test_create_constructor_with_unloaded_file_no_crash(
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "construct.dfn"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.program_result) == []
+    assert action_graph(result.operation_graphs) == []
 
 
 def test_create_parent_not_occupied_does_not_fire_constructor(
@@ -407,4 +407,4 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     assert all_diags[1].parent_position_name == "position<box>"
     # inner fires the constructor when it creates a particle in its own slot,
     # but /test never occupies box, so no constructor fires for /test.
-    assert action_graph(result.program_result) == [(_INNER, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_INNER, _CONSTRUCT)]

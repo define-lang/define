@@ -121,7 +121,7 @@ def test_diamond_both_paths_satisfy_empty_requirement(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -182,7 +182,7 @@ def test_diamond_one_path_violates_empty_requirement(
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -242,7 +242,7 @@ def test_diamond_other_path_violates_empty_requirement(
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -372,7 +372,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -424,7 +424,7 @@ def test_diamond_top_caller_satisfies_occupied_requirement(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -512,7 +512,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -636,7 +636,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),

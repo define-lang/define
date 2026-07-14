@@ -53,7 +53,7 @@ def test_constructor_implied_position_guarantee_visible_to_caller(
     # The caller can destroy the particle in box::position</color> only because
     # the constructor's guarantee tells it that position ends up occupied.
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
 def test_constructor_occupied_guarantee_conflicts_with_caller_create(
@@ -102,4 +102,4 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     assert all_diags[0].position_name == "position<box>::position</color>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.file_path == PurePosixPath("construct.dfn")
-    assert action_graph(result.program_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]

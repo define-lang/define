@@ -103,18 +103,6 @@ py_library(
     srcs = ["operation_graph_renderer.py"],
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
-        ":operation_graph",
-        "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
-    ],
-)
-
-py_library(
-    name = "operation_graph_renderer_new",
-    testonly = True,
-    srcs = ["operation_graph_renderer_new.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
-    deps = [
         ":action_contract",
         ":operation_graph",
         "//define/compiler:ast",
@@ -250,7 +238,6 @@ pyright_test(
         ":definition_postorder_validator_test",
         ":operation_graph",
         ":operation_graph_renderer",
-        ":operation_graph_renderer_new",
         ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",

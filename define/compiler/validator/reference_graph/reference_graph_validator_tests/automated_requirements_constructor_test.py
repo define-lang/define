@@ -87,7 +87,7 @@ def test_occupied_interface_requirement_always_violated(
             "file_path": "consumer.dfn",
         },
     )
-    assert action_graph(result.program_result) == [(_TEST, _CONSUMER)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _CONSUMER)]
 
 
 def test_empty_interface_requirement_satisfied(
@@ -128,7 +128,7 @@ def test_empty_interface_requirement_satisfied(
     # The interface is empty when the constructor runs, so its empty requirement
     # holds.
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _INITIALIZER)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
 
 
 def test_empty_interface_requirement_satisfied_when_created_in_interface_position(
@@ -168,7 +168,7 @@ def test_empty_interface_requirement_satisfied_when_created_in_interface_positio
     # interface is empty when the constructor runs; the requirement is checked
     # locally and never propagates to /test's callers.
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _INITIALIZER)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
 
 
 def test_constructor_empty_violation_via_create_in_implied(

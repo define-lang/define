@@ -51,7 +51,7 @@ def test_action_triggers_implied_action_directly(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
 
 
 def test_action_triggers_implied_action_via_move(
@@ -76,7 +76,7 @@ def test_action_triggers_implied_action_via_move(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
 
 
 def test_constructor_triggers_implied_action(
@@ -98,7 +98,7 @@ def test_constructor_triggers_implied_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_propagates_to_caller(
@@ -186,7 +186,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "file_path": "implied_action.dfn",
         },
     )
-    assert action_graph(result.program_result) == [
+    assert action_graph(result.operation_graphs) == [
         (_MIDDLE, _IMPLIED),
         (_TEST, _MIDDLE),
     ]
@@ -454,7 +454,7 @@ def test_caller_triggers_action_implied_by_constraint(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [
+    assert action_graph(result.operation_graphs) == [
         (_IMPLIER, _IMPLIED),
         (_TEST, _IMPLIED),
         (_TEST, _IMPLIER),
@@ -493,7 +493,7 @@ def test_implied_action_guarantees_propagate_to_caller(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
 
 
 def test_transitive_implication_triggers_action(
@@ -545,7 +545,7 @@ def test_transitive_implication_triggers_action(
         },
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.program_result) == [
+    assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),

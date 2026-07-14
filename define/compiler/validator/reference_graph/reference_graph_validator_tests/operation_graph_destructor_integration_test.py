@@ -1,8 +1,8 @@
 import pytest
 
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
-    operation_dependencies_new,
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -59,7 +59,7 @@ def test_multiple_destructors_all_fire_on_destroy(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.destroy(box)": ["test.create(box)"],
         "destruct_a.create(_noop)": ["test.destroy(box)"],
@@ -126,7 +126,7 @@ def test_caller_added_destructor_fires_in_callee(
     # Aspirational: when destructor triggers are recorded, callee.destroy(target)
     # fires the caller-added destructor on the particle it destroys, inlining the
     # destructor's operations.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(carrier)": [],
         "test.move(carrier, box::/callee::target)": [

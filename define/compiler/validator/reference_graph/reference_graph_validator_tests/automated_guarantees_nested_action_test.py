@@ -81,7 +81,7 @@ def test_inner_empty_guarantee_propagates_through_outer(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -146,7 +146,7 @@ def test_inner_occupied_guarantee_propagates_through_outer(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -249,7 +249,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -318,7 +318,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }

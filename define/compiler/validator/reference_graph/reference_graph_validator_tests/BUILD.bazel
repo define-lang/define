@@ -11,7 +11,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
 )
 
@@ -684,7 +684,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
 )
 
@@ -695,7 +695,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
         "@pypi//pytest",
     ],
 )
@@ -707,7 +707,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
         "@pypi//pytest",
     ],
 )
@@ -719,7 +719,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
 )
 
@@ -730,7 +730,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
 )
 
@@ -741,7 +741,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
         "@pypi//pytest",
     ],
 )

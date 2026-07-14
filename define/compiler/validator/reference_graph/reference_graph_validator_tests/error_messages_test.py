@@ -224,7 +224,7 @@ def test_action_requires_empty_position_format(
             File "test.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/other>' infers this requirement:
             File "other.dfn", line 7, column 30""")
-    assert action_graph_set(result.program_result) == {(_TEST, _OTHER)}
+    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_action_requires_occupied_position_format(
@@ -363,7 +363,7 @@ def test_propagated_action_requires_empty_position_format(
             File "middle.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 7, column 30""")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
@@ -469,7 +469,7 @@ def test_requirement_carried_through_two_moves_format(
             File "middle.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 7, column 33""")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
@@ -587,7 +587,7 @@ def test_requirement_carried_through_actions_on_locals_format(
             File "middle.dfn", line 18, column 30
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 11, column 33""")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),

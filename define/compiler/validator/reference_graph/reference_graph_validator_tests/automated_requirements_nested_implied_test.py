@@ -104,7 +104,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -157,7 +157,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -175,7 +175,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
         }
     )
     assert result.program_result.all_diagnostics == []
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -236,7 +236,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -342,7 +342,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -414,7 +414,7 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -523,7 +523,7 @@ def test_doubly_nested_implied_action_chain_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),

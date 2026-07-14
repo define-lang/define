@@ -1,6 +1,6 @@
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
-    operation_dependencies_new,
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -46,7 +46,7 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
     # position triggers it again, and both invocations are rendered. The refill
     # waits on the first invocation's destroy, which is what empties the position
     # it fills.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
@@ -105,7 +105,7 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
     # on <out> before the second trigger -- and not on the stale first window or
     # on its own trigger. Without that edge, invocation 2 could race the drain
     # and put two particles in <out>.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
         "maker.create(out)": ["test.create(gw::/maker::trigger_pos)"],
@@ -172,7 +172,7 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
     # fill) and by the caller's destroy in the second -- and that destroy
     # waits on the first invocation's create, so the two invocations' writes
     # to <held>::/c cannot race.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/maker::held)": ["test.create(gw)"],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
@@ -228,7 +228,7 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
     # worker guarantees nothing, so each of its two triggers leaves no
     # GuaranteeNode -- only the two distinct trigger fills. Each invocation's
     # operations wait on their own fill.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
         "test.destroy(gw::/worker::trigger_pos)": [
@@ -326,7 +326,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
     # runs four times across the program. Each caller names its own invocations of
     # worker, so those names only tell the four runs apart once the invocation
     # they were triggered from is on the front of them.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(holder_first)": [],
         "test.create(holder_first::/first::trigger_pos)": ["test.create(holder_first)"],
         "test.create(holder_second)": [],
@@ -423,7 +423,7 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
     # names both of its invocations of worker the same way in either run, so the
     # invocation middle itself is in has to go on the front of them to tell the
     # four runs of worker apart.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(holder)": [],
         "test.create(holder::/middle::trigger_pos)": ["test.create(holder)"],
         "test.destroy(holder::/middle::trigger_pos)": [

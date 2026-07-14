@@ -124,7 +124,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -235,7 +235,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -297,7 +297,7 @@ def test_inner_chained_action_empty_requirement_satisfied(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -398,7 +398,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -462,7 +462,7 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -640,7 +640,7 @@ def test_doubly_nested_action_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_MIDDLE, _INNER),
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
@@ -800,7 +800,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "file_path": "d.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         ("action<my.domain.com:my_lib:/c>", "action<my.domain.com:my_lib:/d>"),
         (_TEST, "action<my.domain.com:my_lib:/a>"),
         ("action<my.domain.com:my_lib:/a>", "action<my.domain.com:my_lib:/b>"),
@@ -914,7 +914,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -1080,7 +1080,7 @@ def test_trigger_position_child_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _INNER),
         (_TEST, _OUTER),
         (_OUTER, _INNER),
@@ -1294,7 +1294,7 @@ def test_inner_action_requirement_propagates_after_move(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -1473,7 +1473,7 @@ def test_doubly_nested_requirement_propagates_after_move(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_MIDDLE, _INNER),
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
@@ -1557,7 +1557,7 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
     assert all_diags[0].location.end_line == 5
     assert all_diags[0].location.end_column == 38
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
     }
@@ -1721,7 +1721,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
     }
@@ -1795,7 +1795,7 @@ def test_cross_fqun_occupied_requirement_propagates(
         sub_roots={"lib": _DEP_FQUN},
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
     }
@@ -1906,7 +1906,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
     }
@@ -2050,7 +2050,7 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "bar.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         ("action<my.domain.com:my_lib:/foo>", _MIDDLE),
         (_TEST, "action<my.domain.com:my_lib:/foo>"),
         (_MIDDLE, "action<my.domain.com:my_lib:/bar>"),
@@ -2250,7 +2250,7 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "lib/bar.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/foo>"),
         (f"action<{_MAIN_FQUN}:/foo>", f"action<{_MAIN_FQUN}:/middle>"),
         (f"action<{_MAIN_FQUN}:/middle>", f"action<{_DEP_FQUN}:/bar>"),
@@ -2452,7 +2452,7 @@ def test_move_without_the_carried_child_violates_inner_occupied_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -2673,7 +2673,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
@@ -2881,7 +2881,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
@@ -3003,7 +3003,7 @@ def test_filled_carried_child_violates_inner_empty_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -3234,7 +3234,7 @@ def test_empty_carried_grandchild_and_parent_violate_inner_occupied_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }
@@ -3435,7 +3435,7 @@ def test_filled_carried_grandchild_violates_inner_empty_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
     }

@@ -1,8 +1,8 @@
 import pytest
 
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
-    operation_dependencies_new,
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -73,7 +73,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     # /middle (which never touches it) to /test, so it waits on the /test fill that
     # satisfies it -- reached through the RequirementNode /middle materializes for
     # the propagated requirement.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -142,7 +142,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
     # A move that lands the particle two call levels up satisfies the propagated
     # requirement, so inner.destroy(slot) must wait on that move rather than on
     # /middle's trigger of /inner.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(source)": [],
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
@@ -213,7 +213,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     # and /inner needs it empty. The intermediate destroy is the most recent
     # operation on the position before the trigger, so inner.create(slot) waits on
     # that destroy, not on the /test fill it superseded.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -292,7 +292,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
     # destroys the child on the way down, and /inner needs it empty, so
     # inner.create(holder::/a) waits on that destroy rather than on the /test fill
     # it superseded.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [
@@ -370,7 +370,7 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
     # Nobody empties holder::/a: it is empty by default in the particle /test
     # created in <holder>. /middle never touches it either, so /inner's fill of it
     # waits on the /test create that made its parent, two levels up.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [
@@ -455,7 +455,7 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
     # never touches the slot. /inner's empty requirement propagates through
     # /middle to /outer, so inner.create(slot) waits on the destroy performed by a
     # caller that is not the one that triggered it.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
@@ -551,7 +551,7 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
     assert_no_errors(result.program_result)
     # The same four-level shape, with the emptied position a child of /inner's
     # interface position <holder> rather than an interface position itself.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
@@ -633,7 +633,7 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     # /middle, which triggers /inner, which fills its children. Each child fill
     # needs only /parent present, so it should wait on /test's fill of /parent --
     # two call levels up -- not on /middle's trigger of /inner.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(/parent)": [],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/inner::trigger_pos)": ["test.create(/middle::trigger_pos)"],
@@ -711,7 +711,7 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     # /test fills /parent and /parent::/child; /inner (two levels down) fills the
     # grandchildren. Each grandchild fill needs /parent::/child present, so it
     # should wait on /test's fill of /parent::/child, not on /middle's trigger.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],
@@ -799,7 +799,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
     # then fills the empty-by-default grandchildren parent::/a and parent::/b;
     # each branches from the move that placed the parent, since the move's target
     # (gw::/inner::input) is the nearest ancestor the caller touched.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(mw)": [],
         "test.create(mw::/middle::iface)": ["test.create(mw)"],
         "test.create(mw::/middle::iface::/parent)": ["test.create(mw::/middle::iface)"],
@@ -906,7 +906,7 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     # then /middle) before /middle fills the trigger and /inner destroys the input
     # that rode along. Each callee operation resolves to the move that most recently
     # carried the particle, not to a trigger.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/inner::input)": ["test.create(box)"],
         "test.create(outer_holder)": [],
@@ -996,7 +996,7 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
     # to the first fill would race the move that empties slot again. Likewise
     # helper.move(slot, out) waits on the caller fill of helper::slot, not the
     # helper trigger.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(source)": [],
         "test.create(gw_a)": [],
         "test.create(gw_b)": [],
@@ -1079,7 +1079,7 @@ def test_caller_consumes_a_nested_guarantee(
     # guarantee, so test's move consumes an output produced two levels down.
     # The move must wait on inner's final operation on <out>, resolved within
     # the middle instance test triggered.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
@@ -1164,7 +1164,7 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
     # test straight from outer's contract references, and test's move resolves
     # across outer's trigger of middle to inner's final operation on <out>, in
     # the chain of triggers test fired.
-    assert operation_dependencies_new(result.operation_graphs) == {
+    assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::gw)": ["test.create(box)"],
         "test.create(box::/outer::gw::/middle::igw)": ["test.create(box::/outer::gw)"],

@@ -262,7 +262,7 @@ def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_act
         }
     )
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
         ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/inner>"),
     }
@@ -458,7 +458,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.program_result) == {
+    assert action_graph_set(result.operation_graphs) == {
         ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
         ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/middle>"),
         ("action<my.domain.com:my_lib:/middle>", "action<my.domain.com:my_lib:/inner>"),
