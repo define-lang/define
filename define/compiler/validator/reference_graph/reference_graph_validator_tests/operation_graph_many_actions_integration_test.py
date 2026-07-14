@@ -159,6 +159,425 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
     }
 
 
+def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<gw>::action</inner>::position<slot>.\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<slot>.\n"
+                "        create a particle in position<box>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /test fills the slot two levels down, /middle destroys it on the way down,
+    # and /inner needs it empty. The intermediate destroy is the most recent
+    # operation on the position before the trigger, so inner.create(slot) waits on
+    # that destroy, not on the /test fill it superseded.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gw)": ["test.create(box)"],
+        "test.create(box::/middle::gw::/inner::slot)": [
+            "test.create(box::/middle::gw)"
+        ],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.destroy(gw::/inner::slot)": [
+            "test.create(box::/middle::gw::/inner::slot)"
+        ],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        "inner.create(slot)": ["middle.destroy(gw::/inner::slot)"],
+    }
+
+
+def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interface_child(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<holder>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<gw>::action</inner>::position<holder>::position</a>.\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>::position</a>.\n"
+                "        create a particle in position<box>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The emptied position is a child of /inner's interface position <holder>, not
+    # an interface position itself. /test fills holder and the child, /middle
+    # destroys the child on the way down, and /inner needs it empty, so
+    # inner.create(holder::/a) waits on that destroy rather than on the /test fill
+    # it superseded.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gw)": ["test.create(box)"],
+        "test.create(box::/middle::gw::/inner::holder)": [
+            "test.create(box::/middle::gw)"
+        ],
+        "test.create(box::/middle::gw::/inner::holder::/a)": [
+            "test.create(box::/middle::gw::/inner::holder)"
+        ],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.destroy(gw::/inner::holder::/a)": [
+            "test.create(box::/middle::gw::/inner::holder::/a)"
+        ],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        "inner.create(holder::/a)": ["middle.destroy(gw::/inner::holder::/a)"],
+    }
+
+
+def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<holder>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>.\n"
+                "        create a particle in position<box>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Nobody empties holder::/a: it is empty by default in the particle /test
+    # created in <holder>. /middle never touches it either, so /inner's fill of it
+    # waits on the /test create that made its parent, two levels up.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gw)": ["test.create(box)"],
+        "test.create(box::/middle::gw::/inner::holder)": [
+            "test.create(box::/middle::gw)"
+        ],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        "inner.create(holder::/a)": ["test.create(box::/middle::gw::/inner::holder)"],
+    }
+
+
+def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<slot>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<slot>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<mw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<mw>::action</middle>::position<gw>::action</inner>::position<slot>.\n"
+                "        create a particle in position<mw>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</outer>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>::action</inner>::position<slot>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /outer empties the slot, but /middle is what triggers /inner, and /middle
+    # never touches the slot. /inner's empty requirement propagates through
+    # /middle to /outer, so inner.create(slot) waits on the destroy performed by a
+    # caller that is not the one that triggered it.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/outer::mw)": ["test.create(box)"],
+        "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
+        "test.create(box::/outer::mw::/middle::gw::/inner::slot)": [
+            "test.create(box::/outer::mw::/middle::gw)"
+        ],
+        "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
+        "outer.destroy(mw::/middle::gw::/inner::slot)": [
+            "test.create(box::/outer::mw::/middle::gw::/inner::slot)"
+        ],
+        "outer.create(mw::/middle::trigger_pos)": ["test.create(box::/outer::mw)"],
+        "middle.create(gw::/inner::trigger_pos)": [
+            "test.create(box::/outer::mw::/middle::gw)"
+        ],
+        "inner.create(slot)": ["outer.destroy(mw::/middle::gw::/inner::slot)"],
+    }
+
+
+def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_does_not_trigger_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<holder>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<mw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<mw>::action</middle>::position<gw>::action</inner>::position<holder>::position</a>.\n"
+                "        create a particle in position<mw>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</outer>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>::action</inner>::position<holder>.\n"
+                "        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>::action</inner>::position<holder>::position</a>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The same four-level shape, with the emptied position a child of /inner's
+    # interface position <holder> rather than an interface position itself.
+    assert operation_dependencies(result.program_result, _TEST) == {
+        "test.create(box)": [],
+        "test.create(box::/outer::mw)": ["test.create(box)"],
+        "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
+        "test.create(box::/outer::mw::/middle::gw::/inner::holder)": [
+            "test.create(box::/outer::mw::/middle::gw)"
+        ],
+        "test.create(box::/outer::mw::/middle::gw::/inner::holder::/a)": [
+            "test.create(box::/outer::mw::/middle::gw::/inner::holder)"
+        ],
+        "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
+        "outer.destroy(mw::/middle::gw::/inner::holder::/a)": [
+            "test.create(box::/outer::mw::/middle::gw::/inner::holder::/a)"
+        ],
+        "outer.create(mw::/middle::trigger_pos)": ["test.create(box::/outer::mw)"],
+        "middle.create(gw::/inner::trigger_pos)": [
+            "test.create(box::/outer::mw::/middle::gw)"
+        ],
+        "inner.create(holder::/a)": [
+            "outer.destroy(mw::/middle::gw::/inner::holder::/a)"
+        ],
+    }
+
+
 def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
