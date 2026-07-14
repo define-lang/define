@@ -34,6 +34,11 @@ class RequirementSatisfaction:
     RequirementNode of the callee's graph here. A callee appears in some
     operation's satisfactions exactly once per trigger, since the operation
     that fills the trigger position satisfies the requirement on it.
+
+    TODO: Remove this, along with OperationNode.satisfies, once both renderers
+    read the triggers instead. An ActionTrigger says the same thing from the
+    other side: its callee and trigger_node_id are these, and the node this would
+    hang off is the one its satisfiers map the requirement to.
     """
 
     # The triggered callee, which is also the key of its graph. Which particle's
@@ -47,6 +52,25 @@ class RequirementSatisfaction:
     # action can trigger the same callee any number of times, and one operation
     # can satisfy the same requirement for more than one of those triggers.
     trigger_node_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class ActionTrigger:
+    """One triggering of a callee, and what satisfies each requirement of the callee.
+
+    Recorded from the caller's side, at the moment it triggers, because only the
+    caller knows what it did to the positions the callee names.
+    """
+
+    # The callee this triggering fires.
+    callee: ast.GlobalTypedNameReference
+    # The operation that triggered the callee.
+    trigger_node_id: int
+    # The node that satisfies each requirement of the callee, by the callee's own
+    # key for that requirement. The node is either an operation of this action, or
+    # one of this action's own requirement nodes, which is how a requirement this
+    # action does not satisfy itself passes up to its own caller.
+    satisfiers: dict[tuple[str, ...], int]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -186,6 +210,10 @@ class OperationGraph:
         )
         # A requirement's position -> the RequirementNode for that position.
         self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
+        # (the operation that fired it, the callee) -> that triggering. One
+        # operation can fire more than one callee (creating a particle fires every
+        # constructor it has).
+        self._triggers: dict[tuple[int, str], ActionTrigger] = {}
         # Every action gets an occupied requirement on the position that triggers
         # it. This simplifies splicing together graphs, because the satisfaction
         # of the trigger always has a requirement to map to. A constructor or
@@ -275,6 +303,7 @@ class OperationGraph:
         firing_node = self._nodes[firing_node_id]
         callee_action = callee.get_last_action()
         callee_action_key = callee.canonical_chained_name_tuple
+        satisfiers: dict[tuple[str, ...], int] = {}
         # Trigger positions are direct children of the callee chain.
         acting_on_is_trigger_position = (
             len(acting_on_position_key) == len(callee_action_key) + 1
@@ -284,19 +313,15 @@ class OperationGraph:
             # If we see that we are filling a trigger position, we add the trigger
             # position as a requirement node (becasue it doesn't show up in the
             # normal requirements).
-            firing_node.satisfies.append(
-                RequirementSatisfaction(
-                    callee_action,
-                    acting_on_position_key[len(callee_action_key) :],
-                    firing_node_id,
-                )
-            )
+            trigger_position_key = acting_on_position_key[len(callee_action_key) :]
         else:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
-            firing_node.satisfies.append(
-                RequirementSatisfaction(callee_action, (), firing_node_id)
-            )
+            trigger_position_key = ()
+        firing_node.satisfies.append(
+            RequirementSatisfaction(callee_action, trigger_position_key, firing_node_id)
+        )
+        satisfiers[trigger_position_key] = firing_node_id
         for requirement, caller_position in zip(
             requirements, caller_requirement_positions, strict=True
         ):
@@ -309,7 +334,17 @@ class OperationGraph:
                         callee_action, requirement_key, firing_node_id
                     )
                 )
+                satisfiers[requirement_key] = satisfier
+        self._triggers[(firing_node_id, callee_action.full_typed_name)] = ActionTrigger(
+            callee_action, firing_node_id, satisfiers
+        )
         return firing_node_id
+
+    def trigger(
+        self, trigger_node_id: int, callee: ast.GlobalTypedNameReference
+    ) -> ActionTrigger:
+        """Return the triggering of ``callee`` that the operation at ``trigger_node_id`` fired."""
+        return self._triggers[(trigger_node_id, callee.full_typed_name)]
 
     def _requirement_satisfier(self, in_callee_key: tuple[str, ...]) -> int | None:
         """Return the operation on ``in_callee_key`` that satisfies a callee's requirement, or None."""

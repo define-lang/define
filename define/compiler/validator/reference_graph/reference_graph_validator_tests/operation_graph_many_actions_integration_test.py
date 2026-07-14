@@ -216,7 +216,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     # and /inner needs it empty. The intermediate destroy is the most recent
     # operation on the position before the trigger, so inner.create(slot) waits on
     # that destroy, not on the /test fill it superseded.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -295,7 +295,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
     # destroys the child on the way down, and /inner needs it empty, so
     # inner.create(holder::/a) waits on that destroy rather than on the /test fill
     # it superseded.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [

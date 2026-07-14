@@ -8,7 +8,7 @@ from functools import cached_property
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -28,10 +28,15 @@ type _ActionOperationLabels = typed_name_dict.TypedNameDict[
 class _SplicedRequirement:
     """The match between a callee's requirement and the caller operation that fulfilled it."""
 
-    # The requirement in the callee's graph.
+    # The requirement in the callee's graph. A triggering satisfies every
+    # requirement of the callee that the caller operates on, so this is only one
+    # of them, and it is not always the requirement on the trigger position.
     requirement_node_id: int
     # The label of the caller operation that fulfilled it.
     satisfier: str
+    # The triggering of the callee this requirement was fulfilled for, which says
+    # what satisfies each of the callee's other requirements.
+    trigger: operation_graph.ActionTrigger
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -295,7 +300,13 @@ class _GraphRenderer:
                 caller, caller_short_name, satisfaction.trigger_node_id
             ),
             self._waiting_on(satisfaction.callee, requirement.node_id),
-            _SplicedRequirement(requirement.node_id, satisfier),
+            _SplicedRequirement(
+                requirement.node_id,
+                satisfier,
+                self._graphs[caller].trigger(
+                    satisfaction.trigger_node_id, satisfaction.callee
+                ),
+            ),
         )
 
     def _dependency_labels(
@@ -319,7 +330,34 @@ class _GraphRenderer:
                 dependency_labels.append(
                     self._label(invocation, action, depends_on_node)
                 )
+            elif spliced_requirement is not None and self._empty_by_default(
+                depends_on_node, spliced_requirement
+            ):
+                # Nothing the caller did made the position empty: it is empty
+                # because nothing was ever put in it. What left it that way is the
+                # fill of the position above it, which is the requirement this one
+                # waits on.
+                dependency_labels.extend(
+                    self._dependency_labels(
+                        action,
+                        invocation,
+                        spliced_requirement,
+                        depends_on_node.depends_on,
+                    )
+                )
         return dependency_labels
+
+    @staticmethod
+    def _empty_by_default(
+        node: operation_graph.OperationNode,
+        spliced_requirement: _SplicedRequirement,
+    ) -> bool:
+        """Return whether ``node`` is an empty requirement nothing the caller did satisfies."""
+        if not isinstance(node, operation_graph.RequirementNode):
+            return False
+        if node.required_state is not action_contract.PositionOccupancyState.EMPTY:
+            return False
+        return node.requirement_position not in spliced_requirement.trigger.satisfiers
 
     def _waiting_on(
         self, action: ast.GlobalTypedName, node_id: int

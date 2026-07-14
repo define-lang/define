@@ -541,6 +541,92 @@ def test_operation_records_the_actions_it_triggers():
     ]
 
 
+def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(machine)
+    graph.record_create(trigger_position)
+    trigger_node_id = graph.record_action_trigger(brew, trigger_position, [], [])
+    trigger = graph.trigger(trigger_node_id, _callee(brew))
+    assert trigger.callee == _callee(brew)
+    assert trigger.trigger_node_id == 2
+    assert trigger.satisfiers == {("position<run>",): 2}
+
+
+def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(machine)
+    # The caller fills the callee's <beans>, which is what satisfies the callee's
+    # requirement that it be occupied.
+    graph.record_create(_interface_ref(brew, "beans"))
+    graph.record_create(trigger_position)
+    trigger_node_id = graph.record_action_trigger(
+        brew, trigger_position, [_ref("beans")], [_interface_ref(brew, "beans")]
+    )
+    trigger = graph.trigger(trigger_node_id, _callee(brew))
+    assert trigger.satisfiers == {("position<run>",): 3, ("position<beans>",): 2}
+
+
+def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_caller():
+    # <beans> is a requirement of this action too, which it never operates on, so
+    # what satisfies the callee's requirement is the RequirementNode standing in
+    # for this action's own caller.
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    beans = _interface_ref(brew, "beans")
+    graph = operation_graph.OperationGraph(
+        _requirements((machine, _OCCUPIED), (beans, _OCCUPIED)), _ref("run")
+    )
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(trigger_position)
+    trigger_node_id = graph.record_action_trigger(
+        brew, trigger_position, [_ref("beans")], [beans]
+    )
+    trigger = graph.trigger(trigger_node_id, _callee(brew))
+    satisfier = trigger.satisfiers[("position<beans>",)]
+    assert isinstance(graph.nodes[satisfier], operation_graph.RequirementNode)
+    assert (
+        graph.requirement_node(beans.canonical_chained_name_tuple).node_id == satisfier
+    )
+
+
+def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(machine)
+    graph.record_create(trigger_position)
+    # The caller never touches <cup> and has no requirement on it, so nothing it
+    # did satisfies the callee's requirement: the position is empty because the
+    # create of the machine left it that way.
+    trigger_node_id = graph.record_action_trigger(
+        brew, trigger_position, [_ref("cup")], [_interface_ref(brew, "cup")]
+    )
+    trigger = graph.trigger(trigger_node_id, _callee(brew))
+    assert trigger.satisfiers == {("position<run>",): 2}
+    assert ("position<cup>",) not in trigger.satisfiers
+
+
+def test_one_operation_records_a_trigger_for_each_action_it_fires():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    box = _ref("box")
+    graph.record_create(box)
+    # Two constructors of the box's particle: creating it fires both, and each
+    # triggering is its own record.
+    brew = _action_chain_under("box", "/brew")
+    grind = _action_chain_under("box", "/grind")
+    trigger_node_id = graph.record_action_trigger(brew, box, [], [])
+    assert graph.record_action_trigger(grind, box, [], []) == trigger_node_id
+    assert graph.trigger(trigger_node_id, _callee(brew)).callee == _callee(brew)
+    assert graph.trigger(trigger_node_id, _callee(grind)).callee == _callee(grind)
+
+
 def test_each_operation_reports_only_its_own_triggers():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     one = _ref("one")

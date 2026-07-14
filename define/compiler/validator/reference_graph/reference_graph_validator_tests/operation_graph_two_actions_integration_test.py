@@ -94,6 +94,119 @@ def test_trigger_inlines_callee(
     }
 
 
+def test_callee_fill_of_a_child_waits_only_on_the_caller_fill_of_its_parent(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<output>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<output>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # output::/a is empty by default, so the caller never touches it. The callee's
+    # fill of it only needs output present, so it waits on the caller's fill of
+    # output alone.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::output)": ["test.create(gateway)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(output::/a)": ["test.create(gateway::/other::output)"],
+    }
+
+
+def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<output>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<output>.\n"
+                "        create a particle in position<gateway>::action</other>::position<output>::position</a>.\n"
+                "        destroy the particle in position<gateway>::action</other>::position<output>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The caller fills output and then empties output::/a itself, so the callee's
+    # fill of output::/a waits on that destroy. The create of the parent only
+    # satisfies an empty requirement that nothing else emptied, so it must not be
+    # what this one resolves to.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::output)": ["test.create(gateway)"],
+        "test.create(gateway::/other::output::/a)": [
+            "test.create(gateway::/other::output)"
+        ],
+        "test.destroy(gateway::/other::output::/a)": [
+            "test.create(gateway::/other::output::/a)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(output::/a)": ["test.destroy(gateway::/other::output::/a)"],
+    }
+
+
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
