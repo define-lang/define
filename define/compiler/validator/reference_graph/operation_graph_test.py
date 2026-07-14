@@ -1086,6 +1086,28 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
     assert graph.requirement_node(graph.trigger_position_key).node_id == 0
 
 
+def test_a_constructor_gets_a_requirement_node_for_the_position_it_is_assigned_to():
+    # A constructor has no trigger position: it is triggered by the filling of
+    # the position it is assigned to, which is the position above all the ones it
+    # can name, so its trigger requirement carries the empty key. The create of
+    # the global /marker it assigns waits on that position's own requirement,
+    # while the create with nothing else to wait on waits on the trigger.
+    graph = operation_graph.OperationGraph({_global_key("/marker")})
+    marker = _global_ref("/marker")
+    scratch = _ref("scratch")
+    graph.record_create(marker)
+    graph.record_create(scratch)
+    assert list(graph.nodes) == [
+        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.CreateNode(node_id=2, target=marker, depends_on=[1]),
+        operation_graph.CreateNode(node_id=3, target=scratch, depends_on=[0]),
+    ]
+    assert graph.trigger_position_key == ()
+    assert graph.requirement_node(()).node_id == 0
+    assert graph.requirement_node(_global_key("/marker")).node_id == 1
+
+
 def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
     graph = operation_graph.OperationGraph({_key("slot")}, _ref("run"))
     slot = _ref("slot")

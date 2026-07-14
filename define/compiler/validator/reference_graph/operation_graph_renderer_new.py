@@ -26,9 +26,9 @@ type _ActionOperationLabels = typed_name_dict.TypedNameDict[
 
 @dataclass(frozen=True, slots=True)
 class _SplicedRequirement:
-    """The requirement one triggering of an action waits on, and the caller operation that fulfilled it."""
+    """The match between a callee's requirement and the caller operation that fulfilled it."""
 
-    # The requirement's node in the triggered action's own graph.
+    # The requirement in the callee's graph.
     requirement_node_id: int
     # The label of the caller operation that fulfilled it.
     satisfier: str

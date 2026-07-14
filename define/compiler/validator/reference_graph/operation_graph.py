@@ -181,15 +181,13 @@ class OperationGraph:
         )
         # A requirement's position -> the RequirementNode for that position.
         self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
-        # An action with a trigger position always gets an occupied requirement on
+        # Every action gets an occupied requirement on the position that triggers
         # it. This simplifies splicing together graphs, because the satisfaction
-        # of the trigger position always has a requirement to map to. A
-        # constructor or destructor has no trigger position, so it has no such
-        # node, and its operations with nothing else to wait on wait on nothing.
-        self._trigger_position_requirement_node_id: int | None = (
-            self._add_requirement_node(self._trigger_position_key, ancestor=None)
-            if trigger_position is not None
-            else None
+        # of the trigger always has a requirement to map to. A constructor or
+        # destructor gets a RequirementNode with an empty key as a symbolic stand-in
+        # for "the action got triggered."
+        self._trigger_position_requirement_node_id: int = self._add_requirement_node(
+            self._trigger_position_key, ancestor=None
         )
 
     @property
@@ -350,10 +348,10 @@ class OperationGraph:
                 for child_operation in child_operations
             ):
                 dependencies.add(emptied_ancestor)
-        if not dependencies and self._trigger_position_requirement_node_id is not None:
+        if not dependencies:
             # An operation with nothing else to wait on still happens only
-            # because this action triggered, so it waits on the
-            # trigger-position requirement like any other requirement.
+            # because this action triggered, so it waits on the trigger
+            # requirement like any other requirement.
             return [self._trigger_position_requirement_node_id]
         return sorted(dependencies)
 
