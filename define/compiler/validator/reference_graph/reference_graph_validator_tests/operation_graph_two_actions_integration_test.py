@@ -278,6 +278,426 @@ def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller_filled(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "            it has the position</b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "            it has the position</b>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</b>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The move carries the whole particle, so Rule 2 gives it an edge to the most
+    # recent operation on each child name of <source>. The caller's two creates are
+    # independent of each other, so waiting on only one of them would leave the move
+    # racing the other: the particle could arrive in <holder> before that child name
+    # is filled, and the caller's create would then land in a position whose parent
+    # particle has left.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::source)": ["test.create(gateway)"],
+        "test.create(gateway::/other::source::/a)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::source::/b)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.move(source, holder)": [
+            "test.create(gateway::/other::source::/a)",
+            "test.create(gateway::/other::source::/b)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "deep.dfn": "define the potential position<my.domain.com:my_lib:/deep>.\n",
+            "item.dfn": (
+                "define the potential position<my.domain.com:my_lib:/item> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</deep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<input> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</item>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<input>::position</item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<input>.\n"
+                "        create a particle in position<gateway>::action</other>::position<input>::position</item>.\n"
+                "        create a particle in position<gateway>::action</other>::position<input>::position</item>::position</deep>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # A destroy empties a position the same way a move does, and it destroys the
+    # particle's child names along with it, so Rule 2 crosses the trigger here too:
+    # the callee destroys the caller's </item> particle, which the caller filled a
+    # </deep> inside, so the destroy waits on that fill. Rule 3 then drops the
+    # caller's fill of </item> itself, which the </deep> fill supersedes.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::input)": ["test.create(gateway)"],
+        "test.create(gateway::/other::input::/item)": [
+            "test.create(gateway::/other::input)"
+        ],
+        "test.create(gateway::/other::input::/item::/deep)": [
+            "test.create(gateway::/other::input::/item)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(input::/item)": [
+            "test.create(gateway::/other::input::/item::/deep)"
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_caller_filled(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "deep.dfn": "define the potential position<my.domain.com:my_lib:/deep>.\n",
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</deep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>::position</deep>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Rule 2 excludes a child name that has a more recent operation on one of its
+    # own child names, and that exclusion holds across the trigger as well: the
+    # caller's fill of <source>::</a> is superseded by its fill of the </deep>
+    # inside it, so the move waits on that one operation alone.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::source)": ["test.create(gateway)"],
+        "test.create(gateway::/other::source::/a)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::source::/a::/deep)": [
+            "test.create(gateway::/other::source::/a)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.move(source, holder)": [
+            "test.create(gateway::/other::source::/a::/deep)"
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_child(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "            it has the position</b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "            it has the position</b>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<source>::position</b>.\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Both actions fill a child name of <source>: the caller fills </a> and the
+    # callee fills </b>. Rule 2 wants the most recent operation on each of them, so
+    # the move joins one from each action. Its own fill of </b> does not stand in
+    # for the caller's fill of </a>, which nothing else orders it after.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::source)": ["test.create(gateway)"],
+        "test.create(gateway::/other::source::/a)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(source::/b)": ["test.create(gateway::/other::source)"],
+        "other.move(source, holder)": [
+            "other.create(source::/b)",
+            "test.create(gateway::/other::source::/a)",
+        ],
+    }
+
+
+def test_callee_operation_on_a_child_supersedes_the_caller_operation_on_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<source>::position</a>.\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Both actions operate on <source>::</a>, and every operation of the callee is
+    # more recent than every operation of the caller, so Rule 2 gives the move the
+    # callee's destroy of it and not the caller's fill of it. The destroy reaches
+    # that fill on its own, through the requirement it satisfies.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::source)": ["test.create(gateway)"],
+        "test.create(gateway::/other::source::/a)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(source::/a)": ["test.create(gateway::/other::source::/a)"],
+        "other.move(source, holder)": ["other.destroy(source::/a)"],
+    }
+
+
+def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_child(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "            it has the position</b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<keeper>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>::position</b>.\n"
+                "        move the particle in position<box>::position</a> to position<keeper>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<box>.\n"
+                "        create a particle in position<gateway>::action</other>::position<box>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The callee needs <box> occupied for two different reasons, and each reason
+    # gets its own answer. Its create of </b> only fills a child name of <box>,
+    # which is Rule 1: it waits on the single most recent operation on <box> and its
+    # parent names, the caller's fill of <box>, and the caller's fill of </a> must
+    # not reach it. Its move empties <box>::</a>, which is Rules 2 and 3: that one
+    # does wait on the caller's fill of </a>.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::box)": ["test.create(gateway)"],
+        "test.create(gateway::/other::box::/a)": ["test.create(gateway::/other::box)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(box::/b)": ["test.create(gateway::/other::box)"],
+        "other.move(box::/a, keeper)": ["test.create(gateway::/other::box::/a)"],
+    }
+
+
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

@@ -8,6 +8,12 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
+_EMPTY_RULE_NOT_CROSSED = (
+    "an operation that empties a position the caller filled does not depend on the"
+    " caller's operations on the child names of it, so Rule 2 of the Particle"
+    " Operation Dependency Graph is not applied across a trigger"
+)
+
 _UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED = (
     "an action that never touches a position it passes along from an action it"
     " triggers has no guarantee node for it in its own graph, only the"
@@ -1086,6 +1092,91 @@ def test_caller_consumes_a_nested_guarantee(
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.create(out)": ["test.create(box::/middle::gw)"],
         "test.move(box::/middle::gw::/inner::out, result)": ["inner.create(out)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_child_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<gw> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gw>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<source>.\n"
+                "        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<source>::position</a>.\n"
+                "        create a particle in position<box>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /inner empties a position that /middle never touches: /middle only passes the
+    # requirement on it up to /test, which filled it and filled the </a> inside it.
+    # Rule 2 has to reach across both triggers to find that fill, so /middle has to
+    # pass along what it empties the same way it passes along what it requires.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gw)": ["test.create(box)"],
+        "test.create(box::/middle::gw::/inner::source)": [
+            "test.create(box::/middle::gw)"
+        ],
+        "test.create(box::/middle::gw::/inner::source::/a)": [
+            "test.create(box::/middle::gw::/inner::source)"
+        ],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        "inner.move(source, holder)": [
+            "test.create(box::/middle::gw::/inner::source::/a)"
+        ],
     }
 
 
