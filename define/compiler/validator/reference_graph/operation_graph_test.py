@@ -548,11 +548,10 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
     trigger_position = _interface_ref(brew, "run")
     graph.record_create(machine)
     graph.record_create(trigger_position)
-    trigger_node_id = graph.record_action_trigger(brew, trigger_position, [], [])
-    trigger = graph.trigger(trigger_node_id, _callee(brew))
-    assert trigger.callee == _callee(brew)
-    assert trigger.trigger_node_id == 2
-    assert trigger.satisfiers == {("position<run>",): 2}
+    _ = graph.record_action_trigger(brew, trigger_position, [], [])
+    assert list(graph.triggers) == [
+        operation_graph.ActionTrigger(_callee(brew), 2, {("position<run>",): 2})
+    ]
 
 
 def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
@@ -565,11 +564,14 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
     # requirement that it be occupied.
     graph.record_create(_interface_ref(brew, "beans"))
     graph.record_create(trigger_position)
-    trigger_node_id = graph.record_action_trigger(
+    _ = graph.record_action_trigger(
         brew, trigger_position, [_ref("beans")], [_interface_ref(brew, "beans")]
     )
-    trigger = graph.trigger(trigger_node_id, _callee(brew))
-    assert trigger.satisfiers == {("position<run>",): 3, ("position<beans>",): 2}
+    assert list(graph.triggers) == [
+        operation_graph.ActionTrigger(
+            _callee(brew), 3, {("position<run>",): 3, ("position<beans>",): 2}
+        )
+    ]
 
 
 def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_caller():
@@ -584,10 +586,8 @@ def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_c
     )
     trigger_position = _interface_ref(brew, "run")
     graph.record_create(trigger_position)
-    trigger_node_id = graph.record_action_trigger(
-        brew, trigger_position, [_ref("beans")], [beans]
-    )
-    trigger = graph.trigger(trigger_node_id, _callee(brew))
+    _ = graph.record_action_trigger(brew, trigger_position, [_ref("beans")], [beans])
+    (trigger,) = graph.triggers
     satisfier = trigger.satisfiers[("position<beans>",)]
     assert isinstance(graph.nodes[satisfier], operation_graph.RequirementNode)
     assert (
@@ -605,12 +605,12 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
     # The caller never touches <cup> and has no requirement on it, so nothing it
     # did satisfies the callee's requirement: the position is empty because the
     # create of the machine left it that way.
-    trigger_node_id = graph.record_action_trigger(
+    _ = graph.record_action_trigger(
         brew, trigger_position, [_ref("cup")], [_interface_ref(brew, "cup")]
     )
-    trigger = graph.trigger(trigger_node_id, _callee(brew))
-    assert trigger.satisfiers == {("position<run>",): 2}
-    assert ("position<cup>",) not in trigger.satisfiers
+    assert list(graph.triggers) == [
+        operation_graph.ActionTrigger(_callee(brew), 2, {("position<run>",): 2})
+    ]
 
 
 def test_one_operation_records_a_trigger_for_each_action_it_fires():
@@ -621,10 +621,12 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
     # triggering is its own record.
     brew = _action_chain_under("box", "/brew")
     grind = _action_chain_under("box", "/grind")
-    trigger_node_id = graph.record_action_trigger(brew, box, [], [])
-    assert graph.record_action_trigger(grind, box, [], []) == trigger_node_id
-    assert graph.trigger(trigger_node_id, _callee(brew)).callee == _callee(brew)
-    assert graph.trigger(trigger_node_id, _callee(grind)).callee == _callee(grind)
+    _ = graph.record_action_trigger(brew, box, [], [])
+    _ = graph.record_action_trigger(grind, box, [], [])
+    assert list(graph.triggers) == [
+        operation_graph.ActionTrigger(_callee(brew), 1, {(): 1}),
+        operation_graph.ActionTrigger(_callee(grind), 1, {(): 1}),
+    ]
 
 
 def test_each_operation_reports_only_its_own_triggers():

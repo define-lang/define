@@ -210,10 +210,10 @@ class OperationGraph:
         )
         # A requirement's position -> the RequirementNode for that position.
         self._requirement_nodes: dict[tuple[str, ...], RequirementNode] = {}
-        # (the operation that fired it, the callee) -> that triggering. One
-        # operation can fire more than one callee (creating a particle fires every
+        # Every triggering this action performs, in the order it performs them.
+        # One operation can fire more than one (creating a particle fires every
         # constructor it has).
-        self._triggers: dict[tuple[int, str], ActionTrigger] = {}
+        self._triggers: list[ActionTrigger] = []
         # Every action gets an occupied requirement on the position that triggers
         # it. This simplifies splicing together graphs, because the satisfaction
         # of the trigger always has a requirement to map to. A constructor or
@@ -335,16 +335,13 @@ class OperationGraph:
                     )
                 )
                 satisfiers[requirement_key] = satisfier
-        self._triggers[(firing_node_id, callee_action.full_typed_name)] = ActionTrigger(
-            callee_action, firing_node_id, satisfiers
-        )
+        self._triggers.append(ActionTrigger(callee_action, firing_node_id, satisfiers))
         return firing_node_id
 
-    def trigger(
-        self, trigger_node_id: int, callee: ast.GlobalTypedNameReference
-    ) -> ActionTrigger:
-        """Return the triggering of ``callee`` that the operation at ``trigger_node_id`` fired."""
-        return self._triggers[(trigger_node_id, callee.full_typed_name)]
+    @property
+    def triggers(self) -> Sequence[ActionTrigger]:
+        """Every action this action triggers, in the order it triggers them."""
+        return self._triggers
 
     def _requirement_satisfier(self, in_callee_key: tuple[str, ...]) -> int | None:
         """Return the operation on ``in_callee_key`` that satisfies a callee's requirement, or None."""

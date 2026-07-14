@@ -373,7 +373,7 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
     # Nobody empties holder::/a: it is empty by default in the particle /test
     # created in <holder>. /middle never touches it either, so /inner's fill of it
     # waits on the /test create that made its parent, two levels up.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [
@@ -458,7 +458,7 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
     # never touches the slot. /inner's empty requirement propagates through
     # /middle to /outer, so inner.create(slot) waits on the destroy performed by a
     # caller that is not the one that triggered it.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
@@ -554,7 +554,7 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
     assert_no_errors(result.program_result)
     # The same four-level shape, with the emptied position a child of /inner's
     # interface position <holder> rather than an interface position itself.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
