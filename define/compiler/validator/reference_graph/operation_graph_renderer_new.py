@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from functools import cached_property
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
@@ -33,26 +32,6 @@ def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
     return (trigger.trigger_node_id, trigger.callee.full_typed_name)
 
 
-@dataclass(frozen=True, slots=True)
-class _SplicedAction:
-    """One copy of an action's operations, spliced into the graph by a triggering.
-
-    Triggering an action does not "call" it in the traditional sense. Logically,
-    what it actually does is it splices the operations of the callee into the
-    caller's graph. (The callee's operations wait on the caller's operations.)
-
-    An action is spliced separately every time it is triggered.
-    """
-
-    action: ast.GlobalTypedName
-    # What every operation of this copy is labeled with, such as ``middle``.
-    name: str
-    # The triggering that spliced this copy in, and the copy whose operation fired
-    # it. Both are absent for the entry point, which nothing spliced in.
-    trigger: operation_graph.ActionTrigger | None
-    spliced_by: _SplicedAction | None
-
-
 def _action_name(action: ast.GlobalTypedName) -> str:
     """Return an action's name without its universe or path, such as ``test``."""
     return action.name_content.path.name.removeprefix("/")
@@ -64,7 +43,7 @@ def operation_dependencies_new(
     """Return a label for each operation the entry-point action performs or triggers, mapped to the labels it depends on."""
     for typed_name in operation_graphs:
         if typed_name.name_content.path.name == _ENTRY_POINT_ACTION_PATH:
-            return _GraphRenderer(typed_name, operation_graphs).to_scheduling_table()
+            return _Program(operation_graphs).to_scheduling_table(typed_name)
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
 
 
@@ -186,100 +165,146 @@ class _ActionInvocationLabels:
             }
 
     def name(
-        self, spliced: _SplicedAction, trigger: operation_graph.ActionTrigger
+        self,
+        action: ast.GlobalTypedName,
+        spliced_name: str,
+        trigger: operation_graph.ActionTrigger,
     ) -> str:
-        """Return the name of the action ``trigger`` fires, triggered from the copy ``spliced``."""
-        name = self._labels[spliced.action][trigger]
-        if name in self._ambiguous[spliced.action]:
-            return f"{spliced.name}:{name}"
+        """Return the name of the action ``trigger`` fires, triggered from the copy of ``action`` named ``spliced_name``."""
+        name = self._labels[action][trigger]
+        if name in self._ambiguous[action]:
+            return f"{spliced_name}:{name}"
         return name
 
 
-class _GraphRenderer:
-    """Renders one action's operation graph, and the operations of the actions it triggers."""
+class _NameResolver:
+    """The name every operation and every triggering in the program goes by.
 
-    def __init__(self, action: ast.GlobalTypedName, graphs: _OperationGraphs):
-        """Prepare to render the graph of ``action``, one of the graphs in ``graphs``."""
-        self._action: ast.GlobalTypedName = action
+    Both are decided across the whole program at once: an action's operations are
+    labeled with its own name for them wherever it is spliced in, and whether a
+    triggering's name says which triggering spliced it in depends on what the
+    other actions call theirs.
+    """
+
+    def __init__(self, graphs: _OperationGraphs):
+        """Name the operations and triggerings of every action in ``graphs``."""
+        self._operation_labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
+        for action, graph in graphs.items():
+            self._operation_labels[action] = _OperationLabels(graph)
+        self._invocation_labels: _ActionInvocationLabels = _ActionInvocationLabels(
+            graphs
+        )
+
+    def operation_name(
+        self, action: ast.GlobalTypedName, node: operation_graph.PositionOperationNode
+    ) -> str:
+        """Return what ``action`` calls the operation at ``node``, such as ``move(item, dest)``."""
+        return self._operation_labels[action][node.node_id]
+
+    def triggering_name(
+        self,
+        action: ast.GlobalTypedName,
+        spliced_name: str,
+        trigger: operation_graph.ActionTrigger,
+    ) -> str:
+        """Return the name of the action ``trigger`` fires, triggered from the copy of ``action`` named ``spliced_name``."""
+        return self._invocation_labels.name(action, spliced_name, trigger)
+
+
+class _Program:
+    """Every action's operation graph, and the names everything in them goes by."""
+
+    def __init__(self, graphs: _OperationGraphs):
+        """Prepare to render the actions in ``graphs``."""
         self._graphs: _OperationGraphs = graphs
+        self._names: _NameResolver = _NameResolver(graphs)
 
-    @cached_property
-    def _operation_labels(self) -> _ActionOperationLabels:
-        # A triggered action's operations are labeled with its own name for them,
-        # so every graph is labeled, not only the one being rendered.
-        labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
-        for action, graph in self._graphs.items():
-            labels[action] = _OperationLabels(graph)
-        return labels
-
-    @cached_property
-    def _invocation_labels(self) -> _ActionInvocationLabels:
-        return _ActionInvocationLabels(self._graphs)
-
-    def to_scheduling_table(self) -> dict[str, list[str]]:
-        """Return a label for each operation, mapped to the labels it depends on."""
+    def to_scheduling_table(self, action: ast.GlobalTypedName) -> dict[str, list[str]]:
+        """Return a label for each operation ``action`` performs or triggers, mapped to the labels it depends on."""
         table: dict[str, list[str]] = {}
         # Nothing triggered the entry-point action, so nothing spliced it in.
-        self._splice(
-            table,
-            _SplicedAction(
-                self._action, _action_name(self._action), trigger=None, spliced_by=None
-            ),
+        entry_point = _SplicedAction(
+            self._graphs,
+            self._names,
+            action,
+            _action_name(action),
+            trigger=None,
+            spliced_by=None,
         )
+        entry_point.render(table)
         return table
 
-    def _splice(self, table: dict[str, list[str]], spliced: _SplicedAction):
-        """Add every operation of the copy ``spliced``, and of the actions it triggers, to ``table``."""
-        graph = self._graphs[spliced.action]
-        for node in graph.nodes:
+
+@dataclass(frozen=True, slots=True)
+class _SplicedAction:
+    """One copy of an action's operations, spliced into the graph by a triggering.
+
+    Triggering an action does not "call" it in the traditional sense. Logically,
+    what it actually does is it splices the operations of the callee into the
+    caller's graph. (The callee's operations wait on the caller's operations.)
+
+    An action is spliced separately every time it is triggered.
+    """
+
+    graphs: _OperationGraphs
+    names: _NameResolver
+    action: ast.GlobalTypedName
+    # What every operation of this copy is labeled with, such as ``middle``.
+    name: str
+    # The triggering that spliced this copy in, and the copy whose operation fired
+    # it. Both are absent for the entry point, which nothing spliced in.
+    trigger: operation_graph.ActionTrigger | None
+    spliced_by: _SplicedAction | None
+
+    @property
+    def _graph(self) -> operation_graph.OperationGraph:
+        """The operation graph of the action this is a copy of."""
+        return self.graphs[self.action]
+
+    def render(self, table: dict[str, list[str]]):
+        """Add every operation of this copy, and of the actions it triggers, to ``table``."""
+        for node in self._graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            label = self._label(spliced, node)
+            label = self._label(node)
             if label in table:
                 raise ValueError(f"two operations are labeled {label}")
-            table[label] = self._dependency_labels(spliced, node.depends_on)
+            table[label] = self._dependency_labels(node.depends_on)
         # Triggering an action splices the operations of that action in here.
-        for trigger in graph.triggers:
-            self._splice(table, self._spliced_callee(spliced, trigger))
+        for trigger in self._graph.triggers:
+            self._spliced_callee(trigger).render(table)
 
-    def _spliced_callee(
-        self, spliced: _SplicedAction, trigger: operation_graph.ActionTrigger
-    ) -> _SplicedAction:
-        """Return the copy of the action ``trigger`` fires, spliced in by the copy ``spliced``."""
+    def _spliced_callee(self, trigger: operation_graph.ActionTrigger) -> _SplicedAction:
+        """Return the copy of the action ``trigger`` fires, which this copy splices in."""
         return _SplicedAction(
+            self.graphs,
+            self.names,
             trigger.callee,
-            self._invocation_labels.name(spliced, trigger),
+            self.names.triggering_name(self.action, self.name, trigger),
             trigger=trigger,
-            spliced_by=spliced,
+            spliced_by=self,
         )
 
-    def _label(
-        self, spliced: _SplicedAction, node: operation_graph.PositionOperationNode
-    ) -> str:
-        """Return the label of ``node``, an operation the copy ``spliced`` performs, such as ``test.move(item, dest)``."""
-        return f"{spliced.name}.{self._operation_labels[spliced.action][node.node_id]}"
+    def _label(self, node: operation_graph.PositionOperationNode) -> str:
+        """Return the label of ``node``, an operation this copy performs, such as ``test.move(item, dest)``."""
+        return f"{self.name}.{self.names.operation_name(self.action, node)}"
 
-    def _dependency_labels(
-        self, spliced: _SplicedAction, depends_on: Iterable[int]
-    ) -> list[str]:
-        """Return the labels of the operations the copy ``spliced`` waits on at the ids in ``depends_on``."""
-        graph = self._graphs[spliced.action]
+    def _dependency_labels(self, depends_on: Iterable[int]) -> list[str]:
+        """Return the labels of the operations this copy waits on at the ids in ``depends_on``."""
         dependency_labels: list[str] = []
         for depends_on_node_id in depends_on:
             dependency_labels.extend(
-                self._node_labels(spliced, graph.nodes[depends_on_node_id])
+                self._node_labels(self._graph.nodes[depends_on_node_id])
             )
         return dependency_labels
 
-    def _node_labels(
-        self, spliced: _SplicedAction, node: operation_graph.OperationNode
-    ) -> list[str]:
-        """Return the labels of the operations the copy ``spliced`` waits on at ``node``."""
+    def _node_labels(self, node: operation_graph.OperationNode) -> list[str]:
+        """Return the labels of the operations this copy waits on at ``node``."""
         match node:
             case operation_graph.PositionOperationNode():
-                return [self._label(spliced, node)]
+                return [self._label(node)]
             case operation_graph.RequirementNode():
-                return self._requirement_labels(spliced, node)
+                return self._requirement_labels(node)
             case operation_graph.GuaranteeNode():
                 # TODO: A guarantee waits on the last operation the triggered
                 # action performs on the position, which lives in the graph of
@@ -289,20 +314,19 @@ class _GraphRenderer:
                 raise TypeError(f"unknown node type: {type(node).__name__}")
 
     def _requirement_labels(
-        self, spliced: _SplicedAction, requirement: operation_graph.RequirementNode
+        self, requirement: operation_graph.RequirementNode
     ) -> list[str]:
-        """Return the labels of the operations that put the position of ``requirement`` in the state the copy ``spliced`` needs it in."""
-        if spliced.trigger is None or spliced.spliced_by is None:
+        """Return the labels of the operations that put the position of ``requirement`` in the state this copy needs it in."""
+        if self.trigger is None or self.spliced_by is None:
             # Nothing spliced the entry-point action in, so nothing in this program
             # satisfies its requirements.
             return []
-        satisfier = spliced.trigger.satisfiers.get(requirement.requirement_position)
+        satisfier = self.trigger.satisfiers.get(requirement.requirement_position)
         if satisfier is not None:
             # The action that triggered this copy says what satisfies the
             # requirement. That is one of its own operations, or a requirement of
             # its own, which whatever spliced it in satisfies in turn.
-            caller_graph = self._graphs[spliced.spliced_by.action]
-            return self._node_labels(spliced.spliced_by, caller_graph.nodes[satisfier])
+            return self.spliced_by._node_labels(self.spliced_by._graph.nodes[satisfier])
         if (
             requirement.required_state
             is action_contract.PositionOccupancyState.OCCUPIED
@@ -313,4 +337,4 @@ class _GraphRenderer:
         # Nothing the caller did made the position empty: it is empty because
         # nothing was ever put in it. What left it that way is the fill of the
         # position above it, which is the requirement this one waits on.
-        return self._dependency_labels(spliced, requirement.depends_on)
+        return self._dependency_labels(requirement.depends_on)
