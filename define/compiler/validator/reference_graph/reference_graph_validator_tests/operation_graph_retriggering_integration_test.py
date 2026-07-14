@@ -266,14 +266,14 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
             "first.dfn": (
                 "define the potential action<my.domain.com:my_lib:/first> {\n"
                 "    define the position<trigger_pos>.\n"
-                "    define the position<gw> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</worker>.\n"
-                "        }\n"
-                "    }\n"
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        define the position<gw> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</worker>.\n"
+                "            }\n"
+                "        }\n"
                 "        create a particle in position<gw>.\n"
                 "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
                 "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
@@ -284,14 +284,14 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
             "second.dfn": (
                 "define the potential action<my.domain.com:my_lib:/second> {\n"
                 "    define the position<trigger_pos>.\n"
-                "    define the position<gw> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</worker>.\n"
-                "        }\n"
-                "    }\n"
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        define the position<gw> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</worker>.\n"
+                "            }\n"
+                "        }\n"
                 "        create a particle in position<gw>.\n"
                 "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
                 "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
@@ -343,6 +343,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "first.create(gw::/worker::trigger_pos)#2": [
             "first.destroy(gw::/worker::trigger_pos)"
         ],
+        "first.destroy(gw)": ["first.create(gw::/worker::trigger_pos)#2"],
         "second.create(gw)": ["test.create(holder_second::/second::trigger_pos)"],
         "second.create(gw::/worker::trigger_pos)": ["second.create(gw)"],
         "second.destroy(gw::/worker::trigger_pos)": [
@@ -351,6 +352,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "second.create(gw::/worker::trigger_pos)#2": [
             "second.destroy(gw::/worker::trigger_pos)"
         ],
+        "second.destroy(gw)": ["second.create(gw::/worker::trigger_pos)#2"],
         "worker.create(scratch)": ["first.create(gw::/worker::trigger_pos)"],
         "worker.destroy(scratch)": ["worker.create(scratch)"],
         "worker.create(scratch)#2": ["first.create(gw::/worker::trigger_pos)#2"],

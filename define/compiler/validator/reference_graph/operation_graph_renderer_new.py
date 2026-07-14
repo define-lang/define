@@ -21,9 +21,6 @@ type _OperationGraphs = typed_name_dict.TypedNameDict[
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
-type _ActionInvocations = typed_name_dict.TypedNameDict[
-    ast.GlobalTypedName, _InvocationLabels
-]
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -91,6 +88,7 @@ class _InvocationLabels:
     def __init__(self, graph: operation_graph.OperationGraph):
         """Name the invocation every trigger operation in ``graph`` fires."""
         self._names: dict[int, str] = {}
+        self._callees: dict[int, ast.GlobalTypedNameReference] = {}
         times_invoked: dict[str, int] = {}
         for node in graph.nodes:
             for satisfaction in node.satisfies:
@@ -102,10 +100,70 @@ class _InvocationLabels:
                 self._names[satisfaction.trigger_node_id] = (
                     action_name if count == 1 else f"{action_name}#{count}"
                 )
+                self._callees[satisfaction.trigger_node_id] = satisfaction.callee
 
     def __getitem__(self, trigger_node_id: int) -> str:
         """Return the name of the invocation the trigger operation at ``trigger_node_id`` fires."""
         return self._names[trigger_node_id]
+
+    def names(self) -> Iterable[str]:
+        """Return the name of every invocation this action triggers."""
+        return self._names.values()
+
+    def callees(self) -> Iterable[ast.GlobalTypedNameReference]:
+        """Return the action every invocation this action triggers invokes."""
+        return self._callees.values()
+
+
+class _ActionInvocationLabels:
+    """The name of every invocation in the program, by the action that triggers it and the operation that fires it.
+
+    Each action names its own invocations, knowing nothing of the rest of the
+    program, so a name can fail to stand for one invocation in two ways: two
+    actions that invoke the same callee both name their first invocation of it
+    ``worker``, and an action invoked more than once hands out every one of its
+    names again in each of its own invocations. Either way, the name carries the
+    name of the invocation it was triggered from: ``first:worker``, ``first#2:worker``.
+    """
+
+    def __init__(self, graphs: _OperationGraphs):
+        """Name every invocation the actions in ``graphs`` trigger."""
+        self._labels: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, _InvocationLabels
+        ] = typed_name_dict.TypedNameDict()
+        # How many callers give out each name, and how many times each callee is
+        # invoked. A name stands for one invocation only when one caller gives it
+        # and that caller is itself invoked only once.
+        callers_naming: dict[str, int] = {}
+        times_invoked: typed_name_dict.TypedNameDict[ast.GlobalTypedName, int] = (
+            typed_name_dict.TypedNameDict()
+        )
+        for caller, graph in graphs.items():
+            labels = _InvocationLabels(graph)
+            self._labels[caller] = labels
+            for name in labels.names():
+                callers_naming[name] = callers_naming.get(name, 0) + 1
+            for callee in labels.callees():
+                times_invoked[callee] = times_invoked.get(callee, 0) + 1
+        self._ambiguous: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, set[str]
+        ] = typed_name_dict.TypedNameDict()
+        for caller, labels in self._labels.items():
+            caller_invoked_repeatedly = times_invoked.get(caller, 0) > 1
+            self._ambiguous[caller] = {
+                name
+                for name in labels.names()
+                if callers_naming[name] > 1 or caller_invoked_repeatedly
+            }
+
+    def name(
+        self, action: ast.GlobalTypedName, invocation: str, trigger_node_id: int
+    ) -> str:
+        """Return the name of the invocation the operation at ``trigger_node_id`` fires, in ``action``'s invocation named ``invocation``."""
+        name = self._labels[action][trigger_node_id]
+        if name in self._ambiguous[action]:
+            return f"{invocation}:{name}"
+        return name
 
 
 class _ForwardDependencyGraph:
@@ -158,11 +216,8 @@ class _GraphRenderer:
         return labels
 
     @cached_property
-    def _invocation_labels(self) -> _ActionInvocations:
-        invocations: _ActionInvocations = typed_name_dict.TypedNameDict()
-        for action, graph in self._graphs.items():
-            invocations[action] = _InvocationLabels(graph)
-        return invocations
+    def _invocation_labels(self) -> _ActionInvocationLabels:
+        return _ActionInvocationLabels(self._graphs)
 
     def _label(
         self,
@@ -189,7 +244,11 @@ class _GraphRenderer:
             # This operation satisfies a requirement, so the callee operations that
             # were waiting on that requirement now run.
             for satisfaction in node.satisfies:
-                table.update(self._satisfied_operations(satisfaction, label))
+                table.update(
+                    self._satisfied_operations(
+                        self._action, invocation, satisfaction, label
+                    )
+                )
         return table
 
     def _dependency_labels(
@@ -208,13 +267,17 @@ class _GraphRenderer:
 
     def _satisfied_operations(
         self,
+        caller: ast.GlobalTypedName,
+        caller_invocation: str,
         satisfaction: operation_graph.RequirementSatisfaction,
         satisfier: str,
     ) -> dict[str, list[str]]:
         """Return the callee operations that wait on the requirement the operation labeled ``satisfier`` satisfies."""
         graph = self._graphs[satisfaction.callee]
         requirement = graph.requirement_node(satisfaction.requirement_position)
-        invocation = self._invocation_labels[self._action][satisfaction.trigger_node_id]
+        invocation = self._invocation_labels.name(
+            caller, caller_invocation, satisfaction.trigger_node_id
+        )
         table: dict[str, list[str]] = {}
         for node in self._waiting_on(satisfaction.callee, requirement.node_id):
             dependency_labels: list[str] = []
