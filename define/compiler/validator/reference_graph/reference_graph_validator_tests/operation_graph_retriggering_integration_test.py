@@ -326,9 +326,10 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
     )
     assert_no_errors(result.program_result)
     # first and second each empty and refill worker's trigger position, so worker
-    # runs four times across the program. The four runs are numbered as one
-    # sequence, not per caller: second's first run of worker is #3, not #1.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    # runs four times across the program. Each caller names its own invocations of
+    # worker, so those names only tell the four runs apart once the invocation
+    # they were triggered from is on the front of them.
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(holder_first)": [],
         "test.create(holder_first::/first::trigger_pos)": ["test.create(holder_first)"],
         "test.create(holder_second)": [],
@@ -353,12 +354,117 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
             "second.destroy(gw::/worker::trigger_pos)"
         ],
         "second.destroy(gw)": ["second.create(gw::/worker::trigger_pos)#2"],
-        "worker.create(scratch)": ["first.create(gw::/worker::trigger_pos)"],
-        "worker.destroy(scratch)": ["worker.create(scratch)"],
-        "worker.create(scratch)#2": ["first.create(gw::/worker::trigger_pos)#2"],
-        "worker.destroy(scratch)#2": ["worker.create(scratch)#2"],
-        "worker.create(scratch)#3": ["second.create(gw::/worker::trigger_pos)"],
-        "worker.destroy(scratch)#3": ["worker.create(scratch)#3"],
-        "worker.create(scratch)#4": ["second.create(gw::/worker::trigger_pos)#2"],
-        "worker.destroy(scratch)#4": ["worker.create(scratch)#4"],
+        "first:worker.create(scratch)": ["first.create(gw::/worker::trigger_pos)"],
+        "first:worker.destroy(scratch)": ["first:worker.create(scratch)"],
+        "first:worker#2.create(scratch)": ["first.create(gw::/worker::trigger_pos)#2"],
+        "first:worker#2.destroy(scratch)": ["first:worker#2.create(scratch)"],
+        "second:worker.create(scratch)": ["second.create(gw::/worker::trigger_pos)"],
+        "second:worker.destroy(scratch)": ["second:worker.create(scratch)"],
+        "second:worker#2.create(scratch)": [
+            "second.create(gw::/worker::trigger_pos)#2"
+        ],
+        "second:worker#2.destroy(scratch)": ["second:worker#2.create(scratch)"],
+    }
+
+
+def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invocation(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<scratch>.\n"
+                "        create a particle in position<scratch>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<gw> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</worker>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<gw>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "        create a particle in position<gw>::action</worker>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<holder>.\n"
+                "        create a particle in position<holder>::action</middle>::position<trigger_pos>.\n"
+                "        destroy the particle in position<holder>::action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position<holder>::action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # middle runs twice, and triggers worker twice in each of its runs. middle
+    # names both of its invocations of worker the same way in either run, so the
+    # invocation middle itself is in has to go on the front of them to tell the
+    # four runs of worker apart.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(holder)": [],
+        "test.create(holder::/middle::trigger_pos)": ["test.create(holder)"],
+        "test.destroy(holder::/middle::trigger_pos)": [
+            "test.create(holder::/middle::trigger_pos)"
+        ],
+        "test.create(holder::/middle::trigger_pos)#2": [
+            "test.destroy(holder::/middle::trigger_pos)"
+        ],
+        "middle.create(gw)": ["test.create(holder::/middle::trigger_pos)"],
+        "middle.create(gw::/worker::trigger_pos)": ["middle.create(gw)"],
+        "middle.destroy(gw::/worker::trigger_pos)": [
+            "middle.create(gw::/worker::trigger_pos)"
+        ],
+        "middle.create(gw::/worker::trigger_pos)#2": [
+            "middle.destroy(gw::/worker::trigger_pos)"
+        ],
+        "middle.destroy(gw)": ["middle.create(gw::/worker::trigger_pos)#2"],
+        "middle:worker.create(scratch)": ["middle.create(gw::/worker::trigger_pos)"],
+        "middle:worker.destroy(scratch)": ["middle:worker.create(scratch)"],
+        "middle:worker#2.create(scratch)": [
+            "middle.create(gw::/worker::trigger_pos)#2"
+        ],
+        "middle:worker#2.destroy(scratch)": ["middle:worker#2.create(scratch)"],
+        "middle#2.create(gw)": ["test.create(holder::/middle::trigger_pos)#2"],
+        "middle#2.create(gw::/worker::trigger_pos)": ["middle#2.create(gw)"],
+        "middle#2.destroy(gw::/worker::trigger_pos)": [
+            "middle#2.create(gw::/worker::trigger_pos)"
+        ],
+        "middle#2.create(gw::/worker::trigger_pos)#2": [
+            "middle#2.destroy(gw::/worker::trigger_pos)"
+        ],
+        "middle#2.destroy(gw)": ["middle#2.create(gw::/worker::trigger_pos)#2"],
+        "middle#2:worker.create(scratch)": [
+            "middle#2.create(gw::/worker::trigger_pos)"
+        ],
+        "middle#2:worker.destroy(scratch)": ["middle#2:worker.create(scratch)"],
+        "middle#2:worker#2.create(scratch)": [
+            "middle#2.create(gw::/worker::trigger_pos)#2"
+        ],
+        "middle#2:worker#2.destroy(scratch)": ["middle#2:worker#2.create(scratch)"],
     }

@@ -291,9 +291,16 @@ class _GraphRenderer:
                     dependency_labels.append(
                         self._label(invocation, satisfaction.callee, depends_on_node)
                     )
-            table[self._label(invocation, satisfaction.callee, node)] = (
-                dependency_labels
-            )
+            label = self._label(invocation, satisfaction.callee, node)
+            table[label] = dependency_labels
+            # The callee triggers actions of its own, whose operations run in this
+            # triggering of the callee and in no other triggering of it.
+            for callee_satisfaction in node.satisfies:
+                table.update(
+                    self._satisfied_operations(
+                        satisfaction.callee, invocation, callee_satisfaction, label
+                    )
+                )
         return table
 
     def _waiting_on(
