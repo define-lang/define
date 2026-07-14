@@ -119,12 +119,12 @@ class _PendingGuarantee:
     # All of a triggered contract's guarantees (own and nested) carry it, so a
     # body statement that executes later supersedes them.
     body_operation_number: int
-    # DLP 44: the operation-graph node of the caller op that fired this trigger.
+    # DLP 44: the triggering, in the operation graph, that fired this callee.
     # Each contracted position the guarantee touches has its last operation
-    # pointed here, so the caller's later ops on it chain via the Ancestor Rule.
-    # Nested children inherit it verbatim (the whole callee subtree happens, from
-    # the caller's view, at the one trigger node).
-    trigger_node_id: int
+    # pointed at the operation that fired it, so the caller's later ops on it
+    # chain via the Ancestor Rule. Nested children inherit it verbatim (the whole
+    # callee subtree happens, from the caller's view, at the one trigger).
+    trigger: operation_graph.ActionTrigger
     # DLP 44: the chain of the action the caller directly triggered. The
     # operation graph names every position this trigger guarantees by the name
     # that action gives it, since it is the only action the caller triggered, so
@@ -877,14 +877,14 @@ class ParticleTracker:
         # We have to record the action trigger when particles are still
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
-        trigger_node_id = self._operation_graph.record_action_trigger(
+        trigger = self._operation_graph.record_action_trigger(
             action_chain, acting_on_position, requirements, caller_requirement_positions
         )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
             guarantees,
             self._body_operation_number,
-            trigger_node_id,
+            trigger,
             trigger_chain=action_chain_key,
         )
         self._apply_pending_guarantee(callee_guarantees)
@@ -898,7 +898,7 @@ class ParticleTracker:
             pending_guarantee
         )
         self._operation_graph.record_guarantees(
-            pending_guarantee.trigger_node_id,
+            pending_guarantee.trigger,
             pending_guarantee.trigger_chain,
             touched_keys,
         )
@@ -908,7 +908,7 @@ class ParticleTracker:
                 child_position,
                 child.guarantees,
                 pending_guarantee.body_operation_number,
-                pending_guarantee.trigger_node_id,
+                pending_guarantee.trigger,
                 trigger_chain=pending_guarantee.trigger_chain,
                 call_chain_depth=pending_guarantee.call_chain_depth + 1,
             )

@@ -1,9 +1,6 @@
 import pytest
 
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
-)
 from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
     operation_dependencies_new,
 )
@@ -802,7 +799,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
     # then fills the empty-by-default grandchildren parent::/a and parent::/b;
     # each branches from the move that placed the parent, since the move's target
     # (gw::/inner::input) is the nearest ancestor the caller touched.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(mw)": [],
         "test.create(mw::/middle::iface)": ["test.create(mw)"],
         "test.create(mw::/middle::iface::/parent)": ["test.create(mw::/middle::iface)"],
@@ -909,7 +906,7 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     # then /middle) before /middle fills the trigger and /inner destroys the input
     # that rode along. Each callee operation resolves to the move that most recently
     # carried the particle, not to a trigger.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/inner::input)": ["test.create(box)"],
         "test.create(outer_holder)": [],
@@ -999,7 +996,7 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
     # to the first fill would race the move that empties slot again. Likewise
     # helper.move(slot, out) waits on the caller fill of helper::slot, not the
     # helper trigger.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(source)": [],
         "test.create(gw_a)": [],
         "test.create(gw_b)": [],
@@ -1082,7 +1079,7 @@ def test_caller_consumes_a_nested_guarantee(
     # guarantee, so test's move consumes an output produced two levels down.
     # The move must wait on inner's final operation on <out>, resolved within
     # the middle instance test triggered.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],

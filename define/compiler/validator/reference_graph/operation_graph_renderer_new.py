@@ -319,12 +319,20 @@ class _SplicedAction:
             case operation_graph.RequirementNode():
                 return self._requirement_labels(node)
             case operation_graph.GuaranteeNode():
-                # TODO: A guarantee waits on the last operation the triggered
-                # action performs on the position, which lives in the graph of
-                # that action, so this drops the dependency today.
-                return []
+                return self._guarantee_labels(node)
             case _:
                 raise TypeError(f"unknown node type: {type(node).__name__}")
+
+    def _guarantee_labels(self, guarantee: operation_graph.GuaranteeNode) -> list[str]:
+        """Return the labels of the operations that leave the guaranteed position as the triggered action guarantees it."""
+        # The triggered action guarantees the position, so what puts it in that
+        # state is the last operation that action performs on it, in the copy of it
+        # the triggering the guarantee hangs off spliced in.
+        spliced_callee = self._spliced_callee(guarantee.trigger)
+        last_operation = spliced_callee._graph.last_operation_on_position(
+            guarantee.guaranteed_position
+        )
+        return spliced_callee._node_labels(spliced_callee._graph.nodes[last_operation])
 
     def _requirement_labels(
         self, requirement: operation_graph.RequirementNode

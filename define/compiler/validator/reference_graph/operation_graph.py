@@ -128,10 +128,19 @@ class GuaranteeNode(OperationNode):
     position depend on this node with ordinary edges.
     """
 
-    # The triggered action's full typed name (the key of the callee's graph).
-    action: str
+    # The triggering of the action that guarantees the position.
+    trigger: ActionTrigger
     # The guaranteed position, by the callee's own key for it.
     guaranteed_position: tuple[str, ...]
+
+    @property
+    def action(self) -> str:
+        """The full typed name of the action that guarantees the position.
+
+        TODO: Remove this once the old operation_graph_renderer, its last reader,
+        is gone. The triggering names the action it fires.
+        """
+        return self.trigger.callee.full_typed_name
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -241,14 +250,18 @@ class OperationGraph:
         """This action's own trigger position key; empty for a constructor/destructor."""
         return self._trigger_position_key
 
-    def last_operation_affecting_position(self, key: tuple[str, ...]) -> int:
-        """Return the last operation that affected the position at ``key``.
+    def last_operation_on_position(self, key: tuple[str, ...]) -> int:
+        """Return the last operation this action performed on the position at ``key``."""
+        return self._last_operation[key]
 
-        An operation recorded under exactly this key wins. Otherwise, a move of
-        an ancestor position affected this one, because a move relocates every
-        position inside what it moves. Any other ancestor operation did not (a
-        create makes exactly one particle; the positions inside it start empty),
-        so a position nothing affected raises KeyError.
+    def _last_operation_affecting_position(self, key: tuple[str, ...]) -> int | None:
+        """Return the last operation that put the position at ``key`` in the state it is in, if any.
+
+        This is either the last direct operation on the position, or the
+        last move that put the parent particle into _its_ position.
+
+        If there are no operations this action did that affected the named
+        position in nay way, returns None.
         """
         operation = self._last_operation.get(key)
         if operation is not None:
@@ -256,7 +269,7 @@ class OperationGraph:
         ancestor = self._most_recent_existing_ancestor_operation(key)
         if ancestor is not None and isinstance(self._nodes[ancestor], MoveNode):
             return ancestor
-        raise KeyError(key)
+        return None
 
     def _most_recent_existing_ancestor_operation(
         self, key: tuple[str, ...]
@@ -288,8 +301,8 @@ class OperationGraph:
         acting_on_position: ast.PositionReference,
         requirements: Iterable[ast.PositionReference],
         caller_requirement_positions: Iterable[ast.PositionReference],
-    ) -> int:
-        """Record that this action triggers ``callee``, returning the firing operation's id.
+    ) -> ActionTrigger:
+        """Record that this action triggers ``callee``, returning that triggering.
 
         The firing operation is the one that filled ``acting_on_position`` (a trigger position
         for an action, or the action being operated on by a constructor/destructor).
@@ -335,8 +348,9 @@ class OperationGraph:
                     )
                 )
                 satisfiers[requirement_key] = satisfier
-        self._triggers.append(ActionTrigger(callee_action, firing_node_id, satisfiers))
-        return firing_node_id
+        trigger = ActionTrigger(callee_action, firing_node_id, satisfiers)
+        self._triggers.append(trigger)
+        return trigger
 
     @property
     def triggers(self) -> Sequence[ActionTrigger]:
@@ -348,7 +362,10 @@ class OperationGraph:
         if in_callee_key not in self._last_operation:
             # We need to materialize RequirementNodes to propagate to the caller.
             _ = self._most_recent_ancestor_chain_operation(in_callee_key)
-        return self._last_operation.get(in_callee_key)
+        # A move of an ancestor position carried this position along with it, so
+        # that move is what put it in the state the callee needs, even though
+        # nothing operated on the position itself.
+        return self._last_operation_affecting_position(in_callee_key)
 
     def _compute_dependencies(
         self,
@@ -550,11 +567,11 @@ class OperationGraph:
 
     def record_guarantees(
         self,
-        trigger_node_id: int,
+        trigger: ActionTrigger,
         callee_chain: tuple[str, ...],
         guaranteed_keys: Iterable[tuple[str, ...]],
     ):
-        """Record the positions the trigger of ``callee_chain`` guarantees, as nodes hanging off it.
+        """Record the positions ``trigger`` guarantees, as nodes hanging off it.
 
         Each key in ``guaranteed_keys`` is a contracted position's absolute key.
         That position's last operation becomes a new guarantee node, so caller
@@ -568,9 +585,9 @@ class OperationGraph:
             self._nodes.append(
                 GuaranteeNode(
                     node_id=node_id,
-                    action=callee_chain[-1],
+                    trigger=trigger,
                     guaranteed_position=ast.chain_in_callee(callee_chain, absolute_key),
-                    depends_on=[trigger_node_id],
+                    depends_on=[trigger.trigger_node_id],
                 )
             )
             self._last_operation[absolute_key] = node_id

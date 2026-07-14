@@ -1,13 +1,18 @@
+import pytest
+
 from define.compiler import conftest
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
-)
 from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
     operation_dependencies_new,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+
+_EMPTY_RULE_NOT_CROSSED = (
+    "an operation that empties a position the caller filled does not depend on the"
+    " caller's operations on the transitive child positions beneath it, so Rule 2"
+    " of the Particle Operation Dependency Graph is not applied across a trigger"
+)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -207,6 +212,72 @@ def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<holder> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<source> to position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>.\n"
+                "        create a particle in position<gateway>::action</other>::position<source>::position</a>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<gateway>::action</other>::position<holder>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /other fills holder::/a without ever operating on it: its move of <source>
+    # carries the particle's /a along. The caller's destroy of that position waits
+    # on the guarantee, which resolves to the move that carried it there. The move
+    # empties <source>, so it waits on the caller's create of the /a inside it: the
+    # particle it carries is not complete until that create is done.
+    assert operation_dependencies_new(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::source)": ["test.create(gateway)"],
+        "test.create(gateway::/other::source::/a)": [
+            "test.create(gateway::/other::source)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.move(source, holder)": ["test.create(gateway::/other::source::/a)"],
+        "test.destroy(gateway::/other::holder::/a)": ["other.move(source, holder)"],
+    }
+
+
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -246,7 +317,7 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(output)": ["test.create(gateway::/other::trigger_pos)"],
@@ -292,7 +363,7 @@ def test_caller_operation_waits_on_callee_move_output(
         },
     )
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.move(trigger_pos, output)": [
@@ -345,7 +416,7 @@ def test_caller_operation_waits_on_callee_destroy_output(
     # caller fill that satisfies the requirement, not to the guarantee node or the
     # trigger. The caller's refill then waits on the callee's destroy, its final
     # operation on the position.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::output)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
@@ -1002,7 +1073,7 @@ def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
     # particle has position</a>, and the move feeds dest, which requires it. Binding
     # to the box2 fill would let the move run with box2's particle and carry it into
     # dest, violating the constraint.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(action_holder)": [],
         "test.create(box1)": [],
         "test.create(box2)": [],

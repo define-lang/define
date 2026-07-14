@@ -140,7 +140,7 @@ class _OperationGraphFlattener:
         callee_graph, callee_labels = callee_splices[(trigger_node_id, node.action)]
         # A guaranteed position the callee only affected by moving an ancestor
         # resolves to that move.
-        final_operation = callee_graph.last_operation_affecting_position(
+        final_operation = callee_graph.last_operation_on_position(
             node.guaranteed_position
         )
         final_operation_label = callee_labels[final_operation]
