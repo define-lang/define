@@ -283,7 +283,7 @@ def test_empty_requirement_waits_on_the_caller_destroy_that_clears_it(
     # trigger: we know the action triggers, and the create's only precondition is that
     # <slot> is empty. (The destroy transitively orders it after the callee's parent
     # particle was created, since the destroy depends on it.)
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::slot)": ["test.create(gateway)"],
         "test.destroy(gateway::/other::slot)": ["test.create(gateway::/other::slot)"],
@@ -330,7 +330,7 @@ def test_occupied_requirement_waits_on_the_caller_create_that_fills_it(
     assert_no_errors(result.program_result)
     # other.destroy(input) needs only <input> occupied, so it should wait _only_
     # test.create(input), which fills it -- and on nothing else.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::input)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
@@ -378,7 +378,7 @@ def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
     assert_no_errors(result.program_result)
     # A move-out clears the requirement just as a destroy does, so other.create(slot)
     # should wait on the move that empties <slot>, and on nothing else.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::slot)": ["test.create(gateway)"],
         "test.move(gateway::/other::slot, sink)": [
@@ -491,7 +491,7 @@ def test_child_empty_requirement_waits_on_the_caller_empty_of_the_child(
     # The callee fills the child box::/child, whose EMPTY requirement the caller
     # satisfies by emptying that same child. other.create(box::/child) waits on
     # the caller destroy of the child, not on the trigger.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
         "test.create(gateway::/other::box::/child)": [
@@ -615,7 +615,7 @@ def test_occupied_grandchild_requirement_waits_on_the_caller_fill(
     assert_no_errors(result.program_result)
     # The callee reads a grandchild-depth contracted position, so its OCCUPIED
     # requirement resolves to the caller fill of that grandchild.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
         "test.create(gateway::/other::box::/child)": [
@@ -686,7 +686,7 @@ def test_empty_grandchild_requirement_waits_on_the_caller_empty(
     assert_no_errors(result.program_result)
     # The callee fills a grandchild-depth contracted position, so its EMPTY
     # requirement resolves to the caller empty of that same grandchild.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
         "test.create(gateway::/other::box::/child)": [
@@ -816,7 +816,7 @@ def test_empty_requirement_resolves_to_the_most_recent_empty_before_the_trigger(
     # needs slot empty, so it must resolve to the second (most recent) destroy
     # before the trigger, not the first -- picking the first would leave it racing
     # the refill.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/filler::slot)": ["test.create(gw)"],
         "test.destroy(gw::/filler::slot)": ["test.create(gw::/filler::slot)"],
@@ -1064,7 +1064,7 @@ def test_triggered_action_with_no_guarantees_still_runs(
     # its caller -- but it still runs. Its operations must appear, waiting on
     # the trigger fill (the scratch destroy is the block-end auto-destruction),
     # and the caller's unrelated create of <note> stays independent of it.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
         "worker.create(scratch)": ["test.create(gw::/worker::trigger_pos)"],

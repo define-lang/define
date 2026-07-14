@@ -695,7 +695,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
         "@pypi//pytest",
     ],
 )
@@ -708,6 +708,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer_new",
         "@pypi//pytest",
     ],
 )

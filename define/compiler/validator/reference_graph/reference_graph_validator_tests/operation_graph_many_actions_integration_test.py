@@ -4,6 +4,9 @@ from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
+from define.compiler.validator.reference_graph.operation_graph_renderer_new import (
+    operation_dependencies_new,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -745,7 +748,7 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
     # test straight from outer's contract references, and test's move resolves
     # across outer's trigger of middle to inner's final operation on <out>, in
     # the chain of triggers test fired.
-    assert operation_dependencies(result.program_result, _TEST) == {
+    assert operation_dependencies_new(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/outer::gw)": ["test.create(box)"],
         "test.create(box::/outer::gw::/middle::igw)": ["test.create(box::/outer::gw)"],
