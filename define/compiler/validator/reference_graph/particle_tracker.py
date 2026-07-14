@@ -16,7 +16,7 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Mapping
 
 
 @dataclass(frozen=True, slots=True)
@@ -397,7 +397,7 @@ class ParticleTracker:
 
     def __init__(
         self,
-        requirements: Container[tuple[str, ...]],
+        requirements: Mapping[tuple[str, ...], action_contract.PositionRequirement],
         trigger_position: ast.PositionReference | None = None,
     ):
         """Initialize an empty particle tracker.

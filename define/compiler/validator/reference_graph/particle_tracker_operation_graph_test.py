@@ -16,7 +16,7 @@ def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
     return typed_name
 
 
-_NO_REQUIREMENTS: frozenset[tuple[str, ...]] = frozenset()
+_NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
 
 _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode

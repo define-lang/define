@@ -1,7 +1,7 @@
 import pytest
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 _LOC = ast.start_of_file_location()
 
@@ -12,7 +12,10 @@ def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
     return typed_name
 
 
-_NO_REQUIREMENTS: frozenset[tuple[str, ...]] = frozenset()
+_NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
+
+_EMPTY = action_contract.PositionOccupancyState.EMPTY
+_OCCUPIED = action_contract.PositionOccupancyState.OCCUPIED
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -128,6 +131,47 @@ def _global_key(*paths: str) -> tuple[str, ...]:
     return _global_ref(*paths).canonical_chained_name_tuple
 
 
+_DUMMY_ACTION = ast.ActionDefinition(
+    name=ast.DefinitionGlobalNameContent(
+        fqun=_FQUN,
+        path=ast.GlobalPathName(name="/dummy", location=_LOC),
+        location=_LOC,
+    ),
+    location=_LOC,
+    quality_implications=(),
+    interface_positions=(),
+    trigger_conditions=ast.TriggerConditionsBlock(
+        conditions=(
+            ast.PositionPresenceStatement(
+                typed_name=ast.LocalTypedNameReference(
+                    name_type=ast.NameType.POSITION,
+                    name_content=ast.LocalNameContent(name="dummy", location=_LOC),
+                    location=_LOC,
+                ),
+                location=_LOC,
+            ),
+        ),
+        location=_LOC,
+    ),
+    action_statements=ast.ActionStatementsBlock(statements=(), location=_LOC),
+)
+
+
+def _requirements(
+    *requirements: tuple[ast.PositionReference, action_contract.PositionOccupancyState],
+) -> dict[tuple[str, ...], action_contract.PositionRequirement]:
+    """Return an inferred-requirements map holding a requirement on each position."""
+    return {
+        position.canonical_chained_name_tuple: action_contract.PositionRequirement(
+            required_state=state,
+            position=position,
+            inferred_at=_LOC,
+            enclosing_action=_DUMMY_ACTION,
+        )
+        for position, state in requirements
+    }
+
+
 def _trigger(
     graph: operation_graph.OperationGraph,
     action_chain: ast.ActionReference,
@@ -151,7 +195,9 @@ def _trigger(
 # Every graph below is an action triggered by position<run>, so its first node
 # stands in for the caller operation that filled that position: the operations
 # with nothing else to wait on depend on it.
-_TRIGGER_POSITION = operation_graph.RequirementNode(node_id=0, depends_on=[])
+_TRIGGER_POSITION = operation_graph.RequirementNode(
+    node_id=0, depends_on=[], required_state=_OCCUPIED
+)
 
 
 def test_same_key_chain():
@@ -1017,7 +1063,9 @@ def test_last_operation_affecting_position_raises_for_an_unaffected_position():
 
 
 def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
-    graph = operation_graph.OperationGraph({_key("input")}, _ref("run"))
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("input"), _OCCUPIED)), _ref("run")
+    )
     input_position = _ref("input")
     # The destroy reads a caller-filled position that no earlier body operation
     # acted on, so it waits on a RequirementNode minted at the lower id -- it
@@ -1025,19 +1073,25 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
     graph.record_destroy(input_position, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
         operation_graph.DestroyNode(node_id=2, target=input_position, depends_on=[1]),
     ]
     assert graph.requirement_node(_key("input")).node_id == 1
 
 
 def test_fill_of_empty_requirement_waits_on_a_requirement_node():
-    graph = operation_graph.OperationGraph({_key("slot")}, _ref("run"))
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("slot"), _EMPTY)), _ref("run")
+    )
     slot = _ref("slot")
     graph.record_create(slot)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
     ]
     assert graph.requirement_node(_key("slot")).node_id == 1
@@ -1063,7 +1117,9 @@ def test_operations_with_nothing_else_to_wait_on_share_the_trigger_position_requ
     graph.record_create(scratch)
     graph.record_create(note)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=0, depends_on=[], required_state=_OCCUPIED
+        ),
         operation_graph.CreateNode(node_id=1, target=scratch, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=note, depends_on=[0]),
     ]
@@ -1079,7 +1135,9 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
     graph.record_destroy(run, [])
     graph.record_create(scratch)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=0, depends_on=[], required_state=_OCCUPIED
+        ),
         operation_graph.DestroyNode(node_id=1, target=run, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=scratch, depends_on=[0]),
     ]
@@ -1092,14 +1150,20 @@ def test_a_constructor_gets_a_requirement_node_for_the_position_it_is_assigned_t
     # can name, so its trigger requirement carries the empty key. The create of
     # the global /marker it assigns waits on that position's own requirement,
     # while the create with nothing else to wait on waits on the trigger.
-    graph = operation_graph.OperationGraph({_global_key("/marker")})
+    graph = operation_graph.OperationGraph(
+        _requirements((_global_ref("/marker"), _EMPTY))
+    )
     marker = _global_ref("/marker")
     scratch = _ref("scratch")
     graph.record_create(marker)
     graph.record_create(scratch)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(node_id=0, depends_on=[]),
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=0, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=2, target=marker, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=scratch, depends_on=[0]),
     ]
@@ -1109,7 +1173,9 @@ def test_a_constructor_gets_a_requirement_node_for_the_position_it_is_assigned_t
 
 
 def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
-    graph = operation_graph.OperationGraph({_key("slot")}, _ref("run"))
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("slot"), _EMPTY)), _ref("run")
+    )
     slot = _ref("slot")
     graph.record_create(slot)
     # The destroy follows an earlier body operation on the position (the
@@ -1117,7 +1183,9 @@ def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
     graph.record_destroy(slot, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=slot, depends_on=[2]),
     ]
@@ -1125,14 +1193,18 @@ def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
 
 
 def test_requirement_node_attaches_to_the_nearest_requirement_ancestor():
-    graph = operation_graph.OperationGraph({_key("box")}, _ref("run"))
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("box"), _OCCUPIED)), _ref("run")
+    )
     deep = _ref("box", "mid", "deep")
     # Only box is a requirement, so the intermediate positions mint no nodes of
     # their own and the create waits on box's RequirementNode.
     graph.record_create(deep)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
         operation_graph.CreateNode(node_id=2, target=deep, depends_on=[1]),
     ]
     assert graph.requirement_node(_key("box")).node_id == 1
@@ -1145,7 +1217,12 @@ def test_two_children_of_required_parent_share_the_parent_requirement_node():
     # shared: each child's own RequirementNode depends on it, so the two creates
     # transitively wait on whatever fills box.
     graph = operation_graph.OperationGraph(
-        {_key("box"), _key("box", "a"), _key("box", "b")}, _ref("run")
+        _requirements(
+            (_ref("box"), _OCCUPIED),
+            (_ref("box", "a"), _EMPTY),
+            (_ref("box", "b"), _EMPTY),
+        ),
+        _ref("run"),
     )
     box_a = _ref("box", "a")
     box_b = _ref("box", "b")
@@ -1153,10 +1230,16 @@ def test_two_children_of_required_parent_share_the_parent_requirement_node():
     graph.record_create(box_b)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=3, target=box_a, depends_on=[2]),
-        operation_graph.RequirementNode(node_id=4, depends_on=[1]),
+        operation_graph.RequirementNode(
+            node_id=4, depends_on=[1], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=5, target=box_b, depends_on=[4]),
     ]
     assert graph.requirement_node(_key("box")).node_id == 1
@@ -1169,20 +1252,26 @@ def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
     # builds a RequirementNode per contracted ancestor, each depending on the
     # next shallower one, and the create waits on the leaf.
     graph = operation_graph.OperationGraph(
-        {
-            _key("box"),
-            _key("box", "child"),
-            _key("box", "child", "grandchild"),
-        },
+        _requirements(
+            (_ref("box"), _OCCUPIED),
+            (_ref("box", "child"), _OCCUPIED),
+            (_ref("box", "child", "grandchild"), _EMPTY),
+        ),
         _ref("run"),
     )
     grandchild = _ref("box", "child", "grandchild")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=3, depends_on=[2], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
     assert graph.requirement_node(_key("box")).node_id == 1
@@ -1195,20 +1284,26 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
     # grandchild builds the same ancestor chain, and the destroy waits on the
     # leaf.
     graph = operation_graph.OperationGraph(
-        {
-            _key("box"),
-            _key("box", "child"),
-            _key("box", "child", "grandchild"),
-        },
+        _requirements(
+            (_ref("box"), _OCCUPIED),
+            (_ref("box", "child"), _OCCUPIED),
+            (_ref("box", "child", "grandchild"), _OCCUPIED),
+        ),
         _ref("run"),
     )
     grandchild = _ref("box", "child", "grandchild")
     graph.record_destroy(grandchild, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=3, depends_on=[2], required_state=_OCCUPIED
+        ),
         operation_graph.DestroyNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
     assert graph.requirement_node(_key("box")).node_id == 1
@@ -1221,14 +1316,22 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
     # reads input::/parent (provided by a caller move that carries the child), so
     # the destroy waits on the input::/parent requirement, which waits on input.
     graph = operation_graph.OperationGraph(
-        {_key("input"), _key("input", "parent")}, _ref("run")
+        _requirements(
+            (_ref("input"), _OCCUPIED),
+            (_ref("input", "parent"), _OCCUPIED),
+        ),
+        _ref("run"),
     )
     parent = _ref("input", "parent")
     graph.record_destroy(parent, [])
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_OCCUPIED
+        ),
         operation_graph.DestroyNode(node_id=3, target=parent, depends_on=[2]),
     ]
     assert graph.requirement_node(_key("input")).node_id == 1
@@ -1240,11 +1343,11 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
     # and fills its children. The chain is built from global keys verbatim; the
     # /parent RequirementNode is shared by both children's requirements.
     graph = operation_graph.OperationGraph(
-        {
-            _global_key("/parent"),
-            _global_key("/parent", "/child1"),
-            _global_key("/parent", "/child2"),
-        },
+        _requirements(
+            (_global_ref("/parent"), _OCCUPIED),
+            (_global_ref("/parent", "/child1"), _EMPTY),
+            (_global_ref("/parent", "/child2"), _EMPTY),
+        ),
         _ref("run"),
     )
     child1 = _global_ref("/parent", "/child1")
@@ -1253,10 +1356,16 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
     graph.record_create(child2)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=3, target=child1, depends_on=[2]),
-        operation_graph.RequirementNode(node_id=4, depends_on=[1]),
+        operation_graph.RequirementNode(
+            node_id=4, depends_on=[1], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=5, target=child2, depends_on=[4]),
     ]
     assert graph.requirement_node(_global_key("/parent")).node_id == 1
@@ -1271,7 +1380,9 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     # caller-controlled empty-requirement <dest> (Fill Rule, no in-body op -> a
     # RequirementNode). This is the shape a real /test produces for
     # `create <src>; move <src> to <dest>` with <dest> an empty-by-default guarantee.
-    graph = operation_graph.OperationGraph({_key("dest")}, _ref("run"))
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("dest"), _EMPTY)), _ref("run")
+    )
     src = _ref("src")
     dest = _ref("dest")
     graph.record_create(src)
@@ -1279,7 +1390,9 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
         operation_graph.CreateNode(node_id=1, target=src, depends_on=[0]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[]),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[], required_state=_EMPTY
+        ),
         operation_graph.MoveNode(node_id=3, source=src, target=dest, depends_on=[1, 2]),
     ]
     assert graph.requirement_node(_key("dest")).node_id == 2
@@ -1290,20 +1403,26 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
     # /parent::/child::/grandchild chain is built from global keys, each
     # RequirementNode depending on the next shallower one.
     graph = operation_graph.OperationGraph(
-        {
-            _global_key("/parent"),
-            _global_key("/parent", "/child"),
-            _global_key("/parent", "/child", "/grandchild1"),
-        },
+        _requirements(
+            (_global_ref("/parent"), _OCCUPIED),
+            (_global_ref("/parent", "/child"), _OCCUPIED),
+            (_global_ref("/parent", "/child", "/grandchild1"), _EMPTY),
+        ),
         _ref("run"),
     )
     grandchild = _global_ref("/parent", "/child", "/grandchild1")
     graph.record_create(grandchild)
     assert list(graph.nodes) == [
         _TRIGGER_POSITION,
-        operation_graph.RequirementNode(node_id=1, depends_on=[]),
-        operation_graph.RequirementNode(node_id=2, depends_on=[1]),
-        operation_graph.RequirementNode(node_id=3, depends_on=[2]),
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=3, depends_on=[2], required_state=_EMPTY
+        ),
         operation_graph.CreateNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
     assert graph.requirement_node(_global_key("/parent")).node_id == 1

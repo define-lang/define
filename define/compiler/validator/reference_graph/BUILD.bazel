@@ -92,6 +92,7 @@ py_library(
     srcs = ["operation_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":action_contract",
         "//define/compiler:ast",
     ],
 )

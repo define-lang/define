@@ -20,9 +20,10 @@ import typing
 from dataclasses import dataclass, field
 
 from define.compiler import ast
+from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,11 +116,13 @@ class RequirementNode(OperationNode):
 
     This stands in for the caller operation that satisfies an inferred requirement.
     The renderer/codegen resolves it to the caller op that most recently operated
-    on ``requirement_position`` before the trigger. It carries only the position,
-    not the required state, because that most-recent caller op already leaves the
-    position in the required state in all valid Define programs.
+    on ``requirement_position`` before the trigger. A position can be empty
+    without any operation emptying it, so an empty requirement can have no such
+    caller op at all, which is why the required state is recorded here.
     """
 
+    # The state this action needs the position to be in.
+    required_state: action_contract.PositionOccupancyState
     # This action's own key for the caller-controlled contracted position.
     # TODO: Remove this once the old operation_graph_renderer, its last reader,
     # is gone. A caller that holds a satisfaction reaches the node through
@@ -134,7 +137,7 @@ class OperationGraph:
 
     def __init__(
         self,
-        requirements: Container[tuple[str, ...]],
+        requirements: Mapping[tuple[str, ...], action_contract.PositionRequirement],
         trigger_position: ast.PositionReference | None = None,
     ):
         """Create an empty graph.
@@ -173,7 +176,9 @@ class OperationGraph:
         #     new global max, so it invalidates the answer for its whole subtree,
         #     not just when a requirement node is added.)
         self._last_operation: dict[tuple[str, ...], int] = {}
-        self._requirements: Container[tuple[str, ...]] = requirements
+        self._requirements: Mapping[
+            tuple[str, ...], action_contract.PositionRequirement
+        ] = requirements
         self._trigger_position_key: tuple[str, ...] = (
             trigger_position.canonical_chained_name_tuple
             if trigger_position is not None
@@ -187,7 +192,9 @@ class OperationGraph:
         # destructor gets a RequirementNode with an empty key as a symbolic stand-in
         # for "the action got triggered."
         self._trigger_position_requirement_node_id: int = self._add_requirement_node(
-            self._trigger_position_key, ancestor=None
+            self._trigger_position_key,
+            ancestor=None,
+            required_state=action_contract.PositionOccupancyState.OCCUPIED,
         )
 
     @property
@@ -377,7 +384,8 @@ class OperationGraph:
     ) -> int | None:
         """Materialize a RequirementNode standing in for the caller op on ``key``, or None."""
         # The position isn't one of our inferred requirements, no need to worry abut it.
-        if key not in self._requirements:
+        requirement = self._requirements.get(key)
+        if requirement is None:
             return None
         # There is an ancestor operation, and isn't a requirement node (meaning we are already
         # past requirements on this position).
@@ -385,13 +393,19 @@ class OperationGraph:
             self._nodes[ancestor], RequirementNode
         ):
             return None
-        return self._add_requirement_node(key, ancestor)
+        return self._add_requirement_node(key, ancestor, requirement.required_state)
 
-    def _add_requirement_node(self, key: tuple[str, ...], ancestor: int | None) -> int:
+    def _add_requirement_node(
+        self,
+        key: tuple[str, ...],
+        ancestor: int | None,
+        required_state: action_contract.PositionOccupancyState,
+    ) -> int:
         """Add a RequirementNode standing in for the caller op on ``key``, returning its id."""
         node_id = len(self._nodes)
         node = RequirementNode(
             node_id=node_id,
+            required_state=required_state,
             requirement_position=key,
             depends_on=[ancestor] if ancestor is not None else [],
         )
