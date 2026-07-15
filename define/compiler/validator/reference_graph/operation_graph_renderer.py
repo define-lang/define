@@ -29,7 +29,7 @@ type _TriggerKey = tuple[int, str]
 
 def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
     """Return the key that tells one triggering an action performs from the next."""
-    return (trigger.trigger_node_id, trigger.callee.full_typed_name)
+    return (trigger.trigger_node_id, trigger.callee_action_name.full_typed_name)
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -59,7 +59,9 @@ def action_graph(operation_graphs: _OperationGraphs) -> list[tuple[str, str]]:
     edges: list[tuple[str, str]] = []
     for action, graph in operation_graphs.items():
         for trigger in graph.triggers:
-            edges.append((action.source_typed_name, trigger.callee.full_typed_name))
+            edges.append(
+                (action.source_typed_name, trigger.callee_action_name.full_typed_name)
+            )
     return edges
 
 
@@ -121,7 +123,7 @@ class _InvocationLabels:
         self._callees: list[ast.GlobalTypedNameReference] = []
         times_invoked: dict[str, int] = {}
         for trigger in graph.triggers:
-            action_name = _action_name(trigger.callee)
+            action_name = _action_name(trigger.callee_action_name)
             # An action can trigger the same action more than once, which every
             # triggering after the first says in its name.
             count = times_invoked.get(action_name, 0) + 1
@@ -129,7 +131,7 @@ class _InvocationLabels:
             self._names[_trigger_key(trigger)] = (
                 action_name if count == 1 else f"{action_name}#{count}"
             )
-            self._callees.append(trigger.callee)
+            self._callees.append(trigger.callee_action_name)
 
     def __getitem__(self, trigger: operation_graph.ActionTrigger) -> str:
         """Return the name of the action ``trigger`` fires."""
@@ -313,7 +315,7 @@ class _SplicedAction:
         return _SplicedAction(
             self.graphs,
             self.names,
-            trigger.callee,
+            trigger.callee_action_name,
             self.names.triggering_name(self.action, self.name, trigger),
             trigger=trigger,
             spliced_by=self,
@@ -352,10 +354,23 @@ class _SplicedAction:
         # state is the last operation that action performs on it, in the copy of it
         # the triggering the guarantee hangs off spliced in.
         spliced_callee = self._spliced_callee(guarantee.trigger)
-        last_operation = spliced_callee._graph.last_operation_on_position(
-            guarantee.guaranteed_position
+        return spliced_callee._guaranteed_position_labels(guarantee.guaranteed_position)
+
+    def _guaranteed_position_labels(self, position: tuple[str, ...]) -> list[str]:
+        """Resolve the final operation on a guaranteed position through pass-through actions."""
+        last_operation = self._graph.last_operation_on_position(position)
+        node = self._graph.nodes[last_operation]
+        # A non-requirement node is this graph's recorded final operation on the
+        # position. If only its initial RequirementNode remains, this action
+        # passed a nested guarantee outward without recording it on the position.
+        if not isinstance(node, operation_graph.RequirementNode):
+            return self._node_labels(node)
+
+        trigger = self._graph.last_trigger_using_requirement(node.node_id)
+        callee_position = ast.chain_in_callee(trigger.action_chain, position)
+        return self._spliced_callee(trigger)._guaranteed_position_labels(
+            callee_position
         )
-        return spliced_callee._node_labels(spliced_callee._graph.nodes[last_operation])
 
     def _requirement_labels(
         self, requirement: operation_graph.RequirementNode

@@ -5,13 +5,6 @@ from define.compiler.validator.reference_graph import action_contract, operation
 
 _LOC = ast.start_of_file_location()
 
-
-def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
-    typed_name = action_chain.get_last_action()
-    assert typed_name is not None
-    return typed_name
-
-
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
 
 _EMPTY = action_contract.PositionOccupancyState.EMPTY
@@ -189,7 +182,9 @@ def _trigger(
         caller_requirement_child_positions=(),
     )
     graph.record_guarantees(
-        trigger, action_chain.canonical_chained_name_tuple, guaranteed_keys
+        trigger,
+        action_chain.canonical_chained_name_tuple,
+        guaranteed_keys,
     )
     return trigger
 
@@ -534,7 +529,7 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew),
+            brew,
             2,
             {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
         )
@@ -561,7 +556,7 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew),
+            brew,
             3,
             {
                 ("position<run>",): operation_graph.RequirementBinding(3, (), None),
@@ -596,11 +591,47 @@ def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_c
     binding_node = graph.nodes[beans_binding.node_id]
     assert isinstance(binding_node, operation_graph.RequirementNode)
     assert binding_node.requirement_position == beans.canonical_chained_name_tuple
+    assert graph.last_trigger_using_requirement(binding_node.node_id) is trigger
     requirement_children_node = beans_binding.requirement_children_node
     assert requirement_children_node is not None
     assert (
         requirement_children_node.requirement_position
         == beans.canonical_chained_name_tuple
+    )
+
+
+def test_last_trigger_using_requirement_returns_the_later_trigger():
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    beans = _interface_ref(brew, "beans")
+    graph = operation_graph.OperationGraph(
+        _requirements((machine, _OCCUPIED), (beans, _OCCUPIED)), _ref("run")
+    )
+    trigger_position = _interface_ref(brew, "run")
+    graph.record_create(trigger_position)
+    first_trigger = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [_ref("beans")],
+        [beans],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=((),),
+    )
+    beans_requirement_node_id = first_trigger.bindings[("position<beans>",)].node_id
+
+    graph.record_create(trigger_position)
+    second_trigger = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [_ref("beans")],
+        [beans],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=((),),
+    )
+
+    assert (
+        graph.last_trigger_using_requirement(beans_requirement_node_id)
+        is second_trigger
     )
 
 
@@ -624,7 +655,7 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew),
+            brew,
             2,
             {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
         )
@@ -657,12 +688,12 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew),
+            brew,
             1,
             {(): operation_graph.RequirementBinding(1, (), None)},
         ),
         operation_graph.ActionTrigger(
-            _callee(grind),
+            grind,
             1,
             {(): operation_graph.RequirementBinding(1, (), None)},
         ),
@@ -695,12 +726,12 @@ def test_each_triggering_names_the_operation_that_fired_it():
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew),
+            brew,
             1,
             {(): operation_graph.RequirementBinding(1, (), None)},
         ),
         operation_graph.ActionTrigger(
-            _callee(grind),
+            grind,
             2,
             {(): operation_graph.RequirementBinding(2, (), None)},
         ),

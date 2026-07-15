@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,14 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-
-_UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED = (
-    "an action that never touches a position it passes along from an action it"
-    " triggers has no guarantee node for it in its own graph, only the"
-    " requirement node at the same key, so a consumer resolves the position to"
-    " its state before the trigger rather than to the nested action's final"
-    " operation on it"
-)
 
 
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
@@ -1360,7 +1350,6 @@ def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED)
 def test_caller_consumes_a_guarantee_from_two_triggers_down(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

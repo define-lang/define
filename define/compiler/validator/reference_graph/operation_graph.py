@@ -81,13 +81,23 @@ class ActionTrigger:
     caller knows what it did to the positions the callee names.
     """
 
-    # The callee this triggering fires.
-    callee: ast.GlobalTypedNameReference
+    # The action reference this triggering fires, from the caller's perspective.
+    callee: ast.ActionReference
     # The operation that triggered the callee.
     trigger_node_id: int
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
     bindings: dict[tuple[str, ...], RequirementBinding]
+
+    @property
+    def callee_action_name(self) -> ast.GlobalTypedNameReference:
+        """Return the final action in the reference."""
+        return self.callee.get_last_action()
+
+    @property
+    def action_chain(self) -> tuple[str, ...]:
+        """Return the caller's chained name for the action."""
+        return self.callee.canonical_chained_name_tuple
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -229,6 +239,11 @@ class OperationGraph:
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
         self._triggers: list[ActionTrigger] = []
+        # The last triggering that used each RequirementNode to satisfy one of
+        # its requirements. Guarantee resolution follows this reverse binding
+        # when an action passes along a guarantee without operating on its
+        # position itself.
+        self._last_trigger_by_requirement_node_id: dict[int, ActionTrigger] = {}
         # Every action gets an occupied requirement on the position that triggers
         # it. This simplifies splicing together graphs, because the triggering
         # always has a requirement to map its firing operation to. A constructor or
@@ -317,7 +332,6 @@ class OperationGraph:
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_node_id = self._last_operation[acting_on_position_key]
-        callee_action = callee.get_last_action()
         callee_action_key = callee.canonical_chained_name_tuple
         bindings: dict[tuple[str, ...], RequirementBinding] = {}
         # Trigger positions are direct children of the callee chain.
@@ -354,8 +368,12 @@ class OperationGraph:
                     child_positions,
                     binding_node_id,
                 )
-        trigger = ActionTrigger(callee_action, firing_node_id, bindings)
+        trigger = ActionTrigger(callee, firing_node_id, bindings)
         self._triggers.append(trigger)
+        for binding in bindings.values():
+            binding_node = self._nodes[binding.node_id]
+            if isinstance(binding_node, RequirementNode):
+                self._last_trigger_by_requirement_node_id[binding.node_id] = trigger
         return trigger
 
     def _requirement_binding(
@@ -395,6 +413,10 @@ class OperationGraph:
     def triggers(self) -> Sequence[ActionTrigger]:
         """Every action this action triggers, in the order it triggers them."""
         return self._triggers
+
+    def last_trigger_using_requirement(self, requirement_node_id: int) -> ActionTrigger:
+        """Return the last triggering that used ``requirement_node_id`` to satisfy a requirement."""
+        return self._last_trigger_by_requirement_node_id[requirement_node_id]
 
     def _requirement_binding_node_id(
         self, caller_position_key: tuple[str, ...]

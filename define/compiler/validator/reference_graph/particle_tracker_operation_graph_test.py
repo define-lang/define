@@ -9,13 +9,6 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 
-
-def _callee(action_chain: ast.ActionReference) -> ast.GlobalTypedNameReference:
-    typed_name = action_chain.get_last_action()
-    assert typed_name is not None
-    return typed_name
-
-
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
 
 _CREATE = operation_graph.CreateNode
@@ -387,7 +380,7 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # merely holds it fires nothing.
     assert list(tracker.operation_graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(action_chain),
+            action_chain,
             2,
             {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
         )
