@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,12 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-
-_EMPTY_RULE_NOT_CROSSED = (
-    "an operation that empties a position the caller filled does not depend on the"
-    " caller's operations on the transitive child positions beneath it, so Rule 2"
-    " of the Particle Operation Dependency Graph is not applied across a trigger"
-)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -212,7 +204,6 @@ def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
 def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -278,7 +269,6 @@ def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
 def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller_filled(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -330,8 +320,8 @@ def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller
         },
     )
     assert_no_errors(result.program_result)
-    # The move carries the whole particle, so Rule 2 gives it an edge to the most
-    # recent operation on each child name of <source>. The caller's two creates are
+    # The move carries the whole particle, so it waits on the most recent
+    # operation on each child name of <source>. The caller's two creates are
     # independent of each other, so waiting on only one of them would leave the move
     # racing the other: the particle could arrive in <holder> before that child name
     # is filled, and the caller's create would then land in a position whose parent
@@ -353,7 +343,6 @@ def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
 def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -405,10 +394,10 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
     )
     assert_no_errors(result.program_result)
     # A destroy empties a position the same way a move does, and it destroys the
-    # particle's child names along with it, so Rule 2 crosses the trigger here too:
-    # the callee destroys the caller's </item> particle, which the caller filled a
-    # </deep> inside, so the destroy waits on that fill. Rule 3 then drops the
-    # caller's fill of </item> itself, which the </deep> fill supersedes.
+    # particle's child names along with it, so the same crossing applies: the
+    # callee destroys the caller's </item> particle, which the caller filled a
+    # </deep> inside, so the destroy waits on that fill and not on the caller's
+    # fill of </item> itself, which the </deep> fill supersedes.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::input)": ["test.create(gateway)"],
@@ -425,7 +414,63 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
+def test_callee_destroy_of_a_refilled_position_ignores_the_previous_particles_child_fill(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "source.dfn": (
+                "define the potential position<my.domain.com:my_lib:/source> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    it also assigns the position</source>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</source>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</source>.\n"
+                "    it also assigns the action</other>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</source>.\n"
+                "        create a particle in position</source>::position</child>.\n"
+                "        destroy the particle in position</source>.\n"
+                "        create a particle in position</source>.\n"
+                "        create a particle in action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # The first </source> particle and its </child> no longer exist when the
+    # caller refills </source>. The callee destroys the replacement particle, so
+    # it waits on the second create of </source>, not the child operation from the
+    # previous particle.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/source)": [],
+        "test.create(/source::/child)": ["test.create(/source)"],
+        "test.destroy(/source)": ["test.create(/source::/child)"],
+        "test.create(/source)#2": ["test.destroy(/source)"],
+        "test.create(/other::trigger_pos)": [],
+        "other.destroy(/source)": ["test.create(/source)#2"],
+    }
+
+
 def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_caller_filled(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -481,7 +526,7 @@ def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_
         },
     )
     assert_no_errors(result.program_result)
-    # Rule 2 excludes a child name that has a more recent operation on one of its
+    # Emptying excludes a child name that has a more recent operation on one of its
     # own child names, and that exclusion holds across the trigger as well: the
     # caller's fill of <source>::</a> is superseded by its fill of the </deep>
     # inside it, so the move waits on that one operation alone.
@@ -501,7 +546,6 @@ def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
 def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_child(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -554,8 +598,8 @@ def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_chi
     )
     assert_no_errors(result.program_result)
     # Both actions fill a child name of <source>: the caller fills </a> and the
-    # callee fills </b>. Rule 2 wants the most recent operation on each of them, so
-    # the move joins one from each action. Its own fill of </b> does not stand in
+    # callee fills </b>. Emptying wants the most recent operation on each of them,
+    # so the move joins one from each action. Its own fill of </b> does not stand in
     # for the caller's fill of </a>, which nothing else orders it after.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(gateway)": [],
@@ -621,7 +665,7 @@ def test_callee_operation_on_a_child_supersedes_the_caller_operation_on_it(
     )
     assert_no_errors(result.program_result)
     # Both actions operate on <source>::</a>, and every operation of the callee is
-    # more recent than every operation of the caller, so Rule 2 gives the move the
+    # more recent than every operation of the caller, so the move waits on the
     # callee's destroy of it and not the caller's fill of it. The destroy reaches
     # that fill on its own, through the requirement it satisfies.
     assert operation_dependencies(result.operation_graphs) == {
@@ -683,11 +727,11 @@ def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_ch
     )
     assert_no_errors(result.program_result)
     # The callee needs <box> occupied for two different reasons, and each reason
-    # gets its own answer. Its create of </b> only fills a child name of <box>,
-    # which is Rule 1: it waits on the single most recent operation on <box> and its
-    # parent names, the caller's fill of <box>, and the caller's fill of </a> must
-    # not reach it. Its move empties <box>::</a>, which is Rules 2 and 3: that one
-    # does wait on the caller's fill of </a>.
+    # gets its own answer. Its create of </b> only fills a child name of <box>, so
+    # it waits on the single most recent operation on <box> and its parent names,
+    # the caller's fill of <box>, and the caller's fill of </a> must not reach it.
+    # Its move empties <box>::</a>, so that one does wait on the caller's fill
+    # of </a>.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
@@ -1309,6 +1353,166 @@ def test_empty_grandchild_requirement_waits_on_the_caller_empty(
     }
 
 
+def test_emptying_a_four_level_particle_waits_only_on_the_deepest_caller_operation(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "greatgrandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/greatgrandchild>.\n"
+            ),
+            "grandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grandchild> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</greatgrandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position</parent> to position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    it also assigns the action</other>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</parent>.\n"
+                "        create a particle in position</parent>::position</child>.\n"
+                "        create a particle in position</parent>::position</child>::position</grandchild>.\n"
+                "        create a particle in position</parent>::position</child>::position</grandchild>::position</greatgrandchild>.\n"
+                "        create a particle in action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Each deeper caller fill waits on the shallower fill before it. Emptying
+    # <parent> therefore needs only the deepest caller operation.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/parent)": [],
+        "test.create(/parent::/child)": ["test.create(/parent)"],
+        "test.create(/parent::/child::/grandchild)": ["test.create(/parent::/child)"],
+        "test.create(/parent::/child::/grandchild::/greatgrandchild)": [
+            "test.create(/parent::/child::/grandchild)"
+        ],
+        "test.create(/other::trigger_pos)": [],
+        "other.move(/parent, out)": [
+            "test.create(/parent::/child::/grandchild::/greatgrandchild)"
+        ],
+    }
+
+
+def test_intermediate_callee_emptying_reaches_a_deeper_caller_operation(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "greatgrandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/greatgrandchild>.\n"
+            ),
+            "grandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grandchild> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</greatgrandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<parent> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<parent>::position</child>::position</grandchild>.\n"
+                "        destroy the particle in position<parent>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<gateway>.\n"
+                "        create a particle in position<gateway>::action</other>::position<parent>.\n"
+                "        create a particle in position<gateway>::action</other>::position<parent>::position</child>.\n"
+                "        create a particle in position<gateway>::action</other>::position<parent>::position</child>::position</grandchild>.\n"
+                "        create a particle in position<gateway>::action</other>::position<parent>::position</child>::position</grandchild>::position</greatgrandchild>.\n"
+                "        create a particle in position<gateway>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # Emptying <grandchild> reaches the caller's operation on
+    # <greatgrandchild>. The later emptying of <parent> needs only that callee
+    # operation because it already reaches every caller operation on the path.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::parent)": ["test.create(gateway)"],
+        "test.create(gateway::/other::parent::/child)": [
+            "test.create(gateway::/other::parent)"
+        ],
+        "test.create(gateway::/other::parent::/child::/grandchild)": [
+            "test.create(gateway::/other::parent::/child)"
+        ],
+        "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)": [
+            "test.create(gateway::/other::parent::/child::/grandchild)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.destroy(parent::/child::/grandchild)": [
+            "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)"
+        ],
+        "other.destroy(parent)": ["other.destroy(parent::/child::/grandchild)"],
+    }
+
+
 def test_implied_position_grandchildren_wait_on_the_direct_caller_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1563,8 +1767,8 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
         "test.destroy(gw::/worker::out)": ["test.create(gw::/worker::out)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
         "worker.move(in, out)": [
-            "test.create(gw::/worker::in)",
             "test.destroy(gw::/worker::out)",
+            "test.create(gw::/worker::in)",
         ],
     }
 
@@ -1621,8 +1825,8 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
         "test.create(gw::/worker::box)": ["test.create(gw)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
         "worker.move(in, box::/y)": [
-            "test.create(gw::/worker::in)",
             "test.create(gw::/worker::box)",
+            "test.create(gw::/worker::in)",
         ],
     }
 

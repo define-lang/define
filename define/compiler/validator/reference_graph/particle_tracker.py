@@ -16,7 +16,7 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import action_contract, operation_graph
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterator, Mapping, Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -857,8 +857,8 @@ class ParticleTracker:
         action_chain: ast.ActionReference,
         guarantees: action_contract.Guarantees,
         acting_on_position: ast.PositionReference,
-        requirements: Iterable[ast.PositionReference],
-        caller_requirement_positions: Iterable[ast.PositionReference],
+        requirements: Sequence[ast.PositionReference],
+        caller_requirement_positions: Sequence[ast.PositionReference],
     ) -> action_contract.NestedGuarantees:
         """Apply the guarantees for a triggered action.
 
@@ -867,8 +867,8 @@ class ParticleTracker:
 
         ``requirements`` are the callee's own requirement chains, and
         ``caller_requirement_positions`` are those same chains from the caller's
-        perspective; the operation graph tags the caller operations that satisfy
-        them.
+        perspective; the operation graph records the caller dependencies that
+        satisfy them.
 
         Returns a nested guarantee for this action to record.
         """
@@ -877,8 +877,19 @@ class ParticleTracker:
         # We have to record the action trigger when particles are still
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
+        acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         trigger = self._operation_graph.record_action_trigger(
-            action_chain, acting_on_position, requirements, caller_requirement_positions
+            action_chain,
+            acting_on_position,
+            requirements,
+            caller_requirement_positions,
+            acting_on_position_child_positions=self._store.state.subtree_keys(
+                acting_on_position_key
+            ),
+            caller_requirement_child_positions=(
+                self._store.state.subtree_keys(position.canonical_chained_name_tuple)
+                for position in caller_requirement_positions
+            ),
         )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,

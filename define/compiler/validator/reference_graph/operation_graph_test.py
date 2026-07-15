@@ -180,7 +180,14 @@ def _trigger(
     of the triggered action or a position it implies on the particle the action
     is assigned to.
     """
-    trigger = graph.record_action_trigger(action_chain, acting_on_position, [], [])
+    trigger = graph.record_action_trigger(
+        action_chain,
+        acting_on_position,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     graph.record_guarantees(
         trigger, action_chain.canonical_chained_name_tuple, guaranteed_keys
     )
@@ -517,9 +524,20 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
     trigger_position = _interface_ref(brew, "run")
     graph.record_create(machine)
     graph.record_create(trigger_position)
-    _ = graph.record_action_trigger(brew, trigger_position, [], [])
+    _ = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(_callee(brew), 2, {("position<run>",): 2})
+        operation_graph.ActionTrigger(
+            _callee(brew),
+            2,
+            {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
+        )
     ]
 
 
@@ -534,11 +552,21 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
     graph.record_create(_interface_ref(brew, "beans"))
     graph.record_create(trigger_position)
     _ = graph.record_action_trigger(
-        brew, trigger_position, [_ref("beans")], [_interface_ref(brew, "beans")]
+        brew,
+        trigger_position,
+        [_ref("beans")],
+        [_interface_ref(brew, "beans")],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=((),),
     )
     assert list(graph.triggers) == [
         operation_graph.ActionTrigger(
-            _callee(brew), 3, {("position<run>",): 3, ("position<beans>",): 2}
+            _callee(brew),
+            3,
+            {
+                ("position<run>",): operation_graph.RequirementBinding(3, (), None),
+                ("position<beans>",): operation_graph.RequirementBinding(2, (), None),
+            },
         )
     ]
 
@@ -555,11 +583,25 @@ def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_c
     )
     trigger_position = _interface_ref(brew, "run")
     graph.record_create(trigger_position)
-    _ = graph.record_action_trigger(brew, trigger_position, [_ref("beans")], [beans])
+    _ = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [_ref("beans")],
+        [beans],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=((),),
+    )
     (trigger,) = graph.triggers
-    satisfier = graph.nodes[trigger.satisfiers[("position<beans>",)]]
-    assert isinstance(satisfier, operation_graph.RequirementNode)
-    assert satisfier.requirement_position == beans.canonical_chained_name_tuple
+    beans_binding = trigger.bindings[("position<beans>",)]
+    binding_node = graph.nodes[beans_binding.node_id]
+    assert isinstance(binding_node, operation_graph.RequirementNode)
+    assert binding_node.requirement_position == beans.canonical_chained_name_tuple
+    requirement_children_node = beans_binding.requirement_children_node
+    assert requirement_children_node is not None
+    assert (
+        requirement_children_node.requirement_position
+        == beans.canonical_chained_name_tuple
+    )
 
 
 def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
@@ -573,10 +615,19 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
     # did satisfies the callee's requirement: the position is empty because the
     # create of the machine left it that way.
     _ = graph.record_action_trigger(
-        brew, trigger_position, [_ref("cup")], [_interface_ref(brew, "cup")]
+        brew,
+        trigger_position,
+        [_ref("cup")],
+        [_interface_ref(brew, "cup")],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=((),),
     )
     assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(_callee(brew), 2, {("position<run>",): 2})
+        operation_graph.ActionTrigger(
+            _callee(brew),
+            2,
+            {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
+        )
     ]
 
 
@@ -588,11 +639,33 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
     # triggering is its own record.
     brew = _action_chain_under("box", "/brew")
     grind = _action_chain_under("box", "/grind")
-    _ = graph.record_action_trigger(brew, box, [], [])
-    _ = graph.record_action_trigger(grind, box, [], [])
+    _ = graph.record_action_trigger(
+        brew,
+        box,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
+    _ = graph.record_action_trigger(
+        grind,
+        box,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(_callee(brew), 1, {(): 1}),
-        operation_graph.ActionTrigger(_callee(grind), 1, {(): 1}),
+        operation_graph.ActionTrigger(
+            _callee(brew),
+            1,
+            {(): operation_graph.RequirementBinding(1, (), None)},
+        ),
+        operation_graph.ActionTrigger(
+            _callee(grind),
+            1,
+            {(): operation_graph.RequirementBinding(1, (), None)},
+        ),
     ]
 
 
@@ -604,11 +677,33 @@ def test_each_triggering_names_the_operation_that_fired_it():
     graph.record_create(two)
     brew = _action_chain_under("one", "/brew")
     grind = _action_chain_under("two", "/grind")
-    _ = graph.record_action_trigger(brew, one, [], [])
-    _ = graph.record_action_trigger(grind, two, [], [])
+    _ = graph.record_action_trigger(
+        brew,
+        one,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
+    _ = graph.record_action_trigger(
+        grind,
+        two,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(_callee(brew), 1, {(): 1}),
-        operation_graph.ActionTrigger(_callee(grind), 2, {(): 2}),
+        operation_graph.ActionTrigger(
+            _callee(brew),
+            1,
+            {(): operation_graph.RequirementBinding(1, (), None)},
+        ),
+        operation_graph.ActionTrigger(
+            _callee(grind),
+            2,
+            {(): operation_graph.RequirementBinding(2, (), None)},
+        ),
     ]
 
 
@@ -646,7 +741,14 @@ def test_guarantee_node_names_the_position_as_the_callee_does():
     # names the position as the callee's own graph does (``position<coffee>``),
     # not by where it lands in this caller (``machine::/brew::coffee``), so
     # codegen can find the last operation on it in that graph.
-    trigger = graph.record_action_trigger(brew, trigger_position, [], [])
+    trigger = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     graph.record_guarantees(
         trigger,
         brew.canonical_chained_name_tuple,
@@ -709,7 +811,14 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
     # way the callee does: by the action the caller actually triggered, with the
     # key the callee's own graph knows it as.
     grinder = ("position<grinder>", "action<my.domain.com:my_lib:/grind>")
-    trigger = graph.record_action_trigger(brew, trigger_position, [], [])
+    trigger = graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [],
+        [],
+        acting_on_position_child_positions=(),
+        caller_requirement_child_positions=(),
+    )
     graph.record_guarantees(
         trigger,
         brew.canonical_chained_name_tuple,
@@ -1096,7 +1205,13 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
         operation_graph.RequirementNode(
             node_id=1, depends_on=[], required_state=_OCCUPIED
         ),
-        operation_graph.DestroyNode(node_id=2, target=input_position, depends_on=[1]),
+        operation_graph.RequirementChildrenNode(
+            node_id=2,
+            depends_on=[],
+            requirement_position=_key("input"),
+            depends_on_child_operations=frozenset(),
+        ),
+        operation_graph.DestroyNode(node_id=3, target=input_position, depends_on=[2]),
     ]
 
 
@@ -1155,8 +1270,14 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
         operation_graph.RequirementNode(
             node_id=0, depends_on=[], required_state=_OCCUPIED
         ),
-        operation_graph.DestroyNode(node_id=1, target=run, depends_on=[0]),
-        operation_graph.CreateNode(node_id=2, target=scratch, depends_on=[0]),
+        operation_graph.RequirementChildrenNode(
+            node_id=1,
+            depends_on=[],
+            requirement_position=_key("run"),
+            depends_on_child_operations=frozenset(),
+        ),
+        operation_graph.DestroyNode(node_id=2, target=run, depends_on=[1]),
+        operation_graph.CreateNode(node_id=3, target=scratch, depends_on=[0]),
     ]
 
 
@@ -1309,7 +1430,13 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
         operation_graph.RequirementNode(
             node_id=3, depends_on=[2], required_state=_OCCUPIED
         ),
-        operation_graph.DestroyNode(node_id=4, target=grandchild, depends_on=[3]),
+        operation_graph.RequirementChildrenNode(
+            node_id=4,
+            depends_on=[],
+            requirement_position=_key("box", "child", "grandchild"),
+            depends_on_child_operations=frozenset(),
+        ),
+        operation_graph.DestroyNode(node_id=5, target=grandchild, depends_on=[4]),
     ]
 
 
@@ -1334,7 +1461,13 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
         ),
-        operation_graph.DestroyNode(node_id=3, target=parent, depends_on=[2]),
+        operation_graph.RequirementChildrenNode(
+            node_id=3,
+            depends_on=[],
+            requirement_position=_key("input", "parent"),
+            depends_on_child_operations=frozenset(),
+        ),
+        operation_graph.DestroyNode(node_id=4, target=parent, depends_on=[3]),
     ]
 
 
@@ -1372,10 +1505,10 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
 
 def test_move_joins_an_in_body_source_with_a_requirement_target():
     # A move is the one operation with both a fill and an empty side, so it can
-    # depend on a RequirementNode and a PositionOperationNode at once: it empties
-    # the in-body-created <src> (Empty Rule -> the create) and fills the
-    # caller-controlled empty-requirement <dest> (Fill Rule, no in-body op -> a
-    # RequirementNode). This is the shape a real /test produces for
+    # depend on a RequirementNode and a PositionOperationNode at once: emptying
+    # the body-created <src> waits on its create, while filling the
+    # caller-controlled empty-requirement <dest> waits on a RequirementNode.
+    # This is the shape a real /test produces for
     # `create <src>; move <src> to <dest>` with <dest> an empty-by-default guarantee.
     graph = operation_graph.OperationGraph(
         _requirements((_ref("dest"), _EMPTY)), _ref("run")
@@ -1421,3 +1554,119 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
         ),
         operation_graph.CreateNode(node_id=4, target=grandchild, depends_on=[3]),
     ]
+
+
+def test_emptying_a_caller_filled_position_uses_a_requirement_children_node():
+    # The body creates a child of <source>, then moves <source> out. Emptying
+    # <source> needs child operations from the caller as well as the body's
+    # create. The RequirementChildrenNode records that the body already waits on
+    # <source::child>, so a caller operation on that path will be superseded.
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("source"), _OCCUPIED), (_ref("holder"), _EMPTY)),
+        _ref("run"),
+    )
+    graph.record_create(_ref("source", "child"))
+    graph.record_move(_ref("source"), _ref("holder"), [_key("source", "child")])
+    requirement_children = graph.nodes[4]
+    move = graph.nodes[5]
+    assert requirement_children == operation_graph.RequirementChildrenNode(
+        node_id=4,
+        depends_on=[],
+        requirement_position=_key("source"),
+        depends_on_child_operations=frozenset({("position<child>",)}),
+    )
+    assert move.depends_on == [2, 3, 4]
+
+
+def test_emptying_a_position_the_body_refilled_waits_on_the_refill():
+    # The first destroy empties the caller's particle through a
+    # RequirementChildrenNode. The body then refills <slot>; the second destroy
+    # empties that body particle, so it resolves to the refill.
+    graph = operation_graph.OperationGraph(
+        _requirements((_ref("slot"), _OCCUPIED)), _ref("run")
+    )
+    graph.record_destroy(_ref("slot"), [])
+    graph.record_create(_ref("slot"))
+    graph.record_destroy(_ref("slot"), [])
+    assert graph.nodes[2] == operation_graph.RequirementChildrenNode(
+        node_id=2,
+        depends_on=[],
+        requirement_position=_key("slot"),
+        depends_on_child_operations=frozenset(),
+    )
+    assert graph.nodes[5].depends_on == [4]
+
+
+def test_trigger_snapshots_operations_on_the_current_child_positions():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph.record_create(_ref("box"))
+    graph.record_create(_ref("box", "a"))
+    graph.record_create(_ref("box", "b"))
+    brew = _action_chain_under("box", "/brew")
+    trigger = graph.record_action_trigger(
+        brew,
+        _ref("box"),
+        [],
+        [],
+        acting_on_position_child_positions=[
+            _key("box", "a"),
+            _key("box", "b"),
+        ],
+        caller_requirement_child_positions=(),
+    )
+    assert trigger.bindings[()].child_operations == (
+        operation_graph.ChildOperation(("position<a>",), 2),
+        operation_graph.ChildOperation(("position<b>",), 3),
+    )
+
+
+def test_trigger_snapshot_excludes_an_operation_on_a_previous_particle_child():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph.record_create(_ref("box"))
+    graph.record_create(_ref("box", "a"))
+    brew = _action_chain_under("box", "/brew")
+    trigger = graph.record_action_trigger(
+        brew,
+        _ref("box"),
+        [],
+        [],
+        acting_on_position_child_positions=[],
+        caller_requirement_child_positions=(),
+    )
+    assert trigger.bindings[()].child_operations == ()
+
+
+def test_trigger_snapshot_keeps_only_the_deepest_operation_on_a_child_path():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph.record_create(_ref("box"))
+    graph.record_create(_ref("box", "a"))
+    graph.record_create(_ref("box", "a", "deep"))
+    brew = _action_chain_under("box", "/brew")
+    trigger = graph.record_action_trigger(
+        brew,
+        _ref("box"),
+        [],
+        [],
+        acting_on_position_child_positions=[
+            _key("box", "a"),
+            _key("box", "a", "deep"),
+        ],
+        caller_requirement_child_positions=(),
+    )
+    assert trigger.bindings[()].child_operations == (
+        operation_graph.ChildOperation(("position<a>", "position<deep>"), 3),
+    )
+
+
+def test_requirement_binding_excludes_child_operations_on_the_same_paths():
+    binding = operation_graph.RequirementBinding(
+        1,
+        (
+            operation_graph.ChildOperation(("position<a>",), 2),
+            operation_graph.ChildOperation(("position<b>",), 3),
+        ),
+        None,
+    )
+    assert binding.child_operations_not_on_same_paths_as(
+        frozenset({("position<a>", "position<deep>")})
+    ) == (operation_graph.ChildOperation(("position<b>",), 3),)

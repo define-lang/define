@@ -386,7 +386,11 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # is what satisfies the callee's requirement on that position; the box that
     # merely holds it fires nothing.
     assert list(tracker.operation_graph.triggers) == [
-        operation_graph.ActionTrigger(_callee(action_chain), 2, {("position<run>",): 2})
+        operation_graph.ActionTrigger(
+            _callee(action_chain),
+            2,
+            {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
+        )
     ]
 
 

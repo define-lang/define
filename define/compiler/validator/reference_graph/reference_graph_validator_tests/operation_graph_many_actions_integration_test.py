@@ -8,12 +8,6 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
-_EMPTY_RULE_NOT_CROSSED = (
-    "an operation that empties a position the caller filled does not depend on the"
-    " caller's operations on the child names of it, so Rule 2 of the Particle"
-    " Operation Dependency Graph is not applied across a trigger"
-)
-
 _UNTOUCHED_INTERMEDIATE_GUARANTEES_NOT_CROSSED = (
     "an action that never touches a position it passes along from an action it"
     " triggers has no guarantee node for it in its own graph, only the"
@@ -727,6 +721,106 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     }
 
 
+def test_intermediate_callee_operation_suppresses_only_its_caller_path(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "greatgrandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/greatgrandchild>.\n"
+            ),
+            "grandchild.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grandchild> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</greatgrandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "sibling.dfn": (
+                "define the potential position<my.domain.com:my_lib:/sibling>.\n"
+            ),
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "        it has the position</sibling>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</parent>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    it also assigns the action</inner>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</parent>::position</child>::position</grandchild>.\n"
+                "        create a particle in action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    it also assigns the action</middle>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</parent>.\n"
+                "        create a particle in position</parent>::position</child>.\n"
+                "        create a particle in position</parent>::position</child>::position</grandchild>.\n"
+                "        create a particle in position</parent>::position</child>::position</grandchild>::position</greatgrandchild>.\n"
+                "        create a particle in position</parent>::position</sibling>.\n"
+                "        create a particle in action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /middle's grandchild destroy reaches /test's operations on the same path,
+    # so /inner's parent destroy needs only /middle's operation for that path.
+    # /test's sibling fill is on an independent path and remains a dependency.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/parent)": [],
+        "test.create(/parent::/child)": ["test.create(/parent)"],
+        "test.create(/parent::/child::/grandchild)": ["test.create(/parent::/child)"],
+        "test.create(/parent::/child::/grandchild::/greatgrandchild)": [
+            "test.create(/parent::/child::/grandchild)"
+        ],
+        "test.create(/parent::/sibling)": ["test.create(/parent)"],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.destroy(/parent::/child::/grandchild)": [
+            "test.create(/parent::/child::/grandchild::/greatgrandchild)"
+        ],
+        "middle.create(/inner::trigger_pos)": ["test.create(/middle::trigger_pos)"],
+        "inner.destroy(/parent)": [
+            "middle.destroy(/parent::/child::/grandchild)",
+            "test.create(/parent::/sibling)",
+        ],
+    }
+
+
 def test_moved_in_parent_children_branch_from_the_carrying_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -801,10 +895,13 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
         },
     )
     assert_no_errors(result.program_result)
-    # middle moves iface (carrying its </parent> child) into inner::input. inner
-    # then fills the empty-by-default grandchildren parent::/a and parent::/b;
-    # each branches from the move that placed the parent, since the move's target
-    # (gw::/inner::input) is the nearest ancestor the caller touched.
+    # middle moves iface (carrying its </parent> child) into inner::input. The
+    # move empties iface, which the caller filled a </parent> inside, so it waits
+    # on the caller's fill of iface::/parent, not the caller's fill of iface,
+    # which that child supersedes. inner then fills the
+    # empty-by-default grandchildren parent::/a and parent::/b; each branches from
+    # the move that placed the parent, since the move's target (gw::/inner::input)
+    # is the nearest ancestor the caller touched.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(mw)": [],
         "test.create(mw::/middle::iface)": ["test.create(mw)"],
@@ -813,7 +910,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
         "middle.create(gw)": ["test.create(mw::/middle::run)"],
         "middle.move(iface, gw::/inner::input)": [
             "middle.create(gw)",
-            "test.create(mw::/middle::iface)",
+            "test.create(mw::/middle::iface::/parent)",
         ],
         "middle.create(gw::/inner::run)": ["middle.create(gw)"],
         "inner.create(input::/parent::/a)": ["middle.move(iface, gw::/inner::input)"],
@@ -1095,7 +1192,6 @@ def test_caller_consumes_a_nested_guarantee(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_CROSSED)
 def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_child_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1161,8 +1257,9 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
     assert_no_errors(result.program_result)
     # /inner empties a position that /middle never touches: /middle only passes the
     # requirement on it up to /test, which filled it and filled the </a> inside it.
-    # Rule 2 has to reach across both triggers to find that fill, so /middle has to
-    # pass along what it empties the same way it passes along what it requires.
+    # The move's empty of <source> has to reach across both triggers to find that
+    # </a> fill, while its fill of <holder> waits on the /test create of <gw>, the
+    # particle <holder> lives in, two levels up.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
@@ -1175,8 +1272,91 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.move(source, holder)": [
-            "test.create(box::/middle::gw::/inner::source::/a)"
+            "test.create(box::/middle::gw)",
+            "test.create(box::/middle::gw::/inner::source::/a)",
         ],
+    }
+
+
+def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "gc.dfn": "define the potential position<my.domain.com:my_lib:/gc>.\n",
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</gc>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</parent>::position</child>::position</gc>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "mover.dfn": (
+                "define the potential action<my.domain.com:my_lib:/mover> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<dest> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</gc>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position</parent>::position</child> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</parent>.\n"
+                "    it also assigns the action</filler>.\n"
+                "    it also assigns the action</mover>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</parent>.\n"
+                "        create a particle in position</parent>::position</child>.\n"
+                "        create a particle in action</filler>::position<trigger_pos>.\n"
+                "        create a particle in action</mover>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    # /filler and /mover share the implied /parent particle. /filler fills
+    # /parent::/child::/gc, which it guarantees rather than /test operating on it
+    # directly. /mover then empties /parent::/child, carrying it to <dest>, which
+    # requires /gc. Emptying /parent::/child must wait on the operation that filled
+    # its /gc child -- /filler's create -- even though no direct /test operation
+    # touched it: the fill reaches the move through the guarantee.
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/parent)": [],
+        "test.create(/parent::/child)": ["test.create(/parent)"],
+        "test.create(/filler::trigger_pos)": [],
+        "test.create(/mover::trigger_pos)": [],
+        "filler.create(/parent::/child::/gc)": ["test.create(/parent::/child)"],
+        "mover.move(/parent::/child, dest)": ["filler.create(/parent::/child::/gc)"],
     }
 
 

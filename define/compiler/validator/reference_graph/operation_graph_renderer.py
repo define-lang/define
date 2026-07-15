@@ -339,6 +339,8 @@ class _SplicedAction:
                 return [self._label(node)]
             case operation_graph.RequirementNode():
                 return self._requirement_labels(node)
+            case operation_graph.RequirementChildrenNode():
+                return self._resolve_requirement_children(node, frozenset())
             case operation_graph.GuaranteeNode():
                 return self._guarantee_labels(node)
             case _:
@@ -363,12 +365,14 @@ class _SplicedAction:
             # Nothing spliced the entry-point action in, so nothing in this program
             # satisfies its requirements.
             return []
-        satisfier = self.trigger.satisfiers.get(requirement.requirement_position)
-        if satisfier is not None:
+        binding = self.trigger.bindings.get(requirement.requirement_position)
+        if binding is not None:
             # The action that triggered this copy says what satisfies the
             # requirement. That is one of its own operations, or a requirement of
             # its own, which whatever spliced it in satisfies in turn.
-            return self.spliced_by._node_labels(self.spliced_by._graph.nodes[satisfier])
+            return self.spliced_by._node_labels(
+                self.spliced_by._graph.nodes[binding.node_id]
+            )
         if (
             requirement.required_state
             is action_contract.PositionOccupancyState.OCCUPIED
@@ -381,3 +385,51 @@ class _SplicedAction:
         # position above it, which is the requirement this one waits on. With no
         # position above it, no operation made it empty and it waits on nothing.
         return self._dependency_labels(requirement.depends_on)
+
+    def _resolve_requirement_children(
+        self,
+        requirement: operation_graph.RequirementChildrenNode,
+        depends_on_child_operations: frozenset[tuple[str, ...]],
+    ) -> list[str]:
+        """Resolve the caller contribution for emptying a required particle.
+
+        For example, suppose /middle passes <source> from /test to /inner, and
+        /inner operates on <source>::</a>::</deep> before emptying <source>.
+        The renderer examines /middle and then /test for operations that the
+        emptying operation must depend on. By the time it examines /test,
+        ``depends_on_child_operations`` contains the relative position
+        </a>::</deep>. If /test operated on <source>::</a>, that operation is
+        omitted because /inner's operation already depends on it.
+        """
+        if self.trigger is None or self.spliced_by is None:
+            # Skipped for the entry-point action.
+            return []
+        depends_on_child_operations = (
+            requirement.depends_on_child_operations | depends_on_child_operations
+        )
+        binding = self.trigger.bindings[requirement.requirement_position]
+        operations = binding.child_operations_not_on_same_paths_as(
+            depends_on_child_operations
+        )
+        labels: list[str] = []
+        for operation in sorted(operations, key=lambda operation: operation.node_id):
+            operation_labels = self.spliced_by._node_labels(
+                self.spliced_by._graph.nodes[operation.node_id]
+            )
+            if not operation_labels:
+                raise ValueError(
+                    f"child operation at {operation.child_position} has no label"
+                )
+            labels.extend(operation_labels)
+        if binding.requirement_children_node is not None:
+            labels.extend(
+                self.spliced_by._resolve_requirement_children(
+                    binding.requirement_children_node,
+                    depends_on_child_operations,
+                )
+            )
+        if labels or depends_on_child_operations:
+            return labels
+        return self.spliced_by._node_labels(
+            self.spliced_by._graph.nodes[binding.node_id]
+        )
