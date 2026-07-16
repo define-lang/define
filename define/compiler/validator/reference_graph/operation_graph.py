@@ -485,54 +485,96 @@ class OperationGraph:
         # nothing operated on the position itself.
         return self._last_operation_affecting_position(caller_position_key)
 
-    def _fill_dependencies(self, position: tuple[str, ...]) -> set[int]:
-        """Return dependencies required before filling ``position``."""
-        dependencies: set[int] = set()
-        # Filling a position waits on the most recent operation on that position
-        # and its parents, so the parent is present to hold it.
-        filled_ancestor = self._most_recent_ancestor_chain_operation(position)
-        if filled_ancestor is not None:
-            dependencies.add(filled_ancestor)
-        return dependencies
-
-    def _empty_dependencies(
+    def _operation_dependencies(
         self,
-        position: tuple[str, ...],
-        child_operations: ParticleChildOperations,
-    ) -> set[int]:
-        """Return dependencies required before emptying ``position``."""
-        # Emptying a position waits on the most recent operation in each touched
-        # child position (minus a shallower one a deeper touched position has
-        # already superseded), and on the emptied position's own chain only when
-        # that is more recent than every one of those child operations; otherwise
-        # a child already reaches it.
+        *,
+        empty_position: tuple[str, ...] | None = None,
+        fill_position: tuple[str, ...] | None = None,
+        child_operations: ParticleChildOperations | None = None,
+    ) -> list[int]:
+        """Return dependencies required before optionally emptying and filling positions."""
+        if child_operations is None:
+            child_operations = ParticleChildOperations()
         dependencies: set[int] = set()
-        emptied_ancestor = self._most_recent_ancestor_chain_operation(position)
-        if emptied_ancestor is not None:
-            node = self._nodes[emptied_ancestor]
-            if (
-                isinstance(node, RequirementNode)
-                and node.requirement_position == position
-            ):
-                requirement_children_node = self._add_requirement_children_node(
-                    position, child_operations.child_position_set()
-                )
-                dependencies.add(requirement_children_node.node_id)
-            elif child_operations.all_precede(emptied_ancestor):
-                child_operations = ParticleChildOperations()
-                dependencies.add(emptied_ancestor)
-        dependencies.update(
-            operation.node_id for operation in child_operations.operations
-        )
-        return dependencies
 
-    def _operation_dependencies(self, dependencies: set[int]) -> list[int]:
+        fill_dependency: int | None = None
+        if fill_position is not None:
+            # Filling a position waits on the most recent operation on that
+            # position and its parent names, so the parent particle is present.
+            fill_dependency = self._most_recent_ancestor_chain_operation(fill_position)
+            if fill_dependency is not None:
+                dependencies.add(fill_dependency)
+
+        if empty_position is not None:
+            empty_dependencies: set[int] = set()
+            # Emptying a position waits on the most recent operation in each
+            # touched child position (minus a shallower one a deeper touched
+            # position has already superseded), and on the emptied position's
+            # own chain only when that is more recent than every one of those
+            # child operations; otherwise a child already reaches it.
+            emptied_ancestor = self._most_recent_ancestor_chain_operation(
+                empty_position
+            )
+            if emptied_ancestor is not None:
+                node = self._nodes[emptied_ancestor]
+                if (
+                    isinstance(node, RequirementNode)
+                    and node.requirement_position == empty_position
+                ):
+                    requirement_children_node = self._add_requirement_children_node(
+                        empty_position, child_operations.child_position_set()
+                    )
+                    empty_dependencies.add(requirement_children_node.node_id)
+                elif child_operations.all_precede(emptied_ancestor):
+                    child_operations = ParticleChildOperations()
+                    empty_dependencies.add(emptied_ancestor)
+            empty_dependencies.update(
+                operation.node_id for operation in child_operations.operations
+            )
+
+            # A move can receive a dependency from filling its target that
+            # operates on the source position or one of its parent names. If
+            # every dependency from emptying the source is a newer Particle
+            # Operation, those source dependencies already place the move after
+            # the target dependency, so the target dependency is excluded.
+            # Nodes other than Particle Operations are excluded because they cannot
+            # establish this ordering until action graphs are resolved.
+            if (
+                fill_dependency is not None
+                and empty_dependencies
+                and self._operation_is_on_position_or_parent_names(
+                    self._nodes[fill_dependency],
+                    empty_position,
+                )
+                and all(
+                    empty_dependency > fill_dependency
+                    and isinstance(self._nodes[empty_dependency], PositionOperationNode)
+                    for empty_dependency in empty_dependencies
+                )
+            ):
+                dependencies.discard(fill_dependency)
+            dependencies.update(empty_dependencies)
         if not dependencies:
             # An operation with nothing else to wait on still happens only
             # because this action triggered, so it waits on the trigger
             # requirement like any other requirement.
             return [self._trigger_position_requirement_node_id]
         return sorted(dependencies)
+
+    @staticmethod
+    def _operation_is_on_position_or_parent_names(
+        node: OperationNode, position: tuple[str, ...]
+    ) -> bool:
+        """Return whether ``node`` operates on ``position`` or one of its parent names."""
+        if not isinstance(node, PositionOperationNode):
+            return False
+        target = node.target.canonical_chained_name_tuple
+        if position[: len(target)] == target:
+            return True
+        if isinstance(node, MoveNode):
+            source = node.source.canonical_chained_name_tuple
+            return position[: len(source)] == source
+        return False
 
     def _most_recent_ancestor_chain_operation(
         self, position: tuple[str, ...]
@@ -607,7 +649,7 @@ class OperationGraph:
     def record_create(self, target: ast.PositionReference) -> int:
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
-        depends_on = self._operation_dependencies(self._fill_dependencies(key))
+        depends_on = self._operation_dependencies(fill_position=key)
         node_id = len(self._nodes)
         self._nodes.append(
             CreateNode(node_id=node_id, target=target, depends_on=depends_on)
@@ -627,9 +669,11 @@ class OperationGraph:
         )
         source_key = source.canonical_chained_name_tuple
         target_key = target.canonical_chained_name_tuple
-        dependencies = self._fill_dependencies(target_key)
-        dependencies.update(self._empty_dependencies(source_key, child_operations))
-        depends_on = self._operation_dependencies(dependencies)
+        depends_on = self._operation_dependencies(
+            empty_position=source_key,
+            fill_position=target_key,
+            child_operations=child_operations,
+        )
         node_id = len(self._nodes)
         self._nodes.append(
             MoveNode(
@@ -655,7 +699,8 @@ class OperationGraph:
         )
         key = target.canonical_chained_name_tuple
         depends_on = self._operation_dependencies(
-            self._empty_dependencies(key, child_operations)
+            empty_position=key,
+            child_operations=child_operations,
         )
         node_id = len(self._nodes)
         self._nodes.append(

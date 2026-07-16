@@ -279,6 +279,44 @@ def test_move_depends_on_both_ends():
     ]
 
 
+def test_move_keeps_fill_dependency_when_empty_dependency_is_symbolic():
+    graph = operation_graph.OperationGraph(
+        _requirements(
+            (_ref("box"), _OCCUPIED),
+            (_ref("box", "source"), _OCCUPIED),
+            (_ref("box", "destination"), _EMPTY),
+        ),
+        _ref("run"),
+    )
+    source = _ref("box", "source")
+    destination = _ref("box", "destination")
+    _ = graph.record_move(source, destination, ())
+    assert list(graph.nodes) == [
+        _TRIGGER_POSITION,
+        operation_graph.RequirementNode(
+            node_id=1, depends_on=[], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementNode(
+            node_id=2, depends_on=[1], required_state=_EMPTY
+        ),
+        operation_graph.RequirementNode(
+            node_id=3, depends_on=[1], required_state=_OCCUPIED
+        ),
+        operation_graph.RequirementChildrenNode(
+            node_id=4,
+            depends_on=[],
+            requirement_position=_key("box", "source"),
+            depends_on_child_operations=frozenset(),
+        ),
+        operation_graph.MoveNode(
+            node_id=5,
+            source=source,
+            target=destination,
+            depends_on=[2, 4],
+        ),
+    ]
+
+
 def test_move_carries_child_transitively():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")
