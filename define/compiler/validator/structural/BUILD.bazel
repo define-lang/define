@@ -17,7 +17,6 @@ py_library(
         "//define/compiler:parser_error_classification",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:stats",
@@ -40,6 +39,7 @@ py_test(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:validation_result",
+        "@pypi//pytest",
     ],
 )
 
@@ -83,7 +83,7 @@ py_test(
     deps = [
         ":path_tracker",
         "//define/compiler/data_structures:define_path",
-        "@pypi//pygtrie",
+        "@pypi//pytest",
     ],
 )
 

@@ -7,7 +7,6 @@ py_library(
     srcs = ["semantics.py"],
     visibility = ["//defcl/python:__pkg__"],
     deps = [
-        ":validator",
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
         "@pypi//protobuf",
@@ -31,7 +30,7 @@ py_test(
         "//defcl/testdata/invalid/semantics/schemas:no_brackets_message_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:no_brackets_scalar_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:repeated_integer_enum_proto_py",
-        "//defcl/testdata/invalid/semantics/schemas:schemas_py",
+        "@pypi//pytest",
     ],
 )
 
@@ -40,7 +39,6 @@ py_library(
     srcs = ["syntax.py"],
     visibility = ["//defcl/python:__pkg__"],
     deps = [
-        ":validator",
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
     ],
@@ -56,6 +54,7 @@ py_test(
         ":syntax",
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
+        "@pypi//pytest",
     ],
 )
 

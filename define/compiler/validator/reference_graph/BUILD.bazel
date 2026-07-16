@@ -84,6 +84,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -115,8 +116,10 @@ py_test(
     size = "small",
     srcs = ["operation_graph_test.py"],
     deps = [
+        ":action_contract",
         ":operation_graph",
         "//define/compiler:ast",
+        "@pypi//pytest",
     ],
 )
 
@@ -140,7 +143,6 @@ py_library(
         ":operation_graph",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
-        "//define/compiler/validator:scope_tracker",
     ],
 )
 
@@ -164,7 +166,7 @@ py_test(
         ":action_contract",
         ":particle_tracker",
         "//define/compiler:ast",
-        "//define/compiler/validator:scope_tracker",
+        "@pypi//pytest",
     ],
 )
 
@@ -184,9 +186,11 @@ py_library(
         ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
+        "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:validation_result",
     ],
 )
 

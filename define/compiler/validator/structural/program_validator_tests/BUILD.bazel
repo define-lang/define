@@ -8,6 +8,7 @@ py_test(
     size = "small",
     srcs = ["diagnostic_collection_test.py"],
     deps = [
+        "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -30,8 +31,10 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -72,9 +75,12 @@ py_test(
     srcs = ["error_messages_test.py"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -86,8 +92,10 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -109,8 +117,10 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -131,6 +141,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -152,6 +163,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:file_validator",
     ],
@@ -165,9 +177,11 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -188,6 +202,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -199,6 +214,7 @@ py_test(
     deps = [
         "//define/compiler:exceptions",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -249,6 +265,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],

@@ -13,7 +13,6 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
-        ":compiler",
         ":constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/lark:lark_standalone",
@@ -44,6 +43,7 @@ py_library(
     srcs = ["conftest.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":ast",
         ":diagnostics",
         ":parser",
         "//define/compiler/data_structures:typed_name_dict",
@@ -104,6 +104,7 @@ py_library(
     deps = [
         ":ast",
         ":constants",
+        ":exceptions",
         "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
@@ -135,6 +136,7 @@ py_library(
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":constants",
         ":exceptions",
         ":overall_stats",
         ":parser",
@@ -156,7 +158,9 @@ py_test(
         ":exceptions",
         ":parser",
         ":parser_exceptions",
+        "//define/compiler/validator:validation_result",
         "@pypi//hypothesis",
+        "@pypi//pytest",
     ],
 )
 
@@ -169,8 +173,9 @@ py_test(
         ":diagnostics",
         ":driver",
         ":parser",
+        ":parser_exceptions",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator:validation_result",
+        "@pypi//pytest",
     ],
 )
 
@@ -180,9 +185,11 @@ py_test(
     srcs = ["driver_run_test.py"],
     data = ["//define/testdata:testdata_files"],
     deps = [
+        ":constants",
         ":driver",
         ":overall_stats",
         ":parser",
+        "@pypi//pytest",
     ],
 )
 
@@ -195,8 +202,9 @@ py_test(
         ":driver",
         ":exceptions",
         ":parser",
-        ":parser_exceptions",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -217,6 +225,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":indentation_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -228,6 +237,7 @@ py_binary(
     srcs = ["main.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":constants",
         ":driver",
         ":overall_stats",
         "@pypi//click",
@@ -240,7 +250,9 @@ py_test(
     srcs = ["main_integration_test.py"],
     data = [":main"],
     env = {"MAIN_BINARY": "$(rlocationpath :main)"},
-    deps = ["@rules_python//python/runfiles"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 py_test(
@@ -248,6 +260,7 @@ py_test(
     size = "small",
     srcs = ["main_test.py"],
     deps = [
+        ":constants",
         ":driver",
         ":main",
         ":overall_stats",
@@ -274,6 +287,8 @@ py_test(
         ":ast",
         ":name_parser",
         ":parser_exceptions",
+        "//define/compiler/lark:lark_standalone",
+        "@pypi//pytest",
     ],
 )
 
@@ -290,6 +305,7 @@ py_test(
     srcs = ["overall_stats_test.py"],
     deps = [
         ":overall_stats",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
     ],
@@ -304,7 +320,6 @@ py_library(
     ],
     deps = [
         ":ast",
-        ":compiler",
         ":diagnostics",
         ":indentation_validator",
         ":parser_error_classification",
@@ -318,7 +333,10 @@ py_library(
     name = "parser_error_classification",
     srcs = ["parser_error_classification.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [":parser_exceptions"],
+    deps = [
+        ":parser_exceptions",
+        "//define/compiler/lark:lark_standalone",
+    ],
 )
 
 py_library(
@@ -341,7 +359,6 @@ py_library(
     deps = [
         ":ast",
         ":name_parser",
-        ":parser_exceptions",
         "//define/compiler/lark:lark_standalone",
     ],
 )

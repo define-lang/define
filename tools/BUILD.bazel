@@ -16,6 +16,21 @@ py_binary(
 )
 
 py_binary(
+    name = "check_python_deps",
+    srcs = ["check_python_deps.py"],
+)
+
+py_test(
+    name = "check_python_deps_test",
+    size = "small",
+    srcs = ["check_python_deps_test.py"],
+    deps = [
+        ":check_python_deps",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "compile_jinja_templates",
     srcs = ["compile_jinja_templates.py"],
     visibility = ["//visibility:public"],
@@ -53,7 +68,6 @@ py_test(
     deps = [
         ":generate_large_define_source",
         "//define/compiler:ast",
-        "//define/compiler:diagnostics",
         "//define/compiler:parser",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
@@ -67,7 +81,7 @@ py_binary(
     visibility = ["//:__subpackages__"],
     deps = [
         "@pypi//lark",
-        "@pypi//regex",
+        "@pypi//regex",  # keep
     ],
 )
 
@@ -248,6 +262,8 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":analyze_profile",
+        ":check_python_deps",
+        ":check_python_deps_test",
         ":compile_jinja_templates",
         ":generate_action_graph_source",
         ":generate_action_graph_source_test",

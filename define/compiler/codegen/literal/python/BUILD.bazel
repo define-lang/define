@@ -39,6 +39,7 @@ py_library(
         ":template_env",
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph",
+        "@pypi//jinja2",
     ],
 )
 

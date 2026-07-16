@@ -61,10 +61,8 @@ py_library(
         "//define/compiler:exceptions",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
-        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
@@ -76,11 +74,10 @@ py_test(
     deps = [
         ":stats",
         ":validation_result",
+        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/graphs:reference_graph",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
     ],
 )
 

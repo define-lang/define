@@ -10,8 +10,10 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
+        "//define/compiler:diagnostics",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -22,8 +24,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -34,8 +36,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -46,8 +48,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -58,7 +60,6 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
     ],
 )
 
@@ -69,15 +70,19 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
 py_library(
     name = "conftest",
     srcs = ["conftest.py"],
-    deps = ["//define/compiler:parser"],
+    deps = [
+        "//define/compiler:parser",
+        "//define/compiler/lark:lark_standalone",
+        "@pypi//pytest",
+    ],
 )
 
 py_test(
@@ -86,8 +91,8 @@ py_test(
     srcs = ["error_messages_test.py"],
     deps = [
         ":conftest",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -97,8 +102,8 @@ py_test(
     srcs = ["extra_whitespace_test.py"],
     deps = [
         ":conftest",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -109,8 +114,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -121,8 +126,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -133,8 +138,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -145,7 +150,6 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
     ],
 )
 
@@ -156,7 +160,6 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
     ],
 )
 
@@ -172,8 +175,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -184,8 +187,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -196,8 +199,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -214,8 +217,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -226,8 +229,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
-        "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 

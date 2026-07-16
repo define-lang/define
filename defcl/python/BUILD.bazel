@@ -20,7 +20,6 @@ py_library(
     srcs = ["parser.py"],
     visibility = ["//define/compiler:__pkg__"],
     deps = [
-        ":python",
         "//defcl/python/validator:semantics",
         "//defcl/python/validator:syntax",
         "@pypi//protobuf",
@@ -38,7 +37,6 @@ py_test(
         "//defcl/testdata/valid/schemas:integers_proto_py",
         "//defcl/testdata/valid/schemas:nested_messages_proto_py",
         "//defcl/testdata/valid/schemas:repeated_messages_proto_py",
-        "//defcl/testdata/valid/schemas:schemas_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
         "//defcl/testdata/valid/schemas:strings_proto_py",
         "@pypi//pytest",

@@ -142,6 +142,10 @@ BUILD file generator.
     `_pb2`).
 - **Keep targets atomic:** each target lists only its own source file in `srcs`
   and only its direct dependencies in `deps`.
+- After changing Python imports or targets, run
+  `uv run tools/check_python_deps.py <changed files>`.
+- Use `# keep` on a Python dependency only when it is required dynamically and
+  cannot be inferred from imports.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
   package-private targets; use `//pkg:__subpackages__` when needed by sibling
   packages; use `//visibility:public` only for true public APIs.

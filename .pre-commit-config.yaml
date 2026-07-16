@@ -43,6 +43,12 @@ repos:
         types_or: [markdown, json]
         pass_filenames: false
 
+      - id: python-deps
+        name: fix Python BUILD dependencies
+        entry: uv run tools/check_python_deps.py
+        language: system
+        files: (^|/)(BUILD\.bazel|.*\.py)$
+
       - id: format
         name: reformat files
         entry: bazelisk run --noshow_progress //tools:format --

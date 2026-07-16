@@ -8,7 +8,6 @@ py_library(
     srcs = ["action_call_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        "//define/compiler:ast",
         "@pypi//networkx",
     ],
 )
@@ -32,6 +31,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
         "@rules_python//python/runfiles",
     ],
 )
@@ -42,6 +42,7 @@ py_test(
     srcs = ["action_call_graph_test.py"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )

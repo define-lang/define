@@ -28,7 +28,8 @@ py_test(
     deps = [
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
-        "//define/runtime:literal",
+        "//define/runtime:literal",  # keep
+        "@pypi//pytest",
     ],
 )
 
