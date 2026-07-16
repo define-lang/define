@@ -317,6 +317,42 @@ def test_move_keeps_fill_dependency_when_empty_dependency_is_symbolic():
     ]
 
 
+def test_move_excludes_fill_dependency_when_empty_dependency_is_a_guarantee():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    box = _ref("box")
+    producer = _action_chain_under("box", "/producer")
+    trigger_position = _interface_ref(producer, "input")
+    result = _interface_ref(producer, "result")
+    destination = _ref("box", "destination")
+    _ = graph.record_create(box)
+    _ = graph.record_create(trigger_position)
+    trigger = _trigger(
+        graph, producer, trigger_position, result.canonical_chained_name_tuple
+    )
+    _ = graph.record_move(result, destination, ())
+    assert list(graph.nodes) == [
+        _TRIGGER_POSITION,
+        operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
+        operation_graph.CreateNode(
+            node_id=2,
+            target=trigger_position,
+            depends_on=[1],
+        ),
+        operation_graph.GuaranteeNode(
+            node_id=3,
+            trigger=trigger,
+            guaranteed_position=("position<result>",),
+            depends_on=[2],
+        ),
+        operation_graph.MoveNode(
+            node_id=4,
+            source=result,
+            target=destination,
+            depends_on=[3],
+        ),
+    ]
+
+
 def test_move_carries_child_transitively():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     box = _ref("box")

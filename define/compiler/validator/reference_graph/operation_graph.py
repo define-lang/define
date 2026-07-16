@@ -537,8 +537,8 @@ class OperationGraph:
             # every dependency from emptying the source is a newer Particle
             # Operation, those source dependencies already place the move after
             # the target dependency, so the target dependency is excluded.
-            # Nodes other than Particle Operations are excluded because they cannot
-            # establish this ordering until action graphs are resolved.
+            # Requirement nodes are excluded because they cannot establish this
+            # ordering until action graphs are resolved.
             if (
                 fill_dependency is not None
                 and empty_dependencies
@@ -548,7 +548,10 @@ class OperationGraph:
                 )
                 and all(
                     empty_dependency > fill_dependency
-                    and isinstance(self._nodes[empty_dependency], PositionOperationNode)
+                    and isinstance(
+                        self._nodes[empty_dependency],
+                        (PositionOperationNode, GuaranteeNode),
+                    )
                     for empty_dependency in empty_dependencies
                 )
             ):

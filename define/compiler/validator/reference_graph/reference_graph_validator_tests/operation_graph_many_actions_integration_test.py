@@ -645,6 +645,56 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
     }
 
 
+def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "destination.dfn": "define the potential position<my.domain.com:my_lib:/destination>.\n",
+            "producer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/producer> {\n"
+                "    define the position<input>.\n"
+                "    define the position<result>.\n"
+                "    it happens when {\n"
+                "        the position<input> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<input> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "box.dfn": (
+                "define the potential position<my.domain.com:my_lib:/box> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the action</producer>.\n"
+                "        it has the position</destination>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</box>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in position</box>.\n"
+                "        create a particle in position</box>::action</producer>::position<input>.\n"
+                "        move the particle in position</box>::action</producer>::position<result> to position</box>::position</destination>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/box)": [],
+        "test.create(/box::/producer::input)": ["test.create(/box)"],
+        "producer.move(input, result)": ["test.create(/box::/producer::input)"],
+        "test.move(/box::/producer::result, /box::/destination)": [
+            "producer.move(input, result)"
+        ],
+    }
+
+
 def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
