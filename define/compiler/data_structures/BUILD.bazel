@@ -26,6 +26,21 @@ py_test(
 )
 
 py_library(
+    name = "persistent_trie",
+    srcs = ["persistent_trie.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "persistent_trie_test",
+    size = "small",
+    srcs = ["persistent_trie_test.py"],
+    deps = [
+        ":persistent_trie",
+    ],
+)
+
+py_library(
     name = "trie",
     srcs = ["trie.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -75,6 +90,8 @@ pyright_test(
         ":data_structures",
         ":define_path",
         ":define_path_test",
+        ":persistent_trie",
+        ":persistent_trie_test",
         ":trie",
         ":trie_test",
         ":typed_name_dict",
