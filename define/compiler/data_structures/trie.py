@@ -16,7 +16,7 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, ItemsView, Iterable
+    from collections.abc import Callable, ItemsView, Iterable, Iterator
 
 type TrieKey = tuple[str, ...]
 
@@ -269,6 +269,24 @@ class StrictReparentingTrie[V]:
                 result.append((relative_child, self._values[full_child]))
                 stack.append((full_child, relative_child))
         return result
+
+    def selected_subtree_items[Selected](
+        self, key: TrieKey, select: Callable[[V], Selected | None]
+    ) -> Iterator[tuple[TrieKey, Selected]]:
+        """Yield selected descendant values with keys relative to ``key``."""
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        stack: list[tuple[TrieKey, TrieKey]] = [(key, ())]
+        while stack:
+            full_node, relative_node = stack.pop()
+            for segment in self._children.get(full_node, ()):
+                full_child = (*full_node, segment)
+                relative_child = (*relative_node, segment)
+                value = self._values[full_child]
+                selected = select(value)
+                if selected is not None:
+                    yield relative_child, selected
+                stack.append((full_child, relative_child))
 
     def subtree_keys(self, key: TrieKey) -> list[TrieKey]:
         """Return the full key of every descendant of key; key itself is excluded."""

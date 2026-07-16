@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import typing
 from dataclasses import dataclass
 
@@ -19,7 +18,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class ParticleInfo:
     """Information about a tracked particle."""
 
@@ -36,10 +35,6 @@ class ParticleInfo:
     origin_position: ast.PositionReference
     # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
     from_caller: bool = False
-
-    def move_to(self, target: ast.PositionReference) -> ParticleInfo:
-        """Return a new ParticleInfo reflecting a move to the target position."""
-        return dataclasses.replace(self, last_position=target)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +53,11 @@ class _NodeState:
 
     particle_info: ParticleInfo | None = None
     emptied_by: ast.PositionReference | None = None
+    # Keeping the exact-position operation with the state makes it follow moves,
+    # so child-operation snapshots only need to be built when an operation uses one.
+    # TODO: Reconsider the boundary between particle tracking and operation-graph
+    # construction; this is operation-graph metadata stored here for reparenting.
+    operation_node_id: int | None = None
 
 
 @dataclass
@@ -566,6 +566,13 @@ class ParticleTracker:
                 result[relative_key] = action_contract.ERROR_OCCUPANCY
         return result
 
+    def _preceding_child_operations(
+        self, key: tuple[str, ...]
+    ) -> Iterator[tuple[tuple[str, ...], int]]:
+        return self._store.state.selected_subtree_items(
+            key, lambda state: state.operation_node_id
+        )
+
     def create(
         self,
         in_position: ast.PositionReference,
@@ -591,8 +598,9 @@ class ParticleTracker:
         if existing is not None and existing.particle_info is not None:
             raise ValueError(f"position {key} is already occupied")
         # Only a body create becomes a node in the operation graph.
+        operation_node_id: int | None = None
         if from_caller is None:
-            self._operation_graph.record_create(in_position)
+            operation_node_id = self._operation_graph.record_create(in_position)
         info = ParticleInfo(
             last_position=in_position,
             qualities=qualities,
@@ -602,8 +610,11 @@ class ParticleTracker:
         if existing is not None:
             existing.particle_info = info
             existing.emptied_by = None
+            existing.operation_node_id = operation_node_id
         else:
-            self._store.state[key] = _NodeState(particle_info=info)
+            self._store.state[key] = _NodeState(
+                particle_info=info, operation_node_id=operation_node_id
+            )
 
     def destroy(self, in_position: ast.PositionReference):
         """Remove a particle from this position.
@@ -616,15 +627,17 @@ class ParticleTracker:
         if existing is None or existing.particle_info is None:
             raise ValueError(f"position {key} is not occupied")
         # Record before the subtree is deleted, so graph dependencies see the children.
-        self._operation_graph.record_destroy(
-            in_position, self._store.state.subtree_keys(key)
+        operation_node_id = self._operation_graph.record_destroy(
+            in_position, self._preceding_child_operations(key)
         )
         del self._store.state[key]
         # Destroying puts all children back into a known state (they don't exist).
         if key in self._store.error:
             del self._store.error[key]
         self._record_body_write(key)
-        self._store.state[key] = _NodeState(emptied_by=in_position)
+        self._store.state[key] = _NodeState(
+            emptied_by=in_position, operation_node_id=operation_node_id
+        )
 
     def get_emptied_by(
         self, position: ast.PositionReference
@@ -652,8 +665,11 @@ class ParticleTracker:
             )
         self._ensure_action_parent(to_key)
         # Record before move_subtree relocates the children, so graph dependencies see them.
-        self._operation_graph.record_move(
-            source, target, self._store.state.subtree_keys(from_key)
+        source_info = self._store.state[from_key].particle_info
+        if source_info is None:
+            raise ValueError(f"source position {from_key} is empty")
+        operation_node_id = self._operation_graph.record_move(
+            source, target, self._preceding_child_operations(from_key)
         )
         # Both positions are touched by this one move statement, so they share a
         # body operation number.
@@ -661,21 +677,20 @@ class ParticleTracker:
         self._record_body_write(to_key, advance_body_operation_number=False)
         # TODO: Move last_position into _NodeState so that move_subtree
         # doesn't need this post-move fixup.
-        moved_info = self._store.state[from_key].particle_info
-        if moved_info is not None:
-            moved_info = moved_info.move_to(target)
+        source_info.last_position = target
 
         to_state = self._store.state.get(to_key)
         if to_state is not None:
-            # This should never happen, it's just a defensive check.
             if to_state.particle_info is not None:
                 raise ValueError(f"destination position {to_key} is already occupied")
             # The target may already exist as an empty node (previously
             # destroyed). Delete it before moving so move_subtree succeeds.
             del self._store.state[to_key]
         self._store.state.move_subtree(from_key, to_key)
-        self._store.state[to_key].particle_info = moved_info
-        self._store.state[from_key] = _NodeState(emptied_by=source)
+        self._store.state[to_key].operation_node_id = operation_node_id
+        self._store.state[from_key] = _NodeState(
+            emptied_by=source, operation_node_id=operation_node_id
+        )
         self._store.rekey_records_for_move(from_key, to_key)
 
     def generate_own_guarantees(
@@ -883,11 +898,11 @@ class ParticleTracker:
             acting_on_position,
             requirements,
             caller_requirement_positions,
-            acting_on_position_child_positions=self._store.state.subtree_keys(
+            acting_on_preceding_child_operations=self._preceding_child_operations(
                 acting_on_position_key
             ),
-            caller_requirement_child_positions=(
-                self._store.state.subtree_keys(position.canonical_chained_name_tuple)
+            required_preceding_child_operations=(
+                self._preceding_child_operations(position.canonical_chained_name_tuple)
                 for position in caller_requirement_positions
             ),
         )
@@ -908,11 +923,15 @@ class ParticleTracker:
         touched_keys = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
-        self._operation_graph.record_guarantees(
+        guarantee_nodes = self._operation_graph.record_guarantees(
             pending_guarantee.trigger,
             pending_guarantee.trigger_chain,
             touched_keys,
         )
+        for key, node_id in guarantee_nodes.items():
+            state = self._store.state.get(key)
+            if state is not None:
+                state.operation_node_id = node_id
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
             child_nested_guarantee = _PendingGuarantee(
@@ -1123,7 +1142,8 @@ class ParticleTracker:
             self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
 
-        moved_info = origin_state.particle_info.move_to(guarantee.caused_by)
+        moved_info = origin_state.particle_info
+        moved_info.last_position = guarantee.caused_by
         if saved_tree is not None:
             # If we have a saved_tree, we have to graft back in the children of
             # the popped subtree (the popped subtree starts with the particle

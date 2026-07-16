@@ -104,8 +104,31 @@ py_library(
     srcs = ["operation_graph_renderer.py"],
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
-        ":action_contract",
         ":operation_graph",
+        ":operation_graph_resolver",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+    ],
+)
+
+py_library(
+    name = "operation_graph_resolver",
+    srcs = ["operation_graph_resolver.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":operation_graph",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+    ],
+)
+
+py_test(
+    name = "operation_graph_resolver_test",
+    size = "small",
+    srcs = ["operation_graph_resolver_test.py"],
+    deps = [
+        ":operation_graph",
+        ":operation_graph_resolver",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -242,6 +265,8 @@ pyright_test(
         ":definition_postorder_validator_test",
         ":operation_graph",
         ":operation_graph_renderer",
+        ":operation_graph_resolver",
+        ":operation_graph_resolver_test",
         ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",

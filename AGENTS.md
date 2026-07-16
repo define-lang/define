@@ -79,6 +79,9 @@ See [define/spec/spec.md] for the language specification.
   `disable_feature=True`.
 - Do not add `-> None` return annotations unless a type checker explicitly
   requires one.
+- Use comprehensions only when their iteration and filtering are immediately
+  readable. Use ordinary control flow for comprehensions with nested iteration,
+  multiple conditions, or nontrivial expressions.
 
 ## Terminology
 

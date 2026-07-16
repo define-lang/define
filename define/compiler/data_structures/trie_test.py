@@ -220,6 +220,34 @@ class TestSubtreeItems:
             t.subtree_items(())
 
 
+class TestSelectedSubtreeItems:
+    def test_yields_selected_relative_keys_across_unselected_nodes(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        t[("a", "b", "c")] = 3
+        t[("a", "d")] = 4
+        t[("z",)] = 6
+        assert sorted(
+            t.selected_subtree_items(
+                ("a",), lambda value: str(value) if value % 2 == 0 else None
+            )
+        ) == [
+            (("b",), "2"),
+            (("d",), "4"),
+        ]
+
+    def test_missing_key_yields_nothing(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        assert list(t.selected_subtree_items(("missing",), lambda value: value)) == []
+
+    def test_empty_key_raises_when_iterated(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        with pytest.raises(trie.EmptyKeyError):
+            list(t.selected_subtree_items((), lambda value: value))
+
+
 class TestSubtreeKeys:
     def test_returns_full_keys_excluding_root_and_unrelated_branches(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()

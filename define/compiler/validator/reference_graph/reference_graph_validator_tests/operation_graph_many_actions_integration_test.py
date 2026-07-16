@@ -7,6 +7,86 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
+def test_actions_with_identically_named_child_actions_have_distinct_instances(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<scratch>.\n"
+                "        create a particle in position<scratch>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "first.dfn": (
+                "define the potential action<my.domain.com:my_lib:/first> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "second.dfn": (
+                "define the potential action<my.domain.com:my_lib:/second> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</first>.\n"
+                "    it also assigns the action</second>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</first>::position<trigger_pos>.\n"
+                "        create a particle in action</second>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/first::trigger_pos)": [],
+        "test.create(/second::trigger_pos)": [],
+        "first.create(box)": ["test.create(/first::trigger_pos)"],
+        "first.create(box::/inner::trigger_pos)": ["first.create(box)"],
+        "first.destroy(box)": ["first.create(box::/inner::trigger_pos)"],
+        "second.create(box)": ["test.create(/second::trigger_pos)"],
+        "second.create(box::/inner::trigger_pos)": ["second.create(box)"],
+        "second.destroy(box)": ["second.create(box::/inner::trigger_pos)"],
+        "first:inner.create(scratch)": ["first.create(box::/inner::trigger_pos)"],
+        "first:inner.destroy(scratch)": ["first:inner.create(scratch)"],
+        "second:inner.create(scratch)": ["second.create(box::/inner::trigger_pos)"],
+        "second:inner.destroy(scratch)": ["second:inner.create(scratch)"],
+    }
+
+
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

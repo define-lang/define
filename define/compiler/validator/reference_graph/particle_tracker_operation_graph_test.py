@@ -9,6 +9,7 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 
+
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
 
 _CREATE = operation_graph.CreateNode
@@ -382,7 +383,11 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
         operation_graph.ActionTrigger(
             action_chain,
             2,
-            {("position<run>",): operation_graph.RequirementBinding(2, (), None)},
+            {
+                ("position<run>",): operation_graph.RequirementBinding(
+                    2, operation_graph.ParticleChildOperations(), None
+                )
+            },
         )
     ]
 

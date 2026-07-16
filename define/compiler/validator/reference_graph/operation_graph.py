@@ -25,6 +25,8 @@ from define.compiler.validator.reference_graph import action_contract
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
+type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], int]]
+
 
 def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
     """Return whether either child position is a prefix of the other."""
@@ -43,34 +45,85 @@ class ChildOperation:
 
 
 @dataclass(frozen=True, slots=True)
+class ParticleChildOperations:
+    """Immutable operations on the child positions of one particle.
+
+    Each value is a construction-time snapshot of operations that may become
+    predecessors of a later operation that empties the particle. The operations
+    have no guaranteed order.
+    """
+
+    operations: tuple[ChildOperation, ...] = ()
+
+    @classmethod
+    def from_preceding_operations(
+        cls, preceding_operations: PrecedingChildOperations
+    ) -> ParticleChildOperations:
+        """Create a snapshot from preceding operations on child positions."""
+        operations: list[ChildOperation] = []
+        operation_positions: set[tuple[str, ...]] = set()
+        operation_position_prefixes: set[tuple[str, ...]] = set()
+        # The caller passes in every child operation that precedes this one.
+        # We need to calculate the ones that are actually relevant for future
+        # emptying operations.
+        #
+        # We find the deepest child unless a parent was operated on more recently.
+        for child_position, node_id in sorted(
+            preceding_operations, key=lambda operation: operation[1], reverse=True
+        ):
+            if (
+                child_position in operation_positions
+                or child_position in operation_position_prefixes
+            ):
+                continue
+            has_operation_on_parent_position = any(
+                child_position[:depth] in operation_positions
+                for depth in range(1, len(child_position))
+            )
+            if has_operation_on_parent_position:
+                continue
+            operations.append(ChildOperation(child_position, node_id))
+            operation_positions.add(child_position)
+            operation_position_prefixes.update(
+                child_position[:depth] for depth in range(1, len(child_position))
+            )
+        return cls(tuple(operations))
+
+    def operations_not_on_same_paths_as(
+        self, relative_positions: frozenset[tuple[str, ...]]
+    ) -> list[ChildOperation]:
+        """Return surviving operations independent of the supplied paths."""
+        operations: list[ChildOperation] = []
+        for operation in self.operations:
+            shares_dependency_path = any(
+                _shares_path(operation.child_position, dependency)
+                for dependency in relative_positions
+            )
+            if not shares_dependency_path:
+                operations.append(operation)
+        return operations
+
+    def all_precede(self, node_id: int) -> bool:
+        """Return whether every operation precedes ``node_id``."""
+        return not self.operations or self.operations[0].node_id < node_id
+
+    def child_position_set(self) -> frozenset[tuple[str, ...]]:
+        """Return the relative child positions with preceding operations."""
+        return frozenset(operation.child_position for operation in self.operations)
+
+
+@dataclass(frozen=True, slots=True)
 class RequirementBinding:
     """The caller dependencies that satisfy one requirement of a triggered callee."""
 
     # The operation or RequirementNode that put the position in its required
     # state from the caller's perspective.
     node_id: int
-    child_operations: tuple[ChildOperation, ...]
+    child_operations: ParticleChildOperations
     # node_id identifies what put the position in its required state. This
     # optional node identifies the additional dependencies needed if the callee
     # empties the required particle.
     requirement_children_node: RequirementChildrenNode | None
-
-    def child_operations_not_on_same_paths_as(
-        self, depends_on_child_operations: frozenset[tuple[str, ...]]
-    ) -> tuple[ChildOperation, ...]:
-        """Return child operations that do not share a path with ``depends_on_child_operations``."""
-        if not depends_on_child_operations:
-            return self.child_operations
-        # TODO: If either collection becomes large, index the position paths in a
-        # prefix trie so shared-path checks do not require comparing every pair.
-        return tuple(
-            operation
-            for operation in self.child_operations
-            if not any(
-                _shares_path(operation.child_position, child_operation)
-                for child_operation in depends_on_child_operations
-            )
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,8 +370,8 @@ class OperationGraph:
         requirements: Sequence[ast.PositionReference],
         caller_requirement_positions: Sequence[ast.PositionReference],
         *,
-        acting_on_position_child_positions: Iterable[tuple[str, ...]],
-        caller_requirement_child_positions: Iterable[Iterable[tuple[str, ...]]],
+        acting_on_preceding_child_operations: PrecedingChildOperations,
+        required_preceding_child_operations: Iterable[PrecedingChildOperations],
     ) -> ActionTrigger:
         """Record that this action triggers ``callee``, returning that triggering.
 
@@ -327,8 +380,8 @@ class OperationGraph:
 
         ``caller_requirement_positions`` are ``requirements`` already expressed
         from the caller's perspective (``requirement.in_caller(callee)``), in the
-        same order. The child-position arguments contain only positions in the
-        particle tracker's current state when the action triggers.
+        same order. The child-operation arguments identify operations responsible
+        for the current state of the particles' child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_node_id = self._last_operation[acting_on_position_key]
@@ -350,13 +403,15 @@ class OperationGraph:
             trigger_position_key = ()
         bindings[trigger_position_key] = self._requirement_binding(
             acting_on_position_key,
-            acting_on_position_child_positions,
+            ParticleChildOperations.from_preceding_operations(
+                acting_on_preceding_child_operations
+            ),
             firing_node_id,
         )
-        for requirement, caller_position, child_positions in zip(
+        for requirement, caller_position, preceding_child_operations in zip(
             requirements,
             caller_requirement_positions,
-            caller_requirement_child_positions,
+            required_preceding_child_operations,
             strict=True,
         ):
             caller_position_key = caller_position.canonical_chained_name_tuple
@@ -365,7 +420,9 @@ class OperationGraph:
             if binding_node_id is not None:
                 bindings[requirement_key] = self._requirement_binding(
                     caller_position_key,
-                    child_positions,
+                    ParticleChildOperations.from_preceding_operations(
+                        preceding_child_operations
+                    ),
                     binding_node_id,
                 )
         trigger = ActionTrigger(callee, firing_node_id, bindings)
@@ -379,19 +436,17 @@ class OperationGraph:
     def _requirement_binding(
         self,
         position: tuple[str, ...],
-        current_child_positions: Iterable[tuple[str, ...]],
+        child_operations: ParticleChildOperations,
         node_id: int,
     ) -> RequirementBinding:
         """Return the caller dependencies that satisfy a callee requirement."""
-        # TODO: Maintain an incremental index of the deepest operation paths so
-        # this and _compute_dependencies do not independently scan particle-state
-        # subtrees and compute their surviving operations.
-        surviving_operations = self._surviving_child_operations(current_child_positions)
-        operations = tuple(
-            ChildOperation(child_position=key[len(position) :], node_id=node_id)
-            for key, node_id in surviving_operations
-        )
         position_node = self._nodes[node_id]
+        # A move that brought the whole particle here already depends on every
+        # older child operation, so retaining them would add redundant edges.
+        if isinstance(position_node, MoveNode) and child_operations.all_precede(
+            node_id
+        ):
+            child_operations = ParticleChildOperations()
         requirement_children_node: RequirementChildrenNode | None = None
         if (
             isinstance(position_node, RequirementNode)
@@ -401,11 +456,11 @@ class OperationGraph:
         ):
             requirement_children_node = self._add_requirement_children_node(
                 position,
-                frozenset(operation.child_position for operation in operations),
+                child_operations.child_position_set(),
             )
         return RequirementBinding(
             node_id,
-            operations,
+            child_operations,
             requirement_children_node,
         )
 
@@ -430,57 +485,48 @@ class OperationGraph:
         # nothing operated on the position itself.
         return self._last_operation_affecting_position(caller_position_key)
 
-    def _compute_dependencies(
-        self,
-        fill_position: tuple[str, ...] | None = None,
-        empty_position: tuple[str, ...] | None = None,
-        previously_touched_child_positions: Iterable[tuple[str, ...]] = (),
-    ) -> list[int]:
-        """Return the ids this operation depends on.
-
-        Materializes any requirements nodes this operation may depend on.
-        """
-        # A move fills its target and empties its source, so a single predecessor
-        # can be reached twice; the dependencies are collected in a set first.
+    def _fill_dependencies(self, position: tuple[str, ...]) -> set[int]:
+        """Return dependencies required before filling ``position``."""
         dependencies: set[int] = set()
         # Filling a position waits on the most recent operation on that position
         # and its parents, so the parent is present to hold it.
-        if fill_position is not None:
-            filled_ancestor = self._most_recent_ancestor_chain_operation(fill_position)
-            if filled_ancestor is not None:
-                dependencies.add(filled_ancestor)
+        filled_ancestor = self._most_recent_ancestor_chain_operation(position)
+        if filled_ancestor is not None:
+            dependencies.add(filled_ancestor)
+        return dependencies
+
+    def _empty_dependencies(
+        self,
+        position: tuple[str, ...],
+        child_operations: ParticleChildOperations,
+    ) -> set[int]:
+        """Return dependencies required before emptying ``position``."""
         # Emptying a position waits on the most recent operation in each touched
         # child position (minus a shallower one a deeper touched position has
         # already superseded), and on the emptied position's own chain only when
         # that is more recent than every one of those child operations; otherwise
         # a child already reaches it.
-        child_operations = self._surviving_child_operations(
-            previously_touched_child_positions
+        dependencies: set[int] = set()
+        emptied_ancestor = self._most_recent_ancestor_chain_operation(position)
+        if emptied_ancestor is not None:
+            node = self._nodes[emptied_ancestor]
+            if (
+                isinstance(node, RequirementNode)
+                and node.requirement_position == position
+            ):
+                requirement_children_node = self._add_requirement_children_node(
+                    position, child_operations.child_position_set()
+                )
+                dependencies.add(requirement_children_node.node_id)
+            elif child_operations.all_precede(emptied_ancestor):
+                child_operations = ParticleChildOperations()
+                dependencies.add(emptied_ancestor)
+        dependencies.update(
+            operation.node_id for operation in child_operations.operations
         )
-        dependencies.update(operation for _, operation in child_operations)
-        if empty_position is not None:
-            emptied_ancestor = self._most_recent_ancestor_chain_operation(
-                empty_position
-            )
-            if emptied_ancestor is not None:
-                node = self._nodes[emptied_ancestor]
-                if (
-                    isinstance(node, RequirementNode)
-                    and node.requirement_position == empty_position
-                ):
-                    dependencies.add(
-                        self._add_requirement_children_node(
-                            empty_position,
-                            frozenset(
-                                key[len(empty_position) :]
-                                for key, _ in child_operations
-                            ),
-                        ).node_id
-                    )
-                elif all(
-                    emptied_ancestor > operation for _, operation in child_operations
-                ):
-                    dependencies.add(emptied_ancestor)
+        return dependencies
+
+    def _operation_dependencies(self, dependencies: set[int]) -> list[int]:
         if not dependencies:
             # An operation with nothing else to wait on still happens only
             # because this action triggered, so it waits on the trigger
@@ -558,71 +604,32 @@ class OperationGraph:
         self._nodes.append(node)
         return node
 
-    def _surviving_child_operations(
-        self, touched_child_positions: Iterable[tuple[str, ...]]
-    ) -> list[tuple[tuple[str, ...], int]]:
-        """Return the touched child operations that no deeper touched one supersedes, each with its position."""
-        # Touched positions without an operation never survive or suppress
-        # anything, so only the ones carrying an operation matter.
-        operated_positions = [
-            (key, operation)
-            for key in touched_child_positions
-            if (operation := self._last_operation.get(key)) is not None
-        ]
-        # With no deeper touched position to supersede it, a lone operation always
-        # survives, so the overwhelmingly common empty/single case needs no search.
-        if len(operated_positions) <= 1:
-            return operated_positions
-        # The nested scan is quadratic in the number of operated positions, but
-        # that count is the breadth of a single destroy or move cascade -- the
-        # particles nested inside the one position being emptied -- which is a
-        # handful at most, so a flat scan beats building an index over it.
-        survivors: list[tuple[tuple[str, ...], int]] = []
-        for key, operation in operated_positions:
-            depth = len(key)
-            superseded = False
-            for deeper_key, deeper_operation in operated_positions:
-                # A position is never a strict descendant of itself (its key is
-                # not longer), so it never suppresses itself or a duplicate.
-                if (
-                    len(deeper_key) > depth
-                    and deeper_operation >= operation
-                    and deeper_key[:depth] == key
-                ):
-                    superseded = True
-                    break
-            if not superseded:
-                survivors.append((key, operation))
-        return survivors
-
-    def record_create(self, target: ast.PositionReference):
+    def record_create(self, target: ast.PositionReference) -> int:
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
-        depends_on = self._compute_dependencies(fill_position=key)
+        depends_on = self._operation_dependencies(self._fill_dependencies(key))
         node_id = len(self._nodes)
         self._nodes.append(
             CreateNode(node_id=node_id, target=target, depends_on=depends_on)
         )
         self._last_operation[key] = node_id
+        return node_id
 
     def record_move(
         self,
         source: ast.PositionReference,
         target: ast.PositionReference,
-        previously_touched_child_positions: Iterable[tuple[str, ...]],
-    ):
-        """Record a body move from ``source`` to ``target``.
-
-        ``previously_touched_child_positions`` are the keys in the source's trie
-        subtree (occupied or known-empty) at the moment of the move.
-        """
+        preceding_child_operations: PrecedingChildOperations,
+    ) -> int:
+        """Record a body move from ``source`` to ``target``."""
+        child_operations = ParticleChildOperations.from_preceding_operations(
+            preceding_child_operations
+        )
         source_key = source.canonical_chained_name_tuple
         target_key = target.canonical_chained_name_tuple
-        depends_on = self._compute_dependencies(
-            fill_position=target_key,
-            empty_position=source_key,
-            previously_touched_child_positions=previously_touched_child_positions,
-        )
+        dependencies = self._fill_dependencies(target_key)
+        dependencies.update(self._empty_dependencies(source_key, child_operations))
+        depends_on = self._operation_dependencies(dependencies)
         node_id = len(self._nodes)
         self._nodes.append(
             MoveNode(
@@ -631,35 +638,38 @@ class OperationGraph:
         )
         self._last_operation[source_key] = node_id
         self._last_operation[target_key] = node_id
+        return node_id
 
     def record_destroy(
         self,
         target: ast.PositionReference,
-        previously_touched_child_positions: Iterable[tuple[str, ...]],
-    ):
+        preceding_child_operations: PrecedingChildOperations,
+    ) -> int:
         """Record a destroy of ``target``.
 
-        The single node covers the whole cascade: everything the destroy also
-        removes, and everything the fired destructors read, is a transitive
-        child of ``target`` and comes in through ``previously_touched_child_positions``.
+        The single node covers the whole cascade, including the child positions
+        it removes and the positions its fired destructors read.
         """
+        child_operations = ParticleChildOperations.from_preceding_operations(
+            preceding_child_operations
+        )
         key = target.canonical_chained_name_tuple
-        depends_on = self._compute_dependencies(
-            empty_position=key,
-            previously_touched_child_positions=previously_touched_child_positions,
+        depends_on = self._operation_dependencies(
+            self._empty_dependencies(key, child_operations)
         )
         node_id = len(self._nodes)
         self._nodes.append(
             DestroyNode(node_id=node_id, target=target, depends_on=depends_on)
         )
         self._last_operation[key] = node_id
+        return node_id
 
     def record_guarantees(
         self,
         trigger: ActionTrigger,
         callee_chain: tuple[str, ...],
         guaranteed_keys: Iterable[tuple[str, ...]],
-    ):
+    ) -> dict[tuple[str, ...], int]:
         """Record the positions ``trigger`` guarantees, as nodes hanging off it.
 
         Each key in ``guaranteed_keys`` is a contracted position's absolute key.
@@ -669,6 +679,7 @@ class OperationGraph:
         as the callee's own graph names it, including a position the callee in
         turn took from an action it triggered.
         """
+        node_ids: dict[tuple[str, ...], int] = {}
         for absolute_key in guaranteed_keys:
             node_id = len(self._nodes)
             self._nodes.append(
@@ -680,3 +691,5 @@ class OperationGraph:
                 )
             )
             self._last_operation[absolute_key] = node_id
+            node_ids[absolute_key] = node_id
+        return node_ids
