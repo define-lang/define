@@ -1578,6 +1578,11 @@ Operations:
    Operation among the ones on the emptied position and its transitive parent
    positions, but only when that operation is more recent than _all_ of the
    child operations in Rule 2 above.
+4. Move Particle Statements both empty a position (the source) and fill a
+   position (the target). When the target depends on a Particle Operation on the
+   source position or one of the source position's transitive parent positions,
+   the target's dependency is excluded if every source dependency is more recent
+   than that target dependency.
 
 ### Executing Particle Operations Concurrently
 
