@@ -393,6 +393,175 @@ def test_destroy_reduces_its_own_position_create_edge(
     }
 
 
+def test_destroy_excludes_an_earlier_move_reached_through_a_child_destroy(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "source.dfn": "define the potential position<my.domain.com:my_lib:/source>.\n",
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</source>.\n"
+                "            it has the position</target>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</source>.\n"
+                "        move the particle in position<box>::position</source> to position<box>::position</target>.\n"
+                "        destroy the particle in position<box>::position</target>.\n"
+                "        destroy the particle in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/source)": ["test.create(box)"],
+        "test.move(box::/source, box::/target)": ["test.create(box::/source)"],
+        "test.destroy(box::/target)": ["test.move(box::/source, box::/target)"],
+        "test.destroy(box)": ["test.destroy(box::/target)"],
+    }
+
+
+def test_move_excludes_an_earlier_move_reached_through_a_child_destroy(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "source.dfn": "define the potential position<my.domain.com:my_lib:/source>.\n",
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<holder>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</source>.\n"
+                "            it has the position</target>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</source>.\n"
+                "        move the particle in position<box>::position</source> to position<box>::position</target>.\n"
+                "        destroy the particle in position<box>::position</target>.\n"
+                "        move the particle in position<box> to position<holder>.\n"
+                "        destroy the particle in position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/source)": ["test.create(box)"],
+        "test.move(box::/source, box::/target)": ["test.create(box::/source)"],
+        "test.destroy(box::/target)": ["test.move(box::/source, box::/target)"],
+        "test.move(box, holder)": ["test.destroy(box::/target)"],
+        "test.destroy(holder)": ["test.move(box, holder)"],
+    }
+
+
+def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "source.dfn": "define the potential position<my.domain.com:my_lib:/source>.\n",
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<holder>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</source>.\n"
+                "            it has the position</target>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</source>.\n"
+                "        move the particle in position<box>::position</source> to position<box>::position</target>.\n"
+                "        move the particle in position<box>::position</target> to position<holder>.\n"
+                "        destroy the particle in position<box>.\n"
+                "        destroy the particle in position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/source)": ["test.create(box)"],
+        "test.move(box::/source, box::/target)": ["test.create(box::/source)"],
+        "test.move(box::/target, holder)": ["test.move(box::/source, box::/target)"],
+        "test.destroy(box)": ["test.move(box::/target, holder)"],
+        "test.destroy(holder)": ["test.move(box::/target, holder)"],
+    }
+
+
+def test_move_excludes_an_earlier_move_reached_through_a_child_move(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "source.dfn": "define the potential position<my.domain.com:my_lib:/source>.\n",
+            "middle.dfn": "define the potential position<my.domain.com:my_lib:/middle>.\n",
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<holder>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</source>.\n"
+                "            it has the position</middle>.\n"
+                "            it has the position</target>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</source>.\n"
+                "        move the particle in position<box>::position</source> to position<box>::position</middle>.\n"
+                "        move the particle in position<box>::position</middle> to position<box>::position</target>.\n"
+                "        move the particle in position<box> to position<holder>.\n"
+                "        destroy the particle in position<holder>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/source)": ["test.create(box)"],
+        "test.move(box::/source, box::/middle)": ["test.create(box::/source)"],
+        "test.move(box::/middle, box::/target)": [
+            "test.move(box::/source, box::/middle)"
+        ],
+        "test.move(box, holder)": ["test.move(box::/middle, box::/target)"],
+        "test.destroy(holder)": ["test.move(box, holder)"],
+    }
+
+
 def test_refill_does_not_repeat_the_ancestor_edge(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

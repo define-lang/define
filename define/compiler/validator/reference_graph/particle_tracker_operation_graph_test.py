@@ -16,7 +16,7 @@ _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode
 _DESTROY = operation_graph.DestroyNode
 _GUARANTEE = operation_graph.GuaranteeNode
-_REQUIREMENT = operation_graph.RequirementNode
+_ACTION_PARENT_LAST_OPERATION = operation_graph.ActionParentLastOperationNode
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -63,7 +63,12 @@ def _action_chain(*elements: ast.TypedNameReference) -> ast.ActionReference:
 
 
 def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
-    return action_contract.OccupiedByNewGuarantee(qualities=(), caused_by=_ref("cause"))
+    cause = _ref("cause")
+    return action_contract.OccupiedByNewGuarantee(
+        qualities=(),
+        caused_by=cause,
+        operation_positions=(cause.canonical_chained_name_tuple,),
+    )
 
 
 def _last_operation(
@@ -120,7 +125,7 @@ def test_body_chain_depends_in_order():
     tracker.create(_ref("one"), ())
     tracker.destroy(_ref("one"))
     # Node 0 is the trigger-position RequirementNode the first create waits on.
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _DESTROY]
+    assert _kinds(tracker) == [_ACTION_PARENT_LAST_OPERATION, _CREATE, _DESTROY]
     assert _deps(tracker, 1) == [0]
     assert _deps(tracker, 2) == [1]
 
@@ -143,7 +148,12 @@ def test_destroy_depends_on_touched_children():
     tracker.create(_ref("box"), ())
     tracker.create(_ref("box", "inner"), ())
     tracker.destroy(_ref("box"))
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _DESTROY]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _DESTROY,
+    ]
     # The destroy waits on the child (2), which already reaches create box (1).
     assert _deps(tracker, 3) == [2]
 
@@ -154,7 +164,13 @@ def test_destroy_depends_on_grandchildren():
     tracker.create(_ref("box", "inner"), ())
     tracker.create(_ref("box", "inner", "deep"), ())
     tracker.destroy(_ref("box"))
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _CREATE, _DESTROY]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _CREATE,
+        _DESTROY,
+    ]
     # subtree_keys hands the destroy the child (2) and the grandchild (3); the
     # grandchild is the deepest and reaches the rest, so only it survives.
     assert _deps(tracker, 4) == [3]
@@ -166,7 +182,13 @@ def test_move_carries_child_transitively():
     tracker.create(_ref("box", "inner"), ())
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _MOVE, _DESTROY]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _MOVE,
+        _DESTROY,
+    ]
     # The move pulls in box::inner via the Child Rule; box::inner already reaches
     # create box (1), so that is not repeated.
     assert _deps(tracker, 3) == [2]
@@ -183,7 +205,7 @@ def test_move_carries_grandchild_subtree():
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [
-        _REQUIREMENT,
+        _ACTION_PARENT_LAST_OPERATION,
         _CREATE,
         _CREATE,
         _CREATE,
@@ -206,7 +228,7 @@ def test_from_caller_create_records_no_operation():
     # The from-caller create is not a body operation, so the destroy has
     # nothing of its own to wait on and waits on the trigger-position
     # requirement.
-    assert _kinds(tracker) == [_REQUIREMENT, _DESTROY]
+    assert _kinds(tracker) == [_ACTION_PARENT_LAST_OPERATION, _DESTROY]
     assert _deps(tracker, 1) == [0]
 
 
@@ -214,7 +236,7 @@ def test_mark_empty_records_nothing():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.mark_empty(_ref("slot"))
     tracker.create(_ref("slot"), ())
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE]
+    assert _kinds(tracker) == [_ACTION_PARENT_LAST_OPERATION, _CREATE]
     assert _deps(tracker, 1) == [0]
 
 
@@ -236,7 +258,12 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
     )
     # The triggered action's output becomes a guarantee node hanging off the
     # trigger; that node is the output's last operation.
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _GUARANTEE]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _GUARANTEE,
+    ]
     assert _last_operation(tracker, out) == 3
     # A caller operation on the output chains to the guarantee node, the most
     # recent operation on its ancestor chain, which already waits on the box
@@ -265,7 +292,13 @@ def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
         [],
     )
     # Each of the callee's outputs becomes its own guarantee node.
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _GUARANTEE, _GUARANTEE]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _GUARANTEE,
+        _GUARANTEE,
+    ]
     parent = _chain(_local("box"), box, _local("parent"))
     child = _chain(_local("box"), box, _local("parent"), _local("child"))
     assert _last_operation(tracker, parent) == 3
@@ -303,7 +336,13 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
     # guarantee node (hanging off the trigger it inherited) that becomes the
     # output's last operation.
     assert tracker.is_occupied(item)
-    assert _kinds(tracker) == [_REQUIREMENT, _CREATE, _CREATE, _CREATE, _GUARANTEE]
+    assert _kinds(tracker) == [
+        _ACTION_PARENT_LAST_OPERATION,
+        _CREATE,
+        _CREATE,
+        _CREATE,
+        _GUARANTEE,
+    ]
     assert _last_operation(tracker, item) == 4
 
 
@@ -350,7 +389,7 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
     # operation.
     assert tracker.is_occupied(item)
     assert _kinds(tracker) == [
-        _REQUIREMENT,
+        _ACTION_PARENT_LAST_OPERATION,
         _CREATE,
         _CREATE,
         _CREATE,
@@ -388,6 +427,7 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
                     2, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         )
     ]
 

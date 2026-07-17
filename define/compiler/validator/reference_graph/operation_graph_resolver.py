@@ -9,6 +9,12 @@ from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import operation_graph
 
+# Resolution must be limited to substitutions that codegen can perform while
+# consuming an operation graph. Operation graphs must already contain the
+# correct minimal direct dependencies; resolution must never compensate for
+# missing graph-construction information by analyzing or repairing the resolved
+# graph.
+
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -122,11 +128,6 @@ class ResolvedOperationGraph:
             action_instance = node.action_instance
             local_node = self.operation(node)
             resolved = self._resolve_ids(action_instance, local_node.depends_on)
-            if not resolved and action_instance.triggered_by is not None:
-                resolved = self._resolve_node(
-                    action_instance.triggered_by.caller,
-                    action_instance.triggered_by.trigger.trigger_node_id,
-                )
             # Multiple symbolic paths can reach the same operation. Cache the
             # ordered unique result as a tuple so callers cannot mutate it.
             cached = tuple(dict.fromkeys(resolved))
@@ -147,6 +148,13 @@ class ResolvedOperationGraph:
         graph = self._graphs[action_instance.action]
         node = graph.nodes[node_id]
         match node:
+            case operation_graph.ActionParentLastOperationNode():
+                if action_instance.triggered_by is None:
+                    return []
+                return self._resolve_node(
+                    action_instance.triggered_by.caller,
+                    action_instance.triggered_by.trigger.action_parent_last_operation_node_id,
+                )
             case operation_graph.PositionOperationNode():
                 return [ResolvedNodeId(action_instance, node_id)]
             case operation_graph.RequirementNode():

@@ -183,6 +183,24 @@ def _requirements(
     }
 
 
+def _guaranteed_positions(
+    *positions: tuple[tuple[str, ...], tuple[tuple[str, ...], ...]],
+) -> operation_graph.GuaranteedPositions:
+    return operation_graph.GuaranteedPositions(
+        (),
+        (
+            (
+                absolute_key,
+                action_contract.PositionGuarantee(
+                    caused_by=_ref("guaranteed"),
+                    operation_positions=operation_positions,
+                ),
+            )
+            for absolute_key, operation_positions in positions
+        ),
+    )
+
+
 def _trigger(
     graph: operation_graph.OperationGraph,
     action_chain: ast.ActionReference,
@@ -204,16 +222,17 @@ def _trigger(
         required_preceding_child_operations=(),
     )
     _ = graph.record_guarantees(
-        trigger, action_chain.canonical_chained_name_tuple, guaranteed_keys
+        trigger,
+        action_chain.canonical_chained_name_tuple,
+        _guaranteed_positions(*((key, (key,)) for key in guaranteed_keys)),
     )
     return trigger
 
 
-# Every graph below is an action triggered by position<run>, so its first node
-# stands in for the caller operation that filled that position: the operations
-# with nothing else to wait on depend on it.
-_TRIGGER_POSITION = operation_graph.RequirementNode(
-    node_id=0, depends_on=[], required_state=_OCCUPIED
+# Every graph below starts with a symbolic node for the caller's last operation
+# on the action's parent position or one of its transitive parent positions.
+_ACTION_PARENT_LAST_OPERATION = operation_graph.ActionParentLastOperationNode(
+    node_id=0, depends_on=[]
 )
 
 
@@ -223,7 +242,7 @@ def test_same_key_chain():
     _ = graph.record_create(one)
     _ = graph.record_destroy(one, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=one, depends_on=[1]),
     ]
@@ -240,7 +259,7 @@ def test_independent_positions_do_not_depend():
     # The two chains share the trigger-position RequirementNode, never each
     # other.
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=one, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=two, depends_on=[0]),
@@ -257,7 +276,7 @@ def test_child_depends_on_nearest_ancestor():
     _ = graph.record_create(inner)
     _ = graph.record_create(deep)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=deep, depends_on=[2]),
@@ -272,7 +291,7 @@ def test_move_depends_on_both_ends():
     _ = graph.record_destroy(two, ())
     _ = graph.record_move(one, two, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=two, depends_on=[0]),
         operation_graph.MoveNode(node_id=3, source=one, target=two, depends_on=[1, 2]),
@@ -292,9 +311,9 @@ def test_move_keeps_fill_dependency_when_empty_dependency_is_symbolic():
     destination = _ref("box", "destination")
     _ = graph.record_move(source, destination, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_EMPTY
@@ -331,7 +350,7 @@ def test_move_excludes_fill_dependency_when_empty_dependency_is_a_guarantee():
     )
     _ = graph.record_move(result, destination, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(
             node_id=2,
@@ -343,6 +362,7 @@ def test_move_excludes_fill_dependency_when_empty_dependency_is_a_guarantee():
             trigger=trigger,
             guaranteed_position=("position<result>",),
             depends_on=[2],
+            operation_positions=(result.canonical_chained_name_tuple,),
         ),
         operation_graph.MoveNode(
             node_id=4,
@@ -369,7 +389,7 @@ def test_move_carries_child_transitively():
     # misses it directly but reaches it through the move node.
     _ = graph.record_destroy(basket, _child_operations(((_key("inner")), 2)))
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.MoveNode(node_id=3, source=box, target=basket, depends_on=[2]),
@@ -389,7 +409,7 @@ def test_destroy_depends_on_touched_children():
         box, _particle_child_operations(graph, box, [_key("box", "inner")])
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=box, depends_on=[2]),
@@ -408,7 +428,7 @@ def test_destroy_depends_on_emptied_child():
         box, _particle_child_operations(graph, box, [_key("box", "inner")])
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=inner, depends_on=[2]),
@@ -423,7 +443,7 @@ def test_recreate_after_direct_destroy_depends_on_destroy():
     _ = graph.record_destroy(one, ())
     _ = graph.record_create(one)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=one, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=one, depends_on=[2]),
@@ -447,7 +467,7 @@ def test_destroy_depends_on_deepest_touched_descendant_only():
         ),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=deep, depends_on=[2]),
@@ -474,7 +494,7 @@ def test_move_depends_on_carried_grandchild_subtree():
         ),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=deep, depends_on=[2]),
@@ -493,7 +513,7 @@ def test_join_moving_into_emptied_position():
     # emptied its target.
     _ = graph.record_move(two, one, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=one, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=two, depends_on=[0]),
@@ -515,7 +535,7 @@ def test_rebranch_after_join():
     _ = graph.record_destroy(two, ())
     _ = graph.record_destroy(one, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.DestroyNode(node_id=2, target=one, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=two, depends_on=[0]),
@@ -546,7 +566,7 @@ def test_child_refill_after_parent_destroy():
     _ = graph.record_move(surprise, inner, ())
     _ = graph.record_create(other)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=box, depends_on=[2]),
@@ -584,7 +604,7 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move():
     # earlier destroy is not repeated -- the move already reaches it.
     _ = graph.record_destroy(box_child, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=box_child, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=box_child, depends_on=[2]),
@@ -631,7 +651,7 @@ def test_deep_grandchild_carried_through_two_moves():
         _child_operations((_key("b"), 2), (_key("b", "c"), 6)),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=a, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=a_b, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=a_b_c, depends_on=[2]),
@@ -666,6 +686,7 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
                     2, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         )
     ]
 
@@ -700,6 +721,7 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
                     2, operation_graph.ParticleChildOperations(), None
                 ),
             },
+            action_parent_last_operation_node_id=1,
         )
     ]
 
@@ -796,6 +818,7 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
                     2, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         )
     ]
 
@@ -833,6 +856,7 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
                     1, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         ),
         operation_graph.ActionTrigger(
             grind,
@@ -842,6 +866,7 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
                     1, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         ),
     ]
 
@@ -879,6 +904,7 @@ def test_each_triggering_names_the_operation_that_fired_it():
                     1, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=1,
         ),
         operation_graph.ActionTrigger(
             grind,
@@ -888,6 +914,7 @@ def test_each_triggering_names_the_operation_that_fired_it():
                     2, operation_graph.ParticleChildOperations(), None
                 )
             },
+            action_parent_last_operation_node_id=2,
         ),
     ]
 
@@ -900,7 +927,7 @@ def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
     _ = graph.record_create(machine)
     trigger = _trigger(graph, brew, machine, coffee.canonical_chained_name_tuple)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -911,6 +938,7 @@ def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
             trigger=trigger,
             guaranteed_position=("position<coffee>",),
             depends_on=[1],
+            operation_positions=(coffee.canonical_chained_name_tuple,),
         ),
     ]
 
@@ -937,12 +965,15 @@ def test_guarantee_node_names_the_position_as_the_callee_does():
     _ = graph.record_guarantees(
         trigger,
         brew.canonical_chained_name_tuple,
-        [
-            (*brew.canonical_chained_name_tuple, "position<coffee>"),
-        ],
+        _guaranteed_positions(
+            (
+                (*brew.canonical_chained_name_tuple, "position<coffee>"),
+                ((*brew.canonical_chained_name_tuple, "position<coffee>"),),
+            ),
+        ),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
         operation_graph.CreateNode(
             node_id=2,
@@ -954,6 +985,9 @@ def test_guarantee_node_names_the_position_as_the_callee_does():
             trigger=trigger,
             guaranteed_position=("position<coffee>",),
             depends_on=[2],
+            operation_positions=(
+                (*brew.canonical_chained_name_tuple, "position<coffee>"),
+            ),
         ),
     ]
 
@@ -969,7 +1003,7 @@ def test_guarantee_node_names_an_implied_position_as_the_callee_does():
     _ = graph.record_create(machine)
     trigger = _trigger(graph, brew, machine, grounds.canonical_chained_name_tuple)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -980,6 +1014,7 @@ def test_guarantee_node_names_an_implied_position_as_the_callee_does():
             trigger=trigger,
             guaranteed_position=("position<my.domain.com:my_lib:/grounds>",),
             depends_on=[1],
+            operation_positions=(grounds.canonical_chained_name_tuple,),
         ),
     ]
 
@@ -1007,12 +1042,21 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
     _ = graph.record_guarantees(
         trigger,
         brew.canonical_chained_name_tuple,
-        [
-            (*brew.canonical_chained_name_tuple, *grinder, "position<grounds>"),
-        ],
+        _guaranteed_positions(
+            (
+                (*brew.canonical_chained_name_tuple, *grinder, "position<grounds>"),
+                (
+                    (
+                        *brew.canonical_chained_name_tuple,
+                        *grinder,
+                        "position<grounds>",
+                    ),
+                ),
+            ),
+        ),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
         operation_graph.CreateNode(
             node_id=2,
@@ -1024,6 +1068,13 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
             trigger=trigger,
             guaranteed_position=(*grinder, "position<grounds>"),
             depends_on=[2],
+            operation_positions=(
+                (
+                    *brew.canonical_chained_name_tuple,
+                    *grinder,
+                    "position<grounds>",
+                ),
+            ),
         ),
     ]
 
@@ -1041,7 +1092,7 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     # edge.
     _ = graph.record_destroy(coffee, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -1052,6 +1103,7 @@ def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
             trigger=trigger,
             guaranteed_position=("position<coffee>",),
             depends_on=[1],
+            operation_positions=(coffee.canonical_chained_name_tuple,),
         ),
         operation_graph.DestroyNode(node_id=3, target=coffee, depends_on=[2]),
     ]
@@ -1071,7 +1123,7 @@ def test_guarantee_overrides_an_earlier_operation():
     # create.
     _ = graph.record_destroy(grounds, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -1083,6 +1135,7 @@ def test_guarantee_overrides_an_earlier_operation():
             trigger=trigger,
             guaranteed_position=("position<my.domain.com:my_lib:/grounds>",),
             depends_on=[1],
+            operation_positions=(grounds.canonical_chained_name_tuple,),
         ),
         operation_graph.DestroyNode(node_id=4, target=grounds, depends_on=[3]),
     ]
@@ -1101,7 +1154,7 @@ def test_parent_destroy_reaches_a_triggered_child():
         box, _particle_child_operations(graph, box, [out.canonical_chained_name_tuple])
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=box,
@@ -1112,6 +1165,7 @@ def test_parent_destroy_reaches_a_triggered_child():
             trigger=trigger,
             guaranteed_position=("position<out>",),
             depends_on=[1],
+            operation_positions=(out.canonical_chained_name_tuple,),
         ),
         operation_graph.DestroyNode(node_id=3, target=box, depends_on=[2]),
     ]
@@ -1136,7 +1190,7 @@ def test_each_guaranteed_position_gets_its_own_guarantee_node():
     _ = graph.record_destroy(coffee, ())
     _ = graph.record_destroy(puck, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -1147,12 +1201,14 @@ def test_each_guaranteed_position_gets_its_own_guarantee_node():
             trigger=trigger,
             guaranteed_position=("position<coffee>",),
             depends_on=[1],
+            operation_positions=(coffee.canonical_chained_name_tuple,),
         ),
         operation_graph.GuaranteeNode(
             node_id=3,
             trigger=trigger,
             guaranteed_position=("position<puck>",),
             depends_on=[1],
+            operation_positions=(puck.canonical_chained_name_tuple,),
         ),
         operation_graph.DestroyNode(node_id=4, target=coffee, depends_on=[2]),
         operation_graph.DestroyNode(node_id=5, target=puck, depends_on=[3]),
@@ -1174,7 +1230,7 @@ def test_a_move_can_be_the_trigger_fill():
     trigger = _trigger(graph, brew, trigger_position, out.canonical_chained_name_tuple)
     _ = graph.record_destroy(out, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=machine, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=src, depends_on=[0]),
         operation_graph.MoveNode(
@@ -1188,6 +1244,7 @@ def test_a_move_can_be_the_trigger_fill():
             trigger=trigger,
             guaranteed_position=("position<out>",),
             depends_on=[3],
+            operation_positions=(out.canonical_chained_name_tuple,),
         ),
         operation_graph.DestroyNode(node_id=5, target=out, depends_on=[4]),
     ]
@@ -1205,7 +1262,7 @@ def test_a_later_operation_overrides_a_guarantee():
     _ = graph.record_create(cup)
     _ = graph.record_destroy(cup, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(
             node_id=1,
             target=machine,
@@ -1216,6 +1273,7 @@ def test_a_later_operation_overrides_a_guarantee():
             trigger=trigger,
             guaranteed_position=("position<cup>",),
             depends_on=[1],
+            operation_positions=(cup.canonical_chained_name_tuple,),
         ),
         operation_graph.CreateNode(node_id=3, target=cup, depends_on=[2]),
         operation_graph.DestroyNode(node_id=4, target=cup, depends_on=[3]),
@@ -1237,7 +1295,7 @@ def test_touched_list_order_does_not_change_edges():
 
     touched = [_key("box", "inner"), _key("box", "inner", "deep")]
     expected = [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=box, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=inner, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=deep, depends_on=[2]),
@@ -1268,7 +1326,7 @@ def test_gap_in_touched_list_still_drops_the_shallower_operation():
         ),
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=outer, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=box, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=mid, depends_on=[2]),
@@ -1288,7 +1346,7 @@ def test_child_create_records_no_operation_for_other_keys():
     _ = graph.record_create(other)
     _ = graph.record_create(box)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=inner, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=other, depends_on=[0]),
         operation_graph.CreateNode(node_id=3, target=box, depends_on=[0]),
@@ -1308,7 +1366,7 @@ def test_duplicate_touched_keys_and_shared_move_operation():
         holder, _child_operations((_key("one"), 2), (_key("two"), 2))
     )
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=one, depends_on=[0]),
         operation_graph.MoveNode(node_id=2, source=one, target=two, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=holder, depends_on=[2]),
@@ -1332,7 +1390,7 @@ def test_wide_touched_subtree_drops_every_superseded_shallow_child():
     # Every shallow child is superseded by its later, deeper child, so the
     # destroy waits on the deep children alone.
     expected: list[operation_graph.OperationNode] = [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=root, depends_on=[0]),
     ]
     for index in range(child_count):
@@ -1397,9 +1455,9 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
     # stands in for the earlier caller op that filled the position.
     _ = graph.record_destroy(input_position, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementChildrenNode(
             node_id=2,
@@ -1418,9 +1476,9 @@ def test_fill_of_empty_requirement_waits_on_a_requirement_node():
     slot = _ref("slot")
     _ = graph.record_create(slot)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_EMPTY
+            node_id=1, depends_on=[0], required_state=_EMPTY
         ),
         operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
     ]
@@ -1434,7 +1492,7 @@ def test_local_fill_with_no_requirement_waits_on_the_trigger_position_requiremen
     # no trigger position.
     _ = graph.record_create(item)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=item, depends_on=[0]),
     ]
 
@@ -1446,9 +1504,7 @@ def test_operations_with_nothing_else_to_wait_on_share_the_trigger_position_requ
     _ = graph.record_create(scratch)
     _ = graph.record_create(note)
     assert list(graph.nodes) == [
-        operation_graph.RequirementNode(
-            node_id=0, depends_on=[], required_state=_OCCUPIED
-        ),
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=scratch, depends_on=[0]),
         operation_graph.CreateNode(node_id=2, target=note, depends_on=[0]),
     ]
@@ -1463,17 +1519,18 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
     _ = graph.record_destroy(run, ())
     _ = graph.record_create(scratch)
     assert list(graph.nodes) == [
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=0, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementChildrenNode(
-            node_id=1,
+            node_id=2,
             depends_on=[],
             requirement_position=_key("run"),
             depends_on_child_operations=frozenset(),
         ),
-        operation_graph.DestroyNode(node_id=2, target=run, depends_on=[1]),
-        operation_graph.CreateNode(node_id=3, target=scratch, depends_on=[0]),
+        operation_graph.DestroyNode(node_id=3, target=run, depends_on=[2]),
+        operation_graph.CreateNode(node_id=4, target=scratch, depends_on=[0]),
     ]
 
 
@@ -1491,11 +1548,9 @@ def test_a_constructor_gets_a_requirement_node_for_the_position_it_is_assigned_t
     _ = graph.record_create(marker)
     _ = graph.record_create(scratch)
     assert list(graph.nodes) == [
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=0, depends_on=[], required_state=_OCCUPIED
-        ),
-        operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_EMPTY
+            node_id=1, depends_on=[0], required_state=_EMPTY
         ),
         operation_graph.CreateNode(node_id=2, target=marker, depends_on=[1]),
         operation_graph.CreateNode(node_id=3, target=scratch, depends_on=[0]),
@@ -1512,9 +1567,9 @@ def test_earlier_body_operation_takes_precedence_over_a_requirement_node():
     # create), so it waits on that rather than minting a fresh requirement node.
     _ = graph.record_destroy(slot, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_EMPTY
+            node_id=1, depends_on=[0], required_state=_EMPTY
         ),
         operation_graph.CreateNode(node_id=2, target=slot, depends_on=[1]),
         operation_graph.DestroyNode(node_id=3, target=slot, depends_on=[2]),
@@ -1530,9 +1585,9 @@ def test_requirement_node_attaches_to_the_nearest_requirement_ancestor():
     # their own and the create waits on box's RequirementNode.
     _ = graph.record_create(deep)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.CreateNode(node_id=2, target=deep, depends_on=[1]),
     ]
@@ -1557,9 +1612,9 @@ def test_two_children_of_required_parent_share_the_parent_requirement_node():
     _ = graph.record_create(box_a)
     _ = graph.record_create(box_b)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_EMPTY
@@ -1587,9 +1642,9 @@ def test_grandchild_fill_builds_the_full_requirement_ancestor_chain():
     grandchild = _ref("box", "child", "grandchild")
     _ = graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
@@ -1616,9 +1671,9 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
     grandchild = _ref("box", "child", "grandchild")
     _ = graph.record_destroy(grandchild, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
@@ -1650,9 +1705,9 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
     parent = _ref("input", "parent")
     _ = graph.record_destroy(parent, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
@@ -1684,9 +1739,9 @@ def test_implied_position_children_share_the_global_parent_requirement_node():
     _ = graph.record_create(child1)
     _ = graph.record_create(child2)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_EMPTY
@@ -1714,10 +1769,10 @@ def test_move_joins_an_in_body_source_with_a_requirement_target():
     _ = graph.record_create(src)
     _ = graph.record_move(src, dest, ())
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.CreateNode(node_id=1, target=src, depends_on=[0]),
         operation_graph.RequirementNode(
-            node_id=2, depends_on=[], required_state=_EMPTY
+            node_id=2, depends_on=[0], required_state=_EMPTY
         ),
         operation_graph.MoveNode(node_id=3, source=src, target=dest, depends_on=[1, 2]),
     ]
@@ -1738,9 +1793,9 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
     grandchild = _global_ref("/parent", "/child", "/grandchild1")
     _ = graph.record_create(grandchild)
     assert list(graph.nodes) == [
-        _TRIGGER_POSITION,
+        _ACTION_PARENT_LAST_OPERATION,
         operation_graph.RequirementNode(
-            node_id=1, depends_on=[], required_state=_OCCUPIED
+            node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED

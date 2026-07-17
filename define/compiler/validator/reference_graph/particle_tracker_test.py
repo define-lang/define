@@ -588,7 +588,14 @@ def test_apply_guarantees_empty():
     _apply_guarantees(
         tracker,
         ref,
-        [(("position<item>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
+        [
+            (
+                ("position<item>",),
+                action_contract.EmptyGuarantee(
+                    caused_by=_POS2_REF, operation_positions=()
+                ),
+            )
+        ],
     )
 
     assert tracker.is_occupied(ref) is False
@@ -612,6 +619,7 @@ def test_apply_guarantees_occupied_by_new():
                 action_contract.OccupiedByNewGuarantee(
                     qualities=(_make_global_ref("/x"),),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             )
         ],
@@ -659,6 +667,7 @@ def test_apply_guarantees_occupied_by_existing():
                 action_contract.OccupiedByExistingGuarantee(
                     origin_position=_make_position_ref([_make_local_ref("item")]),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             ),
         ],
@@ -705,6 +714,7 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
                 action_contract.OccupiedByExistingGuarantee(
                     origin_position=_make_position_ref([_make_local_ref("item")]),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             ),
         ],
@@ -766,6 +776,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
                 action_contract.OccupiedByExistingGuarantee(
                     origin_position=_make_position_ref([_make_local_ref("item")]),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             ),
             (
@@ -773,6 +784,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
                 action_contract.OccupiedByExistingGuarantee(
                     origin_position=_make_position_ref([_make_local_ref("dest")]),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             ),
         ],
@@ -828,6 +840,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
                 action_contract.OccupiedByExistingGuarantee(
                     origin_position=_make_position_ref([_make_local_ref("item")]),
                     caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             ),
         ],
@@ -853,7 +866,14 @@ def test_apply_guarantees_error():
     _apply_guarantees(
         tracker,
         ref,
-        [(("position<item>",), action_contract.ErrorGuarantee(caused_by=_POS2_REF))],
+        [
+            (
+                ("position<item>",),
+                action_contract.ErrorGuarantee(
+                    caused_by=_POS2_REF, operation_positions=()
+                ),
+            )
+        ],
     )
 
     assert tracker.has_error_state(ref) is True
@@ -883,7 +903,14 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
     _apply_guarantees(
         tracker,
         ref,
-        [(("position<trigger>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
+        [
+            (
+                ("position<trigger>",),
+                action_contract.EmptyGuarantee(
+                    caused_by=_POS2_REF, operation_positions=()
+                ),
+            )
+        ],
         acting_on=box_ref,
     )
 
@@ -1068,7 +1095,7 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
             (
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
-                    qualities=(), caused_by=_POS2_REF
+                    qualities=(), caused_by=_POS2_REF, operation_positions=()
                 ),
             )
         ],
@@ -1099,7 +1126,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
                 (
                     ("position<item>",),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=(), caused_by=_POS2_REF
+                        qualities=(), caused_by=_POS2_REF, operation_positions=()
                     ),
                 )
             ],
@@ -1141,7 +1168,7 @@ def _make_nested_level(
                 (
                     (item,),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=(), caused_by=_POS2_REF
+                        qualities=(), caused_by=_POS2_REF, operation_positions=()
                     ),
                 )
             ],

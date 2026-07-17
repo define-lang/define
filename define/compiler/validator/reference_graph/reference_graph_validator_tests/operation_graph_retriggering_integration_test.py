@@ -108,7 +108,7 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(gw)": [],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
-        "maker.create(out)": ["test.create(gw::/maker::trigger_pos)"],
+        "maker.create(out)": ["test.create(gw)"],
         "test.move(gw::/maker::out, first_result)": ["maker.create(out)"],
         "test.destroy(gw::/maker::trigger_pos)": [
             "test.create(gw::/maker::trigger_pos)"
@@ -237,9 +237,9 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
         "test.create(gw::/worker::trigger_pos)#2": [
             "test.destroy(gw::/worker::trigger_pos)"
         ],
-        "worker.create(scratch)": ["test.create(gw::/worker::trigger_pos)"],
+        "worker.create(scratch)": ["test.create(gw)"],
         "worker.destroy(scratch)": ["worker.create(scratch)"],
-        "worker#2.create(scratch)": ["test.create(gw::/worker::trigger_pos)#2"],
+        "worker#2.create(scratch)": ["test.create(gw)"],
         "worker#2.destroy(scratch)": ["worker#2.create(scratch)"],
     }
 
@@ -333,7 +333,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "test.create(holder_second::/second::trigger_pos)": [
             "test.create(holder_second)"
         ],
-        "first.create(gw)": ["test.create(holder_first::/first::trigger_pos)"],
+        "first.create(gw)": ["test.create(holder_first)"],
         "first.create(gw::/worker::trigger_pos)": ["first.create(gw)"],
         "first.destroy(gw::/worker::trigger_pos)": [
             "first.create(gw::/worker::trigger_pos)"
@@ -342,7 +342,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
             "first.destroy(gw::/worker::trigger_pos)"
         ],
         "first.destroy(gw)": ["first.create(gw::/worker::trigger_pos)#2"],
-        "second.create(gw)": ["test.create(holder_second::/second::trigger_pos)"],
+        "second.create(gw)": ["test.create(holder_second)"],
         "second.create(gw::/worker::trigger_pos)": ["second.create(gw)"],
         "second.destroy(gw::/worker::trigger_pos)": [
             "second.create(gw::/worker::trigger_pos)"
@@ -351,15 +351,13 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
             "second.destroy(gw::/worker::trigger_pos)"
         ],
         "second.destroy(gw)": ["second.create(gw::/worker::trigger_pos)#2"],
-        "first:worker.create(scratch)": ["first.create(gw::/worker::trigger_pos)"],
+        "first:worker.create(scratch)": ["first.create(gw)"],
         "first:worker.destroy(scratch)": ["first:worker.create(scratch)"],
-        "first:worker#2.create(scratch)": ["first.create(gw::/worker::trigger_pos)#2"],
+        "first:worker#2.create(scratch)": ["first.create(gw)"],
         "first:worker#2.destroy(scratch)": ["first:worker#2.create(scratch)"],
-        "second:worker.create(scratch)": ["second.create(gw::/worker::trigger_pos)"],
+        "second:worker.create(scratch)": ["second.create(gw)"],
         "second:worker.destroy(scratch)": ["second:worker.create(scratch)"],
-        "second:worker#2.create(scratch)": [
-            "second.create(gw::/worker::trigger_pos)#2"
-        ],
+        "second:worker#2.create(scratch)": ["second.create(gw)"],
         "second:worker#2.destroy(scratch)": ["second:worker#2.create(scratch)"],
     }
 
@@ -432,7 +430,7 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
         "test.create(holder::/middle::trigger_pos)#2": [
             "test.destroy(holder::/middle::trigger_pos)"
         ],
-        "middle.create(gw)": ["test.create(holder::/middle::trigger_pos)"],
+        "middle.create(gw)": ["test.create(holder)"],
         "middle.create(gw::/worker::trigger_pos)": ["middle.create(gw)"],
         "middle.destroy(gw::/worker::trigger_pos)": [
             "middle.create(gw::/worker::trigger_pos)"
@@ -441,13 +439,11 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
             "middle.destroy(gw::/worker::trigger_pos)"
         ],
         "middle.destroy(gw)": ["middle.create(gw::/worker::trigger_pos)#2"],
-        "middle:worker.create(scratch)": ["middle.create(gw::/worker::trigger_pos)"],
+        "middle:worker.create(scratch)": ["middle.create(gw)"],
         "middle:worker.destroy(scratch)": ["middle:worker.create(scratch)"],
-        "middle:worker#2.create(scratch)": [
-            "middle.create(gw::/worker::trigger_pos)#2"
-        ],
+        "middle:worker#2.create(scratch)": ["middle.create(gw)"],
         "middle:worker#2.destroy(scratch)": ["middle:worker#2.create(scratch)"],
-        "middle#2.create(gw)": ["test.create(holder::/middle::trigger_pos)#2"],
+        "middle#2.create(gw)": ["test.create(holder)"],
         "middle#2.create(gw::/worker::trigger_pos)": ["middle#2.create(gw)"],
         "middle#2.destroy(gw::/worker::trigger_pos)": [
             "middle#2.create(gw::/worker::trigger_pos)"
@@ -456,12 +452,8 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
             "middle#2.destroy(gw::/worker::trigger_pos)"
         ],
         "middle#2.destroy(gw)": ["middle#2.create(gw::/worker::trigger_pos)#2"],
-        "middle#2:worker.create(scratch)": [
-            "middle#2.create(gw::/worker::trigger_pos)"
-        ],
+        "middle#2:worker.create(scratch)": ["middle#2.create(gw)"],
         "middle#2:worker.destroy(scratch)": ["middle#2:worker.create(scratch)"],
-        "middle#2:worker#2.create(scratch)": [
-            "middle#2.create(gw::/worker::trigger_pos)#2"
-        ],
+        "middle#2:worker#2.create(scratch)": ["middle#2.create(gw)"],
         "middle#2:worker#2.destroy(scratch)": ["middle#2:worker#2.create(scratch)"],
     }

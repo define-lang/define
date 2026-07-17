@@ -822,24 +822,37 @@ class ParticleTracker:
         """
         error_state = self._store.error.get(key)
         if error_state is not None and error_state.caused_by is not None:
-            return action_contract.ErrorGuarantee(caused_by=error_state.caused_by)
+            return action_contract.ErrorGuarantee(
+                caused_by=error_state.caused_by,
+                operation_positions=(),
+            )
 
         state = self._store.state.get(key)
+        operation_positions: tuple[tuple[str, ...], ...] = ()
+        if state is not None and state.operation_node_id is not None:
+            operation_positions = self._operation_graph.operation_positions(
+                state.operation_node_id
+            )
         if state is not None and state.particle_info is not None:
             info = state.particle_info
             if not info.from_caller:
                 return action_contract.OccupiedByNewGuarantee(
                     qualities=info.qualities,
                     caused_by=info.last_position,
+                    operation_positions=operation_positions,
                 )
             if key != info.origin_position.canonical_chained_name_tuple:
                 return action_contract.OccupiedByExistingGuarantee(
                     origin_position=info.origin_position,
                     caused_by=info.last_position,
+                    operation_positions=operation_positions,
                 )
             # The caller's particle is right where it started.
             if self._position_was_touched(key):
-                return action_contract.UnchangedGuarantee(caused_by=info.last_position)
+                return action_contract.UnchangedGuarantee(
+                    caused_by=info.last_position,
+                    operation_positions=operation_positions,
+                )
             # A trigger position was never touched inside the action.
             #
             # TODO: Should we simply require people to always touch the trigger
@@ -858,8 +871,14 @@ class ParticleTracker:
             # A required-empty requirement is only inferred from operating on the
             # position, so a required-empty position that ends empty was always
             # touched and so gets an UnchangedGuarantee.
-            return action_contract.UnchangedGuarantee(caused_by=caused_by)
-        return action_contract.EmptyGuarantee(caused_by=caused_by)
+            return action_contract.UnchangedGuarantee(
+                caused_by=caused_by,
+                operation_positions=operation_positions,
+            )
+        return action_contract.EmptyGuarantee(
+            caused_by=caused_by,
+            operation_positions=operation_positions,
+        )
 
     def _position_was_touched(self, key: tuple[str, ...]) -> bool:
         """Whether the action ever touched ``key``."""
@@ -920,13 +939,16 @@ class ParticleTracker:
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
         """Apply a callee's own guarantees and record each key it wrote against the trigger; prefix its own nested guarantees one position deeper."""
-        touched_keys = self._update_store_from_callee_direct_guarantees(
+        touched_guarantees = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
         guarantee_nodes = self._operation_graph.record_guarantees(
             pending_guarantee.trigger,
             pending_guarantee.trigger_chain,
-            touched_keys,
+            operation_graph.GuaranteedPositions(
+                pending_guarantee.parent_chain,
+                touched_guarantees,
+            ),
         )
         for key, node_id in guarantee_nodes.items():
             state = self._store.state.get(key)
@@ -957,10 +979,12 @@ class ParticleTracker:
 
     def _update_store_from_callee_direct_guarantees(
         self, pending_guarantee: _PendingGuarantee
-    ) -> list[tuple[str, ...]]:
-        """Apply a callee's own guarantees; return the absolute keys it wrote, in order."""
+    ) -> list[tuple[tuple[str, ...], action_contract.PositionGuarantee]]:
+        """Apply a callee's own guarantees; return what it wrote, in order."""
         guarantees = pending_guarantee.guarantees.own
-        touched_keys: list[tuple[str, ...]] = []
+        touched_guarantees: list[
+            tuple[tuple[str, ...], action_contract.PositionGuarantee]
+        ] = []
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
@@ -1003,7 +1027,7 @@ class ParticleTracker:
                 ),
             )
 
-            touched_keys.append(key)
+            touched_guarantees.append((key, guarantee))
 
             overwrites_subtree = key in origin_keys or (
                 key in self._store.state
@@ -1059,7 +1083,7 @@ class ParticleTracker:
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
-        return touched_keys
+        return touched_guarantees
 
     def _save_origins_at_or_below(
         self,
@@ -1131,7 +1155,7 @@ class ParticleTracker:
             origin_state = self._store.state[origin_key]
         else:
             # The caller never filled the position, and we are executing an OccupiedByExisting
-            # guarnatee on the same position that a particle was passed in on.
+            # guarantee on the same position that a particle was passed in on.
             self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
 

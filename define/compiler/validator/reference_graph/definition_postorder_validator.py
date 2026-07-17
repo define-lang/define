@@ -1849,7 +1849,13 @@ class ActionPostorderValidator:
                         f"unexpected guarantee type {type(guarantee).__name__}"
                     )
             rewritten.append(
-                (key, action_contract.ErrorGuarantee(caused_by=guarantee.caused_by))
+                (
+                    key,
+                    action_contract.ErrorGuarantee(
+                        caused_by=guarantee.caused_by,
+                        operation_positions=guarantee.operation_positions,
+                    ),
+                )
             )
         return action_contract.Guarantees(own=rewritten, nested=())
 
