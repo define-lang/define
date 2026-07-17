@@ -1013,7 +1013,6 @@ class ParticleTracker:
             if not self._check_key_exists_for_guarantee(key, guarantee):
                 continue
 
-            self._ensure_action_parent(key)
             self._store.record_callee_write(
                 key,
                 pending_guarantee.body_operation_number,
@@ -1113,20 +1112,19 @@ class ParticleTracker:
         position. If that happened for this key, we mark the first missing node
         as error and return False to indicate the guarantee should be skipped.
 
-        Returns True when the parent path is fully in the state trie (or
-        could be completed by _ensure_action_parent).
+        Returns True when the parent path is fully in the state trie, creating
+        an action intermediate when that is the only missing parent name.
         """
         ancestor_key = self._store.state.existing_prefix(key)
         if len(ancestor_key) >= len(key) - 1:
             return True
-        # Parent path is incomplete. _ensure_action_parent can fill
-        # exactly one gap when the missing node is an action
-        # intermediate and its own parent exists.
+        # The action intermediate is the only parent name the compiler may add.
         first_missing = key[len(ancestor_key)]
         can_bridge = len(ancestor_key) == len(key) - 2 and first_missing.startswith(
             _ACTION_KEY_PREFIX
         )
         if can_bridge:
+            self._store.state[key[:-1]] = _NodeState()
             return True
         # The caller never filled a required position ancestor.
         # Mark the first missing node as error.
