@@ -3,21 +3,21 @@ name: profile-compiler
 description: >-
   CPU-profile the Define compiler and present the hotspots as clear tables
   (overall, and with the bundled lark parser subtree removed so the compiler's
-  own work is visible), plus a phase breakdown. Runs two complementary shapes: a
-  single huge action (parse-heavy) and a dense action call graph
-  (reference-graph / requirement / guarantee / destruction-contract heavy). Use
-  this whenever the user wants to profile, benchmark, or find performance
-  hotspots / slow spots / bottlenecks in the Define compiler, asks "where is
-  time being spent" or "what should we optimize", wants a flame-graph-style or
-  cProfile view of compilation, or wants to drill a hotspot down to the callers
-  that drive it — even if they don't say the word "profile". For the Define
-  language compiler in this repo (define/compiler), not generic Python
-  profiling.
+  own work is visible), plus a phase breakdown. Runs three complementary shapes:
+  a single huge action (parse-heavy), a dense action call graph (reference-graph
+  / requirement / guarantee / destruction-contract heavy), and a move-heavy body
+  (operation-graph construction heavy). Use this whenever the user wants to
+  profile, benchmark, or find performance hotspots / slow spots / bottlenecks in
+  the Define compiler, asks "where is time being spent" or "what should we
+  optimize", wants a flame-graph-style or cProfile view of compilation, or wants
+  to drill a hotspot down to the callers that drive it — even if they don't say
+  the word "profile". For the Define language compiler in this repo
+  (define/compiler), not generic Python profiling.
 ---
 
 # Profiling the Define compiler
 
-This skill runs CPU profiles of the Define compiler over two complementary
+This skill runs CPU profiles of the Define compiler over three complementary
 source shapes, then presents the results as the tables the user expects: a phase
 breakdown, an overall hotspot table, and a table with the bundled lark parser
 removed so the compiler's own code is visible. It keeps the raw `.prof` files so
@@ -27,14 +27,14 @@ The goal is **understanding**, not fixing. Run the profiles, present the numbers
 clearly, and answer follow-ups. Do not propose or make code changes unless the
 user explicitly asks.
 
-## What to profile and why two shapes
+## What to profile and why three shapes
 
-The two sources stress different halves of the compiler. Profile **both** unless
-the user asks for just one — the headline comparison (parse-bound vs
-validation-bound) is itself a result worth presenting. Generate each fresh on
-every run so it's reproducible from the stated parameters, and so each compiles
-to **zero diagnostics** (the profile then reflects the full pipeline rather than
-an early-exit on error).
+The three sources stress different parts of the compiler. Profile **all three**
+unless the user asks for a subset — the headline comparison (parse-bound vs
+validation-bound, and which validation machinery dominates) is itself a result
+worth presenting. Generate each fresh on every run so it's reproducible from the
+stated parameters, and so each compiles to **zero diagnostics** (the profile
+then reflects the full pipeline rather than an early-exit on error).
 
 ### Source A — single large action (parse-heavy)
 
@@ -77,6 +77,35 @@ requirement inference/checking, and destruction-contract generation. Knobs:
 > guarantee propagation was fixed), so larger sizes are tractable but
 > proportionally slower — only go bigger if the user explicitly asks.
 
+### Source C — move-heavy bodies (operation-graph heavy)
+
+`tools/generate_operation_graph_source.py` (default
+`--repetitions 150 --move-chain-length 24 --tree-depth 32 --wide-children 48 --pods 4 --retriggers 2`,
+~45,000 lines). Sources A and B leave the operation dependency graph (DLP 44,
+`operation_graph.py`) almost cold: A is create/destroy dominated with ~1,200
+trivial moves, and B contains **no move statements at all**, so `record_move`,
+the move dependency-minimization rules, and child-operation snapshots never run
+in either. Source C's main action body repeats statement families each aimed at
+a specific dependency rule: a move ladder (each move depending on the previous),
+a deep position chain moved in one move and destroyed child-by-child
+(stale-chain reduction), a wide particle whose many operated-on child positions
+must be filtered into the move's child-operation snapshot, a sibling move ladder
+under one parent particle (the move dependency-deduplication rule),
+per-repetition contracted positions whose destruction needs the
+caller-contribution bookkeeping for a required particle's children, and
+worker/sink pods whose Action Guarantees the body consumes and which are
+re-triggered and destroyed.
+
+At the default size it profiles in ~20s under cProfile (~6s real): parse ~69% /
+reference-graph validation ~31% of cumtime, lark subtree ~47% of tottime vs ~53%
+compiler's own code. Within the validation phase, `operation_graph.py` is a
+clearly drillable chunk (~15%, on par with `particle_tracker.py`), led by
+`from_preceding_operations` and `_operation_dependencies` — with ~12,000
+`record_move` calls vs zero in Source B. Knobs: `--repetitions` (body length),
+`--move-chain-length`, `--tree-depth` (deeper chains make the ancestor-chain
+walk quadratically more expensive), `--wide-children` (bigger child-operation
+snapshots), `--pods` / `--retriggers` (trigger/guarantee-consumption volume).
+
 ### Common notes
 
 - **Entry point**: profile `driver.compile_source(...)` in-process via
@@ -99,7 +128,7 @@ the `.prof` files especially — so follow-up questions don't require re-running
 2. **Build the CLI** so a clean-compile sanity check is possible:
    `bazelisk build --noshow_progress --ui_event_filters=-info //define/compiler:main`
 
-3. **Generate both sources** fresh (override knobs if the user asked):
+3. **Generate the sources** fresh (override knobs if the user asked):
 
    ```
    uv run tools/generate_large_define_source.py \
@@ -107,6 +136,8 @@ the `.prof` files especially — so follow-up questions don't require re-running
    uv run tools/generate_action_graph_source.py \
      --output tmp/profile/graph.dfn --layers 18 --width 64 --fan-out 32 \
      --destructor-fraction 0.5
+   uv run tools/generate_operation_graph_source.py \
+     --output tmp/profile/opgraph.dfn
    ```
 
 4. **(Optional) Confirm each compiles clean** via the real binary on the stdin
@@ -121,6 +152,8 @@ the `.prof` files especially — so follow-up questions don't require re-running
      --source tmp/profile/source.dfn --out tmp/profile/compile.prof
    PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
      --source tmp/profile/graph.dfn --out tmp/profile/graph.prof
+   PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
+     --source tmp/profile/opgraph.dfn --out tmp/profile/opgraph.prof
    ```
 
    Confirm each prints `has_errors=False`. If either is `True`, stop and report
@@ -132,6 +165,7 @@ the `.prof` files especially — so follow-up questions don't require re-running
    ```
    uv run python tools/analyze_profile.py --prof tmp/profile/compile.prof --top 30
    uv run python tools/analyze_profile.py --prof tmp/profile/graph.prof --top 30
+   uv run python tools/analyze_profile.py --prof tmp/profile/opgraph.prof --top 30
    ```
 
    `--exclude-file` defaults to `lark_standalone.py`. The "without" view drops
@@ -146,9 +180,10 @@ the `.prof` files especially — so follow-up questions don't require re-running
 ## Output format
 
 Lead with the caveat that cProfile inflates wall time ~3×. Then, **for each
-source** (label them "Source A — single large action" and "Source B — action
-call graph"), present the three things below as Markdown tables. Round to 3
-decimals and keep `ncalls`. Finish with a short cross-source contrast.
+source** (label them "Source A — single large action", "Source B — action call
+graph", and "Source C — move-heavy bodies"), present the three things below as
+Markdown tables. Round to 3 decimals and keep `ncalls`. Finish with a short
+cross-source contrast.
 
 ### 1. Phase breakdown (by cumulative time)
 
@@ -166,9 +201,14 @@ The two sources light up different markers — report whichever dominate.
     one another)
   - **destruction-contract generation** =
     `definition_postorder_validator.py:...(_generate_contract)`
+  - **operation-graph construction** = `operation_graph.py:...(record_create)` +
+    `...(record_move)` + `...(record_destroy)` + `...(record_action_trigger)` +
+    `...(record_guarantees)`
 
 Source A is parse-dominated; Source B is reference-graph-dominated (the
-guarantee/requirement/contract rollup is the bulk of its run).
+guarantee/requirement/contract rollup is the bulk of its run); Source C is the
+one where the operation-graph rollup and its helpers
+(`from_preceding_operations`, `_operation_dependencies`) are meaningfully warm.
 
 | Phase | cumtime | % of run |
 | ----- | ------: | -------: |
@@ -208,8 +248,10 @@ scripts to the skill). Common ones:
 - **Re-rank by cumtime, or show more rows** — re-run `analyze_profile.py` with a
   larger `--top`.
 - **Different input shape** — regenerate Source A with different `--lines` /
-  `--max-chain-length`, or Source B with different `--layers` / `--width` /
-  `--fan-out` / `--destructor-fraction`, and re-profile.
+  `--max-chain-length`, Source B with different `--layers` / `--width` /
+  `--fan-out` / `--destructor-fraction`, or Source C with different
+  `--repetitions` / `--move-chain-length` / `--tree-depth` / `--wide-children` /
+  `--pods` / `--retriggers`, and re-profile.
 
 ## Notes
 
@@ -217,7 +259,8 @@ scripts to the skill). Common ones:
   `PYTHONPATH=<repo-root>` because it imports `define.compiler` directly.
 - The scripts (`tools/run_profile.py`, `tools/analyze_profile.py`,
   `tools/generate_large_define_source.py`,
-  `tools/generate_action_graph_source.py`) live in the repo's `tools/` directory
-  and are parameterized; prefer passing flags over editing them. For one-off
-  drill-downs, write a throwaway snippet into the scratch dir rather than
-  editing the committed tools.
+  `tools/generate_action_graph_source.py`,
+  `tools/generate_operation_graph_source.py`) live in the repo's `tools/`
+  directory and are parameterized; prefer passing flags over editing them. For
+  one-off drill-downs, write a throwaway snippet into the scratch dir rather
+  than editing the committed tools.

@@ -86,6 +86,25 @@ py_binary(
 )
 
 py_binary(
+    name = "generate_operation_graph_source",
+    srcs = ["generate_operation_graph_source.py"],
+)
+
+py_test(
+    name = "generate_operation_graph_source_test",
+    size = "small",
+    srcs = ["generate_operation_graph_source_test.py"],
+    deps = [
+        ":generate_operation_graph_source",
+        "//define/compiler:ast",
+        "//define/compiler:parser",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "git_commit_via_api",
     srcs = ["git_commit_via_api.py"],
     deps = [
@@ -270,6 +289,8 @@ pyright_test(
         ":generate_large_define_source",
         ":generate_large_define_source_test",
         ":generate_lark_standalone",
+        ":generate_operation_graph_source",
+        ":generate_operation_graph_source_test",
         ":generate_programming_languages",
         ":git_commit_via_api",
         ":j2lint_runner",
