@@ -1595,6 +1595,14 @@ To determine the dependencies of a Move Particle Statement, combine all the
 dependencies required for emptying the source position and filling the target
 position, and then apply the comparison in The Empty Rule to the combined set.
 
+#### The Action Parent Rule
+
+When the above rules identify no dependency for a Particle Operation, the
+operation depends on the most recent previous Particle Operation on the current
+action’s parent position or one of that position’s transitive parent positions.
+
+The operation that triggered the action is not automatically a dependency.
+
 ### Executing Particle Operations Concurrently
 
 Particle Operations are logically executed following the directed acyclic graph

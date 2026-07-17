@@ -1001,6 +1001,12 @@ The program has thirteen operations, but its longest dependency chain is seven
 operations long, so almost half of the program's execution overlaps with some
 other part of the program.
 
+There is an interesting consequence of our design, in this graph, if you examine
+it: `brew: create(cup)` does _not_ depend on `brew` actually getting triggered.
+That is, `brew: create(cup)` executes logically in parallel in the context of
+its _caller_. Because we know that `brew` _will_ be triggered, we can run
+`brew: create(cup)` actually logically before `brew` is even triggered.
+
 ## Why This is the Right Solution
 
 This puts all the complexities of implementing concurrency into the hands of the
