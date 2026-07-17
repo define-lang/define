@@ -1562,27 +1562,38 @@ Every Create Particle Statement, Move Particle Statement, and Destroy Particle
 Statement is a "Particle Operation." Create and Destroy each operate on a single
 position, and Move operates on both of its positions.
 
-A Particle Operation "fills" a position when it places a particle there (a
-create, or the target of a move) and "empties" a position when it removes one (a
-destroy, or the source of a move).
+The compiler constructs a directed acyclic graph of dependencies between
+Particle Operations. These rules inherently create a transitively-reduced
+minimal DAG of the exact dependencies for maximum safe concurrency, without
+having to perform any transitive reduction algorithms on the full graph.
 
-These rules create a directed acyclic graph of dependencies between Particle
-Operations:
+Note that the compiler is not bound to literally implement the rules below
+exactly as written if there is a more efficient implementation that produces the
+same DAG.
 
-1. Filling a position depends on the single most recent Particle Operation among
-   the ones on that position and its transitive parent positions.
-2. Emptying a position depends on the most recent Particle Operation on each
-   transitive child position beneath it, excluding child positions that have a
-   more recent Particle Operation on one of their own transitive children.
-3. Emptying a position additionally depends on the single most recent Particle
-   Operation among the ones on the emptied position and its transitive parent
-   positions, but only when that operation is more recent than _all_ of the
-   child operations in Rule 2 above.
-4. Move Particle Statements both empty a position (the source) and fill a
-   position (the target). When the target depends on a Particle Operation on the
-   source position or one of the source position's transitive parent positions,
-   the target's dependency is excluded if every source dependency is more recent
-   than that target dependency.
+#### The Fill Rule
+
+Filling a position depends on the single most recent Particle Operation among
+the ones on that position and its transitive parent positions. This means that
+fill operations will always have exactly and only one Particle Operation that
+they depend on.
+
+#### The Empty Rule
+
+To calculate the dependencies of a Particle Operation that empties a position,
+first take the most recent previous Particle Operation on the emptied position
+and the most recent previous Particle Operation on each of its transitive parent
+and child positions.
+
+When any position operated on by one of those Particle Operations is the same
+as, a transitive parent of, or a transitive child of a position operated on by
+another, only the more recent Particle Operation remains a dependency.
+
+#### The Move Rule
+
+To determine the dependencies of a Move Particle Statement, combine all the
+dependencies required for emptying the source position and filling the target
+position, and then apply the comparison in The Empty Rule to the combined set.
 
 ### Executing Particle Operations Concurrently
 
