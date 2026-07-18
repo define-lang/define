@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,9 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS = (
-    "the operation graph does not preserve the Empty Rule across action triggerings"
-)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -209,7 +204,6 @@ def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -275,7 +269,6 @@ def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller_filled(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -478,7 +471,6 @@ def test_callee_destroy_of_a_refilled_position_ignores_the_previous_particles_ch
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_caller_filled(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -554,7 +546,6 @@ def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_child(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -625,7 +616,6 @@ def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_chi
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_operation_on_a_child_supersedes_the_caller_operation_on_it(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -690,7 +680,6 @@ def test_callee_operation_on_a_child_supersedes_the_caller_operation_on_it(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_child(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -802,7 +791,6 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_caller_operation_waits_on_callee_move_output(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1647,7 +1635,6 @@ def test_empty_requirement_resolves_to_the_most_recent_empty_before_the_trigger(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

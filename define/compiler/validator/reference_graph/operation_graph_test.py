@@ -321,17 +321,20 @@ def test_move_keeps_fill_dependency_when_empty_dependency_is_symbolic():
         operation_graph.RequirementNode(
             node_id=3, depends_on=[1], required_state=_OCCUPIED
         ),
-        operation_graph.RequirementChildrenNode(
+        operation_graph.CallerDependenciesNode(
             node_id=4,
             depends_on=[],
-            requirement_position=_key("box", "source"),
-            depends_on_child_operations=frozenset(),
+            caller_dependencies=operation_graph.CallerDependencies(
+                requirement_position=_key("box", "source"),
+                dependency_child_positions=frozenset(),
+                dependency_requirements=(_key("box", "destination"),),
+            ),
         ),
         operation_graph.MoveNode(
             node_id=5,
             source=source,
             target=destination,
-            depends_on=[2, 4],
+            depends_on=[4],
         ),
     ]
 
@@ -683,7 +686,7 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
             2,
             {
                 ("position<run>",): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations(), None
+                    2, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,
@@ -715,10 +718,10 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
             3,
             {
                 ("position<run>",): operation_graph.RequirementBinding(
-                    3, operation_graph.ParticleChildOperations(), None
+                    3, operation_graph.ParticleChildOperations()
                 ),
                 ("position<beans>",): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations(), None
+                    2, operation_graph.ParticleChildOperations()
                 ),
             },
             action_parent_last_operation_node_id=1,
@@ -752,12 +755,6 @@ def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_c
     assert isinstance(binding_node, operation_graph.RequirementNode)
     assert binding_node.requirement_position == beans.canonical_chained_name_tuple
     assert graph.last_trigger_using_requirement(binding_node.node_id) is trigger
-    requirement_children_node = beans_binding.requirement_children_node
-    assert requirement_children_node is not None
-    assert (
-        requirement_children_node.requirement_position
-        == beans.canonical_chained_name_tuple
-    )
 
 
 def test_later_trigger_replaces_the_guarantee_attached_to_a_requirement():
@@ -815,7 +812,7 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
             2,
             {
                 ("position<run>",): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations(), None
+                    2, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,
@@ -853,7 +850,7 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
             1,
             {
                 (): operation_graph.RequirementBinding(
-                    1, operation_graph.ParticleChildOperations(), None
+                    1, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,
@@ -863,7 +860,7 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
             1,
             {
                 (): operation_graph.RequirementBinding(
-                    1, operation_graph.ParticleChildOperations(), None
+                    1, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,
@@ -901,7 +898,7 @@ def test_each_triggering_names_the_operation_that_fired_it():
             1,
             {
                 (): operation_graph.RequirementBinding(
-                    1, operation_graph.ParticleChildOperations(), None
+                    1, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,
@@ -911,7 +908,7 @@ def test_each_triggering_names_the_operation_that_fired_it():
             2,
             {
                 (): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations(), None
+                    2, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=2,
@@ -1459,11 +1456,14 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
         operation_graph.RequirementNode(
             node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
-        operation_graph.RequirementChildrenNode(
+        operation_graph.CallerDependenciesNode(
             node_id=2,
             depends_on=[],
-            requirement_position=_key("input"),
-            depends_on_child_operations=frozenset(),
+            caller_dependencies=operation_graph.CallerDependencies(
+                requirement_position=_key("input"),
+                dependency_child_positions=frozenset(),
+                dependency_requirements=(),
+            ),
         ),
         operation_graph.DestroyNode(node_id=3, target=input_position, depends_on=[2]),
     ]
@@ -1523,11 +1523,14 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
         operation_graph.RequirementNode(
             node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
-        operation_graph.RequirementChildrenNode(
+        operation_graph.CallerDependenciesNode(
             node_id=2,
             depends_on=[],
-            requirement_position=_key("run"),
-            depends_on_child_operations=frozenset(),
+            caller_dependencies=operation_graph.CallerDependencies(
+                requirement_position=_key("run"),
+                dependency_child_positions=frozenset(),
+                dependency_requirements=(),
+            ),
         ),
         operation_graph.DestroyNode(node_id=3, target=run, depends_on=[2]),
         operation_graph.CreateNode(node_id=4, target=scratch, depends_on=[0]),
@@ -1681,11 +1684,14 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
         operation_graph.RequirementNode(
             node_id=3, depends_on=[2], required_state=_OCCUPIED
         ),
-        operation_graph.RequirementChildrenNode(
+        operation_graph.CallerDependenciesNode(
             node_id=4,
             depends_on=[],
-            requirement_position=_key("box", "child", "grandchild"),
-            depends_on_child_operations=frozenset(),
+            caller_dependencies=operation_graph.CallerDependencies(
+                requirement_position=_key("box", "child", "grandchild"),
+                dependency_child_positions=frozenset(),
+                dependency_requirements=(),
+            ),
         ),
         operation_graph.DestroyNode(node_id=5, target=grandchild, depends_on=[4]),
     ]
@@ -1712,11 +1718,14 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
         ),
-        operation_graph.RequirementChildrenNode(
+        operation_graph.CallerDependenciesNode(
             node_id=3,
             depends_on=[],
-            requirement_position=_key("input", "parent"),
-            depends_on_child_operations=frozenset(),
+            caller_dependencies=operation_graph.CallerDependencies(
+                requirement_position=_key("input", "parent"),
+                dependency_child_positions=frozenset(),
+                dependency_requirements=(),
+            ),
         ),
         operation_graph.DestroyNode(node_id=4, target=parent, depends_on=[3]),
     ]
@@ -1807,10 +1816,10 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
     ]
 
 
-def test_emptying_a_caller_filled_position_uses_a_requirement_children_node():
+def test_emptying_a_caller_filled_position_uses_a_caller_dependencies_node():
     # The body creates a child of <source>, then moves <source> out. Emptying
     # <source> needs child operations from the caller as well as the body's
-    # create. The RequirementChildrenNode records that the body already waits on
+    # create. The CallerDependenciesNode records that the body already waits on
     # <source::child>, so a caller operation on that path will be superseded.
     graph = operation_graph.OperationGraph(
         _requirements((_ref("source"), _OCCUPIED), (_ref("holder"), _EMPTY)),
@@ -1822,20 +1831,23 @@ def test_emptying_a_caller_filled_position_uses_a_requirement_children_node():
         _ref("holder"),
         _particle_child_operations(graph, _ref("source"), [_key("source", "child")]),
     )
-    requirement_children = graph.nodes[4]
+    caller_dependencies = graph.nodes[4]
     move = graph.nodes[5]
-    assert requirement_children == operation_graph.RequirementChildrenNode(
+    assert caller_dependencies == operation_graph.CallerDependenciesNode(
         node_id=4,
         depends_on=[],
-        requirement_position=_key("source"),
-        depends_on_child_operations=frozenset({("position<child>",)}),
+        caller_dependencies=operation_graph.CallerDependencies(
+            requirement_position=_key("source"),
+            dependency_child_positions=frozenset({("position<child>",)}),
+            dependency_requirements=(_key("holder"),),
+        ),
     )
-    assert move.depends_on == [2, 3, 4]
+    assert move.depends_on == [2, 4]
 
 
 def test_emptying_a_position_the_body_refilled_waits_on_the_refill():
     # The first destroy empties the caller's particle through a
-    # RequirementChildrenNode. The body then refills <slot>; the second destroy
+    # CallerDependenciesNode. The body then refills <slot>; the second destroy
     # empties that body particle, so it resolves to the refill.
     graph = operation_graph.OperationGraph(
         _requirements((_ref("slot"), _OCCUPIED)), _ref("run")
@@ -1843,11 +1855,14 @@ def test_emptying_a_position_the_body_refilled_waits_on_the_refill():
     _ = graph.record_destroy(_ref("slot"), ())
     _ = graph.record_create(_ref("slot"))
     _ = graph.record_destroy(_ref("slot"), ())
-    assert graph.nodes[2] == operation_graph.RequirementChildrenNode(
+    assert graph.nodes[2] == operation_graph.CallerDependenciesNode(
         node_id=2,
         depends_on=[],
-        requirement_position=_key("slot"),
-        depends_on_child_operations=frozenset(),
+        caller_dependencies=operation_graph.CallerDependencies(
+            requirement_position=_key("slot"),
+            dependency_child_positions=frozenset(),
+            dependency_requirements=(),
+        ),
     )
     assert graph.nodes[5].depends_on == [4]
 

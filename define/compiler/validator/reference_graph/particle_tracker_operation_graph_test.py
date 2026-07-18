@@ -424,7 +424,7 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
             2,
             {
                 ("position<run>",): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations(), None
+                    2, operation_graph.ParticleChildOperations()
                 )
             },
             action_parent_last_operation_node_id=1,

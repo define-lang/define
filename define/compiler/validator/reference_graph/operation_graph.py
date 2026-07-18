@@ -12,6 +12,16 @@ It is worth understanding the difference between this and the validator's other
 mechanisms that track particle states, requirements, and guarantees: this data
 structure is being built to support codegen, while most other data structures
 exist to support validation.
+
+In general, operation graphs are designed such that they are the only thing
+that codegen should need in order to generate code for all actions.
+
+Operation graphs are only expected to be valid for valid Define code. None of
+the code in this module needs to deal with invalid Define code, as such graphs
+will never be passed to codegen. The only "invalid code" situation we might need
+to care about is anything that would cause an infinite loop in this code, but
+generally the validator should never even reach the operation graph's methods
+in any such situation.
 """
 
 from __future__ import annotations
@@ -108,6 +118,29 @@ class ParticleChildOperations:
 
 
 @dataclass(frozen=True, slots=True)
+class CallerDependencies:
+    """Information needed to apply the Empty Rule through caller bindings.
+
+    ``requirement_position`` contains the particle being emptied.
+    ``dependency_child_positions`` are relative to that position and identify
+    operations that are already dependencies. ``dependency_requirements`` must
+    be combined with those operations.
+    """
+
+    requirement_position: tuple[str, ...]
+    dependency_child_positions: frozenset[tuple[str, ...]]
+    dependency_requirements: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CallerDependenciesSubstitution:
+    """The result of substituting caller bindings into CallerDependencies."""
+
+    node_ids: tuple[int, ...]
+    caller_dependencies: CallerDependencies | None
+
+
+@dataclass(frozen=True, slots=True)
 class RequirementBinding:
     """The caller dependencies that satisfy one requirement of a triggered callee."""
 
@@ -115,10 +148,6 @@ class RequirementBinding:
     # state from the caller's perspective.
     node_id: int
     child_operations: ParticleChildOperations
-    # node_id identifies what put the position in its required state. This
-    # optional node identifies the additional dependencies needed if the callee
-    # empties the required particle.
-    requirement_children_node: RequirementChildrenNode | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,16 +291,14 @@ class RequirementNode(OperationNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class RequirementChildrenNode(OperationNode):
-    """The caller contribution required when this action empties a required particle.
+class CallerDependenciesNode(OperationNode):
+    """Caller dependencies needed when an action empties a required particle.
 
-    ``depends_on_child_operations`` identifies, by relative child position, the
-    child operations that are already ordinary dependencies of the operation
-    emptying the required particle.
+    ``caller_dependencies`` preserves the complete Empty Rule dependency set
+    while caller requirement bindings are substituted.
     """
 
-    requirement_position: tuple[str, ...]
-    depends_on_child_operations: frozenset[tuple[str, ...]]
+    caller_dependencies: CallerDependencies
 
 
 class OperationGraph:
@@ -350,6 +377,7 @@ class OperationGraph:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
 
+    # TODO: This should probably be an override-able method on OperationNode.
     def operation_positions(self, node_id: int) -> tuple[tuple[str, ...], ...]:
         """Return every position operated on by a node from this action's perspective."""
         node = self._nodes[node_id]
@@ -364,7 +392,7 @@ class OperationGraph:
             return node.operation_positions
         if isinstance(node, RequirementNode):
             return (node.requirement_position,)
-        if isinstance(node, (ActionParentLastOperationNode, RequirementChildrenNode)):
+        if isinstance(node, (ActionParentLastOperationNode, CallerDependenciesNode)):
             return ()
         raise TypeError(f"unknown operation node type: {type(node).__name__}")
 
@@ -452,7 +480,6 @@ class OperationGraph:
             # to be in the graph in order for it to fire.
             trigger_position_key = ()
         bindings[trigger_position_key] = self._requirement_binding(
-            acting_on_position_key,
             ParticleChildOperations.from_preceding_operations(
                 acting_on_preceding_child_operations
             ),
@@ -469,7 +496,6 @@ class OperationGraph:
             binding_node_id = self._requirement_binding_node_id(caller_position_key)
             if binding_node_id is not None:
                 bindings[requirement_key] = self._requirement_binding(
-                    caller_position_key,
                     ParticleChildOperations.from_preceding_operations(
                         preceding_child_operations
                     ),
@@ -504,7 +530,6 @@ class OperationGraph:
 
     def _requirement_binding(
         self,
-        position: tuple[str, ...],
         child_operations: ParticleChildOperations,
         node_id: int,
     ) -> RequirementBinding:
@@ -516,22 +541,7 @@ class OperationGraph:
             node_id
         ):
             child_operations = ParticleChildOperations()
-        requirement_children_node: RequirementChildrenNode | None = None
-        if (
-            isinstance(position_node, RequirementNode)
-            and position_node.requirement_position == position
-            and position_node.required_state
-            is action_contract.PositionOccupancyState.OCCUPIED
-        ):
-            requirement_children_node = self._add_requirement_children_node(
-                position,
-                child_operations.child_position_set(),
-            )
-        return RequirementBinding(
-            node_id,
-            child_operations,
-            requirement_children_node,
-        )
+        return RequirementBinding(node_id, child_operations)
 
     @property
     def triggers(self) -> Sequence[ActionTrigger]:
@@ -564,21 +574,21 @@ class OperationGraph:
         """Return dependencies required before optionally emptying and filling positions."""
         if child_operations is None:
             child_operations = ParticleChildOperations()
-        candidates: set[int] = set()
-
+        fill_dependency: int | None = None
         if fill_position is not None:
             # Filling a position waits on the most recent operation on that
             # position and its parent names, so the parent particle is present.
             fill_dependency = self._most_recent_ancestor_chain_operation(fill_position)
-            if fill_dependency is not None:
-                candidates.add(fill_dependency)
 
+        dependencies: list[int]
         if empty_position is not None:
             dependencies = self._empty_dependencies(
-                empty_position, child_operations, candidates
+                empty_position, child_operations, fill_dependency
             )
         else:
-            dependencies = sorted(candidates)
+            dependencies = []
+            if fill_dependency is not None:
+                dependencies.append(fill_dependency)
         if not dependencies:
             return [self._action_parent_last_operation_node_id]
         return dependencies
@@ -587,9 +597,10 @@ class OperationGraph:
         self,
         empty_position: tuple[str, ...],
         child_operations: ParticleChildOperations,
-        candidates: set[int],
+        fill_dependency: int | None,
     ) -> list[int]:
         """Add the emptied particle's operations and apply the Empty Rule."""
+        candidates: set[int] = set()
         emptied_ancestor = self._most_recent_ancestor_chain_operation(empty_position)
         if emptied_ancestor is not None:
             node = self._nodes[emptied_ancestor]
@@ -597,12 +608,30 @@ class OperationGraph:
                 isinstance(node, RequirementNode)
                 and node.requirement_position == empty_position
             ):
-                requirement_children_node = self._add_requirement_children_node(
-                    empty_position, child_operations.child_position_set()
+                dependency_requirements: tuple[tuple[str, ...], ...] = ()
+                if fill_dependency is not None:
+                    fill_node = self._nodes[fill_dependency]
+                    if isinstance(fill_node, RequirementNode):
+                        # Allow the caller to apply the Move Rule.
+                        dependency_requirements = (fill_node.requirement_position,)
+                    else:
+                        # We are going to apply the Move Rule here inside this action
+                        # (during _reduce dependencies).
+                        candidates.add(fill_dependency)
+                caller_dependencies = self._add_caller_dependencies(
+                    CallerDependencies(
+                        requirement_position=empty_position,
+                        dependency_child_positions=child_operations.child_position_set(),
+                        dependency_requirements=dependency_requirements,
+                    )
                 )
-                candidates.add(requirement_children_node.node_id)
+                candidates.add(caller_dependencies.node_id)
             else:
                 candidates.add(emptied_ancestor)
+                if fill_dependency is not None:
+                    candidates.add(fill_dependency)
+        elif fill_dependency is not None:
+            candidates.add(fill_dependency)
         candidates.update(
             operation.node_id for operation in child_operations.operations
         )
@@ -706,22 +735,142 @@ class OperationGraph:
         _ = self._last_operation.setdefault(key, node_id)
         return node_id
 
-    def _add_requirement_children_node(
-        self,
-        requirement_position: tuple[str, ...],
-        depends_on_child_operations: frozenset[tuple[str, ...]],
-    ) -> RequirementChildrenNode:
+    def _add_caller_dependencies(
+        self, caller_dependencies: CallerDependencies
+    ) -> CallerDependenciesNode:
         """Add and return the caller contribution for emptying a required particle."""
         node_id = len(self._nodes)
-        node = RequirementChildrenNode(
+        node = CallerDependenciesNode(
             node_id=node_id,
-            # Its dependencies are resolved through a RequirementBinding.
             depends_on=[],
-            requirement_position=requirement_position,
-            depends_on_child_operations=depends_on_child_operations,
+            caller_dependencies=caller_dependencies,
         )
         self._nodes.append(node)
         return node
+
+    def substitute_caller_dependencies(
+        self,
+        caller_dependencies: CallerDependencies,
+        bindings: Mapping[tuple[str, ...], RequirementBinding],
+    ) -> CallerDependenciesSubstitution:
+        """Substitute a callee's dependencies with operations from this caller."""
+        callee_requirement_binding = bindings[caller_dependencies.requirement_position]
+        child_operations = (
+            callee_requirement_binding.child_operations.operations_not_on_same_paths_as(
+                caller_dependencies.dependency_child_positions
+            )
+        )
+        candidates = {operation.node_id for operation in child_operations}
+        for requirement in caller_dependencies.dependency_requirements:
+            # The Fill Rule allows its dependency to come from a transitive parent position.
+            # _first_requirement_binding therefore checks the position and
+            # its parent-position prefixes until it finds the caller binding that supplies
+            # the dependency.
+            binding = self._first_requirement_binding(requirement, bindings)
+            # Note: None means this is an EMPTY requirement that is satisfied by default
+            # (there was no specific operation that emptied the position). The Fill Rule
+            # created a separate requirement against the parent position, and so no binding
+            # is necessary here.
+            if binding is not None:
+                candidates.add(binding.node_id)
+
+        requirement_position_in_caller = self._occupied_requirement_position(
+            callee_requirement_binding
+        )
+        # The particle is not from our caller, so we don't have to propagate
+        # Empty Rule child dependencies on it.
+        if requirement_position_in_caller is None:
+            if (
+                not child_operations
+                and not caller_dependencies.dependency_child_positions
+            ):
+                # callee_requirement_binding.node_id is the operation on the emptied
+                # position. When there are no later child-position operations, it
+                # remains the required dependency per the Empty Rule.
+                candidates.add(callee_requirement_binding.node_id)
+            return CallerDependenciesSubstitution(
+                tuple(self._reduce_dependencies(candidates)), None
+            )
+
+        # If this action received the particle from its caller, some operations
+        # required by the Empty Rule may belong to that caller and must be propagated.
+        # Apply what we can of the Empty Rule now to this caller's operations before
+        # propagating dependencies from this caller's occupied requirement to its caller.
+        dependencies = self._reduce_dependencies(candidates)
+        node_ids: list[int] = []
+        dependency_requirements: list[tuple[str, ...]] = []
+        seen_dependency_requirements: set[tuple[str, ...]] = set()
+        dependency_child_positions = set(
+            callee_requirement_binding.child_operations.child_position_set()
+        )
+        dependency_child_positions.update(
+            caller_dependencies.dependency_child_positions
+        )
+        for node_id in dependencies:
+            if isinstance(self._nodes[node_id], RequirementNode):
+                requirement_position = typing.cast(
+                    "RequirementNode", self._nodes[node_id]
+                ).requirement_position
+                if requirement_position not in seen_dependency_requirements:
+                    dependency_requirements.append(requirement_position)
+                    seen_dependency_requirements.add(requirement_position)
+                continue
+            node_ids.append(node_id)
+            # This remains linear in the positions on the dependencies because
+            # each position is examined once, without comparing dependencies.
+            self._add_positions_relative_to_particle(
+                dependency_child_positions,
+                node_id,
+                requirement_position_in_caller,
+            )
+        return CallerDependenciesSubstitution(
+            tuple(node_ids),
+            CallerDependencies(
+                requirement_position=requirement_position_in_caller,
+                dependency_child_positions=frozenset(dependency_child_positions),
+                dependency_requirements=tuple(dependency_requirements),
+            ),
+        )
+
+    def _occupied_requirement_position(
+        self, binding: RequirementBinding
+    ) -> tuple[str, ...] | None:
+        """Return the occupied requirement position represented by ``binding``."""
+        node = self._nodes[binding.node_id]
+        if not isinstance(node, RequirementNode):
+            return None
+        if node.required_state is not action_contract.PositionOccupancyState.OCCUPIED:
+            return None
+        return node.requirement_position
+
+    @staticmethod
+    def _first_requirement_binding(
+        requirement_position: tuple[str, ...],
+        bindings: Mapping[tuple[str, ...], RequirementBinding],
+    ) -> RequirementBinding | None:
+        """Return the first supplied binding in a requirement's parent chain."""
+        for depth in range(len(requirement_position), 0, -1):
+            binding = bindings.get(requirement_position[:depth])
+            if binding is not None:
+                return binding
+        return None
+
+    def _add_positions_relative_to_particle(
+        self,
+        relative_positions: set[tuple[str, ...]],
+        node_id: int,
+        particle_position: tuple[str, ...],
+    ):
+        """Add a node's transitive parent and child positions relative to ``particle_position``."""
+        for position in self.operation_positions(node_id):
+            shared_depth = min(len(position), len(particle_position))
+            if position[:shared_depth] != particle_position[:shared_depth]:
+                continue
+            if len(position) <= len(particle_position):
+                # This represents the position itself or one of its parents.
+                relative_positions.add(())
+            else:
+                relative_positions.add(position[len(particle_position) :])
 
     def record_create(self, target: ast.PositionReference) -> int:
         """Record a body create in ``target``."""

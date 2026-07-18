@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,9 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS = (
-    "the operation graph does not preserve the Empty Rule across action triggerings"
-)
 
 
 def test_actions_with_identically_named_child_actions_have_distinct_instances(
@@ -650,7 +645,6 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -745,7 +739,6 @@ def test_callee_operation_without_position_dependencies_waits_on_action_parent(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_destroy_excludes_callee_operations_superseded_on_child_positions(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -790,7 +783,6 @@ def test_destroy_excludes_callee_operations_superseded_on_child_positions(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_espresso_operation_graph(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1412,7 +1404,6 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigger(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -1574,7 +1565,6 @@ def test_caller_consumes_a_nested_guarantee(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_EMPTY_RULE_NOT_PRESERVED_ACROSS_ACTIONS)
 def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_child_fill(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

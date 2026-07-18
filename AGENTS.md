@@ -108,6 +108,7 @@ See [define/spec/spec.md] for the language specification.
 
 ## Tests
 
+- Test runs are not necessary when a change only updates comments or docstrings.
 - If the spec and the tests are in conflict, the spec is right and the tests are
   wrong.
 - Avoid adding debug messages to assert calls.

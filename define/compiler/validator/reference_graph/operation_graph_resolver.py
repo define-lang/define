@@ -159,9 +159,9 @@ class ResolvedOperationGraph:
                 return [ResolvedNodeId(action_instance, node_id)]
             case operation_graph.RequirementNode():
                 return self._resolve_requirement(action_instance, node)
-            case operation_graph.RequirementChildrenNode():
-                return self._resolve_requirement_children(
-                    action_instance, node, frozenset()
+            case operation_graph.CallerDependenciesNode():
+                return self._resolve_caller_dependencies(
+                    action_instance, node.caller_dependencies
                 )
             case operation_graph.GuaranteeNode():
                 callee = self._callee_instance(action_instance, node.trigger)
@@ -203,39 +203,27 @@ class ResolvedOperationGraph:
             )
         return self._resolve_ids(action_instance, node.depends_on)
 
-    def _resolve_requirement_children(
+    def _resolve_caller_dependencies(
         self,
         action_instance: ResolvedActionInstance,
-        node: operation_graph.RequirementChildrenNode,
-        accumulated_paths: frozenset[tuple[str, ...]],
+        caller_dependencies: operation_graph.CallerDependencies,
     ) -> list[ResolvedNodeId]:
-        if action_instance.triggered_by is None:
+        triggered_by = action_instance.triggered_by
+        if triggered_by is None:
             return []
-        paths = accumulated_paths | node.depends_on_child_operations
-        binding = action_instance.triggered_by.trigger.bindings[
-            node.requirement_position
-        ]
-        result: list[ResolvedNodeId] = []
-        for operation in sorted(
-            binding.child_operations.operations_not_on_same_paths_as(paths),
-            key=lambda child_operation: child_operation.node_id,
-        ):
-            result.extend(
-                self._resolve_node(
-                    action_instance.triggered_by.caller, operation.node_id
+        caller = triggered_by.caller
+        caller_graph = self._graphs[caller.action]
+        substitution = caller_graph.substitute_caller_dependencies(
+            caller_dependencies, triggered_by.trigger.bindings
+        )
+        dependencies = self._resolve_ids(caller, substitution.node_ids)
+        if substitution.caller_dependencies is not None:
+            dependencies.extend(
+                self._resolve_caller_dependencies(
+                    caller, substitution.caller_dependencies
                 )
             )
-        if binding.requirement_children_node is not None:
-            result.extend(
-                self._resolve_requirement_children(
-                    action_instance.triggered_by.caller,
-                    binding.requirement_children_node,
-                    paths,
-                )
-            )
-        if result or paths:
-            return result
-        return self._resolve_node(action_instance.triggered_by.caller, binding.node_id)
+        return dependencies
 
     def _callee_instance(
         self,
