@@ -134,6 +134,16 @@ fixer work yourself: work through the approved TODOs one worktree at a time,
 following `agents/fixer.md` exactly, then report every worktree as ready for
 review. The rest of the workflow is unchanged.
 
+### Monitor active fixers
+
+Keep the orchestrator's turn active while any fixer or review-revision task is
+running. Use the runtime's agent-wait mechanism and continue waiting after
+status updates until every active fixer has either finished or asked the user a
+question. Do not yield back to the user merely because the work continues in a
+background agent: once the turn ends, the orchestrator cannot proactively
+deliver the completion report. Relay each completion immediately, stage the
+worktree, and provide its review command before ending the turn.
+
 ### Questions during fixing
 
 Fixers surface questions at the moment they have them, not in advance. When a
