@@ -54,16 +54,17 @@ blocked TODO is a success, not a failure.
    `bazelisk test --noshow_progress --ui_event_filters=-info //...` Expect a
    cold build; that is normal for a fresh worktree. If anything fails that your
    change plausibly caused, fix it or take the escape hatch.
-7. Stage everything: `git add -A`. **Do not commit** — the commit is the user's
-   decision and happens only after they approve, at landing. A fully staged
-   worktree with nothing unstaged is the ready-for-review signal.
+7. Leave all changes unstaged for the orchestrator to stage. **Do not commit** —
+   the commit is the user's decision and happens only after they approve, at
+   landing. The orchestrator stages the worktree after your report so shared Git
+   metadata is written by the primary agent.
 8. Do not push, merge, or touch `main` or any other worktree in any way.
 
 ## Report
 
 Your final message goes back to the orchestrator. Include: a one-paragraph
 summary of what changed and why it is safe, any significant judgment calls you
-made, `git diff --cached --stat` output, and confirmation that the full suite
-passed (or the escape-hatch explanation). Stay available afterward — the user
-may send follow-up questions, and you may be asked to adjust the fix and
-re-stage in response to review feedback.
+made, `git diff --stat` output, and confirmation that the full suite passed (or
+the escape-hatch explanation). Stay available afterward — the user may send
+follow-up questions, and you may be asked to adjust the fix in response to
+review feedback.

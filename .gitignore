@@ -8,6 +8,7 @@
 /mutmut_survivors_report.md
 
 /.claude/settings.local.json
+/.todo-worktrees/
 
 # Bazel
 /bazel-*

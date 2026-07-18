@@ -28,8 +28,8 @@ Each in-flight fix is exactly:
 
 - one branch named `todo/<slug>` with **no commits of its own** (it points at
   the `main` commit it was created from), and
-- one worktree at `../define2-todos/<slug>` (a sibling directory of the repo
-  checkout) holding the fix as **staged, uncommitted changes**.
+- one worktree at `.todo-worktrees/<slug>` under the repo's writable root,
+  holding the fix as **staged, uncommitted changes**.
 
 Nothing is committed until the user approves the fix; the commit is the user's
 decision, so it happens only during landing. A fully-staged worktree with
@@ -107,25 +107,27 @@ approve or trim the list before creating any worktree.**
 For each approved TODO:
 
 1. Create its worktree from the repo root:
-   `git worktree add ../define2-todos/<slug> -b todo/<slug> main`
+   `git worktree add .todo-worktrees/<slug> -b todo/<slug> main`
 2. Spawn a background subagent named `todo-<slug>` whose prompt is the contents
    of `agents/fixer.md` plus the specific TODO (file, line, text, fix plan) and
    the absolute worktree path.
 
-Run at most 3 fixers concurrently: each one runs the full Bazel suite in a cold
-output base, and more than that thrashes the machine.
+Spawn fixers for all approved TODOs concurrently. Do not impose a concurrency
+cap; the runtime and the user control the available resources.
 
 Spawn each fixer with the cheapest model you are confident can complete that
 specific fix — a purely mechanical rename or deletion tolerates a cheaper model
 than a fix that needs cross-file reasoning. When in doubt, choose the more
 capable model: a wasted review cycle costs the user more than the model does.
 
-The fixer verifies with the full test suite and leaves the fix as staged,
-uncommitted changes — committing is the user's decision and happens only at
-landing. Because the pre-commit hooks (ruff, basedpyright) therefore run at
-landing time rather than fix time, the fixer must leave a tree that will pass
-them; running `//tools:format` and the full Bazel suite (which lints via aspects
-and runs the `pyright_test` targets) covers this.
+The fixer verifies with the full test suite and leaves the fix uncommitted.
+After it finishes, the orchestrator runs `git -C .todo-worktrees/<slug> add -A`
+so writes to shared Git metadata happen from the primary agent rather than
+requiring a subagent permission prompt. Committing is the user's decision and
+happens only at landing. Because the pre-commit hooks (ruff, basedpyright)
+therefore run at landing time rather than fix time, the fixer must leave a tree
+that will pass them; running `//tools:format` and the full Bazel suite (which
+lints via aspects and runs the `pyright_test` targets) covers this.
 
 If the runtime cannot spawn background subagents (for example Codex), do the
 fixer work yourself: work through the approved TODOs one worktree at a time,
@@ -151,7 +153,7 @@ As each fixer finishes, relay its report and tell the user exactly how to
 review, e.g.:
 
 ```
-git -C ../define2-todos/<slug> diff --cached
+git -C .todo-worktrees/<slug> diff --cached
 ```
 
 or by opening the worktree in their editor. If your runtime lets you message
@@ -169,12 +171,12 @@ do not silently retry or escalate the fix.
 Only when the user approves a specific fix:
 
 1. In the main checkout: `git pull --ff-only origin main`
-2. In the worktree: `git -C ../define2-todos/<slug> add -A`, then commit with a
+2. In the worktree: `git -C .todo-worktrees/<slug> add -A`, then commit with a
    message that describes the change (never "fix TODO"), following your own
    runtime's commit-attribution conventions. The pre-commit hooks run here. If
    one fails, fix the underlying issue in the worktree, re-stage, and retry —
    never `--no-verify`.
-3. `git -C ../define2-todos/<slug> rebase main`. If the rebase conflicts, abort
+3. `git -C .todo-worktrees/<slug> rebase main`. If the rebase conflicts, abort
    it and report; do not resolve conflicts silently. (The commit stays on the
    branch — this is the stopped-partway state.)
 4. **If the rebase moved the commit** (main had advanced since the fix was
@@ -184,7 +186,7 @@ Only when the user approves a specific fix:
    re-run is unnecessary.
 5. In the main checkout: `git merge --ff-only todo/<slug>` then
    `git push origin main`
-6. Clean up: `git worktree remove ../define2-todos/<slug>` and
+6. Clean up: `git worktree remove .todo-worktrees/<slug>` and
    `git branch -d todo/<slug>`
 
 ### 6. Rebase the survivors
