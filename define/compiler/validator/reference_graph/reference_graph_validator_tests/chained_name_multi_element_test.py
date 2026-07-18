@@ -195,7 +195,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+        )
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
@@ -239,7 +241,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+        )
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
@@ -281,7 +285,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+        )
         assert all_diags[0].element_name == "position<pos_c>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
@@ -422,7 +428,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert isinstance(
+            all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
+        )
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/bar>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/foo>"
         assert all_diags[0].location.line == 10
@@ -475,7 +483,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert isinstance(
+            all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
+        )
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/b>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/a>"
         assert all_diags[0].location.line == 10

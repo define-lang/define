@@ -313,7 +313,9 @@ def test_destroy_chained_name_not_in_action(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+    assert isinstance(
+        all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+    )
     assert all_diags[0].element_name == "position<no_such>"
     assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/child>"
     assert all_diags[0].location.line == 10

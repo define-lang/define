@@ -693,13 +693,28 @@ class ChainElementNotInConstraintsDiagnostic(Diagnostic):
 
 
 @dataclass
-class ChainElementNotInActionDiagnostic(Diagnostic):
-    """Diagnostic for when a chain element is part of an action's definition definition block."""
+class ChainElementNotInterfacePositionDiagnostic(Diagnostic):
+    """Diagnostic for when a local name after an action is not an interface position of that action."""
 
     element_name: str
     parent_name: str
     message_format: ClassVar[str] = (
-        "'{self.element_name}' is not defined inside the definition of '{self.parent_name}'"
+        "'{self.element_name}' is not an interface position of the action"
+        " '{self.parent_name}'; only that action's interface positions may follow"
+        " it in a chained name"
+    )
+
+
+@dataclass
+class ChainGlobalNameAfterActionDiagnostic(Diagnostic):
+    """Diagnostic for when a global name follows an action in a chained name."""
+
+    element_name: str
+    parent_name: str
+    message_format: ClassVar[str] = (
+        "'{self.element_name}' is a global name, but only the interface positions"
+        " of the action '{self.parent_name}' may follow it in a chained name;"
+        " interface positions are written as local names"
     )
 
 

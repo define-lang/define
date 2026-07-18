@@ -414,7 +414,9 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+    assert isinstance(
+        all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+    )
     assert all_diags[0].element_name == "position<no_such>"
     assert all_diags[0].parent_name == f"action<{_CHILD}:/act>"
     assert all_diags[0].location.line == 17

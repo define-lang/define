@@ -1459,12 +1459,21 @@ class ActionPostorderValidator:
 
         Returns the number of elements consumed (0 means stop walking).
         """
-        # TODO: We should emit more specific diagnostics for these cases.
         if not isinstance(child, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(chain, child, parent_name)
+            self._emit_chain_after_action_diagnostic(
+                chain,
+                child,
+                parent_name,
+                diagnostics.ChainGlobalNameAfterActionDiagnostic,
+            )
             return 0
         if child.full_typed_name not in action_def.interface_positions_by_name:
-            self._emit_not_in_action_diagnostic(chain, child, parent_name)
+            self._emit_chain_after_action_diagnostic(
+                chain,
+                child,
+                parent_name,
+                diagnostics.ChainElementNotInterfacePositionDiagnostic,
+            )
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
         if child_index + 1 >= len(elements):
@@ -1498,15 +1507,19 @@ class ActionPostorderValidator:
             )
             self._tracker.mark_error(chain)
 
-    def _emit_not_in_action_diagnostic(
+    def _emit_chain_after_action_diagnostic(
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
         parent_name: str,
+        diagnostic_class: type[
+            diagnostics.ChainGlobalNameAfterActionDiagnostic
+            | diagnostics.ChainElementNotInterfacePositionDiagnostic
+        ],
     ):
-        """Emit a diagnostic for a chain element not found in an action definition."""
+        """Emit a diagnostic for a chain element that cannot follow an action."""
         self._diagnostics.append(
-            diagnostics.ChainElementNotInActionDiagnostic(
+            diagnostic_class(
                 location=element.location,
                 element_name=element.full_typed_name,
                 parent_name=parent_name,

@@ -356,13 +356,13 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
     "particles/create/chain_not_in_action": [
-        diagnostics.ChainElementNotInActionDiagnostic,
+        diagnostics.ChainElementNotInterfacePositionDiagnostic,
     ],
     "particles/create/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "particles/move/chain_not_in_action": [
-        diagnostics.ChainElementNotInActionDiagnostic,
+        diagnostics.ChainElementNotInterfacePositionDiagnostic,
     ],
     "particles/move/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,

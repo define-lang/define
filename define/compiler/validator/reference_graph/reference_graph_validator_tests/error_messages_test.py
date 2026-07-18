@@ -170,7 +170,7 @@ def test_deferred_action_chain_error_format(
         File "test.dfn", line 10, column 63
                 create a particle in position<pos_a>::action</act_b>::position<no_such>.
                                                                       ^
-        'position<no_such>' is not defined inside the definition of 'action<my.domain.com:my_lib:/act_b>'""")
+        'position<no_such>' is not an interface position of the action 'action<my.domain.com:my_lib:/act_b>'; only that action's interface positions may follow it in a chained name""")
     )
 
 
