@@ -352,6 +352,36 @@ class StrictReparentingTrie[V]:
                 return prefix
         return None
 
+    def find_longest_prefixes_where(
+        self, keys: Iterable[TrieKey], predicate: Callable[[V], bool]
+    ) -> dict[TrieKey, TrieKey | None]:
+        """Return the longest matching prefix for each distinct key."""
+        sorted_keys = sorted(keys)
+        if sorted_keys and not sorted_keys[0]:
+            raise EmptyKeyError("key must not be empty")
+        results: dict[TrieKey, TrieKey | None] = {}
+        previous_key: TrieKey = ()
+        matches_by_depth: list[TrieKey | None] = [None]
+        for key in sorted_keys:
+            if key == previous_key:
+                continue
+            common_depth = 0
+            for previous_segment, segment in zip(previous_key, key, strict=False):
+                if previous_segment != segment:
+                    break
+                common_depth += 1
+            del matches_by_depth[common_depth + 1 :]
+            nearest_match = matches_by_depth[common_depth]
+            for depth in range(common_depth + 1, len(key) + 1):
+                prefix = key[:depth]
+                value = self._values.get(prefix, _MISSING)
+                if value is not _MISSING and predicate(typing.cast("V", value)):
+                    nearest_match = prefix
+                matches_by_depth.append(nearest_match)
+            results[key] = nearest_match
+            previous_key = key
+        return results
+
 
 class LenientReparentingTrie[V](StrictReparentingTrie[V]):
     """A trie that auto-creates intermediate nodes on write operations.

@@ -296,6 +296,24 @@ class _ParticleStateStore:
             is not None
         )
 
+    def nearest_occupied_ancestors(
+        self, keys: Sequence[tuple[str, ...]]
+    ) -> dict[tuple[str, ...], tuple[tuple[str, ...], ParticleInfo] | None]:
+        """Return the nearest occupied ancestor for each distinct key."""
+        ancestor_keys = self._state.find_longest_prefixes_where(
+            keys, lambda node_state: node_state.particle_info is not None
+        )
+        results: dict[tuple[str, ...], tuple[tuple[str, ...], ParticleInfo] | None] = {}
+        for key, ancestor_key in ancestor_keys.items():
+            if ancestor_key is None:
+                results[key] = None
+                continue
+            particle_info = self._state[ancestor_key].particle_info
+            if particle_info is None:
+                raise ValueError(f"position {ancestor_key} lost its particle")
+            results[key] = ancestor_key, particle_info
+        return results
+
     def keys_for_guarantees(
         self, *, include_callee_derived: bool
     ) -> set[tuple[str, ...]]:
@@ -521,6 +539,36 @@ class ParticleTracker:
         if particle_info is None:
             raise ValueError(f"position {ancestor_key} lost its particle")
         return ancestor_key, particle_info
+
+    # Requirement propagation can query dozens or hundreds of positions for each
+    # triggered action and millions over a large action call graph. Keeping this
+    # operation batched lets trie lookup reuse common position prefixes instead
+    # of repeating the ancestor search for every requirement.
+    def nearest_particles_above_if_state_unknown(
+        self, positions: Sequence[ast.PositionReference]
+    ) -> list[tuple[tuple[str, ...], ParticleInfo] | None]:
+        """Return the nearest particle above each position whose state is unknown."""
+        search_keys: list[tuple[str, ...]] = []
+        search_key_by_position: list[tuple[str, ...] | None] = []
+        for position in positions:
+            key = position.canonical_chained_name_tuple
+            self._apply_pending_guarantees_up_to(key)
+            state_is_known = self._store.has_been_touched(key)
+            parent_key = ast.chain_parent_position(key)
+            if parent_key is not None:
+                parent_particle = self._store.occupant_or_none(parent_key)
+                state_is_known = state_is_known or (
+                    parent_particle is not None and not parent_particle.from_caller
+                )
+            search_key = key[:-1] if not state_is_known and len(key) > 1 else None
+            search_key_by_position.append(search_key)
+            if search_key is not None:
+                search_keys.append(search_key)
+        nearest_ancestors = self._store.nearest_occupied_ancestors(search_keys)
+        return [
+            nearest_ancestors[search_key] if search_key is not None else None
+            for search_key in search_key_by_position
+        ]
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""

@@ -522,6 +522,33 @@ class TestFindLongestPrefixWhere:
         with pytest.raises(trie.EmptyKeyError):
             t.find_longest_prefix_where((), lambda v: v > 0)
 
+    def test_multiple_keys_are_deduplicated(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 99
+        t[("a", "b")] = 2
+        t[("x",)] = 3
+        assert t.find_longest_prefixes_where(
+            (("a", "b"), ("x",), ("a", "b")), lambda value: value > 10
+        ) == {
+            ("a", "b"): ("a",),
+            ("x",): None,
+        }
+
+    def test_multiple_branches_reuse_common_prefixes(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 99
+        t[("a", "b")] = 2
+        t[("a", "b", "c")] = 50
+        t[("a", "d")] = 3
+        assert t.find_longest_prefixes_where(
+            (("a", "d"), ("a", "b", "x"), ("a", "b", "c")),
+            lambda value: value > 10,
+        ) == {
+            ("a", "b", "c"): ("a", "b", "c"),
+            ("a", "b", "x"): ("a",),
+            ("a", "d"): ("a",),
+        }
+
 
 class TestIndependence:
     def test_parent_and_child_are_independent_values(self):

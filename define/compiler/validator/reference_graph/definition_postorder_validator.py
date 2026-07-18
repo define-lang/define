@@ -231,8 +231,14 @@ class ActionPostorderValidator:
         else:
             # We created the action's parent particle in this action.
             caller_path_to_action = None
-        for inner_req, local_position in zip(
-            contract.requirements.values(), caller_positions, strict=True
+        nearest_particles = self._tracker.nearest_particles_above_if_state_unknown(
+            caller_positions
+        )
+        for inner_req, local_position, nearest_particle in zip(
+            contract.requirements.values(),
+            caller_positions,
+            nearest_particles,
+            strict=True,
         ):
             self._maybe_propagate_one_requirement(
                 inner_req,
@@ -241,6 +247,7 @@ class ActionPostorderValidator:
                 action_parent,
                 scope,
                 local_position,
+                nearest_particle,
             )
 
     def _maybe_propagate_one_requirement(
@@ -251,6 +258,7 @@ class ActionPostorderValidator:
         action_parent: ast.PositionReference | None,
         scope: scope_tracker.ScopeTracker,
         local_position: ast.PositionReference,
+        nearest_particle: tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None,
     ):
         """Propagate ``inner_req`` when the caller must satisfy it.
 
@@ -269,7 +277,7 @@ class ActionPostorderValidator:
         actually _know_ the state of "b" and its child "c". Only our caller knows.
         """
         moved_particle = self._ancestor_from_contracted_position(
-            local_position, action_parent
+            nearest_particle, action_parent
         )
         if moved_particle is not None:
             owner_key, owner = moved_particle
@@ -306,13 +314,10 @@ class ActionPostorderValidator:
 
     def _ancestor_from_contracted_position(
         self,
-        position: ast.PositionReference,
+        nearest_ancestor: tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None,
         action_parent: ast.PositionReference | None,
     ) -> tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None:
         """If any of our parents were moved from a contracted position, return that ancestor's position and the particle in it."""
-        nearest_ancestor = self._tracker.nearest_particle_above_if_state_unknown(
-            position
-        )
         if nearest_ancestor is None:
             # The ancestor is an implied action with no parent name.
             return None
