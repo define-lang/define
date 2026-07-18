@@ -1,0 +1,46 @@
+{
+  "skill_name": "todo-hunter",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Hunt through this repo for TODOs that you could actually just go fix. Show me a candidate list with a one-line fix plan and expected diff size for each. Don't create any worktrees or modify anything yet; I just want to see the list first. The repo is at <REPO>.",
+      "expected_output": "A candidate table listing every actionable, test-verifiable TODO (no artificial cap), each with file:line, TODO text, fix plan, and diff-size estimate — and nothing else: no exclusion lists or justifications, and no advance catalog of choices the user would veto. Blocked TODOs (unmet preconditions) simply do not appear. No candidates from define/spec/, define/proposals/, drafts/, or TODO.md. Repo left completely unmodified.",
+      "files": [],
+      "expectations": [
+        "No candidate comes from define/spec/, define/proposals/, drafts/, or TODO.md",
+        "TODOs whose stated precondition is unmet (e.g. the protocompile EDITION_2024 test skip, deleting action_call_graph.py while destructors are unimplemented) do not appear as candidates",
+        "Actionable TODOs are not excluded for involving design choices, user-facing behavior changes, efficiency work, or large mechanical diffs — for example, both the automated_requirements_nested_action_test.py file split and the dead operation_graph field removal appear as candidates",
+        "Every candidate lists file:line, a one-line fix plan, and an expected diff size",
+        "The repo is left completely unmodified: clean git status, no new branches, no worktrees, no define2-todos directory",
+        "The report contains only the candidate list — nothing about TODOs not being proposed (no exclusion lists, categories, or justifications) and no advance catalog of choices the user would be vetoing"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I have a feeling there was a TODO fix from last week that I never got around to reviewing. Can you check what's pending in the repo at <REPO> and tell me how to look at it?",
+      "expected_output": "Discovers the todo/rename-parse-fqun worktree via git, reports it as ready for review (staged uncommitted changes, no commits of its own), gives the exact review command, and touches nothing.",
+      "files": [],
+      "expectations": [
+        "The report identifies the pending fix in the todo/rename-parse-fqun worktree",
+        "The report accurately describes its state: staged, uncommitted changes awaiting the user's review",
+        "The report gives a command that actually shows the pending diff (e.g. git -C <worktree> diff --cached)",
+        "The seeded state is untouched: the worktree still exists with the identical staged diff, no new commits anywhere, main checkout clean",
+        "No new hunt or fix work was started uninvited (no new branches or worktrees)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "There's a TODO in define/compiler/name_parser.py about renaming _parse_fqun that looks trivially fixable. Prepare a fix for it in a git worktree so I can review it before anything lands — consider the candidate pre-approved, no need to check with me on the plan. Stop when it's ready for my review. The repo is at <REPO>.",
+      "expected_output": "A todo/<slug> branch with a sibling worktree containing the rename as staged, uncommitted changes with the TODO comment removed. Branch has no commits of its own; nothing committed or pushed; full Bazel suite run in the worktree; report says how to review.",
+      "files": [],
+      "expectations": [
+        "The fix exists as staged, uncommitted changes in a dedicated git worktree on a todo/* branch — not in the main checkout",
+        "The todo/* branch has no commits of its own (its tip equals main)",
+        "The staged diff removes the TODO comment and renames _parse_fqun at both use sites, and changes nothing else",
+        "Nothing was committed or pushed: origin/main still points at the seeded commit and the main checkout is clean",
+        "The full Bazel test suite (bazelisk test //...) was run against the fixed tree and passed, per the run's report",
+        "The final report tells the user exactly how to review the staged diff"
+      ]
+    }
+  ]
+}

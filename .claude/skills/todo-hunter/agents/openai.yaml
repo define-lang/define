@@ -1,0 +1,10 @@
+interface:
+  display_name: "TODO Hunter"
+  short_description: "Fix straightforward TODOs in review-gated worktrees"
+  default_prompt:
+    "Use $todo-hunter to find TODOs in this repo that are straightforward to
+    fix, prepare each fix as staged changes in its own todo/<slug> worktree, and
+    report them for my review. Land nothing until I approve."
+
+policy:
+  allow_implicit_invocation: true
