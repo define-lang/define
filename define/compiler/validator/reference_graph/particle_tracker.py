@@ -666,8 +666,6 @@ class ParticleTracker:
         # body operation number.
         self._record_body_write(from_key)
         self._record_body_write(to_key, advance_body_operation_number=False)
-        # TODO: Move last_position into _NodeState so that move_subtree
-        # doesn't need this post-move fixup.
         source_info.last_position = target
 
         to_state = self._store.state.get(to_key)
