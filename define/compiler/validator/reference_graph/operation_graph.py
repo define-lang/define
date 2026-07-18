@@ -217,6 +217,11 @@ class OperationNode:
     # that must complete before it).
     depends_on: list[int]
 
+    @property
+    def operated_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Every position operated on by this node."""
+        return ()
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ActionParentLastOperationNode(OperationNode):
@@ -230,6 +235,12 @@ class PositionOperationNode(OperationNode):
     # The position reference as written (the statement target).
     target: ast.PositionReference
 
+    @property
+    @typing.override
+    def operated_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Every position operated on by this node."""
+        return (self.target.canonical_chained_name_tuple,)
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CreateNode(PositionOperationNode):
@@ -241,6 +252,15 @@ class MoveNode(PositionOperationNode):
     """A body move of a particle from ``source`` to ``target``."""
 
     source: ast.PositionReference
+
+    @property
+    @typing.override
+    def operated_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Every position operated on by this node."""
+        return (
+            self.source.canonical_chained_name_tuple,
+            self.target.canonical_chained_name_tuple,
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -270,6 +290,12 @@ class GuaranteeNode(OperationNode):
     # Every caller position operated on by the guaranteed Particle Operation.
     operation_positions: tuple[tuple[str, ...], ...]
 
+    @property
+    @typing.override
+    def operated_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Every position operated on by this node."""
+        return self.operation_positions
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RequirementNode(OperationNode):
@@ -288,6 +314,12 @@ class RequirementNode(OperationNode):
     # requirement nodes on different positions are otherwise identical, so it is
     # left out of equality to keep the tests' expected nodes readable.
     requirement_position: tuple[str, ...] = field(default=(), compare=False)
+
+    @property
+    @typing.override
+    def operated_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Every position operated on by this node."""
+        return (self.requirement_position,)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -377,24 +409,9 @@ class OperationGraph:
         """Every node, in creation order; a node's id is its index here."""
         return self._nodes
 
-    # TODO: This should probably be an override-able method on OperationNode.
     def operation_positions(self, node_id: int) -> tuple[tuple[str, ...], ...]:
         """Return every position operated on by a node from this action's perspective."""
-        node = self._nodes[node_id]
-        if isinstance(node, MoveNode):
-            return (
-                node.source.canonical_chained_name_tuple,
-                node.target.canonical_chained_name_tuple,
-            )
-        if isinstance(node, PositionOperationNode):
-            return (node.target.canonical_chained_name_tuple,)
-        if isinstance(node, GuaranteeNode):
-            return node.operation_positions
-        if isinstance(node, RequirementNode):
-            return (node.requirement_position,)
-        if isinstance(node, (ActionParentLastOperationNode, CallerDependenciesNode)):
-            return ()
-        raise TypeError(f"unknown operation node type: {type(node).__name__}")
+        return self._nodes[node_id].operated_positions
 
     def last_operation_on_position(self, key: tuple[str, ...]) -> int:
         """Return the last operation this action performed on the position at ``key``."""
