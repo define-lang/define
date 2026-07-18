@@ -120,8 +120,6 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     assert diag.location.column == 29
 
 
-# TODO: Both files get ReferencedFileNotFoundDiagnostic for the same missing
-# file. Ideally we would only emit it once.
 def test_referenced_file_not_found_via_already_completed_target(
     validate_project: ValidateProject,
 ):
