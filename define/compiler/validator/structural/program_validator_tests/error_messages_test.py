@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions
+from define.compiler import config, diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
@@ -198,7 +198,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
+    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
 
     formatted = diags[0].format(source.splitlines())
     assert (
@@ -223,7 +223,7 @@ def test_not_project_root_error_message_for_project_root(
     )
     assert len(results) == 1
     error = results[0].exception
-    assert isinstance(error, exceptions.NotProjectRootError)
+    assert isinstance(error, config.NotProjectRootError)
     assert (
         str(error)
         == textwrap.dedent("""\
@@ -256,7 +256,7 @@ def test_not_project_root_error_message_for_subroot(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[0].error, config.NotProjectRootError)
     assert (
         str(diags[0].error)
         == textwrap.dedent("""\
@@ -310,7 +310,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     diags = results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, exceptions.DuplicateFqunError)
+    assert isinstance(diags[0].error, config.DuplicateFqunError)
     assert (
         str(diags[0].error)
         == textwrap.dedent("""\
@@ -347,7 +347,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     assert len(results) == 1
     error = results[0].exception
-    assert isinstance(error, exceptions.ConfigSyntaxError)
+    assert isinstance(error, config.ConfigSyntaxError)
     assert str(error) == str(error.syntax_error)
 
 
@@ -369,7 +369,7 @@ def test_config_validation_error_message(
     )
     assert len(results) == 1
     error = results[0].exception
-    assert isinstance(error, exceptions.ConfigValidationError)
+    assert isinstance(error, config.ConfigValidationError)
     assert str(error) == textwrap.dedent("""\
         File ".define/project/config.defcl"
         Invalid configuration:

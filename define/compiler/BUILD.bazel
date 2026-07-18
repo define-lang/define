@@ -69,6 +69,7 @@ py_library(
     srcs = ["config.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":constants",
         ":exceptions",
         "//defcl/python:exceptions",
         "//defcl/python:parser",
@@ -87,7 +88,6 @@ py_test(
     deps = [
         ":config",
         ":constants",
-        ":exceptions",
         "//defcl/python:exceptions",
         "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
@@ -103,8 +103,8 @@ py_library(
     ],
     deps = [
         ":ast",
+        ":config",
         ":constants",
-        ":exceptions",
         "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
@@ -126,8 +126,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":constants",
-        "//defcl/python:exceptions",
-        "//define/compiler/data_structures:define_path",
     ],
 )
 

@@ -12,7 +12,7 @@ from define.compiler.validator.reference_graph import action_contract
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import exceptions
+    from define.compiler import config
 
 
 def _format_location(location: ast.SourceLocation) -> str:
@@ -432,7 +432,7 @@ class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
 class ConfigLoadErrorDiagnostic(Diagnostic):
     """Diagnostic for when project configuration fails to load."""
 
-    error: exceptions.ConfigError
+    error: config.ConfigError
     message_format: ClassVar[str] = (
         "an error occurred while loading the project configuration:\n{self.error}"
     )

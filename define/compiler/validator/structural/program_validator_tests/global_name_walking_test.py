@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, exceptions
+from define.compiler import config, diagnostics
 from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
@@ -343,7 +343,7 @@ def test_external_universe_invalid_local_deps(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.ConfigValidationError)
+    assert isinstance(diags[0].error, config.ConfigValidationError)
 
 
 def test_external_universe_configured_but_no_sub_root_config(
@@ -365,7 +365,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[0].error, config.NotProjectRootError)
 
 
 def test_unknown_universe_emits_diagnostic(

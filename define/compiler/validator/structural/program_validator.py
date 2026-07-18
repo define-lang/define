@@ -132,7 +132,7 @@ class ProgramStructuralValidator:
         path_dp = define_path.DefinePathFromPosix(path)
         try:
             fqun, sub_root_mappings = self._load_root_config(root_prefix)
-        except exceptions.ConfigError as e:
+        except config.ConfigError as e:
             return self._build_program_result(
                 [_make_config_error_result(root_prefix / path_dp, root_prefix, e)]
             )
@@ -257,7 +257,7 @@ class ProgramStructuralValidator:
                 fqun, sub_root_mappings = self._load_root_config(
                     discovered.root_prefix, discovered.expected_fqun
                 )
-            except exceptions.ConfigError as e:
+            except config.ConfigError as e:
                 self._path_tracker.mark_root_failed(discovered.root_prefix)
                 result.add_file_diagnostic(
                     diagnostics.ConfigLoadErrorDiagnostic(
@@ -366,7 +366,7 @@ class ProgramStructuralValidator:
             raise ValueError("expected at least one discovered file")
         try:
             return self._load_root_config(constants.PROJECT_ROOT)
-        except exceptions.NotProjectRootError as e:
+        except config.NotProjectRootError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
@@ -376,7 +376,7 @@ class ProgramStructuralValidator:
                 )
             )
             return (None, None)
-        except exceptions.ConfigError as e:
+        except config.ConfigError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
@@ -620,7 +620,7 @@ class ProgramStructuralValidator:
         existing = self._path_tracker.fqun_for_root(root_prefix)
         if existing is not None:
             if expected_fqun and existing != expected_fqun:
-                raise exceptions.SubRootFqunMismatchError(
+                raise config.SubRootFqunMismatchError(
                     expected_fqun=expected_fqun,
                     actual_fqun=existing,
                     sub_root_path=str(root_prefix),
@@ -632,14 +632,14 @@ class ProgramStructuralValidator:
         project_config = loader.project_config()
         fqun = project_config.project.universe_name or ""
         if expected_fqun and fqun != expected_fqun:
-            raise exceptions.SubRootFqunMismatchError(
+            raise config.SubRootFqunMismatchError(
                 expected_fqun=expected_fqun,
                 actual_fqun=fqun,
                 sub_root_path=str(root_prefix),
             )
         existing_root = self._path_tracker.root_for_fqun(fqun)
         if existing_root is not None and existing_root != root_prefix:
-            raise exceptions.DuplicateFqunError(
+            raise config.DuplicateFqunError(
                 fqun=fqun,
                 existing_root=existing_root,
                 new_root=root_prefix,
@@ -653,7 +653,7 @@ class ProgramStructuralValidator:
 def _make_config_error_result(
     file_path: define_path.DefinePath,
     root_prefix: define_path.DefinePath,
-    error: exceptions.ConfigError,
+    error: config.ConfigError,
 ) -> validation_result.FileValidationResult:
     """Create a FileValidationResult for a config loading failure."""
     tracker = stats.ValidationStatsTracker()

@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from defcl.python import exceptions as dcl_exceptions
-from define.compiler import config, constants, exceptions
+from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 
 
@@ -14,7 +14,7 @@ class TestAssertIsProjectRoot:
     ):
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.NotProjectRootError):
+        with pytest.raises(config.NotProjectRootError):
             config.ConfigLoader(constants.PROJECT_ROOT).assert_is_project_root()
 
     def test_succeeds_when_config_exists(
@@ -48,7 +48,7 @@ class TestProjectConfig:
         (config_dir / "config.defcl").write_text('project: {\n  universe_name: ""\n}\n')
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
     def test_missing_universe_name_raises(
@@ -59,7 +59,7 @@ class TestProjectConfig:
         (config_dir / "config.defcl").write_text("project: {}\n")
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
     def test_error_message_format(
@@ -70,7 +70,7 @@ class TestProjectConfig:
         (config_dir / "config.defcl").write_text("project: {}\n")
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+        with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
         assert str(exc_info.value) == (
@@ -93,7 +93,7 @@ class TestProjectConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+        with pytest.raises(config.ConfigSyntaxError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
         # This covers ConfigSyntaxError.__str__ preserving the wrapped parser error.
@@ -168,7 +168,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_empty_universe_name_raises(
@@ -180,7 +180,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_missing_path_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -190,7 +190,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_absolute_path_raises(
@@ -207,7 +207,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_dotdot_in_path_raises(
@@ -224,7 +224,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_trailing_slash_in_path_raises(
@@ -241,7 +241,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError):
+        with pytest.raises(config.ConfigValidationError):
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
     def test_duplicate_universe_name_raises(
@@ -266,7 +266,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+        with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
         assert exc_info.value.violation_messages == [
@@ -283,7 +283,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+        with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
         assert str(exc_info.value) == (
@@ -306,7 +306,7 @@ class TestConfigSyntaxError:
         (config_dir / "config.defcl").write_text("project: { universe_name: 'bad' }\n")
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+        with pytest.raises(config.ConfigSyntaxError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
@@ -321,7 +321,7 @@ class TestConfigSyntaxError:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+        with pytest.raises(config.ConfigSyntaxError) as exc_info:
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
@@ -352,7 +352,7 @@ class TestSubRoot:
         (tmp_path / "subroot").mkdir()
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.NotProjectRootError) as exc_info:
+        with pytest.raises(config.NotProjectRootError) as exc_info:
             config.ConfigLoader(
                 define_path.DefinePath("subroot")
             ).assert_is_project_root()
@@ -379,7 +379,7 @@ class TestSubRoot:
         self._write_project_config(tmp_path, "subroot", "project: {}\n")
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+        with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(define_path.DefinePath("subroot")).project_config()
 
         assert exc_info.value.config_path == Path(
@@ -433,7 +433,7 @@ class TestSubRoot:
         )
         monkeypatch.chdir(tmp_path)
 
-        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+        with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(define_path.DefinePath("subroot")).local_deps_config()
 
         assert exc_info.value.config_path == Path("subroot/.define/deps/local.defcl")

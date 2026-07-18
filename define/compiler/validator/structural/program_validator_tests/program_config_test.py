@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions
+from define.compiler import config
 from define.compiler.validator.structural import program_validator
 
 
@@ -20,7 +20,7 @@ def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         .file_results
     )
     assert len(results) == 1
-    assert isinstance(results[0].exception, exceptions.NotProjectRootError)
+    assert isinstance(results[0].exception, config.NotProjectRootError)
 
 
 def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -38,4 +38,4 @@ def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.Monke
         .file_results
     )
     assert len(results) == 1
-    assert isinstance(results[0].exception, exceptions.ConfigValidationError)
+    assert isinstance(results[0].exception, config.ConfigValidationError)

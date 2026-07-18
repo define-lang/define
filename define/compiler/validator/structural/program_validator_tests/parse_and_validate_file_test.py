@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, parser_exceptions
+from define.compiler import config, exceptions, parser_exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
 )
@@ -170,7 +170,7 @@ def test_config_error_sets_later_phases_to_zero(
     assert len(results) == 1
     result = results[0]
 
-    assert isinstance(result.exception, exceptions.ConfigError)
+    assert isinstance(result.exception, config.ConfigError)
     assert result.file_path == define_path.DefinePath("test.dfn")
     assert result.root_prefix == define_path.EMPTY
 

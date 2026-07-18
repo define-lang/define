@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions
+from define.compiler import config, diagnostics
 from define.compiler.conftest import ValidateProject
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
@@ -64,7 +64,7 @@ def test_sub_root_redeclares_parent_fqun(
     assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
     assert diag.location.line == 3
     assert diag.location.column == 29
-    assert isinstance(diag.error, exceptions.DuplicateFqunError)
+    assert isinstance(diag.error, config.DuplicateFqunError)
     assert diag.error.fqun == parent_fqun
     assert diag.error.existing_config == define_path.DefinePath(
         ".define/project/config.defcl"
@@ -142,7 +142,7 @@ def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[0].error, config.NotProjectRootError)
 
 
 def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
@@ -174,7 +174,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 29
-    assert isinstance(all_diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(all_diags[0].error, config.NotProjectRootError)
 
 
 def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
@@ -200,7 +200,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
+    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
     assert diags[0].error.actual_fqun == wrong_universe
     assert diags[0].error.sub_root_path == "lib"
@@ -232,7 +232,7 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
+    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == second_child
     assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
     assert diags[0].error.sub_root_path == "lib"
@@ -634,7 +634,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[0].error, config.NotProjectRootError)
     assert result.file_results[1].file_path == define_path.DefinePath(
         "lib_a/target_a.dfn"
     )
@@ -706,7 +706,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[0].error, config.NotProjectRootError)
     assert result.file_results[1].file_path == define_path.DefinePath("local.dfn")
     assert result.file_results[1].diagnostics == []
 
@@ -744,7 +744,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert isinstance(diags[1], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[1].location.line == 3
     assert diags[1].location.column == 29
-    assert isinstance(diags[1].error, exceptions.NotProjectRootError)
+    assert isinstance(diags[1].error, config.NotProjectRootError)
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 
