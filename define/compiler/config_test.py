@@ -297,6 +297,96 @@ class TestLocalDepsConfig:
         ]
 
 
+class TestLoadProjectRootConfig:
+    def _write_project_config(self, tmp_path: Path, content: str) -> None:
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        (config_dir / "config.defcl").write_text(content)
+
+    def _write_local_deps(self, tmp_path: Path, content: str) -> None:
+        deps_dir = tmp_path / ".define" / "deps"
+        deps_dir.mkdir(parents=True, exist_ok=True)
+        (deps_dir / "local.defcl").write_text(content)
+
+    def test_resolves_fqun_and_sub_roots(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(
+            tmp_path, 'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+        )
+        self._write_local_deps(
+            tmp_path,
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor/lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config()
+        assert result.fqun == "test.example.com:my_lib"
+        assert result.sub_roots == {
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
+                PurePosixPath("vendor/lib")
+            )
+        }
+
+    def test_missing_local_deps_resolves_empty_sub_roots(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(
+            tmp_path, 'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config()
+        assert result.fqun == "test.example.com:my_lib"
+        assert result.sub_roots == {}
+
+    def test_not_a_project_root_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(config.NotProjectRootError):
+            config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config()
+
+    def test_expected_fqun_match_succeeds(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(
+            tmp_path, 'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config(
+            "test.example.com:my_lib"
+        )
+        assert result.fqun == "test.example.com:my_lib"
+
+    def test_expected_fqun_mismatch_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(
+            tmp_path, 'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(config.SubRootFqunMismatchError) as exc_info:
+            config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config(
+                "other.example.com:other_lib"
+            )
+
+        assert exc_info.value.expected_fqun == "other.example.com:other_lib"
+        assert exc_info.value.actual_fqun == "test.example.com:my_lib"
+
+
 class TestConfigSyntaxError:
     def test_project_config_syntax_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

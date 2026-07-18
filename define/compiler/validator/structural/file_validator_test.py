@@ -10,6 +10,7 @@ import pytest
 
 from define.compiler import (
     ast,
+    config,
     diagnostics,
     exceptions,
     parser,
@@ -35,8 +36,10 @@ def _make_context(
     return file_validator.FileValidationContext(
         file_path=define_path.DefinePath(file_name),
         root_prefix=define_path.DefinePath(str(tmp_path)),
-        expected_fqun=fqun,
-        sub_root_mappings=types.MappingProxyType(sub_root_mappings or {}),
+        root_config=config.ProjectRootConfig(
+            fqun=fqun,
+            sub_roots=types.MappingProxyType(sub_root_mappings or {}),
+        ),
     )
 
 

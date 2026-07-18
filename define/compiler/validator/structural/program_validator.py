@@ -14,7 +14,6 @@ from dataclasses import dataclass
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Mapping
 
 from define.compiler import (
     ast,
@@ -131,7 +130,7 @@ class ProgramStructuralValidator:
         root_prefix = constants.PROJECT_ROOT
         path_dp = define_path.DefinePathFromPosix(path)
         try:
-            fqun, sub_root_mappings = self._load_root_config(root_prefix)
+            root_config = self._load_root_config(root_prefix)
         except config.ConfigError as e:
             return self._build_program_result(
                 [_make_config_error_result(root_prefix / path_dp, root_prefix, e)]
@@ -140,8 +139,7 @@ class ProgramStructuralValidator:
         initial_context = file_validator.FileValidationContext(
             file_path=path_dp,
             root_prefix=root_prefix,
-            expected_fqun=fqun,
-            sub_root_mappings=sub_root_mappings,
+            root_config=root_config,
         )
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
@@ -254,7 +252,7 @@ class ProgramStructuralValidator:
             )
 
             try:
-                fqun, sub_root_mappings = self._load_root_config(
+                root_config = self._load_root_config(
                     discovered.root_prefix, discovered.expected_fqun
                 )
             except config.ConfigError as e:
@@ -270,8 +268,7 @@ class ProgramStructuralValidator:
             context = file_validator.FileValidationContext(
                 file_path=discovered.path,
                 root_prefix=discovered.root_prefix,
-                expected_fqun=fqun,
-                sub_root_mappings=sub_root_mappings,
+                root_config=root_config,
             )
             self._path_tracker.mark_in_progress(full_path)
             pool.submit(context)
@@ -284,30 +281,26 @@ class ProgramStructuralValidator:
         if self._first_discovered_file(result) is None:
             return
 
-        current_fqun, sub_root_mappings = self._load_config_in_non_filesystem_context(
-            result
-        )
-        if current_fqun is None or sub_root_mappings is None:
+        root_config = self._load_config_in_non_filesystem_context(result)
+        if root_config is None:
             self._strip_cross_universe_refs(result)
             return
         self._resolve_non_filesystem_discovered_files_with_config(
             result=result,
-            current_fqun=current_fqun,
-            sub_root_mappings=sub_root_mappings,
+            root_config=root_config,
         )
 
     def _resolve_non_filesystem_discovered_files_with_config(
         self,
         result: validation_result.FileValidationResult,
-        current_fqun: str,
-        sub_root_mappings: Mapping[str, define_path.DefinePath],
+        root_config: config.ProjectRootConfig,
     ):
         """Resolve discovered files/edges in non-filesystem mode after config load."""
         unknown_fquns: set[str] = set()
         for definition_result in result.definition_results:
             resolved_discoveries: list[validation_result.DiscoveredFile] = []
             for discovered in definition_result.discovered_files:
-                sub_root_rel = sub_root_mappings.get(discovered.expected_fqun)
+                sub_root_rel = root_config.sub_roots.get(discovered.expected_fqun)
                 if sub_root_rel is None:
                     if discovered.expected_fqun in unknown_fquns:
                         continue
@@ -316,7 +309,7 @@ class ProgramStructuralValidator:
                         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                             location=discovered.location,
                             universe=discovered.expected_fqun,
-                            current_universe_name=current_fqun,
+                            current_universe_name=root_config.fqun,
                         )
                     )
                     continue
@@ -359,7 +352,7 @@ class ProgramStructuralValidator:
     def _load_config_in_non_filesystem_context(
         self,
         result: validation_result.FileValidationResult,
-    ) -> tuple[str, Mapping[str, define_path.DefinePath]] | tuple[None, None]:
+    ) -> config.ProjectRootConfig | None:
         """Load root config and map loading errors to non-filesystem diagnostics."""
         first_discovered = self._first_discovered_file(result)
         if first_discovered is None:
@@ -375,7 +368,7 @@ class ProgramStructuralValidator:
                     config_path=str(e.config_path),
                 )
             )
-            return (None, None)
+            return None
         except config.ConfigError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
@@ -384,7 +377,7 @@ class ProgramStructuralValidator:
                     error=e,
                 )
             )
-            return (None, None)
+            return None
 
     def _validate_outgoing_reference_edges(
         self,
@@ -592,16 +585,12 @@ class ProgramStructuralValidator:
                 return definition_result.discovered_files[0]
         return None
 
-    # TODO: This should probably return a Config object.
     def _load_root_config(
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
-    ) -> tuple[str, Mapping[str, define_path.DefinePath]]:
-        """Load project config for a root and register it.
-
-        Returns (fqun, sub_root_mappings).
-        """
+    ) -> config.ProjectRootConfig:
+        """Load project config for a root and register it."""
         started_at = time.perf_counter_ns()
         try:
             return self._do_load_root_config(root_prefix, expected_fqun)
@@ -612,41 +601,31 @@ class ProgramStructuralValidator:
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
-    ) -> tuple[str, Mapping[str, define_path.DefinePath]]:
+    ) -> config.ProjectRootConfig:
         """Load project config for a root and register it without timing side effects."""
-        # TODO: When _path_tracker just stores Config objects, this
-        # can just return a Config.
-        existing = self._path_tracker.fqun_for_root(root_prefix)
+        existing = self._path_tracker.config_for_root(root_prefix)
         if existing is not None:
-            if expected_fqun and existing != expected_fqun:
+            if expected_fqun and existing.fqun != expected_fqun:
                 raise config.SubRootFqunMismatchError(
                     expected_fqun=expected_fqun,
-                    actual_fqun=existing,
+                    actual_fqun=existing.fqun,
                     sub_root_path=str(root_prefix),
                 )
-            return existing, self._path_tracker.sub_roots_for(root_prefix)
+            return existing
 
-        loader = config.ConfigLoader(root_prefix)
-        loader.assert_is_project_root()
-        project_config = loader.project_config()
-        fqun = project_config.project.universe_name or ""
-        if expected_fqun and fqun != expected_fqun:
-            raise config.SubRootFqunMismatchError(
-                expected_fqun=expected_fqun,
-                actual_fqun=fqun,
-                sub_root_path=str(root_prefix),
-            )
-        existing_root = self._path_tracker.root_for_fqun(fqun)
+        root_config = config.ConfigLoader(root_prefix).load_project_root_config(
+            expected_fqun
+        )
+        existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             raise config.DuplicateFqunError(
-                fqun=fqun,
+                fqun=root_config.fqun,
                 existing_root=existing_root,
                 new_root=root_prefix,
                 config_subpath=config.CONFIG_PATH,
             )
-        sub_root_mappings = loader.local_deps_config()
-        self._path_tracker.register_project_root(root_prefix, fqun, sub_root_mappings)
-        return fqun, sub_root_mappings
+        self._path_tracker.register_project_root(root_prefix, root_config)
+        return root_config
 
 
 def _make_config_error_result(

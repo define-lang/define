@@ -10,6 +10,7 @@ py_library(
     deps = [
         ":name_validators",
         "//define/compiler:ast",
+        "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
@@ -31,6 +32,7 @@ py_test(
     deps = [
         ":file_validator",
         "//define/compiler:ast",
+        "//define/compiler:config",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
@@ -71,6 +73,7 @@ py_library(
     srcs = ["path_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
         "@pypi//pygtrie",
     ],
@@ -82,6 +85,7 @@ py_test(
     srcs = ["path_tracker_test.py"],
     deps = [
         ":path_tracker",
+        "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
     ],

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, override
 
 import pygtrie
@@ -11,7 +10,7 @@ import pygtrie
 from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from define.compiler import config
 
 
 class _PathTrie[V](pygtrie.Trie[define_path.DefinePath, V]):
@@ -28,19 +27,13 @@ class _PathTrie[V](pygtrie.Trie[define_path.DefinePath, V]):
         return define_path.DefinePath("/".join(path[1:]))
 
 
-@dataclass
-class _UniverseInfo:
-    fqun: str
-    sub_roots: Mapping[str, define_path.DefinePath]
-
-
 class PathTracker[T]:
     """Tracks file paths encountered during validation and their results.
 
     Manages three concerns:
     - Mapping from file paths to validation results (with an in-progress sentinel).
     - Tracking paths that were referenced but could not be loaded.
-    - Mapping sub_root paths to universe info for prefix-based lookups.
+    - Mapping project root paths to their resolved config for prefix-based lookups.
 
     Type parameter T is the result type stored per path (e.g. FileValidationResult).
     """
@@ -49,7 +42,7 @@ class PathTracker[T]:
         """Initialize empty path tracking state."""
         self._results: OrderedDict[define_path.DefinePath, T | None] = OrderedDict()
         self._not_found: set[define_path.DefinePath] = set()
-        self._project_roots: _PathTrie[_UniverseInfo] = _PathTrie()
+        self._project_roots: _PathTrie[config.ProjectRootConfig] = _PathTrie()
         self._fqun_to_root: dict[str, define_path.DefinePath] = {}
         self._tracked_files: pygtrie.PrefixSet[define_path.DefinePath] = (
             pygtrie.PrefixSet(factory=_PathTrie)
@@ -111,26 +104,24 @@ class PathTracker[T]:
     def register_project_root(
         self,
         root: define_path.DefinePath,
-        fqun: str,
-        sub_roots: Mapping[str, define_path.DefinePath],
+        root_config: config.ProjectRootConfig,
     ):
-        """Register a project root as existing at a certain path.
+        """Register a project root's resolved configuration at a certain path.
 
         Args:
             root: The filesystem path for a project root, relative to the
               top-most project root. Can be define_path.EMPTY for the
               top-most root.
-            fqun: The fully qualified universe name configured for the root
+            root_config: The resolved project configuration for the root
               specified in the root arg.
-            sub_roots: Mapping of dependency names to their paths.
 
         Raises:
             ValueError: If root is already registered.
         """
         if root in self._project_roots:
             raise ValueError(f"sub_root already registered: {root}")
-        self._project_roots[root] = _UniverseInfo(fqun=fqun, sub_roots=sub_roots)
-        self._fqun_to_root[fqun] = root
+        self._project_roots[root] = root_config
+        self._fqun_to_root[root_config.fqun] = root
 
     def project_root_loaded(self, root: define_path.DefinePath) -> bool:
         """Return True if a project root has been registered at this path."""
@@ -140,21 +131,18 @@ class PathTracker[T]:
         """Return the root path registered for a given FQUN, or None."""
         return self._fqun_to_root.get(fqun)
 
-    def fqun_for_root(self, root: define_path.DefinePath) -> str | None:
-        """Return the FQUN registered for an exact project root path, or None."""
+    def config_for_root(
+        self, root: define_path.DefinePath
+    ) -> config.ProjectRootConfig | None:
+        """Return the resolved config registered for an exact project root path, or None."""
         if root not in self._project_roots:
             return None
-        return self._project_roots[root].fqun
+        return self._project_roots[root]
 
-    def sub_roots_for(
-        self, root: define_path.DefinePath
-    ) -> Mapping[str, define_path.DefinePath]:
-        """Return the sub-root mappings registered for a project root.
-
-        Raises:
-            KeyError: If root is not a registered project root.
-        """
-        return self._project_roots[root].sub_roots
+    def fqun_for_root(self, root: define_path.DefinePath) -> str | None:
+        """Return the FQUN registered for an exact project root path, or None."""
+        root_config = self.config_for_root(root)
+        return None if root_config is None else root_config.fqun
 
     def has_sub_root(self, fqun: str, parent_root: define_path.DefinePath) -> bool:
         """Return True if fqun is a configured sub_root of parent_root."""

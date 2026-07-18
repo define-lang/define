@@ -8,15 +8,12 @@ to shared mutable state.
 from __future__ import annotations
 
 import pathlib
-import typing
 from dataclasses import dataclass
 from functools import cached_property
 
-if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
-
 from define.compiler import (
     ast,
+    config,
     constants,
     diagnostics,
     exceptions,
@@ -35,8 +32,7 @@ class FileValidationContext:
 
     file_path: define_path.DefinePath
     root_prefix: define_path.DefinePath
-    expected_fqun: str
-    sub_root_mappings: Mapping[str, define_path.DefinePath] | None = None
+    root_config: config.ProjectRootConfig | None = None
     is_filesystem_context: bool = True
 
     @cached_property
@@ -56,8 +52,7 @@ class EmptyFileValidationContext(FileValidationContext):
 
     file_path: define_path.DefinePath = constants.NON_FILESYSTEM_PATH
     root_prefix: define_path.DefinePath = define_path.EMPTY
-    expected_fqun: str = ""
-    sub_root_mappings: Mapping[str, define_path.DefinePath] | None = None
+    root_config: config.ProjectRootConfig | None = None
     is_filesystem_context: bool = False
 
     @cached_property
@@ -291,7 +286,8 @@ class DefinitionStructuralValidator:
             )
 
     def _validate_fqun_matches_expected(self):
-        expected_fqun = self._context.expected_fqun
+        root_config = self._context.root_config
+        expected_fqun = "" if root_config is None else root_config.fqun
         if not expected_fqun:
             return
         actual = self._definition.typed_name.name_content.fqun.canonical
@@ -729,7 +725,7 @@ class DefinitionStructuralValidator:
             )
             return
 
-        sub_root_mappings = self._context.sub_root_mappings
+        root_config = self._context.root_config
         if not self._context.is_filesystem_context:
             # Process a cross-FQUN reference in a non-filesystem context.
             self._add_edge_and_discovered_file(
@@ -739,24 +735,24 @@ class DefinitionStructuralValidator:
                 expected_fqun=global_name.fqun,
             )
             return
-        if sub_root_mappings is None:
-            raise ValueError("filesystem contexts must define sub_root_mappings")
+        if root_config is None:
+            raise ValueError("filesystem contexts must define a root config")
 
         # Process a cross-FQUN reference in a filesystem context.
         fqun_string = global_name.fqun.canonical
         if fqun_string in self._unknown_fquns:
             return
-        if fqun_string not in sub_root_mappings:
+        if fqun_string not in root_config.sub_roots:
             self._unknown_fquns.add(fqun_string)
             self._diagnostics.append(
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                     location=global_name.fqun.location,
                     universe=fqun_string,
-                    current_universe_name=self._context.expected_fqun,
+                    current_universe_name=root_config.fqun,
                 )
             )
             return
-        sub_root_rel = sub_root_mappings[fqun_string]
+        sub_root_rel = root_config.sub_roots[fqun_string]
         self._add_edge_and_discovered_file(
             typed_global_name=typed_global_name,
             global_name=global_name,

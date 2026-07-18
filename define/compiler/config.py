@@ -1,6 +1,10 @@
 """Project configuration loading and validation."""
 
+from __future__ import annotations
+
 import types
+import typing
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path, PurePosixPath
 
@@ -13,6 +17,9 @@ from define.compiler import constants, exceptions
 from define.compiler.data_structures import define_path
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class ConfigError(exceptions.DefineError):
@@ -127,6 +134,14 @@ _EMPTY_DEPS: types.MappingProxyType[str, define_path.DefinePathFromPosix] = (
 )
 
 
+@dataclass(slots=True)
+class ProjectRootConfig:
+    """Resolved project configuration for a project root."""
+
+    fqun: str
+    sub_roots: Mapping[str, define_path.DefinePath]
+
+
 class ConfigLoader:
     """Loads and validates Define project configuration files."""
 
@@ -198,3 +213,22 @@ class ConfigLoader:
                 PurePosixPath(dep.path)
             )
         return types.MappingProxyType(deps)
+
+    def load_project_root_config(
+        self, expected_fqun: str | None = None
+    ) -> ProjectRootConfig:
+        """Load and resolve this root's own configuration.
+
+        Raises:
+            SubRootFqunMismatchError: If expected_fqun is given and does not
+                match the universe name declared by this root's own config.
+        """
+        self.assert_is_project_root()
+        fqun = self.project_config().project.universe_name or ""
+        if expected_fqun and fqun != expected_fqun:
+            raise SubRootFqunMismatchError(
+                expected_fqun=expected_fqun,
+                actual_fqun=fqun,
+                sub_root_path=str(self._root),
+            )
+        return ProjectRootConfig(fqun=fqun, sub_roots=self.local_deps_config())
