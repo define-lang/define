@@ -51,13 +51,70 @@ def _global_name(
     )
 
 
+def _validate_multiverse_name(multiverse: ast.Multiverse):
+    return name_validators.validate_global_name(
+        _global_name(
+            _fqun(
+                "my_lib",
+                authority=_authority("my.domain.com"),
+                multiverse=multiverse,
+            ),
+            "/valid_path",
+        )
+    )
+
+
+def _validate_authority(
+    authority: ast.Authority, multiverse: ast.Multiverse | None = None
+):
+    return name_validators.validate_global_name(
+        _global_name(
+            _fqun("my_lib", authority=authority, multiverse=multiverse),
+            "/valid_path",
+        )
+    )
+
+
+def _validate_authority_format(authority: ast.Authority):
+    return _validate_authority(authority, _multiverse("custom"))
+
+
+def _validate_universe_name(universe: ast.Universe):
+    return name_validators.validate_global_name(
+        ast.DefinitionGlobalNameContent(
+            fqun=ast.Fqun(
+                multiverse=None,
+                authority=_authority("my.domain.com"),
+                universe=universe,
+                location=_LOC,
+            ),
+            path=_global_path_name("/valid_path"),
+            location=_LOC,
+        )
+    )
+
+
+def _validate_global_name_path(path: ast.GlobalPathName):
+    return name_validators.validate_global_name(
+        ast.DefinitionGlobalNameContent(
+            fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
+            path=path,
+            location=_LOC,
+        )
+    )
+
+
+def _validate_fqun(fqun: ast.Fqun):
+    return name_validators.validate_global_name(_global_name(fqun, "/valid_path"))
+
+
 class TestMultiverseNameFormat:
     def test_valid(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("my_mv"))
+        result = _validate_multiverse_name(_multiverse("my_mv"))
         assert not result
 
     def test_leading_underscore(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("_mv"))
+        result = _validate_multiverse_name(_multiverse("_mv"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
         assert result[0].multiverse_name == "_mv"
@@ -65,7 +122,7 @@ class TestMultiverseNameFormat:
         assert result[0].location.column == 10
 
     def test_trailing_underscore(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("mv_"))
+        result = _validate_multiverse_name(_multiverse("mv_"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
         assert result[0].multiverse_name == "mv_"
@@ -73,7 +130,7 @@ class TestMultiverseNameFormat:
         assert result[0].location.column == 12
 
     def test_single_char(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("x"))
+        result = _validate_multiverse_name(_multiverse("x"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.MultiverseNameTooShortDiagnostic)
         assert result[0].multiverse_name == "x"
@@ -81,7 +138,7 @@ class TestMultiverseNameFormat:
         assert result[0].location.column == 10
 
     def test_single_char_invalid(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("_"))
+        result = _validate_multiverse_name(_multiverse("_"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.MultiverseNameTooShortDiagnostic)
         assert result[0].location.column == 10
@@ -89,7 +146,7 @@ class TestMultiverseNameFormat:
         assert result[1].location.column == 10
 
     def test_uppercase(self):
-        result = name_validators.validate_multiverse_name_format(_multiverse("Mv"))
+        result = _validate_multiverse_name(_multiverse("Mv"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
         assert result[0].multiverse_name == "Mv"
@@ -97,9 +154,7 @@ class TestMultiverseNameFormat:
         assert result[0].location.column == 10
 
     def test_non_ascii(self):
-        result = name_validators.validate_multiverse_name_format(
-            _multiverse("muv\u00e9")
-        )
+        result = _validate_multiverse_name(_multiverse("muv\u00e9"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
         assert result[0].multiverse_name == "muv\u00e9"
@@ -109,11 +164,11 @@ class TestMultiverseNameFormat:
 
 class TestAuthorityDomainFormat:
     def test_valid(self):
-        result = name_validators.validate_authority_format(_authority("my.domain.com"))
+        result = _validate_authority_format(_authority("my.domain.com"))
         assert not result
 
     def test_leading_hyphen(self):
-        result = name_validators.validate_authority_format(_authority("-example.com"))
+        result = _validate_authority_format(_authority("-example.com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "-example.com"
@@ -121,7 +176,7 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 10
 
     def test_trailing_dot(self):
-        result = name_validators.validate_authority_format(_authority("example.com."))
+        result = _validate_authority_format(_authority("example.com."))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "example.com."
@@ -129,7 +184,7 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 21
 
     def test_single_char(self):
-        result = name_validators.validate_authority_format(_authority("a"))
+        result = _validate_authority_format(_authority("a"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
         assert result[0].domain == "a"
@@ -137,11 +192,11 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 10
 
     def test_two_char_domain_is_valid(self):
-        result = name_validators.validate_authority_format(_authority("ab"))
+        result = _validate_authority_format(_authority("ab"))
         assert not result
 
     def test_trailing_hyphen(self):
-        result = name_validators.validate_authority_format(_authority("example.com-"))
+        result = _validate_authority_format(_authority("example.com-"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "example.com-"
@@ -149,7 +204,7 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 21
 
     def test_leading_dot(self):
-        result = name_validators.validate_authority_format(_authority(".example.com"))
+        result = _validate_authority_format(_authority(".example.com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == ".example.com"
@@ -157,7 +212,7 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 10
 
     def test_single_char_invalid(self):
-        result = name_validators.validate_authority_format(_authority("-"))
+        result = _validate_authority_format(_authority("-"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
         assert result[0].location.column == 10
@@ -165,17 +220,15 @@ class TestAuthorityDomainFormat:
         assert result[1].location.column == 10
 
     def test_uppercase(self):
-        result = name_validators.validate_authority_format(_authority("Example.Com"))
+        result = _validate_authority_format(_authority("Something.Com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
-        assert result[0].domain == "Example.Com"
+        assert result[0].domain == "Something.Com"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
 
     def test_non_ascii(self):
-        result = name_validators.validate_authority_format(
-            _authority("ex\u00e4mple.com")
-        )
+        result = _validate_authority_format(_authority("ex\u00e4mple.com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "ex\u00e4mple.com"
@@ -185,15 +238,11 @@ class TestAuthorityDomainFormat:
 
 class TestAuthorityPathFormat:
     def test_valid(self):
-        result = name_validators.validate_authority_format(
-            _authority("example.com/org/repo")
-        )
+        result = _validate_authority_format(_authority("example.org/org/repo"))
         assert not result
 
     def test_leading_dot(self):
-        result = name_validators.validate_authority_format(
-            _authority("example.com/.hidden")
-        )
+        result = _validate_authority_format(_authority("example.org/.hidden"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[0].segment == ".hidden"
@@ -201,9 +250,7 @@ class TestAuthorityPathFormat:
         assert result[0].location.column == 22
 
     def test_uppercase(self):
-        result = name_validators.validate_authority_format(
-            _authority("example.com/Bad")
-        )
+        result = _validate_authority_format(_authority("example.org/Bad"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[0].segment == "Bad"
@@ -211,9 +258,7 @@ class TestAuthorityPathFormat:
         assert result[0].location.column == 22
 
     def test_multiple_invalid_segments(self):
-        result = name_validators.validate_authority_format(
-            _authority("example.com/Bad/.hidden")
-        )
+        result = _validate_authority_format(_authority("example.org/Bad/.hidden"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[0].segment == "Bad"
@@ -223,16 +268,14 @@ class TestAuthorityPathFormat:
         assert result[1].location.column == 26
 
     def test_empty_segment(self):
-        result = name_validators.validate_authority_format(
-            _authority("example.com//repo")
-        )
+        result = _validate_authority_format(_authority("example.org//repo"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
-        assert result[0].authority == "example.com//repo"
+        assert result[0].authority == "example.org//repo"
         assert result[0].location.column == 21
 
     def test_leading_slash_splits_into_empty_domain(self):
-        result = name_validators.validate_authority_format(_authority("/repo"))
+        result = _validate_authority_format(_authority("/repo"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
         assert result[0].domain == ""
@@ -240,11 +283,11 @@ class TestAuthorityPathFormat:
 
 class TestUniverseNameFormat:
     def test_valid(self):
-        result = name_validators.validate_universe_name_format(_universe("my_lib"))
+        result = _validate_universe_name(_universe("my_lib"))
         assert not result
 
     def test_leading_underscore(self):
-        result = name_validators.validate_universe_name_format(_universe("_my_lib"))
+        result = _validate_universe_name(_universe("_my_lib"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert result[0].universe_name == "_my_lib"
@@ -252,7 +295,7 @@ class TestUniverseNameFormat:
         assert result[0].location.column == 10
 
     def test_trailing_underscore(self):
-        result = name_validators.validate_universe_name_format(_universe("my_lib_"))
+        result = _validate_universe_name(_universe("my_lib_"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert result[0].universe_name == "my_lib_"
@@ -260,7 +303,7 @@ class TestUniverseNameFormat:
         assert result[0].location.column == 16
 
     def test_single_char(self):
-        result = name_validators.validate_universe_name_format(_universe("x"))
+        result = _validate_universe_name(_universe("x"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseNameTooShortDiagnostic)
         assert result[0].universe_name == "x"
@@ -268,11 +311,11 @@ class TestUniverseNameFormat:
         assert result[0].location.column == 10
 
     def test_two_char_universe_is_valid(self):
-        result = name_validators.validate_universe_name_format(_universe("ab"))
+        result = _validate_universe_name(_universe("ab"))
         assert not result
 
     def test_single_char_invalid(self):
-        result = name_validators.validate_universe_name_format(_universe("_"))
+        result = _validate_universe_name(_universe("_"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.UniverseNameTooShortDiagnostic)
         assert result[0].location.column == 10
@@ -280,7 +323,7 @@ class TestUniverseNameFormat:
         assert result[1].location.column == 10
 
     def test_uppercase(self):
-        result = name_validators.validate_universe_name_format(_universe("MyLib"))
+        result = _validate_universe_name(_universe("MyLib"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert result[0].universe_name == "MyLib"
@@ -288,7 +331,7 @@ class TestUniverseNameFormat:
         assert result[0].location.column == 10
 
     def test_non_ascii(self):
-        result = name_validators.validate_universe_name_format(_universe("m\u00fclib"))
+        result = _validate_universe_name(_universe("m\u00fclib"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert result[0].universe_name == "m\u00fclib"
@@ -298,15 +341,11 @@ class TestUniverseNameFormat:
 
 class TestGlobalNamePath:
     def test_valid_multiple_segments(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("/some/valid_path")
-        )
+        result = _validate_global_name_path(_global_path_name("/some/valid_path"))
         assert not result
 
     def test_multiple_invalid_segments(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("/Bad/2bad")
-        )
+        result = _validate_global_name_path(_global_path_name("/Bad/2bad"))
         assert len(result) == 2
         assert isinstance(
             result[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
@@ -320,9 +359,7 @@ class TestGlobalNamePath:
         assert result[1].location.column == 15
 
     def test_missing_leading_slash(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("invalid/path")
-        )
+        result = _validate_global_name_path(_global_path_name("invalid/path"))
         assert len(result) == 1
         assert isinstance(
             result[0], diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic
@@ -331,34 +368,28 @@ class TestGlobalNamePath:
         assert result[0].location.column == 10
 
     def test_bare_slash(self):
-        result = name_validators.validate_global_name_path(_global_path_name("/"))
+        result = _validate_global_name_path(_global_path_name("/"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
         assert result[0].path == "/"
         assert result[0].location.column == 10
 
     def test_trailing_slash(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("/invalid/path/")
-        )
+        result = _validate_global_name_path(_global_path_name("/invalid/path/"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
         assert result[0].path == "/invalid/path/"
         assert result[0].location.column == 23
 
     def test_empty_segment(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("/invalid//path")
-        )
+        result = _validate_global_name_path(_global_path_name("/invalid//path"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
         assert result[0].path == "/invalid//path"
         assert result[0].location.column == 18
 
     def test_segment_starting_with_dot(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("/.hidden/path")
-        )
+        result = _validate_global_name_path(_global_path_name("/.hidden/path"))
         assert len(result) == 1
         assert isinstance(
             result[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
@@ -367,9 +398,7 @@ class TestGlobalNamePath:
         assert result[0].location.column == 11
 
     def test_all_diagnostic_types(self):
-        result = name_validators.validate_global_name_path(
-            _global_path_name("Bad//2bad/")
-        )
+        result = _validate_global_name_path(_global_path_name("Bad//2bad/"))
         assert len(result) == 4
         assert (
             sum(
@@ -403,114 +432,96 @@ class TestGlobalNamePath:
 
 class TestMultiverseNameReserved:
     def test_reserved_programming_language(self):
-        result = name_validators.validate_multiverse_name_reserved(
-            _multiverse("python")
-        )
+        result = _validate_multiverse_name(_multiverse("python"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
         assert result[0].reserved_name == "python"
         assert result[0].location.column == 10
 
     def test_reserved_package_repository(self):
-        result = name_validators.validate_multiverse_name_reserved(_multiverse("npm"))
+        result = _validate_multiverse_name(_multiverse("npm"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
         assert result[0].reserved_name == "npm"
 
     def test_reserved_common_word(self):
-        result = name_validators.validate_multiverse_name_reserved(_multiverse("about"))
+        result = _validate_multiverse_name(_multiverse("about"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
         assert result[0].reserved_name == "about"
 
     def test_mv_is_allowed(self):
-        result = name_validators.validate_multiverse_name_reserved(_multiverse("mv"))
+        result = _validate_multiverse_name(_multiverse("mv"))
         assert not result
 
     def test_non_reserved(self):
-        result = name_validators.validate_multiverse_name_reserved(
-            _multiverse("my_custom_mv")
-        )
+        result = _validate_multiverse_name(_multiverse("my_custom_mv"))
         assert not result
 
     def test_case_insensitive(self):
-        result = name_validators.validate_multiverse_name_reserved(
-            _multiverse("Python")
-        )
-        assert len(result) == 1
-        assert result[0].reserved_name == "Python"
+        result = _validate_multiverse_name(_multiverse("Python"))
+        assert len(result) == 2
+        assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+        assert isinstance(result[1], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert result[1].reserved_name == "Python"
 
 
 class TestAuthorityReserved:
     def test_reserved_domain(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("example.com"), None
-        )
+        result = _validate_authority(_authority("example.com"), None)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert result[0].reserved_name == "example.com"
         assert result[0].location.column == 10
 
     def test_reserved_common_word_domain(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("standard"), None
-        )
+        result = _validate_authority(_authority("standard"), None)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert result[0].reserved_name == "standard"
 
     def test_dotless_domain_in_local_multiverse(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("localhost"), None
-        )
+        result = _validate_authority(_authority("localhost"), None)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.DotlessAuthorityDomainDiagnostic)
         assert result[0].location.column == 10
 
     def test_dotless_domain_in_mv_multiverse(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("myhost"), _multiverse("mv")
-        )
+        result = _validate_authority(_authority("myhost"), _multiverse("mv"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.DotlessAuthorityDomainDiagnostic)
 
     def test_dotless_domain_in_custom_multiverse(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("myhost"), _multiverse("custom")
-        )
+        result = _validate_authority(_authority("myhost"), _multiverse("custom"))
         assert not result
 
     def test_dotted_domain_ok(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("my.domain.com"), None
-        )
+        result = _validate_authority(_authority("my.domain.com"), None)
         assert not result
 
     def test_case_insensitive(self):
-        result = name_validators.validate_authority_reserved(
-            _authority("Example.Com"), None
-        )
-        assert len(result) == 1
-        assert result[0].reserved_name == "Example.Com"
+        result = _validate_authority(_authority("Example.Com"), None)
+        assert len(result) == 2
+        assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+        assert isinstance(result[1], diagnostics.ReservedAuthorityDomainDiagnostic)
+        assert result[1].reserved_name == "Example.Com"
 
 
 class TestUniverseNameReserved:
     def test_reserved_name(self):
-        result = name_validators.validate_universe_name_reserved(_universe("standard"))
+        result = _validate_universe_name(_universe("standard"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
         assert result[0].reserved_name == "standard"
         assert result[0].location.column == 10
 
     def test_reserved_common_word(self):
-        result = name_validators.validate_universe_name_reserved(_universe("about"))
+        result = _validate_universe_name(_universe("about"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
 
     def test_non_reserved_lowercase(self):
-        result = name_validators.validate_universe_name_reserved(
-            _universe("my_library")
-        )
+        result = _validate_universe_name(_universe("my_library"))
         assert not result
 
 
@@ -571,18 +582,18 @@ class TestLocalNameFormat:
 class TestValidateFqun:
     def test_valid_with_authority(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        result = name_validators.validate_fqun(fqun)
+        result = _validate_fqun(fqun)
         assert not result
 
     def test_standard_without_authority(self):
         fqun = _fqun("standard")
-        result = name_validators.validate_fqun(fqun)
+        result = _validate_fqun(fqun)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
 
     def test_universe_without_authority_not_standard(self):
         fqun = _fqun("my_lib")
-        result = name_validators.validate_fqun(fqun)
+        result = _validate_fqun(fqun)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
         assert result[0].universe_name == "my_lib"
@@ -594,27 +605,18 @@ class TestValidateFqun:
             authority=_authority("example.com"),
             multiverse=_multiverse("_"),
         )
-        result = name_validators.validate_fqun(fqun)
-        mv_diags = [
-            d
-            for d in result
-            if isinstance(
-                d,
-                diagnostics.MultiverseNameTooShortDiagnostic
-                | diagnostics.MultiverseNameInvalidCharDiagnostic,
-            )
-        ]
-        assert len(mv_diags) >= 1
+        result = _validate_fqun(fqun)
+        assert len(result) == 4
+        assert isinstance(result[0], diagnostics.MultiverseNameTooShortDiagnostic)
+        assert isinstance(result[1], diagnostics.MultiverseNameInvalidCharDiagnostic)
+        assert isinstance(result[2], diagnostics.ReservedAuthorityDomainDiagnostic)
+        assert isinstance(result[3], diagnostics.ReservedUniverseNameDiagnostic)
 
     def test_reserved_authority(self):
         fqun = _fqun("my_lib", authority=_authority("example.com"))
-        result = name_validators.validate_fqun(fqun)
-        reserved = [
-            d
-            for d in result
-            if isinstance(d, diagnostics.ReservedAuthorityDomainDiagnostic)
-        ]
-        assert len(reserved) == 1
+        result = _validate_fqun(fqun)
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedAuthorityDomainDiagnostic)
 
     def test_custom_multiverse_dotless_authority_allowed(self):
         fqun = _fqun(
@@ -622,7 +624,7 @@ class TestValidateFqun:
             authority=_authority("myhost"),
             multiverse=_multiverse("custom"),
         )
-        result = name_validators.validate_fqun(fqun)
+        result = _validate_fqun(fqun)
         assert not result
 
     def test_collects_all_diagnostics(self):
@@ -631,19 +633,11 @@ class TestValidateFqun:
             authority=_authority("example.com"),
             multiverse=_multiverse("python"),
         )
-        result = name_validators.validate_fqun(fqun)
-        reserved_mv = [
-            d
-            for d in result
-            if isinstance(d, diagnostics.ReservedMultiverseNameDiagnostic)
-        ]
-        reserved_auth = [
-            d
-            for d in result
-            if isinstance(d, diagnostics.ReservedAuthorityDomainDiagnostic)
-        ]
-        assert len(reserved_mv) == 1
-        assert len(reserved_auth) == 1
+        result = _validate_fqun(fqun)
+        assert len(result) == 3
+        assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert isinstance(result[1], diagnostics.ReservedAuthorityDomainDiagnostic)
+        assert isinstance(result[2], diagnostics.ReservedUniverseNameDiagnostic)
 
 
 class TestValidateGlobalName:
@@ -657,36 +651,27 @@ class TestValidateGlobalName:
         fqun = _fqun("my_lib")
         name = _global_name(fqun, "/valid_path")
         result = name_validators.validate_global_name(name)
-        assert any(
-            isinstance(d, diagnostics.UniverseWithoutAuthorityDiagnostic)
-            for d in result
-        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
 
     def test_path_errors_collected(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
         name = _global_name(fqun, "/Bad")
         result = name_validators.validate_global_name(name)
-        assert any(
-            isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-            for d in result
+        assert len(result) == 1
+        assert isinstance(
+            result[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
         )
 
     def test_fqun_and_path_errors_combined(self):
         fqun = _fqun("my_lib")
         name = _global_name(fqun, "/Bad")
         result = name_validators.validate_global_name(name)
-        fqun_errors = [
-            d
-            for d in result
-            if isinstance(d, diagnostics.UniverseWithoutAuthorityDiagnostic)
-        ]
-        path_errors = [
-            d
-            for d in result
-            if isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-        ]
-        assert len(fqun_errors) == 1
-        assert len(path_errors) == 1
+        assert len(result) == 2
+        assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
+        assert isinstance(
+            result[1], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+        )
 
     def test_reference_without_fqun_skips_fqun_validation(self):
         name = ast.ReferenceGlobalNameContent(

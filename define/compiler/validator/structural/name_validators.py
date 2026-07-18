@@ -78,7 +78,7 @@ _AUTHORITY_PATH_CONTINUE_CHARS = _AUTHORITY_PATH_START_CHARS | frozenset(".")
 # ---------------------------------------------------------------------------
 
 
-def validate_multiverse_name_format(
+def _validate_multiverse_name_format(
     multiverse: ast.Multiverse,
 ) -> list[diagnostics.Diagnostic]:
     """Validate multiverse name character format."""
@@ -115,7 +115,7 @@ def validate_multiverse_name_format(
     return result
 
 
-def validate_multiverse_name_reserved(
+def _validate_multiverse_name_reserved(
     multiverse: ast.Multiverse,
 ) -> list[diagnostics.ReservedMultiverseNameDiagnostic]:
     """Validate a multiverse name against reserved names."""
@@ -236,8 +236,7 @@ def _validate_authority_path_segment(
     return None
 
 
-# TODO: Combine this into a single validate_authority.
-def validate_authority_reserved(
+def _validate_authority_reserved(
     authority: ast.Authority, multiverse: ast.Multiverse | None
 ) -> list[diagnostics.ReservedNameDiagnostic]:
     """Validate an authority name against reserved names."""
@@ -270,15 +269,16 @@ def validate_authority_reserved(
     return []
 
 
-def validate_authority_format(
-    authority: ast.Authority,
+def _validate_authority(
+    authority: ast.Authority, multiverse: ast.Multiverse | None
 ) -> list[diagnostics.Diagnostic]:
-    """Validate authority domain and path character/shape format."""
+    """Validate an authority name."""
     domain, path = _split_authority_name(authority.name)
     result: list[diagnostics.Diagnostic] = []
     result.extend(_validate_authority_domain_format(authority, domain))
     if path is not None:
         result.extend(_validate_authority_path_format(authority, domain, path))
+    result.extend(_validate_authority_reserved(authority, multiverse))
     return result
 
 
@@ -287,7 +287,7 @@ def validate_authority_format(
 # ---------------------------------------------------------------------------
 
 
-def validate_universe_name_format(
+def _validate_universe_name_format(
     universe: ast.Universe,
 ) -> list[diagnostics.Diagnostic]:
     """Validate universe name character format."""
@@ -324,7 +324,7 @@ def validate_universe_name_format(
     return result
 
 
-def validate_universe_name_reserved(
+def _validate_universe_name_reserved(
     universe: ast.Universe,
 ) -> list[diagnostics.ReservedUniverseNameDiagnostic]:
     """Validate a universe name against reserved names."""
@@ -343,12 +343,12 @@ def validate_universe_name_reserved(
 # ---------------------------------------------------------------------------
 
 
-def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
+def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
     """Validate a fully-qualified universe name."""
     result: list[diagnostics.Diagnostic] = []
     if fqun.multiverse is not None:
-        result.extend(validate_multiverse_name_format(fqun.multiverse))
-        result.extend(validate_multiverse_name_reserved(fqun.multiverse))
+        result.extend(_validate_multiverse_name_format(fqun.multiverse))
+        result.extend(_validate_multiverse_name_reserved(fqun.multiverse))
 
     if fqun.authority is None:
         if fqun.universe.name.lower() != "standard":
@@ -359,11 +359,10 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
                 )
             )
     else:
-        result.extend(validate_authority_format(fqun.authority))
-        result.extend(validate_authority_reserved(fqun.authority, fqun.multiverse))
+        result.extend(_validate_authority(fqun.authority, fqun.multiverse))
 
-    result.extend(validate_universe_name_format(fqun.universe))
-    result.extend(validate_universe_name_reserved(fqun.universe))
+    result.extend(_validate_universe_name_format(fqun.universe))
+    result.extend(_validate_universe_name_reserved(fqun.universe))
     return result
 
 
@@ -378,7 +377,7 @@ def validate_global_name(
     """Validate a global name and its FQUN."""
     result: list[diagnostics.Diagnostic] = []
     if name.fqun is not None:
-        result.extend(validate_fqun(name.fqun))
+        result.extend(_validate_fqun(name.fqun))
         if (
             must_use_short_form is not None
             and name.fqun.canonical == must_use_short_form.canonical
@@ -389,7 +388,7 @@ def validate_global_name(
                     fqun=must_use_short_form.canonical,
                 )
             )
-    result.extend(validate_global_name_path(name.path))
+    result.extend(_validate_global_name_path(name.path))
     return result
 
 
@@ -399,7 +398,9 @@ def validate_global_name(
 
 
 # TODO: Allow escaped / in paths.
-def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diagnostic]:
+def _validate_global_name_path(
+    path: ast.GlobalPathName,
+) -> list[diagnostics.Diagnostic]:
     """Validate path segments in a global name."""
     result: list[diagnostics.Diagnostic] = []
     path_name = path.name
