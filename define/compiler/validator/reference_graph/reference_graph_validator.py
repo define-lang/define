@@ -90,9 +90,6 @@ class ReferenceGraphValidator:
                 call_graph.add_edge(edge.source, edge.target)
             self._action_contracts[definition.typed_name] = result.contract
             operation_graphs[definition.typed_name] = result.operation_graph
-            # TODO: Remove this once the old operation_graph_renderer, the only
-            # reader of DefinitionValidationResult.operation_graph, is replaced.
-            definition_result.operation_graph = result.operation_graph
         return ReferenceGraphValidationResult(
             action_call_graph=call_graph,
             operation_graphs=operation_graphs,

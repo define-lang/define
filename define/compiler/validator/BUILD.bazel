@@ -63,7 +63,6 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
-        "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
 
