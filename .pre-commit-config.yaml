@@ -62,7 +62,7 @@ repos:
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         pass_filenames: false
   - repo: https://github.com/bufbuild/buf
-    rev: v1.71.0
+    rev: v1.72.0
     hooks:
       - id: buf-lint
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
