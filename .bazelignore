@@ -1,3 +1,4 @@
 node_modules
 mutants
 tools/node_modules
+.todo-worktrees
