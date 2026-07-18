@@ -5,7 +5,11 @@
 # guarantees, auto-destruction, and Destruction Contracts.
 
 import textwrap
+from pathlib import PurePosixPath
 
+import pytest
+
+from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
 
@@ -141,6 +145,110 @@ def test_destructor_requires_empty_position_format(
             File "test.dfn", line 20, column 33
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30""")
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=(
+        "the propagation chain does not yet explain the quality implications"
+        " through which the written constraint attaches the implied destructor"
+    ),
+)
+def test_destructor_attached_through_transitive_implication_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """The attachment explains each quality implication leading from the written constraint to the destructor it transitively implies."""
+    files = {
+        "destructor.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this particle is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_holder>.\n"
+            "        move the particle in position<item> to position<_holder>.\n"
+            "        move the particle in position<_holder> to position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "inner_carrier.dfn": (
+            "define the potential action<my.domain.com:my_lib:/inner_carrier> {\n"
+            "    it also assigns the action</destructor>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<_unused>.\n"
+            "        create a particle in position<_unused>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "outer_carrier.dfn": (
+            "define the potential action<my.domain.com:my_lib:/outer_carrier> {\n"
+            "    it also assigns the action</inner_carrier>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<_unused>.\n"
+            "        create a particle in position<_unused>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</outer_carrier>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::action</outer_carrier>::position<run>.\n"
+            "        destroy the particle in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+    # Implying a quality the body never references is intrinsically an unused
+    # implication; these are incidental to what this test checks.
+    assert isinstance(all_diags[1], diagnostics.UnusedQualityImplicationDiagnostic)
+    assert all_diags[1].location.line == 2
+    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.file_path == PurePosixPath("outer_carrier.dfn")
+    assert all_diags[1].implication_name == "action</inner_carrier>"
+    assert isinstance(all_diags[2], diagnostics.UnusedQualityImplicationDiagnostic)
+    assert all_diags[2].location.line == 2
+    assert all_diags[2].location.column == 25
+    assert all_diags[2].location.file_path == PurePosixPath("inner_carrier.dfn")
+    assert all_diags[2].implication_name == "action</destructor>"
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 13, column 33
+                destroy the particle in position<box>.
+                                        ^
+        'position<box>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
+
+        This error happens because:
+          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<box>':
+            File "test.dfn", line 8, column 28
+          'action<my.domain.com:my_lib:/outer_carrier>' also assigns 'action<my.domain.com:my_lib:/inner_carrier>':
+            File "outer_carrier.dfn", line 2, column 5
+          'action<my.domain.com:my_lib:/inner_carrier>' also assigns 'action<my.domain.com:my_lib:/destructor>':
+            File "inner_carrier.dfn", line 2, column 5
+          the particle in 'position<box>' comes from here:
+            File "test.dfn", line 11, column 30
+          'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
+            File "test.dfn", line 13, column 33
+          'action<my.domain.com:my_lib:/destructor>' infers this requirement:
+            File "destructor.dfn", line 7, column 30""")
 
 
 def test_aware_destructor_requirement_surfaces_as_action_requires_format(

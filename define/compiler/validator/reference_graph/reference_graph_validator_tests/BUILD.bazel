@@ -592,6 +592,8 @@ py_test(
     srcs = ["error_messages_destruction_test.py"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "@pypi//pytest",
     ],
 )
 
