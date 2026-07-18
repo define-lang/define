@@ -495,8 +495,10 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_been_touched(key)
 
-    def has_known_state(self, in_position: ast.PositionReference) -> bool:
-        """Return whether something has decided this position's occupancy.
+    def nearest_particle_above_if_state_unknown(
+        self, in_position: ast.PositionReference
+    ) -> tuple[tuple[str, ...], ParticleInfo] | None:
+        """Return the nearest particle above unless this position's state is known.
 
         The state is known when either: (a) the current position was touched
         in this action or (b) the parent particle was created in this action.
@@ -506,21 +508,14 @@ class ParticleTracker:
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         if self._store.has_been_touched(key):
-            return True
+            return None
         parent_key = ast.chain_parent_position(key)
-        if parent_key is None:
-            return False
-        parent_particle = self._store.occupant_or_none(parent_key)
-        return parent_particle is not None and not parent_particle.from_caller
-
-    def nearest_particle_above(
-        self, in_position: ast.PositionReference
-    ) -> tuple[tuple[str, ...], ParticleInfo] | None:
-        """Return the key and particle of the nearest occupied ancestor of this position."""
-        key = in_position.canonical_chained_name_tuple
+        if parent_key is not None:
+            parent_particle = self._store.occupant_or_none(parent_key)
+            if parent_particle is not None and not parent_particle.from_caller:
+                return None
         if len(key) == 1:
             return None
-        self._apply_pending_guarantees_up_to(key)
         ancestor_key = self._store.state.find_longest_prefix_where(
             key[:-1], lambda node_state: node_state.particle_info is not None
         )

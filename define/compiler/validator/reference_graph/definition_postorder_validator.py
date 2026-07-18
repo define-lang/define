@@ -266,11 +266,9 @@ class ActionPostorderValidator:
         all we did in this action is "move our_interface to interface." We don't
         actually _know_ the state of "b" and its child "c". Only our caller knows.
         """
-        moved_particle = None
-        if not self._tracker.has_known_state(local_position):
-            moved_particle = self._ancestor_from_contracted_position(
-                local_position, action_parent
-            )
+        moved_particle = self._ancestor_from_contracted_position(
+            local_position, action_parent
+        )
         if moved_particle is not None:
             owner_key, owner = moved_particle
             # Make it the child of the contracted position, not the child of this
@@ -310,7 +308,9 @@ class ActionPostorderValidator:
         action_parent: ast.PositionReference | None,
     ) -> tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None:
         """If any of our parents were moved from a contracted position, return that ancestor's position and the particle in it."""
-        nearest_ancestor = self._tracker.nearest_particle_above(position)
+        nearest_ancestor = self._tracker.nearest_particle_above_if_state_unknown(
+            position
+        )
         if nearest_ancestor is None:
             # The ancestor is an implied action with no parent name.
             return None
