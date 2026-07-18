@@ -281,9 +281,51 @@ py_test(
 )
 
 py_test(
-    name = "automated_requirements_nested_action_test",
+    name = "automated_requirements_nested_action_child_name_move_test",
     size = "small",
-    srcs = ["automated_requirements_nested_action_test.py"],
+    srcs = ["automated_requirements_nested_action_child_name_move_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_nested_action_direct_propagation_test",
+    size = "small",
+    srcs = ["automated_requirements_nested_action_direct_propagation_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_nested_action_name_resolution_test",
+    size = "small",
+    srcs = ["automated_requirements_nested_action_name_resolution_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_nested_action_trigger_move_test",
+    size = "small",
+    srcs = ["automated_requirements_nested_action_trigger_move_test.py"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -805,7 +847,10 @@ pyright_test(
         ":automated_requirements_diamond_test",
         ":automated_requirements_implied_position_test",
         ":automated_requirements_move_test",
-        ":automated_requirements_nested_action_test",
+        ":automated_requirements_nested_action_child_name_move_test",
+        ":automated_requirements_nested_action_direct_propagation_test",
+        ":automated_requirements_nested_action_name_resolution_test",
+        ":automated_requirements_nested_action_trigger_move_test",
         ":automated_requirements_nested_implied_test",
         ":automated_requirements_override_test",
         ":automated_requirements_test",
