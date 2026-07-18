@@ -1,10 +1,5 @@
 """Tracks particle occupancy for positions within an action block."""
 
-# TODO: The comments and docstrings in this file describe positions with words
-# this project bans for Define concepts -- "inside", "under", "nested",
-# "shallower" and "deeper" -- where the spec says parent name and child name.
-# Rewrite them in the spec's terms.
-
 from __future__ import annotations
 
 import typing
@@ -81,7 +76,7 @@ class _WriteRecord:
     """A record of a write to a position, containing the information necessary to resolve it when applying guarantees.
 
     Writes are ordered by execution: a higher ``body_operation_number`` wins, and
-    at the same number the shallower ``depth`` wins (a contract's own guarantee
+    at the same number the lower ``depth`` wins (a contract's own guarantee
     outranks a nested guarantee that shares the trigger's operation number).
     """
 
@@ -109,7 +104,7 @@ class _PendingGuarantee:
     """A callee's guarantees, recorded at an absolute position for lazy application.
 
     The callee's own guarantees are applied into the base tries when this nested
-    guarantee is applied; its own nested guarantees are prefixed one position deeper.
+    guarantee is applied; its own nested guarantees gain one child name in their prefix.
     """
 
     # The triggered action's chain.
@@ -131,8 +126,9 @@ class _PendingGuarantee:
     # nested children inherit this chain verbatim, like the trigger node.
     trigger_chain: tuple[str, ...]
     # Call-chain depth from the directly-applied contract: its own guarantees
-    # are depth 0; each nested guarantee is one deeper. Within a single trigger
-    # (same sequence) a shallower guarantee outranks a deeper one it resolved.
+    # are depth 0; each nested guarantee increments the depth. Within a single
+    # trigger (same sequence), a lower-depth guarantee outranks a higher-depth
+    # one it resolved.
     call_chain_depth: int = 0
 
     @property
@@ -140,8 +136,8 @@ class _PendingGuarantee:
         """The parent of the callee's implied (global) positions.
 
         This is ``parent_chain`` with its trailing action stripped: an implied
-        quality lives on the action's parent particle, one position shallower than
-        the action's interface positions. ``parent_chain`` always ends in the
+        quality lives on the action's parent particle, at the parent name of the
+        action's interface position names. ``parent_chain`` always ends in the
         triggered action, since that is the only thing that produces guarantees.
         """
         return self.parent_chain[:-1]
@@ -164,12 +160,12 @@ class _PendingGuarantee:
 class _PendingNestedGuarantees:
     """A prefix multimap of nested guarantees, keyed by a position prefix.
 
-    Each nested guarantee is stored under a position prefix. ``drain_shortest_first``
-    yields the ones whose prefix is an ancestor of a queried position (shortest
-    prefix first); ``drain_at_or_below`` yields the ones whose prefix is at or
-    below it. Both remove what they yield and re-query as they go: applying a
-    yielded nested guarantee can add deeper ones on the same path, which the
-    drain then picks up.
+    Each nested guarantee is stored by a position prefix.
+    ``drain_shortest_first`` yields the ones whose prefix is a parent name of a
+    queried position (shortest prefix first); ``drain_at_or_below`` yields the
+    ones for which the queried position is a parent name. Both remove what they
+    yield and re-query as they go: applying a yielded nested guarantee can add
+    ones with additional child names, which the drain then picks up.
     """
 
     def __init__(self):
@@ -177,8 +173,8 @@ class _PendingNestedGuarantees:
         self._longest_pending_guarantee_key: int = 0
 
     def add(self, nested_guarantee: _PendingGuarantee):
-        """Record a nested guarantee to apply once a query reaches at or under ``prefix``."""
-        # Store the pending nested guarantee under its parent_position, the
+        """Record a nested guarantee to apply once a query reaches ``prefix`` or one of its child names."""
+        # Store the pending nested guarantee by its parent_position, the
         # common ancestor of the callee's interface guarantees (which are
         # prefixed with the trigger position) and its implied guarantees (which
         # are prefixed with the parent_position itself). Using the trigger
@@ -196,20 +192,20 @@ class _PendingNestedGuarantees:
         if not self._by_prefix:
             self._longest_pending_guarantee_key = 0
             return
-        # Walk the prefixes of key from shortest to longest, but no deeper than the
-        # deepest pending guarantee.
+        # Walk the prefixes of key from shortest to longest, but no longer than
+        # the longest pending guarantee key.
         key_len = len(key)
         length = 0
         while length <= key_len and length <= self._longest_pending_guarantee_key:
             prefix = key[:length]
             # Applying a yielded guarantee can re-add one at this same prefix, so
-            # drain it fully before moving to a deeper prefix.
+            # drain it fully before moving to a prefix with another child name.
             while prefix in self._by_prefix:
                 yield from self._by_prefix.pop(prefix)
             length += 1
 
     def drain_at_or_below(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
-        """Yield and remove any pending nested guarantees at any prefix at or below ``key``."""
+        """Yield guarantees whose prefixes equal ``key`` or have it as a parent name."""
         depth = len(key)
         # The reason for this outer while loop is that our caller adds more prefixes
         # as they are running.
@@ -326,7 +322,7 @@ class _ParticleStateStore:
         """Return whether a later-ordered write already decided this key.
 
         "Later" means a higher body operation number, or the same number at a
-        shallower call-chain depth (a contract's own guarantee outranks the
+        lower call-chain depth (a contract's own guarantee outranks the
         nested guarantee it resolved).
         """
         existing = self._write_record.get(key)
@@ -848,7 +844,7 @@ class ParticleTracker:
                     caused_by=info.last_position,
                     operation_positions=operation_positions,
                 )
-            # A trigger position was never touched inside the action.
+            # A trigger position was never touched by the action.
             #
             # TODO: Should we simply require people to always touch the trigger
             # position? It eliminates a lot of "more than one way to do it."
@@ -933,7 +929,7 @@ class ParticleTracker:
         )
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
-        """Apply a callee's own guarantees and record each key it wrote against the trigger; prefix its own nested guarantees one position deeper."""
+        """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
         touched_guarantees = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
@@ -967,7 +963,7 @@ class ParticleTracker:
             self._apply_pending_guarantee(pending_guarantee)
 
     def _fully_resolve_pending_guarantees(self, key: tuple[str, ...]):
-        """Apply the nested guarantee at ``key`` (if any) and every one below it."""
+        """Apply guarantees at ``key`` and prefixes for which it is a parent name."""
         self._apply_pending_guarantees_up_to(key)
         for pending_guarantee in self._pending.drain_at_or_below(key):
             self._apply_pending_guarantee(pending_guarantee)
@@ -1028,7 +1024,8 @@ class ParticleTracker:
                 and not isinstance(guarantee, action_contract.UnchangedGuarantee)
             )
             # We are about to overwrite this key's subtree, and a later guarantee still
-            # needs to read a particle from an origin position that may live under it.
+            # needs to read a particle from an origin position that may have it as
+            # a parent name.
             if origin_keys and overwrites_subtree:
                 self._save_origins_at_or_below(
                     key, origin_keys, saved_state, saved_error
@@ -1040,8 +1037,9 @@ class ParticleTracker:
             if key not in origin_keys and overwrites_subtree:
                 # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
                 # or creates in position<item> (OccupiedByNewGuarantee), any children
-                # the caller had under position<item> must disappear. We achieve this
-                # by deleting each key's entire subtree before applying its guarantee.
+                # the caller had at child names of position<item> must disappear. We
+                # achieve this by deleting each key's entire subtree before applying
+                # its guarantee.
                 # An UnchangedGuarantee leaves the caller's state as it found it, so
                 # it keeps whatever subtree is there.
                 del self._store.state[key]
