@@ -140,9 +140,9 @@ def _emit_header() -> list[str]:
 def _emit_simple_position_pool(prefix: str, num_globals: int) -> list[str]:
     # Emit positions in reverse order (g_(N-1) first, g_0 last) so each
     # ``it has the position</g_(i+1)>`` constraint is a back-reference to
-    # an already-defined name. The non-filesystem validator skips
-    # DiscoveredFile creation for same-source back-references; forward
-    # references would instead trigger NoProjectRootInNonFilesystemContext.
+    # an already-defined name. The non-filesystem validator does not load
+    # files for same-source back-references; forward references would
+    # instead trigger NoProjectRootInNonFilesystemContext.
     lines: list[str] = []
     for i in reversed(range(num_globals)):
         name = _qualified_global_name(prefix, i)

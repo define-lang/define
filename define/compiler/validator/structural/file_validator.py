@@ -65,8 +65,8 @@ class FileStructuralValidator:
     """Stateless per-file validator.
 
     Processes one file: reads from disk, parses, transforms, and validates
-    local rules. Produces a FileValidationResult with discovered files and
-    reference edges for the coordinator to process.
+    local rules. Produces a FileValidationResult with reference edges for
+    the coordinator to process.
     """
 
     _parser: parser.Parser
@@ -206,8 +206,6 @@ class DefinitionStructuralValidator:
     _definition: ast.QualityDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _seen_edge_targets: set[str]
-    _discovered_files: list[validation_result.DiscoveredFile]
-    _discovered_file_keys: set[tuple[define_path.DefinePath, str]]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _seen_definitions: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameInDefinition, ast.QualityDefinition
@@ -235,8 +233,6 @@ class DefinitionStructuralValidator:
         self._diagnostics = []
         self._reference_edges = []
         self._seen_edge_targets = set()
-        self._discovered_files = []
-        self._discovered_file_keys = set()
         self._particle_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
@@ -267,7 +263,6 @@ class DefinitionStructuralValidator:
             definition=self._definition,
             _diagnostics=self._diagnostics,
             reference_edges=self._reference_edges,
-            discovered_files=self._discovered_files,
             particle_statement_validity=self._particle_statement_validity,
         )
 
@@ -692,7 +687,7 @@ class DefinitionStructuralValidator:
         self,
         typed_global_name: ast.GlobalTypedNameReference,
     ):
-        """Record a reference edge and determine the target file to discover."""
+        """Record a reference edge for a global name reference."""
         global_name = typed_global_name.name_content
 
         is_self_reference = (
@@ -705,83 +700,38 @@ class DefinitionStructuralValidator:
         if typed_global_name.full_typed_name in self._seen_edge_targets:
             return
         self._seen_edge_targets.add(typed_global_name.full_typed_name)
-        # Process a reference that's inside of this same file.
-        if typed_global_name in self._seen_definitions or is_self_reference:
-            self._reference_edges.append(
-                reference_graph.ReferenceEdge(
-                    enclosing_definition=self._definition,
-                    global_name_reference=typed_global_name,
-                )
-            )
-            return
 
-        if global_name.fqun is None:
-            # Process a reference from this universe.
-            self._add_edge_and_discovered_file(
-                typed_global_name=typed_global_name,
-                global_name=global_name,
-                root_prefix=self._context.root_prefix,
-                expected_fqun=self._definition.typed_name.name_content.fqun,
-            )
-            return
-
-        root_config = self._context.root_config
-        if not self._context.is_filesystem_context:
-            # Process a cross-FQUN reference in a non-filesystem context.
-            self._add_edge_and_discovered_file(
-                typed_global_name=typed_global_name,
-                global_name=global_name,
-                root_prefix=self._context.root_prefix,
-                expected_fqun=global_name.fqun,
-            )
-            return
-        if root_config is None:
-            raise ValueError("filesystem contexts must define a root config")
-
-        # Process a cross-FQUN reference in a filesystem context.
-        fqun_string = global_name.fqun.canonical
-        if fqun_string in self._unknown_fquns:
-            return
-        if fqun_string not in root_config.sub_roots:
-            self._unknown_fquns.add(fqun_string)
-            self._diagnostics.append(
-                diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                    location=global_name.fqun.location,
-                    universe=fqun_string,
-                    current_universe_name=root_config.fqun,
-                )
-            )
-            return
-        sub_root_rel = root_config.sub_roots[fqun_string]
-        self._add_edge_and_discovered_file(
-            typed_global_name=typed_global_name,
-            global_name=global_name,
-            root_prefix=self._context.root_prefix / sub_root_rel,
-            expected_fqun=global_name.fqun,
+        is_same_file_reference = (
+            typed_global_name in self._seen_definitions or is_self_reference
         )
+        # Process a cross-FQUN reference in a filesystem context. References
+        # that resolve within this same file skip the sub-root check so that
+        # they still get edges for same-file validation.
+        if (
+            global_name.fqun is not None
+            and not is_same_file_reference
+            and self._context.is_filesystem_context
+        ):
+            root_config = self._context.root_config
+            if root_config is None:
+                raise ValueError("filesystem contexts must define a root config")
+            fqun_string = global_name.fqun.canonical
+            if fqun_string in self._unknown_fquns:
+                return
+            if fqun_string not in root_config.sub_roots:
+                self._unknown_fquns.add(fqun_string)
+                self._diagnostics.append(
+                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                        location=global_name.fqun.location,
+                        universe=fqun_string,
+                        current_universe_name=root_config.fqun,
+                    )
+                )
+                return
 
-    def _add_edge_and_discovered_file(
-        self,
-        typed_global_name: ast.GlobalTypedNameReference,
-        global_name: ast.ReferenceGlobalNameContent,
-        root_prefix: define_path.DefinePath,
-        expected_fqun: ast.Fqun,
-    ):
         self._reference_edges.append(
             reference_graph.ReferenceEdge(
                 enclosing_definition=self._definition,
                 global_name_reference=typed_global_name,
-            )
-        )
-        key = (root_prefix, global_name.path.name)
-        if key in self._discovered_file_keys:
-            return
-        self._discovered_file_keys.add(key)
-        self._discovered_files.append(
-            validation_result.DiscoveredFile(
-                path=global_name.path.file_path(),
-                root_prefix=root_prefix,
-                expected_fqun=expected_fqun.canonical,
-                location=global_name.location,
             )
         )

@@ -785,72 +785,133 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     assert diags[1].current_universe_name == _PARENT_UNIVERSE
 
 
-def test_non_filesystem_reference_walks_into_sub_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_same_path_in_known_and_unknown_universes_still_walks_into_known(
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
-    test_helpers.write_local_deps_config(tmp_path, {_CHILD_UNIVERSE: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
-    (tmp_path / "lib/target.dfn").write_text(
-        (
-            f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</leaf>.\n"
-            + "    }\n"
-            + "}\n"
-        ),
-        encoding="utf-8",
+    result = validate_project(
+        {
+            "test.dfn": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain particles where {{\n"
+                f"        it has the position<unknown.com:other_lib:/target>.\n"
+                f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib/target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
+        },
+        universe_name=_PARENT_UNIVERSE,
+        local_deps={_CHILD_UNIVERSE: "lib"},
+        sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    (tmp_path / "lib/leaf.dfn").write_text(
-        f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
-    assert len(result.file_results) == 3
-    assert_no_errors(result)
-    assert str(result.file_results[0].file_path) == "<string>"
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:other_lib"
+    assert diags[0].current_universe_name == _PARENT_UNIVERSE
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
-    assert result.file_results[2].file_path == define_path.DefinePath("lib/leaf.dfn")
-    assert result.file_results[2].root_prefix == define_path.DefinePath("lib")
+    assert result.file_results[1].diagnostics == []
 
 
-@pytest.mark.xfail(
-    raises=KeyError,
-    strict=True,
-    reason=(
-        "In non-filesystem mode, no project root is registered with the"
-        " path_tracker, so a back-reference to an in-source cross-universe"
-        " definition crashes in program_validator._resolve_target_file when"
-        " path_tracker.has_sub_root looks up the empty parent root in"
-        " self._project_roots and raises KeyError."
-    ),
-)
-def test_non_filesystem_cross_universe_back_reference():
-    foreign_universe = "demo_mv:demo.example:demo_universe"
-    source = (
-        f"define the potential position<{foreign_universe}:/target>.\n"
-        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{foreign_universe}:/target>.\n"
-        "    }\n"
-        "}\n"
+def test_same_path_in_two_unknown_universes_diagnoses_each(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "test.dfn": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain particles where {{\n"
+                f"        it has the position<unknown.com:lib_a:/target>.\n"
+                f"        it has the position<unknown.com:lib_b:/target>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+        },
+        universe_name=_PARENT_UNIVERSE,
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:lib_a"
+    assert diags[0].current_universe_name == _PARENT_UNIVERSE
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].universe == "unknown.com:lib_b"
+    assert diags[1].current_universe_name == _PARENT_UNIVERSE
+    assert diags[1].location.line == 4
+    assert diags[1].location.column == 29
+
+
+def test_same_path_in_two_known_universes_walks_into_both_sub_roots(
+    validate_project: ValidateProject,
+):
+    child_x = "mv:define-lang.org:child_x"
+    child_y = "mv:define-lang.org:child_y"
+    result = validate_project(
+        {
+            "test.dfn": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain particles where {{\n"
+                f"        it has the position<{child_x}:/target>.\n"
+                f"        it has the position<{child_y}:/target>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib_x/target.dfn": (
+                f"define the potential position<{child_x}:/target> {{\n"
+                f"    it may only contain particles where {{\n"
+                f"        it has the position</x_child>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib_x/x_child.dfn": f"define the potential position<{child_x}:/x_child>.\n",
+            "lib_y/target.dfn": (
+                f"define the potential position<{child_y}:/target> {{\n"
+                f"    it may only contain particles where {{\n"
+                f"        it has the position</y_child>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib_y/y_child.dfn": f"define the potential position<{child_y}:/y_child>.\n",
+        },
+        universe_name=_PARENT_UNIVERSE,
+        local_deps={child_x: "lib_x", child_y: "lib_y"},
+        sub_roots={"lib_x": child_x, "lib_y": child_y},
+        max_workers=1,
     )
-    assert result.all_exceptions == []
+    assert len(result.file_results) == 5
+    assert_no_errors(result)
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib_x/target.dfn"
+    )
+    assert result.file_results[1].root_prefix == define_path.DefinePath("lib_x")
+    assert (
+        result.file_results[1]
+        .definition_results[0]
+        .definition.typed_name.full_typed_name
+        == f"position<{child_x}:/target>"
+    )
+    assert result.file_results[2].file_path == define_path.DefinePath(
+        "lib_y/target.dfn"
+    )
+    assert result.file_results[2].root_prefix == define_path.DefinePath("lib_y")
+    assert (
+        result.file_results[2]
+        .definition_results[0]
+        .definition.typed_name.full_typed_name
+        == f"position<{child_y}:/target>"
+    )
+    assert result.file_results[3].file_path == define_path.DefinePath(
+        "lib_x/x_child.dfn"
+    )
+    assert result.file_results[4].file_path == define_path.DefinePath(
+        "lib_y/y_child.dfn"
+    )

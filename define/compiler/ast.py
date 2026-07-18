@@ -295,10 +295,14 @@ class GlobalTypedNameReference(GlobalTypedName):
     def full_typed_name(self) -> str:
         return self._full_typed_name
 
+    @property
+    def effective_fqun(self) -> Fqun:
+        """The reference's FQUN, or the enclosing definition's when none is written."""
+        return self.name_content.fqun or self.enclosing_fqun
+
     def source_form_in_universe(self, caller_fqun: Fqun) -> str:
         """Get the string form of the name as it would be written in source in the specified universe."""
-        effective_fqun = self.name_content.fqun or self.enclosing_fqun
-        if effective_fqun.canonical != caller_fqun.canonical:
+        if self.effective_fqun.canonical != caller_fqun.canonical:
             return self.full_typed_name
         return self.source_typed_name
 

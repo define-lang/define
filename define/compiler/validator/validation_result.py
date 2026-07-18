@@ -13,28 +13,13 @@ from define.compiler import (
 from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
-
-
-@dataclass(slots=True)
-class DiscoveredFile:
-    """A file discovered during validation that should be validated next."""
-
-    # TODO: DiscoveredFile mostly duplicates information already on
-    # ReferenceEdge (path/root_prefix/expected_fqun/location are all derivable
-    # from the edge's global_name_reference plus the validating file's
-    # context). It should be removed and the program_validator should drive
-    # file loading and FQUN→sub-root resolution directly off the edges.
-    path: define_path.DefinePath
-    root_prefix: define_path.DefinePath
-    expected_fqun: str
-    location: ast.SourceLocation
 
 
 @dataclass(frozen=True)
@@ -57,7 +42,6 @@ class DefinitionValidationResult:
     _diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
 
     reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
-    discovered_files: list[DiscoveredFile] = field(default_factory=list)
     particle_statement_validity: list[ParticleStatementValidity] = field(
         default_factory=list
     )
@@ -111,6 +95,48 @@ class FileValidationResult:
             ]
             + list(self._post_definition_diagnostics)
         )
+
+    def edges_to_other_files(self) -> Iterator[reference_graph.ReferenceEdge]:
+        """Yield the edges that lead to other files.
+
+        An edge leads to another file unless its target is the enclosing
+        definition or a definition that appeared earlier in the same file.
+        """
+        seen_targets: set[str] = set()
+        for definition_result in self.definition_results:
+            seen_targets.add(definition_result.definition.typed_name.full_typed_name)
+            for edge in definition_result.reference_edges:
+                if edge.target_full_typed_name not in seen_targets:
+                    yield edge
+
+    def first_edge_to_other_file(self) -> reference_graph.ReferenceEdge | None:
+        """Return the first edge that leads to another file, if any."""
+        return next(self.edges_to_other_files(), None)
+
+    def first_edge_per_referenced_file(
+        self,
+    ) -> Iterator[reference_graph.ReferenceEdge]:
+        """Yield each definition's first edge per referenced file.
+
+        Within one definition, only the first reference to a given file drives
+        file loading and its diagnostics, no matter which definition type the
+        references name.
+        """
+        seen_targets: set[str] = set()
+        for definition_result in self.definition_results:
+            seen_targets.add(definition_result.definition.typed_name.full_typed_name)
+            seen_files: set[tuple[str, str]] = set()
+            for edge in definition_result.reference_edges:
+                if edge.target_full_typed_name in seen_targets:
+                    continue
+                referenced_file = (
+                    edge.global_name_reference.effective_fqun.canonical,
+                    edge.global_name_reference.name_content.path.name,
+                )
+                if referenced_file in seen_files:
+                    continue
+                seen_files.add(referenced_file)
+                yield edge
 
 
 @dataclass

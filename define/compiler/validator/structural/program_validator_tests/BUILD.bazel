@@ -94,9 +94,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -115,14 +112,11 @@ py_test(
     size = "small",
     srcs = ["global_name_walking_test.py"],
     deps = [
-        "//define/compiler:config",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:file_validator",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -155,6 +149,20 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "non_filesystem_walk_test",
+    size = "small",
+    srcs = ["non_filesystem_walk_test.py"],
+    deps = [
+        "//define/compiler:config",
+        "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -305,6 +313,7 @@ pyright_test(
         ":local_name_conflicts_test",
         ":move_particle_test",
         ":name_format_positions_test",
+        ":non_filesystem_walk_test",
         ":parallel_test",
         ":parse_and_validate_file_test",
         ":path_mismatch_test",

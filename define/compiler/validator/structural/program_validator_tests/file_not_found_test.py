@@ -4,18 +4,12 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path
-
-import pytest
-
 from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
 from define.compiler.data_structures import define_path
-from define.compiler.validator import test_helpers
-from define.compiler.validator.structural import program_validator
 
 
 def test_entrypoint_file_not_found(validate_project: ValidateProject):
@@ -43,79 +37,6 @@ def test_referenced_file_not_found(
     diag = result.diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "missing.dfn"
-    assert diag.location.line == 3
-    assert diag.location.column == 29
-
-
-def test_non_filesystem_cross_universe_reference(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    child_universe = "mv:define-lang.org:child_lib"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", child_universe)
-    (tmp_path / "lib" / "target.dfn").write_text(
-        f"define the potential position<{child_universe}:/target>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{child_universe}:/target>.\n"
-        f"        it has the position<{child_universe}:/missing>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
-    assert len(result.file_results) == 2
-    assert str(result.file_results[0].file_path) == "<string>"
-    assert result.file_results[0].exception is None
-    assert len(result.file_results[0].diagnostics) == 1
-    diag = result.file_results[0].diagnostics[0]
-    assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diag.file_path == "lib/missing.dfn"
-    assert diag.location.line == 4
-    assert diag.location.column == 29
-    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
-    assert result.file_results[1].exception is None
-    assert result.file_results[1].diagnostics == []
-
-
-def test_forward_reference_within_non_filesystem_source_is_broken(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    # Define requires definitions to appear before they are referenced; a forward
-    # ref within one source is not recognized as same-file and the validator
-    # mishandles it as an unconfigured cross-universe reference to the current
-    # universe.
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/a> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</b>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential position<my.domain.com:my_lib:/b>.\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
-    assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    diag = diags[0]
-    assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diag.universe == "my.domain.com:my_lib"
-    assert diag.current_universe_name == "my.domain.com:my_lib"
     assert diag.location.line == 3
     assert diag.location.column == 29
 

@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 # NOTE: Tests for new syntax or diagnostics belong in program_validator_tests/,
-# not here. This file tests FileStructuralValidator internals only (edges, discovered
-# files, timing stats, error handling).
+# not here. This file tests FileStructuralValidator internals only (edges,
+# timing stats, error handling).
 
 import types
 from pathlib import Path, PurePosixPath
@@ -62,16 +62,6 @@ def _reference_edges(
     ]
 
 
-def _discovered_files(
-    result: validation_result.FileValidationResult,
-) -> list[validation_result.DiscoveredFile]:
-    return [
-        discovered
-        for definition_result in result.definition_results
-        for discovered in definition_result.discovered_files
-    ]
-
-
 class TestFileStructuralValidatorSuccess:
     def test_valid_position(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
@@ -118,7 +108,6 @@ class TestFileStructuralValidatorErrors:
         assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.dfn")
         assert result.definition_results == []
         assert _reference_edges(result) == []
-        assert _discovered_files(result) == []
 
     def test_syntax_error(self, tmp_path: Path, lark_parser: parser.Parser):
         (tmp_path / "test.dfn").write_text(
@@ -290,12 +279,17 @@ class TestFileStructuralValidatorReferenceDiscovery:
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
-        assert len(_reference_edges(result)) == 1
-        assert len(_discovered_files(result)) == 1
-        discovered = _discovered_files(result)[0]
-        assert discovered.path == define_path.DefinePath("other.dfn")
-        assert discovered.root_prefix == define_path.DefinePath(str(tmp_path))
-        assert discovered.expected_fqun == "my.domain.com:my_lib"
+        edges = _reference_edges(result)
+        assert len(edges) == 1
+        assert (
+            edges[0].global_name_reference.full_typed_name
+            == "position<my.domain.com:my_lib:/other>"
+        )
+        assert edges[0].global_name_reference.name_content.fqun is None
+        assert (
+            edges[0].global_name_reference.enclosing_fqun.canonical
+            == "my.domain.com:my_lib"
+        )
 
     def test_cross_universe_reference_configured(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -316,14 +310,17 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
-        assert len(_reference_edges(result)) == 1
-        assert len(_discovered_files(result)) == 1
-        discovered = _discovered_files(result)[0]
-        assert discovered.path == define_path.DefinePath("dep.dfn")
-        assert discovered.root_prefix == define_path.DefinePath(
-            str(PurePosixPath(str(tmp_path)) / "deps/other")
+        edges = _reference_edges(result)
+        assert len(edges) == 1
+        assert (
+            edges[0].global_name_reference.full_typed_name
+            == "position<other.domain.com:other_lib:/dep>"
         )
-        assert discovered.expected_fqun == "other.domain.com:other_lib"
+        assert edges[0].global_name_reference.name_content.fqun is not None
+        assert (
+            edges[0].global_name_reference.name_content.fqun.canonical
+            == "other.domain.com:other_lib"
+        )
 
     def test_cross_universe_reference_not_configured(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -343,7 +340,6 @@ class TestFileStructuralValidatorReferenceDiscovery:
             diagnostics.ExternalUniverseNotConfiguredDiagnostic,
         ]
         assert _reference_edges(result) == []
-        assert _discovered_files(result) == []
 
     def test_multiple_references(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
@@ -359,9 +355,8 @@ class TestFileStructuralValidatorReferenceDiscovery:
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert len(_reference_edges(result)) == 2
-        assert len(_discovered_files(result)) == 2
 
-    def test_same_global_in_many_contexts_dedupes_discovered_files(
+    def test_same_global_in_many_contexts_emits_one_edge(
         self, tmp_path: Path, lark_parser: parser.Parser
     ):
         source = (
@@ -393,9 +388,6 @@ class TestFileStructuralValidatorReferenceDiscovery:
             edges[0].global_name_reference.full_typed_name
             == "position<my.domain.com:my_lib:/shared>"
         )
-        files = _discovered_files(result)
-        assert len(files) == 1
-        assert files[0].path == define_path.DefinePath("shared.dfn")
 
 
 class TestParticleReferenceEdges:
@@ -423,7 +415,6 @@ class TestParticleReferenceEdges:
 
         assert result.diagnostics == []
         assert len(_reference_edges(result)) == 2
-        assert len(_discovered_files(result)) == 2
 
     def test_local_names_produce_no_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -445,7 +436,6 @@ class TestParticleReferenceEdges:
 
         assert result.diagnostics == []
         assert _reference_edges(result) == []
-        assert _discovered_files(result) == []
 
     def test_invalid_global_name_produces_no_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -486,7 +476,6 @@ class TestParticleReferenceEdges:
         assert result.diagnostics[1].location.line == 10
         assert result.diagnostics[1].location.column == 58
         assert _reference_edges(result) == []
-        assert _discovered_files(result) == []
 
 
 class TestFileStructuralValidatorTimingStats:

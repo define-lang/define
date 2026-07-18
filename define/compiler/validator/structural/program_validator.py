@@ -167,10 +167,9 @@ class ProgramStructuralValidator:
         # for filesystem-prefix queries, so omitting it is harmless.
         self._path_tracker.set_result(result.file_path, result)
 
-        self._resolve_non_filesystem_discovered_files(result)
-
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
-            self._process_completed_result(result, pool)
+            self._resolve_non_filesystem_references(result, pool)
+            self._process_completed_result(result, pool, submit_referenced_files=False)
             self._run_pool_loop(pool)
         return self._build_program_result(self._path_tracker.completed_results())
 
@@ -200,13 +199,16 @@ class ProgramStructuralValidator:
         self,
         result: validation_result.FileValidationResult,
         pool: _FileWorkPool,
+        *,
+        submit_referenced_files: bool = True,
     ):
-        """Handle a completed file: check edges, submit discovered."""
+        """Handle a completed file: check edges, submit referenced files."""
         started_at = time.perf_counter_ns()
-        # We always want to submit discovered files first, to get background
+        # We always want to submit referenced files first, to get background
         # work into the queue ASAP.
-        for definition_result in result.definition_results:
-            self._submit_discovered_files(result, definition_result, pool)
+        if submit_referenced_files:
+            for edge in result.edges_to_other_files():
+                self._submit_filesystem_referenced_file(result, edge, pool)
         for definition_result in result.definition_results:
             self._process_completed_definition(result, definition_result)
         # Reference edges are file-scoped, but validating them still depends on
@@ -225,7 +227,7 @@ class ProgramStructuralValidator:
         # FileStructuralValidator preserves duplicate definitions in source order so
         # the later ones can still return diagnostics. Originally, I tried
         # to make all the later checks still run on duplicates, but it gets
-        # into too much complexity. We do still load DiscoveredFiles from
+        # into too much complexity. We do still submit referenced files from
         # duplicates, above, but that's it.
         if typed_name in self._definition_results:
             return
@@ -233,89 +235,124 @@ class ProgramStructuralValidator:
         self._reference_graph.add_definition(definition_result.definition)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
-    def _submit_discovered_files(
+    def _submit_filesystem_referenced_file(
         self,
         result: validation_result.FileValidationResult,
-        definition_result: validation_result.DefinitionValidationResult,
+        edge: reference_graph.ReferenceEdge,
         pool: _FileWorkPool,
     ):
-        """Submit discovered files if not already tracked."""
-        for discovered in definition_result.discovered_files:
-            full_path = discovered.root_prefix / discovered.path
-            if self._path_tracker.is_tracked(full_path):
-                continue
-            if self._path_tracker.is_under_failed_root(full_path):
-                continue
-
-            self._check_existing_root_conflicts_for_first_subroot_load(
-                discovered, result
+        """Submit the file an edge references from a filesystem-context file."""
+        global_name = edge.global_name_reference.name_content
+        if global_name.fqun is None:
+            root_prefix = result.root_prefix
+        else:
+            # Edges with an explicit FQUN only exist when file validation
+            # found the FQUN in the enclosing root's local deps, so this
+            # lookup cannot fail.
+            root_prefix = result.root_prefix / self._path_tracker.sub_root_location(
+                global_name.fqun.canonical, result.root_prefix
             )
+        self._submit_referenced_file(
+            result=result,
+            edge=edge,
+            root_prefix=root_prefix,
+            pool=pool,
+        )
 
-            try:
-                root_config = self._load_root_config(
-                    discovered.root_prefix, discovered.expected_fqun
-                )
-            except config.ConfigError as e:
-                self._path_tracker.mark_root_failed(discovered.root_prefix)
-                result.add_file_diagnostic(
-                    diagnostics.ConfigLoadErrorDiagnostic(
-                        location=discovered.location,
-                        error=e,
-                    )
-                )
-                continue
-
-            context = file_validator.FileValidationContext(
-                file_path=discovered.path,
-                root_prefix=discovered.root_prefix,
-                root_config=root_config,
-            )
-            self._path_tracker.mark_in_progress(full_path)
-            pool.submit(context)
-
-    def _resolve_non_filesystem_discovered_files(
+    def _submit_referenced_file(
         self,
         result: validation_result.FileValidationResult,
+        edge: reference_graph.ReferenceEdge,
+        root_prefix: define_path.DefinePath,
+        pool: _FileWorkPool,
     ):
-        """Load project config if necessary, and resolve FQUNs to sub-roots."""
-        if self._first_discovered_file(result) is None:
+        """Submit an edge's referenced file if not already tracked."""
+        global_name = edge.global_name_reference.name_content
+        file_path = global_name.path.file_path()
+        full_path = root_prefix / file_path
+        if self._path_tracker.is_tracked(full_path):
+            return
+        if self._path_tracker.is_under_failed_root(full_path):
             return
 
-        root_config = self._load_config_in_non_filesystem_context(result)
+        self._check_existing_root_conflicts_for_first_subroot_load(
+            root_prefix=root_prefix,
+            global_name_reference=edge.global_name_reference,
+            source_result=result,
+        )
+
+        try:
+            root_config = self._load_root_config(
+                root_prefix, edge.global_name_reference.effective_fqun.canonical
+            )
+        except config.ConfigError as e:
+            self._path_tracker.mark_root_failed(root_prefix)
+            result.add_file_diagnostic(
+                diagnostics.ConfigLoadErrorDiagnostic(
+                    location=global_name.location,
+                    error=e,
+                )
+            )
+            return
+
+        context = file_validator.FileValidationContext(
+            file_path=file_path,
+            root_prefix=root_prefix,
+            root_config=root_config,
+        )
+        self._path_tracker.mark_in_progress(full_path)
+        pool.submit(context)
+
+    def _resolve_non_filesystem_references(
+        self,
+        result: validation_result.FileValidationResult,
+        pool: _FileWorkPool,
+    ):
+        """Load project config if necessary, and submit referenced files."""
+        first_edge = result.first_edge_to_other_file()
+        if first_edge is None:
+            return
+
+        root_config = self._load_config_in_non_filesystem_context(result, first_edge)
         if root_config is None:
             self._strip_cross_universe_refs(result)
             return
-        self._resolve_non_filesystem_discovered_files_with_config(
+        self._resolve_non_filesystem_references_with_config(
             result=result,
             root_config=root_config,
+            pool=pool,
         )
 
-    def _resolve_non_filesystem_discovered_files_with_config(
+    def _resolve_non_filesystem_references_with_config(
         self,
         result: validation_result.FileValidationResult,
         root_config: config.ProjectRootConfig,
+        pool: _FileWorkPool,
     ):
-        """Resolve discovered files/edges in non-filesystem mode after config load."""
+        """Resolve references in non-filesystem mode after config load."""
         unknown_fquns: set[str] = set()
-        for definition_result in result.definition_results:
-            resolved_discoveries: list[validation_result.DiscoveredFile] = []
-            for discovered in definition_result.discovered_files:
-                sub_root_rel = root_config.sub_roots.get(discovered.expected_fqun)
-                if sub_root_rel is None:
-                    if discovered.expected_fqun in unknown_fquns:
-                        continue
-                    unknown_fquns.add(discovered.expected_fqun)
-                    result.add_file_diagnostic(
-                        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                            location=discovered.location,
-                            universe=discovered.expected_fqun,
-                            current_universe_name=root_config.fqun,
-                        )
-                    )
+        for edge in result.first_edge_per_referenced_file():
+            expected_fqun = edge.global_name_reference.effective_fqun.canonical
+            sub_root_rel = root_config.sub_roots.get(expected_fqun)
+            if sub_root_rel is None:
+                if expected_fqun in unknown_fquns:
                     continue
-                discovered.root_prefix = discovered.root_prefix / sub_root_rel
-                resolved_discoveries.append(discovered)
-            definition_result.discovered_files = resolved_discoveries
+                unknown_fquns.add(expected_fqun)
+                global_name = edge.global_name_reference.name_content
+                result.add_file_diagnostic(
+                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                        location=global_name.location,
+                        universe=expected_fqun,
+                        current_universe_name=root_config.fqun,
+                    )
+                )
+                continue
+            self._submit_referenced_file(
+                result=result,
+                edge=edge,
+                root_prefix=result.root_prefix / sub_root_rel,
+                pool=pool,
+            )
 
         # In a filesystem context, we don't return reference edges for
         # unknown sub-roots, so we are keeping that behavior consistent
@@ -335,14 +372,13 @@ class ProgramStructuralValidator:
         self,
         result: validation_result.FileValidationResult,
     ):
-        """Strip all discovered files and cross-universe edges after total config failure.
+        """Strip cross-universe edges after total config failure.
 
         When root config loading fails entirely, every cross-universe FQUN is
         unresolvable. Same-universe edges are kept so that same-file validation
         (e.g. cycle detection) still runs.
         """
         for definition_result in result.definition_results:
-            definition_result.discovered_files = []
             definition_result.reference_edges = [
                 ref_edge
                 for ref_edge in definition_result.reference_edges
@@ -352,19 +388,18 @@ class ProgramStructuralValidator:
     def _load_config_in_non_filesystem_context(
         self,
         result: validation_result.FileValidationResult,
+        first_edge: reference_graph.ReferenceEdge,
     ) -> config.ProjectRootConfig | None:
         """Load root config and map loading errors to non-filesystem diagnostics."""
-        first_discovered = self._first_discovered_file(result)
-        if first_discovered is None:
-            raise ValueError("expected at least one discovered file")
+        global_name = first_edge.global_name_reference.name_content
         try:
             return self._load_root_config(constants.PROJECT_ROOT)
         except config.NotProjectRootError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
-                    location=first_discovered.location,
-                    universe=first_discovered.expected_fqun,
+                    location=global_name.location,
+                    universe=first_edge.global_name_reference.effective_fqun.canonical,
                     config_path=str(e.config_path),
                 )
             )
@@ -373,7 +408,7 @@ class ProgramStructuralValidator:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
-                    location=first_discovered.location,
+                    location=global_name.location,
                     error=e,
                 )
             )
@@ -554,36 +589,27 @@ class ProgramStructuralValidator:
 
     def _check_existing_root_conflicts_for_first_subroot_load(
         self,
-        discovered: validation_result.DiscoveredFile,
+        root_prefix: define_path.DefinePath,
+        global_name_reference: ast.GlobalTypedNameReference,
         source_result: validation_result.FileValidationResult,
     ):
-        """Check SubRootAlreadyOccupied for discovered files entering a new sub-root."""
-        if self._path_tracker.project_root_loaded(discovered.root_prefix):
+        """Check SubRootAlreadyOccupied for referenced files entering a new sub-root."""
+        if self._path_tracker.project_root_loaded(root_prefix):
             return
 
         conflicting_path, existing_universe = (
-            self._path_tracker.first_tracked_file_under(discovered.root_prefix)
+            self._path_tracker.first_tracked_file_under(root_prefix)
         )
         if conflicting_path is not None:
             source_result.add_file_diagnostic(
                 diagnostics.SubRootAlreadyOccupiedDiagnostic(
-                    location=discovered.location,
-                    universe=discovered.expected_fqun,
-                    sub_root_path=str(discovered.root_prefix),
+                    location=global_name_reference.name_content.location,
+                    universe=global_name_reference.effective_fqun.canonical,
+                    sub_root_path=str(root_prefix),
                     existing_file=str(conflicting_path),
                     existing_universe=existing_universe or "",
                 )
             )
-
-    def _first_discovered_file(
-        self,
-        result: validation_result.FileValidationResult,
-    ) -> validation_result.DiscoveredFile | None:
-        """Return the first discovered file in definition iteration order."""
-        for definition_result in result.definition_results:
-            if definition_result.discovered_files:
-                return definition_result.discovered_files[0]
-        return None
 
     def _load_root_config(
         self,
