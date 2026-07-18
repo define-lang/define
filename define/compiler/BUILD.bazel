@@ -250,6 +250,9 @@ py_test(
     srcs = ["main_integration_test.py"],
     data = [":main"],
     env = {"MAIN_BINARY": "$(rlocationpath :main)"},
+    # The compiler runs in a subprocess, so this test's own process executes no
+    # instrumented code and the coverage reporter fails on an empty data set.
+    tags = ["no-coverage"],
     deps = [
         "@rules_python//python/runfiles",
     ],
