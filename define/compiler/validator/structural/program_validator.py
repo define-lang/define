@@ -522,11 +522,10 @@ class ProgramStructuralValidator:
 
         if edge.global_name_reference not in self._definition_results:
             source_definition.add_diagnostic(
-                diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
+                diagnostics.ReferencedDefinitionNotFoundDiagnostic(
                     location=global_name.location,
-                    path=str(global_name.path.relative_path)
-                    + constants.DEFINE_FILE_SUFFIX,
-                    expected_name=edge.global_name_reference.full_typed_name,
+                    file_path=str(target_file),
+                    definition_name=edge.global_name_reference.full_typed_name,
                 )
             )
 

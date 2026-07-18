@@ -37,7 +37,7 @@ INVALID_FILES = sorted((FILES_ROOT / "invalid").rglob("*.dfn"))
 # Files NOT in this dict are expected to produce DefineSyntaxError.
 EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "references/action_local_pos_requires_missing_global.dfn": [
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     ],
     "syntax/authority_path_empty_segment/empty_segment.dfn": [
         diagnostics.FqunMismatchDiagnostic,
@@ -347,13 +347,12 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ConfigLoadErrorDiagnostic,
     ],
     "global_name_walk/sub_root_is_current_universe": [
-        # TODO: ReferencedGlobalNameWrongTypeDiagnostic should not fire here.
         diagnostics.ReferencedFileNotFoundDiagnostic,
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
     "global_name_walk/wrong_type": [
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     ],
     "particles/create/chain_not_in_action": [
         diagnostics.ChainElementNotInterfacePositionDiagnostic,

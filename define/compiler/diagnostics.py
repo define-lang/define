@@ -379,13 +379,14 @@ class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
 
 
 @dataclass
-class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
-    """Diagnostic for when a referenced file lacks the referenced type at that path."""
+class ReferencedDefinitionNotFoundDiagnostic(Diagnostic):
+    """Diagnostic for when a resolved file does not contain the referenced definition."""
 
-    path: str
-    expected_name: str
+    file_path: str
+    definition_name: str
     message_format: ClassVar[str] = (
-        "path '{self.path}' does not define '{self.expected_name}'"
+        "file '{self.file_path}' does not contain a definition for "
+        "'{self.definition_name}'"
     )
 
 

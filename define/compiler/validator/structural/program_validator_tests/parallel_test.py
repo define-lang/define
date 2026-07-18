@@ -127,11 +127,11 @@ def test_wrong_type_detected_without_deferral(
     assert result.file_results[3].file_path == define_path.DefinePath("checker.dfn")
     assert len(result.file_results[3].diagnostics) == 1
     diag = result.file_results[3].diagnostics[0]
-    assert isinstance(diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert isinstance(diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag.location.line == 3
     assert diag.location.column == 29
-    assert diag.path == "target.dfn"
-    assert diag.expected_name == "position<my.domain.com:my_lib:/target>"
+    assert diag.file_path == "target.dfn"
+    assert diag.definition_name == "position<my.domain.com:my_lib:/target>"
 
 
 def test_reference_edges_resolve_by_file_completion_order(
@@ -186,11 +186,13 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert all(r.exception is None for r in result.file_results)
     assert len(result.file_results[0].diagnostics) == 2
     diag0 = result.file_results[0].diagnostics[0]
-    assert isinstance(diag0, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert isinstance(diag0, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag0.location.line == 3
     assert diag0.location.column == 29
-    assert diag0.path == "lib/target.dfn"
-    assert diag0.expected_name == "position<mv:define-lang.org:test_parent:/lib/target>"
+    assert diag0.file_path == "lib/target.dfn"
+    assert (
+        diag0.definition_name == "position<mv:define-lang.org:test_parent:/lib/target>"
+    )
     diag1 = result.file_results[0].diagnostics[1]
     assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag1.location.line == 4

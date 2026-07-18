@@ -414,13 +414,13 @@ def test_path_inside_other_universe_skips_further_validation(
     assert len(result.file_results[0].diagnostics) == 2
     wrong_type_diag = result.file_results[0].diagnostics[0]
     assert isinstance(
-        wrong_type_diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic
+        wrong_type_diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
     assert wrong_type_diag.location.line == 3
     assert wrong_type_diag.location.column == 29
-    assert wrong_type_diag.path == "child_action.dfn"
+    assert wrong_type_diag.file_path == "lib/child_action.dfn"
     assert (
-        wrong_type_diag.expected_name
+        wrong_type_diag.definition_name
         == "position<mv:define-lang.org:child_universe:/child_action>"
     )
     path_diag = result.file_results[0].diagnostics[1]
@@ -460,13 +460,13 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert result.file_results[0].diagnostics[0].location.line == 3
     assert result.file_results[0].diagnostics[0].location.column == 29
-    assert result.file_results[0].diagnostics[0].path == "target.dfn"
+    assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
     assert (
-        result.file_results[0].diagnostics[0].expected_name
+        result.file_results[0].diagnostics[0].definition_name
         == "position<mv:define-lang.org:child_universe:/target>"
     )
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
@@ -513,13 +513,13 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert result.file_results[0].diagnostics[0].location.line == 3
     assert result.file_results[0].diagnostics[0].location.column == 29
-    assert result.file_results[0].diagnostics[0].path == "target.dfn"
+    assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
     assert (
-        result.file_results[0].diagnostics[0].expected_name
+        result.file_results[0].diagnostics[0].definition_name
         == "position<mv:define-lang.org:child_universe:/target>"
     )
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
@@ -733,10 +733,10 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diags[0].path == "wrong_type.dfn"
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].file_path == "wrong_type.dfn"
     assert (
-        diags[0].expected_name
+        diags[0].definition_name
         == "position<mv:define-lang.org:parent_universe:/wrong_type>"
     )
     assert diags[0].location.line == 4

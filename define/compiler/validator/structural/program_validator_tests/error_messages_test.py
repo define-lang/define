@@ -49,6 +49,49 @@ def test_path_mismatch_format(validate_project: ValidateProject):
         definition path '/wrong/path' does not match file path '/foo/bar'""")
 
 
+def test_referenced_definition_not_found_format(validate_project: ValidateProject):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "target.dfn": (
+                "define the potential action<my.domain.com:my_lib:/target> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a particle in position<__noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    test_result = next(
+        r
+        for r in result.file_results
+        if r.file_path == define_path.DefinePath("test.dfn")
+    )
+    diags = test_result.diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    formatted = diags[0].format(source.splitlines())
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+                it has the position</target>.
+                                    ^
+        file 'target.dfn' does not contain a definition for 'position<my.domain.com:my_lib:/target>'""")
+    )
+
+
 def test_duplicate_definition_format():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"
