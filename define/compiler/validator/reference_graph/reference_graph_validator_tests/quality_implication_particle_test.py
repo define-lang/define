@@ -281,26 +281,31 @@ def test_round_trip_local_to_implied_back_to_local_preserves_quality(
     assert_no_errors(result.program_result)
 
 
-def test_round_trip_implied_to_local(
+def test_round_trip_implied_to_local_back_to_implied_preserves_quality(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            # TODO: Rename these and improve this test to prove that qualities
-            # are preserved.
-            "implier.dfn": "define the potential position<my.domain.com:my_lib:/implier>.\n",
+            "required_quality.dfn": "define the potential position<my.domain.com:my_lib:/required_quality>.\n",
+            "quality_bearing.dfn": (
+                "define the potential position<my.domain.com:my_lib:/quality_bearing> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</required_quality>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implier>.\n"
+                "    it also assigns the position</quality_bearing>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<local>.\n"
-                "        create a particle in position</implier>.\n"
-                "        move the particle in position</implier> to position<local>.\n"
-                "        move the particle in position<local> to position</implier>.\n"
-                "        destroy the particle in position</implier>.\n"
+                "        define the position<temporary>.\n"
+                "        create a particle in position</quality_bearing>.\n"
+                "        move the particle in position</quality_bearing> to position<temporary>.\n"
+                "        move the particle in position<temporary> to position</quality_bearing>.\n"
+                "        destroy the particle in position</quality_bearing>.\n"
                 "    }\n"
                 "}\n"
             ),
