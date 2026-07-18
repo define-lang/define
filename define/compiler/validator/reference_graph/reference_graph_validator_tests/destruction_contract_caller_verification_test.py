@@ -1619,9 +1619,7 @@ def test_owner_with_error_required_position_skips_destructor_check(
     assert len(all_diags) == 2
     # The move-from-empty: the destructor's requirement on position</x> is error to
     # the owner, so it is skipped rather than reported as a violation.
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -1629,6 +1627,7 @@ def test_owner_with_error_required_position_skips_destructor_check(
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</x>"
     )
+    assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is None
     # close_file declares target's position</x> constraint but its own body never
     # references it; only the caller's move does, which is a different definition,

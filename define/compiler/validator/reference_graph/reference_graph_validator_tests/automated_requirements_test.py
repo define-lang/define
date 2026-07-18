@@ -356,6 +356,8 @@ def test_empty_requirement_with_error_state_is_silent(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
@@ -405,6 +407,8 @@ def test_occupied_requirement_with_error_state_is_silent(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
@@ -465,6 +469,8 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 47

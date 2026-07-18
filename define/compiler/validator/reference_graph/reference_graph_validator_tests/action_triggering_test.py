@@ -589,6 +589,11 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
         assert result.program_result.all_diagnostics[0].location.line == 8
         assert result.program_result.all_diagnostics[0].location.column == 30
+        assert (
+            result.program_result.all_diagnostics[0].is_action_interface_position
+            is False
+        )
+        assert result.program_result.all_diagnostics[0].inferred_at is None
 
     def test_no_body_effect_when_move_target_has_error_state(
         self,
@@ -619,6 +624,11 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
         assert result.program_result.all_diagnostics[0].location.line == 8
         assert result.program_result.all_diagnostics[0].location.column == 30
+        assert (
+            result.program_result.all_diagnostics[0].is_action_interface_position
+            is False
+        )
+        assert result.program_result.all_diagnostics[0].inferred_at is None
 
 
 class TestUnknownGlobalNoTrigger:

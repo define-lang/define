@@ -175,7 +175,7 @@ def test_untouched_interface_position_preserved_after_trigger(
 def test_move_from_guarantee_emptied_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Moving from an interface position that the action's guarantee emptied produces MoveFromEmptyInterfacePositionDiagnostic."""
+    """Moving from an interface position that the action's guarantee emptied is an error."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -211,9 +211,7 @@ def test_move_from_guarantee_emptied_interface_position(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -221,6 +219,7 @@ def test_move_from_guarantee_emptied_interface_position(
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
+    assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 30
@@ -1126,9 +1125,7 @@ def test_constructor_trigger_applies_empty_guarantee(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
@@ -1136,6 +1133,7 @@ def test_constructor_trigger_applies_empty_guarantee(
         all_diags[0].position_name
         == "position<inner>::action</other>::position<trigger_pos>"
     )
+    assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 30
@@ -1518,9 +1516,7 @@ def test_post_trigger_empty_guarantee_on_child_position(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -1528,6 +1524,8 @@ def test_post_trigger_empty_guarantee_on_child_position(
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</child_q>"
     )
+    assert all_diags[0].is_action_interface_position is True
+    assert all_diags[0].inferred_at is None
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
@@ -1743,9 +1741,7 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 43
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -1753,6 +1749,8 @@ def test_post_trigger_new_guarantee_deletes_old_children(
         all_diags[0].position_name
         == "position<box>::action</other>::position<iface>::position</a>"
     )
+    assert all_diags[0].is_action_interface_position is True
+    assert all_diags[0].inferred_at is None
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 

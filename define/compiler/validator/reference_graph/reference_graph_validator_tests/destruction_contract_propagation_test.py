@@ -1243,6 +1243,8 @@ def test_required_position_error_in_child_state_skips_verification(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("close_file.dfn")
     assert all_diags[0].position_name == "position<spare>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),

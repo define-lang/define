@@ -117,22 +117,20 @@ class ParticleOperationExecutor:
         diags: list[diagnostics.Diagnostic] = []
         if not from_occupied:
             from_action = op.source.get_last_action()
-            if from_action is not None:
-                emptied_by = self._tracker.get_emptied_by(op.source)
-                diags.append(
-                    diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-                        location=op.source.location,
-                        position_name=op.source.source_chained_name,
-                        inferred_at=emptied_by.location if emptied_by else None,
-                    )
+            is_action_interface_position = from_action is not None
+            emptied_by = (
+                self._tracker.get_emptied_by(op.source)
+                if is_action_interface_position
+                else None
+            )
+            diags.append(
+                diagnostics.MoveFromEmptyPositionDiagnostic(
+                    location=op.source.location,
+                    position_name=op.source.source_chained_name,
+                    is_action_interface_position=is_action_interface_position,
+                    inferred_at=emptied_by.location if emptied_by else None,
                 )
-            else:
-                diags.append(
-                    diagnostics.MoveFromEmptyPositionDiagnostic(
-                        location=op.source.location,
-                        position_name=op.source.source_chained_name,
-                    )
-                )
+            )
         if not to_empty:
             occupant = self._tracker.get_occupant(op.target)
             diags.append(

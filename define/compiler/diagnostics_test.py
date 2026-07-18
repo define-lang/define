@@ -56,10 +56,10 @@ def test_move_to_occupied_message_with_position():
 
 
 def test_move_from_empty_interface_position_default():
-    diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
+    diagnostic = diagnostics.MoveFromEmptyPositionDiagnostic(
         location=_LOC,
         position_name="position<box>::action</other>::position<item>",
-        inferred_at=None,
+        is_action_interface_position=True,
     )
 
     assert diagnostic.message == (
@@ -71,9 +71,10 @@ def test_move_from_empty_interface_position_default():
 
 
 def test_move_from_empty_interface_position_with_inferred_at():
-    diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
+    diagnostic = diagnostics.MoveFromEmptyPositionDiagnostic(
         location=_LOC,
         position_name="position<box>::action</other>::position<trigger_pos>",
+        is_action_interface_position=True,
         inferred_at=ast.SourceLocation(
             line=7,
             column=37,

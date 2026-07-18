@@ -601,10 +601,22 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement's source position has no particle."""
 
     position_name: str
-    message_format: ClassVar[str] = (
-        "cannot move a particle from '{self.position_name}'"
-        " because it does not contain one"
-    )
+    is_action_interface_position: bool = False
+    inferred_at: ast.SourceLocation | None = None
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the diagnostic message, optionally including the inferred-at location."""
+        base = (
+            f"cannot move a particle from '{self.position_name}'"
+            " because it does not contain one"
+        )
+        if self.inferred_at is not None:
+            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
+        if self.is_action_interface_position:
+            return f"{base}; action interface positions are empty by default"
+        return base
 
 
 @dataclass
@@ -866,27 +878,6 @@ class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
         "However, this line moves a particle from '{self.origin_name}' into"
         " '{self.position_name}' and then nothing moves it back out of that position."
     )
-
-
-# TODO: Should perhaps just merge this with the normal MoveFromEmpty diagnostic.
-@dataclass
-class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
-    """Diagnostic for moving from an empty action interface position."""
-
-    position_name: str
-    inferred_at: ast.SourceLocation | None
-
-    @property
-    @typing.override
-    def message(self) -> str:
-        """Render the diagnostic message."""
-        base = (
-            f"cannot move a particle from '{self.position_name}'"
-            f" because it does not contain one"
-        )
-        if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
-        return f"{base}; action interface positions are empty by default"
 
 
 @dataclass

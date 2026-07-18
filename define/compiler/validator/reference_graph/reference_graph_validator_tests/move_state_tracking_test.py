@@ -29,6 +29,8 @@ def test_move_from_empty_position(
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<from_pos>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
 
 
 def test_move_to_occupied_position(
@@ -155,6 +157,8 @@ def test_same_move_twice_in_a_row(
     assert diags[0].location.line == 10
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[1].location.line == 10
     assert diags[1].location.column == 45
@@ -189,6 +193,8 @@ def test_round_trip_move_fails_second_return(
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<b>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[1].location.line == 11
     assert diags[1].location.column == 45
@@ -231,6 +237,8 @@ def test_two_actions_same_name_one_empty_error_one_clean(
     assert all_diags[0].position_name == "position<from_pos>"
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
 
 
 def test_two_actions_same_name_one_occupied_error_one_clean(
@@ -328,6 +336,8 @@ def test_move_from_empty_marks_both_positions_error(
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
 
 
 def test_move_to_occupied_marks_both_positions_error(
@@ -387,6 +397,8 @@ def test_both_from_empty_and_to_occupied_marks_error(
     assert diags[0].location.line == 9
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[1].location.line == 9
     assert diags[1].location.column == 45
@@ -422,6 +434,8 @@ def test_error_state_does_not_affect_other_positions(
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[1].location.line == 11
     assert diags[1].location.column == 45
@@ -533,6 +547,8 @@ def test_move_from_empty_local_chained(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
 
 
 def test_move_to_occupied_local_chained(
@@ -610,6 +626,8 @@ def test_double_move_from_local_chained_fails(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
 
 
 def test_move_from_local_chained_to_local(

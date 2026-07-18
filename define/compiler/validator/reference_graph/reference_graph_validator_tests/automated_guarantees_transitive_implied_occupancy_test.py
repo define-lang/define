@@ -317,9 +317,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 16
@@ -329,6 +327,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<input>"
     )
+    assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 30
@@ -656,6 +655,8 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert all_diags[0].location.end_column == 67
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
@@ -787,6 +788,8 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     assert all_diags[0].location.end_column == 52
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</implied_pos>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
     assert action_graph(result.operation_graphs) == [
         (
             "action<my.domain.com:my_lib:/middle>",

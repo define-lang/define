@@ -860,3 +860,108 @@ def test_destroy_in_default_empty_interface_position_format(
                                         ^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")
     )
+
+
+def test_move_from_emptied_interface_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        define the position<sink>.\n"
+        "        define the position<sink2>.\n"
+        "        create a particle in position<box>.\n"
+        "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+        "        destroy the particle in position<box>.\n"
+        "        create a particle in position<box>.\n"
+        "        create a particle in position<box>::action</other>::position<item>.\n"
+        "        move the particle in position<box>::action</other>::position<item> to position<sink>.\n"
+        "        move the particle in position<box>::action</other>::position<item> to position<sink2>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 19, column 30
+                move the particle in position<box>::action</other>::position<item> to position<sink2>.
+                                     ^
+        cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
+        File "test.dfn", line 18, column 30""")
+
+
+def test_move_from_default_empty_interface_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        define the position<sink>.\n"
+        "        create a particle in position<box>.\n"
+        "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+        "        destroy the particle in position<box>.\n"
+        "        create a particle in position<box>.\n"
+        "        move the particle in position<box>::action</other>::position<item> to position<sink>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 16, column 30
+                move the particle in position<box>::action</other>::position<item> to position<sink>.
+                                     ^
+        cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")
+    )
