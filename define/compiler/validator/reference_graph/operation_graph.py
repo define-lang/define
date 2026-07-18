@@ -400,36 +400,6 @@ class OperationGraph:
         """Return the last operation this action performed on the position at ``key``."""
         return self._last_operation[key]
 
-    def _last_operation_affecting_position(self, key: tuple[str, ...]) -> int | None:
-        """Return the last operation that put the position at ``key`` in the state it is in, if any.
-
-        This is either the last direct operation on the position, or the
-        last move that put the parent particle into _its_ position.
-
-        If there are no operations this action did that affected the named
-        position in nay way, returns None.
-        """
-        operation = self._last_operation.get(key)
-        if operation is not None:
-            return operation
-        ancestor = self._most_recent_existing_ancestor_operation(key)
-        if ancestor is not None and isinstance(self._nodes[ancestor], MoveNode):
-            return ancestor
-        return None
-
-    def _most_recent_existing_ancestor_operation(
-        self, key: tuple[str, ...]
-    ) -> int | None:
-        """Return the most recent already-recorded operation on ``key``'s ancestor chain."""
-        most_recent: int | None = None
-        for length in range(len(key) - 1, 0, -1):
-            operation = self._last_operation.get(key[:length])
-            if operation is not None and (
-                most_recent is None or operation > most_recent
-            ):
-                most_recent = operation
-        return most_recent
-
     def body_touched_key(self, key: tuple[str, ...]) -> bool:
         """Return whether the body performed a real operation on exactly this key.
 
@@ -556,13 +526,22 @@ class OperationGraph:
         self, caller_position_key: tuple[str, ...]
     ) -> int | None:
         """Return the operation on ``caller_position_key`` that satisfies a callee requirement, or None."""
-        if caller_position_key not in self._last_operation:
-            # We need to materialize RequirementNodes to propagate to the caller.
-            _ = self._most_recent_ancestor_chain_operation(caller_position_key)
-        # A move of an ancestor position carried this position along with it, so
-        # that move is what put it in the state the callee needs, even though
-        # nothing operated on the position itself.
-        return self._last_operation_affecting_position(caller_position_key)
+        operation = self._last_operation.get(caller_position_key)
+        if operation is not None:
+            return operation
+        # We need to materialize RequirementNodes to propagate to the caller.
+        ancestor_operation = self._most_recent_ancestor_chain_operation(
+            caller_position_key
+        )
+        operation = self._last_operation.get(caller_position_key)
+        if operation is not None:
+            return operation
+        # A move of a parent position also put this position in its current state.
+        if ancestor_operation is not None and isinstance(
+            self._nodes[ancestor_operation], MoveNode
+        ):
+            return ancestor_operation
+        return None
 
     def _operation_dependencies(
         self,
