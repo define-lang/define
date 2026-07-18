@@ -120,6 +120,7 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
     ],

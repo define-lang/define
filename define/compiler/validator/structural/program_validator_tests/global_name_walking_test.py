@@ -5,6 +5,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -15,7 +16,7 @@ from define.compiler.conftest import (
 )
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
-from define.compiler.validator.structural import program_validator
+from define.compiler.validator.structural import file_validator, program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -130,6 +131,79 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     assert all_diags[0].first_definition_line == 1
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 1
+
+
+def test_back_reference_to_earlier_definition_does_not_load_its_file(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "test.dfn": (
+                "define the potential position<my.domain.com:my_lib:/other>.\n"
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</other>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
+        },
+    )
+    assert len(result.file_results) == 1
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert diags[0].expected_path == "/test"
+    assert diags[0].actual_path == "/other"
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 52
+
+
+def test_same_target_file_referenced_as_two_types_loads_once(
+    validate_project: ValidateProject,
+):
+    original_validate_file = file_validator.FileStructuralValidator.validate_file
+    validated_paths: list[str] = []
+
+    def recording_validate_file(
+        self: file_validator.FileStructuralValidator,
+        context: file_validator.FileValidationContext,
+    ):
+        validated_paths.append(str(context.full_path))
+        return original_validate_file(self, context)
+
+    with mock.patch.object(
+        file_validator.FileStructuralValidator,
+        "validate_file",
+        autospec=True,
+        side_effect=recording_validate_file,
+    ):
+        result = validate_project(
+            {
+                "test.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain particles where {\n"
+                    "        it has the position</target>.\n"
+                    "        it has the action</target>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            },
+        )
+    assert validated_paths == ["test.dfn", "target.dfn"]
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].file_path == "target.dfn"
+    assert diags[0].definition_name == "action<my.domain.com:my_lib:/target>"
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 27
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
+    assert result.file_results[1].diagnostics == []
 
 
 def test_self_cycle_emits_diagnostic(
@@ -368,6 +442,42 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert isinstance(diags[0].error, config.NotProjectRootError)
 
 
+def test_non_filesystem_current_universe_reference_does_not_load_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # A current-universe reference from non-filesystem source is mishandled as
+    # an unconfigured cross-universe reference (see
+    # test_forward_reference_within_non_filesystem_source_is_broken in
+    # file_not_found_test.py), so the on-disk file is never loaded.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "target.dfn").write_text(
+        "define the potential position<my.domain.com:my_lib:/target>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    assert str(result.file_results[0].file_path) == "<string>"
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "my.domain.com:my_lib"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+
+
 def test_unknown_universe_emits_diagnostic(
     parse_and_validate_file: ParseAndValidateFile,
 ):
@@ -591,4 +701,110 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[1].universe == "unknown.com:lib_b"
     assert diags[1].location.line == 5
+    assert diags[1].location.column == 29
+
+
+def test_unknown_universe_sharing_path_with_known_universe_does_not_load_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    child_universe = "mv:define-lang.org:child_lib"
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", child_universe)
+    (tmp_path / "lib" / "target.dfn").write_text(
+        f"define the potential position<{child_universe}:/target>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<unknown.com:other_lib:/target>.\n"
+        f"        it has the position<{child_universe}:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    assert str(result.file_results[0].file_path) == "<string>"
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:other_lib"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+
+
+def test_unknown_universe_diagnostics_precede_sub_root_config_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    child_universe = "mv:define-lang.org:child_lib"
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
+    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        f"        it has the position<{child_universe}:/target>.\n"
+        "        it has the position<unknown.com:other_lib:/other>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:other_lib"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
+    assert isinstance(diags[1], diagnostics.ConfigLoadErrorDiagnostic)
+    assert isinstance(diags[1].error, config.NotProjectRootError)
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 29
+
+
+def test_second_unknown_universe_for_same_path_diagnosed_per_definition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<unknown.com:lib_a:/target>.\n"
+        "        it has the position<unknown.com:lib_b:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    # The second universe is diagnosed per-definition during edge validation,
+    # so its diagnostic sorts before the file-level one for the first universe.
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:lib_b"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
+    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].universe == "unknown.com:lib_a"
+    assert diags[1].current_universe_name == "my.domain.com:my_lib"
+    assert diags[1].location.line == 3
     assert diags[1].location.column == 29

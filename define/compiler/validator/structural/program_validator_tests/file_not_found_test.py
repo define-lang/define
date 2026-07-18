@@ -197,3 +197,28 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     assert diags[1].file_path == "missing.dfn"
     assert diags[1].location.line == 9
     assert diags[1].location.column == 33
+
+
+def test_same_missing_file_referenced_as_two_types_in_one_definition(
+    parse_and_validate_file: ParseAndValidateFile,
+):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</missing>.\n"
+        "        it has the action</missing>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = parse_and_validate_file(source)
+    assert result.exception is None
+    diags = result.diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diags[0].file_path == "missing.dfn"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diags[1].file_path == "missing.dfn"
+    assert diags[1].location.line == 4
+    assert diags[1].location.column == 27

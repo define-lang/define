@@ -785,6 +785,48 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     assert diags[1].current_universe_name == _PARENT_UNIVERSE
 
 
+def test_non_filesystem_reference_walks_into_sub_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
+    test_helpers.write_local_deps_config(tmp_path, {_CHILD_UNIVERSE: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    (tmp_path / "lib/target.dfn").write_text(
+        (
+            f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</leaf>.\n"
+            + "    }\n"
+            + "}\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "lib/leaf.dfn").write_text(
+        f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+        "    it may only contain particles where {\n"
+        f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 3
+    assert_no_errors(result)
+    assert str(result.file_results[0].file_path) == "<string>"
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+    assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
+    assert result.file_results[2].file_path == define_path.DefinePath("lib/leaf.dfn")
+    assert result.file_results[2].root_prefix == define_path.DefinePath("lib")
+
+
 @pytest.mark.xfail(
     raises=KeyError,
     strict=True,
