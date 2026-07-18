@@ -65,10 +65,14 @@ class ParticleOperationExecutor:
     """Creates, destroys, and moves particles, including enforcing the rules on doing so."""
 
     _tracker: particle_tracker.ParticleTracker
+    _enclosing_fqun: ast.Fqun
 
-    def __init__(self, tracker: particle_tracker.ParticleTracker):
+    def __init__(
+        self, tracker: particle_tracker.ParticleTracker, enclosing_fqun: ast.Fqun
+    ):
         """Create a new ParticleOperationExecutor."""
         self._tracker = tracker
+        self._enclosing_fqun = enclosing_fqun
 
     def execute_create(self, op: Create) -> list[diagnostics.Diagnostic]:
         """Execute the Create operation."""
@@ -146,7 +150,7 @@ class ParticleOperationExecutor:
             return diags
         have = _name_set(self._tracker.get_occupant(op.source).qualities)
         missing = [
-            name.full_typed_name
+            name.source_form_in_universe(self._enclosing_fqun)
             for name in op.target_required_qualities
             if name.full_typed_name not in have
         ]

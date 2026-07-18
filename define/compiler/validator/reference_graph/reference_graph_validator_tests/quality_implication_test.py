@@ -96,7 +96,7 @@ def test_single_level_transitivity_does_not_include_unrelated(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/unrelated>",
+        "position</unrelated>",
     ]
 
 
@@ -390,7 +390,7 @@ def test_matching_implied_but_not_matching_impliers_for_move(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/independent>",
+        "position</independent>",
     ]
 
 

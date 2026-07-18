@@ -648,7 +648,6 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
 
     source_position: str
     target_position: str
-    # TODO: missing_qualities should use source form, not canonical form.
     missing_qualities: Sequence[str]
 
     @property

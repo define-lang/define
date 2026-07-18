@@ -154,7 +154,7 @@ def test_move_into_implied_position_missing_quality(
     assert all_diags[0].source_position == "position</plain>"
     assert all_diags[0].target_position == "position</parent>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/child>",
+        "position</child>",
     ]
 
 

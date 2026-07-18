@@ -202,7 +202,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert all_diags[0].source_position == "position<box>::position</implied_b>"
     assert all_diags[0].target_position == "position<fail_dest>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/other>",
+        "position</other>",
     ]
     assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),
@@ -399,7 +399,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     )
     assert all_diags[0].target_position == "position<fail_dest>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/other>",
+        "position</other>",
     ]
     assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),
@@ -592,7 +592,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     )
     assert all_diags[0].target_position == "position<fail_dest>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/other>",
+        "position</other>",
     ]
     assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),

@@ -647,8 +647,56 @@ def test_move_violates_constraints_error_message(
           from: position<from_pos>
             to: position<to_pos>
         because the particle being moved does not have the required qualities:
-          position<my.domain.com:my_lib:/x>
-          action<my.domain.com:my_lib:/y>""")
+          position</x>
+          action</y>""")
+
+
+def test_move_violates_constraints_error_message_cross_universe(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    child_fqun = "mv:define-lang.org:child"
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the position</x>.\n"
+        f"                it has the position<{child_fqun}:/q>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<from_pos>.\n"
+        "        move the particle in position<from_pos> to position<to_pos>.\n"
+        "        create a particle in position<to_pos>::position</x>.\n"
+        f"        create a particle in position<to_pos>::position<{child_fqun}:/q>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": source,
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "lib/q.dfn": f"define the potential position<{child_fqun}:/q>.\n",
+        },
+        local_deps={child_fqun: "lib"},
+        sub_roots={"lib": child_fqun},
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent(f"""\
+        File "test.dfn", line 14, column 52
+                move the particle in position<from_pos> to position<to_pos>.
+                                                           ^
+        cannot move a particle
+          from: position<from_pos>
+            to: position<to_pos>
+        because the particle being moved does not have the required qualities:
+          position</x>
+          position<{child_fqun}:/q>""")
 
 
 def test_constructor_requires_empty_position_format(

@@ -42,7 +42,7 @@ def test_move_to_chained_dest_violates_constraints(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/x>",
+        "position</x>",
     ]
 
 
@@ -159,7 +159,7 @@ def test_move_from_chained_to_local_violates_constraints(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -250,7 +250,7 @@ def test_move_from_unconstrained_local_to_chained_constrained(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/x>",
+        "position</x>",
     ]
 
 
@@ -289,7 +289,7 @@ def test_definition_local_to_chained_violates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/x>",
+        "position</x>",
     ]
 
 
@@ -375,7 +375,7 @@ def test_chained_to_definition_local_violates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -624,7 +624,7 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     assert all_diags[0].source_position == "position<a>::position</x>::position</y>"
     assert all_diags[0].target_position == "position<b>::position</z>::position</w>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/x>",
+        "position</x>",
     ]
 
 

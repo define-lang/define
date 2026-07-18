@@ -295,6 +295,13 @@ class GlobalTypedNameReference(GlobalTypedName):
     def full_typed_name(self) -> str:
         return self._full_typed_name
 
+    def source_form_in_universe(self, caller_fqun: Fqun) -> str:
+        """Get the string form of the name as it would be written in source in the specified universe."""
+        effective_fqun = self.name_content.fqun or self.enclosing_fqun
+        if effective_fqun.canonical != caller_fqun.canonical:
+            return self.full_typed_name
+        return self.source_typed_name
+
 
 @dataclass(frozen=True, slots=True)
 class LocalTypedNameReference(TypedName):
@@ -491,11 +498,9 @@ class ChainedName(ASTNode):
         parts: list[str] = []
         for elem in self.typed_names:
             if isinstance(elem, GlobalTypedNameReference):
-                effective_fqun = elem.name_content.fqun or elem.enclosing_fqun
-                if effective_fqun.canonical != caller_fqun.canonical:
-                    parts.append(elem.full_typed_name)
-                    continue
-            parts.append(elem.source_typed_name)
+                parts.append(elem.source_form_in_universe(caller_fqun))
+            else:
+                parts.append(elem.source_typed_name)
         return "::".join(parts)
 
     def with_prefix(self, prefix: ChainedName) -> Self:

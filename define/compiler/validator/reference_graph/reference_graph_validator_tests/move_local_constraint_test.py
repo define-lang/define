@@ -45,7 +45,7 @@ def test_move_violates_dest_constraints(
     assert all_diags[0].source_position == "position<from_pos>"
     assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -83,7 +83,7 @@ def test_move_from_unconstrained_to_constrained(
     assert all_diags[0].source_position == "position<from_pos>"
     assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/x>",
+        "position</x>",
     ]
 
 
@@ -207,7 +207,7 @@ def test_local_move_violates_constraints_marks_error(
     assert all_diags[0].source_position == "position<from_pos>"
     assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -280,7 +280,7 @@ def test_definition_local_to_statement_local_violates(
     assert all_diags[0].source_position == "position<def_pos>"
     assert all_diags[0].target_position == "position<stmt_pos>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -352,7 +352,7 @@ def test_statement_local_to_definition_local_violates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 
@@ -423,7 +423,7 @@ def test_definition_local_to_definition_local_violates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/y>",
+        "position</y>",
     ]
 
 

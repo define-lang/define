@@ -113,7 +113,9 @@ class ActionPostorderValidator:
 
     @cached_property
     def _executor(self) -> particle_operation.ParticleOperationExecutor:
-        return particle_operation.ParticleOperationExecutor(self._tracker)
+        return particle_operation.ParticleOperationExecutor(
+            self._tracker, self._enclosing_fqun
+        )
 
     @cached_property
     def _implied_quality_list(self) -> tuple[ast.GlobalTypedNameReference, ...]:
