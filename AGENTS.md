@@ -125,6 +125,11 @@ See [define/spec/spec.md] for the language specification.
 
 The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 
+- **Codex only:** Always invoke `bazelisk` and `bazel` commands outside the
+  Codex sandbox by requesting escalated execution. This lets Bazel's persistent
+  server survive between tool calls. The repository's Codex allow rules approve
+  `bazelisk` escalation without prompting the user.
+
 ### BUILD File Management
 
 BUILD files are maintained entirely by hand — do not use gazelle or any other
