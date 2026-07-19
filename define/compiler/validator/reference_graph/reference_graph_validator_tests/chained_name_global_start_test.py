@@ -7,11 +7,29 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
+    ValidateTestdataNonFilesystemWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestUnnecessarySelfReference:
+    def test_destroy_self_reference_in_chain(
+        self,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    ):
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        diags = results[0].diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert diags[0].definition_name == (
+            "action<mv:define-lang.org:test_files:/invalid/references/unnecessary_self_reference>"
+        )
+        assert diags[0].location.line == 8
+        assert diags[0].location.column == 33
+        assert diags[0].location.end_line == 8
+        assert diags[0].location.end_column == 87
+        assert diags[0].location.file_path is None
+
     def test_self_reference_in_chain(
         self,
         validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,

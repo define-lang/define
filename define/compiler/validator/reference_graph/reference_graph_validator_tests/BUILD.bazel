@@ -400,6 +400,7 @@ py_test(
     name = "chained_name_global_start_test",
     size = "small",
     srcs = ["chained_name_global_start_test.py"],
+    data = ["//define/testdata/reference_graph/chained_name_global_start"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

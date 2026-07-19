@@ -280,7 +280,9 @@ py_test(
     name = "universe_without_authority_test",
     size = "small",
     srcs = ["universe_without_authority_test.py"],
+    data = ["//define/testdata/structural/universe_without_authority"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],

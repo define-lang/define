@@ -4,6 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -22,19 +23,19 @@ def test_standard_without_authority_ok():
     assert diags[0].location.column == 31
 
 
-def test_non_standard_without_authority_error():
-    source = "define the potential position<my_universe:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_non_standard_without_authority_error(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
     assert diags[0].universe_name == "my_universe"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
+    assert diags[0].location.end_line == 1
+    assert diags[0].location.end_column == 42
+    assert diags[0].location.file_path is None
 
 
 def test_with_authority_ok():

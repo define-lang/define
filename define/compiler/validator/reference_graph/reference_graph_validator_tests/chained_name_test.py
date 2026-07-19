@@ -288,6 +288,34 @@ class TestCreateParticle:
 
 
 class TestMoveParticle:
+    def test_undefined_local_action_in_from_position(
+        self,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    ):
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        diags = results[0].diagnostics
+        assert len(diags) == 3
+        assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].local_name == "action<act_other>"
+        assert diags[0].location.line == 7
+        assert diags[0].location.column == 30
+        assert diags[0].location.end_line == 7
+        assert diags[0].location.end_column == 47
+        assert diags[0].location.file_path is None
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].local_name == "act_other"
+        assert diags[1].location.line == 7
+        assert diags[1].location.column == 30
+        assert diags[1].location.end_line == 7
+        assert diags[1].location.end_column == 47
+        assert diags[1].location.file_path is None
+        assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[2].location.line == 7
+        assert diags[2].location.column == 30
+        assert diags[2].location.end_line == 7
+        assert diags[2].location.end_column == 47
+        assert diags[2].location.file_path is None
+
     def test_chain_ending_with_action_in_from(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
