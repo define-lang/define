@@ -1,8 +1,8 @@
 deps: {
   local: [
     {
-      universe_name: "mv:define-lang.org:test_parent"
-      path: "parent"
+      universe_name: "mv:define-lang.org:parent"
+      path: "nested"
     }
   ]
 }

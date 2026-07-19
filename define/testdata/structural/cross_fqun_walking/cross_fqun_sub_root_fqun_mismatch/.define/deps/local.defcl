@@ -1,7 +1,7 @@
 deps: {
   local: [
     {
-      universe_name: "mv:define-lang.org:expected_child"
+      universe_name: "mv:define-lang.org:child_universe"
       path: "lib"
     }
   ]

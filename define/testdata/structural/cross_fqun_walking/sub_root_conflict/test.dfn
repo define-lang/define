@@ -1,6 +1,6 @@
-define the potential position<mv:define-lang.org:test_sub_root_conflict:/test> {
+define the potential position<mv:define-lang.org:parent_universe:/test> {
     it may only contain particles where {
         it has the position</lib/parent_target>.
-        it has the position<mv:define-lang.org:test_sub_root_child:/sub_root_target>.
+        it has the position<mv:define-lang.org:child_universe:/sub_root_target>.
     }
 }

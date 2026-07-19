@@ -1,5 +1,5 @@
-define the potential position<mv:define-lang.org:test_child:/target> {
+define the potential position<mv:define-lang.org:child:/target> {
     it may only contain particles where {
-        it has the position<mv:define-lang.org:test_parent:/leaf>.
+        it has the position<mv:define-lang.org:parent:/leaf>.
     }
 }

@@ -20,44 +20,11 @@ _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
 
 
 def test_sub_root_redeclares_parent_fqun(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
     parent_fqun = "mv:define-lang.org:parent"
-    child_fqun = "mv:define-lang.org:child"
-    test_helpers.write_project_config(tmp_path, parent_fqun)
-    test_helpers.write_local_deps_config(tmp_path, {child_fqun: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", child_fqun)
-    test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
-    test_helpers.write_sub_root(tmp_path, "lib/nested", parent_fqun)
-    (tmp_path / "test.dfn").write_text(
-        (
-            f"define the potential position<{parent_fqun}:/test> {{\n"
-            + "    it may only contain particles where {\n"
-            + f"        it has the position<{child_fqun}:/target>.\n"
-            + "    }\n"
-            + "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib/target.dfn").write_text(
-        (
-            f"define the potential position<{child_fqun}:/target> {{\n"
-            + "    it may only contain particles where {\n"
-            + f"        it has the position<{parent_fqun}:/leaf>.\n"
-            + "    }\n"
-            + "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib/nested/leaf.dfn").write_text(
-        f"define the potential position<{parent_fqun}:/leaf>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-
-    result = program_validator.ProgramStructuralValidator().validate_program(
-        PurePosixPath("test.dfn"), max_workers=1
-    )
+    result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
@@ -158,23 +125,12 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     assert isinstance(all_diags[0].error, config.NotProjectRootError)
 
 
-def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
-    wrong_universe = "mv:define-lang.org:wrong_universe"
-    result = validate_project(
-        {
-            "test.dfn": (
-                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "lib/target.dfn": f"define the potential position<{wrong_universe}:/target>.\n",
-        },
-        universe_name=_PARENT_UNIVERSE,
-        local_deps={_CHILD_UNIVERSE: "lib"},
-        sub_roots={"lib": wrong_universe},
-    )
+def test_cross_fqun_sub_root_fqun_mismatch(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    actual_child = "mv:define-lang.org:actual_child"
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -183,7 +139,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
-    assert diags[0].error.actual_fqun == wrong_universe
+    assert diags[0].error.actual_fqun == actual_child
     assert diags[0].error.sub_root_path == "lib"
 
 
@@ -220,24 +176,11 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     assert result.file_results[1].diagnostics == []
 
 
-def test_sub_root_conflict(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "test.dfn": (
-                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position</lib/parent_target>.\n"
-                f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "lib/parent_target.dfn": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
-            "lib/sub_root_target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
-        },
-        universe_name=_PARENT_UNIVERSE,
-        local_deps={_CHILD_UNIVERSE: "lib"},
-        sub_roots={"lib": _CHILD_UNIVERSE},
-    )
+def test_sub_root_conflict(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
