@@ -128,7 +128,11 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - **Codex only:** Always invoke `bazelisk` and `bazel` commands outside the
   Codex sandbox by requesting escalated execution. This lets Bazel's persistent
   server survive between tool calls. The repository's Codex allow rules approve
-  `bazelisk` escalation without prompting the user.
+  `bazelisk` escalation without prompting the user. A `bazelisk` or `bazel`
+  invocation must be the entire shell command, with no preceding or following
+  command; never combine it with another command through `&&`, `||`, `;`, a
+  pipe, or a subshell. This ensures only Bazel receives outside-sandbox
+  execution.
 
 ### BUILD File Management
 
