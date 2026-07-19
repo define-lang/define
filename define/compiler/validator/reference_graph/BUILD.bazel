@@ -194,6 +194,26 @@ py_test(
 )
 
 py_library(
+    name = "quality_assignments",
+    srcs = ["quality_assignments.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+    ],
+)
+
+py_test(
+    name = "quality_assignments_test",
+    size = "small",
+    srcs = ["quality_assignments_test.py"],
+    deps = [
+        ":quality_assignments",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "reference_graph",
     srcs = ["__init__.py"],
 )
@@ -272,6 +292,8 @@ pyright_test(
         ":particle_tracker",
         ":particle_tracker_operation_graph_test",
         ":particle_tracker_test",
+        ":quality_assignments",
+        ":quality_assignments_test",
         ":reference_graph",
         ":reference_graph_validator",
         ":requirement_violation",
