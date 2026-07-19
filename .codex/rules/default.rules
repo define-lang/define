@@ -186,6 +186,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["uv", "run", "tools/check_python_deps.py"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["uv", "run", "tools/sync_agent_permissions.py"],
     decision = "allow",
 )

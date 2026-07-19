@@ -48,6 +48,7 @@
       "Bash(uv run python - *)",
       "Bash(uv run pytest *)",
       "Bash(uv run ruff *)",
+      "Bash(uv run tools/check_python_deps.py *)",
       "Bash(uv run tools/sync_agent_permissions.py)",
       "Bash(uv run tools/setup_local_dev.py)",
       "Bash(uv run mutmut *)",
