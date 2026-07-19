@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:test_walk_wrong_type" }
+project: {
+  universe_name: "mv:define-lang.org:test_walk_wrong_type"
+}

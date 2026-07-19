@@ -1,5 +1,5 @@
-define the potential position<mv:define-lang.org:test_walk_cross_fqun_missing_sub_root:/test> {
+define the potential position<mv:define-lang.org:parent_universe:/test> {
     it may only contain particles where {
-        it has the position<other.example.com:missing_universe:/target>.
+        it has the position<mv:define-lang.org:child_universe:/target>.
     }
 }

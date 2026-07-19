@@ -174,31 +174,10 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
 
 
 def test_referenced_global_name_wrong_type_position(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "target.dfn": (
-                "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target> {\n"
-                "    define the position<_noop>.\n"
-                "    it happens when {\n"
-                "        the position<_noop> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<__noop>.\n"
-                "        create a particle in position<__noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</target>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-        universe_name="mv:define-lang.org:test_walk_wrong_type",
-    )
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

@@ -10,6 +10,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
+    ValidateTestdataStructural,
 )
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import file_validator
@@ -203,18 +204,11 @@ def test_same_target_file_referenced_as_two_types_loads_once(
 
 
 def test_self_cycle_emits_diagnostic(
-    parse_and_validate_file: ParseAndValidateFile,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</test>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = parse_and_validate_file(source)
-    assert result.exception is None
-    diags = result.diagnostics
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
@@ -231,26 +225,11 @@ def test_self_cycle_emits_diagnostic(
     )
 
 
-def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</loop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "loop.dfn": (
-                "define the potential position<mv:define-lang.org:test_walk_cycle:/loop> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</test>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-        universe_name="mv:define-lang.org:test_walk_cycle",
-    )
+def test_two_file_cycle_emits_diagnostic(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -277,17 +256,11 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
 
 
 def test_unknown_universe_emits_diagnostic(
-    parse_and_validate_file: ParseAndValidateFile,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = parse_and_validate_file(source)
-    diags = result.diagnostics
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.line == 3

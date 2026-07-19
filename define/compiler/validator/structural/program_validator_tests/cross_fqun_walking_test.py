@@ -9,7 +9,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import config, diagnostics
-from define.compiler.conftest import ValidateProject
+from define.compiler.conftest import ValidateProject, ValidateTestdataStructural
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
@@ -96,21 +96,11 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
 
 
-def test_cross_fqun_file_not_found(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "test.dfn": (
-                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT_UNIVERSE,
-        local_deps={_CHILD_UNIVERSE: "lib"},
-        sub_roots={"lib": _CHILD_UNIVERSE},
-    )
+def test_cross_fqun_file_not_found(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
@@ -121,20 +111,11 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
     assert diags[0].file_path == "lib/missing.dfn"
 
 
-def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "test.dfn": (
-                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT_UNIVERSE,
-        local_deps={_CHILD_UNIVERSE: "lib"},
-    )
+def test_cross_fqun_sub_root_missing_config(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics

@@ -1,8 +1,8 @@
 deps: {
   local: [
     {
-      universe_name: "other.example.com:missing_universe"
-      path: "deps/missing_universe"
+      universe_name: "mv:define-lang.org:child_universe"
+      path: "lib"
     }
   ]
 }

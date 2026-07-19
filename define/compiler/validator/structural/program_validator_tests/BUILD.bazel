@@ -34,6 +34,7 @@ py_test(
     name = "cross_fqun_walking_test",
     size = "small",
     srcs = ["cross_fqun_walking_test.py"],
+    data = ["//define/testdata/structural/cross_fqun_walking"],
     deps = [
         "//define/compiler:config",
         "//define/compiler:conftest",
@@ -98,6 +99,7 @@ py_test(
     name = "file_not_found_test",
     size = "small",
     srcs = ["file_not_found_test.py"],
+    data = ["//define/testdata/structural/file_not_found"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -120,6 +122,7 @@ py_test(
     name = "global_name_walking_test",
     size = "small",
     srcs = ["global_name_walking_test.py"],
+    data = ["//define/testdata/structural/global_name_walking"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

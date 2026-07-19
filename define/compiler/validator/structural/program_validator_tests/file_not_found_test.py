@@ -8,6 +8,7 @@ from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
+    ValidateTestdataStructural,
 )
 from define.compiler.data_structures import define_path
 
@@ -22,19 +23,12 @@ def test_entrypoint_file_not_found(validate_project: ValidateProject):
 
 
 def test_referenced_file_not_found(
-    parse_and_validate_file: ParseAndValidateFile,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</missing>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = parse_and_validate_file(source)
-    assert result.exception is None
-    assert len(result.diagnostics) == 1
-    diag = result.diagnostics[0]
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.file_results[0].diagnostics) == 1
+    diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "missing.dfn"
     assert diag.location.line == 3

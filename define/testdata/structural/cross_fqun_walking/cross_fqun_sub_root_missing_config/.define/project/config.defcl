@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:test_walk_cross_fqun_missing_sub_root" }
+project: {
+  universe_name: "mv:define-lang.org:parent_universe"
+}
