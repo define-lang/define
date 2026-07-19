@@ -1,9 +1,0 @@
-define the potential action<mv:define-lang.org:test_dim_chain_action:/act_middle> {
-    define the position<inner_pos>.
-    it happens when {
-        the position<inner_pos> has a particle.
-    } and it does {
-        define the position<_noop>.
-        create a particle in position<_noop>.
-    }
-}

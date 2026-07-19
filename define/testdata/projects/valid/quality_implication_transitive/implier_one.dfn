@@ -1,9 +1,0 @@
-define the potential action<mv:define-lang.org:test_qual_impl_transitive:/implier_one> {
-    it also assigns the position</implied>.
-    it happens when {
-        this particle is created.
-    } and it does {
-        create a particle in position</implied>.
-        destroy the particle in position</implied>.
-    }
-}

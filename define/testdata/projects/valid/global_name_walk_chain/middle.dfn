@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_walk_chain:/middle> {
-    it may only contain particles where {
-        it has the position</leaf>.
-    }
-}
