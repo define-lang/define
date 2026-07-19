@@ -269,7 +269,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees.own[0][0] == ("position<item>",)
         guarantee = contract.guarantees.own[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -303,7 +303,7 @@ class TestGuaranteeGeneration:
         dest_key, dest_guarantee = contract.guarantees.own[1]
         assert dest_key == ("position<dest>",)
         assert isinstance(dest_guarantee, action_contract.OccupiedByNewGuarantee)
-        assert dest_guarantee.qualities == ()
+        assert tuple(dest_guarantee.qualities) == ()
         assert dest_guarantee.caused_by.location.line == 9
         assert dest_guarantee.caused_by.location.column == 48
         assert dest_guarantee.caused_by.source_chained_name == "position<dest>"
@@ -327,7 +327,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees.own[0][0] == ("position<item>",)
         guarantee = contract.guarantees.own[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -417,7 +417,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees.own[0][0] == ("position<item>",)
         guarantee = contract.guarantees.own[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
 
@@ -586,7 +586,7 @@ class TestChainedGuaranteeGeneration:
         assert contract.guarantees.own[0][0] == chain_key
         guarantee = contract.guarantees.own[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
@@ -725,7 +725,7 @@ class TestChainedGuaranteeGeneration:
         assert contract.guarantees.own[0][0] == chain_key
         guarantee = contract.guarantees.own[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 30
 
@@ -750,7 +750,7 @@ class TestNoOpGuaranteeSuppression:
         key, guarantee = contract.guarantees.own[0]
         assert key == ("position<item>",)
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == ()
+        assert tuple(guarantee.qualities) == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"

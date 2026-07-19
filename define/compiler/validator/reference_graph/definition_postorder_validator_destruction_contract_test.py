@@ -115,7 +115,7 @@ def test_passed_in_direct_destroy_records_contract():
     assert (
         dc.destroying_action.full_typed_name == "action<my.domain.com:my_lib:/closer>"
     )
-    assert [q.full_typed_name for q in dc.verified_destructors] == [
+    assert [quality.full_typed_name for quality in dc.verified_destructors] == [
         "action<my.domain.com:my_lib:/delete_file_destructor>"
     ]
     assert _child_states(dc) == {("position<my.domain.com:my_lib:/file>",): _OCCUPIED}
@@ -261,14 +261,14 @@ def test_verified_destructors_in_firing_order_and_empty_when_none():
     dcs = _destruction_contracts(source, "closer")
     assert len(dcs) == 2
     # Firing order is the reverse of declaration order (d1 then d2 declared).
-    assert [q.full_typed_name for q in dcs[0].verified_destructors] == [
+    assert [quality.full_typed_name for quality in dcs[0].verified_destructors] == [
         "action<my.domain.com:my_lib:/d2>",
         "action<my.domain.com:my_lib:/d1>",
     ]
     assert (
         dcs[0].destroyed_position_contracted.source_chained_name == "position<target>"
     )
-    assert [q.full_typed_name for q in dcs[1].verified_destructors] == []
+    assert tuple(dcs[1].verified_destructors) == ()
     assert (
         dcs[1].destroyed_position_contracted.source_chained_name
         == "position<empty_target>"
@@ -363,7 +363,7 @@ def test_pass_through_re_records_contract_with_carry_over_and_accumulation():
     # Cumulative Child State: mid contributed the position</file> it filled.
     assert _child_states(dc) == {("position<my.domain.com:my_lib:/file>",): _OCCUPIED}
     # mid resolved the destructor it knows, so it is added to verified_destructors.
-    assert [q.full_typed_name for q in dc.verified_destructors] == [
+    assert [quality.full_typed_name for quality in dc.verified_destructors] == [
         "action<my.domain.com:my_lib:/delete_file_destructor>"
     ]
 

@@ -27,7 +27,7 @@ def _build(
     direct: tuple[ast.GlobalTypedNameReference, ...],
     graph: dict[str, tuple[ast.GlobalTypedNameReference, ...]],
 ) -> quality_assignments.QualityAssignments:
-    return quality_assignments.QualityAssignments.build(
+    return quality_assignments.QualityAssignments.expand_implications(
         direct, lambda quality: graph.get(quality.full_typed_name, ())
     )
 
@@ -44,7 +44,7 @@ def test_depth_first_assignment_order_and_paths():
     )
 
     assert tuple(assignments) == (shared, second, other, first)
-    shared_assignment = assignments.assignment_for(shared)
+    shared_assignment = assignments.preferred_assignment_for(shared)
     assert isinstance(shared_assignment, quality_assignments.ImpliedQualityAssignment)
     second_assignment = shared_assignment.caused_by
     assert second_assignment.quality == second
@@ -77,7 +77,7 @@ def test_later_direct_assignment_is_preferred_without_rewriting_descendant_path(
         },
     )
 
-    preferred = assignments.assignment_for(intermediate)
+    preferred = assignments.preferred_assignment_for(intermediate)
     assert type(preferred) is quality_assignments.QualityAssignment
     descendant_assignment = next(
         assignment
@@ -93,11 +93,13 @@ def test_later_direct_assignment_is_preferred_without_rewriting_descendant_path(
     )
 
 
-def test_assignment_lookup_returns_collection_record():
+def test_preferred_assignment_lookup_and_quality_membership():
     quality = _quality("quality")
     assignments = _build((quality,), {})
 
-    assert assignments.assignment_for(quality) is assignments.assignments[0]
+    assert assignments.preferred_assignment_for(quality) is assignments.assignments[0]
+    assert assignments.has_quality(quality) is True
+    assert assignments.has_quality(_quality("other")) is False
 
 
 def test_shared_empty_collection_is_reused():

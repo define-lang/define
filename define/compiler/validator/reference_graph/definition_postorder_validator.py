@@ -14,6 +14,7 @@ from define.compiler.validator.reference_graph import (
     dead_constraint_tracker,
     particle_operation,
     particle_tracker,
+    quality_assignments,
     requirement_violation,
 )
 
@@ -37,7 +38,7 @@ class PostorderValidationResult:
 class _CascadeDestructor:
     """One destructor in a destruction cascade, paired with the particle it fires on."""
 
-    quality: ast.GlobalTypedNameReference
+    assignment: quality_assignments.QualityAssignment
     position: ast.PositionReference
     origin_position: ast.PositionReference
 
@@ -62,7 +63,7 @@ class ActionPostorderValidator:
         ast.GlobalTypedName, action_contract.ActionContract
     ]
     _definition_quality_cache: dict[
-        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+        tuple[str, ...], quality_assignments.QualityAssignments
     ]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
@@ -81,7 +82,7 @@ class ActionPostorderValidator:
             ast.GlobalTypedName, action_contract.ActionContract
         ],
         definition_quality_cache: dict[
-            tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+            tuple[str, ...], quality_assignments.QualityAssignments
         ],
     ):
         """Initialize with the definition to validate and the full results map."""
@@ -392,11 +393,12 @@ class ActionPostorderValidator:
     def _run_constructors(
         self,
         position: ast.PositionReference,
-        qualities: tuple[ast.GlobalTypedNameReference, ...],
+        qualities: quality_assignments.QualityAssignments,
         scope: scope_tracker.ScopeTracker,
     ):
         """Trigger every constructor on the particle just created in position (DLP 32)."""
-        for quality in qualities:
+        for assignment in qualities.assignments:
+            quality = assignment.quality
             if quality.name_type != ast.NameType.ACTION:
                 continue
             definition_result = self._definition_results.get(quality)
@@ -454,7 +456,8 @@ class ActionPostorderValidator:
         particle = occupancy.occupant
         # Here, we walk the tree of particles in a depth-frst post-order traversal
         # as required by the destruction cascade.
-        for quality in reversed(particle.qualities):
+        for assignment in reversed(particle.qualities.assignments):
+            quality = assignment.quality
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
                 self._walk_cascade_into(
@@ -473,7 +476,7 @@ class ActionPostorderValidator:
                 if definition.is_destructor:
                     destructors.append(
                         _CascadeDestructor(
-                            quality=quality,
+                            assignment=assignment,
                             position=position,
                             origin_position=particle.origin_position,
                         )
@@ -516,7 +519,7 @@ class ActionPostorderValidator:
             # handled through the normal requirements mechanism (fired and
             # propagated as this action's own requirements), not through the
             # Destruction Contract's requirement-verification mechanism.
-            verified_destructors=self._destructor_qualities(info.qualities),
+            verified_destructors=self._destructor_quality_assignments(info.qualities),
             is_auto_destruction=is_auto_destruction,
         )
 
@@ -535,10 +538,11 @@ class ActionPostorderValidator:
         for destructor in destructors:
             # _collect_cascade_destructors already verified the destructor's
             # definition loaded.
-            contract = self._action_contracts[destructor.quality]
-            action_chain = destructor.position.with_action_suffix(destructor.quality)
+            quality = destructor.assignment.quality
+            contract = self._action_contracts[quality]
+            action_chain = destructor.position.with_action_suffix(quality)
             attachment = self._destructor_attachment(
-                destructor.quality, destructor.origin_position, scope
+                quality, destructor.origin_position, scope
             )
             self._propagate_destructor_requirements(
                 contract, action_chain, scope, attachment
@@ -559,7 +563,7 @@ class ActionPostorderValidator:
             self._action_edges.append(
                 action_call_graph.ActionGraphEdge(
                     source=self._definition.typed_name.source_typed_name,
-                    target=destructor.quality.full_typed_name,
+                    target=quality.full_typed_name,
                 )
             )
 
@@ -774,14 +778,15 @@ class ActionPostorderValidator:
             )
         )
 
-    def _destructor_qualities(
-        self, qualities: tuple[ast.GlobalTypedNameReference, ...]
-    ) -> tuple[ast.GlobalTypedNameReference, ...]:
-        """Return the destructor-action qualities in firing order (reverse of assignment)."""
+    def _destructor_quality_assignments(
+        self, qualities: quality_assignments.QualityAssignments
+    ) -> quality_assignments.QualityAssignments:
+        """Return destructor assignments in firing order."""
         # TODO: This feels inefficient to do every time, but let's wait for actual
         # profiling data to tell us if that's important.
-        result: list[ast.GlobalTypedNameReference] = []
-        for quality in reversed(qualities):
+        result: list[quality_assignments.QualityAssignment] = []
+        for assignment in reversed(qualities.assignments):
+            quality = assignment.quality
             if quality.name_type != ast.NameType.ACTION:
                 continue
             definition_result = self._definition_results.get(quality)
@@ -790,8 +795,12 @@ class ActionPostorderValidator:
             ):
                 continue
             if definition_result.definition.is_destructor:
-                result.append(quality)
-        return tuple(result)
+                # We pick the assignment that the developer wrote most explicitly:
+                # either the one directly written here, or the one transitively
+                # implied.
+                preferred_assignment = qualities.preferred_assignment_for(quality)
+                result.append(preferred_assignment)
+        return quality_assignments.QualityAssignments(tuple(result))
 
     def _check_destructor_requirements_from_contracts(
         self,
@@ -866,7 +875,7 @@ class ActionPostorderValidator:
                 caller_particle_position
             )
             merged_child_state.update(destruction_contract.child_state)
-        newly_verified: list[ast.GlobalTypedNameReference] = []
+        newly_verified: list[quality_assignments.QualityAssignment] = []
         self._verify_destruction_cascade(
             caller_particle_position,
             destruction_contract=destruction_contract,
@@ -894,7 +903,7 @@ class ActionPostorderValidator:
         destruction_contract: action_contract.DestructionContract,
         caller_particle: particle_tracker.ParticleInfo,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
-        newly_verified: list[ast.GlobalTypedNameReference],
+        newly_verified: list[quality_assignments.QualityAssignment],
         trigger_step: action_contract.PropagationStep,
     ):
         # Carry the merged destruction-time picture and the destructors checked
@@ -907,9 +916,11 @@ class ActionPostorderValidator:
                 destroyed_position_local=destruction_contract.destroyed_position_local,
                 child_state=merged_child_state,
                 destroying_action=destruction_contract.destroying_action,
-                verified_destructors=(
-                    *destruction_contract.verified_destructors,
-                    *newly_verified,
+                verified_destructors=quality_assignments.QualityAssignments(
+                    (
+                        *destruction_contract.verified_destructors.assignments,
+                        *newly_verified,
+                    )
                 ),
                 is_auto_destruction=destruction_contract.is_auto_destruction,
                 trigger_chain=(trigger_step, *destruction_contract.trigger_chain),
@@ -927,7 +938,7 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        newly_verified: list[ast.GlobalTypedNameReference],
+        newly_verified: list[quality_assignments.QualityAssignment],
     ):
         occupancy_info = self._tracker.get_occupancy_info(position)
         if occupancy_info.has_error or occupancy_info.occupant is None:
@@ -943,7 +954,8 @@ class ActionPostorderValidator:
         ):
             return
         particle = occupancy_info.occupant
-        for quality in reversed(particle.qualities):
+        for assignment in reversed(particle.qualities.assignments):
+            quality = assignment.quality
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
                 self._verify_destruction_cascade(
@@ -966,8 +978,9 @@ class ActionPostorderValidator:
                 definition = definition_result.definition
                 if (
                     definition.is_destructor
-                    and quality.full_typed_name
-                    not in destruction_contract.verified_destructor_names
+                    and not destruction_contract.verified_destructors.has_quality(
+                        quality
+                    )
                     and self._verify_one_cascade_destructor(
                         destructor_quality=quality,
                         particle_position=position,
@@ -981,7 +994,7 @@ class ActionPostorderValidator:
                         created_in_this_action=created_in_this_action,
                     )
                 ):
-                    newly_verified.append(quality)
+                    newly_verified.append(assignment)
                 for interface_position in reversed(definition.interface_positions):
                     child = position.with_position_suffix(
                         quality, interface_position.typed_name
@@ -1083,11 +1096,8 @@ class ActionPostorderValidator:
         """Locate the constraint that puts the destructor on the particle created in origin_position.
 
         Prefers a constraint that is the destructor itself, then one that
-        transitively implies it. Returns None when this scope cannot see a
-        constraint that attaches the destructor: the particle arrived through a
-        position whose constraints do not assign it, or it was created in a
-        callee's local position this scope cannot resolve. In those cases no
-        attachment step is shown.
+        transitively implies it. Returns None when the particle was created in a
+        callee's local position this scope cannot resolve.
         """
         last_origin_element = origin_position.typed_names[-1]
         if (
@@ -1095,23 +1105,14 @@ class ActionPostorderValidator:
             and len(origin_position.typed_names) == 1
             and not scope.is_defined_local(origin_position)
         ):
-            # The particle was created in a callee's local position, which this
-            # scope cannot resolve. Per the TODO on
-            # _get_transitive_required_qualities, the particle's carried
-            # qualities don't yet record where each one was attached, so we
-            # cannot point at the attaching constraint and show no attachment.
+            # TODO: Use the assignment provenance on ParticleInfo to resolve the
+            # attachment for particles created in callee-local positions.
             return None
-        direct, _ = self._get_direct_required_qualities(origin_position, scope)
-        if direct is not None:
-            # A constraint that directly declares the destructor is the clearest
-            # attachment point, so it wins over one that only implies it.
-            for root in direct:
-                if root.full_typed_name == destructor_quality.full_typed_name:
-                    return root.location
-            for root in direct:
-                if self._quality_implies(root, destructor_quality.full_typed_name):
-                    return root.location
-        return None
+        assignments = self._get_transitive_required_qualities(origin_position, scope)
+        assignment = assignments.preferred_assignment_for(destructor_quality)
+        while isinstance(assignment, quality_assignments.ImpliedQualityAssignment):
+            assignment = assignment.caused_by
+        return assignment.quality.location
 
     def _destructor_attachment(
         self,
@@ -1129,34 +1130,6 @@ class ActionPostorderValidator:
             attached_at=attached_at,
             position=origin_position.typed_names[-1],
         )
-
-    def _quality_implies(
-        self, root: ast.GlobalTypedNameReference, target_full_typed_name: str
-    ) -> bool:
-        """Whether root transitively implies the named quality (not counting root itself)."""
-        # TODO: This feels inefficient; we already did this walk to determine
-        # the transitive qualities; we could preserve that informatiom somehow.
-        definition_result = self._definition_results.get(root)
-        if definition_result is None:
-            return False
-        seen = {root.full_typed_name}
-        stack = [
-            implication.typed_global_name
-            for implication in definition_result.definition.quality_implications
-        ]
-        while stack:
-            node = stack.pop()
-            name = node.full_typed_name
-            if name in seen:
-                continue
-            seen.add(name)
-            if name == target_full_typed_name:
-                return True
-            definition_result = self._definition_results.get(node)
-            if definition_result is not None:
-                for implication in definition_result.definition.quality_implications:
-                    stack.append(implication.typed_global_name)
-        return False
 
     def _resolve_destructor_requirement(
         self,
@@ -1625,50 +1598,44 @@ class ActionPostorderValidator:
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> tuple[ast.GlobalTypedNameReference, ...]:
-        # TODO: This flattens the qualities into a list, discarding the tree of
-        # which constraint attached each one — directly, or transitively through
-        # which implying quality. Recording that structure here and carrying it
-        # on ParticleInfo.qualities would let _destructor_attachment_location
-        # resolve the attachment for a particle a callee created in a local
-        # position, which the destroying scope can no longer look up.
+    ) -> quality_assignments.QualityAssignments:
         direct, cache_key = self._get_direct_required_qualities(position, scope)
         if direct is None:
-            return ()
+            return quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
         if cache_key is None:
-            return self._expand_with_implications_in_order(direct)
+            return self._build_quality_assignments(direct)
         cached = self._definition_quality_cache.get(cache_key)
         if cached is not None:
             return cached
-        result = self._expand_with_implications_in_order(direct)
+        result = self._build_quality_assignments(direct)
         self._definition_quality_cache[cache_key] = result
         return result
 
-    def _expand_with_implications_in_order(
+    def _build_quality_assignments(
         self, direct: tuple[ast.GlobalTypedNameReference, ...]
-    ) -> tuple[ast.GlobalTypedNameReference, ...]:
-        """Expand quality implications depth-first, implications before the implying quality.
+    ) -> quality_assignments.QualityAssignments:
+        """Build assigned qualities in source-order depth-first assignment order."""
 
-        Order follows the spec: when a quality A implies B, B is assigned
-        beforehand. Implications are walked in source order.
-        """
-        seen: set[str] = set()
-        result: list[ast.GlobalTypedNameReference] = []
-
-        def visit(typed_name: ast.GlobalTypedNameReference):
-            name = typed_name.full_typed_name
-            if name in seen:
-                return
-            seen.add(name)
+        def implications_for(
+            typed_name: ast.GlobalTypedNameReference,
+        ) -> tuple[ast.GlobalTypedNameReference, ...]:
+            # We cannot reuse assignments from another cached QualityAssignments
+            # here. Their caused_by links point to that collection's assignments,
+            # and overlap between direct constraints can select a different first
+            # implication path. Caching a separate transitive list for every
+            # quality would avoid this walk, but could use quadratic memory for a
+            # linear implication chain.
             defn_result = self._definition_results.get(typed_name)
-            if defn_result is not None:
-                for impl in defn_result.definition.quality_implications:
-                    visit(impl.typed_global_name)
-            result.append(typed_name)
+            if defn_result is None:
+                return ()
+            return tuple(
+                implication.typed_global_name
+                for implication in defn_result.definition.quality_implications
+            )
 
-        for typed_name in direct:
-            visit(typed_name)
-        return tuple(result)
+        return quality_assignments.QualityAssignments.expand_implications(
+            direct, implications_for
+        )
 
     @property
     def _action_definition(self) -> ast.ActionDefinition:

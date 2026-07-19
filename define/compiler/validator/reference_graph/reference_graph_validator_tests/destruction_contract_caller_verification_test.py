@@ -2,6 +2,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
@@ -20,6 +22,91 @@ _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
 _CARRIER = "action<my.domain.com:my_lib:/carrier>"
 _D1 = "action<my.domain.com:my_lib:/d1>"
 _D2 = "action<my.domain.com:my_lib:/d2>"
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=(
+        "lifecycle diagnostics do not yet use the assignment provenance carried"
+        " by a particle created in a callee-local position"
+    ),
+)
+def test_destructor_diagnostic_retains_callee_local_assignment(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """The propagation chain includes the callee-local destructor assignment."""
+    result = validate_project_with_reference_graph(
+        {
+            "destructor.dfn": (
+                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        this particle is being destroyed.\n"
+                "    } and it does {\n"
+                "        define the position<holder>.\n"
+                "        move the particle in position<item> to position<holder>.\n"
+                "        move the particle in position<holder> to position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "producer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/producer> {\n"
+                "    define the position<result> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</destructor>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<created> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</destructor>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<created>.\n"
+                "        move the particle in position<created> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</producer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</producer>::position<run>.\n"
+                "        destroy the particle in position<box>::action</producer>::position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert [step.kind for step in all_diags[0].propagation_chain] == [
+        action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+        action_contract.PropagationKind.PARTICLE_ORIGIN,
+        action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+        action_contract.PropagationKind.DIRECT_INFERENCE,
+    ]
+    attachment = all_diags[0].propagation_chain[0]
+    assert attachment.location.file_path == PurePosixPath("producer.dfn")
+    assert attachment.location.line == 13
+    assert attachment.location.column == 24
+    assert attachment.enclosing_quality_name == "position<created>"
+    assert (
+        attachment.triggered_quality_name == "action<my.domain.com:my_lib:/destructor>"
+    )
 
 
 def test_intermediate_verifies_destructor_it_can_resolve(

@@ -30,9 +30,9 @@ def test_destructor_requires_occupied_position_format(
             "    it happens when {\n"
             "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        define the position<_holder>.\n"
-            "        move the particle in position<item> to position<_holder>.\n"
-            "        move the particle in position<_holder> to position<item>.\n"
+            "        define the position<holder>.\n"
+            "        move the particle in position<item> to position<holder>.\n"
+            "        move the particle in position<holder> to position<item>.\n"
             "    }\n"
             "}\n"
         ),
@@ -73,6 +73,91 @@ def test_destructor_requires_occupied_position_format(
             File "test.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "test.dfn", line 15, column 33
+          'action<my.domain.com:my_lib:/destructor>' infers this requirement:
+            File "destructor.dfn", line 7, column 30""")
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=(
+        "lifecycle diagnostics do not yet use the assignment provenance carried"
+        " by a particle created in a callee-local position"
+    ),
+)
+def test_destructor_on_particle_created_in_callee_local_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """The attachment names the callee-local constraint that assigned the destructor."""
+    files = {
+        "destructor.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this particle is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_holder>.\n"
+            "        move the particle in position<item> to position<_holder>.\n"
+            "        move the particle in position<_holder> to position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "producer.dfn": (
+            "define the potential action<my.domain.com:my_lib:/producer> {\n"
+            "    define the position<result> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</destructor>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<created> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</destructor>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<created>.\n"
+            "        move the particle in position<created> to position<result>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</producer>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::action</producer>::position<run>.\n"
+            "        destroy the particle in position<box>::action</producer>::position<result>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 13, column 33
+                destroy the particle in position<box>::action</producer>::position<result>.
+                                        ^
+        'position<box>::action</producer>::position<result>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
+
+        This error happens because:
+          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<created>':
+            File "producer.dfn", line 13, column 24
+          the particle in 'position<box>::action</producer>::position<result>' comes from here:
+            File "producer.dfn", line 16, column 30
+          'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
+            File "test.dfn", line 13, column 33
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30""")
 

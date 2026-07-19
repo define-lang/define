@@ -50,7 +50,7 @@ class QualityAssignments:
         self._direct_overrides = direct_overrides
 
     @classmethod
-    def build(
+    def expand_implications(
         cls,
         direct: tuple[ast.GlobalTypedNameReference, ...],
         implications_for: _ImplicationsFor,
@@ -97,7 +97,7 @@ class QualityAssignments:
         assignments.append(direct_assignment)
 
     @cached_property
-    def _assignment_by_quality(
+    def _preferred_assignments(
         self,
     ) -> typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, QualityAssignment]:
         assignment_by_quality: typed_name_dict.TypedNameDict[
@@ -109,11 +109,22 @@ class QualityAssignments:
             assignment_by_quality[assignment.quality] = assignment
         return assignment_by_quality
 
-    def assignment_for(
+    def preferred_assignment_for(
         self, quality: ast.GlobalTypedNameReference
-    ) -> QualityAssignment | None:
-        """Return the preferred assignment for a quality."""
-        return self._assignment_by_quality.get(quality)
+    ) -> QualityAssignment:
+        """Return the assignment preferred for diagnostics.
+
+        A direct assignment is preferred over an earlier implied assignment of
+        the same quality. Otherwise, this returns the record in ``assignments``,
+        which retains the first source-order implication path. Preferring a later
+        direct assignment does not replace that record in ``assignments`` or
+        change the paths of its descendants.
+        """
+        return self._preferred_assignments[quality]
+
+    def has_quality(self, quality: ast.GlobalTypedNameReference) -> bool:
+        """Return whether the quality is assigned."""
+        return quality in self._preferred_assignments
 
     def __iter__(self) -> Iterator[ast.GlobalTypedNameReference]:
         """Iterate over assigned qualities in semantic assignment order."""

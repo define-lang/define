@@ -6,11 +6,13 @@ from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
     particle_tracker,
+    quality_assignments,
 )
 
 _LOC = ast.start_of_file_location()
 
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
+_NO_QUALITIES = quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
 _LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
 _POS2_REF = ast.PositionReference(
     typed_names=(
@@ -87,6 +89,14 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
     )
 
 
+def _quality_assignments(
+    *qualities: ast.GlobalTypedNameReference,
+) -> quality_assignments.QualityAssignments:
+    return quality_assignments.QualityAssignments.expand_implications(
+        qualities, lambda _: ()
+    )
+
+
 def _make_position_ref(
     elements: list[ast.TypedNameReference],
     location: ast.SourceLocation = _LOC,
@@ -98,7 +108,7 @@ def test_create_and_is_occupied():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref, ())
+    tracker.create(ref, _NO_QUALITIES)
 
     assert tracker.is_occupied(ref) is True
 
@@ -113,29 +123,29 @@ def test_get_occupant():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref, (_make_global_ref("/x"),))
+    tracker.create(ref, _quality_assignments(_make_global_ref("/x")))
     occupant = tracker.get_occupant(ref)
 
     assert isinstance(occupant, particle_tracker.ParticleInfo)
     assert occupant.last_position.location == _LOC
-    assert occupant.qualities == (_make_global_ref("/x"),)
+    assert tuple(occupant.qualities) == (_make_global_ref("/x"),)
 
 
 def test_create_already_occupied_raises():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref, ())
+    tracker.create(ref, _NO_QUALITIES)
 
     with pytest.raises(ValueError, match="already occupied"):
-        tracker.create(ref, ())
+        tracker.create(ref, _NO_QUALITIES)
 
 
 def test_destroy():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("pos_a")])
 
-    tracker.create(ref, ())
+    tracker.create(ref, _NO_QUALITIES)
     tracker.destroy(ref)
 
     assert tracker.is_occupied(ref) is False
@@ -153,7 +163,7 @@ def test_move():
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
-    tracker.create(ref_a, ())
+    tracker.create(ref_a, _NO_QUALITIES)
     tracker.move(ref_a, ref_b)
 
     assert tracker.is_occupied(ref_a) is False
@@ -208,7 +218,7 @@ def test_error_state_propagates_to_descendants():
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
     )
 
-    tracker.create(parent_ref, ())
+    tracker.create(parent_ref, _NO_QUALITIES)
     tracker.mark_error(parent_ref)
 
     assert tracker.has_error_state(parent_ref) is True
@@ -220,8 +230,8 @@ def test_move_to_occupied_raises():
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
-    tracker.create(ref_a, ())
-    tracker.create(ref_b, ())
+    tracker.create(ref_a, _NO_QUALITIES)
+    tracker.create(ref_b, _NO_QUALITIES)
 
     with pytest.raises(ValueError, match="already occupied"):
         tracker.move(ref_a, ref_b)
@@ -231,21 +241,21 @@ def test_create_stores_qualities():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref, (_make_global_ref("/x"),))
+    tracker.create(ref, _quality_assignments(_make_global_ref("/x")))
 
-    assert tracker.get_occupant(ref).qualities == (_make_global_ref("/x"),)
+    assert tuple(tracker.get_occupant(ref).qualities) == (_make_global_ref("/x"),)
 
 
 def test_move_preserves_qualities():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
-    qualities = (_make_global_ref("/x"), _make_global_ref("/y"))
+    qualities = _quality_assignments(_make_global_ref("/x"), _make_global_ref("/y"))
 
     tracker.create(ref_a, qualities)
     tracker.move(ref_a, ref_b)
 
-    assert tracker.get_occupant(ref_b).qualities == qualities
+    assert tracker.get_occupant(ref_b).qualities is qualities
 
 
 def test_move_updates_ref():
@@ -255,7 +265,7 @@ def test_move_updates_ref():
         [_make_local_ref("pos_b", location=_LOC2)], location=_LOC2
     )
 
-    tracker.create(ref_a, ())
+    tracker.create(ref_a, _NO_QUALITIES)
     assert tracker.get_occupant(ref_a).last_position.location == _LOC
 
     tracker.move(ref_a, ref_b)
@@ -266,9 +276,9 @@ def test_create_empty_qualities():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref, ())
+    tracker.create(ref, _NO_QUALITIES)
 
-    assert tracker.get_occupant(ref).qualities == ()
+    assert tuple(tracker.get_occupant(ref).qualities) == ()
 
 
 def test_keys_use_separate_trie_levels():
@@ -278,7 +288,7 @@ def test_keys_use_separate_trie_levels():
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
     )
 
-    tracker.create(ref_a, ())
+    tracker.create(ref_a, _NO_QUALITIES)
 
     assert tracker.is_occupied(ref_a) is True
     assert tracker.is_occupied(ref_chain) is False
@@ -289,7 +299,7 @@ def test_move_preserves_origin_position():
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
-    tracker.create(ref_a, ())
+    tracker.create(ref_a, _NO_QUALITIES)
     tracker.move(ref_a, ref_b)
 
     assert tracker.get_occupant(ref_b).origin_position is ref_a
@@ -300,11 +310,11 @@ def test_create_at_global_chain():
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
-    tracker.create(parent_ref, ())
-    tracker.create(ref, (_make_global_ref("/x"),))
+    tracker.create(parent_ref, _NO_QUALITIES)
+    tracker.create(ref, _quality_assignments(_make_global_ref("/x")))
 
     assert tracker.is_occupied(ref) is True
-    assert tracker.get_occupant(ref).qualities == (_make_global_ref("/x"),)
+    assert tuple(tracker.get_occupant(ref).qualities) == (_make_global_ref("/x"),)
 
 
 def test_move_from_local_to_global_chain():
@@ -315,13 +325,13 @@ def test_move_from_local_to_global_chain():
         [_make_local_ref("pos_b"), _make_global_ref("/child")]
     )
 
-    tracker.create(local_ref, (_make_global_ref("/x"),))
-    tracker.create(dest_parent_ref, ())
+    tracker.create(local_ref, _quality_assignments(_make_global_ref("/x")))
+    tracker.create(dest_parent_ref, _NO_QUALITIES)
     tracker.move(local_ref, chain_ref)
 
     assert tracker.is_occupied(local_ref) is False
     assert tracker.is_occupied(chain_ref) is True
-    assert tracker.get_occupant(chain_ref).qualities == (_make_global_ref("/x"),)
+    assert tuple(tracker.get_occupant(chain_ref).qualities) == (_make_global_ref("/x"),)
 
 
 def test_move_from_global_chain_to_local():
@@ -332,13 +342,13 @@ def test_move_from_global_chain_to_local():
         [_make_local_ref("pos_b"), _make_global_ref("/child")]
     )
 
-    tracker.create(chain_parent_ref, ())
-    tracker.create(chain_ref, (_make_global_ref("/x"),))
+    tracker.create(chain_parent_ref, _NO_QUALITIES)
+    tracker.create(chain_ref, _quality_assignments(_make_global_ref("/x")))
     tracker.move(chain_ref, local_ref)
 
     assert tracker.is_occupied(chain_ref) is False
     assert tracker.is_occupied(local_ref) is True
-    assert tracker.get_occupant(local_ref).qualities == (_make_global_ref("/x"),)
+    assert tuple(tracker.get_occupant(local_ref).qualities) == (_make_global_ref("/x"),)
 
 
 def test_move_between_global_chains():
@@ -352,14 +362,14 @@ def test_move_between_global_chains():
         [_make_local_ref("pos_b"), _make_global_ref("/child_b")]
     )
 
-    tracker.create(parent_a, ())
-    tracker.create(parent_b, ())
-    tracker.create(chain_a, (_make_global_ref("/x"),))
+    tracker.create(parent_a, _NO_QUALITIES)
+    tracker.create(parent_b, _NO_QUALITIES)
+    tracker.create(chain_a, _quality_assignments(_make_global_ref("/x")))
     tracker.move(chain_a, chain_b)
 
     assert tracker.is_occupied(chain_a) is False
     assert tracker.is_occupied(chain_b) is True
-    assert tracker.get_occupant(chain_b).qualities == (_make_global_ref("/x"),)
+    assert tuple(tracker.get_occupant(chain_b).qualities) == (_make_global_ref("/x"),)
 
 
 def test_create_at_interface_position_chain():
@@ -369,11 +379,11 @@ def test_create_at_interface_position_chain():
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("item")]
     )
 
-    tracker.create(box_ref, ())
-    tracker.create(ref, (_make_global_ref("/q"),))
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(ref, _quality_assignments(_make_global_ref("/q")))
 
     assert tracker.is_occupied(ref) is True
-    assert tracker.get_occupant(ref).qualities == (_make_global_ref("/q"),)
+    assert tuple(tracker.get_occupant(ref).qualities) == (_make_global_ref("/q"),)
 
 
 def test_action_parent_auto_created_for_single_action_chain():
@@ -383,8 +393,8 @@ def test_action_parent_auto_created_for_single_action_chain():
         [_make_local_ref("item"), _make_action_ref("/foo"), _make_local_ref("trigger")]
     )
 
-    tracker.create(item_ref, ())
-    tracker.create(ref, ())
+    tracker.create(item_ref, _NO_QUALITIES)
+    tracker.create(ref, _NO_QUALITIES)
 
     assert tracker.is_occupied(ref) is True
 
@@ -396,10 +406,10 @@ def test_chained_position_without_intermediate_fails():
         [_make_local_ref("local"), _make_global_ref("/mid"), _make_global_ref("/last")]
     )
 
-    tracker.create(local_ref, ())
+    tracker.create(local_ref, _NO_QUALITIES)
 
     with pytest.raises(KeyError):
-        tracker.create(ref, ())
+        tracker.create(ref, _NO_QUALITIES)
 
 
 def test_action_chain_without_parent_position_fails():
@@ -409,7 +419,7 @@ def test_action_chain_without_parent_position_fails():
     )
 
     with pytest.raises(KeyError):
-        tracker.create(ref, ())
+        tracker.create(ref, _NO_QUALITIES)
 
 
 def test_nested_action_chain_without_intermediate_fails():
@@ -425,10 +435,10 @@ def test_nested_action_chain_without_intermediate_fails():
         ]
     )
 
-    tracker.create(item_ref, ())
+    tracker.create(item_ref, _NO_QUALITIES)
 
     with pytest.raises(KeyError):
-        tracker.create(ref, ())
+        tracker.create(ref, _NO_QUALITIES)
 
 
 def test_move_between_interface_position_chains():
@@ -441,13 +451,13 @@ def test_move_between_interface_position_chains():
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("dst")]
     )
 
-    tracker.create(box_ref, ())
-    tracker.create(ref_a, (_make_global_ref("/q"),))
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(ref_a, _quality_assignments(_make_global_ref("/q")))
     tracker.move(ref_a, ref_b)
 
     assert tracker.is_occupied(ref_a) is False
     assert tracker.is_occupied(ref_b) is True
-    assert tracker.get_occupant(ref_b).qualities == (_make_global_ref("/q"),)
+    assert tuple(tracker.get_occupant(ref_b).qualities) == (_make_global_ref("/q"),)
 
 
 def test_destroy_at_chain():
@@ -455,8 +465,8 @@ def test_destroy_at_chain():
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
-    tracker.create(parent_ref, ())
-    tracker.create(ref, ())
+    tracker.create(parent_ref, _NO_QUALITIES)
+    tracker.create(ref, _NO_QUALITIES)
     tracker.destroy(ref)
 
     assert tracker.is_occupied(ref) is False
@@ -469,8 +479,8 @@ def test_destroy_prunes_children():
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
     )
 
-    tracker.create(parent_ref, ())
-    tracker.create(child_ref, ())
+    tracker.create(parent_ref, _NO_QUALITIES)
+    tracker.create(child_ref, _NO_QUALITIES)
     tracker.destroy(parent_ref)
 
     assert tracker.is_occupied(parent_ref) is False
@@ -493,8 +503,8 @@ def test_destroy_clears_error_children():
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
     )
 
-    tracker.create(parent_ref, ())
-    tracker.create(child_ref, ())
+    tracker.create(parent_ref, _NO_QUALITIES)
+    tracker.create(child_ref, _NO_QUALITIES)
     tracker.mark_error(child_ref)
 
     assert tracker.has_error_state(child_ref) is True
@@ -511,8 +521,8 @@ def test_destroy_parent_also_destroys_child():
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
     )
 
-    tracker.create(local_ref, ())
-    tracker.create(chain_ref, ())
+    tracker.create(local_ref, _NO_QUALITIES)
+    tracker.create(chain_ref, _NO_QUALITIES)
 
     assert tracker.is_occupied(local_ref) is True
     assert tracker.is_occupied(chain_ref) is True
@@ -530,8 +540,8 @@ def test_emptied_by_at_chain():
         [_make_local_ref("pos_a"), _make_global_ref("/child")], location=_LOC2
     )
 
-    tracker.create(parent_ref, ())
-    tracker.create(ref, ())
+    tracker.create(parent_ref, _NO_QUALITIES)
+    tracker.create(ref, _NO_QUALITIES)
     tracker.destroy(ref)
 
     assert tracker.get_emptied_by(ref) is ref
@@ -582,8 +592,8 @@ def test_apply_guarantees_empty():
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
-    tracker.create(box_ref, ())
-    tracker.create(ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -609,7 +619,8 @@ def test_apply_guarantees_occupied_by_new():
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
 
-    tracker.create(box_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    qualities = _quality_assignments(_make_global_ref("/x"))
     _apply_guarantees(
         tracker,
         ref,
@@ -617,7 +628,7 @@ def test_apply_guarantees_occupied_by_new():
             (
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
-                    qualities=(_make_global_ref("/x"),),
+                    qualities=qualities,
                     caused_by=_POS2_REF,
                     operation_positions=(),
                 ),
@@ -629,7 +640,7 @@ def test_apply_guarantees_occupied_by_new():
     assert tracker.is_occupied(ref) is True
     occupant = tracker.get_occupant(ref)
     assert occupant.last_position.location == _LOC2
-    assert occupant.qualities == (_make_global_ref("/x"),)
+    assert occupant.qualities is qualities
     assert occupant.origin_position is _POS2_REF
     assert occupant.from_caller is False
 
@@ -654,9 +665,9 @@ def test_apply_guarantees_occupied_by_existing():
             _make_local_ref("trigger"),
         ]
     )
-    tracker.create(box_ref, ())
-    tracker.create(item_ref, (_make_global_ref("/q"),))
-    tracker.create(trigger_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(item_ref, _quality_assignments(_make_global_ref("/q")))
+    tracker.create(trigger_ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -679,7 +690,7 @@ def test_apply_guarantees_occupied_by_existing():
     assert tracker.is_occupied(dest_ref) is True
     occupant = tracker.get_occupant(dest_ref)
     assert occupant.last_position.location == _LOC2
-    assert occupant.qualities == (_make_global_ref("/q"),)
+    assert tuple(occupant.qualities) == (_make_global_ref("/q"),)
     assert occupant.origin_position is item_ref
 
 
@@ -700,10 +711,10 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
     trigger_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("trigger")]
     )
-    tracker.create(box_ref, ())
-    tracker.create(item_ref, (_make_global_ref("/q"),))
-    tracker.create(child_ref, (_make_global_ref("/r"),))
-    tracker.create(trigger_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(item_ref, _quality_assignments(_make_global_ref("/q")))
+    tracker.create(child_ref, _quality_assignments(_make_global_ref("/r")))
+    tracker.create(trigger_ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -729,7 +740,9 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
         ]
     )
     assert tracker.is_occupied(new_child_ref) is True
-    assert tracker.get_occupant(new_child_ref).qualities == (_make_global_ref("/r"),)
+    assert tuple(tracker.get_occupant(new_child_ref).qualities) == (
+        _make_global_ref("/r"),
+    )
 
 
 def test_apply_guarantees_occupied_by_existing_swap():
@@ -760,12 +773,12 @@ def test_apply_guarantees_occupied_by_existing_swap():
     trigger_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("trigger")]
     )
-    tracker.create(box_ref, ())
-    tracker.create(item_ref, (_make_global_ref("/q"),))
-    tracker.create(item_child_ref, (_make_global_ref("/r"),))
-    tracker.create(dest_ref, (_make_global_ref("/s"),))
-    tracker.create(dest_child_ref, (_make_global_ref("/t"),))
-    tracker.create(trigger_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(item_ref, _quality_assignments(_make_global_ref("/q")))
+    tracker.create(item_child_ref, _quality_assignments(_make_global_ref("/r")))
+    tracker.create(dest_ref, _quality_assignments(_make_global_ref("/s")))
+    tracker.create(dest_child_ref, _quality_assignments(_make_global_ref("/t")))
+    tracker.create(trigger_ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -791,7 +804,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
     )
 
     assert tracker.is_occupied(dest_ref) is True
-    assert tracker.get_occupant(dest_ref).qualities == (_make_global_ref("/q"),)
+    assert tuple(tracker.get_occupant(dest_ref).qualities) == (_make_global_ref("/q"),)
 
     new_child_a_ref = _make_position_ref(
         [
@@ -802,10 +815,12 @@ def test_apply_guarantees_occupied_by_existing_swap():
         ]
     )
     assert tracker.is_occupied(new_child_a_ref) is True
-    assert tracker.get_occupant(new_child_a_ref).qualities == (_make_global_ref("/r"),)
+    assert tuple(tracker.get_occupant(new_child_a_ref).qualities) == (
+        _make_global_ref("/r"),
+    )
 
     assert tracker.is_occupied(item_ref) is True
-    assert tracker.get_occupant(item_ref).qualities == (_make_global_ref("/s"),)
+    assert tuple(tracker.get_occupant(item_ref).qualities) == (_make_global_ref("/s"),)
 
     new_child_b_ref = _make_position_ref(
         [
@@ -816,7 +831,9 @@ def test_apply_guarantees_occupied_by_existing_swap():
         ]
     )
     assert tracker.is_occupied(new_child_b_ref) is True
-    assert tracker.get_occupant(new_child_b_ref).qualities == (_make_global_ref("/t"),)
+    assert tuple(tracker.get_occupant(new_child_b_ref).qualities) == (
+        _make_global_ref("/t"),
+    )
 
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
@@ -830,7 +847,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
         ]
     )
 
-    tracker.create(box_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
     _apply_guarantees(
         tracker,
         ref,
@@ -860,8 +877,8 @@ def test_apply_guarantees_error():
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
-    tracker.create(box_ref, ())
-    tracker.create(ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -897,8 +914,8 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
             _make_local_ref("untouched"),
         ]
     )
-    tracker.create(box_ref, ())
-    tracker.create(untouched_ref, ())
+    tracker.create(box_ref, _NO_QUALITIES)
+    tracker.create(untouched_ref, _NO_QUALITIES)
 
     _apply_guarantees(
         tracker,
@@ -922,7 +939,7 @@ def test_generate_own_guarantees_skips_occupied_by_existing_at_origin():
     run_name = _make_local_ref("run")
     run_ref = _make_position_ref([run_name])
 
-    tracker.create(run_ref, (), from_caller=run_ref)
+    tracker.create(run_ref, _NO_QUALITIES, from_caller=run_ref)
 
     assert tracker.generate_own_guarantees((run_name,), (), {}) == []
 
@@ -934,7 +951,7 @@ def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
     a_ref = _make_position_ref([a_name])
     b_ref = _make_position_ref([b_name], location=_LOC2)
 
-    tracker.create(a_ref, (), from_caller=a_ref)
+    tracker.create(a_ref, _NO_QUALITIES, from_caller=a_ref)
     tracker.move(a_ref, b_ref)
 
     guarantees = tracker.generate_own_guarantees((a_name, b_name), (), {})
@@ -955,7 +972,7 @@ def test_generate_own_guarantees_emits_unchanged_for_touched_inferred_empty():
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
 
-    tracker.create(x_ref, ())
+    tracker.create(x_ref, _NO_QUALITIES)
     tracker.destroy(x_ref)
 
     requirements = {
@@ -977,7 +994,7 @@ def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
 
-    tracker.create(x_ref, (), from_caller=x_ref)
+    tracker.create(x_ref, _NO_QUALITIES, from_caller=x_ref)
     destroy_ref = _make_position_ref([_make_local_ref("x", location=_LOC2)], _LOC2)
     tracker.destroy(destroy_ref)
 
@@ -1010,10 +1027,10 @@ def test_snapshot_child_state_captures_each_occupancy_kind():
         [_make_local_ref("parent"), _make_local_ref("branch"), _make_local_ref("leaf")]
     )
 
-    tracker.create(parent, ())
-    tracker.create(child, ())
-    tracker.create(grandchild, (_make_global_ref("/x"),))
-    tracker.create(emptied, ())
+    tracker.create(parent, _NO_QUALITIES)
+    tracker.create(child, _NO_QUALITIES)
+    tracker.create(grandchild, _quality_assignments(_make_global_ref("/x")))
+    tracker.create(emptied, _NO_QUALITIES)
     tracker.destroy(emptied)
     tracker.mark_error(deep_error)
 
@@ -1046,9 +1063,9 @@ def test_snapshot_child_state_is_decoupled_from_later_mutation():
         [_make_local_ref("parent"), _make_local_ref("child"), _make_local_ref("gc")]
     )
 
-    tracker.create(parent, ())
-    tracker.create(child, ())
-    tracker.create(grandchild, (_make_global_ref("/x"),))
+    tracker.create(parent, _NO_QUALITIES)
+    tracker.create(child, _NO_QUALITIES)
+    tracker.create(grandchild, _quality_assignments(_make_global_ref("/x")))
 
     parent_key = parent.canonical_chained_name_tuple
     child_rel = child.canonical_chained_name_tuple[len(parent_key) :]
@@ -1057,8 +1074,8 @@ def test_snapshot_child_state_is_decoupled_from_later_mutation():
     snapshot = tracker.snapshot_child_state(parent)
 
     tracker.destroy(parent)
-    tracker.create(parent, ())
-    tracker.create(child, ())
+    tracker.create(parent, _NO_QUALITIES)
+    tracker.create(child, _NO_QUALITIES)
     tracker.mark_error(grandchild)
 
     assert tracker.snapshot_child_state(parent) == {
@@ -1085,9 +1102,9 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
     item_ref = _make_position_ref(
         [box_name, _make_action_ref("/other"), _make_local_ref("item")]
     )
-    tracker.create(box_ref, (), from_caller=box_ref)
+    tracker.create(box_ref, _NO_QUALITIES, from_caller=box_ref)
     trigger_ref = _make_position_ref([_make_local_ref("trigger")])
-    tracker.create(trigger_ref, ())
+    tracker.create(trigger_ref, _NO_QUALITIES)
     _apply_guarantees(
         tracker,
         item_ref,
@@ -1095,7 +1112,9 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
             (
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
-                    qualities=(), caused_by=_POS2_REF, operation_positions=()
+                    qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                    caused_by=_POS2_REF,
+                    operation_positions=(),
                 ),
             )
         ],
@@ -1116,9 +1135,9 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
-    tracker.create(box_ref, (), from_caller=box_ref)
+    tracker.create(box_ref, _NO_QUALITIES, from_caller=box_ref)
     trigger_ref = _make_position_ref([_make_local_ref("trigger")])
-    tracker.create(trigger_ref, ())
+    tracker.create(trigger_ref, _NO_QUALITIES)
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/other>",),
         guarantees=action_contract.Guarantees(
@@ -1126,7 +1145,9 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
                 (
                     ("position<item>",),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=(), caused_by=_POS2_REF, operation_positions=()
+                        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        caused_by=_POS2_REF,
+                        operation_positions=(),
                     ),
                 )
             ],
@@ -1168,7 +1189,9 @@ def _make_nested_level(
                 (
                     (item,),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=(), caused_by=_POS2_REF, operation_positions=()
+                        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        caused_by=_POS2_REF,
+                        operation_positions=(),
                     ),
                 )
             ],
@@ -1181,10 +1204,10 @@ def test_generate_flattened_guarantees_flattens_many_nested_levels():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     box_name = _make_local_ref("box")
     box_ref = _make_position_ref([box_name])
-    tracker.create(box_ref, (), from_caller=box_ref)
+    tracker.create(box_ref, _NO_QUALITIES, from_caller=box_ref)
     marker_name = _make_local_ref("marker")
     marker_ref = _make_position_ref([marker_name])
-    tracker.create(marker_ref, ())
+    tracker.create(marker_ref, _NO_QUALITIES)
 
     # Three levels of nesting, each deferred behind the one above it.
     level3 = _make_nested_level("/c", "position<item_c>", ())

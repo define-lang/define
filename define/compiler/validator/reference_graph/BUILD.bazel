@@ -20,6 +20,7 @@ py_library(
     srcs = ["action_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":quality_assignments",
         "//define/compiler:ast",
     ],
 )
@@ -78,6 +79,7 @@ py_library(
         ":operation_graph",
         ":particle_operation",
         ":particle_tracker",
+        ":quality_assignments",
         ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -152,6 +154,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":particle_tracker",
+        ":quality_assignments",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -164,6 +167,7 @@ py_library(
     deps = [
         ":action_contract",
         ":operation_graph",
+        ":quality_assignments",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
     ],
@@ -177,6 +181,7 @@ py_test(
         ":action_contract",
         ":operation_graph",
         ":particle_tracker",
+        ":quality_assignments",
         "//define/compiler:ast",
     ],
 )
@@ -188,6 +193,7 @@ py_test(
     deps = [
         ":action_contract",
         ":particle_tracker",
+        ":quality_assignments",
         "//define/compiler:ast",
         "@pypi//pytest",
     ],
@@ -229,6 +235,7 @@ py_library(
         ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
+        ":quality_assignments",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",

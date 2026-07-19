@@ -5,12 +5,14 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph,
     particle_tracker,
+    quality_assignments,
 )
 
 _LOC = ast.start_of_file_location()
 
 
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
+_NO_QUALITIES = quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
 
 _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode
@@ -65,7 +67,7 @@ def _action_chain(*elements: ast.TypedNameReference) -> ast.ActionReference:
 def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
     cause = _ref("cause")
     return action_contract.OccupiedByNewGuarantee(
-        qualities=(),
+        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
         caused_by=cause,
         operation_positions=(cause.canonical_chained_name_tuple,),
     )
@@ -122,7 +124,7 @@ def _make_requirement(
 
 def test_body_chain_depends_in_order():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("one"), ())
+    tracker.create(_ref("one"), _NO_QUALITIES)
     tracker.destroy(_ref("one"))
     # Node 0 is the trigger-position RequirementNode the first create waits on.
     assert _kinds(tracker) == [_ACTION_PARENT_LAST_OPERATION, _CREATE, _DESTROY]
@@ -132,8 +134,8 @@ def test_body_chain_depends_in_order():
 
 def test_child_create_depends_on_parent():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("box"), ())
-    tracker.create(_ref("box", "inner"), ())
+    tracker.create(_ref("box"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner"), _NO_QUALITIES)
     assert [
         node.target.canonical_chained_name_tuple
         for node in tracker.operation_graph.nodes
@@ -145,8 +147,8 @@ def test_child_create_depends_on_parent():
 
 def test_destroy_depends_on_touched_children():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("box"), ())
-    tracker.create(_ref("box", "inner"), ())
+    tracker.create(_ref("box"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner"), _NO_QUALITIES)
     tracker.destroy(_ref("box"))
     assert _kinds(tracker) == [
         _ACTION_PARENT_LAST_OPERATION,
@@ -160,9 +162,9 @@ def test_destroy_depends_on_touched_children():
 
 def test_destroy_depends_on_grandchildren():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("box"), ())
-    tracker.create(_ref("box", "inner"), ())
-    tracker.create(_ref("box", "inner", "deep"), ())
+    tracker.create(_ref("box"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner", "deep"), _NO_QUALITIES)
     tracker.destroy(_ref("box"))
     assert _kinds(tracker) == [
         _ACTION_PARENT_LAST_OPERATION,
@@ -178,8 +180,8 @@ def test_destroy_depends_on_grandchildren():
 
 def test_move_carries_child_transitively():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("box"), ())
-    tracker.create(_ref("box", "inner"), ())
+    tracker.create(_ref("box"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner"), _NO_QUALITIES)
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [
@@ -199,9 +201,9 @@ def test_move_carries_child_transitively():
 
 def test_move_carries_grandchild_subtree():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
-    tracker.create(_ref("box"), ())
-    tracker.create(_ref("box", "inner"), ())
-    tracker.create(_ref("box", "inner", "deep"), ())
+    tracker.create(_ref("box"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner"), _NO_QUALITIES)
+    tracker.create(_ref("box", "inner", "deep"), _NO_QUALITIES)
     tracker.move(_ref("box"), _ref("basket"))
     tracker.destroy(_ref("basket"))
     assert _kinds(tracker) == [
@@ -223,7 +225,7 @@ def test_move_carries_grandchild_subtree():
 def test_from_caller_create_records_no_operation():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     iface = _ref("iface")
-    tracker.create(iface, (), from_caller=iface)
+    tracker.create(iface, _NO_QUALITIES, from_caller=iface)
     tracker.destroy(iface)
     # The from-caller create is not a body operation, so the destroy has
     # nothing of its own to wait on and waits on the trigger-position
@@ -235,7 +237,7 @@ def test_from_caller_create_records_no_operation():
 def test_mark_empty_records_nothing():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     tracker.mark_empty(_ref("slot"))
-    tracker.create(_ref("slot"), ())
+    tracker.create(_ref("slot"), _NO_QUALITIES)
     assert _kinds(tracker) == [_ACTION_PARENT_LAST_OPERATION, _CREATE]
     assert _deps(tracker, 1) == [0]
 
@@ -245,8 +247,8 @@ def test_triggered_guarantee_output_becomes_a_guarantee_node():
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     out = _chain(_local("box"), box, _local("out"))
-    tracker.create(_ref("box"), ())  # requirement 0, create 1
-    tracker.create(run, ())  # 2: the caller fill that fires the trigger
+    tracker.create(_ref("box"), _NO_QUALITIES)  # requirement 0, create 1
+    tracker.create(run, _NO_QUALITIES)  # 2: the caller fill that fires the trigger
     tracker.apply_guarantees(
         _action_chain(_local("box"), box),
         action_contract.Guarantees(
@@ -276,8 +278,8 @@ def test_triggered_guarantee_parent_and_child_become_guarantee_nodes():
     tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
-    tracker.create(_ref("box"), ())  # requirement 0, create 1
-    tracker.create(run, ())  # 2: the trigger fill
+    tracker.create(_ref("box"), _NO_QUALITIES)  # requirement 0, create 1
+    tracker.create(run, _NO_QUALITIES)  # 2: the trigger fill
     tracker.apply_guarantees(
         _action_chain(_local("box"), box),
         action_contract.Guarantees(
@@ -316,9 +318,9 @@ def test_nested_triggered_guarantee_becomes_a_guarantee_node():
     # guarantee's target is drained.
     sibling = _chain(_local("box"), inner, _local("sibling"))
     item = _chain(_local("box"), inner, _local("item"))
-    tracker.create(_ref("box"), ())  # requirement 0, create 1
-    tracker.create(run, ())  # 2: the trigger fill
-    tracker.create(sibling, ())  # 3
+    tracker.create(_ref("box"), _NO_QUALITIES)  # requirement 0, create 1
+    tracker.create(run, _NO_QUALITIES)  # 2: the trigger fill
+    tracker.create(sibling, _NO_QUALITIES)  # 3
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/inner>",),
         guarantees=action_contract.Guarantees(
@@ -356,10 +358,10 @@ def test_stale_nested_guarantee_keeps_the_later_last_operation():
     sibling = _chain(_local("box"), inner, _local("sibling"))
     item = _chain(_local("box"), inner, _local("item"))
     inner_item = ("action<my.domain.com:my_lib:/inner>", "position<item>")
-    tracker.create(_ref("box"), ())  # requirement 0, create 1
-    tracker.create(earlier_run, ())  # 2: the earlier trigger fill
-    tracker.create(sibling, ())  # 3
-    tracker.create(later_run, ())  # 4: the later trigger fill
+    tracker.create(_ref("box"), _NO_QUALITIES)  # requirement 0, create 1
+    tracker.create(earlier_run, _NO_QUALITIES)  # 2: the earlier trigger fill
+    tracker.create(sibling, _NO_QUALITIES)  # 3
+    tracker.create(later_run, _NO_QUALITIES)  # 4: the later trigger fill
     # The earlier trigger defers a nested guarantee for box::action</inner>::item.
     nested = action_contract.NestedGuarantees(
         triggered_action=("action<my.domain.com:my_lib:/inner>",),
@@ -404,8 +406,8 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     box = _action("/b")
     run = _chain(_local("box"), box, _local("run"))
     action_chain = _action_chain(_local("box"), box)
-    tracker.create(_ref("box"), ())  # requirement 0, create 1
-    tracker.create(run, ())  # 2: the trigger fill
+    tracker.create(_ref("box"), _NO_QUALITIES)  # requirement 0, create 1
+    tracker.create(run, _NO_QUALITIES)  # 2: the trigger fill
     tracker.apply_guarantees(
         action_chain,
         action_contract.Guarantees(
@@ -439,7 +441,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     callee = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     x = _local("x")
     x_ref = _ref("x")
-    callee.create(x_ref, ())
+    callee.create(x_ref, _NO_QUALITIES)
     callee.destroy(x_ref)
     requirements = {
         ("position<x>",): _make_requirement(
@@ -457,9 +459,9 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
     caller = particle_tracker.ParticleTracker(_NO_REQUIREMENTS, _ref("run"))
     box = _local("box")
     b = _action("/b")
-    caller.create(_ref("box"), ())  # requirement node 0, box create node 1
+    caller.create(_ref("box"), _NO_QUALITIES)  # requirement node 0, box create node 1
     run = _chain(box, b, _local("run"))
-    caller.create(run, ())  # node 2: the fill that fires the trigger
+    caller.create(run, _NO_QUALITIES)  # node 2: the fill that fires the trigger
     caller.apply_guarantees(
         _action_chain(box, b),
         action_contract.Guarantees(own=callee_guarantees, nested=()),
@@ -467,7 +469,7 @@ def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position()
         [],
         [],
     )
-    caller.create(_chain(box, b, x), ())  # node 4
+    caller.create(_chain(box, b, x), _NO_QUALITIES)  # node 4
 
     # The caller's fill of x waits for the guarantee node (node 3) that
     # transiently occupied x: the UnchangedGuarantee carried the ordering the

@@ -11,6 +11,7 @@ from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
+    quality_assignments,
 )
 
 if typing.TYPE_CHECKING:
@@ -48,7 +49,7 @@ class ReferenceGraphValidator:
         ast.GlobalTypedName, action_contract.ActionContract
     ]
     _definition_quality_cache: dict[
-        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+        tuple[str, ...], quality_assignments.QualityAssignments
     ]
 
     def __init__(

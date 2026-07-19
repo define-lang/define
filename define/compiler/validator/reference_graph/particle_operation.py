@@ -11,7 +11,10 @@ if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
     from define.compiler import ast
-    from define.compiler.validator.reference_graph import particle_tracker
+    from define.compiler.validator.reference_graph import (
+        particle_tracker,
+        quality_assignments,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +28,7 @@ class Operation:
 class Create(Operation):
     """Create a new particle in a position, with the given qualities."""
 
-    qualities: tuple[ast.GlobalTypedNameReference, ...]
+    qualities: quality_assignments.QualityAssignments
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,10 +54,6 @@ class Move(Operation):
 @dataclass(frozen=True, slots=True)
 class Destroy(Operation):
     """Destroy the particle in a position."""
-
-
-def _name_set(typed_names: tuple[ast.GlobalTypedNameReference, ...]) -> frozenset[str]:
-    return frozenset(name.full_typed_name for name in typed_names)
 
 
 # TODO: I want to change Define's semantics so that you can only directly
@@ -148,11 +147,11 @@ class ParticleOperationExecutor:
             self._tracker.mark_error(op.source)
             self._tracker.mark_error(op.target)
             return diags
-        have = _name_set(self._tracker.get_occupant(op.source).qualities)
+        have = self._tracker.get_occupant(op.source).qualities
         missing = [
             name.source_form_in_universe(self._enclosing_fqun)
             for name in op.target_required_qualities
-            if name.full_typed_name not in have
+            if not have.has_quality(name)
         ]
         if missing:
             self._tracker.mark_error(op.source)

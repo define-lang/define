@@ -5,10 +5,10 @@ from __future__ import annotations
 import enum
 import typing
 from dataclasses import dataclass, field
-from functools import cached_property
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
+    from define.compiler.validator.reference_graph import quality_assignments
 
 
 class PositionOccupancyState(enum.Enum):
@@ -222,7 +222,7 @@ class OccupiedByExistingGuarantee(PositionGuarantee):
 class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new particle created by the action."""
 
-    qualities: tuple[ast.GlobalTypedNameReference, ...]
+    qualities: quality_assignments.QualityAssignments
 
 
 @dataclass(frozen=True)
@@ -286,7 +286,7 @@ class DestructionContract:
     # The action that physically performed the destruction.
     destroying_action: ast.GlobalTypedName
     # Destructors we have already verified, so consumers do not re-verify.
-    verified_destructors: tuple[ast.GlobalTypedNameReference, ...]
+    verified_destructors: quality_assignments.QualityAssignments
     # True when destroyed_position_local was auto-destroyed at block end rather
     # than by an explicit destroy statement.
     is_auto_destruction: bool
@@ -296,13 +296,6 @@ class DestructionContract:
     # itself verify the destructor, so a destructor verified many hops above its
     # destruction can render every hop in between.
     trigger_chain: tuple[PropagationStep, ...] = ()
-
-    @cached_property
-    def verified_destructor_names(self) -> frozenset[str]:
-        """The full typed names of the destructors the recorder already verified."""
-        return frozenset(
-            quality.full_typed_name for quality in self.verified_destructors
-        )
 
 
 @dataclass(frozen=True)
