@@ -1,4 +1,5 @@
-define the potential action<mv:define-lang.org:test_action_requires_empty:/test> {
+# Triggering after filling a position required empty reports at the trigger.
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.
@@ -11,7 +12,7 @@ define the potential action<mv:define-lang.org:test_action_requires_empty:/test>
         define the position<spare>.
         create a particle in position<box>.
         create a particle in position<spare>.
-        move the particle in position<spare> to position<box>::action</other>::position<dest>.
+        move the particle in position<spare> to position<box>::action</other>::position<item>.
         create a particle in position<box>::action</other>::position<trigger_pos>.
     }
 }

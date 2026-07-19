@@ -3,7 +3,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateProjectWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -17,38 +20,10 @@ _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
 
 
 def test_constructor_occupied_violation_via_destroy_of_implied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "p.dfn": (
-                "define the potential action<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
@@ -61,6 +36,8 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
     assert diag.location.column == 30
+    assert diag.location.end_line == 11
+    assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,

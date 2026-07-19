@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_init_requires_empty:/p> {
+define the potential action<my.domain.com:my_lib:/p> {
     it also assigns the position</q>.
     it happens when {
         this particle is created.

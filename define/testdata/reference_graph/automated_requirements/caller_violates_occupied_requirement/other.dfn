@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_action_requires_occupied:/other> {
+define the potential action<my.domain.com:my_lib:/other> {
     define the position<trigger_pos>.
     define the position<item>.
     define the position<dest>.

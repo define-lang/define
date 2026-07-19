@@ -6,7 +6,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateProjectWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
@@ -131,46 +134,17 @@ def test_violate_occupied_requirement(
 
 
 def test_caller_violates_occupied_requirement(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Caller triggering without filling a required occupied position produces a diagnostic at the trigger site."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -181,7 +155,7 @@ def test_caller_violates_occupied_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -237,48 +211,17 @@ def test_caller_satisfies_empty_requirement(
 
 
 def test_caller_violates_empty_requirement(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Triggering an action whose body creates in a position fails when the caller already filled it."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 16
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
@@ -289,7 +232,7 @@ def test_caller_violates_empty_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<item>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 15,
             "column": 49,
             "file_path": "test.dfn",
         },
@@ -297,7 +240,7 @@ def test_caller_violates_empty_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 15,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },

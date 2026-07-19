@@ -4,6 +4,8 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from pathlib import PurePosixPath
+
 from define.compiler import config, diagnostics
 from define.compiler.conftest import ValidateProject, ValidateTestdataStructural
 from define.compiler.data_structures import define_path
@@ -204,6 +206,46 @@ def test_sub_root_conflict(
     )
     assert result.file_results[2].exception is None
     assert result.file_results[2].diagnostics == []
+
+
+def test_sub_root_is_current_universe(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[0].exception is None
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+    assert result.file_results[1].exception is None
+    all_diags = result.all_diagnostics
+    assert len(all_diags) == 3
+    assert isinstance(all_diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert all_diags[0].file_path == "lib/target.dfn"
+    assert (
+        all_diags[0].definition_name
+        == "position<mv:define-lang.org:test_parent:/lib/target>"
+    )
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 29
+    assert all_diags[0].location.end_line == 3
+    assert all_diags[0].location.end_column == 40
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[1].file_path == "target.dfn"
+    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.column == 29
+    assert all_diags[1].location.end_line == 4
+    assert all_diags[1].location.end_column == 36
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[2], diagnostics.PathMismatchDiagnostic)
+    assert all_diags[2].expected_path == "/lib/target"
+    assert all_diags[2].actual_path == "/target"
+    assert all_diags[2].location.line == 1
+    assert all_diags[2].location.column == 62
+    assert all_diags[2].location.end_line == 1
+    assert all_diags[2].location.end_column == 69
+    assert all_diags[2].location.file_path == PurePosixPath("lib/target.dfn")
 
 
 def test_sub_root_conflict_continues_validation(validate_project: ValidateProject):

@@ -3,7 +3,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateProjectWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
@@ -172,51 +175,10 @@ def test_empty_interface_requirement_satisfied_when_created_in_interface_positio
 
 
 def test_constructor_empty_violation_via_create_in_implied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            # An earlier constructor fills the implied position, so the later
-            # constructor's empty requirement on it can never hold.
-            "filler.dfn": (
-                "define the potential action<my.domain.com:my_lib:/filler> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential action<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</filler>.\n"
-                "                it has the action</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
@@ -224,8 +186,10 @@ def test_constructor_empty_violation_via_create_in_implied(
     assert diag.action_name == _P
     assert diag.required_empty is True
     assert diag.position_name == "position<box>::position</q>"
-    assert diag.location.line == 12
+    assert diag.location.line == 14
     assert diag.location.column == 30
+    assert diag.location.end_line == 14
+    assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -241,7 +205,7 @@ def test_constructor_empty_violation_via_create_in_implied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
-            "line": 12,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },

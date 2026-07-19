@@ -147,6 +147,7 @@ py_test(
     name = "automated_requirements_constructor_implied_test",
     size = "small",
     srcs = ["automated_requirements_constructor_implied_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_constructor_implied"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -185,6 +186,7 @@ py_test(
     name = "automated_requirements_constructor_test",
     size = "small",
     srcs = ["automated_requirements_constructor_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_constructor"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -375,6 +377,7 @@ py_test(
     name = "automated_requirements_test",
     size = "small",
     srcs = ["automated_requirements_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",

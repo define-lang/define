@@ -1,4 +1,6 @@
-define the potential action<mv:define-lang.org:test_init_requires_empty:/test> {
+# An earlier constructor fills the implied position, so the later
+# constructor's empty requirement on it can never hold.
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.

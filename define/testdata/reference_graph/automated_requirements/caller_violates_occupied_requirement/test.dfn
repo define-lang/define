@@ -1,4 +1,5 @@
-define the potential action<mv:define-lang.org:test_action_requires_occupied:/test> {
+# Triggering without filling a required occupied position reports at the trigger.
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.
