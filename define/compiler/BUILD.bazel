@@ -164,21 +164,6 @@ py_test(
 )
 
 py_test(
-    name = "driver_integration_test",
-    size = "small",
-    srcs = ["driver_integration_test.py"],
-    data = ["//define/testdata:testdata_files"],
-    deps = [
-        ":diagnostics",
-        ":driver",
-        ":parser",
-        ":parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
     name = "driver_run_test",
     size = "small",
     srcs = ["driver_run_test.py"],
@@ -409,7 +394,6 @@ pyright_test(
         ":diagnostics_test",
         ":driver",
         ":driver_fuzz_test",
-        ":driver_integration_test",
         ":driver_run_test",
         ":driver_test",
         ":exceptions",

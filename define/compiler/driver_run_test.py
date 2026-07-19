@@ -1,10 +1,9 @@
-"""Tests for Driver.run().
+"""Exercise the Driver's public boundary across every compiler phase.
 
-Most integration tests for the driver should be in driver_integration_test,
-intead.
-
-This just tests a few cases to make sure that the specific code in Driver.run
-is functioning correctly.
+These tests use Driver.run for both filesystem projects and direct source so a
+wiring change cannot silently omit validation, code generation, diagnostics,
+or statistics. Together they cover every publicly reachable line and branch in
+driver.py.
 """
 
 import io
@@ -15,6 +14,37 @@ import pytest
 from define.compiler import constants, driver, overall_stats, parser
 
 _PARSER = parser.Parser()
+
+
+def _write_valid_position_project(project_root: Path, universe_name: str) -> None:
+    config_dir = project_root / ".define" / "project"
+    config_dir.mkdir(parents=True)
+    _ = (config_dir / "config.defcl").write_text(
+        f'project: {{ universe_name: "{universe_name}" }}\n'
+    )
+    _ = (project_root / "test.dfn").write_text(
+        f"define the potential position<{universe_name}:/test>.\n"
+    )
+
+
+def test_absolute_path_in_project_returns_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    _write_valid_position_project(
+        project_root, "mv:define-lang.org:driver_absolute_path"
+    )
+    monkeypatch.chdir(project_root)
+    error_stream = io.StringIO()
+
+    result = driver.Driver(_PARSER).run(
+        project_root / "test.dfn",
+        error_stream=error_stream,
+    )
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
 
 
 def test_absolute_path_outside_project_root_returns_error(
@@ -229,6 +259,30 @@ def test_compile_succeeds(
     assert result == driver.ExitCode.SUCCESS
 
 
+def test_compile_source_succeeds(tmp_path: Path) -> None:
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<created>.\n"
+        "        create a particle in position<created>.\n"
+        "    }\n"
+        "}\n"
+    )
+
+    result = driver.Driver(_PARSER).run(
+        source=source,
+        mode=driver.DriverMode.COMPILE,
+        output_dir=tmp_path,
+    )
+
+    assert result == driver.ExitCode.SUCCESS
+    generated_entry_point = tmp_path / "__main__.py"
+    assert generated_entry_point.exists()
+    assert generated_entry_point.stat().st_size > 0
+
+
 def test_compile_with_errors_returns_error(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -264,3 +318,104 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
         "^\n"
         "the entry point of a Define program must be a constructor\n"
     )
+
+
+def test_compile_without_output_directory_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="output_dir is required when mode is COMPILE"):
+        _ = driver.Driver(_PARSER).run(mode=driver.DriverMode.COMPILE)
+
+
+def test_compile_without_path_or_source_raises_value_error(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="path is required when source is not given"):
+        _ = driver.Driver(_PARSER).run(
+            mode=driver.DriverMode.COMPILE,
+            output_dir=tmp_path,
+        )
+
+
+def test_default_parser_returns_success() -> None:
+    source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+    error_stream = io.StringIO()
+
+    result = driver.Driver().run(source=source, error_stream=error_stream)
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
+
+
+def test_multifile_project_returns_success(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(testdata_project_directory)
+    error_stream = io.StringIO()
+    stats_stream = io.StringIO()
+
+    result = driver.Driver(_PARSER).run(
+        Path("test.dfn"),
+        error_stream=error_stream,
+        stats_stream=stats_stream,
+        stats_mode=overall_stats.StatsMode.PER_FILE,
+    )
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
+    stats_output = stats_stream.getvalue()
+    assert "Files compiled:  2" in stats_output
+    assert "  test.dfn\n" in stats_output
+    assert "  dependency.dfn\n" in stats_output
+
+
+def test_reference_graph_diagnostic_returns_error(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(testdata_project_directory)
+    error_stream = io.StringIO()
+
+    result = driver.Driver(_PARSER).run(
+        Path("test.dfn"),
+        error_stream=error_stream,
+    )
+
+    assert result == driver.ExitCode.ERROR
+    assert error_stream.getvalue() == (
+        'File "test.dfn", line 9, column 30\n'
+        "        create a particle in position<target>.\n"
+        "                             ^\n"
+        "a particle already exists in 'position<target>'; it was put there at:\n"
+        'File "test.dfn", line 8, column 30\n'
+    )
+
+
+def test_relative_path_with_dotdot_in_project_returns_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    _write_valid_position_project(
+        project_root, "mv:define-lang.org:driver_relative_path"
+    )
+    monkeypatch.chdir(project_root)
+    error_stream = io.StringIO()
+
+    result = driver.Driver(_PARSER).run(
+        Path("unused/../test.dfn"),
+        error_stream=error_stream,
+    )
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
+
+
+def test_valid_source_returns_success() -> None:
+    source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+    error_stream = io.StringIO()
+
+    result = driver.Driver(_PARSER).run(source=source, error_stream=error_stream)
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
+
+
+def test_validate_without_path_or_source_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="path is required when source is not given"):
+        _ = driver.Driver(_PARSER).run()

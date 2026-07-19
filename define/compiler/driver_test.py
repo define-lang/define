@@ -207,29 +207,6 @@ class TestSourceValidation:
         assert diagnostic.location.line == 2
         assert diagnostic.location.column == 1
 
-    def test_reference_graph_validation_reports_diagnostic(self):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<target>.\n"
-            "        create a particle in position<target>.\n"
-            "        create a particle in position<target>.\n"
-            "    }\n"
-            "}\n"
-        )
-        driver_result = driver.Driver(_PARSER).validate_source(source)
-        assert driver_result.result.all_exceptions == []
-        all_diagnostics = driver_result.result.all_diagnostics
-        assert len(all_diagnostics) == 1
-        diagnostic = all_diagnostics[0]
-        assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
-        assert diagnostic.position_name == "position<target>"
-        assert diagnostic.location.line == 8
-        assert diagnostic.location.column == 30
-
 
 class TestSourceCompilation:
     def test_constructor_entry_point_writes_output(self, tmp_path: Path):

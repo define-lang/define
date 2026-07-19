@@ -1,0 +1,11 @@
+# Driver.run must report diagnostics added during reference graph validation.
+define the potential action<mv:define-lang.org:driver_reference_graph:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<target>.
+        create a particle in position<target>.
+        create a particle in position<target>.
+    }
+}
