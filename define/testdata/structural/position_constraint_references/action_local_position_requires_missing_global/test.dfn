@@ -1,7 +1,7 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/references/action_local_pos_requires_missing_global> {
+define the potential action<mv:define-lang.org:test_files:/test> {
     define the position<my_pos> {
         it may only contain particles where {
-            it has the position</invalid/references/action_local_pos_requires_missing_global>.
+            it has the position</test>.
         }
     }
     it happens when {

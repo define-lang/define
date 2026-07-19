@@ -4,13 +4,13 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataNonFilesystem
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_authority_domain_leading_dot_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
     assert diags[0].domain == ".define-lang.org"
@@ -23,9 +23,9 @@ def test_authority_domain_leading_dot_position(
 
 
 def test_authority_domain_trailing_dot_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
     assert diags[0].domain == "define-lang.org."
@@ -38,9 +38,9 @@ def test_authority_domain_trailing_dot_position(
 
 
 def test_authority_domain_trailing_hyphen_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
     assert diags[0].domain == "define-lang.org-"
@@ -53,9 +53,9 @@ def test_authority_domain_trailing_hyphen_position(
 
 
 def test_authority_domain_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
     assert diags[0].domain == "Define-lang.org"
@@ -68,9 +68,9 @@ def test_authority_domain_uppercase_position(
 
 
 def test_global_name_path_hyphen_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "test-path"
@@ -83,9 +83,9 @@ def test_global_name_path_hyphen_position(
 
 
 def test_global_name_path_special_character_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "test@path"
@@ -98,9 +98,9 @@ def test_global_name_path_special_character_position(
 
 
 def test_global_name_path_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "TestPath"
@@ -113,9 +113,9 @@ def test_global_name_path_uppercase_position(
 
 
 def test_later_path_segment_leading_digit_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "9path"
@@ -128,9 +128,9 @@ def test_later_path_segment_leading_digit_position(
 
 
 def test_local_name_leading_digit_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "1bad"
@@ -150,9 +150,9 @@ def test_local_name_leading_digit_position(
 
 
 def test_local_name_special_character_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].position_name == "position<my@pos>"
@@ -172,9 +172,9 @@ def test_local_name_special_character_position(
 
 
 def test_local_name_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "BadName"
@@ -194,9 +194,9 @@ def test_local_name_uppercase_position(
 
 
 def test_multiverse_trailing_underscore_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
     assert diags[0].multiverse_name == "mv_"
@@ -209,9 +209,9 @@ def test_multiverse_trailing_underscore_position(
 
 
 def test_multiverse_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
     assert diags[0].multiverse_name == "Mv"
@@ -224,9 +224,9 @@ def test_multiverse_uppercase_position(
 
 
 def test_path_segment_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "Path"
@@ -239,16 +239,16 @@ def test_path_segment_uppercase_position(
 
 
 def test_path_leading_underscore_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert diags == []
 
 
 def test_path_trailing_slash_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].path == "/invalid/syntax/paths/trailing_slash/"
@@ -260,9 +260,9 @@ def test_path_trailing_slash_position(
 
 
 def test_universe_trailing_underscore_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
     assert diags[0].universe_name == "test_files_"
@@ -275,9 +275,9 @@ def test_universe_trailing_underscore_position(
 
 
 def test_universe_uppercase_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_non_filesystem().file_results[0].diagnostics
+    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
     assert diags[0].universe_name == "MY_LIB"
@@ -290,9 +290,9 @@ def test_universe_uppercase_position(
 
 
 def test_multiverse_name_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
@@ -305,9 +305,9 @@ def test_multiverse_name_position(
 
 
 def test_multiverse_name_too_short(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MultiverseNameTooShortDiagnostic)
@@ -316,9 +316,9 @@ def test_multiverse_name_too_short(
 
 
 def test_authority_domain_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -331,9 +331,9 @@ def test_authority_domain_position(
 
 
 def test_authority_domain_too_short(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.AuthorityDomainTooShortDiagnostic)
@@ -342,9 +342,9 @@ def test_authority_domain_too_short(
 
 
 def test_authority_path_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
@@ -357,9 +357,9 @@ def test_authority_path_position(
 
 
 def test_authority_path_empty_segment(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
@@ -367,9 +367,9 @@ def test_authority_path_empty_segment(
 
 
 def test_universe_name_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
@@ -382,9 +382,9 @@ def test_universe_name_position(
 
 
 def test_universe_name_too_short(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameTooShortDiagnostic)
@@ -392,9 +392,9 @@ def test_universe_name_too_short(
 
 
 def test_path_segment_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -407,9 +407,9 @@ def test_path_segment_position(
 
 
 def test_global_name_path_empty_segment(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
@@ -417,9 +417,9 @@ def test_global_name_path_empty_segment(
 
 
 def test_local_name_position(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)

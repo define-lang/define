@@ -1,6 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataNonFilesystem
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -66,9 +66,9 @@ def test_valid_constructor():
 
 
 def test_undefined_local_name(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -78,9 +78,9 @@ def test_undefined_local_name(
 
 
 def test_action_type_in_trigger_condition_is_rejected(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -94,3 +94,27 @@ def test_action_type_in_trigger_condition_is_rejected(
     assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[2].location.line == 3
     assert diags[2].location.column == 13
+
+
+def test_invalid_local_name_format(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].local_name == "position<BAD>"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 13
+    assert diags[0].location.end_line == 3
+    assert diags[0].location.end_column == 26
+    assert diags[0].location.file_path is None
+    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[1].local_name == "BAD"
+    assert diags[1].char == "B"
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 22
+    assert diags[1].location.end_line == 3
+    assert diags[1].location.end_column == 25
+    assert diags[1].location.file_path is None

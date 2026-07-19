@@ -223,6 +223,7 @@ py_test(
     name = "position_constraint_references_test",
     size = "small",
     srcs = ["position_constraint_references_test.py"],
+    data = ["//define/testdata/structural/position_constraint_references"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

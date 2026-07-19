@@ -4,7 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataNonFilesystem
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -24,9 +24,9 @@ def test_standard_without_authority_ok():
 
 
 def test_non_standard_without_authority_error(
-    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_non_filesystem().file_results
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)

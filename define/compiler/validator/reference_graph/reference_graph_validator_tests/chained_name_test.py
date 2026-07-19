@@ -14,6 +14,26 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestCreateParticle:
+    def test_unknown_global_position(
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+    ):
+        result = validate_testdata_project_with_reference_graph().program_result
+        assert result.all_exceptions == []
+        diags = result.all_diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert diags[0].source_global_name == "position</valid/minimal_position>"
+        assert (
+            diags[0].full_global_name
+            == "position<mv:define-lang.org:test_files:/valid/minimal_position>"
+        )
+        assert diags[0].location.line == 6
+        assert diags[0].location.column == 30
+        assert diags[0].location.end_line == 6
+        assert diags[0].location.end_column == 63
+        assert diags[0].location.file_path == PurePosixPath("test.dfn")
+
     def test_invalid_local_name_char(
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,

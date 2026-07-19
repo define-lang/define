@@ -1,7 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/constructors/undefined_local> {
-    it happens when {
-        this particle is created.
-    } and it does {
-        create a particle in position<no_such_pos>.
-    }
-}

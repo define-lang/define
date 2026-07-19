@@ -21,17 +21,20 @@ _TEST_SOURCE_ROOTS = {
 _NON_FILESYSTEM_FIXTURES = {
     "parse_testdata",
     "testdata_source_path",
-    "validate_testdata_non_filesystem",
+    "validate_testdata_structural_non_filesystem",
     "validate_testdata_non_filesystem_with_reference_graph",
 }
 _FILESYSTEM_FIXTURES = {
     "parse_and_validate_testdata_file",
-    "validate_testdata_project",
+    "validate_testdata_structural",
     "validate_testdata_project_with_reference_graph",
     "validate_testdata_source_as_file",
     "testdata_project_directory",
 }
 _TESTDATA_FIXTURES = _NON_FILESYSTEM_FIXTURES | _FILESYSTEM_FIXTURES
+
+# TODO: Require data-backed tests that assert diagnostics to also assert that
+# validation produced no exceptions.
 
 
 def _fixture_arguments(

@@ -12,6 +12,27 @@ from define.compiler.conftest import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
+def test_constructor_duplicate_local_position(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diags[0].position_name == "position<local>"
+    assert diags[0].populated_at.line == 6
+    assert diags[0].populated_at.column == 30
+    assert diags[0].populated_at.end_line == 6
+    assert diags[0].populated_at.end_column == 45
+    assert diags[0].populated_at.file_path is None
+    assert diags[0].location.line == 7
+    assert diags[0].location.column == 30
+    assert diags[0].location.end_line == 7
+    assert diags[0].location.end_column == 45
+    assert diags[0].location.file_path is None
+
+
 def test_duplicate_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

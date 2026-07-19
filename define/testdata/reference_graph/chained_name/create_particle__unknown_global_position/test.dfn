@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/references/unknown_global_name> {
+define the potential action<mv:define-lang.org:test_files:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.

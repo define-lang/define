@@ -4,10 +4,72 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from pathlib import PurePosixPath
+
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
+from define.compiler.conftest import (
+    ValidateProject,
+    ValidateTestdataStructural,
+    ValidateTestdataStructuralNonFilesystem,
+)
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
+
+
+def test_action_local_position_requires_missing_global(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    diags = result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].file_path == "test.dfn"
+    assert diags[0].definition_name == "position<mv:define-lang.org:test_files:/test>"
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 33
+    assert diags[0].location.end_line == 4
+    assert diags[0].location.end_column == 38
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+
+
+def test_same_fqun_constraint_reference_in_global_position_must_use_short_form(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].fqun == "mv:define-lang.org:test_files"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert diags[0].location.end_line == 3
+    assert diags[0].location.end_column == 58
+    assert diags[0].location.file_path is None
+
+
+def test_same_fqun_constraint_reference_in_move_must_use_short_form(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].fqun == "mv:define-lang.org:test_files"
+    assert diags[0].location.line == 5
+    assert diags[0].location.column == 33
+    assert diags[0].location.end_line == 5
+    assert diags[0].location.end_column == 62
+    assert diags[0].location.file_path is None
+    assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[1].fqun == "mv:define-lang.org:test_files"
+    assert diags[1].location.line == 12
+    assert diags[1].location.column == 80
+    assert diags[1].location.end_line == 12
+    assert diags[1].location.end_column == 109
+    assert diags[1].location.file_path is None
 
 
 def test_position_constraint_reference_with_invalid_path():

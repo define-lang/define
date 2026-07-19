@@ -269,10 +269,23 @@ class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
         ...
 
 
-class ValidateTestdataNonFilesystem(Protocol):
+class ValidateTestdataStructuralNonFilesystem(Protocol):
     """Validate the convention-derived non-filesystem source structurally."""
 
     def __call__(self) -> validation_result.ProgramValidationResult:
+        """Run structural validation."""
+        ...
+
+
+class ValidateTestdataStructural(Protocol):
+    """Validate the convention-derived filesystem project structurally."""
+
+    def __call__(
+        self,
+        *,
+        max_workers: int | None = ...,
+        entry_file: str = ...,
+    ) -> validation_result.ProgramValidationResult:
         """Run structural validation."""
         ...
 
@@ -303,9 +316,9 @@ def testdata_source_path(request: pytest.FixtureRequest) -> Path:
 
 
 @pytest.fixture
-def validate_testdata_non_filesystem(
+def validate_testdata_structural_non_filesystem(
     request: pytest.FixtureRequest,
-) -> ValidateTestdataNonFilesystem:
+) -> ValidateTestdataStructuralNonFilesystem:
     """Structurally validate source.dfn from the derived testdata directory."""
     directory = _testdata_directory(request)
     source = (directory / "source.dfn").read_text(encoding="utf-8")
@@ -314,6 +327,27 @@ def validate_testdata_non_filesystem(
         return program_validator.ProgramStructuralValidator(
             _PARSER
         ).validate_program_non_filesystem(source)
+
+    return _run
+
+
+@pytest.fixture
+def validate_testdata_structural(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> ValidateTestdataStructural:
+    """Validate the current test's convention-derived filesystem project."""
+    directory = _testdata_directory(request)
+
+    def _run(
+        *,
+        max_workers: int | None = None,
+        entry_file: str = "test.dfn",
+    ) -> validation_result.ProgramValidationResult:
+        monkeypatch.chdir(directory)
+        return program_validator.ProgramStructuralValidator(_PARSER).validate_program(
+            PurePosixPath(entry_file), max_workers=max_workers
+        )
 
     return _run
 
