@@ -143,6 +143,24 @@ def test_local_name_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
+def test_local_name_with_space_after_valid_characters(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<test path>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " "
+    assert exc_info.value.name == "test"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 29
+
+
 def test_create_position_ref_starting_with_space(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.InvalidName) as exc_info:
         parse(

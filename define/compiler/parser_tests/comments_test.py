@@ -64,6 +64,14 @@ def test_control_character_in_comment(parse: Parse) -> None:
     assert exc_info.value.column == 15
 
 
+def test_control_character_in_inline_comment(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        parse("define the potential position<standard:/path>. # comment\x00\n")
+    assert exc_info.value.line == 1
+    assert exc_info.value.char == "\x00"
+    assert exc_info.value.column == 57
+
+
 def test_comment_with_trailing_whitespace(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("# comment with trailing space \n")

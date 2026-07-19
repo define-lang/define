@@ -1,8 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/valid/constructors/construct_block_only> {
-    it happens when {
-        this particle is created.
-    } and it does {
-        define the position<local>.
-        create a particle in position<local>.
-    }
-}

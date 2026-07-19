@@ -1,9 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/valid/minimal_action> {
-    define the position<pp>.
-    it happens when {
-        the position<pp> has a particle.
-    } and it does {
-        define the position<noop>.
-        create a particle in position<noop>.
-    }
-}
