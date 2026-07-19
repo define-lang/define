@@ -9,6 +9,9 @@ _PHASE_BY_TEST_DIRECTORY = {
     "program_validator_tests": "structural",
     "reference_graph_validator_tests": "reference_graph",
 }
+_PHASE_BY_TEST_FILE = {
+    "driver_run_test.py": "driver",
+}
 
 
 def _snake_case(class_name: str) -> str:
@@ -37,13 +40,18 @@ def directory_for(
     test_class_name: str | None = None,
 ) -> Path:
     """Return the convention-derived testdata directory for a test."""
-    test_directories = set(test_file.parts) & _PHASE_BY_TEST_DIRECTORY.keys()
-    if len(test_directories) != 1:
-        raise ValueError(f"cannot determine testdata phase for {test_file}")
-    test_directory = test_directories.pop()
     if not test_file.stem.endswith("_test"):
         raise ValueError(f"test module must end in _test: {test_file}")
-    phase = _PHASE_BY_TEST_DIRECTORY[test_directory]
+    phases = {
+        _PHASE_BY_TEST_DIRECTORY[directory]
+        for directory in set(test_file.parts) & _PHASE_BY_TEST_DIRECTORY.keys()
+    }
+    file_phase = _PHASE_BY_TEST_FILE.get(test_file.name)
+    if file_phase is not None:
+        phases.add(file_phase)
+    if len(phases) != 1:
+        raise ValueError(f"cannot determine testdata phase for {test_file}")
+    phase = phases.pop()
     module_name = test_file.stem.removesuffix("_test")
     case_name = case_name_for(test_name, test_class_name)
     directory = _TESTDATA_ROOT / phase / module_name / case_name

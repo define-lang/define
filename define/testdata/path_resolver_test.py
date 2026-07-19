@@ -26,3 +26,13 @@ def test_case_name_for_test_in_class():
         )
         == "create_particle__undefined_local_position_in_chain"
     )
+
+
+def test_directory_for_driver_test():
+    directory = path_resolver.directory_for(
+        Path("define/compiler/driver_run_test.py"),
+        "test_valid_file_returns_success",
+    )
+    assert directory == Path(
+        "define/testdata/driver/driver_run/valid_file_returns_success"
+    )

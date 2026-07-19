@@ -1,7 +1,7 @@
 # Define Testdata Organization
 
-Testdata in the `parser`, `structural`, and `reference_graph` directories must
-be owned by exactly one Python test and use this path:
+Testdata in the subdirectories of this directory must be owned by exactly one
+Python test and use this path:
 
 ```text
 define/testdata/<phase>/<test module without _test>/<scenario name>/

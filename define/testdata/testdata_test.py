@@ -11,6 +11,7 @@ from define.testdata import path_resolver
 
 _TESTDATA_ROOT = Path("define/testdata")
 _TEST_SOURCE_ROOTS = {
+    "driver": Path("define/compiler"),
     "parser": Path("define/compiler/parser_tests"),
     "structural": Path("define/compiler/validator/structural/program_validator_tests"),
     "reference_graph": Path(
@@ -27,6 +28,7 @@ _FILESYSTEM_FIXTURES = {
     "validate_testdata_project",
     "validate_testdata_project_with_reference_graph",
     "validate_testdata_source_as_file",
+    "testdata_project_directory",
 }
 _TESTDATA_FIXTURES = _NON_FILESYSTEM_FIXTURES | _FILESYSTEM_FIXTURES
 

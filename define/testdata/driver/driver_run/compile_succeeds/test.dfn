@@ -1,0 +1,8 @@
+define the potential action<mv:define-lang.org:test_constructor:/test> {
+    define the position<result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<result>.
+    }
+}

@@ -281,6 +281,14 @@ def _testdata_directory(request: pytest.FixtureRequest) -> Path:
 
 
 @pytest.fixture
+def testdata_project_directory(
+    request: pytest.FixtureRequest,
+) -> Path:
+    """Return the current test's convention-derived project directory."""
+    return _testdata_directory(request)
+
+
+@pytest.fixture
 def validate_non_filesystem_with_reference_graph() -> (
     ValidateNonFilesystemWithReferenceGraph
 ):

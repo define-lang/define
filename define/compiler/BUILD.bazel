@@ -182,8 +182,9 @@ py_test(
     name = "driver_run_test",
     size = "small",
     srcs = ["driver_run_test.py"],
-    data = ["//define/testdata:testdata_files"],
+    data = ["//define/testdata/driver/driver_run"],
     deps = [
+        ":conftest",
         ":constants",
         ":driver",
         ":overall_stats",
@@ -205,6 +206,13 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "@pypi//pytest",
     ],
+)
+
+filegroup(
+    name = "driver_test_sources",
+    testonly = True,
+    srcs = ["driver_run_test.py"],
+    visibility = ["//define/testdata:__pkg__"],
 )
 
 py_library(
