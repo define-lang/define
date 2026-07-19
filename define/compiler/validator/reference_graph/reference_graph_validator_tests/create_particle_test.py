@@ -12,29 +12,17 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
+    ValidateTestdataNonFilesystemWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator import test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_short_form_global_reference(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</other>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -45,19 +33,9 @@ def test_short_form_global_reference(
 
 
 def test_same_fqun_reference_must_use_short_form(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<my.domain.com:my_lib:/other>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)

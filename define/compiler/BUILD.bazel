@@ -53,6 +53,7 @@ py_library(
         "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
+        "//define/testdata:path_resolver",
         "@pypi//pytest",
     ],
 )

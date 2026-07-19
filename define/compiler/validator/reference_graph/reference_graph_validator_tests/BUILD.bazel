@@ -3,6 +3,13 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = glob(["*_test.py"]),
+    visibility = ["//define/testdata:__pkg__"],
+)
+
 py_test(
     name = "action_triggering_test",
     size = "small",
@@ -414,6 +421,7 @@ py_test(
     name = "chained_name_test",
     size = "small",
     srcs = ["chained_name_test.py"],
+    data = ["//define/testdata/reference_graph/chained_name"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -437,6 +445,7 @@ py_test(
     name = "create_particle_test",
     size = "small",
     srcs = ["create_particle_test.py"],
+    data = ["//define/testdata/reference_graph/create_particle"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

@@ -8,3 +8,5 @@ rules:
   diagnostics returned.
 - Never break one line of Define source code across two Python lines, even if it
   creates a very long Python string.
+- Before adding, removing, renaming, or updating a data-backed test, read and
+  follow `define/testdata/AGENTS.md`.

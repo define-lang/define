@@ -15,3 +15,5 @@ rules:
   (line/column/token/char, as applicable).
 - Prefer the format `mv:define-lang.org:parser` as the FQUN for global
   definitions in tests, rather than a bare universe name like `standard`.
+- Before adding, removing, renaming, or updating a data-backed test, read and
+  follow `define/testdata/AGENTS.md`.

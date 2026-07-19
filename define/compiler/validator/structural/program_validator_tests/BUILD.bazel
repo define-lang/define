@@ -3,6 +3,13 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = glob(["*_test.py"]),
+    visibility = ["//define/testdata:__pkg__"],
+)
+
 py_test(
     name = "diagnostic_collection_test",
     size = "small",

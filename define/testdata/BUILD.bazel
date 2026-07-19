@@ -1,11 +1,62 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
 filegroup(
     name = "testdata_files",
     srcs = glob(
         ["**/*"],
         exclude = [
+            "**/*.py",
             "**/*.pyc",
             "**/__pycache__/**",
         ],
     ),
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
+    name = "path_resolver",
+    testonly = True,
+    srcs = ["path_resolver.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "path_resolver_test",
+    size = "small",
+    srcs = ["path_resolver_test.py"],
+    data = ["//define/testdata/reference_graph/create_particle"],
+    deps = [":path_resolver"],
+)
+
+py_test(
+    name = "testdata_test",
+    size = "small",
+    srcs = ["testdata_test.py"],
+    data = [
+        ":testdata_files",
+        "//define/compiler/parser_tests:test_sources",
+        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:test_sources",
+        "//define/compiler/validator/structural/program_validator_tests:test_sources",
+        "//define/testdata/reference_graph/chained_name",
+        "//define/testdata/reference_graph/create_particle",
+    ],
+    deps = [":path_resolver"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":path_resolver",
+        ":path_resolver_test",
+        ":testdata_test",
+    ],
 )

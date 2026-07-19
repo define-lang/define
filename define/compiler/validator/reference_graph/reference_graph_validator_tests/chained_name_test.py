@@ -7,6 +7,8 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
+    ValidateTestdataNonFilesystemWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -14,19 +16,9 @@ from define.compiler.validator.test_helpers import assert_no_errors
 class TestCreateParticle:
     def test_invalid_local_name_char(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<inner_pos>.\n"
-            "    it happens when {\n"
-            "        the position<inner_pos> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in position<inner_pos>::position<Bad>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(
@@ -222,37 +214,10 @@ class TestCreateParticle:
         assert diags[2].location.column == 43
 
     def test_valid_chain_with_action_in_middle(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</act_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_b.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                    "    define the position<pos_c>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_c> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
 
     def test_chained_local_after_short_form_global_position(

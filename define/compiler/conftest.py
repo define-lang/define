@@ -5,7 +5,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Protocol, overload
+from typing import Protocol, cast, overload
 
 import pytest
 
@@ -18,6 +18,7 @@ from define.compiler.validator.reference_graph import (
     reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
+from define.testdata import path_resolver
 
 _PARSER = parser.Parser()
 _TEST_FQUN = "my.domain.com:my_lib"
@@ -260,6 +261,25 @@ type ValidateNonFilesystemWithReferenceGraph = Callable[
 ]
 
 
+class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
+    """Validate the convention-derived non-filesystem source."""
+
+    def __call__(self) -> validation_result.ProgramValidationResult:
+        """Run structural and reference graph validation."""
+        ...
+
+
+def _testdata_directory(request: pytest.FixtureRequest) -> Path:
+    test_function = cast("pytest.Function", request.node)
+    test_class = test_function.parent
+    test_class_name = test_class.name if isinstance(test_class, pytest.Class) else None
+    return path_resolver.directory_for(
+        request.path,
+        test_function.name,
+        test_class_name,
+    )
+
+
 @pytest.fixture
 def validate_non_filesystem_with_reference_graph() -> (
     ValidateNonFilesystemWithReferenceGraph
@@ -267,6 +287,29 @@ def validate_non_filesystem_with_reference_graph() -> (
     """Validate source text through both structural and reference graph validation."""
 
     def _run(source: str) -> validation_result.ProgramValidationResult:
+        result = program_validator.ProgramStructuralValidator(
+            _PARSER
+        ).validate_program_non_filesystem(source)
+        reference_graph_validator.ReferenceGraphValidator(
+            result.reference_graph,
+            result.definition_results,
+        ).validate()
+        return result
+
+    return _run
+
+
+@pytest.fixture
+def validate_testdata_non_filesystem_with_reference_graph(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> ValidateTestdataNonFilesystemWithReferenceGraph:
+    """Validate source.dfn from the current test's derived testdata directory."""
+    directory = _testdata_directory(request)
+    source = (directory / "source.dfn").read_text(encoding="utf-8")
+
+    def _run() -> validation_result.ProgramValidationResult:
+        monkeypatch.chdir(directory)
         result = program_validator.ProgramStructuralValidator(
             _PARSER
         ).validate_program_non_filesystem(source)
@@ -309,6 +352,19 @@ class ValidateProjectWithReferenceGraph(Protocol):
         ...
 
 
+class ValidateTestdataProjectWithReferenceGraph(Protocol):
+    """Validate the convention-derived filesystem project."""
+
+    def __call__(
+        self,
+        *,
+        max_workers: int | None = ...,
+        entry_file: str = ...,
+    ) -> FullValidationResult:
+        """Run structural and reference graph validation."""
+        ...
+
+
 @pytest.fixture
 def validate_project_with_reference_graph(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -334,6 +390,28 @@ def validate_project_with_reference_graph(
             sub_roots=sub_roots,
             entry_file=entry_file,
         )
+        return _run_reference_graph_validation(structural_result)
+
+    return _run
+
+
+@pytest.fixture
+def validate_testdata_project_with_reference_graph(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> ValidateTestdataProjectWithReferenceGraph:
+    """Stage and validate the current test's convention-derived project."""
+    directory = _testdata_directory(request)
+
+    def _run(
+        *,
+        max_workers: int | None = None,
+        entry_file: str = "test.dfn",
+    ) -> FullValidationResult:
+        monkeypatch.chdir(directory)
+        structural_result = program_validator.ProgramStructuralValidator(
+            _PARSER
+        ).validate_program(PurePosixPath(entry_file), max_workers=max_workers)
         return _run_reference_graph_validation(structural_result)
 
     return _run
