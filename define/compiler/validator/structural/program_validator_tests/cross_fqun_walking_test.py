@@ -4,15 +4,9 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
-
-import pytest
-
 from define.compiler import config, diagnostics
 from define.compiler.conftest import ValidateProject, ValidateTestdataStructural
 from define.compiler.data_structures import define_path
-from define.compiler.validator import test_helpers
-from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
@@ -481,45 +475,11 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
     assert result.file_results[2].file_path == define_path.DefinePath("lib/leaf.dfn")
 
 
-def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    grandchild_universe = "mv:define-lang.org:grandchild_universe"
-    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
-    test_helpers.write_local_deps_config(tmp_path, {_CHILD_UNIVERSE: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
-    test_helpers.write_local_deps_config(
-        tmp_path / "lib", {grandchild_universe: "inner"}
-    )
-    test_helpers.write_sub_root(tmp_path, "lib/inner", grandchild_universe)
-    monkeypatch.chdir(tmp_path)
-
-    (tmp_path / "test.dfn").write_text(
-        (
-            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"    it may only contain particles where {{\n"
-            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"    }}\n"
-            f"}}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib/target.dfn").write_text(
-        (
-            f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
-            f"    it may only contain particles where {{\n"
-            f"        it has the position<{grandchild_universe}:/leaf>.\n"
-            f"    }}\n"
-            f"}}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib/inner/leaf.dfn").write_text(
-        f"define the potential position<{grandchild_universe}:/leaf>.\n",
-        encoding="utf-8",
-    )
-
-    result = program_validator.ProgramStructuralValidator().validate_program(
-        PurePosixPath("test.dfn")
-    )
+def test_cross_fqun_nested_sub_roots(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert_no_errors(result)
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")

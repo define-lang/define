@@ -3,9 +3,12 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from pathlib import PurePosixPath
+
 from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateSourceAsFile,
+    ValidateTestdataStructural,
 )
 
 
@@ -18,18 +21,21 @@ def test_matching_authority_universe(validate_source_as_file: ValidateSourceAsFi
     assert len(diags) == 0
 
 
-def test_mismatched_universe(validate_source_as_file: ValidateSourceAsFile):
-    source = "define the potential position<my.domain.com:wrong_lib:/path>.\n"
-    diags = validate_source_as_file(
-        source,
-        "my.domain.com:my_lib",
-    )
+def test_mismatched_universe(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(entry_file="path.dfn")
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "my.domain.com:wrong_lib"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
+    assert diags[0].location.end_line == 1
+    assert diags[0].location.end_column == 54
+    assert diags[0].location.file_path == PurePosixPath("path.dfn")
 
 
 def test_mismatched_authority(validate_source_as_file: ValidateSourceAsFile):

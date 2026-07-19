@@ -1,5 +1,5 @@
-define the potential position<mv:define-lang.org:test_nested_sub_root_child:/target> {
+define the potential position<mv:define-lang.org:child_universe:/target> {
     it may only contain particles where {
-        it has the position<mv:define-lang.org:test_nested_sub_root_grandchild:/leaf>.
+        it has the position<mv:define-lang.org:grandchild_universe:/leaf>.
     }
 }

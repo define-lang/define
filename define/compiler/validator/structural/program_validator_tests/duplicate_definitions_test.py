@@ -4,6 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -21,17 +22,12 @@ def test_no_duplicates_ok():
     assert len(diags) == 0
 
 
-def test_duplicate_position_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_duplicate_position_error(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].definition_type == "position"

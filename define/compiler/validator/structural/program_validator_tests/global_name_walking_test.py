@@ -4,6 +4,7 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from pathlib import PurePosixPath
 from unittest import mock
 
 from define.compiler import diagnostics
@@ -128,6 +129,27 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     assert all_diags[0].first_definition_line == 1
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 1
+
+
+def test_cross_file_duplicate_definition_reports_path_mismatch(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[0].diagnostics == []
+    assert result.file_results[1].file_path == define_path.DefinePath("other.dfn")
+    diags = result.file_results[1].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert diags[0].expected_path == "/other"
+    assert diags[0].actual_path == "/test"
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 70
+    assert diags[0].location.end_line == 2
+    assert diags[0].location.end_column == 75
+    assert diags[0].location.file_path == PurePosixPath("other.dfn")
 
 
 def test_back_reference_to_earlier_definition_does_not_load_its_file(

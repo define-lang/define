@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:test_nested_sub_root_grandchild" }
+project: {
+  universe_name: "mv:define-lang.org:grandchild_universe"
+}

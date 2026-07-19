@@ -280,6 +280,8 @@ class ValidateTestdataStructuralNonFilesystem(Protocol):
 class ValidateTestdataStructural(Protocol):
     """Validate the convention-derived filesystem project structurally."""
 
+    # TODO: Audit every entry_file override. Prefer test.dfn defining /test unless
+    # the entry path itself is behavior under test.
     def __call__(
         self,
         *,

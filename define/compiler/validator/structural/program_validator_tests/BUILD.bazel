@@ -41,8 +41,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -60,7 +58,9 @@ py_test(
     name = "duplicate_definitions_test",
     size = "small",
     srcs = ["duplicate_definitions_test.py"],
+    data = ["//define/testdata/structural/duplicate_definitions"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -112,6 +112,7 @@ py_test(
     name = "fqun_mismatch_test",
     size = "small",
     srcs = ["fqun_mismatch_test.py"],
+    data = ["//define/testdata/structural/fqun_mismatch"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -216,6 +217,7 @@ py_test(
     name = "path_mismatch_test",
     size = "small",
     srcs = ["path_mismatch_test.py"],
+    data = ["//define/testdata/structural/path_mismatch"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
