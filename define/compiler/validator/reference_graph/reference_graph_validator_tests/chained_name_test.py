@@ -508,37 +508,34 @@ class TestMoveParticle:
         )
         assert_no_errors(result.program_result)
 
-    def test_chain_not_in_constraints(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    def test_chain_element_inside_action_not_found(
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the position</pos_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    define the position<dest>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in position<pos_a>::position</pos_b>::position</wrong> to position<dest>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_b.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the position</pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            }
+        result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
         )
+        assert all_diags[0].element_name == "position<no_such>"
+        assert (
+            all_diags[0].parent_name
+            == "action<mv:define-lang.org:test_move_bad_action:/act_b>"
+        )
+        assert all_diags[0].location.line == 13
+        assert all_diags[0].location.column == 63
+        assert all_diags[0].location.end_line == 13
+        assert all_diags[0].location.end_column == 80
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+    def test_chain_not_in_constraints(
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+    ):
+        result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(

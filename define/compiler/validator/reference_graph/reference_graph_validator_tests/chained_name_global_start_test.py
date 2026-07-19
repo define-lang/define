@@ -8,6 +8,7 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -174,6 +175,31 @@ class TestUnknownGlobalChainStart:
 
 
 class TestImpliedQualityChainStart:
+    def test_constructor_chain_not_in_constraints(
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+    ):
+        result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
+        )
+        assert (
+            all_diags[0].element_name
+            == "position<mv:define-lang.org:test_pos_init_chain_bad:/wrong>"
+        )
+        assert (
+            all_diags[0].parent_name
+            == "position<mv:define-lang.org:test_pos_init_chain_bad:/other>"
+        )
+        assert all_diags[0].location.line == 6
+        assert all_diags[0].location.column == 48
+        assert all_diags[0].location.end_line == 6
+        assert all_diags[0].location.end_column == 64
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
     def test_valid_chain_past_implied_position(
         self,
         validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,

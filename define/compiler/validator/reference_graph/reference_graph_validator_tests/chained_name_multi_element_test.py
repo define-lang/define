@@ -4,7 +4,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateProjectWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -42,35 +45,11 @@ class TestCreateParticle:
         assert_no_errors(result.program_result)
 
     def test_chain_third_element_not_in_position_constraints(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the position</pos_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position<pos_a>::position</pos_b>::position</wrong>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_b.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the position</pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -207,38 +186,11 @@ class TestCreateParticle:
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_element_inside_action_not_found(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</act_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position<pos_a>::action</act_b>::position<no_such>.\n"
-                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_b.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                    "    define the position<pos_c>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_c> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(

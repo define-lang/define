@@ -7,6 +7,7 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -24,44 +25,10 @@ def test_destroy_empty_local_position(
 
 
 def test_destroy_already_emptied_interface_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<_sink>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<_sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        destroy the particle in position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(

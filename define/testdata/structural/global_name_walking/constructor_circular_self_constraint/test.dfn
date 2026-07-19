@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_pos_init_self_ref_constr_bad:/test> {
-    it may only contain particles where {
-        it has the position</test>.
-    }
-}

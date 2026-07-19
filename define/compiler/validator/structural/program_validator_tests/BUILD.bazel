@@ -149,6 +149,7 @@ py_test(
     name = "move_particle_test",
     size = "small",
     srcs = ["move_particle_test.py"],
+    data = ["//define/testdata/structural/move_particle"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

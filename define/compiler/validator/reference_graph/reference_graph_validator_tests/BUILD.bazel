@@ -412,6 +412,7 @@ py_test(
     name = "chained_name_multi_element_test",
     size = "small",
     srcs = ["chained_name_multi_element_test.py"],
+    data = ["//define/testdata/reference_graph/chained_name_multi_element"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

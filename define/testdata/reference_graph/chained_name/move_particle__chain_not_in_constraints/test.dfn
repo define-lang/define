@@ -1,5 +1,4 @@
-define the potential action<mv:define-lang.org:test_move_bad_constraint:/test> {
-    define the position<run>.
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<pos_a> {
         it may only contain particles where {
             it has the position</pos_b>.
@@ -7,7 +6,7 @@ define the potential action<mv:define-lang.org:test_move_bad_constraint:/test> {
     }
     define the position<dest>.
     it happens when {
-        the position<run> has a particle.
+        the position<pos_a> has a particle.
     } and it does {
         move the particle in position<pos_a>::position</pos_b>::position</wrong> to position<dest>.
     }
