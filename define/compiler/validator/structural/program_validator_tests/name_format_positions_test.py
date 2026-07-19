@@ -4,16 +4,13 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 
 
-def test_multiverse_name_position():
-    source = "define the potential position<_mv:my.domain.com:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_multiverse_name_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
@@ -25,13 +22,10 @@ def test_multiverse_name_position():
     assert diags[0].location.end_column == 34
 
 
-def test_multiverse_name_too_short():
-    source = "define the potential position<m:my.domain.com:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_multiverse_name_too_short(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MultiverseNameTooShortDiagnostic)
@@ -39,13 +33,10 @@ def test_multiverse_name_too_short():
     assert isinstance(diags[1], diagnostics.ReservedMultiverseNameDiagnostic)
 
 
-def test_authority_domain_position():
-    source = "define the potential position<mv:-example.com:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_authority_domain_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -57,13 +48,10 @@ def test_authority_domain_position():
     assert diags[0].location.end_column == 46
 
 
-def test_authority_domain_too_short():
-    source = "define the potential position<mv:a:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_authority_domain_too_short(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.AuthorityDomainTooShortDiagnostic)
@@ -71,13 +59,10 @@ def test_authority_domain_too_short():
     assert isinstance(diags[1], diagnostics.DotlessAuthorityDomainDiagnostic)
 
 
-def test_authority_path_position():
-    source = "define the potential position<mv:my.domain.com/.hidden:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_authority_path_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
@@ -89,26 +74,20 @@ def test_authority_path_position():
     assert diags[0].location.end_column == 55
 
 
-def test_authority_path_empty_segment():
-    source = "define the potential position<mv:my.domain.com//team:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_authority_path_empty_segment(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
     assert diags[0].authority == "my.domain.com//team"
 
 
-def test_universe_name_position():
-    source = "define the potential position<mv:my.domain.com:_my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_universe_name_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
@@ -120,26 +99,20 @@ def test_universe_name_position():
     assert diags[0].location.end_column == 55
 
 
-def test_universe_name_too_short():
-    source = "define the potential position<mv:my.domain.com:t:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_universe_name_too_short(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameTooShortDiagnostic)
     assert diags[0].universe_name == "t"
 
 
-def test_path_segment_position():
-    source = "define the potential position<my.domain.com:my_lib:/2bad>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_path_segment_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -151,36 +124,20 @@ def test_path_segment_position():
     assert diags[0].location.end_column == 57
 
 
-def test_global_name_path_empty_segment():
-    source = "define the potential position<mv:my.domain.com:my_lib:/foo//bar>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_global_name_path_empty_segment(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
     assert diags[0].path == "/foo//bar"
 
 
-def test_local_name_position():
-    source = (
-        "define the potential action<mv:my.domain.com:my_lib:/act> {\n"
-        "    define the position<my-pos>.\n"
-        "    it happens when {\n"
-        "        the position<my-pos> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_local_name_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)

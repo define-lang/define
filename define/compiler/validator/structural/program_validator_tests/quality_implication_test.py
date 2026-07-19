@@ -8,6 +8,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateProject,
     ValidateProjectWithReferenceGraph,
+    ValidateTestdataNonFilesystem,
 )
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
@@ -188,25 +189,10 @@ def test_duplicate_implication_in_action_error():
     assert diags[0].location.column == 25
 
 
-def test_three_duplicate_implication_two_errors():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</foo>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_three_duplicate_implication_two_errors(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)

@@ -4,6 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -30,24 +31,10 @@ def test_different_names_no_error():
     assert len(diags) == 0
 
 
-def test_duplicate_name_error():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "    define the position<alpha>.\n"
-        "    define the position<alpha>.\n"
-        "    it happens when {\n"
-        "        the position<alpha> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_duplicate_name_error(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -212,24 +199,10 @@ def test_action_statements_local_name_no_error():
     assert len(diags) == 0
 
 
-def test_action_statements_duplicate_name_error():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<alpha>.\n"
-        "        define the position<alpha>.\n"
-        "        create a particle in position<alpha>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_action_statements_duplicate_name_error(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -239,22 +212,10 @@ def test_action_statements_duplicate_name_error():
     assert diags[0].location.column == 29
 
 
-def test_action_statements_name_conflicts_with_parent_scope():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "    define the position<alpha>.\n"
-        "    it happens when {\n"
-        "        the position<alpha> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<alpha>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_action_statements_name_conflicts_with_parent_scope(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)

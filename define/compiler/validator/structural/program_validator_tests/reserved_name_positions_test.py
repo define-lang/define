@@ -4,16 +4,14 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
-def test_reserved_universe_name_position():
-    source = "define the potential position<standard:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_reserved_universe_name_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -22,13 +20,10 @@ def test_reserved_universe_name_position():
     assert diags[0].location.column == 31
 
 
-def test_reserved_universe_name_with_authority_position():
-    source = "define the potential position<example.com:example:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_reserved_universe_name_with_authority_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
@@ -56,13 +51,10 @@ def test_reserved_authority_position():
     assert diags[0].location.column == 31
 
 
-def test_reserved_authority_with_multiverse_position():
-    source = "define the potential position<mv:example.com:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_reserved_authority_with_multiverse_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
@@ -71,13 +63,10 @@ def test_reserved_authority_with_multiverse_position():
     assert diags[0].location.column == 34
 
 
-def test_dotless_authority_position():
-    source = "define the potential position<localhost:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_dotless_authority_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
@@ -87,13 +76,10 @@ def test_dotless_authority_position():
     assert diags[0].location.column == 31
 
 
-def test_reserved_multiverse_position():
-    source = "define the potential position<python:example.org:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_reserved_multiverse_position(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)

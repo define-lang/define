@@ -1,6 +1,7 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/position_constraints/duplicate_in_global_position> {
+define the potential position<my.domain.com:my_lib:/foo>.
+define the potential position<my.domain.com:my_lib:/root> {
     it may only contain particles where {
-        it has the position</valid/action_local_pos_requires_global>.
-        it has the position</valid/action_local_pos_requires_global>.
+        it has the position</foo>.
+        it has the position</foo>.
     }
 }

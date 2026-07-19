@@ -1,8 +1,8 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/undefined_local_position> {
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
-        move the particle in position<no_such_pos> to position<also_missing>.
+        move the particle in position<bad_from> to position<bad_to>.
     }
 }

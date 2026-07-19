@@ -1,5 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 from define.compiler.validator.structural import program_validator
 
 
@@ -64,22 +65,10 @@ def test_valid_constructor():
     assert diags == []
 
 
-def test_undefined_local_name():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    it happens when {\n"
-        "        the position<unknown> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_undefined_local_name(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -88,22 +77,10 @@ def test_undefined_local_name():
     assert diags[0].location.column == 13
 
 
-def test_action_type_in_trigger_condition_is_rejected():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    it happens when {\n"
-        "        the action<my_act> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_action_type_in_trigger_condition_is_rejected(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)

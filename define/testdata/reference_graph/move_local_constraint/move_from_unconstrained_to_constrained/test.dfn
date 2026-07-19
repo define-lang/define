@@ -1,5 +1,4 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/particles/move/violates_dest_constraints_unconstrained_source>.
-define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/violates_dest_constraints_unconstrained_source> {
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.
@@ -7,11 +6,11 @@ define the potential action<mv:define-lang.org:test_files:/invalid/particles/mov
         define the position<from_pos>.
         define the position<to_pos> {
             it may only contain particles where {
-                it has the position</invalid/particles/move/violates_dest_constraints_unconstrained_source>.
+                it has the position</x>.
             }
         }
         create a particle in position<from_pos>.
         move the particle in position<from_pos> to position<to_pos>.
-        create a particle in position<to_pos>::position</invalid/particles/move/violates_dest_constraints_unconstrained_source>.
+        create a particle in position<to_pos>::position</x>.
     }
 }

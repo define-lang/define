@@ -1,8 +1,8 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/duplicate_across_scopes> {
-    define the position<same_name>.
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<alpha>.
     it happens when {
-        the position<same_name> has a particle.
+        the position<alpha> has a particle.
     } and it does {
-        define the position<same_name>.
+        define the position<alpha>.
     }
 }

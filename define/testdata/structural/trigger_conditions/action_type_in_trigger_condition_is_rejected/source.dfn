@@ -1,6 +1,6 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/trigger_conditions/single_action_reference> {
+define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
-        the action<act_other> has a particle.
+        the action<my_act> has a particle.
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.

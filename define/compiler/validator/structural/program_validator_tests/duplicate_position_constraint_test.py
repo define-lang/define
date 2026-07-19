@@ -5,6 +5,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateTestdataNonFilesystem
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -28,21 +29,10 @@ def test_no_duplicate_constraints_ok():
     assert_no_errors(result)
 
 
-def test_duplicate_constraint_in_global_position_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</foo>.\n"
-        "        it has the position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_duplicate_constraint_in_global_position_error(
+    validate_testdata_non_filesystem: ValidateTestdataNonFilesystem,
+):
+    results = validate_testdata_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)

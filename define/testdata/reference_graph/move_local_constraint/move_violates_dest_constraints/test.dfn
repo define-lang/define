@@ -1,22 +1,22 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/particles/move/violates_dest_constraints>.
-define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/violates_dest_constraints> {
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
         define the position<from_pos> {
             it may only contain particles where {
-                it has the position</invalid/particles/move/violates_dest_constraints>.
+                it has the position</x>.
             }
         }
         define the position<to_pos> {
             it may only contain particles where {
-                it has the position</valid/action_local_pos_requires_global>.
+                it has the position</y>.
             }
         }
         create a particle in position<from_pos>.
-        create a particle in position<from_pos>::position</invalid/particles/move/violates_dest_constraints>.
         move the particle in position<from_pos> to position<to_pos>.
-        create a particle in position<to_pos>::position</valid/action_local_pos_requires_global>.
+        create a particle in position<from_pos>.
+        create a particle in position<from_pos>::position</x>.
+        create a particle in position<to_pos>::position</y>.
     }
 }

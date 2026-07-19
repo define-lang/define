@@ -5,26 +5,17 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateTestdataNonFilesystemWithReferenceGraph,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_duplicate_local_position(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)

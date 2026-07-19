@@ -1,1 +1,1 @@
-define the potential position<mv:define-lang.org/.test:test_files:/invalid/syntax/invalid_authority_path_segment/authority_path_leading_dot>.
+define the potential position<mv:my.domain.com/.hidden:my_lib:/path>.

@@ -442,24 +442,9 @@ class TestActionTriggering:
 
     def test_self_trigger(
         self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+        validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<my_pos>.\n"
-                    "    define the position<other>.\n"
-                    "    it happens when {\n"
-                    "        the position<my_pos> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in position<my_pos> to position<other>.\n"
-                    "        create a particle in position<my_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            },
-        )
+        result = validate_testdata_project_with_reference_graph()
         assert len(result.program_result.all_diagnostics) == 1
         assert isinstance(
             result.program_result.all_diagnostics[0],

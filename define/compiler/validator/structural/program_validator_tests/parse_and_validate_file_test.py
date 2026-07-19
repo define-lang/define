@@ -87,10 +87,9 @@ def test_non_filesystem_parse_error_returns_single_result():
 
 def test_invalid_utf8_populates_exceptions_and_source_is_none(
     parse_and_validate_file: ParseAndValidateFile,
+    testdata_source_path: Path,
 ):
-    result = parse_and_validate_file(
-        b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff"
-    )
+    result = parse_and_validate_file(testdata_source_path.read_bytes())
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
@@ -109,12 +108,9 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
 def test_name_parser_error_at_definition_populates_exceptions(
     parse_and_validate_file: ParseAndValidateFile,
+    testdata_source_path: Path,
 ):
-    source = (
-        "define the potential position<"
-        + "mv:define-lang.org:test:files:/invalid/syntax/fqun_format/too_many_colons"
-        + ">.\n"
-    )
+    source = testdata_source_path.read_text(encoding="utf-8")
     result = parse_and_validate_file(source)
 
     assert result.diagnostics == []

@@ -3,6 +3,22 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+_TESTDATA_PACKAGES = subpackages(
+    include = [
+        "driver/**",
+        "reference_graph/**",
+        "structural/**",
+    ],
+)
+
+_TESTDATA_TARGETS = [
+    "//define/testdata/%s:%s" % (
+        package,
+        package.rsplit("/", 1)[-1],
+    )
+    for package in _TESTDATA_PACKAGES
+]
+
 filegroup(
     name = "testdata_files",
     srcs = glob(
@@ -38,15 +54,11 @@ py_test(
     name = "testdata_test",
     size = "small",
     srcs = ["testdata_test.py"],
-    data = [
-        ":testdata_files",
+    data = _TESTDATA_TARGETS + [
         "//define/compiler:driver_test_sources",
         "//define/compiler/parser_tests:test_sources",
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:test_sources",
         "//define/compiler/validator/structural/program_validator_tests:test_sources",
-        "//define/testdata/driver/driver_run",
-        "//define/testdata/reference_graph/chained_name",
-        "//define/testdata/reference_graph/create_particle",
     ],
     deps = [":path_resolver"],
 )

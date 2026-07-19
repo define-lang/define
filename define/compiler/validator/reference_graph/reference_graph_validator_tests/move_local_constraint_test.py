@@ -5,38 +5,9 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_move_violates_dest_constraints(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<from_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<from_pos>.\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        create a particle in position<from_pos>::position</x>.\n"
-                "        create a particle in position<to_pos>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -50,31 +21,9 @@ def test_move_violates_dest_constraints(
 
 
 def test_move_from_unconstrained_to_constrained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<from_pos>.\n"
-                "        define the position<to_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<from_pos>.\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<to_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)

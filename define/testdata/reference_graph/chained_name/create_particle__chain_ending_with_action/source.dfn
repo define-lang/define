@@ -1,8 +1,7 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/particles/create/chain_ending_with_action> {
-    define the position<run>.
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<pos_a>.
     it happens when {
-        the position<run> has a particle.
+        the position<pos_a> has a particle.
     } and it does {
         create a particle in position<pos_a>::action<act_b>.
     }

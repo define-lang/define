@@ -1,0 +1,8 @@
+filegroup(
+    name = "parse_and_validate_file",
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/validator/structural/program_validator_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)

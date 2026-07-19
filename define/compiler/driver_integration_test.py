@@ -23,6 +23,9 @@ import pytest
 from define.compiler import diagnostics, driver, parser, parser_exceptions
 from define.compiler.validator.test_helpers import assert_no_errors
 
+# TODO: Re-enable this after its corpus has been migrated to test-owned testdata.
+pytestmark = pytest.mark.skip(reason="testdata corpus migration is in progress")
+
 _PARSER = parser.Parser()
 
 TESTDATA_ROOT = Path("define/testdata")

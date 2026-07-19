@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/actions/self_trigger> {
+define the potential action<my.domain.com:my_lib:/test> {
     define the position<my_pos>.
     define the position<other>.
     it happens when {

@@ -83,19 +83,9 @@ class TestCreateParticle:
 
     def test_chain_ending_with_action(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<pos_a>.\n"
-            "    it happens when {\n"
-            "        the position<pos_a> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in position<pos_a>::action<act_b>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
@@ -299,39 +289,10 @@ class TestCreateParticle:
 
 class TestMoveParticle:
     def test_chain_ending_with_action_in_from(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</act_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    define the position<dest>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in position<pos_a>::action</act_b> to position<dest>.\n"
-                    "        create a particle in position<pos_a>::action</act_b>::position<run>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_b.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                    "    define the position<run>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)

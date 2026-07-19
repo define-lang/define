@@ -69,7 +69,9 @@ py_test(
     name = "duplicate_position_constraint_test",
     size = "small",
     srcs = ["duplicate_position_constraint_test.py"],
+    data = ["//define/testdata/structural/duplicate_position_constraint"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
@@ -131,7 +133,9 @@ py_test(
     name = "local_name_conflicts_test",
     size = "small",
     srcs = ["local_name_conflicts_test.py"],
+    data = ["//define/testdata/structural/local_name_conflicts"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -153,9 +157,10 @@ py_test(
     name = "name_format_positions_test",
     size = "small",
     srcs = ["name_format_positions_test.py"],
+    data = ["//define/testdata/structural/name_format_positions"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -190,6 +195,7 @@ py_test(
     name = "parse_and_validate_file_test",
     size = "small",
     srcs = ["parse_and_validate_file_test.py"],
+    data = ["//define/testdata/structural/parse_and_validate_file"],
     deps = [
         "//define/compiler:config",
         "//define/compiler:conftest",
@@ -240,7 +246,9 @@ py_test(
     name = "reserved_name_positions_test",
     size = "small",
     srcs = ["reserved_name_positions_test.py"],
+    data = ["//define/testdata/structural/reserved_name_positions"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -250,7 +258,9 @@ py_test(
     name = "trigger_conditions_test",
     size = "small",
     srcs = ["trigger_conditions_test.py"],
+    data = ["//define/testdata/structural/trigger_conditions"],
     deps = [
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -280,6 +290,7 @@ py_test(
     name = "quality_implication_test",
     size = "small",
     srcs = ["quality_implication_test.py"],
+    data = ["//define/testdata/structural/quality_implication"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

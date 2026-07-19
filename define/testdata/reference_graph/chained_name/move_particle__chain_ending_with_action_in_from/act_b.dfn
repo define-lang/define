@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/valid/action_with_block> {
+define the potential action<my.domain.com:my_lib:/act_b> {
     define the position<run>.
     it happens when {
         the position<run> has a particle.

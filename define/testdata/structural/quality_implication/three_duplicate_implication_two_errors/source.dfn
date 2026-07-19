@@ -1,9 +1,11 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/quality_implications/duplicate> {
-    it also assigns the position</valid/minimal_position>.
-    it also assigns the position</valid/minimal_position>.
+define the potential position<my.domain.com:my_lib:/foo>.
+define the potential action<my.domain.com:my_lib:/root> {
+    it also assigns the position</foo>.
+    it also assigns the position</foo>.
+    it also assigns the position</foo>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</valid/minimal_position>.
+        create a particle in position</foo>.
     }
 }

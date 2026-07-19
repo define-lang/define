@@ -4,6 +4,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
+    ValidateTestdataNonFilesystemWithReferenceGraph,
 )
 
 
@@ -169,20 +170,9 @@ def test_undefined_to_position(
 
 
 def test_both_positions_undefined(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        move the particle in position<bad_from>"
-        " to position<bad_to>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
+    results = validate_testdata_non_filesystem_with_reference_graph().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -298,22 +288,9 @@ def test_valid_global_to_position(
 
 
 def test_move_to_same_position_does_not_mark_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        create a particle in position<a>.\n"
-        "        move the particle in position<a> to position<a>.\n"
-        "        create a particle in position<a>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
+    results = validate_testdata_non_filesystem_with_reference_graph().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)

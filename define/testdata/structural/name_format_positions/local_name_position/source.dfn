@@ -1,8 +1,7 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/hyphen> {
-    define the position<run>.
+define the potential action<mv:my.domain.com:my_lib:/act> {
     define the position<my-pos>.
     it happens when {
-        the position<run> has a particle.
+        the position<my-pos> has a particle.
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
