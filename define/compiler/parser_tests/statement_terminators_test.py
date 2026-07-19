@@ -34,6 +34,26 @@ def test_missing_newline_after_terminator(parse: Parse) -> None:
     assert exc_info.value.column == 46
 
 
+def test_missing_newline_between_global_definitions(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
+        )
+    assert exc_info.value.token == "define the potential action"
+    assert exc_info.value.token.type == "DEFINE_THE_POTENTIAL_ACTION"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 64
+
+
+def test_double_terminator(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 64
+
+
 def test_space_before_terminator(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")

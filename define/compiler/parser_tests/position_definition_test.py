@@ -39,6 +39,45 @@ def test_position_definition_missing_open_angle(parse: Parse) -> None:
     assert exc_info.value.name == "standard:/path"
 
 
+def test_position_definition_space_instead_of_open_angle(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        parse("define the potential position mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == " "
+    assert exc_info.value.token.type == "SPACE"
+    assert exc_info.value.name == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 30
+
+
+def test_position_definition_with_control_character(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "define"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_position_definition_with_empty_global_path(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
+        parse("define the potential position<mv:define-lang.org:parser:>.\n")
+    assert exc_info.value.token == "mv"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 31
+
+
+def test_position_definition_with_global_path_missing_leading_slash(
+    parse: Parse,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
+        parse("define the potential position<mv:define-lang.org:parser:path>.\n")
+    assert exc_info.value.token == "mv"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 31
+
+
 def test_position_definition_empty_name_content(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse("define the potential position<>.\n")

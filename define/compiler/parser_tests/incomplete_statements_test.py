@@ -35,6 +35,60 @@ def test_define_the_potential_incomplete_global_prefix(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
+def test_missing_space_in_global_definition_prefix(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("definethe potential position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "definethe"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_misspelled_define_in_global_definition_prefix(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("defin the potential position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "defin"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_misspelled_potential_in_global_definition_prefix(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define the potental position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "define"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_misspelled_the_in_global_definition_prefix(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define teh potential position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "define"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_wrong_word_order_in_global_definition_prefix(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define potential the position<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "define"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_invalid_global_definition_name_type(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define the potential quality<mv:define-lang.org:parser:/path>.\n")
+    assert exc_info.value.token == "define"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
 def test_bare_colon_at_top_level(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse(":\n")
