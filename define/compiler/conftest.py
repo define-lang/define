@@ -94,7 +94,9 @@ def validate_project(
                 (tmp_path / dep_path).mkdir(parents=True, exist_ok=True)
         if sub_roots is not None:
             for sub_root_path, sub_universe in sub_roots.items():
-                test_helpers.write_sub_root(tmp_path, sub_root_path, sub_universe)
+                test_helpers.write_project_config(
+                    tmp_path / sub_root_path, sub_universe
+                )
         for name, content in files.items():
             file_path = tmp_path / name
             file_path.parent.mkdir(parents=True, exist_ok=True)

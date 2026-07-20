@@ -321,9 +321,9 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     test_helpers.write_project_config(tmp_path, parent_fqun)
     test_helpers.write_local_deps_config(tmp_path, {child_fqun: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", child_fqun)
+    test_helpers.write_project_config(tmp_path / "lib", child_fqun)
     test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
-    test_helpers.write_sub_root(tmp_path, "lib/nested", parent_fqun)
+    test_helpers.write_project_config(tmp_path / "lib" / "nested", parent_fqun)
     _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
     _ = (tmp_path / "lib" / "target.dfn").write_text(
         (

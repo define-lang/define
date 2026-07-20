@@ -6,18 +6,9 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler.graphs import action_call_graph, action_call_graph_renderer
+from define.compiler.validator import test_helpers
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.test_helpers import assert_no_errors
-
-
-def _write_project_config(tmp_path: Path, universe_name: str):
-    config_dir = tmp_path / ".define" / "project"
-    config_dir.mkdir(parents=True, exist_ok=True)
-    (config_dir / "config.defcl").write_text(
-        f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
-        encoding="utf-8",
-    )
 
 
 def _validate_mermaid(text: str):
@@ -60,7 +51,7 @@ def _build_graph(
     expect_errors: bool = False,
 ) -> action_call_graph.ActionCallGraph:
     pv = program_validator.ProgramStructuralValidator()
-    _write_project_config(tmp_path, universe_name)
+    test_helpers.write_project_config(tmp_path, universe_name)
     for name, source in files.items():
         file_path = tmp_path / name
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +64,7 @@ def _build_graph(
         program_result.definition_results,
     ).validate()
     if not expect_errors:
-        assert_no_errors(program_result)
+        test_helpers.assert_no_errors(program_result)
     return reference_graph_result.action_call_graph
 
 
