@@ -1,12 +1,10 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<input> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
+    it also assigns the action</triggered>.
     it happens when {
         this particle is created.
     } and it does {
-        destroy the particle in position<input>::position</child>.
+        create a particle in action</triggered>::position<input>.
+        create a particle in action</triggered>::position<input>::position</child>.
+        create a particle in action</triggered>::position<run>.
     }
 }

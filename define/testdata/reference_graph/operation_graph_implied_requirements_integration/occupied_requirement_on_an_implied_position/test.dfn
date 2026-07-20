@@ -1,8 +1,10 @@
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</triggered>.
     it also assigns the position</implied>.
     it happens when {
         this particle is created.
     } and it does {
-        destroy the particle in position</implied>.
+        create a particle in position</implied>.
+        create a particle in action</triggered>::position<run>.
     }
 }
