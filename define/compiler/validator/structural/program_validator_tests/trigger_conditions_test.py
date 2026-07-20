@@ -1,68 +1,28 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
-from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_valid_local_position():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<my_pos>.\n"
-        "    it happens when {\n"
-        "        the position<my_pos> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert diags == []
+def test_valid_local_position(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
-def test_valid_destructor():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    it happens when {\n"
-        "        this particle is being destroyed.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert diags == []
+def test_valid_destructor(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
-def test_valid_constructor():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert diags == []
+def test_valid_constructor(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
 def test_undefined_local_name(

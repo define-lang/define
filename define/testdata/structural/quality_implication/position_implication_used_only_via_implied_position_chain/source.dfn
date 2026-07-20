@@ -1,0 +1,22 @@
+define the potential action<my.domain.com:my_lib:/bar> {
+    define the position<x>.
+    it happens when {
+        the position<x> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/foo> {
+    it may only contain particles where {
+        it has the action</bar>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/root> {
+    it also assigns the position</foo>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</foo>::action</bar>::position<x>.
+    }
+}

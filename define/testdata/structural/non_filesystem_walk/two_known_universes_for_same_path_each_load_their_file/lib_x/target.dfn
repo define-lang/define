@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:child_x:/target> {
+    it may only contain particles where {
+        it has the position</x_child>.
+    }
+}

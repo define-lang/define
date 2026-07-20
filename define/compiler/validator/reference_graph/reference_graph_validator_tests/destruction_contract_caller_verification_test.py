@@ -10,6 +10,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _MID = "action<my.domain.com:my_lib:/mid>"
@@ -467,7 +468,7 @@ def test_intermediate_resolves_satisfied_owner_does_not_re_report(
             ),
         },
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_MID, _CLOSE_FILE),
@@ -955,7 +956,7 @@ def test_five_level_implied_requirements_resolved_across_actions_satisfied(
             ),
         },
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_MIDDLE, _CLOSE_FILE),
         (_CLOSE_FILE, _DESTRUCTOR),
@@ -1343,7 +1344,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_satisfied(
             ),
         },
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_INNER, _CLOSE_FILE),
         (_CLOSE_FILE, _DESTRUCTOR),

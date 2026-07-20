@@ -1,68 +1,32 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import diagnostics
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_valid_destroy_in_action_body():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_target>.\n"
-        "        destroy the particle in position<_target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    assert results[0].exception is None
-    diags = results[0].diagnostics
-    assert diags == []
+def test_valid_destroy_in_action_body(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
-def test_undefined_local_position_in_destroy():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        destroy the particle in position<undefined>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_undefined_local_position_in_destroy(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    results = result.file_results
     assert results[0].exception is None
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
 
 
-def test_non_self_ref_global_in_action_body():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        destroy the particle in action</other>::position<x>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_non_self_ref_global_in_action_body(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    results = result.file_results
     assert results[0].exception is None
     diags = results[0].diagnostics
     assert len(diags) == 2

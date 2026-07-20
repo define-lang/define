@@ -6,20 +6,15 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateSourceAsFile,
-    ValidateTestdataStructural,
-)
+from define.compiler.conftest import ValidateTestdataStructural
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_path_matches_file_no_error(validate_source_as_file: ValidateSourceAsFile):
-    source = "define the potential position<my.domain.com:my_lib:/foo/bar>.\n"
-    diags = validate_source_as_file(
-        source,
-        "my.domain.com:my_lib",
-        PurePosixPath("foo/bar.dfn"),
-    )
-    assert len(diags) == 0
+def test_path_matches_file_no_error(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(entry_file="foo/bar.dfn")
+    assert_no_errors(result)
 
 
 def test_path_mismatch_error(
@@ -39,21 +34,15 @@ def test_path_mismatch_error(
     assert diags[0].location.file_path == PurePosixPath("foo/bar.dfn")
 
 
-def test_no_file_path_skips_validation(validate_source_as_file: ValidateSourceAsFile):
-    source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
-    diags = validate_source_as_file(
-        source,
-        "my.domain.com:my_lib",
-        PurePosixPath("any/path.dfn"),
-    )
-    assert len(diags) == 0
+def test_no_file_path_skips_validation(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(entry_file="any/path.dfn")
+    assert_no_errors(result)
 
 
-def test_nested_path_matches(validate_source_as_file: ValidateSourceAsFile):
-    source = "define the potential position<my.domain.com:my_lib:/a/b/c>.\n"
-    diags = validate_source_as_file(
-        source,
-        "my.domain.com:my_lib",
-        PurePosixPath("a/b/c.dfn"),
-    )
-    assert len(diags) == 0
+def test_nested_path_matches(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(entry_file="a/b/c.dfn")
+    assert_no_errors(result)

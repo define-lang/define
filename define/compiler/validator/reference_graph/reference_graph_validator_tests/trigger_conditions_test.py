@@ -3,6 +3,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestTriggerConditionValidation:
@@ -21,9 +22,8 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
-        diags = results[0].diagnostics
-        assert diags == []
+        result = validate_non_filesystem_with_reference_graph(source)
+        assert_no_errors(result)
 
     def test_undefined_local_name(
         self,

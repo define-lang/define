@@ -59,7 +59,7 @@ def test_action_caller_occupied_overrides_inner_empty(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
 
 
 def test_action_caller_empty_overrides_inner_occupied(
@@ -107,7 +107,7 @@ def test_action_caller_empty_overrides_inner_occupied(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
 
 
 def test_constructor_occupied_overrides_triggered_action_empty(
@@ -157,7 +157,7 @@ def test_constructor_occupied_overrides_triggered_action_empty(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
 
 
 def test_constructor_empty_overrides_triggered_action_occupied(
@@ -206,7 +206,7 @@ def test_constructor_empty_overrides_triggered_action_occupied(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
 
 
 def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_action(

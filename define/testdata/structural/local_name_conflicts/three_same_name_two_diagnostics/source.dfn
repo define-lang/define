@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<alpha>.
+    define the position<alpha>.
+    define the position<alpha>.
+    it happens when {
+        the position<alpha> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}

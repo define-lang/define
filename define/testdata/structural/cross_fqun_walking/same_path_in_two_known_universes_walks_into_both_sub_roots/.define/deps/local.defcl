@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:child_x"
+      path: "lib_x"
+    },
+    {
+      universe_name: "mv:define-lang.org:child_y"
+      path: "lib_y"
+    }
+  ]
+}

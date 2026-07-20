@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:child_lib:/target>.
+        it has the position<mv:define-lang.org:child_lib:/missing>.
+    }
+}

@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<x>.
+    it happens when {
+        the position<x> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}

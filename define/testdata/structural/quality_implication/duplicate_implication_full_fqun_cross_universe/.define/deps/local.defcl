@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:implied_dup_implication"
+      path: "lib"
+    }
+  ]
+}

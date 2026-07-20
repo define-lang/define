@@ -14,6 +14,9 @@ import textwrap
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
+# Keep Define source inline in this module because these tests compare rendered
+# diagnostics against the exact source lines supplied to the formatter.
+
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _OUTER_IMPLIED = "action<my.domain.com:my_lib:/outer_implied>"

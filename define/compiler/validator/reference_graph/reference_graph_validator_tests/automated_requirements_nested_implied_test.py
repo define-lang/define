@@ -11,6 +11,7 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -103,7 +104,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
             "test.dfn": _TEST_PRE_FILLS_X,
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
@@ -174,7 +175,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
             "test.dfn": _TEST_DOES_NOT_FILL_X,
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),

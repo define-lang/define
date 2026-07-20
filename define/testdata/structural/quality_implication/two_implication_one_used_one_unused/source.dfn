@@ -1,0 +1,11 @@
+define the potential position<my.domain.com:my_lib:/foo>.
+define the potential position<my.domain.com:my_lib:/bar>.
+define the potential action<my.domain.com:my_lib:/root> {
+    it also assigns the position</foo>.
+    it also assigns the position</bar>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</foo>.
+    }
+}

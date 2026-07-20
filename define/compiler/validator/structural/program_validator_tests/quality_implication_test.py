@@ -8,44 +8,18 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateProject,
-    ValidateProjectWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
     ValidateTestdataStructural,
     ValidateTestdataStructuralNonFilesystem,
 )
 from define.compiler.data_structures import define_path
-from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_non_self_ref_global_in_action_body(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</other>::position<x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<x>.\n"
-                "    it happens when {\n"
-                "        the position<x> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -55,107 +29,33 @@ def test_non_self_ref_global_in_action_body(
     assert all_diags[0].location.column == 30
 
 
-def test_two_distinct_used_quality_implication_statements():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/bar>.\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</bar>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "        create a particle in position</bar>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+def test_two_distinct_used_quality_implication_statements(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
 
 
-def test_action_implication_used_via_interface_position_chain():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/foo> {\n"
-        "    define the position<x>.\n"
-        "    it happens when {\n"
-        "        the position<x> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the action</foo>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in action</foo>::position<x>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+def test_action_implication_used_via_interface_position_chain(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
 
 
-def test_position_implication_used_only_via_implied_position_chain():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/bar> {\n"
-        "    define the position<x>.\n"
-        "    it happens when {\n"
-        "        the position<x> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential position<my.domain.com:my_lib:/foo> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the action</bar>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>::action</bar>::position<x>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+def test_position_implication_used_only_via_implied_position_chain(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
 
 
-def test_global_used_without_implication_is_unknown():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_global_used_without_implication_is_unknown(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].source_global_name == "position</foo>"
@@ -164,26 +64,12 @@ def test_global_used_without_implication_is_unknown():
     assert diags[0].location.column == 30
 
 
-def test_duplicate_implication_in_action_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</foo>.\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_duplicate_implication_in_action_error(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
     assert diags[0].implication_name == "position</foo>"
@@ -211,29 +97,10 @@ def test_three_duplicate_implication_two_errors(
 
 
 def test_duplicate_implication_full_fqun_cross_universe(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    implier_fqun = "mv:define-lang.org:implier_dup_implication"
     implied_fqun = "mv:define-lang.org:implied_dup_implication"
-    result = validate_project(
-        {
-            "test.dfn": (
-                f"define the potential action<{implier_fqun}:/test> {{\n"
-                f"    it also assigns the position<{implied_fqun}:/foo>.\n"
-                f"    it also assigns the position<{implied_fqun}:/foo>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                f"        create a particle in position<{implied_fqun}:/foo>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "lib/foo.dfn": f"define the potential position<{implied_fqun}:/foo>.\n",
-        },
-        universe_name=implier_fqun,
-        local_deps={implied_fqun: "lib"},
-        sub_roots={"lib": implied_fqun},
-    )
+    result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -248,54 +115,18 @@ def test_duplicate_implication_full_fqun_cross_universe(
 
 
 def test_implication_same_path_different_fquns_are_not_duplicates(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    main_fqun = "mv:define-lang.org:implication_distinct_main"
-    a_fqun = "mv:define-lang.org:implication_distinct_lib_a"
-    b_fqun = "mv:define-lang.org:implication_distinct_lib_b"
-    result = validate_project(
-        {
-            "a/foo.dfn": f"define the potential position<{a_fqun}:/foo>.\n",
-            "b/foo.dfn": f"define the potential position<{b_fqun}:/foo>.\n",
-            "test.dfn": (
-                f"define the potential action<{main_fqun}:/test> {{\n"
-                f"    it also assigns the position<{a_fqun}:/foo>.\n"
-                f"    it also assigns the position<{b_fqun}:/foo>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                f"        create a particle in position<{a_fqun}:/foo>.\n"
-                f"        create a particle in position<{b_fqun}:/foo>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-        universe_name=main_fqun,
-        local_deps={a_fqun: "a", b_fqun: "b"},
-        sub_roots={"a": a_fqun, "b": b_fqun},
-    )
+    result = validate_testdata_structural()
     assert_no_errors(result)
 
 
-def test_duplicate_via_full_form_and_short_form_implication():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position<my.domain.com:my_lib:/foo>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_duplicate_via_full_form_and_short_form_implication(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
@@ -303,24 +134,12 @@ def test_duplicate_via_full_form_and_short_form_implication():
     assert diags[0].location.column == 34
 
 
-def test_implication_with_invalid_path_format_error():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</bad/>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_implication_with_invalid_path_format_error(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].path == "/bad/"
@@ -328,25 +147,12 @@ def test_implication_with_invalid_path_format_error():
     assert diags[0].location.column == 38
 
 
-def test_implication_invalid_name_does_not_become_duplicate():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</bad/>.\n"
-        "    it also assigns the position</bad/>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_implication_invalid_name_does_not_become_duplicate(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].path == "/bad/"
@@ -358,23 +164,12 @@ def test_implication_invalid_name_does_not_become_duplicate():
     assert diags[1].location.column == 38
 
 
-def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</bad/>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</bad/>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].path == "/bad/"
@@ -391,34 +186,10 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
     assert diags[2].location.column == 43
 
 
-def test_circular_implication_emits_diagnostic(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "foo.dfn": (
-                "define the potential action<my.domain.com:my_lib:/foo> {\n"
-                "    it also assigns the action</bar>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</bar>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "bar.dfn": (
-                "define the potential action<my.domain.com:my_lib:/bar> {\n"
-                "    it also assigns the action</foo>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</foo>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-        entry_file="foo.dfn",
-    )
+def test_circular_implication_emits_diagnostic(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(entry_file="foo.dfn")
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("foo.dfn")
     assert result.file_results[0].diagnostics == []
@@ -451,26 +222,12 @@ def test_unused_implication_in_constructor_error(
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
-def test_unused_implication_on_action_error():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_unused_implication_on_action_error(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].implication_name == "position</foo>"
@@ -478,22 +235,12 @@ def test_unused_implication_on_action_error():
     assert diags[0].location.column == 25
 
 
-def test_implication_used_only_in_constraint_block_is_unused():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_implication_used_only_in_constraint_block_is_unused(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].implication_name == "position</foo>"
@@ -501,26 +248,12 @@ def test_implication_used_only_in_constraint_block_is_unused():
     assert diags[0].location.column == 25
 
 
-def test_two_implication_one_used_one_unused():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/foo>.\n"
-        "define the potential position<my.domain.com:my_lib:/bar>.\n"
-        "define the potential action<my.domain.com:my_lib:/root> {\n"
-        "    it also assigns the position</foo>.\n"
-        "    it also assigns the position</bar>.\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        create a particle in position</foo>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_two_implication_one_used_one_unused(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].implication_name == "position</bar>"
@@ -529,22 +262,9 @@ def test_two_implication_one_used_one_unused():
 
 
 def test_implication_for_nonexistent_quality_used_in_body(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</nonexistent>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</nonexistent>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_structural()
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

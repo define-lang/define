@@ -11,6 +11,7 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
@@ -261,7 +262,7 @@ def test_caller_satisfies_empty_in_implied_position(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
 
 
@@ -302,7 +303,7 @@ def test_caller_satisfies_occupied_in_implied_position(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
 
 
@@ -594,7 +595,7 @@ def test_caller_satisfies_empty_in_child_of_implied_position(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
 
 
@@ -643,7 +644,7 @@ def test_caller_satisfies_occupied_in_child_of_implied_position(
             ),
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
 
 

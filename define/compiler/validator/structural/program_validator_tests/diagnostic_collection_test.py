@@ -4,19 +4,15 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
-def test_multiple_diagnostics_collected():
-    source = (
-        "define the potential position<standard:/first>.\n"
-        "define the potential position<standard:/second>.\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_multiple_diagnostics_collected(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -29,16 +25,12 @@ def test_multiple_diagnostics_collected():
     assert diags[1].reserved_name == "standard"
 
 
-def test_diagnostics_in_source_order():
-    source = (
-        "define the potential position<standard:/first>.\n"
-        "define the potential position<standard:/second>.\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+def test_diagnostics_in_source_order(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.line == 1

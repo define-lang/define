@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:implication_distinct_lib_a"
+      path: "a"
+    },
+    {
+      universe_name: "mv:define-lang.org:implication_distinct_lib_b"
+      path: "b"
+    }
+  ]
+}

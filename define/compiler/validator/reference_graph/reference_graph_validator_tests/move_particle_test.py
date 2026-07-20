@@ -6,6 +6,7 @@ from define.compiler.conftest import (
     ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_valid_local_positions(
@@ -22,8 +23,8 @@ def test_valid_local_positions(
         "    }\n"
         "}\n"
     )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
-    assert results[0].diagnostics == []
+    result = validate_non_filesystem_with_reference_graph(source)
+    assert_no_errors(result)
 
 
 def test_move_from_child_to_parents_empty_sibling(
@@ -61,7 +62,7 @@ def test_move_from_child_to_parents_empty_sibling(
             "sibling.dfn": "define the potential position<my.domain.com:my_lib:/sibling>.\n",
         }
     )
-    assert result.program_result.all_diagnostics == []
+    assert_no_errors(result.program_result)
 
 
 def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(

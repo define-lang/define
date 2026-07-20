@@ -272,7 +272,11 @@ class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
 class ValidateTestdataStructuralNonFilesystem(Protocol):
     """Validate the convention-derived non-filesystem source structurally."""
 
-    def __call__(self) -> validation_result.ProgramValidationResult:
+    def __call__(
+        self,
+        *,
+        max_workers: int | None = ...,
+    ) -> validation_result.ProgramValidationResult:
         """Run structural validation."""
         ...
 
@@ -312,23 +316,22 @@ def testdata_project_directory(
 
 
 @pytest.fixture
-def testdata_source_path(request: pytest.FixtureRequest) -> Path:
-    """Return source.dfn for the current convention-derived testdata case."""
-    return _testdata_directory(request) / "source.dfn"
-
-
-@pytest.fixture
 def validate_testdata_structural_non_filesystem(
     request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> ValidateTestdataStructuralNonFilesystem:
     """Structurally validate source.dfn from the derived testdata directory."""
     directory = _testdata_directory(request)
     source = (directory / "source.dfn").read_text(encoding="utf-8")
 
-    def _run() -> validation_result.ProgramValidationResult:
+    def _run(
+        *,
+        max_workers: int | None = None,
+    ) -> validation_result.ProgramValidationResult:
+        monkeypatch.chdir(directory)
         return program_validator.ProgramStructuralValidator(
             _PARSER
-        ).validate_program_non_filesystem(source)
+        ).validate_program_non_filesystem(source, max_workers=max_workers)
 
     return _run
 

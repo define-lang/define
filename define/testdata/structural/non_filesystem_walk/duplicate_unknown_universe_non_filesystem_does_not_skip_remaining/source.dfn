@@ -1,0 +1,7 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position<unknown.com:lib_a:/target_a>.
+        it has the position<unknown.com:lib_a:/target_b>.
+        it has the position<unknown.com:lib_b:/target_c>.
+    }
+}

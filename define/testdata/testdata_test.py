@@ -20,7 +20,6 @@ _TEST_SOURCE_ROOTS = {
 }
 _NON_FILESYSTEM_FIXTURES = {
     "parse_testdata",
-    "testdata_source_path",
     "validate_testdata_structural_non_filesystem",
     "validate_testdata_non_filesystem_with_reference_graph",
 }

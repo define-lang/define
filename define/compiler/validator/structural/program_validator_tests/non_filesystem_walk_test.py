@@ -4,36 +4,18 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path
-
 import pytest
 
 from define.compiler import config, diagnostics
+from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.data_structures import define_path
-from define.compiler.validator import test_helpers
-from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
-
-_PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
-_CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
 
 
 def test_external_universe_no_project_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(
@@ -46,27 +28,9 @@ def test_external_universe_no_project_config(
 
 
 def test_config_failure_still_validates_same_file_cycles(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/a> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "        it has the position</b>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential position<my.domain.com:my_lib:/b> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</a>.\n"
-        "    }\n"
-        "}\n"
-    )
-    monkeypatch.chdir(tmp_path)
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -87,22 +51,9 @@ def test_config_failure_still_validates_same_file_cycles(
 
 
 def test_external_universe_without_local_deps(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -113,25 +64,9 @@ def test_external_universe_without_local_deps(
 
 
 def test_external_universe_not_in_local_deps(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(
-        tmp_path, {"some.other.com:some_lib": "vendor/some_lib"}
-    )
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -142,33 +77,9 @@ def test_external_universe_not_in_local_deps(
 
 
 def test_external_universe_invalid_local_deps(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    deps_dir = tmp_path / ".define" / "deps"
-    deps_dir.mkdir(parents=True, exist_ok=True)
-    (deps_dir / "local.defcl").write_text(
-        (
-            "deps: {\n  local: [\n"
-            '    { universe_name: "dup" path: "a" },\n'
-            '    { universe_name: "dup" path: "b" }\n'
-            "  ]\n}\n"
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -178,26 +89,9 @@ def test_external_universe_invalid_local_deps(
 
 
 def test_external_universe_configured_but_no_sub_root_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(
-        tmp_path, {"other.example.com:other_universe": "vendor/other"}
-    )
-    (tmp_path / "vendor" / "other").mkdir(parents=True, exist_ok=True)
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -207,31 +101,10 @@ def test_external_universe_configured_but_no_sub_root_config(
 
 
 def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_filesystem(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    child_a = "mv:define-lang.org:child_a"
     child_b = "mv:define-lang.org:child_b"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_a: "lib_a"})
-    test_helpers.write_sub_root(tmp_path, "lib_a", child_a)
-    (tmp_path / "lib_a/target_a.dfn").write_text(
-        f"define the potential position<{child_a}:/target_a>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{child_a}:/target_a>.\n"
-        f"        it has the position<{child_b}:/target_b>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
@@ -247,24 +120,9 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
 
 
 def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<unknown.com:lib_a:/target_a>.\n"
-        "        it has the position<unknown.com:lib_a:/target_b>.\n"
-        "        it has the position<unknown.com:lib_b:/target_c>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_testdata_structural_non_filesystem().file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -278,38 +136,9 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
 
 
 def test_non_filesystem_reference_walks_into_sub_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
-    test_helpers.write_local_deps_config(tmp_path, {_CHILD_UNIVERSE: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
-    (tmp_path / "lib/target.dfn").write_text(
-        (
-            f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</leaf>.\n"
-            + "    }\n"
-            + "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib/leaf.dfn").write_text(
-        f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 3
     assert_no_errors(result)
     assert str(result.file_results[0].file_path) == "<string>"
@@ -320,30 +149,9 @@ def test_non_filesystem_reference_walks_into_sub_root(
 
 
 def test_non_filesystem_cross_universe_reference(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    child_universe = "mv:define-lang.org:child_lib"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", child_universe)
-    (tmp_path / "lib" / "target.dfn").write_text(
-        f"define the potential position<{child_universe}:/target>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{child_universe}:/target>.\n"
-        f"        it has the position<{child_universe}:/missing>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
     assert result.file_results[0].exception is None
@@ -360,30 +168,9 @@ def test_non_filesystem_cross_universe_reference(
 
 
 def test_unknown_universe_does_not_block_known_universe_for_same_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    child_universe = "mv:define-lang.org:child_lib"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", child_universe)
-    (tmp_path / "lib" / "target.dfn").write_text(
-        f"define the potential position<{child_universe}:/target>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<unknown.com:other_lib:/target>.\n"
-        f"        it has the position<{child_universe}:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
     diags = result.file_results[0].diagnostics
@@ -399,26 +186,9 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
 
 
 def test_unknown_universe_and_sub_root_config_errors_in_source_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    child_universe = "mv:define-lang.org:child_lib"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{child_universe}:/target>.\n"
-        "        it has the position<unknown.com:other_lib:/other>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -434,23 +204,9 @@ def test_unknown_universe_and_sub_root_config_errors_in_source_order(
 
 
 def test_two_unknown_universes_for_same_path_each_diagnosed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<unknown.com:lib_a:/target>.\n"
-        "        it has the position<unknown.com:lib_b:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -467,56 +223,11 @@ def test_two_unknown_universes_for_same_path_each_diagnosed(
 
 
 def test_two_known_universes_for_same_path_each_load_their_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     child_x = "mv:define-lang.org:child_x"
     child_y = "mv:define-lang.org:child_y"
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    test_helpers.write_local_deps_config(tmp_path, {child_x: "lib_x", child_y: "lib_y"})
-    test_helpers.write_sub_root(tmp_path, "lib_x", child_x)
-    test_helpers.write_sub_root(tmp_path, "lib_y", child_y)
-    (tmp_path / "lib_x" / "target.dfn").write_text(
-        (
-            f"define the potential position<{child_x}:/target> {{\n"
-            "    it may only contain particles where {\n"
-            "        it has the position</x_child>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib_x" / "x_child.dfn").write_text(
-        f"define the potential position<{child_x}:/x_child>.\n",
-        encoding="utf-8",
-    )
-    (tmp_path / "lib_y" / "target.dfn").write_text(
-        (
-            f"define the potential position<{child_y}:/target> {{\n"
-            "    it may only contain particles where {\n"
-            "        it has the position</y_child>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "lib_y" / "y_child.dfn").write_text(
-        f"define the potential position<{child_y}:/y_child>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{child_x}:/target>.\n"
-        f"        it has the position<{child_y}:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source, max_workers=1
-        )
-    )
+    result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert len(result.file_results) == 5
     assert_no_errors(result)
     assert str(result.file_results[0].file_path) == "<string>"
@@ -549,27 +260,9 @@ def test_two_known_universes_for_same_path_each_load_their_file(
 
 
 def test_forward_reference_within_non_filesystem_source_is_broken(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    # Define requires definitions to appear before they are referenced; a forward
-    # ref within one source is not recognized as same-file and the validator
-    # mishandles it as an unconfigured cross-universe reference to the current
-    # universe.
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/a> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</b>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential position<my.domain.com:my_lib:/b>.\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -577,7 +270,7 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diag.universe == "my.domain.com:my_lib"
     assert diag.current_universe_name == "my.domain.com:my_lib"
-    assert diag.location.line == 3
+    assert diag.location.line == 7
     assert diag.location.column == 29
 
 
@@ -592,36 +285,9 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     ),
 )
 def test_non_filesystem_reference_walks_into_current_universe_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    (tmp_path / "target.dfn").write_text(
-        (
-            "define the potential position<my.domain.com:my_lib:/target> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the position</leaf>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "leaf.dfn").write_text(
-        "define the potential position<my.domain.com:my_lib:/leaf>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 3
     assert_no_errors(result)
     assert str(result.file_results[0].file_path) == "<string>"
@@ -640,19 +306,8 @@ def test_non_filesystem_reference_walks_into_current_universe_file(
         " self._project_roots and raises KeyError."
     ),
 )
-def test_non_filesystem_cross_universe_back_reference():
-    foreign_universe = "demo_mv:demo.example:demo_universe"
-    source = (
-        f"define the potential position<{foreign_universe}:/target>.\n"
-        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-        "    it may only contain particles where {\n"
-        f"        it has the position<{foreign_universe}:/target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+def test_non_filesystem_cross_universe_back_reference(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []

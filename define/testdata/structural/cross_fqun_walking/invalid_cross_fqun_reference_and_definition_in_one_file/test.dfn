@@ -1,0 +1,8 @@
+# This is a very strange invalid case, but we want to be sure we emit the
+# right diagnostic for it.
+define the potential position<mv:define-lang.org:other_lib:/test>.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:other_lib:/test>.
+    }
+}

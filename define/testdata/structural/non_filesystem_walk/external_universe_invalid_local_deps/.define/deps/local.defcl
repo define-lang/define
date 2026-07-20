@@ -1,0 +1,6 @@
+deps: {
+  local: [
+    { universe_name: "dup" path: "a" },
+    { universe_name: "dup" path: "b" }
+  ]
+}

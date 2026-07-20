@@ -5,7 +5,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
-from define.compiler.validator.structural import program_validator
 
 
 def test_case_insensitive_reserved_universe_position(
@@ -115,14 +114,12 @@ def test_reserved_universe_name_with_authority_position(
     assert diags[1].location.column == 43
 
 
-def test_reserved_authority_position():
-    source = "define the potential position<example.com:my_lib:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_reserved_authority_position(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
     assert diags[0].reserved_name == "example.com"

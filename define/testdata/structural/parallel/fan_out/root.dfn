@@ -1,0 +1,14 @@
+define the potential position<my.domain.com:my_lib:/root> {
+    it may only contain particles where {
+        it has the position</leaf_0>.
+        it has the position</leaf_1>.
+        it has the position</leaf_2>.
+        it has the position</leaf_3>.
+        it has the position</leaf_4>.
+        it has the position</leaf_5>.
+        it has the position</leaf_6>.
+        it has the position</leaf_7>.
+        it has the position</leaf_8>.
+        it has the position</leaf_9>.
+    }
+}

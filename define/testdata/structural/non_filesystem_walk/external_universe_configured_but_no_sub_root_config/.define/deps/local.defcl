@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "other.example.com:other_universe"
+      path: "vendor/other"
+    }
+  ]
+}

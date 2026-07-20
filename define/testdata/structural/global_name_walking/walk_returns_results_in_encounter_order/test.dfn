@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:walk_order:/test> {
+    it may only contain particles where {
+        it has the position</middle>.
+    }
+}

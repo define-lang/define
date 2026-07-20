@@ -65,6 +65,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
@@ -271,6 +272,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
@@ -354,6 +356,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
     ],
@@ -504,6 +507,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//pytest",
     ],
@@ -694,6 +698,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -835,6 +840,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 

@@ -11,6 +11,9 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
 )
 
+# Keep Define source inline in this module because these tests compare rendered
+# diagnostics against the exact source lines supplied to the formatter.
+
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"

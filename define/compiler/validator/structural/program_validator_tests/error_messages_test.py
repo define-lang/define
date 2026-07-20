@@ -14,6 +14,9 @@ from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
+# Keep Define source inline in this module because these tests compare rendered
+# diagnostics against the exact source lines supplied to the formatter.
+
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"

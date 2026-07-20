@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:implication_distinct_main:/test> {
+    it also assigns the position<mv:define-lang.org:implication_distinct_lib_a:/foo>.
+    it also assigns the position<mv:define-lang.org:implication_distinct_lib_b:/foo>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<mv:define-lang.org:implication_distinct_lib_a:/foo>.
+        create a particle in position<mv:define-lang.org:implication_distinct_lib_b:/foo>.
+    }
+}

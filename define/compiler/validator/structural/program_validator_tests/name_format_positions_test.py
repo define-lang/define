@@ -5,6 +5,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_authority_domain_leading_dot_position(
@@ -241,8 +242,8 @@ def test_path_segment_uppercase_position(
 def test_path_leading_underscore_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    diags = validate_testdata_structural_non_filesystem().file_results[0].diagnostics
-    assert diags == []
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
 def test_path_trailing_slash_position(

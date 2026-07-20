@@ -1,0 +1,9 @@
+filegroup(
+    name = "non_filesystem_walk",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+    ],
+)

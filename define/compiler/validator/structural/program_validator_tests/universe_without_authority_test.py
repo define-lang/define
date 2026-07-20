@@ -5,17 +5,15 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
-from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_standard_without_authority_ok():
-    source = "define the potential position<standard:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_standard_without_authority_ok(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].reserved_name == "standard"
@@ -38,25 +36,19 @@ def test_non_standard_without_authority_error(
     assert diags[0].location.file_path is None
 
 
-def test_with_authority_ok():
-    source = "define the potential position<my.domain.com:my_universe:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 0
+def test_with_authority_ok(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
-def test_case_insensitive_standard():
-    source = "define the potential position<STANDARD:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_case_insensitive_standard(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
     assert diags[0].universe_name == "STANDARD"

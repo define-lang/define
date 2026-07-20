@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/same> {
+    define the position<_noop>.
+    it happens when {
+        the position<_noop> has a particle.
+    } and it does {
+        define the position<__noop>.
+        create a particle in position<__noop>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/same> {
+    define the position<_noop>.
+    it happens when {
+        the position<_noop> has a particle.
+    } and it does {
+        define the position<__noop>.
+        create a particle in position<__noop>.
+    }
+}

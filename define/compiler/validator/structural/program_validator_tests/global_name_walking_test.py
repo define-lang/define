@@ -9,8 +9,6 @@ from unittest import mock
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ParseAndValidateFile,
-    ValidateProject,
     ValidateTestdataStructural,
 )
 from define.compiler.data_structures import define_path
@@ -18,14 +16,8 @@ from define.compiler.validator.structural import file_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_nested_file_path(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "sub/dir/leaf.dfn": "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
-        },
-        universe_name="test.example.com:my_lib",
-        entry_file="sub/dir/leaf.dfn",
-    )
+def test_nested_file_path(validate_testdata_structural: ValidateTestdataStructural):
+    result = validate_testdata_structural(entry_file="sub/dir/leaf.dfn")
     assert len(result.file_results) == 1
     assert_no_errors(result)
     assert result.file_results[0].file_path == define_path.DefinePath(
@@ -33,27 +25,10 @@ def test_nested_file_path(validate_project: ValidateProject):
     )
 
 
-def test_walk_returns_results_in_encounter_order(validate_project: ValidateProject):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</middle>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "middle.dfn": (
-                "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</leaf>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "leaf.dfn": "define the potential position<mv:define-lang.org:walk_order:/leaf>.\n",
-        },
-        universe_name="mv:define-lang.org:walk_order",
-    )
+def test_walk_returns_results_in_encounter_order(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
     assert [r.file_path for r in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("middle.dfn"),
@@ -62,27 +37,9 @@ def test_walk_returns_results_in_encounter_order(validate_project: ValidateProje
 
 
 def test_duplicate_does_not_corrupt_reference_resolution(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "root.dfn": (
-                "define the potential position<my.domain.com:my_lib:/root> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</target>.\n"
-                "        it has the position</dup>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
-            "dup.dfn": (
-                "define the potential position<my.domain.com:my_lib:/target>.\n"
-                "define the potential position<my.domain.com:my_lib:/dup>.\n"
-            ),
-        },
-        entry_file="root.dfn",
-        max_workers=1,
-    )
+    result = validate_testdata_structural(max_workers=1, entry_file="root.dfn")
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("root.dfn")
     assert result.file_results[0].diagnostics == []
@@ -100,27 +57,9 @@ def test_duplicate_does_not_corrupt_reference_resolution(
 
 
 def test_duplicate_source_definition_does_not_add_reference_edges(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test>.\n"
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</other>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential position<my.domain.com:my_lib:/other> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</test>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_structural()
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -153,21 +92,9 @@ def test_cross_file_duplicate_definition_reports_path_mismatch(
 
 
 def test_back_reference_to_earlier_definition_does_not_load_its_file(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/other>.\n"
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</other>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
-        },
-    )
+    result = validate_testdata_structural()
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -180,7 +107,7 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
 
 
 def test_same_target_file_referenced_as_two_types_loads_once(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
     original_validate_file = file_validator.FileStructuralValidator.validate_file
     validated_paths: list[str] = []
@@ -198,19 +125,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
         autospec=True,
         side_effect=recording_validate_file,
     ):
-        result = validate_project(
-            {
-                "test.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/test> {\n"
-                    "    it may only contain particles where {\n"
-                    "        it has the position</target>.\n"
-                    "        it has the action</target>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
-            },
-        )
+        result = validate_testdata_structural()
     assert validated_paths == ["test.dfn", "target.dfn"]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
@@ -292,18 +207,11 @@ def test_unknown_universe_emits_diagnostic(
 
 
 def test_duplicate_unknown_universe_emits_one_diagnostic(
-    parse_and_validate_file: ParseAndValidateFile,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position<other.example.com:other_universe:/target>.\n"
-        "        it has the position<other.example.com:other_universe:/another>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = parse_and_validate_file(source)
-    diags = result.diagnostics
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.line == 3
@@ -313,27 +221,9 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
 
 
 def test_unknown_universe_across_files_reported_per_file(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position<other.example.com:other_universe:/target>.\n"
-                "        it has the position</other>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential position<my.domain.com:my_lib:/other> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position<other.example.com:other_universe:/another>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_structural()
     all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     for diag in all_diags:
@@ -345,31 +235,9 @@ def test_unknown_universe_across_files_reported_per_file(
 
 
 def test_already_tracked_discovery_does_not_skip_remaining_files(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</middle>.\n"
-                "        it has the position</shared>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "middle.dfn": (
-                "define the potential position<my.domain.com:my_lib:/middle> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</shared>.\n"
-                "        it has the position</leaf>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "shared.dfn": "define the potential position<my.domain.com:my_lib:/shared>.\n",
-            "leaf.dfn": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
-        },
-        max_workers=1,
-    )
+    result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 4
     assert [r.file_path for r in result.file_results] == [
         define_path.DefinePath("test.dfn"),
@@ -381,31 +249,9 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
 
 
 def test_circular_reference_does_not_skip_remaining_edge_validation(
-    validate_project: ValidateProject,
+    validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_project(
-        {
-            "test.dfn": (
-                "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</test>.\n"
-                "        it has the position</wrong_type>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "wrong_type.dfn": (
-                "define the potential action<my.domain.com:my_lib:/wrong_type> {\n"
-                "    define the position<_noop>.\n"
-                "    it happens when {\n"
-                "        the position<_noop> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<__noop>.\n"
-                "        create a particle in position<__noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

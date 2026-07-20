@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "some.other.com:some_lib"
+      path: "vendor/some_lib"
+    }
+  ]
+}

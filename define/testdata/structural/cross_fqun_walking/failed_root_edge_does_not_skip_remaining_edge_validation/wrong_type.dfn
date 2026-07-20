@@ -1,0 +1,9 @@
+define the potential action<mv:define-lang.org:parent_universe:/wrong_type> {
+    define the position<_noop>.
+    it happens when {
+        the position<_noop> has a particle.
+    } and it does {
+        define the position<__noop>.
+        create a particle in position<__noop>.
+    }
+}

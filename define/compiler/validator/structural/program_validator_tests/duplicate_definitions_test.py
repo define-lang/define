@@ -5,21 +5,14 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
-from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
-def test_no_duplicates_ok():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/first>.\n"
-        "define the potential position<my.domain.com:my_lib:/second>.\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 0
+def test_no_duplicates_ok(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
 def test_duplicate_position_error(
@@ -37,33 +30,12 @@ def test_duplicate_position_error(
     assert diags[0].location.column == 1
 
 
-def test_duplicate_action_error():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/same> {\n"
-        "    define the position<_noop>.\n"
-        "    it happens when {\n"
-        "        the position<_noop> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<__noop>.\n"
-        "        create a particle in position<__noop>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/same> {\n"
-        "    define the position<_noop>.\n"
-        "    it happens when {\n"
-        "        the position<_noop> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<__noop>.\n"
-        "        create a particle in position<__noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_duplicate_action_error(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].definition_type == "action"
@@ -73,40 +45,19 @@ def test_duplicate_action_error():
     assert diags[0].location.column == 1
 
 
-def test_same_path_different_types_ok():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "define the potential action<my.domain.com:my_lib:/same> {\n"
-        "    define the position<_noop>.\n"
-        "    it happens when {\n"
-        "        the position<_noop> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<__noop>.\n"
-        "        create a particle in position<__noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
-    assert len(diags) == 0
+def test_same_path_different_types_ok(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
 
 
-def test_three_duplicates_two_errors():
-    source = (
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-    )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
-    diags = results[0].diagnostics
+def test_three_duplicates_two_errors(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)

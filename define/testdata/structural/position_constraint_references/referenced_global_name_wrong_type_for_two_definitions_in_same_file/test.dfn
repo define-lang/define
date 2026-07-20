@@ -1,0 +1,18 @@
+define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+    }
+}
+define the potential action<mv:define-lang.org:test_walk_wrong_type:/test> {
+    define the position<local> {
+        it may only contain particles where {
+            it has the position</target>.
+        }
+    }
+    it happens when {
+        the position<local> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}
