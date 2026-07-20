@@ -159,6 +159,21 @@ class ActionPostorderValidator:
                 from, or None for a directly inferred requirement.
             scope: The scope tracker (for resolving qualities of local positions).
         """
+        # Profiles of dense action call graphs make requirement recording and
+        # propagation look like avoidable allocation and repeated-pass costs.
+        # Experiments in July 2026 showed that those apparent costs are mostly
+        # required by later consumers or already shared and batched:
+        # - Storing canonical-name tuples as the primary data and creating
+        #   PositionReferences only when requested made dense action call graphs
+        #   14-16% slower and a deeply chained position-operation workload 20%
+        #   slower. Propagation and diagnostics request PositionReferences for
+        #   most requirements, so the prototype added conversions without
+        #   avoiding the original objects.
+        # - Combining requirement propagation stages into one pass changed
+        #   runtime by only about 1%. The existing code already shares caller
+        #   PositionReferences and batches nearest-particle work.
+        # Revisit only if those consumers or the propagation pipeline change
+        # substantially.
         requirement_key = contracted_position.canonical_chained_name_tuple
         # This both prevents us from double-inferring requirements, and also
         # implements the "caller requirements override callee requirements" part

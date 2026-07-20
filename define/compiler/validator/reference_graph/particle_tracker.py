@@ -948,6 +948,21 @@ class ParticleTracker:
 
         Returns a nested guarantee for this action to record.
         """
+        # Profiles make eager guarantee application look like duplicated work
+        # that can simply be deferred. Experiments in July 2026 showed that much
+        # of this work represents ordering that the particle state and operation
+        # graph must both observe, rather than redundant computation:
+        # - Deferring callee guarantees in a lazy overlay improved dense action
+        #   call graphs by 7-12%, but produced incorrect operation graphs.
+        #   Superseded GuaranteeNodes, parent dependencies,
+        #   OccupiedByExisting swaps, and nested or implied guarantees depend on
+        #   guarantees becoming visible in their precise application order.
+        # - Expanding every nested guarantee prefix before applying it preserved
+        #   more ordering, but exhausted memory on the largest dense action call
+        #   graph.
+        # Do not repeat these deferral experiments unless the prototype preserves
+        # the ordering behavior above and remains memory-efficient on the largest
+        # dense action call graph.
         self._body_operation_number += 1
         action_chain_key = action_chain.canonical_chained_name_tuple
         # We have to record the action trigger when particles are still

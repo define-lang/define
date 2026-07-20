@@ -353,29 +353,22 @@ class OperationGraph:
         self._nodes: list[OperationNode] = []
         # A position's canonical chained name -> id of the last operation on it,
         # for every position the body touches.
-        # TODO: Experiment with cheaper structures for this. Today
-        # _most_recent_ancestor_chain_operation walks every prefix of a position,
-        # so the flat dict makes it slice and re-hash a fresh tuple per ancestor
-        # (O(depth^2), and those keys are long typed-name strings). Some options
-        # worth trying, not a decided plan:
-        #   - A prefix trie keyed by single chain elements: keeps the ancestor
-        #     walk O(depth) but with single-element steps, each element hashed
-        #     once and no throwaway tuples, while still serving exact-key point
-        #     lookups.
-        #   - A path-max structure: the query is "max op id over the root->node
-        #     path" with point updates, and since op ids increase monotonically,
-        #     recording an op at P is really a subtree-assign of the new max. A
-        #     static tree makes this O(log n) via Euler tour + a lazy segment
-        #     tree, but our position tree is built incrementally, so it would take
-        #     a dynamic-tree structure (Euler-tour / link-cut) whose constant
-        #     probably loses to a tight walk at the small depths we see.
-        #   - A last-op fast path: remember the previous op's (position, id); when
-        #     the next query is inside that position's subtree, that id is the
-        #     answer in ~O(1) (it is the global max and an ancestor), falling back
-        #     to the walk otherwise. Covers the common operate-parent-then-child
-        #     pattern. (Caching more broadly does not help: every ordinary op is a
-        #     new global max, so it invalidates the answer for its whole subtree,
-        #     not just when a requirement node is added.)
+        # cProfile makes ancestor lookup through this flat mapping look like a
+        # performance problem because dense action call graphs perform millions
+        # of prefix checks. Unprofiled experiments in July 2026 showed that the
+        # lookup is not a meaningful share of whole-compiler CPU time:
+        # - A prefix trie intended to avoid tuple slicing made dense action call
+        #   graphs 21-25% slower and a deeply chained position-operation workload
+        #   17% slower. It also used enough memory to kill the largest test.
+        # - A compact index for requirements without RequirementNodes appeared
+        #   successful under cProfile: it removed millions of prefix checks and
+        #   made the lookup routines 21-27% faster. It failed to produce a real
+        #   compiler improvement, however. Alternating unprofiled compilations
+        #   differed by only 0.6%, within normal run-to-run variation, so the
+        #   prototype was rejected.
+        # Do not retry either representation without evidence that workload
+        # shape or this algorithm has materially changed; the number of semantic
+        # effects constructed and propagated dominates these lookup costs.
         self._last_operation: dict[tuple[str, ...], int] = {}
         self._requirements: Mapping[
             tuple[str, ...], action_contract.PositionRequirement
