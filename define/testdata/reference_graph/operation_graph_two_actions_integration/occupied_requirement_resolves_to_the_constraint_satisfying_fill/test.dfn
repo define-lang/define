@@ -6,7 +6,6 @@
 # to the box2 fill would let the move run with box2's particle and carry it into
 # dest, violating the constraint.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<box1> {
         it may only contain particles where {
             it has the position</a>.
@@ -24,7 +23,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<action_holder>.
         create a particle in position<box1>.
