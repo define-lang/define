@@ -21,9 +21,6 @@ from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
 
 _PARSER = parser.Parser()
-_TEST_FQUN = "my.domain.com:my_lib"
-
-type PositionReferenceFor = Callable[[str], ast.PositionReference]
 
 
 def parse_and_transform(
@@ -35,52 +32,6 @@ def parse_and_transform(
     assert result.exception is None
     assert result.program is not None
     return result.program
-
-
-def _make_position_reference(chained_name: str) -> ast.PositionReference:
-    """Create a PositionReference by parsing a chained name in a minimal action context."""
-    elements = chained_name.split("::")
-    local_defs: list[str] = []
-    seen: set[str] = set()
-    for elem in elements:
-        if not elem.startswith("position<"):
-            continue
-        name = elem[len("position<") : -1]
-        if name.startswith("/"):
-            continue
-        if name in seen:
-            continue
-        seen.add(name)
-        local_defs.append(f"        define the position<{name}>.\n")
-
-    source = (
-        f"define the potential action<{_TEST_FQUN}:/test> {{\n"
-        "    define the position<_trigger>.\n"
-        "    it happens when {\n"
-        "        the position<_trigger> has a particle.\n"
-        "    } and it does {\n"
-        + "".join(local_defs)
-        + f"        create a particle in {chained_name}.\n"
-        "    }\n"
-        "}\n"
-    )
-    program = parse_and_transform(source)
-    action_def = program.definitions[0]
-    assert isinstance(action_def, ast.ActionDefinition)
-    for stmt in action_def.action_statements.statements:
-        if isinstance(stmt, ast.CreateParticleStatement):
-            return stmt.target_position
-    raise ValueError(f"No create statement found for: {chained_name}")
-
-
-@pytest.fixture
-def position_reference_for() -> PositionReferenceFor:
-    """Create a PositionReference from a source-form chained name.
-
-    Pass the source-form chained name (e.g. ``"position<local>::position</x>"``).
-    Local position names (without ``/``) are auto-defined in the action body.
-    """
-    return _make_position_reference
 
 
 @dataclass

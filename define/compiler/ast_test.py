@@ -7,11 +7,33 @@ from pathlib import PurePosixPath
 import pytest
 
 from define.compiler import ast
-from define.compiler.conftest import PositionReferenceFor, parse_and_transform
+from define.compiler.conftest import parse_and_transform
 from define.compiler.data_structures import define_path
 
 _LOC = ast.start_of_file_location()
 _FQUN = "my.domain.com:my_lib"
+
+
+# These AST tests intentionally construct references from source so their nodes
+# follow the same full parser and transformer path as production input.
+def _position_reference_for(chained_name: str) -> ast.PositionReference:
+    source = (
+        f"define the potential action<{_FQUN}:/test> {{\n"
+        "    define the position<_trigger>.\n"
+        "    it happens when {\n"
+        "        the position<_trigger> has a particle.\n"
+        "    } and it does {\n"
+        f"        create a particle in {chained_name}.\n"
+        "    }\n"
+        "}\n"
+    )
+    program = parse_and_transform(source)
+    action_definition = program.definitions[0]
+    assert isinstance(action_definition, ast.ActionDefinition)
+    for statement in action_definition.action_statements.statements:
+        if isinstance(statement, ast.CreateParticleStatement):
+            return statement.target_position
+    raise ValueError(f"No create statement found for: {chained_name}")
 
 
 def _parse_position(source: str) -> ast.PositionDefinition:
@@ -421,16 +443,16 @@ class TestChainedNameConstruction:
 
 
 class TestChainedNameCanonical:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>")
+    def test_single_element(self):
+        pos = _position_reference_for("position<local>")
         assert pos.canonical_chained_name == "position<local>"
 
-    def test_two_elements(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_two_elements(self):
+        pos = _position_reference_for("position<local>::position</x>")
         assert pos.canonical_chained_name == f"position<local>::position<{_FQUN}:/x>"
 
-    def test_with_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>::position<iface>")
+    def test_with_action(self):
+        pos = _position_reference_for("position<local>::action</act>::position<iface>")
         assert (
             pos.canonical_chained_name
             == f"position<local>::action<{_FQUN}:/act>::position<iface>"
@@ -438,12 +460,12 @@ class TestChainedNameCanonical:
 
 
 class TestChainedNameCanonicalTuple:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>")
+    def test_single_element(self):
+        pos = _position_reference_for("position<local>")
         assert pos.canonical_chained_name_tuple == ("position<local>",)
 
-    def test_three_elements(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>::position<iface>")
+    def test_three_elements(self):
+        pos = _position_reference_for("position<local>::action</act>::position<iface>")
         assert pos.canonical_chained_name_tuple == (
             "position<local>",
             f"action<{_FQUN}:/act>",
@@ -452,12 +474,12 @@ class TestChainedNameCanonicalTuple:
 
 
 class TestSourceChainedName:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>")
+    def test_single_element(self):
+        pos = _position_reference_for("position<local>")
         assert pos.source_chained_name == "position<local>"
 
-    def test_chained_with_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for(
+    def test_chained_with_action(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         assert (
@@ -467,21 +489,21 @@ class TestSourceChainedName:
 
 
 class TestGetLastAction:
-    def test_no_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_no_action(self):
+        pos = _position_reference_for("position<local>::position</x>")
         assert pos.get_last_action() is None
 
-    def test_with_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>::position<iface>")
+    def test_with_action(self):
+        pos = _position_reference_for("position<local>::action</act>::position<iface>")
         result = pos.get_last_action()
         assert result is not None
         assert result.source_typed_name == "action</act>"
 
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        assert position_reference_for("position<local>").get_last_action() is None
+    def test_single_element(self):
+        assert _position_reference_for("position<local>").get_last_action() is None
 
-    def test_two_actions(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for(
+    def test_two_actions(self):
+        pos = _position_reference_for(
             "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
         )
         result = pos.get_last_action()
@@ -490,18 +512,18 @@ class TestGetLastAction:
 
 
 class TestGetChainToLastAction:
-    def test_no_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_no_action(self):
+        pos = _position_reference_for("position<local>::position</x>")
         assert pos.get_chain_to_last_action() is None
 
-    def test_with_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>::position<iface>")
+    def test_with_action(self):
+        pos = _position_reference_for("position<local>::action</act>::position<iface>")
         result = pos.get_chain_to_last_action()
         assert isinstance(result, ast.ActionReference)
         assert result.source_chained_name == "position<local>::action</act>"
 
-    def test_two_actions(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for(
+    def test_two_actions(self):
+        pos = _position_reference_for(
             "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
         )
         result = pos.get_chain_to_last_action()
@@ -513,26 +535,24 @@ class TestGetChainToLastAction:
 
 
 class TestGetLastActionChildren:
-    def test_no_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_no_action(self):
+        pos = _position_reference_for("position<local>::position</x>")
         assert pos.get_last_action_children() is None
 
-    def test_with_action_and_interface(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for(
+    def test_with_action_and_interface(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         result = pos.get_last_action_children()
         assert result is not None
         assert result.source_chained_name == "position<iface>::position</child>"
 
-    def test_action_at_end(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>")
+    def test_action_at_end(self):
+        pos = _position_reference_for("position<local>::action</act>")
         assert pos.get_last_action_children() is None
 
-    def test_two_actions(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for(
+    def test_two_actions(self):
+        pos = _position_reference_for(
             "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
         )
         result = pos.get_last_action_children()
@@ -541,19 +561,17 @@ class TestGetLastActionChildren:
 
 
 class TestWalkParentPositions:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>")
+    def test_single_element(self):
+        pos = _position_reference_for("position<local>")
         assert list(pos.walk_parent_positions()) == []
 
-    def test_two_positions(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_two_positions(self):
+        pos = _position_reference_for("position<local>::position</x>")
         parents = [p.source_chained_name for p in pos.walk_parent_positions()]
         assert parents == ["position<local>"]
 
-    def test_position_action_position_position(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for(
+    def test_position_action_position_position(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         parents = [p.source_chained_name for p in pos.walk_parent_positions()]
@@ -562,10 +580,8 @@ class TestWalkParentPositions:
             "position<local>::action</act>::position<iface>",
         ]
 
-    def test_three_positions_no_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for("position<local>::position</x>::position</y>")
+    def test_three_positions_no_action(self):
+        pos = _position_reference_for("position<local>::position</x>::position</y>")
         parents = [p.source_chained_name for p in pos.walk_parent_positions()]
         assert parents == [
             "position<local>",
@@ -574,32 +590,30 @@ class TestWalkParentPositions:
 
 
 class TestParentPosition:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        assert position_reference_for("position<local>").parent_position() is None
+    def test_single_element(self):
+        assert _position_reference_for("position<local>").parent_position() is None
 
-    def test_two_positions(self, position_reference_for: PositionReferenceFor):
-        parent = position_reference_for(
+    def test_two_positions(self):
+        parent = _position_reference_for(
             "position<local>::position</x>"
         ).parent_position()
         assert parent is not None
         assert parent.source_chained_name == "position<local>"
 
-    def test_three_positions(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::position</x>::position</y>")
+    def test_three_positions(self):
+        pos = _position_reference_for("position<local>::position</x>::position</y>")
         parent = pos.parent_position()
         assert parent is not None
         assert parent.source_chained_name == "position<local>::position</x>"
 
-    def test_skips_action(self, position_reference_for: PositionReferenceFor):
-        pos = position_reference_for("position<local>::action</act>::position<iface>")
+    def test_skips_action(self):
+        pos = _position_reference_for("position<local>::action</act>::position<iface>")
         parent = pos.parent_position()
         assert parent is not None
         assert parent.source_chained_name == "position<local>"
 
-    def test_nearest_parent_includes_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for(
+    def test_nearest_parent_includes_action(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         parent = pos.parent_position()
@@ -609,10 +623,8 @@ class TestParentPosition:
             == "position<local>::action</act>::position<iface>"
         )
 
-    def test_iterative_walk_leaf_to_root(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for(
+    def test_iterative_walk_leaf_to_root(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         parents: list[str] = []
@@ -627,26 +639,24 @@ class TestParentPosition:
 
 
 class TestChainParentPosition:
-    def test_single_element(self, position_reference_for: PositionReferenceFor):
-        key = position_reference_for("position<local>").canonical_chained_name_tuple
+    def test_single_element(self):
+        key = _position_reference_for("position<local>").canonical_chained_name_tuple
         assert ast.chain_parent_position(key) is None
 
-    def test_two_positions(self, position_reference_for: PositionReferenceFor):
-        key = position_reference_for(
+    def test_two_positions(self):
+        key = _position_reference_for(
             "position<local>::position</x>"
         ).canonical_chained_name_tuple
         assert ast.chain_parent_position(key) == ("position<local>",)
 
-    def test_skips_action(self, position_reference_for: PositionReferenceFor):
-        key = position_reference_for(
+    def test_skips_action(self):
+        key = _position_reference_for(
             "position<local>::action</act>::position<iface>"
         ).canonical_chained_name_tuple
         assert ast.chain_parent_position(key) == ("position<local>",)
 
-    def test_matches_object_form_including_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for(
+    def test_matches_object_form_including_action(self):
+        pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
         object_parent = pos.parent_position()
@@ -658,34 +668,28 @@ class TestChainParentPosition:
 
 
 class TestChainInCallee:
-    def test_interface_position_is_a_child_of_the_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        caller = position_reference_for(
+    def test_interface_position_is_a_child_of_the_action(self):
+        caller = _position_reference_for(
             "position<box>::action</b>"
         ).canonical_chained_name_tuple
-        absolute = position_reference_for(
+        absolute = _position_reference_for(
             "position<box>::action</b>::position<iface>"
         ).canonical_chained_name_tuple
         assert ast.chain_in_callee(caller, absolute) == ("position<iface>",)
 
-    def test_implied_position_is_a_child_of_the_actions_parent_position(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        caller = position_reference_for(
+    def test_implied_position_is_a_child_of_the_actions_parent_position(self):
+        caller = _position_reference_for(
             "position<box>::action</b>"
         ).canonical_chained_name_tuple
-        absolute = position_reference_for(
+        absolute = _position_reference_for(
             "position<box>::position</x>"
         ).canonical_chained_name_tuple
         assert ast.chain_in_callee(caller, absolute) == (
             "position<my.domain.com:my_lib:/x>",
         )
 
-    def test_inverts_chain_in_caller(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        caller = position_reference_for(
+    def test_inverts_chain_in_caller(self):
+        caller = _position_reference_for(
             "position<box>::action</b>"
         ).canonical_chained_name_tuple
         for source in (
@@ -694,73 +698,59 @@ class TestChainInCallee:
             "position</x>::position</y>",
             "action</c>::position<iface>",
         ):
-            local = position_reference_for(source).canonical_chained_name_tuple
+            local = _position_reference_for(source).canonical_chained_name_tuple
             assert (
                 ast.chain_in_callee(caller, ast.chain_in_caller(caller, local)) == local
             )
 
 
 class TestInCaller:
-    def test_implied_quality_drops_action_segment(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        caller = position_reference_for("position<box>::action</b>")
+    def test_implied_quality_drops_action_segment(self):
+        inner = _position_reference_for("position</x>")
+        caller = _position_reference_for("position<box>::action</b>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == "position<box>::position</x>"
 
-    def test_implied_quality_chain_drops_action_segment(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>::position</y>")
-        caller = position_reference_for("position<box>::action</b>")
+    def test_implied_quality_chain_drops_action_segment(self):
+        inner = _position_reference_for("position</x>::position</y>")
+        caller = _position_reference_for("position<box>::action</b>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == "position<box>::position</x>::position</y>"
 
-    def test_interface_position_nests_under_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position<iface>")
-        caller = position_reference_for("position<box>::action</b>")
+    def test_interface_position_nests_under_action(self):
+        inner = _position_reference_for("position<iface>")
+        caller = _position_reference_for("position<box>::action</b>")
         result = inner.in_caller(caller)
         assert (
             result.source_chained_name == "position<box>::action</b>::position<iface>"
         )
 
-    def test_implied_action_iface_drops_action_segment(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("action</c>::position<iface>")
-        caller = position_reference_for("position<box>::action</b>")
+    def test_implied_action_iface_drops_action_segment(self):
+        inner = _position_reference_for("action</c>::position<iface>")
+        caller = _position_reference_for("position<box>::action</b>")
         result = inner.in_caller(caller)
         assert (
             result.source_chained_name == "position<box>::action</c>::position<iface>"
         )
 
-    def test_caller_without_parent_implied_returns_self(
-        self, position_reference_for: PositionReferenceFor
-    ):
+    def test_caller_without_parent_implied_returns_self(self):
         # When the caller's action chain has no parent position (e.g., an
         # implied action triggered directly), an implied quality lives at
         # the caller's top-level scope, not under any interface position.
-        inner = position_reference_for("position</x>")
-        caller = position_reference_for("action</b>")
+        inner = _position_reference_for("position</x>")
+        caller = _position_reference_for("action</b>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == "position</x>"
 
-    def test_caller_without_parent_interface_concatenates(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position<iface>")
-        caller = position_reference_for("action</b>")
+    def test_caller_without_parent_interface_concatenates(self):
+        inner = _position_reference_for("position<iface>")
+        caller = _position_reference_for("action</b>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == "action</b>::position<iface>"
 
-    def test_long_caller_chain_implied_drops_trailing_action(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        caller = position_reference_for(
+    def test_long_caller_chain_implied_drops_trailing_action(self):
+        inner = _position_reference_for("position</x>")
+        caller = _position_reference_for(
             "position<box>::action</foo>::position<iface>::action</bar>"
         )
         result = inner.in_caller(caller)
@@ -768,11 +758,9 @@ class TestInCaller:
             "position<box>::action</foo>::position<iface>::position</x>"
         )
 
-    def test_long_caller_chain_interface_concatenates(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position<inner_iface>")
-        caller = position_reference_for(
+    def test_long_caller_chain_interface_concatenates(self):
+        inner = _position_reference_for("position<inner_iface>")
+        caller = _position_reference_for(
             "position<box>::action</foo>::position<iface>::action</bar>"
         )
         result = inner.in_caller(caller)
@@ -781,11 +769,9 @@ class TestInCaller:
             "::action</bar>::position<inner_iface>"
         )
 
-    def test_two_action_caller_chain_implied_chained_inner(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>::position</y>")
-        caller = position_reference_for(
+    def test_two_action_caller_chain_implied_chained_inner(self):
+        inner = _position_reference_for("position</x>::position</y>")
+        caller = _position_reference_for(
             "position<box>::action</foo>::position<iface>::action</bar>"
         )
         result = inner.in_caller(caller)
@@ -793,11 +779,9 @@ class TestInCaller:
             "position<box>::action</foo>::position<iface>::position</x>::position</y>"
         )
 
-    def test_two_action_caller_chain_interface_chained_inner(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position<inner_iface>::position</child>")
-        caller = position_reference_for(
+    def test_two_action_caller_chain_interface_chained_inner(self):
+        inner = _position_reference_for("position<inner_iface>::position</child>")
+        caller = _position_reference_for(
             "position<box>::action</foo>::position<iface>::action</bar>"
         )
         result = inner.in_caller(caller)
@@ -806,19 +790,15 @@ class TestInCaller:
             "::action</bar>::position<inner_iface>::position</child>"
         )
 
-    def test_position_ending_caller_concatenates_implied(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        caller = position_reference_for("position<box>")
+    def test_position_ending_caller_concatenates_implied(self):
+        inner = _position_reference_for("position</x>")
+        caller = _position_reference_for("position<box>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == "position<box>::position</x>"
 
-    def test_position_ending_caller_concatenates_implied_chain(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>::position</y>")
-        caller = position_reference_for("position<box>::position</wrap>")
+    def test_position_ending_caller_concatenates_implied_chain(self):
+        inner = _position_reference_for("position</x>::position</y>")
+        caller = _position_reference_for("position<box>::position</wrap>")
         result = inner.in_caller(caller)
         assert result.source_chained_name == (
             "position<box>::position</wrap>::position</x>::position</y>"
@@ -826,36 +806,28 @@ class TestInCaller:
 
 
 class TestWithPrefix:
-    def test_concatenates_typed_names(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        prefix = position_reference_for("position<box>::action</b>")
+    def test_concatenates_typed_names(self):
+        inner = _position_reference_for("position</x>")
+        prefix = _position_reference_for("position<box>::action</b>")
         result = inner.with_prefix(prefix)
         assert result.source_chained_name == "position<box>::action</b>::position</x>"
 
-    def test_preserves_position_reference_subclass(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        prefix = position_reference_for("position<box>")
+    def test_preserves_position_reference_subclass(self):
+        inner = _position_reference_for("position</x>")
+        prefix = _position_reference_for("position<box>")
         result = inner.with_prefix(prefix)
         assert isinstance(result, ast.PositionReference)
 
-    def test_preserves_self_location_not_prefix_location(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>")
-        prefix = position_reference_for("position<box>")
+    def test_preserves_self_location_not_prefix_location(self):
+        inner = _position_reference_for("position</x>")
+        prefix = _position_reference_for("position<box>")
         result = inner.with_prefix(prefix)
         assert result.location == inner.location
         assert result.location != prefix.location
 
-    def test_multi_element_prefix_and_inner(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        inner = position_reference_for("position</x>::position</y>")
-        prefix = position_reference_for("position<box>::position</wrap>")
+    def test_multi_element_prefix_and_inner(self):
+        inner = _position_reference_for("position</x>::position</y>")
+        prefix = _position_reference_for("position<box>::position</wrap>")
         result = inner.with_prefix(prefix)
         assert result.source_chained_name == (
             "position<box>::position</wrap>::position</x>::position</y>"
@@ -877,10 +849,8 @@ def _action_typed_name(path: str) -> ast.GlobalTypedNameReference:
 
 
 class TestActionReference:
-    def test_rejects_chain_ending_in_position(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        pos = position_reference_for("position<local>::position</x>")
+    def test_rejects_chain_ending_in_position(self):
+        pos = _position_reference_for("position<local>::position</x>")
         with pytest.raises(ValueError, match="must be an action"):
             _ = ast.ActionReference(location=pos.location, typed_names=pos.typed_names)
 
@@ -891,37 +861,29 @@ class TestActionReference:
 
 
 class TestWithSuffix:
-    def test_with_position_suffix_returns_position_reference(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        base = position_reference_for("position<box>::action</act>::position<iface>")
-        suffix = position_reference_for("position</child>")
+    def test_with_position_suffix_returns_position_reference(self):
+        base = _position_reference_for("position<box>::action</act>::position<iface>")
+        suffix = _position_reference_for("position</child>")
         result = base.with_position_suffix(*suffix.typed_names)
         assert isinstance(result, ast.PositionReference)
         assert result.source_chained_name == (
             "position<box>::action</act>::position<iface>::position</child>"
         )
 
-    def test_with_position_suffix_rejects_action_suffix(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        base = position_reference_for("position<box>")
+    def test_with_position_suffix_rejects_action_suffix(self):
+        base = _position_reference_for("position<box>")
         with pytest.raises(ValueError, match="must be a position"):
             _ = base.with_position_suffix(_action_typed_name("/act"))
 
-    def test_with_action_suffix_returns_action_reference(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        base = position_reference_for("position<box>")
+    def test_with_action_suffix_returns_action_reference(self):
+        base = _position_reference_for("position<box>")
         result = base.with_action_suffix(_action_typed_name("/act"))
         assert isinstance(result, ast.ActionReference)
         assert result.source_chained_name == (
             "position<box>::action<my.domain.com:my_lib:/act>"
         )
 
-    def test_with_action_suffix_rejects_position_suffix(
-        self, position_reference_for: PositionReferenceFor
-    ):
-        base = position_reference_for("position<box>")
+    def test_with_action_suffix_rejects_position_suffix(self):
+        base = _position_reference_for("position<box>")
         with pytest.raises(ValueError, match="must be an action"):
             _ = base.with_action_suffix(*base.typed_names)
