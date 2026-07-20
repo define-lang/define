@@ -1,12 +1,17 @@
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 filegroup(
+    name = "codegen_testdata",
+    testonly = True,
+    srcs = [":generator_integration"],
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
+
+filegroup(
     name = "generator_integration",
+    testonly = True,
     srcs = glob(["**/*"]),
-    visibility = [
-        "//define/compiler/codegen:__pkg__",
-        "//define/testdata:__pkg__",
-    ],
+    visibility = ["//define/testdata:__pkg__"],
 )
 
 # --- Type-checking ---

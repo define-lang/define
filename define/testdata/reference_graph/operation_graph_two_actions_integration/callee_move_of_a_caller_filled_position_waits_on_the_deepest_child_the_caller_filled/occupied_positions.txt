@@ -1,0 +1,5 @@
+action<my.domain.com:my_lib:/test>::position<gateway>
+action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>
+action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>::position<my.domain.com:my_lib:/a>
+action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>::position<my.domain.com:my_lib:/a>::position<my.domain.com:my_lib:/deep>

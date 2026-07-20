@@ -9,6 +9,12 @@ py_library(
 )
 
 py_library(
+    name = "generated_program_runner",
+    srcs = ["generated_program_runner.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_library(
     name = "generator",
     srcs = ["generator.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -24,8 +30,9 @@ py_test(
     name = "generator_integration_test",
     size = "small",
     srcs = ["generator_integration_test.py"],
-    data = ["//define/testdata/codegen/generator_integration"],
+    data = ["//define/testdata/codegen"],
     deps = [
+        ":generated_program_runner",
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
         "//define/runtime:literal",  # keep
@@ -70,6 +77,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":codegen",
+        ":generated_program_runner",
         ":generator",
         ":generator_integration_test",
         ":generator_test",

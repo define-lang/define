@@ -55,7 +55,12 @@ known-first-party = ["define", "defcl", "tools"]
 "define/compiler/**/*.py" = [
     "S105", # Stop complaining about assigning things to "token"
 ]
-"**/testdata/codegen/**/expected/**/*.py" = [
+"**/testdata/**/expected/**/*.py" = [
+    "D100", # Generated code doesn't need module docstrings.
+    "D101", # Generated code doesn't need class docstrings.
+    "D102", # Generated code doesn't need method docstrings.
+    "D103", # Generated code doesn't need function docstrings.
+    "D107", # Generated code doesn't need __init__ docstrings.
     "I001", # Import ordering depends on isort first-party config of the target project.
     "N801", # Generated code may produce non-CapWords class names.
 ]
@@ -78,19 +83,11 @@ known-first-party = ["define", "defcl", "tools"]
 "define/compiler/ast.py" = [
     "A005", # Module intentionally named ast for AST definitions.
 ]
-"**/testdata/codegen/**/*.py" = [
-    "D100", # Generated code doesn't need module docstrings.
-    "D101", # Generated code doesn't need class docstrings.
-    "D102", # Generated code doesn't need method docstrings.
-    "D103", # Generated code doesn't need function docstrings.
-    "D107", # Generated code doesn't need __init__ docstrings.
-]
-
 [tool.ruff]
 force-exclude = true
 
 [tool.ruff.format]
-exclude = ["**/testdata/codegen/**/expected/**/*.py"]
+exclude = ["**/testdata/**/expected/**/*.py"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
@@ -152,6 +149,11 @@ exclude = [
 
 [[tool.basedpyright.executionEnvironments]]
 root = "define/testdata/codegen"
+extraPaths = ["."]
+reportImplicitRelativeImport = false
+
+[[tool.basedpyright.executionEnvironments]]
+root = "define/testdata/reference_graph"
 extraPaths = ["."]
 reportImplicitRelativeImport = false
 

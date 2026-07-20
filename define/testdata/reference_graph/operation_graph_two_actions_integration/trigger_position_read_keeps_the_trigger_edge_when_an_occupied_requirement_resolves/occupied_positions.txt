@@ -1,0 +1,3 @@
+action<my.domain.com:my_lib:/test>::position<gw>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/worker>::position<box>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/worker>::position<box>::position<my.domain.com:my_lib:/y>

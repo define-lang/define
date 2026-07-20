@@ -111,6 +111,6 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
             "@pypi//types_pyyaml",
         ],
         env = env,
-        tags = ["pyright"],
+        tags = ["no-lint", "pyright"],
         **kwargs
     )

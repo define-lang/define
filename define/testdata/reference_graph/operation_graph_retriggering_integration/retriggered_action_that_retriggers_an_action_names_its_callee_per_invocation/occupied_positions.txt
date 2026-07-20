@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/test>::position<holder>
+action<my.domain.com:my_lib:/test>::position<holder>::action<my.domain.com:my_lib:/middle>::position<trigger_pos>

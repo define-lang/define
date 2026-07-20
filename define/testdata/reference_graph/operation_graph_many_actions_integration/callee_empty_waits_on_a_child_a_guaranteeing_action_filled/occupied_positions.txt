@@ -1,0 +1,5 @@
+position<my.domain.com:my_lib:/parent>
+action<my.domain.com:my_lib:/filler>::position<trigger_pos>
+action<my.domain.com:my_lib:/mover>::position<trigger_pos>
+action<my.domain.com:my_lib:/mover>::position<dest>
+action<my.domain.com:my_lib:/mover>::position<dest>::position<my.domain.com:my_lib:/gc>

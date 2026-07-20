@@ -1,0 +1,6 @@
+action<my.domain.com:my_lib:/test>::position<outer_holder>
+action<my.domain.com:my_lib:/test>::position<outer_holder>::action<my.domain.com:my_lib:/outer>::position<middle_holder>
+action<my.domain.com:my_lib:/test>::position<outer_holder>::action<my.domain.com:my_lib:/outer>::position<middle_holder>::action<my.domain.com:my_lib:/middle>::position<input>
+action<my.domain.com:my_lib:/test>::position<outer_holder>::action<my.domain.com:my_lib:/outer>::position<middle_holder>::action<my.domain.com:my_lib:/middle>::position<input>::action<my.domain.com:my_lib:/inner>::position<run>
+action<my.domain.com:my_lib:/test>::position<outer_holder>::action<my.domain.com:my_lib:/outer>::position<middle_holder>::action<my.domain.com:my_lib:/middle>::position<run>
+action<my.domain.com:my_lib:/test>::position<outer_holder>::action<my.domain.com:my_lib:/outer>::position<run>

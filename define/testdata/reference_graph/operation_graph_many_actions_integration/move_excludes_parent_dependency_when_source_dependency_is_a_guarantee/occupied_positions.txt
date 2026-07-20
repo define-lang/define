@@ -1,0 +1,2 @@
+position<my.domain.com:my_lib:/box>
+position<my.domain.com:my_lib:/box>::position<my.domain.com:my_lib:/destination>

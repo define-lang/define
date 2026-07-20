@@ -1,0 +1,5 @@
+position<my.domain.com:my_lib:/parent>
+position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>
+position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>::position<my.domain.com:my_lib:/grandchild1>
+position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>::position<my.domain.com:my_lib:/grandchild2>
+action<my.domain.com:my_lib:/inner>::position<trigger_pos>

@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/triggered>::position<input>
+action<my.domain.com:my_lib:/triggered>::position<run>

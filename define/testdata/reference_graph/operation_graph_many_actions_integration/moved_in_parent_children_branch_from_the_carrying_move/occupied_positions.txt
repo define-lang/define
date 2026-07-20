@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/test>::position<mw>
+action<my.domain.com:my_lib:/test>::position<mw>::action<my.domain.com:my_lib:/middle>::position<run>

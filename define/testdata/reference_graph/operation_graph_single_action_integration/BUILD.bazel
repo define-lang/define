@@ -1,9 +1,32 @@
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+filegroup(
+    name = "codegen_testdata",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
+
 filegroup(
     name = "operation_graph_single_action_integration",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+            "**/occupied_positions.txt",
+        ],
+    ),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
         "//define/testdata:__pkg__",
     ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    srcs = glob(["**/expected/**/*.py"]),
+    deps = ["//define/runtime:literal"],
 )

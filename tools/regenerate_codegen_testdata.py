@@ -4,11 +4,13 @@ Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_
 """
 
 import contextlib
+import glob
 import shutil
 import sys
 from pathlib import Path
 
 from define.compiler import driver
+from define.compiler.codegen import generated_program_runner
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TESTDATA_ROOT = REPO_ROOT / "define/testdata/codegen"
@@ -28,13 +30,23 @@ def _regenerate_case(case_dir: Path) -> bool:
             for diag in result.result.all_diagnostics:
                 print(f"    {diag}")
             return False
+    runtime_result = generated_program_runner.run_generated_program(expected_dir)
+    if runtime_result.returncode != 0:
+        print(f"  {case_dir.relative_to(TESTDATA_ROOT)}: FAILED")
+        print(runtime_result.stderr)
+        return False
+    occupied_positions = case_dir / "occupied_positions.txt"
+    if not occupied_positions.exists():
+        _ = occupied_positions.write_text(runtime_result.stdout)
     print(f"  {case_dir.relative_to(TESTDATA_ROOT)}: OK")
     return True
 
 
 def main():
     """Regenerate all expected output files."""
-    case_dirs = sorted(path.parent for path in TESTDATA_ROOT.glob("*/*/test.dfn"))
+    case_dirs = sorted(
+        Path(path).parent for path in glob.glob(str(TESTDATA_ROOT / "*/*/test.dfn"))
+    )
     print(f"Regenerating {len(case_dirs)} test cases...")
     success = True
     for case_dir in case_dirs:

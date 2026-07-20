@@ -1,0 +1,17 @@
+_CODEGEN_MODULES = subpackages(
+    include = ["*"],
+    exclude = ["generator"],
+)
+
+filegroup(
+    name = "codegen",
+    testonly = True,
+    srcs = [
+        "//define/testdata/codegen/%s:codegen_testdata" % package
+        for package in _CODEGEN_MODULES
+    ],
+    visibility = [
+        "//define/compiler/codegen:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)

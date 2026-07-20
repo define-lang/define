@@ -1,0 +1,4 @@
+action<my.domain.com:my_lib:/test>::position<first_result>
+action<my.domain.com:my_lib:/test>::position<second_result>
+action<my.domain.com:my_lib:/test>::position<gw>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/maker>::position<trigger_pos>

@@ -1,0 +1,4 @@
+action<my.domain.com:my_lib:/test>::position<gw>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/maker>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/maker>::position<held>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/maker>::position<held>::position<my.domain.com:my_lib:/c>

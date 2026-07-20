@@ -6,7 +6,10 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_library(
     name = "literal",
     srcs = ["literal.py"],
-    visibility = ["//define:__subpackages__"],
+    visibility = [
+        "//define:__subpackages__",
+        "//tools:__pkg__",
+    ],
 )
 
 py_test(

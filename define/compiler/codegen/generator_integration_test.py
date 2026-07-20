@@ -7,18 +7,20 @@ generated files, and an occupied_positions.txt runtime expectation.
 """
 
 import difflib
-import subprocess
-import sys
+import glob
 import tempfile
 from pathlib import Path
 
 import pytest
 
 from define.compiler import driver
+from define.compiler.codegen import generated_program_runner
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TESTDATA_ROOT = Path("define/testdata/codegen")
-_TEST_CASES = sorted(path.parent for path in _TESTDATA_ROOT.glob("*/*/test.dfn"))
+_TEST_CASES = sorted(
+    Path(path).parent for path in glob.glob(str(_TESTDATA_ROOT / "*/*/test.dfn"))
+)
 
 
 def _all_files(root: Path) -> dict[str, str]:
@@ -81,15 +83,7 @@ def test_generates_expected_output(
 )
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"
-    result = subprocess.run(
-        [sys.executable, str(expected_dir / "__main__.py")],
-        env={
-            "PYTHONPATH": str(expected_dir) + ":" + ":".join(sys.path),
-            "DEFINE_REPORT_OCCUPIED_POSITIONS": "1",
-        },
-        capture_output=True,
-        text=True,
-    )
+    result = generated_program_runner.run_generated_program(expected_dir)
     if result.returncode != 0:
         pytest.fail(result.stderr)
 

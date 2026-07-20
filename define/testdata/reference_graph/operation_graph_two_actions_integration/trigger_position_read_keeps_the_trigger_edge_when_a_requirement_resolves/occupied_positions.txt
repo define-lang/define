@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/test>::position<gw>
+action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/worker>::position<out>

@@ -129,7 +129,11 @@ py_binary(
 py_binary(
     name = "regenerate_codegen_testdata",
     srcs = ["regenerate_codegen_testdata.py"],
-    deps = ["//define/compiler:driver"],
+    deps = [
+        "//define/compiler:driver",
+        "//define/compiler/codegen:generated_program_runner",
+        "//define/runtime:literal",  # keep
+    ],
 )
 
 prettier_bin.prettier_binary(

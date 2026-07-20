@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/first>::position<trigger_pos>
+action<my.domain.com:my_lib:/second>::position<trigger_pos>

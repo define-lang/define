@@ -1,0 +1,2 @@
+action<my.domain.com:my_lib:/test>::position<crate>
+action<my.domain.com:my_lib:/test>::position<crate>::position<my.domain.com:my_lib:/child>

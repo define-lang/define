@@ -1,0 +1,4 @@
+action<my.domain.com:my_lib:/test>::position<gw_a>
+action<my.domain.com:my_lib:/test>::position<gw_a>::action<my.domain.com:my_lib:/worker>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<gw_b>
+action<my.domain.com:my_lib:/test>::position<gw_b>::action<my.domain.com:my_lib:/helper>::position<trigger_pos>

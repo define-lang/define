@@ -1,0 +1,8 @@
+action<my.domain.com:my_lib:/test>::position<box>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>::action<my.domain.com:my_lib:/middle>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>::action<my.domain.com:my_lib:/middle>::position<gw>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>::action<my.domain.com:my_lib:/middle>::position<gw>::action<my.domain.com:my_lib:/inner>::position<trigger_pos>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>::action<my.domain.com:my_lib:/middle>::position<gw>::action<my.domain.com:my_lib:/inner>::position<holder>
+action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/outer>::position<mw>::action<my.domain.com:my_lib:/middle>::position<gw>::action<my.domain.com:my_lib:/inner>::position<holder>::position<my.domain.com:my_lib:/a>
