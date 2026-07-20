@@ -109,7 +109,8 @@ See [define/spec/spec.md] for the language specification.
   When the reason for the change is not clear from the subject, add a concise
   commit body explaining why it exists. Avoid vague subjects such as "Refactor
   tests" or "Update files."
-- End commits written by an agent with the standard Co-authored-by trailer.
+- End commits written by an agent with the standard Co-authored-by trailer using
+  an extra -m at the end of the git commit command.
 
 ## Tests
 
