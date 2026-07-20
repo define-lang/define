@@ -119,53 +119,64 @@ snapshots), `--pods` / `--retriggers` (trigger/guarantee-consumption volume).
 
 Work out of a scratch dir (default `tmp/profile/`). Keep every artifact there —
 the `.prof` files especially — so follow-up questions don't require re-running.
+Create it before invoking any Bazel target: `mkdir -p tmp/profile`.
 
-1. **One-time local dev setup** (safe to repeat):
-   `uv run tools/setup_local_dev.py`. This copies the Bazel-generated
-   lark/protobuf modules into the source tree so `define.compiler` imports
-   resolve outside Bazel.
+> **Python environment requirement:** Run every source generator, compiler
+> profile, and performance benchmark through its Bazel target. This applies to
+> the main agent and every subagent. Do not use `uv run`, a repository `.venv`,
+> or the OS Python for profiling: `uv` can select the OS interpreter, whose
+> performance differs enough to invalidate comparisons. A subagent must build or
+> run the relevant `py_binary` with Bazel instead of creating its own uv
+> environment. OS Python is acceptable only for reading an existing `.prof` file
+> with standard-library `pstats`, because that does not measure compiler
+> performance.
 
-2. **Build the CLI** so a clean-compile sanity check is possible:
+1. **Build the CLI** so a clean-compile sanity check is possible:
    `bazelisk build --noshow_progress --ui_event_filters=-info //define/compiler:main`
 
-3. **Generate the sources** fresh (override knobs if the user asked):
+2. **Generate the sources** fresh (override knobs if the user asked):
 
    ```
-   uv run tools/generate_large_define_source.py \
-     --output tmp/profile/source.dfn --lines 50000 --max-chain-length 25
-   uv run tools/generate_action_graph_source.py \
-     --output tmp/profile/graph.dfn --layers 18 --width 64 --fan-out 32 \
+   bazelisk run //tools:generate_large_define_source -- \
+     --output "$PWD/tmp/profile/source.dfn" --lines 50000 --max-chain-length 25
+   bazelisk run //tools:generate_action_graph_source -- \
+     --output "$PWD/tmp/profile/graph.dfn" --layers 18 --width 64 --fan-out 32 \
      --destructor-fraction 0.5
-   uv run tools/generate_operation_graph_source.py \
-     --output tmp/profile/opgraph.dfn
+   bazelisk run //tools:generate_operation_graph_source -- \
+     --output "$PWD/tmp/profile/opgraph.dfn"
    ```
 
-4. **(Optional) Confirm each compiles clean** via the real binary on the stdin
+3. **(Optional) Confirm each compiles clean** via the real binary on the stdin
    path:
    `./bazel-bin/define/compiler/main compile --out /tmp/cg_check < tmp/profile/source.dfn`
    Exit 0 with no diagnostics means the profile will cover the whole pipeline.
 
-5. **Run the profiles** (needs the repo root on PYTHONPATH):
+4. **Run the profiles** through the Bazel Python toolchain:
 
    ```
-   PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
-     --source tmp/profile/source.dfn --out tmp/profile/compile.prof
-   PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
-     --source tmp/profile/graph.dfn --out tmp/profile/graph.prof
-   PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
-     --source tmp/profile/opgraph.dfn --out tmp/profile/opgraph.prof
+   bazelisk run //tools:run_profile -- \
+     --source "$PWD/tmp/profile/source.dfn" \
+     --out "$PWD/tmp/profile/compile.prof"
+   bazelisk run //tools:run_profile -- \
+     --source "$PWD/tmp/profile/graph.dfn" --out "$PWD/tmp/profile/graph.prof"
+   bazelisk run //tools:run_profile -- \
+     --source "$PWD/tmp/profile/opgraph.dfn" \
+     --out "$PWD/tmp/profile/opgraph.prof"
    ```
 
    Confirm each prints `has_errors=False`. If either is `True`, stop and report
    that run — its profile is not a valid full-pipeline sample.
 
-6. **Analyze** each `.prof` (both the with-lark and without-lark views come from
+5. **Analyze** each `.prof` (both the with-lark and without-lark views come from
    one file):
 
    ```
-   uv run python tools/analyze_profile.py --prof tmp/profile/compile.prof --top 30
-   uv run python tools/analyze_profile.py --prof tmp/profile/graph.prof --top 30
-   uv run python tools/analyze_profile.py --prof tmp/profile/opgraph.prof --top 30
+   bazelisk run //tools:analyze_profile -- \
+     --prof "$PWD/tmp/profile/compile.prof" --top 30
+   bazelisk run //tools:analyze_profile -- \
+     --prof "$PWD/tmp/profile/graph.prof" --top 30
+   bazelisk run //tools:analyze_profile -- \
+     --prof "$PWD/tmp/profile/opgraph.prof" --top 30
    ```
 
    `--exclude-file` defaults to `lark_standalone.py`. The "without" view drops
@@ -174,7 +185,7 @@ the `.prof` files especially — so follow-up questions don't require re-running
    removal). So a builtin both sides call keeps its compiler-driven cost here
    instead of being charged entirely to lark.
 
-7. **Present the results** in the format below — one set of tables per source,
+6. **Present the results** in the format below — one set of tables per source,
    plus the headline contrast between them.
 
 ## Output format
@@ -236,10 +247,11 @@ a short throwaway `pstats` snippet written into the scratch dir (don't add
 scripts to the skill). Common ones:
 
 - **"Who calls hotspot F?" / "what does F call?"** — load the `.prof` with
-  `pstats.Stats` and use `print_callers(F)` / `print_callees(F)`, or read the
-  per-edge caller dict directly: `stats.stats[func]` is
-  `(cc, nc, tt, ct, callers)`, where `callers[caller_func] = (cc, nc, tt, ct)`
-  is the callee's time attributable to that one caller edge.
+  standard-library `pstats.Stats` and use `print_callers(F)` /
+  `print_callees(F)`, or read the per-edge caller dict directly:
+  `stats.stats[func]` is `(cc, nc, tt, ct, callers)`, where
+  `callers[caller_func] = (cc, nc, tt, ct)` is the callee's time attributable to
+  that one caller edge.
 - **"Break down file X's cost by which caller in file Y drives it"** — sum each
   function-in-X's per-edge `ct` over callers whose filename is Y, grouped by
   caller line. That per-edge `ct` already includes X's nested private helpers,
@@ -255,8 +267,8 @@ scripts to the skill). Common ones:
 
 ## Notes
 
-- Run all Python via `uv run`. The profile script additionally needs
-  `PYTHONPATH=<repo-root>` because it imports `define.compiler` directly.
+- Run all compiler-performance Python through Bazel targets. Never create a uv
+  environment for a profiling run, including in a subagent worktree.
 - The scripts (`tools/run_profile.py`, `tools/analyze_profile.py`,
   `tools/generate_large_define_source.py`,
   `tools/generate_action_graph_source.py`,
