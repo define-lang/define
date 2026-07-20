@@ -157,6 +157,11 @@ root = "define/testdata/reference_graph"
 extraPaths = ["."]
 reportImplicitRelativeImport = false
 
+[[tool.basedpyright.executionEnvironments]]
+root = "define/testdata/structural"
+extraPaths = ["."]
+reportImplicitRelativeImport = false
+
 [dependency-groups]
 default = [
     "define",

@@ -15,6 +15,18 @@ _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
 
 
+def test_authority_conflict(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    assert_no_errors(validate_testdata_structural())
+
+
+def test_references_across_fquns(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    assert_no_errors(validate_testdata_structural())
+
+
 def test_sub_root_redeclares_parent_fqun(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

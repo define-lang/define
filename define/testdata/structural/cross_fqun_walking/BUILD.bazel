@@ -1,9 +1,23 @@
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
 filegroup(
     name = "cross_fqun_walking",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+            "**/occupied_positions.txt",
+        ],
+    ),
     visibility = [
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",
         "//define/testdata:__pkg__",
     ],
+)
+
+pyright_test(
+    name = "pyright_test",
+    srcs = glob(["**/expected/**/*.py"]),
+    deps = ["//define/runtime:literal"],
 )

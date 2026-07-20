@@ -11,6 +11,42 @@ from define.compiler.conftest import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
+def test_action_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_action_position_long_names(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_local_start(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_position_action(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_position_action_long_names(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_short_names(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
 class TestCreateParticle:
     def test_unknown_global_position(
         self,
