@@ -91,7 +91,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 13,
@@ -275,7 +275,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 13,
@@ -546,7 +546,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 15,
@@ -673,7 +673,7 @@ def test_destruction_contracts_verified_in_execution_order(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<one>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 13,
@@ -725,7 +725,7 @@ def test_destruction_contracts_verified_in_execution_order(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<two>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 18,

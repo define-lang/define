@@ -68,6 +68,7 @@ def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
     cause = _ref("cause")
     return action_contract.OccupiedByNewGuarantee(
         qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+        origin_position=cause,
         caused_by=cause,
         operation_positions=(cause.canonical_chained_name_tuple,),
     )

@@ -134,7 +134,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -238,7 +238,7 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -334,7 +334,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -431,7 +431,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -528,7 +528,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,

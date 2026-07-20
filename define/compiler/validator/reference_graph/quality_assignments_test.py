@@ -50,6 +50,9 @@ def test_depth_first_assignment_order_and_paths():
     assert second_assignment.quality == second
     assert isinstance(second_assignment, quality_assignments.ImpliedQualityAssignment)
     assert second_assignment.caused_by.quality == first
+    assert tuple(
+        assignment.quality for assignment in shared_assignment.assignment_path()
+    ) == (first, second, shared)
 
 
 def test_cycles_and_duplicate_reachability_assign_once():
@@ -98,6 +101,7 @@ def test_preferred_assignment_lookup_and_quality_membership():
     assignments = _build((quality,), {})
 
     assert assignments.preferred_assignment_for(quality) is assignments.assignments[0]
+    assert assignments.assignments[0].assignment_path() == (assignments.assignments[0],)
     assert assignments.has_quality(quality) is True
     assert assignments.has_quality(_quality("other")) is False
 

@@ -1,4 +1,6 @@
-"""Assigned particle qualities and their source-order implication provenance."""
+"""Assigned particle qualities and their source-order implication paths."""
+
+# TODO: Rename this module to quality_assignment.
 
 from __future__ import annotations
 
@@ -9,7 +11,7 @@ from functools import cached_property
 from define.compiler.data_structures import typed_name_dict
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Sequence
 
     from define.compiler import ast
 
@@ -25,12 +27,28 @@ class QualityAssignment:
 
     quality: ast.GlobalTypedNameReference
 
+    def assignment_path(self) -> Sequence[QualityAssignment]:
+        """Return the assignments from the direct constraint through this assignment."""
+        return (self,)
+
 
 @dataclass(frozen=True, slots=True)
 class ImpliedQualityAssignment(QualityAssignment):
     """A quality assigned by another assigned quality."""
 
     caused_by: QualityAssignment
+
+    @typing.override
+    def assignment_path(self) -> Sequence[QualityAssignment]:
+        """Return the assignments from the direct constraint through this assignment."""
+        path: list[QualityAssignment] = []
+        current: QualityAssignment = self
+        while isinstance(current, ImpliedQualityAssignment):
+            path.append(current)
+            current = current.caused_by
+        path.append(current)
+        path.reverse()
+        return path
 
 
 @typing.final

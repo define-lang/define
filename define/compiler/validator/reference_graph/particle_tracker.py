@@ -879,6 +879,7 @@ class ParticleTracker:
             if not info.from_caller:
                 return action_contract.OccupiedByNewGuarantee(
                     qualities=info.qualities,
+                    origin_position=info.origin_position,
                     caused_by=info.last_position,
                     operation_positions=operation_positions,
                 )
@@ -1111,7 +1112,7 @@ class ParticleTracker:
                     new_info = ParticleInfo(
                         last_position=guarantee.caused_by,
                         qualities=guarantee.qualities,
-                        origin_position=guarantee.caused_by,
+                        origin_position=guarantee.origin_position,
                     )
                     self._store.state[key] = _NodeState(particle_info=new_info)
                 case action_contract.ErrorGuarantee():

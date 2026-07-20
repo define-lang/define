@@ -629,6 +629,7 @@ def test_apply_guarantees_occupied_by_new():
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
                     qualities=qualities,
+                    origin_position=_POS2_REF,
                     caused_by=_POS2_REF,
                     operation_positions=(),
                 ),
@@ -1113,6 +1114,7 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
                     qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                    origin_position=_POS2_REF,
                     caused_by=_POS2_REF,
                     operation_positions=(),
                 ),
@@ -1146,6 +1148,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
                     ("position<item>",),
                     action_contract.OccupiedByNewGuarantee(
                         qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        origin_position=_POS2_REF,
                         caused_by=_POS2_REF,
                         operation_positions=(),
                     ),
@@ -1190,6 +1193,7 @@ def _make_nested_level(
                     (item,),
                     action_contract.OccupiedByNewGuarantee(
                         qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        origin_position=_POS2_REF,
                         caused_by=_POS2_REF,
                         operation_positions=(),
                     ),

@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
@@ -25,14 +23,6 @@ _D1 = "action<my.domain.com:my_lib:/d1>"
 _D2 = "action<my.domain.com:my_lib:/d2>"
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=(
-        "lifecycle diagnostics do not yet use the assignment provenance carried"
-        " by a particle created in a callee-local position"
-    ),
-)
 def test_destructor_diagnostic_retains_callee_local_assignment(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -94,19 +84,40 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert [step.kind for step in all_diags[0].propagation_chain] == [
-        action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
-        action_contract.PropagationKind.PARTICLE_ORIGIN,
-        action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-        action_contract.PropagationKind.DIRECT_INFERENCE,
-    ]
-    attachment = all_diags[0].propagation_chain[0]
-    assert attachment.location.file_path == PurePosixPath("producer.dfn")
-    assert attachment.location.line == 13
-    assert attachment.location.column == 24
-    assert attachment.enclosing_quality_name == "position<created>"
-    assert (
-        attachment.triggered_quality_name == "action<my.domain.com:my_lib:/destructor>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<created>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 13,
+            "column": 28,
+            "file_path": "producer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</producer>::position<result>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "producer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 13,
+            "column": 33,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
     )
 
 
@@ -198,7 +209,7 @@ def test_intermediate_verifies_destructor_it_can_resolve(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -256,7 +267,7 @@ def test_intermediate_verifies_destructor_it_can_resolve(
 def test_transitively_implied_destructor_attributes_to_implying_constraint(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A destructor reaches the particle only because a constraint requires the carrier action that implies it, so the attachment points at that `it has the action</carrier>` constraint, not the implication clause."""
+    """A constraint assigns the carrier action, which then assigns the destructor."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -333,18 +344,25 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    # The attachment points at the directly-declared `it has the action</carrier>`
-    # constraint that pulls in the carrier (which implies the destructor), not at
-    # the carrier's implication clause.
+    # The chain starts at the directly declared carrier constraint and then shows
+    # the carrier's implication of the destructor.
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
-            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "triggered_quality_name": _CARRIER,
             "line": 13,
             "column": 28,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_IMPLIED,
+            "enclosing_quality_name": _CARRIER,
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 2,
+            "column": 25,
+            "file_path": "carrier.dfn",
         },
         {
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
@@ -582,7 +600,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _D2,
             "line": 14,
@@ -652,7 +670,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _D1,
             "line": 4,
@@ -711,7 +729,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
 def test_directly_declared_destructor_attribution_wins_over_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When a constraint both requires the carrier that implies the destructor and directly requires the destructor itself, the attachment points at the direct declaration even though the carrier constraint is listed first."""
+    """A direct destructor constraint is preferred over an earlier implication path."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -789,12 +807,12 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    # The attachment points at the directly-declared destructor constraint
+    # The propagation chain uses the directly declared destructor constraint
     # (test.dfn line 15), not the carrier constraint listed before it (line 14).
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
             "line": 14,
@@ -1088,7 +1106,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1151,7 +1169,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1498,7 +1516,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1569,7 +1587,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,

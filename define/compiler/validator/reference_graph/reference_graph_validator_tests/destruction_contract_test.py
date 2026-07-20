@@ -157,7 +157,7 @@ def test_caller_known_child_state_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
             "line": 13,
@@ -335,7 +335,7 @@ def test_caller_known_empty_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_EMPTY_DESTRUCTOR,
             "line": 13,
@@ -477,7 +477,7 @@ def test_two_caller_attached_destructors_verified_independently(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_B,
             "line": 14,
@@ -705,7 +705,7 @@ def test_three_destructors_with_two_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_C,
             "line": 15,
@@ -755,7 +755,7 @@ def test_three_destructors_with_two_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_B,
             "line": 14,
@@ -882,7 +882,7 @@ def test_declared_quality_destructor_verified_once(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<target>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1113,7 +1113,7 @@ def test_constructor_consumer_caller_known_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
             "line": 12,
@@ -1257,7 +1257,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<target>",
             "triggered_quality_name": _DELETE_FILE1,
             "line": 4,
@@ -1296,7 +1296,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE2,
             "line": 14,

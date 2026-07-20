@@ -15,7 +15,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from define.compiler import ast, diagnostics
-from define.compiler.validator.reference_graph import action_contract, particle_tracker
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    particle_tracker,
+    quality_assignments,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,37 +38,44 @@ def trigger_violation(
     full_caller_chain: ast.PositionReference,
     acting_on_position: ast.PositionReference,
     occupant: particle_tracker.ParticleInfo | None,
+    action_assignment: action_contract.ActionAssignment | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of an action this body runs."""
-    originating = req.enclosing_action
-    runner_name = originating.typed_name.source_typed_name
-    definition_name = definition.typed_name.source_typed_name
     position_name = full_caller_chain.source_form_in_universe(
         definition.typed_name.name_content.fqun
     )
-    location = acting_on_position.location
     fill = _fill(
         position_name,
         occupant.last_position.location if occupant is not None else None,
     )
     chain = req.propagation_chain()
-    # The fill that violates an empty-requirement happens before the trigger.
-    steps = [
-        *fill,
-        action_contract.PropagationStep(
-            location=location,
-            kind=action_contract.PropagationKind.ACTION_TRIGGER,
-            enclosing_quality_name=definition_name,
-            triggered_quality_name=runner_name,
+    trigger_step = action_contract.PropagationStep(
+        location=acting_on_position.location,
+        kind=(
+            action_contract.PropagationKind.CONSTRUCTOR_TRIGGER
+            if req.enclosing_action.is_constructor
+            else action_contract.PropagationKind.ACTION_TRIGGER
         ),
-        *chain,
-    ]
+        enclosing_quality_name=definition.typed_name.source_typed_name,
+        triggered_quality_name=req.enclosing_action.typed_name.source_typed_name,
+    )
+    if action_assignment is not None:
+        steps = [
+            *action_assignment.propagation_chain(),
+            trigger_step,
+            *fill,
+            *chain,
+        ]
+    else:
+        # An ordinary action can only trigger after the state satisfying its
+        # Trigger Conditions Block already exists.
+        steps = [*fill, trigger_step, *chain]
     return _diagnostic(
-        location=location,
+        location=acting_on_position.location,
         position_name=position_name,
         required_empty=req.required_state
         == action_contract.PositionOccupancyState.EMPTY,
-        action_name=runner_name,
+        action_name=req.enclosing_action.typed_name.source_typed_name,
         steps=steps,
     )
 
@@ -74,21 +85,17 @@ def direct_destructor(
     req: action_contract.PositionRequirement,
     definition: ast.QualityDefinition,
     full_caller_chain: ast.PositionReference,
-    acting_on_position: ast.PositionReference,
     occupant: particle_tracker.ParticleInfo | None,
-    destroy_target_origin_at: ast.SourceLocation | None,
+    destructor: action_contract.CascadeDestructor,
     auto_destruction_target: ast.PositionReference | None,
-    attachment: action_contract.DestructorAttachment | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor this body fires."""
-    if destroy_target_origin_at is None:
-        raise ValueError("a destructor violation must know its particle's origin")
     enclosing_fqun = definition.typed_name.name_content.fqun
     definition_name = definition.typed_name.source_typed_name
     destructor_name = req.root_cause_action_name()
     position_name = full_caller_chain.source_form_in_universe(enclosing_fqun)
     if auto_destruction_target is None:
-        location = acting_on_position.location
+        location = destructor.position.location
         auto_destruction = None
     else:
         location = auto_destruction_target.location
@@ -99,15 +106,15 @@ def direct_destructor(
             containing_definition_name=definition_name,
             location=location,
         )
-    # The destructor is attached when the particle is created, so its attachment
-    # and origin lead; auto-destruction (if any) happens at block end, just
-    # before the destruction that fires the destructor.
     steps = [
-        *_attachment(attachment, destructor_name),
+        # The destructor is assigned when the particle is created, so its assignment
+        # and origin lead; auto-destruction (if any) happens at block end, just before
+        # the destruction that fires the destructor.
+        *destructor.action_assignment().propagation_chain(),
         action_contract.PropagationStep(
-            location=destroy_target_origin_at,
+            location=destructor.origin_position.location,
             kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
-            enclosing_quality_name=acting_on_position.source_form_in_universe(
+            enclosing_quality_name=destructor.position.source_form_in_universe(
                 enclosing_fqun
             ),
             triggered_quality_name=None,
@@ -146,7 +153,7 @@ def contract_destructor(
     particle_position: ast.PositionReference,
     particle: particle_tracker.ParticleInfo,
     trigger_step: action_contract.PropagationStep,
-    attachment: action_contract.DestructorAttachment | None,
+    quality_assignment: quality_assignments.QualityAssignment,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
     enclosing_fqun = definition.typed_name.name_content.fqun
@@ -158,7 +165,6 @@ def contract_destructor(
         inferred_at=destruction_contract.destroyed_position_local.location,
         enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
-        destructor_attachment=attachment,
     )
     position_name = resolved_position.source_form_in_universe(enclosing_fqun)
     required_empty = (
@@ -170,8 +176,9 @@ def contract_destructor(
             "an empty-requirement violation means the position is filled, "
             + "so its fill site must be known"
         )
-    leading_attachments, rest = _split_leading_attachments(
-        cascade_req.propagation_chain()
+    action_assignment = action_contract.ActionAssignment(
+        quality_assignment=quality_assignment,
+        assigned_to_position_name=particle.origin_position.typed_names[-1],
     )
     # The verifying definition's own trigger of the callee is the runner the
     # requirement gates; it is the same step that would be prepended if this
@@ -196,7 +203,7 @@ def contract_destructor(
             )
         )
     steps = [
-        *leading_attachments,
+        *action_assignment.propagation_chain(),
         action_contract.PropagationStep(
             location=particle.origin_position.location,
             kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
@@ -209,7 +216,7 @@ def contract_destructor(
         *_fill(position_name, fill_at),
         *destruction_contract.trigger_chain,
         *auto_step,
-        *rest,
+        *cascade_req.propagation_chain(),
     ]
     return _diagnostic(
         location=trigger_step.location,
@@ -235,21 +242,6 @@ def _fill(
     ]
 
 
-def _attachment(
-    attachment: action_contract.DestructorAttachment | None, destructor_name: str
-) -> list[action_contract.PropagationStep]:
-    if attachment is None:
-        return []
-    return [
-        action_contract.PropagationStep(
-            location=attachment.attached_at,
-            kind=action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
-            enclosing_quality_name=attachment.position.full_typed_name,
-            triggered_quality_name=destructor_name,
-        )
-    ]
-
-
 def _auto(
     auto_destruction: _AutoDestruction | None,
 ) -> list[action_contract.PropagationStep]:
@@ -263,23 +255,6 @@ def _auto(
             triggered_quality_name=auto_destruction.containing_definition_name,
         )
     ]
-
-
-def _split_leading_attachments(
-    chain: list[action_contract.PropagationStep],
-) -> tuple[
-    list[action_contract.PropagationStep], list[action_contract.PropagationStep]
-]:
-    """Split off the destructor-attachment steps that lead the chain.
-
-    They are encountered when the particle is created, so they precede the fill
-    and destruction events that the caller interleaves ahead of the rest.
-    """
-    rest = list(chain)
-    leading: list[action_contract.PropagationStep] = []
-    while rest and rest[0].kind == action_contract.PropagationKind.DESTRUCTOR_ATTACHED:
-        leading.append(rest.pop(0))
-    return leading, rest
 
 
 def _diagnostic(

@@ -106,7 +106,7 @@ def test_occupied_implied_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 8,
@@ -229,7 +229,7 @@ def test_empty_implied_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 8,
@@ -341,7 +341,7 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/carrier>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 3,

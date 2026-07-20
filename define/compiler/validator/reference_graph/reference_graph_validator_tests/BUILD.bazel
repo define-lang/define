@@ -509,7 +509,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
-        "@pypi//pytest",
     ],
 )
 
@@ -616,7 +615,6 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "@pypi//pytest",
     ],
 )
 

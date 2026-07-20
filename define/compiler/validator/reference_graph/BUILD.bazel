@@ -251,6 +251,7 @@ py_library(
     deps = [
         ":action_contract",
         ":particle_tracker",
+        ":quality_assignments",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],

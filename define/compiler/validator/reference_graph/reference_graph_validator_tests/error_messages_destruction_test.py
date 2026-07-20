@@ -7,8 +7,6 @@
 import textwrap
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
@@ -70,7 +68,7 @@ def test_destructor_requires_occupied_position_format(
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
+          'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 13, column 30
@@ -80,18 +78,10 @@ def test_destructor_requires_occupied_position_format(
             File "destructor.dfn", line 7, column 30""")
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=(
-        "lifecycle diagnostics do not yet use the assignment provenance carried"
-        " by a particle created in a callee-local position"
-    ),
-)
 def test_destructor_on_particle_created_in_callee_local_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """The attachment names the callee-local constraint that assigned the destructor."""
+    """The propagation chain names the callee-local constraint that assigned the destructor."""
     files = {
         "destructor.dfn": (
             "define the potential action<my.domain.com:my_lib:/destructor> {\n"
@@ -99,9 +89,9 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
             "    it happens when {\n"
             "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        define the position<_holder>.\n"
-            "        move the particle in position<item> to position<_holder>.\n"
-            "        move the particle in position<_holder> to position<item>.\n"
+            "        define the position<holder>.\n"
+            "        move the particle in position<item> to position<holder>.\n"
+            "        move the particle in position<holder> to position<item>.\n"
             "    }\n"
             "}\n"
         ),
@@ -155,8 +145,8 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
         'position<box>::action</producer>::position<result>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<created>':
-            File "producer.dfn", line 13, column 24
+          'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<created>':
+            File "producer.dfn", line 13, column 28
           the particle in 'position<box>::action</producer>::position<result>' comes from here:
             File "producer.dfn", line 16, column 30
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
@@ -223,7 +213,7 @@ def test_destructor_requires_empty_position_format(
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
+          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
@@ -235,18 +225,10 @@ def test_destructor_requires_empty_position_format(
             File "destructor_empty.dfn", line 6, column 30""")
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=(
-        "the propagation chain does not yet explain the quality implications"
-        " through which the written constraint attaches the implied destructor"
-    ),
-)
-def test_destructor_attached_through_transitive_implication_format(
+def test_destructor_assigned_through_transitive_implication_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """The attachment explains each quality implication leading from the written constraint to the destructor it transitively implies."""
+    """The diagnostic explains every implication from the constraint to the destructor."""
     files = {
         "destructor.dfn": (
             "define the potential action<my.domain.com:my_lib:/destructor> {\n"
@@ -325,12 +307,12 @@ def test_destructor_attached_through_transitive_implication_format(
         'position<box>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<box>':
+          'action<my.domain.com:my_lib:/outer_carrier>' is assigned to 'position<box>':
             File "test.dfn", line 8, column 28
           'action<my.domain.com:my_lib:/outer_carrier>' also assigns 'action<my.domain.com:my_lib:/inner_carrier>':
-            File "outer_carrier.dfn", line 2, column 5
+            File "outer_carrier.dfn", line 2, column 25
           'action<my.domain.com:my_lib:/inner_carrier>' also assigns 'action<my.domain.com:my_lib:/destructor>':
-            File "inner_carrier.dfn", line 2, column 5
+            File "inner_carrier.dfn", line 2, column 25
           the particle in 'position<box>' comes from here:
             File "test.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
@@ -403,7 +385,7 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 13, column 30
-          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<target>':
+          'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<target>':
             File "close_file.dfn", line 4, column 24
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "close_file.dfn", line 11, column 33
@@ -549,7 +531,7 @@ def test_auto_destruction_destructor_requires_empty_position_format(
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
+          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
@@ -616,7 +598,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
+          'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 13, column 30
@@ -697,7 +679,7 @@ def test_destructor_cascade_through_action_format(
             File "test.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/inner>':
             File "test.dfn", line 14, column 30
-          the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<incoming>':
+          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<incoming>':
             File "inner.dfn", line 4, column 24
           'action<my.domain.com:my_lib:/inner>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
             File "inner.dfn", line 11, column 9
@@ -709,9 +691,8 @@ def test_destructor_cascade_through_action_format(
 #
 # These cover the new error stacks where the destroying action could NOT see a
 # caller-attached destructor and recorded a Destruction Contract that the
-# triggering action verifies. The chain gains a DESTRUCTOR_ATTACHED step (the
-# attacher) after the DESTRUCTOR_CASCADE step (the destroyer): destruction comes
-# before attachment, as a causal stack.
+# triggering action verifies. The chain identifies the constraint that assigned
+# the destructor before showing the action trigger and destruction cascade.
 
 
 def test_destruction_contract_requires_occupied_format(
@@ -777,7 +758,7 @@ def test_destruction_contract_requires_occupied_format(
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/delete_file_destructor>' is attached to the particle by a constraint on 'position<my_file>':
+          'action<my.domain.com:my_lib:/delete_file_destructor>' is assigned to 'position<my_file>':
             File "test.dfn", line 13, column 28
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 17, column 30
@@ -875,7 +856,7 @@ def test_destruction_contract_requires_empty_format(
         'position<box>::action</filler>::position<incoming>::position</p2>' must be empty before 'action<my.domain.com:my_lib:/filler>' runs, and it is not empty.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/d>' is attached to the particle by a constraint on 'position<my_file>':
+          'action<my.domain.com:my_lib:/d>' is assigned to 'position<my_file>':
             File "test.dfn", line 13, column 28
           the particle in 'position<box>::action</filler>::position<incoming>' comes from here:
             File "test.dfn", line 17, column 30
@@ -959,7 +940,7 @@ def test_destruction_contract_auto_destruction_format(
         'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my_file>':
+          'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my_file>':
             File "test.dfn", line 13, column 28
           the particle in 'position<box>::action</mid>::position<incoming>' comes from here:
             File "test.dfn", line 17, column 30
@@ -1039,7 +1020,7 @@ def test_destruction_contract_constructor_attacher_format(
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/carrier>':
+          'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my.domain.com:my_lib:/carrier>':
             File "carrier.dfn", line 4, column 20
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 12, column 30
@@ -1122,7 +1103,7 @@ def test_destruction_contract_cascade_child_format(
         'position<box>::action</close_file>::position<target>::position</child>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/child_destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child>':
+          'action<my.domain.com:my_lib:/child_destructor>' is assigned to 'position<my.domain.com:my_lib:/child>':
             File "child.dfn", line 3, column 20
           the particle in 'position<box>::action</close_file>::position<target>::position</child>' comes from here:
             File "test.dfn", line 18, column 30

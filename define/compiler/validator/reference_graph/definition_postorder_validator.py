@@ -35,15 +35,6 @@ class PostorderValidationResult:
 
 
 @dataclass(frozen=True, slots=True)
-class _CascadeDestructor:
-    """One destructor in a destruction cascade, paired with the particle it fires on."""
-
-    assignment: quality_assignments.QualityAssignment
-    position: ast.PositionReference
-    origin_position: ast.PositionReference
-
-
-@dataclass(frozen=True, slots=True)
 class _ResolvedRequirement:
     """A destructor requirement whose required position's destruction-time occupancy is known here."""
 
@@ -153,7 +144,7 @@ class ActionPostorderValidator:
         inferred_at: ast.SourceLocation,
         propagated_from: action_contract.PositionRequirement | None,
         scope: scope_tracker.ScopeTracker,
-        destructor_attachment: action_contract.DestructorAttachment | None = None,
+        action_assignment: action_contract.ActionAssignment | None = None,
     ):
         """Record a requirement in this definition's contract and reflect it in the tracker.
 
@@ -188,7 +179,7 @@ class ActionPostorderValidator:
                 inferred_at=inferred_at,
                 enclosing_action=self._action_definition,
                 propagated_from=propagated_from,
-                destructor_attachment=destructor_attachment,
+                action_assignment=action_assignment,
             )
         )
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
@@ -216,6 +207,7 @@ class ActionPostorderValidator:
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
         caller_positions: list[ast.PositionReference],
+        action_assignment: action_contract.ActionAssignment | None,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
         action_parent = action_chain.parent_position()
@@ -249,6 +241,7 @@ class ActionPostorderValidator:
                 scope,
                 local_position,
                 nearest_particle,
+                action_assignment,
             )
 
     def _maybe_propagate_one_requirement(
@@ -260,6 +253,7 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
         local_position: ast.PositionReference,
         nearest_particle: tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None,
+        action_assignment: action_contract.ActionAssignment | None,
     ):
         """Propagate ``inner_req`` when the caller must satisfy it.
 
@@ -311,6 +305,7 @@ class ActionPostorderValidator:
             inferred_at=action_chain.location,
             propagated_from=inner_req,
             scope=scope,
+            action_assignment=action_assignment,
         )
 
     def _ancestor_from_contracted_position(
@@ -415,16 +410,25 @@ class ActionPostorderValidator:
             # interface positions hang off position::action</construct> while its
             # implied qualities hang off the position itself.
             action_chain = position.with_action_suffix(quality)
-            self._fire_triggered_action(contract, action_chain, position, scope)
+            self._fire_triggered_action(
+                contract,
+                action_chain,
+                position,
+                scope,
+                action_assignment=action_contract.ActionAssignment(
+                    quality_assignment=qualities.preferred_assignment_for(quality),
+                    assigned_to_position_name=position.typed_names[-1],
+                ),
+            )
 
     def _walk_destruction_cascade(
         self,
         destroyed_position: ast.PositionReference,
         *,
         is_auto_destruction: bool,
-    ) -> list[_CascadeDestructor]:
+    ) -> list[action_contract.CascadeDestructor]:
         """Walk a destruction cascade once: record a Destruction Contract per caller-passed particle, and return the destructors to fire."""
-        destructors: list[_CascadeDestructor] = []
+        destructors: list[action_contract.CascadeDestructor] = []
         self._walk_cascade_into(
             destroyed_position,
             destroyed_position,
@@ -437,7 +441,7 @@ class ActionPostorderValidator:
         self,
         position: ast.PositionReference,
         explicitly_destroyed_position: ast.PositionReference,
-        destructors: list[_CascadeDestructor],
+        destructors: list[action_contract.CascadeDestructor],
         *,
         is_auto_destruction: bool,
     ):
@@ -474,9 +478,12 @@ class ActionPostorderValidator:
                     continue
                 definition = definition_result.definition
                 if definition.is_destructor:
+                    preferred_assignment = particle.qualities.preferred_assignment_for(
+                        quality
+                    )
                     destructors.append(
-                        _CascadeDestructor(
-                            assignment=assignment,
+                        action_contract.CascadeDestructor(
+                            assignment=preferred_assignment,
                             position=position,
                             origin_position=particle.origin_position,
                         )
@@ -525,7 +532,7 @@ class ActionPostorderValidator:
 
     def _run_destructors(
         self,
-        destructors: list[_CascadeDestructor],
+        destructors: list[action_contract.CascadeDestructor],
         scope: scope_tracker.ScopeTracker,
         auto_destruction_target: ast.PositionReference | None = None,
     ):
@@ -541,24 +548,18 @@ class ActionPostorderValidator:
             quality = destructor.assignment.quality
             contract = self._action_contracts[quality]
             action_chain = destructor.position.with_action_suffix(quality)
-            attachment = self._destructor_attachment(
-                quality, destructor.origin_position, scope
-            )
             self._propagate_destructor_requirements(
-                contract, action_chain, scope, attachment
+                contract, action_chain, scope, destructor.assignment
             )
             caller_positions = [
                 requirement.position.in_caller(action_chain)
                 for requirement in contract.requirements.values()
             ]
-            self._check_requirements(
+            self._check_destructor_requirements(
                 contract,
-                destructor.position,
+                destructor,
                 caller_positions,
-                is_destructor=True,
-                destroy_target_origin_at=destructor.origin_position.location,
                 auto_destruction_target=auto_destruction_target,
-                destructor_attachment=attachment,
             )
             self._action_edges.append(
                 action_call_graph.ActionGraphEdge(
@@ -572,7 +573,7 @@ class ActionPostorderValidator:
         contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
-        attachment: action_contract.DestructorAttachment | None,
+        quality_assignment: quality_assignments.QualityAssignment,
     ):
         """Propagate requirements into this action's contract when the destroyed particle itself was from a contracted position."""
         # For `move position<incoming> to position<local_box>.` followed by
@@ -601,7 +602,10 @@ class ActionPostorderValidator:
                 inferred_at=caller_path_to_destructor.location,
                 propagated_from=inner_req,
                 scope=scope,
-                destructor_attachment=attachment,
+                action_assignment=action_contract.ActionAssignment(
+                    quality_assignment=quality_assignment,
+                    assigned_to_position_name=parent_origin.typed_names[-1],
+                ),
             )
 
     def _check_interface_fill_trigger(
@@ -652,6 +656,7 @@ class ActionPostorderValidator:
         action_chain: ast.ActionReference,
         acting_on_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
+        action_assignment: action_contract.ActionAssignment | None = None,
     ):
         # Requirement propagation, requirement checking, and the operation graph
         # each need every requirement's position from the caller's perspective
@@ -665,14 +670,19 @@ class ActionPostorderValidator:
             position.in_caller(action_chain) for position in requirement_positions
         ]
         self._propagate_action_requirements(
-            contract, action_chain, scope, caller_requirement_positions
+            contract,
+            action_chain,
+            scope,
+            caller_requirement_positions,
+            action_assignment,
         )
         self._check_requirements(
-            contract, acting_on_position, caller_requirement_positions
+            contract,
+            acting_on_position,
+            caller_requirement_positions,
+            action_assignment=action_assignment,
         )
-        self._check_destructor_requirements_from_contracts(
-            contract, action_chain, scope
-        )
+        self._check_destructor_requirements_from_contracts(contract, action_chain)
         self._nested_guarantees.append(
             self._tracker.apply_guarantees(
                 action_chain,
@@ -696,10 +706,7 @@ class ActionPostorderValidator:
         acting_on_position: ast.PositionReference,
         caller_positions: list[ast.PositionReference],
         *,
-        is_destructor: bool = False,
-        destroy_target_origin_at: ast.SourceLocation | None = None,
-        auto_destruction_target: ast.PositionReference | None = None,
-        destructor_attachment: action_contract.DestructorAttachment | None = None,
+        action_assignment: action_contract.ActionAssignment | None,
     ):
         """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position.
 
@@ -718,31 +725,29 @@ class ActionPostorderValidator:
         for req, full_caller_chain in zip(
             contract.requirements.values(), caller_positions, strict=True
         ):
-            self._check_one_requirement(
-                full_caller_chain,
-                acting_on_position,
-                req,
-                is_destructor=is_destructor,
-                destroy_target_origin_at=destroy_target_origin_at,
-                auto_destruction_target=auto_destruction_target,
-                destructor_attachment=destructor_attachment,
+            violated, occupant = self._requirement_violation_occupant(
+                full_caller_chain, req
             )
+            if violated:
+                self._diagnostics.append(
+                    requirement_violation.trigger_violation(
+                        req=req,
+                        definition=self._definition,
+                        full_caller_chain=full_caller_chain,
+                        acting_on_position=acting_on_position,
+                        occupant=occupant,
+                        action_assignment=action_assignment,
+                    )
+                )
 
-    def _check_one_requirement(
+    def _requirement_violation_occupant(
         self,
         full_caller_chain: ast.PositionReference,
-        acting_on_position: ast.PositionReference,
         req: action_contract.PositionRequirement,
-        *,
-        is_destructor: bool,
-        destroy_target_origin_at: ast.SourceLocation | None = None,
-        auto_destruction_target: ast.PositionReference | None = None,
-        destructor_attachment: action_contract.DestructorAttachment | None = None,
-    ):
-        """Emit a diagnostic if a single requirement is not satisfied."""
+    ) -> tuple[bool, particle_tracker.ParticleInfo | None]:
         occupancy = self._tracker.get_occupancy_info(full_caller_chain)
         if occupancy.has_error:
-            return
+            return False, None
         occupant = occupancy.occupant
         empty_violation = (
             req.required_state == action_contract.PositionOccupancyState.EMPTY
@@ -752,31 +757,33 @@ class ActionPostorderValidator:
             req.required_state == action_contract.PositionOccupancyState.OCCUPIED
             and occupant is None
         )
-        if not (empty_violation or occupied_violation):
-            return
-        if is_destructor:
-            self._diagnostics.append(
-                requirement_violation.direct_destructor(
-                    req=req,
-                    definition=self._definition,
-                    full_caller_chain=full_caller_chain,
-                    acting_on_position=acting_on_position,
-                    occupant=occupant,
-                    destroy_target_origin_at=destroy_target_origin_at,
-                    auto_destruction_target=auto_destruction_target,
-                    attachment=destructor_attachment,
+        return (empty_violation or occupied_violation, occupant)
+
+    def _check_destructor_requirements(
+        self,
+        contract: action_contract.ActionContract,
+        destructor: action_contract.CascadeDestructor,
+        caller_positions: list[ast.PositionReference],
+        *,
+        auto_destruction_target: ast.PositionReference | None,
+    ):
+        for req, full_caller_chain in zip(
+            contract.requirements.values(), caller_positions, strict=True
+        ):
+            violated, occupant = self._requirement_violation_occupant(
+                full_caller_chain, req
+            )
+            if violated:
+                self._diagnostics.append(
+                    requirement_violation.direct_destructor(
+                        req=req,
+                        definition=self._definition,
+                        full_caller_chain=full_caller_chain,
+                        occupant=occupant,
+                        destructor=destructor,
+                        auto_destruction_target=auto_destruction_target,
+                    )
                 )
-            )
-            return
-        self._diagnostics.append(
-            requirement_violation.trigger_violation(
-                req=req,
-                definition=self._definition,
-                full_caller_chain=full_caller_chain,
-                acting_on_position=acting_on_position,
-                occupant=occupant,
-            )
-        )
 
     def _destructor_quality_assignments(
         self, qualities: quality_assignments.QualityAssignments
@@ -806,7 +813,6 @@ class ActionPostorderValidator:
         self,
         contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
-        scope: scope_tracker.ScopeTracker,
     ):
         """Verify caller-attached destructors that a triggered action's Destruction Contracts surfaced.
 
@@ -816,8 +822,6 @@ class ActionPostorderValidator:
             action_chain: The names up to and including the triggered action.
                 Each contract's contracted positions are remapped into this caller
                 via ``in_caller(action_chain)``.
-            scope: This definition's scope, used to resolve the position
-                constraints that attach each destructor.
         """
         # The hop recording that this definition triggered the action, used
         # if its destruction contract has to be re-recorded and passed on to
@@ -831,7 +835,7 @@ class ActionPostorderValidator:
         )
         for destruction_contract in contract.destruction_contracts:
             self._check_one_destruction_contract(
-                destruction_contract, action_chain, trigger_step, scope
+                destruction_contract, action_chain, trigger_step
             )
 
     def _check_one_destruction_contract(
@@ -839,7 +843,6 @@ class ActionPostorderValidator:
         destruction_contract: action_contract.DestructionContract,
         action_chain: ast.ActionReference,
         trigger_step: action_contract.PropagationStep,
-        scope: scope_tracker.ScopeTracker,
     ):
         caller_particle_position = (
             destruction_contract.destroyed_position_contracted.in_caller(action_chain)
@@ -884,7 +887,6 @@ class ActionPostorderValidator:
                 caller_particle_position.canonical_chained_name_tuple
             ),
             trigger_step=trigger_step,
-            scope=scope,
             merged_child_state=merged_child_state,
             created_in_this_action=created_in_this_action,
             newly_verified=newly_verified,
@@ -935,7 +937,6 @@ class ActionPostorderValidator:
         destroying_definition: ast.ActionDefinition | None,
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
-        scope: scope_tracker.ScopeTracker,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
         newly_verified: list[quality_assignments.QualityAssignment],
@@ -964,7 +965,6 @@ class ActionPostorderValidator:
                     destroying_definition=destroying_definition,
                     caller_prefix_length=caller_prefix_length,
                     trigger_step=trigger_step,
-                    scope=scope,
                     merged_child_state=merged_child_state,
                     created_in_this_action=created_in_this_action,
                     newly_verified=newly_verified,
@@ -976,6 +976,9 @@ class ActionPostorderValidator:
                 ):
                     continue
                 definition = definition_result.definition
+                preferred_assignment = particle.qualities.preferred_assignment_for(
+                    quality
+                )
                 if (
                     definition.is_destructor
                     and not destruction_contract.verified_destructors.has_quality(
@@ -989,12 +992,12 @@ class ActionPostorderValidator:
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,
                         trigger_step=trigger_step,
-                        scope=scope,
+                        quality_assignment=preferred_assignment,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
                     )
                 ):
-                    newly_verified.append(assignment)
+                    newly_verified.append(preferred_assignment)
                 for interface_position in reversed(definition.interface_positions):
                     child = position.with_position_suffix(
                         quality, interface_position.typed_name
@@ -1005,7 +1008,6 @@ class ActionPostorderValidator:
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,
                         trigger_step=trigger_step,
-                        scope=scope,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
                         newly_verified=newly_verified,
@@ -1021,7 +1023,7 @@ class ActionPostorderValidator:
         destroying_definition: ast.ActionDefinition | None,
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
-        scope: scope_tracker.ScopeTracker,
+        quality_assignment: quality_assignments.QualityAssignment,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
     ) -> bool:
@@ -1030,9 +1032,6 @@ class ActionPostorderValidator:
         if destructor_contract is None or destroying_definition is None:
             return False
         action_chain = particle_position.with_action_suffix(destructor_quality)
-        attachment = self._destructor_attachment(
-            destructor_quality, particle.origin_position, scope
-        )
         # A destructor is checked exactly once: only at the action that knows the
         # state of every position it requires. Resolve the state of all required positions
         # first, before we attempt to check its requirements.
@@ -1082,54 +1081,10 @@ class ActionPostorderValidator:
                     particle_position=particle_position,
                     particle=particle,
                     trigger_step=trigger_step,
-                    attachment=attachment,
+                    quality_assignment=quality_assignment,
                 )
             )
         return True
-
-    def _destructor_attachment_location(
-        self,
-        destructor_quality: ast.GlobalTypedNameReference,
-        origin_position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> ast.SourceLocation | None:
-        """Locate the constraint that puts the destructor on the particle created in origin_position.
-
-        Prefers a constraint that is the destructor itself, then one that
-        transitively implies it. Returns None when the particle was created in a
-        callee's local position this scope cannot resolve.
-        """
-        last_origin_element = origin_position.typed_names[-1]
-        if (
-            isinstance(last_origin_element, ast.LocalTypedNameReference)
-            and len(origin_position.typed_names) == 1
-            and not scope.is_defined_local(origin_position)
-        ):
-            # TODO: Use the assignment provenance on ParticleInfo to resolve the
-            # attachment for particles created in callee-local positions.
-            return None
-        assignments = self._get_transitive_required_qualities(origin_position, scope)
-        assignment = assignments.preferred_assignment_for(destructor_quality)
-        while isinstance(assignment, quality_assignments.ImpliedQualityAssignment):
-            assignment = assignment.caused_by
-        return assignment.quality.location
-
-    def _destructor_attachment(
-        self,
-        destructor_quality: ast.GlobalTypedNameReference,
-        origin_position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> action_contract.DestructorAttachment | None:
-        """Build the destructor's attachment, or None when this scope cannot see it."""
-        attached_at = self._destructor_attachment_location(
-            destructor_quality, origin_position, scope
-        )
-        if attached_at is None:
-            return None
-        return action_contract.DestructorAttachment(
-            attached_at=attached_at,
-            position=origin_position.typed_names[-1],
-        )
 
     def _resolve_destructor_requirement(
         self,
@@ -1569,9 +1524,7 @@ class ActionPostorderValidator:
             # Local position inside an action — look up the parent action's
             # interface position definition. Chain validation guarantees the
             # parent is a global action reference whose definition exists and
-            # contains this interface position. A bare local from another scope
-            # has no parent action here; the only caller that can hold one,
-            # _destructor_attachment_location, filters it out before this point.
+            # contains this interface position.
             parent = typing.cast(
                 "ast.GlobalTypedNameReference", position.typed_names[-2]
             )

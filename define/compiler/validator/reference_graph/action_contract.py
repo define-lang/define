@@ -45,9 +45,12 @@ class PropagationKind(enum.Enum):
     # The current definition's body destroyed a caller-passed particle,
     # firing a destructor; the destructor's requirements propagated up.
     DESTRUCTOR_CASCADE = enum.auto()
-    # The current definition attached a destructor to a particle that a callee
-    # later destroyed.
-    DESTRUCTOR_ATTACHED = enum.auto()
+    # A position constraint directly assigned a quality to a position.
+    QUALITY_ASSIGNED = enum.auto()
+    # One assigned quality implied another quality.
+    QUALITY_IMPLIED = enum.auto()
+    # Creating a particle triggered one of its constructor qualities.
+    CONSTRUCTOR_TRIGGER = enum.auto()
     # The current definition's body triggered an action; the action's
     # requirements propagated up.
     ACTION_TRIGGER = enum.auto()
@@ -68,27 +71,45 @@ class PropagationStep:
 
     location: ast.SourceLocation
     kind: PropagationKind
-    # The definition whose body did the thing this step describes (where
-    # ``location`` points).
+    # The definition, quality, or position that performs or receives the event
+    # described by this step (where ``location`` points).
     enclosing_quality_name: str
-    # For non-root steps: the quality (destructor / triggered action) that the
-    # next step downward is inside.
+    # The quality triggered or assigned by an event involving two names; None
+    # when the event only describes ``enclosing_quality_name``.
     triggered_quality_name: str | None
 
 
-@dataclass(frozen=True, slots=True)
-class DestructorAttachment:
-    """The position constraint that puts a destructor on the particle."""
+@dataclass(frozen=True)
+class ActionAssignment:
+    """An action's assignment to a particle at a position."""
 
-    # The constraint line that attaches the destructor: the
-    # `it has the action</D>.` line, or the directly-declared constraint whose
-    # implication adds it.
-    # TODO: When the destructor is added through implication, also explain how
-    # this constraint line leads to the implied destructor.
-    attached_at: ast.SourceLocation
-    # The position whose constraints attach the destructor (the position the
-    # particle was created in).
-    position: ast.TypedName
+    quality_assignment: quality_assignments.QualityAssignment
+    assigned_to_position_name: ast.TypedName
+
+    def propagation_chain(self) -> list[PropagationStep]:
+        """Return the assignment and implication steps in source order."""
+        assignment_path = self.quality_assignment.assignment_path()
+        direct_assignment = assignment_path[0]
+        steps = [
+            PropagationStep(
+                location=direct_assignment.quality.location,
+                kind=PropagationKind.QUALITY_ASSIGNED,
+                enclosing_quality_name=self.assigned_to_position_name.full_typed_name,
+                triggered_quality_name=direct_assignment.quality.full_typed_name,
+            )
+        ]
+        previous_assignment = direct_assignment
+        for implied_assignment in assignment_path[1:]:
+            steps.append(
+                PropagationStep(
+                    location=implied_assignment.quality.location,
+                    kind=PropagationKind.QUALITY_IMPLIED,
+                    enclosing_quality_name=previous_assignment.quality.full_typed_name,
+                    triggered_quality_name=implied_assignment.quality.full_typed_name,
+                )
+            )
+            previous_assignment = implied_assignment
+        return steps
 
 
 @dataclass(frozen=True)
@@ -108,7 +129,9 @@ class PositionRequirement:
     inferred_at: ast.SourceLocation
     enclosing_action: ast.ActionDefinition
     propagated_from: PositionRequirement | None = None
-    destructor_attachment: DestructorAttachment | None = None
+    # The constructor or destructor assignment that caused this requirement to
+    # propagate, if relevant. Used to explain that assignment in diagnostics.
+    action_assignment: ActionAssignment | None = None
 
     def root_cause_action(self) -> ast.ActionDefinition:
         """Return the action definition that originally inferred this requirement."""
@@ -135,35 +158,14 @@ class PositionRequirement:
         chain: list[PropagationStep] = []
         current: PositionRequirement | None = self
         while current is not None:
-            chain.extend(current._propagation_steps())
+            if current.action_assignment is not None:
+                chain.extend(current.action_assignment.propagation_chain())
+            chain.append(current.propagation_step())
             current = current.propagated_from
         return chain
 
-    def _propagation_steps(self) -> list[PropagationStep]:
-        # The constraint that attaches the destructor is encountered before the
-        # destruction it eventually causes, so it is listed first.
-        steps: list[PropagationStep] = []
-        if self.destructor_attachment is not None:
-            steps.append(self._destructor_attachment_step(self.destructor_attachment))
-        steps.append(self._propagation_step())
-        return steps
-
-    def _destructor_attachment_step(
-        self, attachment: DestructorAttachment
-    ) -> PropagationStep:
-        if self.propagated_from is None:
-            raise ValueError(
-                "destructor_attachment requires a propagated_from requirement"
-            )
-        destructor = self.propagated_from.enclosing_action
-        return PropagationStep(
-            location=attachment.attached_at,
-            kind=PropagationKind.DESTRUCTOR_ATTACHED,
-            enclosing_quality_name=attachment.position.full_typed_name,
-            triggered_quality_name=destructor.typed_name.source_typed_name,
-        )
-
-    def _propagation_step(self) -> PropagationStep:
+    def propagation_step(self) -> PropagationStep:
+        """Return the event that propagated this requirement."""
         enclosing_name = self.enclosing_action.typed_name.source_typed_name
         if self.propagated_from is None:
             return PropagationStep(
@@ -175,6 +177,8 @@ class PositionRequirement:
         other_action = self.propagated_from.enclosing_action
         if other_action.is_destructor:
             kind = PropagationKind.DESTRUCTOR_CASCADE
+        elif other_action.is_constructor:
+            kind = PropagationKind.CONSTRUCTOR_TRIGGER
         else:
             kind = PropagationKind.ACTION_TRIGGER
         return PropagationStep(
@@ -223,6 +227,7 @@ class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new particle created by the action."""
 
     qualities: quality_assignments.QualityAssignments
+    origin_position: ast.PositionReference
 
 
 @dataclass(frozen=True)
@@ -296,6 +301,25 @@ class DestructionContract:
     # itself verify the destructor, so a destructor verified many hops above its
     # destruction can render every hop in between.
     trigger_chain: tuple[PropagationStep, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CascadeDestructor:
+    """One destructor in a destruction cascade, paired with the position it fires on."""
+
+    # Used only to explain the destructor assignment in diagnostics. This is the
+    # preferred assignment, so a direct constraint replaces an earlier implied
+    # assignment here.
+    assignment: quality_assignments.QualityAssignment
+    position: ast.PositionReference
+    origin_position: ast.PositionReference
+
+    def action_assignment(self) -> ActionAssignment:
+        """Return the destructor assignment used in diagnostics."""
+        return ActionAssignment(
+            quality_assignment=self.assignment,
+            assigned_to_position_name=self.origin_position.typed_names[-1],
+        )
 
 
 @dataclass(frozen=True)

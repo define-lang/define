@@ -337,7 +337,7 @@ def test_auto_destruction_failing_empty_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 8,
@@ -436,7 +436,7 @@ def test_auto_destruction_failing_occupied_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 8,
@@ -516,7 +516,7 @@ def test_constructor_auto_destruction_failing_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 7,
@@ -615,7 +615,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     assert_propagation_chain(
         box_a_diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box_a>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 8,
@@ -678,7 +678,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     assert_propagation_chain(
         box_b_diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box_b>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 13,
@@ -775,7 +775,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_q>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 3,
@@ -870,7 +870,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 4,
@@ -968,7 +968,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/implied_q>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 3,
@@ -1097,7 +1097,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 4,

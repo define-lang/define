@@ -538,20 +538,28 @@ def test_two_different_implier_constructors_conflict(
     assert_propagation_chain(
         diag,
         {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
+            "line": 6,
+            "column": 24,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</implied>",
             "triggered_quality_name": None,
             "line": 6,
             "column": 30,
             "file_path": "first_implier.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
-            "line": 12,
-            "column": 30,
-            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -682,7 +690,15 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
+            "line": 6,
+            "column": 24,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "line": 12,

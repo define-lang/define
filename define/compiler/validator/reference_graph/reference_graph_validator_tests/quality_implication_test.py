@@ -220,20 +220,28 @@ def test_diamond_transitivity_create_conflict_detected(
     assert_propagation_chain(
         diag,
         {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<source>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
+            "line": 6,
+            "column": 24,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<source>::position</implied>",
             "triggered_quality_name": None,
             "line": 6,
             "column": 30,
             "file_path": "implier_one.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
-            "line": 17,
-            "column": 30,
-            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,

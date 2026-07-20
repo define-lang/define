@@ -165,7 +165,7 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
             "line": 14,
@@ -371,7 +371,7 @@ def test_cascade_verifies_child_destructor_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CHILD_DESTRUCTOR,
             "line": 3,
@@ -588,7 +588,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 13,
@@ -717,7 +717,7 @@ def test_constructor_attaches_destructor_and_verifies_via_contract(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/carrier>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 4,
@@ -891,7 +891,7 @@ def test_constructor_resolves_implied_action_destruction_contract(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _D,
             "line": 8,
@@ -1119,7 +1119,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 13,
@@ -1342,7 +1342,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 13,
@@ -1516,7 +1516,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CHILD_DESTRUCTOR,
             "line": 3,
@@ -1577,7 +1577,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _PARENT_DESTRUCTOR,
             "line": 13,
@@ -1713,7 +1713,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<staging>",
             "triggered_quality_name": _D,
             "line": 13,

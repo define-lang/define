@@ -20,6 +20,9 @@ _OUTER = "action<my.domain.com:my_lib:/outer>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 
+# Keep Define source inline in this module so each formatted diagnostic can be
+# reviewed together with the source that produces it.
+
 
 def test_local_duplicate_particle_format(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
@@ -132,22 +135,22 @@ def test_deferred_action_chain_error_format(
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<pos_a> {\n"
         "        it may only contain particles where {\n"
-        "            it has the action</act_b>.\n"
+        "            it has the action</create_noop>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
         "        the position<pos_a> has a particle.\n"
         "    } and it does {\n"
-        "        create a particle in position<pos_a>::action</act_b>::position<no_such>.\n"
-        "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
+        "        create a particle in position<pos_a>::action</create_noop>::position<no_such>.\n"
+        "        create a particle in position<pos_a>::action</create_noop>::position<pos_c>.\n"
         "    }\n"
         "}\n"
     )
     result = validate_project_with_reference_graph(
         {
             "test.dfn": source,
-            "act_b.dfn": (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+            "create_noop.dfn": (
+                "define the potential action<my.domain.com:my_lib:/create_noop> {\n"
                 "    define the position<pos_c>.\n"
                 "    it happens when {\n"
                 "        the position<pos_c> has a particle.\n"
@@ -170,10 +173,10 @@ def test_deferred_action_chain_error_format(
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 10, column 63
-                create a particle in position<pos_a>::action</act_b>::position<no_such>.
-                                                                      ^
-        'position<no_such>' is not an interface position of the action 'action<my.domain.com:my_lib:/act_b>'; only that action's interface positions may follow it in a chained name""")
+        File "test.dfn", line 10, column 69
+                create a particle in position<pos_a>::action</create_noop>::position<no_such>.
+                                                                            ^
+        'position<no_such>' is not an interface position of the action 'action<my.domain.com:my_lib:/create_noop>'; only that action's interface positions may follow it in a chained name""")
     )
 
 
@@ -610,11 +613,11 @@ def test_move_violates_constraints_error_message(
         "        define the position<to_pos> {\n"
         "            it may only contain particles where {\n"
         "                it has the position</x>.\n"
-        "                it has the action</y>.\n"
+        "                it has the action</create_noop>.\n"
         "            }\n"
         "        }\n"
         "        create a particle in position<to_pos>.\n"
-        "        create a particle in position<to_pos>::action</y>::position<run>.\n"
+        "        create a particle in position<to_pos>::action</create_noop>::position<run>.\n"
         "        create a particle in position<to_pos>::position</x>.\n"
         "        destroy the particle in position<to_pos>.\n"
         "        create a particle in position<from_pos>.\n"
@@ -626,8 +629,8 @@ def test_move_violates_constraints_error_message(
         {
             "test.dfn": source,
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": (
-                "define the potential action<my.domain.com:my_lib:/y> {\n"
+            "create_noop.dfn": (
+                "define the potential action<my.domain.com:my_lib:/create_noop> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -651,7 +654,7 @@ def test_move_violates_constraints_error_message(
             to: position<to_pos>
         because the particle being moved does not have the required qualities:
           position</x>
-          action</y>""")
+          action</create_noop>""")
 
 
 def test_move_violates_constraints_error_message_cross_universe(
@@ -717,8 +720,8 @@ def test_constructor_requires_empty_position_format(
             "    }\n"
             "}\n"
         ),
-        "p.dfn": (
-            "define the potential action<my.domain.com:my_lib:/p> {\n"
+        "create_q.dfn": (
+            "define the potential action<my.domain.com:my_lib:/create_q> {\n"
             "    it also assigns the position</q>.\n"
             "    it happens when {\n"
             "        this particle is created.\n"
@@ -736,7 +739,7 @@ def test_constructor_requires_empty_position_format(
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
             "                it has the action</filler>.\n"
-            "                it has the action</p>.\n"
+            "                it has the action</create_q>.\n"
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
@@ -752,15 +755,17 @@ def test_constructor_requires_empty_position_format(
         File "test.dfn", line 12, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/p>' runs, and it is not empty.
+        'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/create_q>' runs, and it is not empty.
 
         This error happens because:
+          'action<my.domain.com:my_lib:/create_q>' is assigned to 'position<box>':
+            File "test.dfn", line 9, column 28
+          'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/create_q>':
+            File "test.dfn", line 12, column 30
           'position<box>::position</q>' is filled here:
             File "filler.dfn", line 6, column 30
-          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/p>':
-            File "test.dfn", line 12, column 30
-          'action<my.domain.com:my_lib:/p>' infers this requirement:
-            File "p.dfn", line 6, column 30""")
+          'action<my.domain.com:my_lib:/create_q>' infers this requirement:
+            File "create_q.dfn", line 6, column 30""")
 
 
 def test_constructor_requires_occupied_position_format(
@@ -768,8 +773,8 @@ def test_constructor_requires_occupied_position_format(
 ):
     files = {
         "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-        "p.dfn": (
-            "define the potential action<my.domain.com:my_lib:/p> {\n"
+        "destroy_q.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destroy_q> {\n"
             "    it also assigns the position</q>.\n"
             "    it happens when {\n"
             "        this particle is created.\n"
@@ -786,7 +791,7 @@ def test_constructor_requires_occupied_position_format(
             "    } and it does {\n"
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
-            "                it has the action</p>.\n"
+            "                it has the action</destroy_q>.\n"
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
@@ -802,13 +807,138 @@ def test_constructor_requires_occupied_position_format(
         File "test.dfn", line 11, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/p>' runs, and it is not occupied.
+        'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs, and it is not occupied.
 
         This error happens because:
-          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/p>':
+          'action<my.domain.com:my_lib:/destroy_q>' is assigned to 'position<box>':
+            File "test.dfn", line 8, column 28
+          'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/destroy_q>':
             File "test.dfn", line 11, column 30
-          'action<my.domain.com:my_lib:/p>' infers this requirement:
-            File "p.dfn", line 6, column 33""")
+          'action<my.domain.com:my_lib:/destroy_q>' infers this requirement:
+            File "destroy_q.dfn", line 6, column 33""")
+
+
+def test_implied_constructor_requires_occupied_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "carrier.dfn": (
+            "define the potential action<my.domain.com:my_lib:/carrier> {\n"
+            "    it also assigns the action</destroy_q>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        create a particle in action</destroy_q>::position<q>.\n"
+            "        destroy the particle in action</destroy_q>::position<q>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destroy_q.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destroy_q> {\n"
+            "    define the position<q>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        destroy the particle in position<q>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</carrier>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 11, column 30
+                create a particle in position<box>.
+                                     ^
+        'position<box>::action</destroy_q>::position<q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs, and it is not occupied.
+
+        This error happens because:
+          'action<my.domain.com:my_lib:/carrier>' is assigned to 'position<box>':
+            File "test.dfn", line 8, column 28
+          'action<my.domain.com:my_lib:/carrier>' also assigns 'action<my.domain.com:my_lib:/destroy_q>':
+            File "carrier.dfn", line 2, column 25
+          'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/destroy_q>':
+            File "test.dfn", line 11, column 30
+          'action<my.domain.com:my_lib:/destroy_q>' infers this requirement:
+            File "destroy_q.dfn", line 6, column 33""")
+
+
+def test_direct_constructor_constraint_is_preferred_over_implication_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "carrier.dfn": (
+            "define the potential action<my.domain.com:my_lib:/carrier> {\n"
+            "    it also assigns the action</destroy_q>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        create a particle in action</destroy_q>::position<q>.\n"
+            "        destroy the particle in action</destroy_q>::position<q>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destroy_q.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destroy_q> {\n"
+            "    define the position<q>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        destroy the particle in position<q>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</carrier>.\n"
+            "                it has the action</destroy_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 12, column 30
+                create a particle in position<box>.
+                                     ^
+        'position<box>::action</destroy_q>::position<q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs, and it is not occupied.
+
+        This error happens because:
+          'action<my.domain.com:my_lib:/destroy_q>' is assigned to 'position<box>':
+            File "test.dfn", line 9, column 28
+          'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/destroy_q>':
+            File "test.dfn", line 12, column 30
+          'action<my.domain.com:my_lib:/destroy_q>' infers this requirement:
+            File "destroy_q.dfn", line 6, column 33""")
 
 
 def test_destroy_in_emptied_interface_position_format(

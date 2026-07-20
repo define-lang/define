@@ -243,7 +243,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs, and it is not empty.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/d1>' is attached to the particle by a constraint on 'position<incoming>':
+          'action<my.domain.com:my_lib:/d1>' is assigned to 'position<incoming>':
             File "outer_implied.dfn", line 5, column 24
           the particle in 'action</triggered_by_outer_implied>::position<trigger_pos>' comes from here:
             File "outer_implied.dfn", line 14, column 30
@@ -276,7 +276,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs, and it is not occupied.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/d2>' is attached to the particle by a constraint on 'position<iface>':
+          'action<my.domain.com:my_lib:/d2>' is assigned to 'position<iface>':
             File "holder.dfn", line 5, column 24
           the particle in 'action</outer_implied>::position<incoming>' comes from here:
             File "outer.dfn", line 8, column 30

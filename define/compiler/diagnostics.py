@@ -814,10 +814,20 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
                     f"'{step.enclosing_quality_name}' destroys a particle,"
                     f" triggering the destructor '{step.triggered_quality_name}'"
                 )
-            case action_contract.PropagationKind.DESTRUCTOR_ATTACHED:
+            case action_contract.PropagationKind.QUALITY_ASSIGNED:
                 return (
-                    f"the destructor '{step.triggered_quality_name}' is attached to"
-                    f" the particle by a constraint on '{step.enclosing_quality_name}'"
+                    f"'{step.triggered_quality_name}' is assigned to"
+                    f" '{step.enclosing_quality_name}'"
+                )
+            case action_contract.PropagationKind.QUALITY_IMPLIED:
+                return (
+                    f"'{step.enclosing_quality_name}' also assigns"
+                    f" '{step.triggered_quality_name}'"
+                )
+            case action_contract.PropagationKind.CONSTRUCTOR_TRIGGER:
+                return (
+                    f"'{step.enclosing_quality_name}' creates a particle, triggering"
+                    f" the constructor '{step.triggered_quality_name}'"
                 )
             case action_contract.PropagationKind.ACTION_TRIGGER:
                 return (
