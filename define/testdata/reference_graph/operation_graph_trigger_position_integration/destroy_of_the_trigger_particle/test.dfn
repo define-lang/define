@@ -1,10 +1,8 @@
-# The destroy waits on the caller operation that filled the trigger position,
-# which is not an operation of this action.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
+    it also assigns the action</triggered>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
-        destroy the particle in position<run>.
+        create a particle in action</triggered>::position<run>.
     }
 }

@@ -11,7 +11,8 @@ def test_destroy_of_the_trigger_particle(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(run)": [],
+        "test.create(/triggered::run)": [],
+        "triggered.destroy(run)": ["test.create(/triggered::run)"],
     }
 
 
@@ -21,8 +22,11 @@ def test_destroy_of_the_trigger_position_waits_on_its_child_destroy(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(run::/child)": [],
-        "test.destroy(run)": ["test.destroy(run::/child)"],
+        "test.create(source)": [],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.move(source, /triggered::run)": ["test.create(source::/child)"],
+        "triggered.destroy(run::/child)": ["test.move(source, /triggered::run)"],
+        "triggered.destroy(run)": ["triggered.destroy(run::/child)"],
     }
 
 
@@ -32,7 +36,8 @@ def test_move_of_the_trigger_particle(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.move(run, dest)": [],
+        "test.create(/triggered::run)": [],
+        "triggered.move(run, dest)": ["test.create(/triggered::run)"],
     }
 
 
@@ -42,8 +47,9 @@ def test_move_of_the_trigger_particle_into_a_local_position(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.move(run, local)": [],
-        "test.destroy(local)": ["test.move(run, local)"],
+        "test.create(/triggered::run)": [],
+        "triggered.move(run, local)": ["test.create(/triggered::run)"],
+        "triggered.destroy(local)": ["triggered.move(run, local)"],
     }
 
 
@@ -53,7 +59,8 @@ def test_move_of_the_trigger_particle_into_an_implied_position(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.move(run, /implied)": [],
+        "test.create(/triggered::run)": [],
+        "triggered.move(run, /implied)": ["test.create(/triggered::run)"],
     }
 
 
@@ -63,5 +70,8 @@ def test_operation_on_a_child_of_the_trigger_position(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(run::/child)": [],
+        "test.create(source)": [],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.move(source, /triggered::run)": ["test.create(source::/child)"],
+        "triggered.destroy(run::/child)": ["test.move(source, /triggered::run)"],
     }
