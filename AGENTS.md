@@ -184,7 +184,7 @@ BUILD file generator.
 - Test all targets:
   `bazelisk test --noshow_progress --ui_event_filters=-info //...`
 - Run coverage:
-  `bazelisk coverage --noshow_progress --ui_event_filters=-info //... --combined_report=lcov --instrumentation_filter='^//(define|defcl|tools)[/:]' --test_tag_filters=-no-coverage`
+  `bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov //...`
 - Always run the full test suite
   (`bazelisk test --noshow_progress --ui_event_filters=-info //...`) when done
   working, to make sure nothing is broken.

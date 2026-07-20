@@ -5,6 +5,10 @@ build --verbose_failures
 test --test_output=errors
 test --test_summary=terse
 
+# Limit coverage instrumentation and test selection to project code.
+coverage --instrumentation_filter=^//(define|defcl|tools)[/:]
+coverage --test_tag_filters=-no-coverage
+
 # Opt into future Bazel defaults (green-field project)
 # Uncomment when protobuf sets toolchain param on run_shell actions.
 # https://github.com/protocolbuffers/protobuf/issues/19261
