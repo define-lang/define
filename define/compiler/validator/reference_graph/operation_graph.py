@@ -950,6 +950,14 @@ class OperationGraph:
         own graph names it, including a position the callee in turn took from an
         action it triggered.
         """
+        # The per-guarantee node and its one-element dependency list look like
+        # avoidable allocation costs because guarantees account for most nodes
+        # in dense action call graphs. A July 2026 experiment shared one
+        # dependency list among every GuaranteeNode produced by the same
+        # triggering, eliminating over one million list allocations in the
+        # largest profile. It failed to reduce compiler CPU: alternating
+        # unprofiled runs averaged 8.013s before and 8.037s after, so the
+        # prototype was rejected as a CPU optimization.
         node_ids: dict[tuple[str, ...], int] = {}
         for absolute_key, operation_positions in guaranteed_positions.items():
             node_id = len(self._nodes)

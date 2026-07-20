@@ -960,6 +960,12 @@ class ParticleTracker:
         # - Expanding every nested guarantee prefix before applying it preserved
         #   more ordering, but exhausted memory on the largest dense action call
         #   graph.
+        # - Passing each accepted guarantee directly to the operation graph
+        #   looked like it would remove duplicated work: it eliminated the
+        #   temporary accepted-guarantee list, the second recording pass, and the
+        #   node-id mapping pass. Creating a shared-effect object for each
+        #   guarantee instead made validation 3.1% slower, so the prototype was
+        #   rejected.
         # Do not repeat these deferral experiments unless the prototype preserves
         # the ordering behavior above and remains memory-efficient on the largest
         # dense action call graph.
