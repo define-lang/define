@@ -2,7 +2,6 @@
 # requirement, so inner.destroy(slot) must wait on that move rather than on
 # /middle's trigger of /inner.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<source>.
     define the position<box> {
         it may only contain particles where {
@@ -10,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<source>.
         create a particle in position<box>.

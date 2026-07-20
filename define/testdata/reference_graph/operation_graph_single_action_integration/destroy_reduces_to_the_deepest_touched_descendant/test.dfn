@@ -2,14 +2,13 @@
 # supersedes: the grandchild reaches the child and the box through its own
 # ancestor chain, so the destroy needs only the grandchild.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<box> {
         it may only contain particles where {
             it has the position</child>.
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::position</child>.

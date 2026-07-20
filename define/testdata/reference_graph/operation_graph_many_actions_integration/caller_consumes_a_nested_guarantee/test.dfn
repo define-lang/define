@@ -3,7 +3,6 @@
 # The move must wait on inner's final operation on <out>, resolved within
 # the middle instance test triggered.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<result>.
     define the position<box> {
         it may only contain particles where {
@@ -11,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.

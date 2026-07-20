@@ -6,7 +6,6 @@
 # helper.move(slot, out) waits on the caller fill of helper::slot, not the
 # helper trigger.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<source>.
     define the position<temp>.
     define the position<gw_a> {
@@ -20,7 +19,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<source>.
         create a particle in position<gw_a>.

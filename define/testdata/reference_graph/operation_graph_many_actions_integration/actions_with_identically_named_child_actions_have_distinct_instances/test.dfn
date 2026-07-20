@@ -1,9 +1,8 @@
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</first>.
     it also assigns the action</second>.
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in action</first>::position<trigger_pos>.
         create a particle in action</second>::position<trigger_pos>.

@@ -4,14 +4,13 @@
 # inner.create(holder::/a) waits on that destroy rather than on the /test fill
 # it superseded.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<box> {
         it may only contain particles where {
             it has the action</middle>.
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.

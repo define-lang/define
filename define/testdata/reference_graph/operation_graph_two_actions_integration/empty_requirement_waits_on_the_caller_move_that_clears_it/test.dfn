@@ -1,7 +1,6 @@
 # A move-out clears the requirement just as a destroy does, so other.create(slot)
 # should wait on the move that empties <slot>, and on nothing else.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<sink>.
     define the position<gateway> {
         it may only contain particles where {
@@ -9,7 +8,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<slot>.

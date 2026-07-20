@@ -3,14 +3,13 @@
 # callee's destroy of it and not the caller's fill of it. The destroy reaches
 # that fill on its own, through the requirement it satisfies.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<gateway> {
         it may only contain particles where {
             it has the action</other>.
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<source>.
