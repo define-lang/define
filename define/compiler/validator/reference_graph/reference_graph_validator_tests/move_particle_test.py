@@ -8,6 +8,42 @@ from define.compiler.conftest import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
+def test_local_positions_and_move(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_move_between_interface_positions(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_move_from_chained(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_move_from_interface(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_move_from_local(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_shared_interface_constraint(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
 def test_valid_local_positions(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

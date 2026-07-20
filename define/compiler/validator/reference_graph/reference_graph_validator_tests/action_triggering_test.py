@@ -16,6 +16,36 @@ _P = "action<my.domain.com:my_lib:/p>"
 _SHARED = "action<my.domain.com:my_lib:/shared>"
 
 
+def test_action_chain_cascade(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_action_with_body(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_constraints_and_init(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_empty_action(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_multi_interface_positions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
 def test_basic_cross_action_trigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

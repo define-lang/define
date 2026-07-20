@@ -10,6 +10,36 @@ from define.compiler.conftest import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
+def test_destroy_from_chained(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_destroy_from_implied(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_destroy_from_interface(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_destroy_from_local(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_destroy_then_create_same_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
 def test_destroy_empty_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
