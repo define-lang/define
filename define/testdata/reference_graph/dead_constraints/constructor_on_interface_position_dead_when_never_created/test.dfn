@@ -1,0 +1,17 @@
+# The trigger particle is supplied by the caller, not created here, so its
+# constructor never runs in /test, leaving the constraint dead.
+#
+# TODO: However, this means that actions can never demand a constructor
+# on their interface positions, so maybe we should rethink this.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the action</construct>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+    }
+}

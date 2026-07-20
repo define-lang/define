@@ -1,0 +1,20 @@
+# The moved iface lacks </parent>, so inner's occupied requirement on it is genuinely violated.
+# The moved iface carries no </parent>, and /middle recorded the missing
+# child as its requirement on iface::/parent, so the violation lands on
+# /test, which never fills it. The chain traces through the move to /inner's
+# inference.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<mw> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<mw>.
+        create a particle in position<mw>::action</middle>::position<iface>.
+        create a particle in position<mw>::action</middle>::position<run>.
+    }
+}

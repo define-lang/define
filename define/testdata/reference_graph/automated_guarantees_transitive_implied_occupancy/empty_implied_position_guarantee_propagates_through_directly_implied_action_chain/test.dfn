@@ -1,0 +1,14 @@
+# An implied position emptied by an action reached only through directly-implied actions still has its empty guarantee propagated to the outermost caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it also assigns the position</implied_pos>.
+    define the position<run>.
+    define the position<dest>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</implied_pos>.
+        create a particle in action</middle>::position<trigger_pos>.
+        move the particle in position</implied_pos> to position<dest>.
+    }
+}

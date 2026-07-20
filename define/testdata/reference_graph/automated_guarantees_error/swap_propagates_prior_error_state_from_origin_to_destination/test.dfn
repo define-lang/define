@@ -1,0 +1,25 @@
+# When the caller has made one of two swap targets error before triggering the swap, the other target should also be error after the swap.
+#
+# The swap moves whatever was in the error position into the other,
+# and since the caller cannot know what arrived there, subsequent
+# operations on the destination are silently allowed.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<empty_src>.
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<a>.
+        move the particle in position<empty_src> to position<box>::action</other>::position<a>.
+        create a particle in position<box>::action</other>::position<b>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        destroy the particle in position<box>::action</other>::position<b>.
+        destroy the particle in position<box>::action</other>::position<b>.
+    }
+}

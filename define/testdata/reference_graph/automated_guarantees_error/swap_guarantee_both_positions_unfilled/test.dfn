@@ -1,0 +1,24 @@
+# Swapping two interface positions when the caller fills neither.
+#
+# Both positions get OCCUPIED requirements. When guarantees apply,
+# each OccupiedByExisting tries to read its origin (the other
+# position), which was never filled. Both should end up error.
+# Subsequent operations on both positions are silently allowed.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        create a particle in position<box>::action</other>::position<a>.
+        create a particle in position<box>::action</other>::position<a>.
+        create a particle in position<box>::action</other>::position<b>.
+        create a particle in position<box>::action</other>::position<b>.
+    }
+}

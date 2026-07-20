@@ -1,0 +1,25 @@
+# Swapping two interface positions when the caller fills only one.
+#
+# Only position<b> is unfilled. After the swap, position<a> should
+# be error (its origin position<b> was never filled) and
+# position<b> should contain what was in position<a>.
+# position<b> is now occupied: the swap moved position<a>'s particle there.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        move the particle in position<spare> to position<box>::action</other>::position<a>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        create a particle in position<box>::action</other>::position<a>.
+        create a particle in position<box>::action</other>::position<b>.
+    }
+}

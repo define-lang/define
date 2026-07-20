@@ -1,0 +1,16 @@
+# A constraint violation on an interface position makes the guarantee error but reports the violation.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        create a particle in position<box>::action</other>::position<item>.
+    }
+}

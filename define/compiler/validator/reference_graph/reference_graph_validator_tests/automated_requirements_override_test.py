@@ -3,7 +3,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
@@ -15,252 +17,37 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_action_caller_occupied_overrides_inner_empty(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</q>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</inner>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</q>.\n"
-                "        create a particle in action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</outer>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_action_caller_empty_overrides_inner_occupied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</q>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</inner>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</outer>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</q>.\n"
-                "        create a particle in action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_constructor_occupied_overrides_triggered_action_empty(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</q>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential action<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</inner>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "        destroy the particle in position</q>.\n"
-                "        create a particle in action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_constructor_empty_overrides_triggered_action_occupied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</q>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential action<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</inner>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_action(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<iface>::action</inner>::position<item>.\n"
-                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</outer>::position<iface>.\n"
-                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {
         ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
@@ -269,74 +56,9 @@ def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_act
 
 
 def test_doubly_nested_both_outer_and_caller_fill(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "middle.dfn": (
-                "define the potential action<my.domain.com:my_lib:/middle> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<mid_iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<out_iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</middle>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a particle in position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
-                "        create a particle in position<out_iface>::action</middle>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</outer>::position<out_iface>.\n"
-                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)

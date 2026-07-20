@@ -37,117 +37,23 @@ def test_move_from_unconstrained_to_constrained(
 
 
 def test_move_with_compatible_constraints(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<from_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<from_pos>.\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        create a particle in position<from_pos>::position</y>.\n"
-                "        create a particle in position<to_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_local_move_round_trip_with_constraint_subset(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
-            "c.dfn": "define the potential position<my.domain.com:my_lib:/c>.\n",
-            "d.dfn": "define the potential position<my.domain.com:my_lib:/d>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<a> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</b>.\n"
-                "                it has the position</c>.\n"
-                "                it has the position</d>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<b> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</b>.\n"
-                "                it has the position</c>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<a>.\n"
-                "        move the particle in position<a> to position<b>.\n"
-                "        move the particle in position<b> to position<a>.\n"
-                "        create a particle in position<b>.\n"
-                "        create a particle in position<b>::position</b>.\n"
-                "        create a particle in position<b>::position</c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_local_move_violates_constraints_marks_error(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<from_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<from_pos>.\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        create a particle in position<to_pos>.\n"
-                "        create a particle in position<from_pos>::position</x>.\n"
-                "        create a particle in position<to_pos>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -161,66 +67,16 @@ def test_local_move_violates_constraints_marks_error(
 
 
 def test_move_to_unconstrained_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<from_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        create a particle in position<from_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_definition_local_to_statement_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<def_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<def_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<stmt_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        move the particle in position<def_pos> to position<stmt_pos>.\n"
-                "        create a particle in position<def_pos>.\n"
-                "        create a particle in position<def_pos>::position</x>.\n"
-                "        create a particle in position<stmt_pos>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -234,69 +90,16 @@ def test_definition_local_to_statement_local_violates(
 
 
 def test_definition_local_to_statement_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<def_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<def_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<stmt_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        move the particle in position<def_pos> to position<stmt_pos>.\n"
-                "        create a particle in position<stmt_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_statement_local_to_definition_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<def_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</y>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<stmt_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<stmt_pos>.\n"
-                "        move the particle in position<stmt_pos> to position<def_pos>.\n"
-                "        create a particle in position<stmt_pos>.\n"
-                "        create a particle in position<stmt_pos>::position</x>.\n"
-                "        create a particle in position<def_pos>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -306,68 +109,16 @@ def test_statement_local_to_definition_local_violates(
 
 
 def test_statement_local_to_definition_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<def_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<stmt_pos> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<stmt_pos>.\n"
-                "        move the particle in position<stmt_pos> to position<def_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_definition_local_to_definition_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<from_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<to_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</y>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<from_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "        create a particle in position<from_pos>.\n"
-                "        create a particle in position<from_pos>::position</x>.\n"
-                "        create a particle in position<to_pos>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -377,30 +128,7 @@ def test_definition_local_to_definition_local_violates(
 
 
 def test_definition_local_to_definition_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<from_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<to_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<from_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<from_pos> to position<to_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)

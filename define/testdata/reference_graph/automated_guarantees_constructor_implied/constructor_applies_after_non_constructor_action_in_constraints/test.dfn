@@ -1,0 +1,21 @@
+# A constructor applies even when a non-constructor action quality precedes it in constraints.
+#
+# /target has constraints [action</foo>, action</construct_bar>] in source order.
+# /construct_bar fills its implied position</bar>. When the caller creates a particle
+# at position</target>, /construct_bar must run even though a non-constructor action
+# quality precedes it in the constraint list.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</target>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</target>.
+        create a particle in position<box>::position</target>::position</bar>.
+    }
+}

@@ -1,0 +1,18 @@
+# /a requires /dep. A constructor fills each implied position. Both child positions are occupied after create.
+# Both creates should fail because the constructors already filled them.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</construct_a>.
+                it has the position</a>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</a>.
+        create a particle in position<box>::position</a>::position</dep>.
+    }
+}

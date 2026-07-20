@@ -1,0 +1,8 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<inner>.
+    it happens when {
+        the position<inner> has a particle.
+    } and it does {
+        create a particle in action</test>::position<Bad>.
+    }
+}

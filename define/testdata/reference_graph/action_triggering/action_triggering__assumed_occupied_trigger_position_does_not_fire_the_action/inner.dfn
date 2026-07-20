@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/inner> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the position</a>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}

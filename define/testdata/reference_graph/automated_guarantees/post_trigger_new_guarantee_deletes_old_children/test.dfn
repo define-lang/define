@@ -1,0 +1,50 @@
+# After trigger, replacing a particle in a position deletes the old particle's children.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</a>.
+                it has the position</b>.
+            }
+        }
+        define the position<spare> {
+            it may only contain particles where {
+                it has the position</a>.
+                it has the position</b>.
+            }
+        }
+        define the position<spare_a> {
+            it may only contain particles where {
+                it has the position</a>.
+            }
+        }
+        define the position<spare_b> {
+            it may only contain particles where {
+                it has the position</b>.
+            }
+        }
+        define the position<sink>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<spare_a>.
+        create a particle in position<spare_b>.
+        move the particle in position<spare> to position<local>.
+        move the particle in position<spare_a> to position<local>::position</a>.
+        move the particle in position<spare_b> to position<local>::position</b>.
+        move the particle in position<local> to position<box>::action</other>::position<iface>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<iface>::position</a> to position<sink>.
+        create a particle in position<spare_a>.
+        create a particle in position<spare_a>::position</a>.
+        create a particle in position<spare_b>.
+        create a particle in position<spare_b>::position</b>.
+    }
+}

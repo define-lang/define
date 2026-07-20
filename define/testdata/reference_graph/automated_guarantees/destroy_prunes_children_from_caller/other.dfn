@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the position</child_q>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        destroy the particle in position<item>::position</child_q>.
+        destroy the particle in position<item>.
+    }
+}

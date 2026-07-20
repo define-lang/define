@@ -1,0 +1,15 @@
+# /test fills /parent and /parent::/child; /inner (two levels down) fills the
+# grandchildren. Each grandchild fill needs /parent::/child present, so it
+# should wait on /test's fill of /parent::/child, not on /middle's trigger.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</parent>.
+    it also assigns the action</middle>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</parent>.
+        create a particle in position</parent>::position</child>.
+        create a particle in action</middle>::position<trigger_pos>.
+    }
+}

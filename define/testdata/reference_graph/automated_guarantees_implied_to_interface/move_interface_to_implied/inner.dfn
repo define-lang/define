@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/inner> {
+    it also assigns the position</implied>.
+    define the position<trigger_pos>.
+    define the position<item>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        move the particle in position<item> to position</implied>.
+    }
+}

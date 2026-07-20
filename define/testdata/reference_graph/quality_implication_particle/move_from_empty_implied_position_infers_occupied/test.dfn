@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</implier>.
+    it also assigns the position</other_implier>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</implier> to position</other_implier>.
+    }
+}

@@ -4,7 +4,6 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateProjectWithReferenceGraph,
     ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator.reference_graph import action_contract
@@ -23,46 +22,13 @@ _P = "action<my.domain.com:my_lib:/p>"
 
 
 def test_occupied_interface_requirement_always_violated(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            # Destroys the particle in its own interface position, so it requires
-            # that position to be occupied when the constructor runs.
-            "consumer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/consumer> {\n"
-                "    define the position<input>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<input>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</consumer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    # A constructor runs the instant the particle is created, when its interface
-    # positions are still empty, so an occupied-interface requirement can never
-    # hold.
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -77,7 +43,7 @@ def test_occupied_interface_requirement_always_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consumer>",
-            "line": 8,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -85,7 +51,7 @@ def test_occupied_interface_requirement_always_violated(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consumer>",
-            "line": 11,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -102,82 +68,17 @@ def test_occupied_interface_requirement_always_violated(
 
 
 def test_empty_interface_requirement_satisfied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            # Creates then destroys a particle in its own interface position, so
-            # it requires that position to be empty when the constructor runs.
-            "initializer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/initializer> {\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</initializer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    # The interface is empty when the constructor runs, so its empty requirement
-    # holds.
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
 
 
 def test_empty_interface_requirement_satisfied_when_created_in_interface_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "initializer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/initializer> {\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</initializer>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    # /test creates the particle in its own interface position, so it knows the
-    # interface is empty when the constructor runs; the requirement is checked
-    # locally and never propagates to /test's callers.
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
 
@@ -237,57 +138,9 @@ def test_constructor_empty_violation_via_create_in_implied(
 
 
 def test_constructor_empty_violation_via_create_in_child_of_implied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "q.dfn": (
-                "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "filler.dfn": (
-                "define the potential action<my.domain.com:my_lib:/filler> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>.\n"
-                "        create a particle in position</q>::position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential action<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</q>::position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</filler>.\n"
-                "                it has the action</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]

@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<source>.
+    define the position<dest>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        move the particle in position<source> to position<dest>.
+    }
+}

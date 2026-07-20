@@ -1,0 +1,22 @@
+# Cross-FQUN OCCUPIED propagation: /inner is in _DEP_FQUN with position</x>.
+#
+# /inner moves from position<item>::position</x>, creating an OCCUPIED requirement
+# on position<item>::position</x>. This requirement propagates through /outer to
+# /test. /test fills it, satisfying the requirement.
+define the potential action<mv:define-lang.org:main_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<iface>.
+        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>::position<mv:define-lang.org:dep_lib:/x>.
+        create a particle in position<box>::action</outer>::position<trigger_pos>.
+    }
+}

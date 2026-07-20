@@ -1,0 +1,23 @@
+# Moving a caller-passed particle into a local position inside mid and destroying it there keys the Destruction Contract on the contracted origin (mid's interface), so the caller verifies its attached destructor against that origin.
+# Surfaced via mid, which destroys the particle in its local position.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</delete_destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<box>::action</mid>::position<incoming>.
+        create a particle in position<box>::action</mid>::position<run>.
+    }
+}

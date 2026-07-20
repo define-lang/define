@@ -1,0 +1,25 @@
+# middle moves iface (carrying its </parent> child) into inner::input. The
+# move empties iface, which the caller filled a </parent> inside, so it waits
+# on the caller's fill of iface::/parent, not the caller's fill of iface,
+# which that child supersedes. inner then fills the
+# empty-by-default grandchildren parent::/a and parent::/b; each branches from
+# the move that placed the parent, since the move's target (gw::/inner::input)
+# is the nearest ancestor the caller touched.
+# The destroy waits on the callee's fills inside gw, which already reach
+# the carrying move, so it needs no direct move edge.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<mw> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<mw>.
+        create a particle in position<mw>::action</middle>::position<iface>.
+        create a particle in position<mw>::action</middle>::position<iface>::position</parent>.
+        create a particle in position<mw>::action</middle>::position<run>.
+    }
+}

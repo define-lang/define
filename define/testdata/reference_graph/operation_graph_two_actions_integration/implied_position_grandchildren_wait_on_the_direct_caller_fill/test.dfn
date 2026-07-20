@@ -1,0 +1,16 @@
+# /test fills the shared global /parent and /parent::/child, then triggers the
+# implied /inner directly. /inner's grandchild fills need /parent::/child
+# present, so they resolve to /test's fill of it -- the implied position hangs
+# off the callee's parent particle, not under its action chain.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</parent>.
+    it also assigns the action</inner>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</parent>.
+        create a particle in position</parent>::position</child>.
+        create a particle in action</inner>::position<trigger_pos>.
+    }
+}

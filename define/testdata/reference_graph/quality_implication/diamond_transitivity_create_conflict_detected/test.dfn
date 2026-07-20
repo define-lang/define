@@ -1,0 +1,24 @@
+# Two impliers both implying the same position and both creating in it
+# via their constructors is genuinely illegal: when the second implier's
+# constructor runs, the implied position has already been filled by the
+# first, so the second's EMPTY-from-Create requirement is violated.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<source> {
+        it may only contain particles where {
+            it has the action</implier_one>.
+            it has the action</implier_two>.
+        }
+    }
+    define the position<dest> {
+        it may only contain particles where {
+            it has the position</implied>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<source>.
+        move the particle in position<source> to position<dest>.
+    }
+}

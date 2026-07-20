@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    it also assigns the position</implied>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        move the particle in position</implied> to position<local>.
+        create a particle in position<local>::action</inner>::position<trigger_pos>.
+    }
+}

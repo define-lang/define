@@ -1,0 +1,19 @@
+# /inner requires position<item> occupied. /outer triggers /inner without filling it.
+#
+# The OCCUPIED requirement propagates from /inner through /outer to /test.
+# /test doesn't fill position<item> either, so the diagnostic appears at /test.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<iface>.
+        create a particle in position<box>::action</outer>::position<trigger_pos>.
+    }
+}

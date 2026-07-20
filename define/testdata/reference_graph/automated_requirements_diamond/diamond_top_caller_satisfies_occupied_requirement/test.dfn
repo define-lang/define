@@ -1,0 +1,30 @@
+# /shared requires position<item> occupied (first reference is a move-from).
+#
+# Neither /act_b nor /act_c fill position<item>, so the OCCUPIED requirement
+# propagates through both to /test. /test fills position<item> for both paths
+# before triggering, satisfying both propagated requirements.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box_b> {
+        it may only contain particles where {
+            it has the action</act_b>.
+        }
+    }
+    define the position<box_c> {
+        it may only contain particles where {
+            it has the action</act_c>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box_b>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_b>::action</act_b>::position<pp>.
+        create a particle in position<box_c>.
+        create a particle in position<box_c>::action</act_c>::position<gateway>.
+        create a particle in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_c>::action</act_c>::position<pp>.
+    }
+}

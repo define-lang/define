@@ -1,0 +1,19 @@
+# The refill needs no fresh ancestor edge to create(parent): the destroy it
+# follows is more recent than create(parent) and already reaches it, so the
+# refill inherits the ordering transitively.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<parent> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<parent>.
+        create a particle in position<parent>::position</child>.
+        destroy the particle in position<parent>::position</child>.
+        create a particle in position<parent>::position</child>.
+    }
+}

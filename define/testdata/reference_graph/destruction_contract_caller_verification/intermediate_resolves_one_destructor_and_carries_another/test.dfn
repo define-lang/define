@@ -1,0 +1,26 @@
+# The particle carries two caller-attached destructors; mid fills d1's position so it resolves d1 itself, while d2's position is filled only by the owner, so mid carries d2 up and /test resolves it.
+# d2 is carried past mid and resolved by the owner /test, attributed to my_file.
+# d1 is resolved low, by mid itself, attributed to mid's own interface.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</d1>.
+                it has the action</d2>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::action</d2>::position<item2>.
+        move the particle in position<my_file> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<item>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<_sink>.
+        move the particle in position<trigger_pos> to position<_sink>.
+        create a particle in position<item>.
+    }
+}

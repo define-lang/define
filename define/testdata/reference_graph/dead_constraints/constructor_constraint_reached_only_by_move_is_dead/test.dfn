@@ -1,0 +1,24 @@
+# Unlike a destructor, a constructor is only alive when triggered. Moving a
+# particle into box2 does not trigger box2's constructor, so its constraint
+# is dead, while box2's destructor constraint stays exempt.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box1> {
+            it may only contain particles where {
+                it has the action</construct>.
+                it has the action</cleanup>.
+            }
+        }
+        define the position<box2> {
+            it may only contain particles where {
+                it has the action</construct>.
+                it has the action</cleanup>.
+            }
+        }
+        create a particle in position<box1>.
+        move the particle in position<box1> to position<box2>.
+    }
+}

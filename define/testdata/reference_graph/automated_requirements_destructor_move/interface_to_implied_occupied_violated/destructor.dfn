@@ -1,0 +1,17 @@
+define the potential action<my.domain.com:my_lib:/destructor> {
+    it also assigns the position</dest_marker>.
+    define the position<source> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<_leaf>.
+        move the particle in position<source> to position</dest_marker>.
+        move the particle in position</dest_marker>::position</child> to position<_leaf>.
+        move the particle in position<_leaf> to position</dest_marker>::position</child>.
+        move the particle in position</dest_marker> to position<source>.
+    }
+}

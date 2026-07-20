@@ -1,0 +1,20 @@
+# When an action's body touches children of two distinct interface positions, and the caller fills neither, the caller's view of *both* positions should be error afterwards.
+#
+# Subsequent operations on either are silently allowed rather than
+# failing as if the position were empty.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        destroy the particle in position<box>::action</other>::position<a>.
+        destroy the particle in position<box>::action</other>::position<b>.
+    }
+}

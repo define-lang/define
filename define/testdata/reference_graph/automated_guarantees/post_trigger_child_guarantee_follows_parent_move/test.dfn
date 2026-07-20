@@ -1,0 +1,23 @@
+# After trigger, a child guarantee follows its parent when the parent is moved.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare> {
+            it may only contain particles where {
+                it has the position</child_q>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        move the particle in position<spare> to position<box>::action</other>::position<item>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        create a particle in position<box>::action</other>::position<dest>::position</child_q>.
+    }
+}

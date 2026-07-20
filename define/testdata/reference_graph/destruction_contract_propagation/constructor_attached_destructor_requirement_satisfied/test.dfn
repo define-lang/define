@@ -1,0 +1,18 @@
+# When the constructor fills the destructor's required position before handing the carrier to close_file, the caller-attached destructor verifies satisfied.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</carrier>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position</carrier>.
+        create a particle in position</carrier>::position</file>.
+        move the particle in position</carrier> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

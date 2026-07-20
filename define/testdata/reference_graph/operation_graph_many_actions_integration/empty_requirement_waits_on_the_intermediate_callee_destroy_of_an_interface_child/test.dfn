@@ -1,0 +1,22 @@
+# The emptied position is a child of /inner's interface position <holder>, not
+# an interface position itself. /test fills holder and the child, /middle
+# destroys the child on the way down, and /inner needs it empty, so
+# inner.create(holder::/a) waits on that destroy rather than on the /test fill
+# it superseded.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</middle>::position<gw>.
+        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>.
+        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>::position</a>.
+        create a particle in position<box>::action</middle>::position<trigger_pos>.
+    }
+}

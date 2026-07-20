@@ -1,0 +1,18 @@
+# Destroys the particle in its own interface position, so it requires
+# that position to be occupied when the constructor runs.
+# A constructor runs the instant the particle is created, when its interface
+# positions are still empty, so an occupied-interface requirement can never
+# hold.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</consumer>.
+            }
+        }
+        create a particle in position<box>.
+    }
+}

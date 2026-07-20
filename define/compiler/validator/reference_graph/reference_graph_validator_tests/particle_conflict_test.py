@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -47,40 +46,16 @@ def test_duplicate_local_position(
 
 
 def test_different_local_positions(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<pos_a>.\n"
-        "        define the position<pos_b>.\n"
-        "        create a particle in position<pos_a>.\n"
-        "        create a particle in position<pos_b>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_undefined_position_not_tracked_for_duplicates(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<no_such_pos>.\n"
-        "        create a particle in position<no_such_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -94,57 +69,16 @@ def test_undefined_position_not_tracked_for_duplicates(
 
 
 def test_two_actions_same_local_position_create_no_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_two_actions_same_name_one_duplicate_one_clean(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<my_pos>.\n"
-        "        create a particle in position<my_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -155,57 +89,16 @@ def test_two_actions_same_name_one_duplicate_one_clean(
 
 
 def test_three_actions_particle_isolation(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<shared_name>.\n"
-        "        create a particle in position<shared_name>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<shared_name>.\n"
-        "        create a particle in position<shared_name>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_three> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<shared_name>.\n"
-        "        create a particle in position<shared_name>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_definition_block_position_enforced(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    define the position<outer_pos>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<outer_pos>.\n"
-        "        create a particle in position<outer_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)

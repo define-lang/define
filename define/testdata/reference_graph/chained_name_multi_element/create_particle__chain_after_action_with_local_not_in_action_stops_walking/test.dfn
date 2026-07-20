@@ -1,0 +1,19 @@
+# Chain walking stops when a local element after an action isn't in the action's interfaces.
+#
+# Even when the chain continues beyond that element, only one diagnostic
+# is emitted and walking stops — it does not advance as if one element
+# were consumed (which would treat a local element as a global parent
+# and crash).
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<pos_a> {
+        it may only contain particles where {
+            it has the action</act_b>.
+        }
+    }
+    it happens when {
+        the position<pos_a> has a particle.
+    } and it does {
+        create a particle in position<pos_a>::action</act_b>::position<no_such>::position</later>.
+        create a particle in position<pos_a>::action</act_b>::position<inner>.
+    }
+}

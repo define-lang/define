@@ -1,0 +1,24 @@
+# A particle auto-destroyed inside inner, whose contract re-records through the pass-through mid, surfaces at the owner /test carrying inner's auto-destruction site.
+# The chain traces every trigger hop (test -> mid -> inner) down to inner's
+# block-end auto-destruction, just as an explicit destroy would.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</delete_destructor>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

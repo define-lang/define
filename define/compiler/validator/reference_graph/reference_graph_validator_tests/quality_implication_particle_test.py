@@ -17,134 +17,37 @@ _TRANSITIVE_IMPLIED_DFN = (
 
 
 def test_create_in_implied_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_between_implied_positions(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implier.dfn": "define the potential position<my.domain.com:my_lib:/implier>.\n",
-            "other_implier.dfn": "define the potential position<my.domain.com:my_lib:/other_implier>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implier>.\n"
-                "    it also assigns the position</other_implier>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implier>.\n"
-                "        move the particle in position</implier> to position</other_implier>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_chained_child_access_via_implied_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</parent>.\n"
-                "        destroy the particle in position</parent>::position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_destroy_after_create_in_implied_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implier.dfn": "define the potential position<my.domain.com:my_lib:/implier>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implier>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implier>.\n"
-                "        destroy the particle in position</implier>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_into_implied_position_missing_quality(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "parent.dfn": (
-                "define the potential position<my.domain.com:my_lib:/parent> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</child>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "plain.dfn": "define the potential position<my.domain.com:my_lib:/plain>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</plain>.\n"
-                "    it also assigns the position</parent>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</plain>.\n"
-                "        move the particle in position</plain> to position</parent>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -159,25 +62,9 @@ def test_move_into_implied_position_missing_quality(
 
 
 def test_create_in_occupied_implied_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -191,151 +78,37 @@ def test_create_in_occupied_implied_position(
 
 
 def test_destroy_in_empty_implied_position_inferrs_created(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_from_empty_implied_position_infers_occupied(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implier.dfn": "define the potential position<my.domain.com:my_lib:/implier>.\n",
-            "other_implier.dfn": "define the potential position<my.domain.com:my_lib:/other_implier>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implier>.\n"
-                "    it also assigns the position</other_implier>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position</implier> to position</other_implier>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_round_trip_local_to_implied_back_to_local_preserves_quality(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "implier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/implier> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<local_a> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</implier>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<bearer>.\n"
-                "        define the position<local_b> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<local_a>.\n"
-                "        move the particle in position<local_a> to position<bearer>.\n"
-                "        move the particle in position<bearer> to position<local_b>.\n"
-                "        destroy the particle in position<local_b>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_round_trip_implied_to_local_back_to_implied_preserves_quality(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "required_quality.dfn": "define the potential position<my.domain.com:my_lib:/required_quality>.\n",
-            "quality_bearing.dfn": (
-                "define the potential position<my.domain.com:my_lib:/quality_bearing> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</required_quality>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</quality_bearing>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<temporary>.\n"
-                "        create a particle in position</quality_bearing>.\n"
-                "        move the particle in position</quality_bearing> to position<temporary>.\n"
-                "        move the particle in position<temporary> to position</quality_bearing>.\n"
-                "        destroy the particle in position</quality_bearing>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_from_local_to_implied_marks_local_empty(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<local>.\n"
-                "        create a particle in position<local>.\n"
-                "        move the particle in position<local> to position</implied>.\n"
-                "        destroy the particle in position<local>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -346,27 +119,9 @@ def test_move_from_local_to_implied_marks_local_empty(
 
 
 def test_move_from_implied_to_local_marks_implied_empty(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<local>.\n"
-                "        create a particle in position</implied>.\n"
-                "        move the particle in position</implied> to position<local>.\n"
-                "        destroy the particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -377,152 +132,23 @@ def test_move_from_implied_to_local_marks_implied_empty(
 
 
 def test_move_respects_direct_implied_qualities(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "implier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/implier> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<source> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</implier>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<destination> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<source>.\n"
-                "        move the particle in position<source> to position<destination>.\n"
-                "        destroy the particle in position<destination>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_respects_transitively_constructed_occupancy(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "transitive_implied.dfn": _TRANSITIVE_IMPLIED_DFN,
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</transitive_implied>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</transitive_implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "holder.dfn": (
-                "define the potential position<my.domain.com:my_lib:/holder> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</inner>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    it also assigns the position</holder>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</holder>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<source> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<destination> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</holder>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<source>.\n"
-                "        move the particle in position<source> to position<destination>.\n"
-                "        destroy the particle in position<destination>::position</holder>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_two_different_implier_constructors_conflict(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": _IMPLIED_DFN,
-            "first_implier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/first_implier> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "second_implier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/second_implier> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</first_implier>.\n"
-                "            it has the action</second_implier>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
@@ -573,108 +199,16 @@ def test_two_different_implier_constructors_conflict(
 
 
 def test_three_level_chain_create_destroy_create_constructors(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "cell.dfn": "define the potential position<my.domain.com:my_lib:/cell>.\n",
-            "filler.dfn": (
-                "define the potential action<my.domain.com:my_lib:/filler> {\n"
-                "    it also assigns the position</cell>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</cell>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "emptier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/emptier> {\n"
-                "    it also assigns the position</cell>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</cell>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "refiller.dfn": (
-                "define the potential action<my.domain.com:my_lib:/refiller> {\n"
-                "    it also assigns the position</cell>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</cell>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</filler>.\n"
-                "            it has the action</emptier>.\n"
-                "            it has the action</refiller>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "slot.dfn": "define the potential position<my.domain.com:my_lib:/slot>.\n",
-            "emptier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/emptier> {\n"
-                "    it also assigns the position</slot>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</slot>.\n"
-                "        destroy the particle in position</slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "requirer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/requirer> {\n"
-                "    it also assigns the position</slot>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</emptier>.\n"
-                "            it has the action</requirer>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
@@ -717,41 +251,9 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
 
 
 def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "emptier.dfn": "define the potential position<my.domain.com:my_lib:/emptier>.\n",
-            "filler.dfn": (
-                "define the potential action<my.domain.com:my_lib:/filler> {\n"
-                "    it also assigns the position</emptier>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</emptier>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<source> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</filler>.\n"
-                "            it has the position</emptier>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<source>.\n"
-                "        destroy the particle in position<source>::position</emptier>.\n"
-                "        destroy the particle in position<source>::position</emptier>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]

@@ -1,0 +1,20 @@
+# Destroying the parent finishes branch b's whole subtree (leaf then branch) before touching branch a, which a breadth-first walk would not do.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</a_branch>.
+                it has the position</b_branch>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</a_branch>.
+        create a particle in position<box>::position</a_branch>::position</a_leaf>.
+        create a particle in position<box>::position</b_branch>.
+        create a particle in position<box>::position</b_branch>::position</b_leaf>.
+        destroy the particle in position<box>.
+    }
+}

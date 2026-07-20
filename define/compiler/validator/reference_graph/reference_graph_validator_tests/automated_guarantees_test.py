@@ -6,7 +6,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
@@ -25,143 +27,40 @@ _CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
 
 
 def test_create_in_interface_position_starts_empty(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Creating in an interface position that starts empty succeeds."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        destroy the particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_interface_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Creating twice in the same interface position produces CreateInOccupiedPositionDiagnostic."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        destroy the particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].populated_at.line == 12
-    assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
-
-
-def test_untouched_interface_position_preserved_after_trigger(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    """An interface position's state is preserved through a trigger if the action doesn't touch it."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.line == 13
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+
+
+def test_untouched_interface_position_preserved_after_trigger(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
+    assert all_diags[0].populated_at.line == 13
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
@@ -173,46 +72,13 @@ def test_untouched_interface_position_preserved_after_trigger(
 
 
 def test_move_from_guarantee_emptied_interface_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Moving from an interface position that the action's guarantee emptied is an error."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<trigger_pos> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<trigger_pos> to position<to_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -228,86 +94,21 @@ def test_move_from_guarantee_emptied_interface_position(
 
 
 def test_post_trigger_guaranteed_empty_position_allows_create(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position guaranteed empty by the action allows a create."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_guaranteed_occupied_position_rejects_create(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position guaranteed occupied by the action (via create) rejects a second create."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -318,183 +119,52 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
 
 
 def test_post_trigger_trigger_position_stays_occupied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """The trigger position remains occupied after the trigger fires; creating in it again fails."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
-    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.line == 13
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_untouched_trigger_allows_move_from(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """An action that leaves its trigger untouched keeps the caller's particle, so the caller can move it out."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<trigger_pos> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
 
 def test_second_trigger_cycle_after_guarantee_empties_trigger(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """When the action moves the trigger particle away, the trigger position is empty after trigger, allowing re-trigger."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_sink>.\n"
-                "        move the particle in position<trigger_pos> to position<_sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_second_trigger_fails_when_guarantee_filled_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Second trigger fails when the action's guarantee filled a position the action requires empty."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_sink>.\n"
-                "        move the particle in position<trigger_pos> to position<_sink>.\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -511,7 +181,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -528,57 +198,16 @@ def test_second_trigger_fails_when_guarantee_filled_position(
 
 
 def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Second trigger fails when the dest position is still occupied from the first trigger's move guarantee."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_sink>.\n"
-                "        move the particle in position<trigger_pos> to position<_sink>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        define the position<spare2>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
-    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -595,7 +224,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 19,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -612,54 +241,16 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
 
 
 def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Second trigger fails both occupied and empty requirements due to the first trigger's move guarantees."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_sink>.\n"
-                "        move the particle in position<trigger_pos> to position<_sink>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -668,7 +259,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 16,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -685,7 +276,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
     assert all_diags[1].position_name == "position<box>::action</other>::position<dest>"
-    assert all_diags[1].location.line == 16
+    assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -702,7 +293,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 16,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -719,240 +310,45 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
 
 
 def test_second_trigger_succeeds_with_proper_state_management(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Second trigger succeeds when the caller properly restores state between trigger cycles."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_sink>.\n"
-                "        move the particle in position<trigger_pos> to position<_sink>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        define the position<spare2>.\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<dest> to position<sink>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_particle_identity_preserved_through_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a particle moved by the action's guarantee retains its constraint qualities."""
-    result = validate_project_with_reference_graph(
-        {
-            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</quality_a>.\n"
-                "            it has the position</quality_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>::position</quality_a>.\n"
-                "        create a particle in position<item>::position</quality_b>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<wide> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_a>.\n"
-                "                it has the position</quality_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<wide>.\n"
-                "        move the particle in position<wide> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<dest> to position<wide>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_guaranteed_empty_position_allows_move_to(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position guaranteed empty by the action allows move-to."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_occupied_by_new_allows_move_from(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position guaranteed occupied via the action's create allows move-from."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_occupied_by_new_rejects_move_to(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position guaranteed occupied via the action's create rejects move-to."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 49
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -964,49 +360,13 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
 
 
 def test_post_trigger_occupied_by_existing_rejects_create(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position occupied by the action's move rejects create."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
@@ -1017,51 +377,13 @@ def test_post_trigger_occupied_by_existing_rejects_create(
 
 
 def test_post_trigger_occupied_by_existing_rejects_move_to(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a position occupied by the action's move rejects another move-to."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        define the position<spare2>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
@@ -1073,56 +395,9 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
 
 
 def test_constructor_trigger_applies_empty_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Trigger from within a constructor applies the action's empty guarantee."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<trigger_pos> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        define the position<inner> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<to_pos>.\n"
-                "        create a particle in position<inner>.\n"
-                "        create a particle in position<inner>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<inner>::action</other>::position<trigger_pos> to position<to_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -1145,55 +420,9 @@ def test_constructor_trigger_applies_empty_guarantee(
 
 
 def test_constructor_trigger_applies_occupied_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Trigger from within a constructor applies the action's occupied guarantee."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        define the position<inner> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<inner>.\n"
-                "        create a particle in position<inner>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<inner>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -1213,100 +442,21 @@ def test_constructor_trigger_applies_occupied_guarantee(
 
 
 def test_trigger_chain_move_guarantee_empties_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """A trigger chain correctly applies a child move guarantee, emptying the child position."""
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<trigger_pos>::position</x> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare>::position</x>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_trigger_chain_create_guarantee_fills_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """A trigger chain correctly applies a child create guarantee, filling the child position."""
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<trigger_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1320,140 +470,21 @@ def test_trigger_chain_create_guarantee_fills_position(
 
 
 def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After a trigger chain move-then-return, the particle retains its original constraint qualities."""
-    result = validate_project_with_reference_graph(
-        {
-            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "x.dfn": (
-                "define the potential position<my.domain.com:my_lib:/x> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</quality_a>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<tmp>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<trigger_pos>::position</x> to position<tmp>.\n"
-                "        move the particle in position<tmp> to position<trigger_pos>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<wide> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_a>.\n"
-                "                it has the position</quality_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<needs_b> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<wide>.\n"
-                "        move the particle in position<wide> to position<spare>::position</x>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<trigger_pos>::position</x> to position<needs_b>.\n"
-                "        create a particle in position<needs_b>::position</quality_b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_existing_guarantee_on_child_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a child position filled by the action's move is guaranteed occupied."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare2>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1464,60 +495,13 @@ def test_post_trigger_existing_guarantee_on_child_position(
 
 
 def test_post_trigger_empty_guarantee_on_child_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a child position emptied by the action is guaranteed empty."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<_sink>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>::position</child_q>.\n"
-                "        move the particle in position<item>::position</child_q> to position<_sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1530,51 +514,13 @@ def test_post_trigger_empty_guarantee_on_child_position(
 
 
 def test_post_trigger_new_guarantee_on_child_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a child position newly created by the action is guaranteed occupied."""
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</x>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        create a particle in position<item>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1585,69 +531,13 @@ def test_post_trigger_new_guarantee_on_child_position(
 
 
 def test_post_trigger_empty_guarantee_deletes_children(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, moving a parent away guarantees its children are also empty."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<_sink>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<item>::position</child_q>.\n"
-                "        move the particle in position<item> to position<_sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare2> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        create a particle in position<spare2>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 28
+    assert all_diags[0].location.line == 29
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1662,87 +552,13 @@ def test_post_trigger_empty_guarantee_deletes_children(
 
 
 def test_post_trigger_new_guarantee_deletes_old_children(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, replacing a particle in a position deletes the old particle's children."""
-    result = validate_project_with_reference_graph(
-        {
-            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
-            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</a>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<_sink>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<iface> to position<_sink>.\n"
-                "        create a particle in position<iface>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<local> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</a>.\n"
-                "                it has the position</b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</a>.\n"
-                "                it has the position</b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare_a> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</a>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare_b> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare_a>.\n"
-                "        create a particle in position<spare_b>.\n"
-                "        move the particle in position<spare> to position<local>.\n"
-                "        move the particle in position<spare_a> to position<local>::position</a>.\n"
-                "        move the particle in position<spare_b> to position<local>::position</b>.\n"
-                "        move the particle in position<local> to position<box>::action</other>::position<iface>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<iface>::position</a> to position<sink>.\n"
-                "        create a particle in position<spare_a>.\n"
-                "        create a particle in position<spare_a>::position</a>.\n"
-                "        create a particle in position<spare_b>.\n"
-                "        create a particle in position<spare_b>::position</b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 43
+    assert all_diags[0].location.line == 44
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1755,131 +571,21 @@ def test_post_trigger_new_guarantee_deletes_old_children(
 
 
 def test_post_trigger_child_removed_before_parent_move(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, removing a child then moving the parent leaves the destination child empty."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<_sink>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item>::position</child_q> to position<_sink>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare2> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        create a particle in position<spare2>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_post_trigger_parent_and_child_both_have_guarantees(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, parent move and child create guarantees both apply at the destination."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "        create a particle in position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1890,63 +596,13 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
 
 
 def test_post_trigger_child_guarantee_follows_parent_move(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, a child guarantee follows its parent when the parent is moved."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>::position</child_q>.\n"
-                "        move the particle in position<item> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1957,69 +613,13 @@ def test_post_trigger_child_guarantee_follows_parent_move(
 
 
 def test_post_trigger_existing_guarantee_empties_origin_children(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, moving a parent away empties the origin's children even if the caller filled them."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<iface_return>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<iface>::position</child_q>.\n"
-                "        move the particle in position<iface> to position<iface_return>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<local> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare2>.\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        move the particle in position<spare> to position<local>.\n"
-                "        move the particle in position<spare2> to position<local>::position</child_q>.\n"
-                "        move the particle in position<local> to position<box>::action</other>::position<iface>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<iface>::position</child_q> to position<sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 30
+    assert all_diags[0].location.line == 31
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -2034,278 +634,35 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
 
 
 def test_post_trigger_existing_guarantee_on_child_swap(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """After trigger, swapping children between positions preserves each particle's qualities."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<a> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<b> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<_tmp>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<a>::position</child_q> to position<_tmp>.\n"
-                "        move the particle in position<b>::position</child_q> to position<a>::position</child_q>.\n"
-                "        move the particle in position<_tmp> to position<b>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sa> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_a>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sb> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<needs_a> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_a>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<needs_b> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</quality_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare2> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<spare2>.\n"
-                "        create a particle in position<sa>.\n"
-                "        create a particle in position<sb>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<a>.\n"
-                "        move the particle in position<spare2> to position<box>::action</other>::position<b>.\n"
-                "        move the particle in position<sa> to position<box>::action</other>::position<a>::position</child_q>.\n"
-                "        move the particle in position<sb> to position<box>::action</other>::position<b>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<a>::position</child_q> to position<needs_b>.\n"
-                "        move the particle in position<box>::action</other>::position<b>::position</child_q> to position<needs_a>.\n"
-                "        create a particle in position<needs_a>::position</quality_a>.\n"
-                "        create a particle in position<needs_b>::position</quality_b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_long_chain_trigger_fires_and_applies_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<output>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<output>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</outer>::position<iface>.\n"
-                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<output> to position<dest>.\n"
-                "        destroy the particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_long_inner_chained_action_fills_positions_in_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<output>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<output>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        define the position<_sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</outer>::position<iface>.\n"
-                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos> to position<_sink>.\n"
-                "        move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<output> to position<dest>.\n"
-                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_long_chain_inner_requirement_enforced_through_nested_trigger(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """/inner creates in position<item>, requiring it empty.
-
-    /outer triggers /inner internally. /test pre-fills the deeply nested
-    position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>,
-    then triggers /outer. The inner requirement that position<item> be empty
-    produces an inferred-requirement-violation diagnostic.
-    """
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<outer_iface> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<outer_iface>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<local> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<local>.\n"
-                "        create a particle in position<local>::action</outer>::position<outer_iface>.\n"
-                "        create a particle in position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>.\n"
-                "        create a particle in position<local>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
@@ -2320,7 +677,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -2328,7 +685,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 14,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -2356,109 +713,21 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
 
 
 def test_destroy_produces_empty_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """When an action destroys an interface position, the caller sees it as empty afterward."""
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare>.\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
 def test_destroy_prunes_children_from_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Destroy prunes children from the caller's perspective.
-
-    When an action destroys an interface position, child positions filled by
-    the caller are also destroyed. Trying to move from the child afterward fails.
-    """
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<item>::position</child_q>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<spare> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_q>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<sink>.\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<spare>.\n"
-                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the particle in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -2473,172 +742,41 @@ def test_destroy_prunes_children_from_caller(
 
 
 def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_change(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """Triggering /inner fills out; the body empties out; re-triggering /inner re-fills out (the later guarantee wins), so a create there fails."""
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<t>.\n"
-                "    define the position<out>.\n"
-                "    it happens when {\n"
-                "        the position<t> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<out>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<t>.\n"
-                "        destroy the particle in position<box>::action</inner>::position<out>.\n"
-                "        destroy the particle in position<box>::action</inner>::position<t>.\n"
-                "        create a particle in position<box>::action</inner>::position<t>.\n"
-                "        create a particle in position<box>::action</inner>::position<out>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diag.position_name == "position<box>::action</inner>::position<out>"
-    assert diag.location.line == 16
-    assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
-
-
-def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    """Triggering /emptier then /filler, which give opposite guarantees on the same implied </shared>, leaves it occupied (the later /filler wins), so a create there fails."""
-    result = validate_project_with_reference_graph(
-        {
-            "shared.dfn": (
-                "define the potential position<my.domain.com:my_lib:/shared>.\n"
-            ),
-            "filler.dfn": (
-                "define the potential action<my.domain.com:my_lib:/filler> {\n"
-                "    it also assigns the position</shared>.\n"
-                "    define the position<trigger_f>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_f> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</shared>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "emptier.dfn": (
-                "define the potential action<my.domain.com:my_lib:/emptier> {\n"
-                "    it also assigns the position</shared>.\n"
-                "    define the position<trigger_e>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_e> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position</shared>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</shared>.\n"
-                "            it has the action</filler>.\n"
-                "            it has the action</emptier>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</shared>.\n"
-                "        create a particle in position<box>::action</emptier>::position<trigger_e>.\n"
-                "        create a particle in position<box>::action</filler>::position<trigger_f>.\n"
-                "        create a particle in position<box>::position</shared>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    diag = all_diags[0]
-    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert diag.position_name == "position<box>::position</shared>"
     assert diag.location.line == 17
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
 
 
-def test_existing_guarantee_on_child_survives_destroying_original_parent(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """A callee moves item::/child_q to dest::/child_q then destroys item; the moved child must still read as occupied at dest::/child_q in the caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diag.position_name == "position<box>::position</shared>"
+    assert diag.location.line == 18
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+
+
+def test_existing_guarantee_on_child_survives_destroying_original_parent(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -2648,61 +786,13 @@ def test_existing_guarantee_on_child_survives_destroying_original_parent(
 
 
 def test_existing_guarantee_on_child_survives_recreating_original_parent(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """A callee moves item::/child_q to dest::/child_q then destroys and recreates item; the moved child must still read as occupied at dest::/child_q in the caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
-                "        destroy the particle in position<item>.\n"
-                "        create a particle in position<item>.\n"
-                "        create a particle in position<item>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -2712,74 +802,13 @@ def test_existing_guarantee_on_child_survives_recreating_original_parent(
 
 
 def test_nested_existing_guarantees_survive_destroying_original_parent(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """A callee moves a grandchild and its parent to separate destinations, then destroys the original parent; both moved particles must still read as occupied in the caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "grand.dfn": "define the potential position<my.domain.com:my_lib:/grand>.\n",
-            "child_q.dfn": (
-                "define the potential position<my.domain.com:my_lib:/child_q> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</grand>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "other.dfn": (
-                "define the potential action<my.domain.com:my_lib:/other> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child_q>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<dest2> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</grand>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<dest>.\n"
-                "        create a particle in position<dest2>.\n"
-                "        move the particle in position<item>::position</child_q>::position</grand> to position<dest2>::position</grand>.\n"
-                "        move the particle in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
-                "        destroy the particle in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</other>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</other>::position<item>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a particle in position<box>::action</other>::position<item>::position</child_q>::position</grand>.\n"
-                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</other>::position<dest2>::position</grand>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (

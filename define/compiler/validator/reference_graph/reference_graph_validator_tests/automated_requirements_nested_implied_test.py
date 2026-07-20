@@ -3,7 +3,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
@@ -94,16 +96,9 @@ _TEST_DOES_NOT_FILL_X = (
 
 
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfies(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_DEFINITION,
-            "inner.dfn": _INNER_DESTROYS_X,
-            "middle.dfn": _MIDDLE_TRIGGERS_INNER,
-            "test.dfn": _TEST_PRE_FILLS_X,
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
@@ -112,16 +107,9 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
 
 
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violates(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_DEFINITION,
-            "inner.dfn": _INNER_DESTROYS_X,
-            "middle.dfn": _MIDDLE_TRIGGERS_INNER,
-            "test.dfn": _TEST_DOES_NOT_FILL_X,
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -165,16 +153,9 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfies(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_DEFINITION,
-            "inner.dfn": _INNER_CREATES_X,
-            "middle.dfn": _MIDDLE_TRIGGERS_INNER,
-            "test.dfn": _TEST_DOES_NOT_FILL_X,
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
@@ -183,16 +164,9 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violates(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_DEFINITION,
-            "inner.dfn": _INNER_CREATES_X,
-            "middle.dfn": _MIDDLE_TRIGGERS_INNER,
-            "test.dfn": _TEST_PRE_FILLS_X,
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -266,48 +240,13 @@ _INNER_REQUIRES_ITEM_OCCUPIED = (
 
 
 def test_caller_filled_implied_position_propagates_inner_action_requirement(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """When the caller fills an implied position used to reach an inner action, the inner action's requirements propagate to the caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_HAS_INNER,
-            "inner.dfn": _INNER_REQUIRES_ITEM_OCCUPIED,
-            "middle.dfn": (
-                "define the potential action<my.domain.com:my_lib:/middle> {\n"
-                "    it also assigns the position</x>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</x>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "                it has the action</middle>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::position</x>.\n"
-                "        create a particle in position<box>::action</middle>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
@@ -322,7 +261,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -350,43 +289,9 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
 
 
 def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implied_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """When the current action fills an implied position before triggering an inner action through it, the inner action's requirement is checked at the trigger site but does not propagate further up to the caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": _X_HAS_INNER,
-            "inner.dfn": _INNER_REQUIRES_ITEM_OCCUPIED,
-            "middle.dfn": (
-                "define the potential action<my.domain.com:my_lib:/middle> {\n"
-                "    it also assigns the position</x>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</x>.\n"
-                "        create a particle in position</x>::action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</middle>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</middle>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -422,68 +327,14 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
 
 
 def test_doubly_nested_implied_action_chain_propagates(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """An interface requirement from /inner propagates two levels up through /middle and /outer when each is reached as an implied action of its caller."""
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<extra>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<extra> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "middle.dfn": (
-                "define the potential action<my.domain.com:my_lib:/middle> {\n"
-                "    it also assigns the action</inner>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</inner>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    it also assigns the action</middle>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</middle>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</outer>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 12
+    assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
@@ -495,7 +346,7 @@ def test_doubly_nested_implied_action_chain_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },

@@ -1,0 +1,17 @@
+# The particle is created in this action's own interface position, so
+# the action owns it: the destructor's requirement is checked here rather than
+# propagated to a caller, even though position<iface> is a contracted name.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<iface> {
+        it may only contain particles where {
+            it has the action</destructor>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<iface>.
+        destroy the particle in position<iface>.
+    }
+}

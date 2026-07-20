@@ -1,0 +1,16 @@
+# Inner destroys input::/b::/c but the caller fills neither iface::/b nor its /c, so both propagated requirements are violated.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<mw> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<mw>.
+        create a particle in position<mw>::action</middle>::position<iface>.
+        create a particle in position<mw>::action</middle>::position<run>.
+    }
+}

@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/delete_empty_destructor> {
+    it also assigns the position</file>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        create a particle in position</file>.
+        destroy the particle in position</file>.
+    }
+}

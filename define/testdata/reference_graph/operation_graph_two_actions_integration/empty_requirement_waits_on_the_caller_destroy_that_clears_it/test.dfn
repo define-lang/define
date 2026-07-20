@@ -1,0 +1,21 @@
+# other.create(slot) needs <slot> empty, so it should wait on test.destroy(slot),
+# which clears the position, and on nothing else. It needs no edge to the
+# trigger: we know the action triggers, and the create's only precondition is that
+# <slot> is empty. (The destroy transitively orders it after the callee's parent
+# particle was created, since the destroy depends on it.)
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<slot>.
+        destroy the particle in position<gateway>::action</other>::position<slot>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,22 @@
+# /other fills holder::/a without ever operating on it: its move of <source>
+# carries the particle's /a along. The caller's destroy of that position waits
+# on the guarantee, which resolves to the move that carried it there. The move
+# empties <source>, so it waits on the caller's create of the /a inside it: the
+# particle it carries is not complete until that create is done.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<source>.
+        create a particle in position<gateway>::action</other>::position<source>::position</a>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+        destroy the particle in position<gateway>::action</other>::position<holder>::position</a>.
+    }
+}

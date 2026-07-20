@@ -1,0 +1,17 @@
+# /a requires /dep. /dep's constructor fills /dep. /a's constructor moves that particle out to a sink. Caller sees /dep empty.
+# /dep was moved out by /a's constructor, so creating there should succeed.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</construct_a>.
+                it has the position</a>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</a>::position</dep>.
+    }
+}

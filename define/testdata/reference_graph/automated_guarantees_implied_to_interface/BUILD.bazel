@@ -1,0 +1,8 @@
+filegroup(
+    name = "automated_guarantees_implied_to_interface",
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)

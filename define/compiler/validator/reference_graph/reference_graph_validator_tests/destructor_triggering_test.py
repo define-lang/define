@@ -3,7 +3,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -15,106 +17,18 @@ _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
 _MARKED = "action<my.domain.com:my_lib:/marked>"
 
 
-_DESTRUCTOR_NOOP = (
-    "define the potential action<my.domain.com:my_lib:/destructor> {\n"
-    "    it happens when {\n"
-    "        this particle is being destroyed.\n"
-    "    } and it does {\n"
-    "        define the position<_noop>.\n"
-    "        create a particle in position<_noop>.\n"
-    "    }\n"
-    "}\n"
-)
-
-
-def _named_destructor_noop(name: str) -> str:
-    return (
-        f"define the potential action<my.domain.com:my_lib:/{name}> {{\n"
-        "    it happens when {\n"
-        "        this particle is being destroyed.\n"
-        "    } and it does {\n"
-        "        define the position<_noop>.\n"
-        "        create a particle in position<_noop>.\n"
-        "    }\n"
-        "}\n"
-    )
-
-
 def test_destroy_fires_destructor_via_constraint(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_fires_destructor_via_quality_implication(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
-                "    define the position<slot>.\n"
-                "    it happens when {\n"
-                "        this particle is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_holder>.\n"
-                "        move the particle in position<slot> to position<_holder>.\n"
-                "        move the particle in position<_holder> to position<slot>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "marked.dfn": (
-                "define the potential action<my.domain.com:my_lib:/marked> {\n"
-                "    it also assigns the action</destructor>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in action</destructor>::position<slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</marked>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_TEST, _MARKED),
@@ -123,39 +37,9 @@ def test_destroy_fires_destructor_via_quality_implication(
 
 
 def test_destroy_does_not_fire_non_destructor_action_quality(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "worker.dfn": (
-                "define the potential action<my.domain.com:my_lib:/worker> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</worker>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -168,31 +52,9 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
 
 
 def test_destroy_fires_multiple_destructors(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor_a.dfn": _named_destructor_noop("destructor_a"),
-            "destructor_b.dfn": _named_destructor_noop("destructor_b"),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor_a>.\n"
-                "                it has the action</destructor_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_TEST, _DESTRUCTOR_B),
@@ -201,55 +63,17 @@ def test_destroy_fires_multiple_destructors(
 
 
 def test_destructor_fired_from_constructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_empty_position_does_not_fire_destructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -261,45 +85,9 @@ def test_destroy_empty_position_does_not_fire_destructor(
 
 
 def test_destroy_parent_not_occupied_does_not_fire_destructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<slot> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<slot>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "            }\n"
-                "        }\n"
-                "        destroy the particle in position<box>::action</inner>::position<slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -318,28 +106,9 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
 
 
 def test_destroy_destructor_with_unloaded_file_no_crash(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -351,92 +120,17 @@ def test_destroy_destructor_with_unloaded_file_no_crash(
 
 
 def test_destroy_via_chained_interface_position_fires_destructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<slot> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<run>.\n"
-                "        destroy the particle in position<box>::action</inner>::position<slot>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    """make_thing attaches a destructor in a local position then moves the particle into result, whose constraint omits the destructor; the destructor rides the OccupiedByNew guarantee up to /test, which owns the result and fires it on destroy."""
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "make_thing.dfn": (
-                "define the potential action<my.domain.com:my_lib:/make_thing> {\n"
-                "    define the position<result>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<temp> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<temp>.\n"
-                "        move the particle in position<temp> to position<result>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</make_thing>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</make_thing>::position<run>.\n"
-                "        destroy the particle in position<box>::action</make_thing>::position<result>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_TEST, _MAKE_THING),
@@ -445,30 +139,8 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
 
 
 def test_destroy_after_move_into_unconstrained_position_fires_destructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_NOOP,
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<plain>.\n"
-                "        create a particle in position<box>.\n"
-                "        move the particle in position<box> to position<plain>.\n"
-                "        destroy the particle in position<plain>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]

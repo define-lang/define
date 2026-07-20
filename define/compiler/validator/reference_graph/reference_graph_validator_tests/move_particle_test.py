@@ -2,118 +2,30 @@
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
+    ValidateTestdataProjectWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_valid_local_positions(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<from_pos>.\n"
-        "    define the position<to_pos>.\n"
-        "    it happens when {\n"
-        "        the position<from_pos> has a particle.\n"
-        "    } and it does {\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_move_from_child_to_parents_empty_sibling(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<parent> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</child>.\n"
-                "            it has the position</sibling>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<parent>.\n"
-                "        create a particle in position<parent>::position</child>.\n"
-                "        create a particle in position<parent>::position</child>::position</grandchild>.\n"
-                "        move the particle in position<parent>::position</child>::position</grandchild> to position<parent>::position</sibling>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "child.dfn": (
-                "define the potential position<my.domain.com:my_lib:/child> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the position</grandchild>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "grandchild.dfn": "define the potential position<my.domain.com:my_lib:/grandchild>.\n",
-            "sibling.dfn": "define the potential position<my.domain.com:my_lib:/sibling>.\n",
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<from_pos>.\n"
-                "    define the position<gateway> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</dest>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<from_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<from_pos> to position<gateway>::position</dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "dest.dfn": (
-                "define the potential position<my.domain.com:my_lib:/dest> {\n"
-                "    it may only contain particles where {\n"
-                "        it has the action</required>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "required.dfn": (
-                "define the potential action<my.domain.com:my_lib:/required> {\n"
-                "    define the position<_noop>.\n"
-                "    it happens when {\n"
-                "        the position<_noop> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<__noop>.\n"
-                "        create a particle in position<__noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -125,20 +37,9 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
 
 
 def test_undefined_from_position(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<to_pos>.\n"
-        "    it happens when {\n"
-        "        the position<to_pos> has a particle.\n"
-        "    } and it does {\n"
-        "        move the particle in position<no_such_pos>"
-        " to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
+    results = validate_testdata_non_filesystem_with_reference_graph().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -148,20 +49,9 @@ def test_undefined_from_position(
 
 
 def test_undefined_to_position(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<from_pos>.\n"
-        "    it happens when {\n"
-        "        the position<from_pos> has a particle.\n"
-        "    } and it does {\n"
-        "        move the particle in position<from_pos>"
-        " to position<no_such_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
+    results = validate_testdata_non_filesystem_with_reference_graph().file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -187,33 +77,9 @@ def test_both_positions_undefined(
 
 
 def test_same_fqun_must_use_short_form_in_from(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential position<my.domain.com:my_lib:/other>.\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<to_pos>.\n"
-                "    define the position<gateway> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</other>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<gateway>.\n"
-                "        create a particle in position<gateway>::position</other>.\n"
-                "        move the particle in position<gateway>::position<my.domain.com:my_lib:/other> to position<to_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
@@ -225,32 +91,9 @@ def test_same_fqun_must_use_short_form_in_from(
 
 
 def test_same_fqun_must_use_short_form_in_to(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "other.dfn": (
-                "define the potential position<my.domain.com:my_lib:/other>.\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    define the position<from_pos>.\n"
-                "    define the position<gateway> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</other>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<gateway>.\n"
-                "        move the particle in position<from_pos> to position<gateway>::position<my.domain.com:my_lib:/other>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
@@ -262,23 +105,9 @@ def test_same_fqun_must_use_short_form_in_to(
 
 
 def test_valid_global_to_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<local_pos>.\n"
-                "    it happens when {\n"
-                "        the position<local_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<local_pos> to position</global_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "global_pos.dfn": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -306,29 +135,9 @@ def test_move_to_same_position_does_not_mark_error(
 
 
 def test_move_to_chained_prefix_marks_error(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<local_pos> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</target_pos>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<local_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<local_pos> to position<local_pos>::position</target_pos>.\n"
-                "        create a particle in position<local_pos>.\n"
-                "        create a particle in position<local_pos>::position</target_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "target_pos.dfn": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)

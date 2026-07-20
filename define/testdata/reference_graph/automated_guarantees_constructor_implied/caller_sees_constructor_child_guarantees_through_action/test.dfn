@@ -1,0 +1,19 @@
+# /inner has interface position<item> requiring /a's constructor. /outer calls /inner and sees /a's guarantee.
+# /inner created a particle in position<item>, firing /a's constructor,
+# which filled position</a>. That guarantee propagates through /inner's
+# contract to /test. The create should fail.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</inner>::position<trigger_pos>.
+        create a particle in position<box>::action</inner>::position<item>::position</a>.
+    }
+}

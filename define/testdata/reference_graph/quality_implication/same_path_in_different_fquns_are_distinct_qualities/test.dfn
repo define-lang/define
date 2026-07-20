@@ -1,0 +1,20 @@
+define the potential action<mv:define-lang.org:cross_implication_main:/test> {
+    define the position<run>.
+    define the position<source> {
+        it may only contain particles where {
+            it has the action</implier>.
+        }
+    }
+    define the position<dest> {
+        it may only contain particles where {
+            it has the position<mv:define-lang.org:cross_implication_lib_b:/foo>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<source>.
+        move the particle in position<source> to position<dest>.
+        create a particle in position<dest>::position<mv:define-lang.org:cross_implication_lib_b:/foo>.
+    }
+}

@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/mid> {
+    define the position<incoming>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local_box>.
+        move the particle in position<incoming> to position<local_box>.
+        destroy the particle in position<local_box>.
+    }
+}

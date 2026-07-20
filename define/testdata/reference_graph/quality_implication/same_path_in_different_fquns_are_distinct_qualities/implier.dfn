@@ -1,0 +1,8 @@
+define the potential action<mv:define-lang.org:cross_implication_main:/implier> {
+    it also assigns the position<mv:define-lang.org:cross_implication_lib_a:/foo>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<mv:define-lang.org:cross_implication_lib_a:/foo>.
+    }
+}

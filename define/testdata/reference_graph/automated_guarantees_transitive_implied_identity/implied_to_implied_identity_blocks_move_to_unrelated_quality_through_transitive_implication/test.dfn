@@ -1,0 +1,36 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<my_secret_holder> {
+            it may only contain particles where {
+                it has the position</secret>.
+            }
+        }
+        define the position<fail_dest> {
+            it may only contain particles where {
+                it has the position</other>.
+            }
+        }
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</implier>.
+                it has the action</implied_action>.
+                it has the position</implied_a>.
+                it has the position</implied_b>.
+            }
+        }
+        create a particle in position<my_secret_holder>.
+        create a particle in position<box>.
+        move the particle in position<my_secret_holder> to position<box>::position</implied_a>.
+        create a particle in position<box>::action</implied_action>::position<trigger_pos>.
+        move the particle in position<box>::position</implied_b> to position<fail_dest>.
+        create a particle in position<my_secret_holder>.
+        create a particle in position<my_secret_holder>::position</secret>.
+        create a particle in position<fail_dest>.
+        create a particle in position<fail_dest>::position</other>.
+        create a particle in position<box>::position</implied_a>.
+        create a particle in position<box>::action</implier>::position<run>.
+    }
+}

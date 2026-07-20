@@ -1,0 +1,17 @@
+# action</p>'s constructor creates and then destroys a particle in its
+# implied position</carrier>. The constructor owns that particle, so the
+# destructor's interface-position requirement is checked locally rather than
+# propagated: position</carrier> never came from a caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</p>.
+            }
+        }
+        create a particle in position<box>.
+    }
+}

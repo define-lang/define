@@ -1,0 +1,8 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<to_pos>.
+    it happens when {
+        the position<to_pos> has a particle.
+    } and it does {
+        move the particle in position<no_such_pos> to position<to_pos>.
+    }
+}

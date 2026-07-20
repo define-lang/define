@@ -1,0 +1,35 @@
+# The widget is moved into worker::slot, back out, through helper, then into
+# worker::slot a second time before worker triggers. worker.destroy(slot) must
+# resolve its requirement to that second fill -- the most recent caller op that
+# leaves slot occupied before the trigger -- not the stale first fill; binding
+# to the first fill would race the move that empties slot again. Likewise
+# helper.move(slot, out) waits on the caller fill of helper::slot, not the
+# helper trigger.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<source>.
+    define the position<temp>.
+    define the position<gw_a> {
+        it may only contain particles where {
+            it has the action</worker>.
+        }
+    }
+    define the position<gw_b> {
+        it may only contain particles where {
+            it has the action</helper>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<source>.
+        create a particle in position<gw_a>.
+        create a particle in position<gw_b>.
+        move the particle in position<source> to position<gw_a>::action</worker>::position<slot>.
+        move the particle in position<gw_a>::action</worker>::position<slot> to position<temp>.
+        move the particle in position<temp> to position<gw_b>::action</helper>::position<slot>.
+        create a particle in position<gw_b>::action</helper>::position<trigger_pos>.
+        move the particle in position<gw_b>::action</helper>::position<out> to position<gw_a>::action</worker>::position<slot>.
+        create a particle in position<gw_a>::action</worker>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/twoport> {
+    define the position<go>.
+    define the position<slot>.
+    it happens when {
+        the position<go> has a particle.
+    } and it does {
+        destroy the particle in position<slot>.
+        destroy the particle in position<go>.
+    }
+}

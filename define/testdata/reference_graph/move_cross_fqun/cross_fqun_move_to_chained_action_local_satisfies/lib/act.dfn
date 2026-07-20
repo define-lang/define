@@ -1,0 +1,13 @@
+define the potential action<mv:define-lang.org:child:/act> {
+    define the position<trigger>.
+    define the position<local_dest> {
+        it may only contain particles where {
+            it has the position</quality>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        create a particle in position<local_dest>.
+    }
+}

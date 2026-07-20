@@ -8,77 +8,16 @@ _CHILD = "mv:define-lang.org:child"
 
 
 def test_cross_fqun_local_to_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<from_pos> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<to_pos> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<from_pos>.\n"
-                f"        move the particle in position<from_pos> to position<to_pos>.\n"
-                f"        create a particle in position<to_pos>::position<{_CHILD}:/x>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_local_to_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
-            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<from_pos> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<to_pos> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/y>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<from_pos>.\n"
-                f"        move the particle in position<from_pos> to position<to_pos>.\n"
-                f"        create a particle in position<to_pos>::position<{_CHILD}:/y>.\n"
-                f"        create a particle in position<from_pos>.\n"
-                f"        create a particle in position<from_pos>::position<{_CHILD}:/x>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -88,84 +27,16 @@ def test_cross_fqun_local_to_local_violates(
 
 
 def test_cross_fqun_local_to_chained_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": (
-                f"define the potential position<{_CHILD}:/x> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position</y>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<from_pos> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/y>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<dest> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<from_pos>.\n"
-                f"        create a particle in position<dest>.\n"
-                f"        move the particle in position<from_pos> to position<dest>::position<{_CHILD}:/x>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_local_to_chained_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": (
-                f"define the potential position<{_CHILD}:/x> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position</y>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<from_pos>.\n"
-                f"        define the position<dest> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<from_pos>.\n"
-                f"        create a particle in position<dest>.\n"
-                f"        move the particle in position<from_pos> to position<dest>::position<{_CHILD}:/x>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -175,84 +46,16 @@ def test_cross_fqun_local_to_chained_violates(
 
 
 def test_cross_fqun_chained_to_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": (
-                f"define the potential position<{_CHILD}:/x> {{\n"
-                f"    it may only contain particles where {{\n"
-                f"        it has the position</y>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<src> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<dest> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/y>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<src>.\n"
-                f"        create a particle in position<src>::position<{_CHILD}:/x>.\n"
-                f"        move the particle in position<src>::position<{_CHILD}:/x> to position<dest>.\n"
-                f"        create a particle in position<dest>::position<{_CHILD}:/y>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_chained_to_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
-            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<src> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/x>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<dest> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/y>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<src>.\n"
-                f"        create a particle in position<src>::position<{_CHILD}:/x>.\n"
-                f"        move the particle in position<src>::position<{_CHILD}:/x> to position<dest>.\n"
-                f"        create a particle in position<dest>::position<{_CHILD}:/y>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -262,103 +65,16 @@ def test_cross_fqun_chained_to_local_violates(
 
 
 def test_cross_fqun_move_to_chained_action_local_satisfies(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.dfn": (
-                f"define the potential action<{_CHILD}:/act> {{\n"
-                f"    define the position<trigger>.\n"
-                f"    define the position<local_dest> {{\n"
-                f"        it may only contain particles where {{\n"
-                f"            it has the position</quality>.\n"
-                f"        }}\n"
-                f"    }}\n"
-                f"    it happens when {{\n"
-                f"        the position<trigger> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        create a particle in position<local_dest>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<src> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/quality>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        define the position<gateway> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the action<{_CHILD}:/act>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<src>.\n"
-                f"        create a particle in position<gateway>.\n"
-                f"        move the particle in position<src> to position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
-                f"        destroy the particle in position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
-                f"        create a particle in position<gateway>::action<{_CHILD}:/act>::position<trigger>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_move_to_chained_action_local_violates(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.dfn": (
-                f"define the potential action<{_CHILD}:/act> {{\n"
-                f"    define the position<trigger>.\n"
-                f"    define the position<local_dest> {{\n"
-                f"        it may only contain particles where {{\n"
-                f"            it has the position</quality>.\n"
-                f"        }}\n"
-                f"    }}\n"
-                f"    it happens when {{\n"
-                f"        the position<trigger> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        create a particle in position<local_dest>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<src>.\n"
-                f"        define the position<gateway> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the action<{_CHILD}:/act>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<src>.\n"
-                f"        create a particle in position<gateway>.\n"
-                f"        move the particle in position<src> to position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
-                f"        create a particle in position<gateway>::action<{_CHILD}:/act>::position<trigger>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
@@ -368,50 +84,9 @@ def test_cross_fqun_move_to_chained_action_local_violates(
 
 
 def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.dfn": (
-                f"define the potential action<{_CHILD}:/act> {{\n"
-                f"    define the position<trigger>.\n"
-                f"    define the position<inner>.\n"
-                f"    it happens when {{\n"
-                f"        the position<trigger> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        create a particle in position<inner>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    define the position<src> {{\n"
-                f"        it may only contain particles where {{\n"
-                f"            it has the action<{_CHILD}:/act>.\n"
-                f"        }}\n"
-                f"    }}\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<dest> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the position<{_CHILD}:/quality>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<src>.\n"
-                f"        move the particle in position<src>::action<{_CHILD}:/act>::position<no_such> to position<dest>.\n"
-                f"        create a particle in position<dest>.\n"
-                f"        create a particle in position<dest>::position<{_CHILD}:/quality>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(

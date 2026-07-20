@@ -1,0 +1,22 @@
+# The first move carries the child to basket::/child without operating on
+# that key directly, so the second move empties basket without finding a
+# direct operation on the carried child. It waits on the first move, the
+# most recent operation on basket's ancestor chain.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    define the position<basket>.
+    define the position<crate>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::position</child>.
+        move the particle in position<box> to position<basket>.
+        move the particle in position<basket> to position<crate>.
+    }
+}

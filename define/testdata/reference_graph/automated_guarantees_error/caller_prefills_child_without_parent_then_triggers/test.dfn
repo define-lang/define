@@ -1,0 +1,20 @@
+# Caller pre-fills a child interface position without the parent, then triggers.
+#
+# The parent check fires for the child create, marking it error.
+# The subsequent trigger and guarantee application handle the
+# error state gracefully with no spurious errors.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<item>::position</child_q>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+    }
+}

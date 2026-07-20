@@ -2,7 +2,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -70,45 +72,9 @@ _DESTRUCTOR_REQUIRES_CHILD_OCCUPIED = (
 
 
 def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -165,46 +131,9 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
 
 
 def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>::action</destructor>::position<item>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -269,46 +198,9 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
 
 
 def test_implied_requirement_propagates_and_is_violated_at_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "marker.dfn": "define the potential position<my.domain.com:my_lib:/marker>.\n",
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_IMPLIED_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -365,47 +257,9 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
 
 
 def test_child_requirement_propagates_and_is_violated_at_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "leaf.dfn": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_CHILD_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>::action</destructor>::position<holder>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -462,47 +316,9 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
 
 
 def test_requirement_follows_moved_in_particle_to_contracted_origin(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<local_box>.\n"
-                "        move the particle in position<incoming> to position<local_box>.\n"
-                "        destroy the particle in position<local_box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -559,46 +375,9 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
 
 
 def test_propagated_requirement_satisfied_at_caller_produces_no_error(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</mid>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>.\n"
-                "        create a particle in position<box>::action</mid>::position<incoming>::action</destructor>::position<item>.\n"
-                "        create a particle in position<box>::action</mid>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
         (_MID, _DESTRUCTOR),

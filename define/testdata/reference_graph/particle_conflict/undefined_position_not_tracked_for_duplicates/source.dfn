@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<no_such_pos>.
+        create a particle in position<no_such_pos>.
+    }
+}

@@ -1,0 +1,31 @@
+# A constraint assigns the carrier action, which then assigns the destructor.
+# The chain starts at the directly declared carrier constraint and then shows
+# the carrier's implication of the destructor.
+# Implying a destructor that the carrier never triggers is intrinsically an
+# unused implication; it is incidental to what this test checks.
+# TODO: Decide whether to allow an action to imply a destructor it does not
+# use. A destructor can never be triggered from the implier's own body, so
+# implying one always trips this diagnostic; if we allow it, this assertion
+# goes away and the destructor count above drops to one.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</carrier>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::action</carrier>::position<run>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

@@ -1,0 +1,22 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local_a> {
+            it may only contain particles where {
+                it has the action</implier>.
+            }
+        }
+        define the position<bearer>.
+        define the position<local_b> {
+            it may only contain particles where {
+                it has the position</implied>.
+            }
+        }
+        create a particle in position<local_a>.
+        move the particle in position<local_a> to position<bearer>.
+        move the particle in position<bearer> to position<local_b>.
+        destroy the particle in position<local_b>::position</implied>.
+    }
+}

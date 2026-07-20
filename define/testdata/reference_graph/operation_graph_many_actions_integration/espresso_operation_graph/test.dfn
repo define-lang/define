@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<station> {
+            it may only contain particles where {
+                it has the action</grind>.
+                it has the action</heat>.
+                it has the action</brew>.
+            }
+        }
+        create a particle in position<station>.
+        create a particle in position<station>::action</grind>::position<beans>.
+        create a particle in position<station>::action</heat>::position<cold_water>.
+        move the particle in position<station>::action</grind>::position<grounds> to position<station>::action</brew>::position<grounds>.
+        move the particle in position<station>::action</heat>::position<hot_water> to position<station>::action</brew>::position<water>.
+        destroy the particle in position<station>::action</brew>::position<cup>.
+        destroy the particle in position<station>::action</brew>::position<spent_puck>.
+    }
+}

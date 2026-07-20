@@ -1,0 +1,21 @@
+# The move reads <in>, the trigger position, so it needs the trigger fill as
+# a real data dependency -- just as in the trigger-read test above. But its
+# EMPTY requirement on <out> resolves to the caller's destroy, and that
+# resolved edge must not displace the trigger edge: with only the destroy
+# edge, the move could run at destroy-time, while <in> is still empty.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gw> {
+        it may only contain particles where {
+            it has the action</worker>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gw>.
+        create a particle in position<gw>::action</worker>::position<out>.
+        destroy the particle in position<gw>::action</worker>::position<out>.
+        create a particle in position<gw>::action</worker>::position<in>.
+    }
+}

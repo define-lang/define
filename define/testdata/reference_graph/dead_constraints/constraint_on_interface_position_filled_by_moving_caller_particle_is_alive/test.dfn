@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<in_iface> {
+        it may only contain particles where {
+            it has the position</thing>.
+        }
+    }
+    define the position<out_iface> {
+        it may only contain particles where {
+            it has the position</thing>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<in_iface> to position<out_iface>.
+    }
+}

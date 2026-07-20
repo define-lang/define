@@ -1,0 +1,7 @@
+define the potential position<my.domain.com:my_lib:/target> {
+    it may only contain particles where {
+        it has the action</foo>.
+        it has the action</construct_bar>.
+        it has the position</bar>.
+    }
+}

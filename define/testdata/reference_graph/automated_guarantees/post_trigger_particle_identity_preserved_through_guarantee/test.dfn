@@ -1,0 +1,24 @@
+# After trigger, a particle moved by the action's guarantee retains its constraint qualities.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<wide> {
+            it may only contain particles where {
+                it has the position</quality_a>.
+                it has the position</quality_b>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<wide>.
+        move the particle in position<wide> to position<box>::action</other>::position<item>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<dest> to position<wide>.
+    }
+}

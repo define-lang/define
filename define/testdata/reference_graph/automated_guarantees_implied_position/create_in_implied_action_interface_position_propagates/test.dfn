@@ -1,0 +1,18 @@
+# /inner creates in an implied action's interface position (action</foo>::position<iface>); /test sees position<box>::action</foo>::position<iface> filled.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</inner>.
+                it has the action</foo>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</foo>::position<trigger_pos>.
+        create a particle in position<box>::action</inner>::position<trigger_pos>.
+        create a particle in position<box>::action</foo>::position<iface>.
+    }
+}

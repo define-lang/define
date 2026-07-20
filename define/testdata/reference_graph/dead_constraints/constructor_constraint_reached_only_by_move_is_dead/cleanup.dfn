@@ -1,0 +1,8 @@
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}

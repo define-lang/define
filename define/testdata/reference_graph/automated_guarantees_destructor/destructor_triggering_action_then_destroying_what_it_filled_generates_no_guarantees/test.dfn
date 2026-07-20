@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</filler>.
+    it also assigns the position</implied>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        create a particle in action</filler>::position<trigger_pos>.
+        destroy the particle in position</implied>.
+    }
+}

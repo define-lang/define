@@ -1,0 +1,20 @@
+# inner.destroy(slot) reads a position whose requirement propagates up through
+# /middle (which never touches it) to /test, so it waits on the /test fill that
+# satisfies it -- reached through the RequirementNode /middle materializes for
+# the propagated requirement.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</middle>::position<gw>.
+        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<slot>.
+        create a particle in position<box>::action</middle>::position<trigger_pos>.
+    }
+}

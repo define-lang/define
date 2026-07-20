@@ -1,0 +1,25 @@
+# first and second each empty and refill worker's trigger position, so worker
+# runs four times across the program. Each caller names its own invocations of
+# worker, so those names only tell the four runs apart once the invocation
+# they were triggered from is on the front of them.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<holder_first> {
+        it may only contain particles where {
+            it has the action</first>.
+        }
+    }
+    define the position<holder_second> {
+        it may only contain particles where {
+            it has the action</second>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<holder_first>.
+        create a particle in position<holder_first>::action</first>::position<trigger_pos>.
+        create a particle in position<holder_second>.
+        create a particle in position<holder_second>::action</second>::position<trigger_pos>.
+    }
+}

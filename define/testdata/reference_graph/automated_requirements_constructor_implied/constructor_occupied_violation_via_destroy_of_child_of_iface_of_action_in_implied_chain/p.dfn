@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/p> {
+    it also assigns the position</q>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</q>.
+        create a particle in position</q>::position</outer>.
+        create a particle in position</q>::position</outer>::action</a>::position<iface>.
+        destroy the particle in position</q>::position</outer>::action</a>::position<iface>::position</child>.
+    }
+}

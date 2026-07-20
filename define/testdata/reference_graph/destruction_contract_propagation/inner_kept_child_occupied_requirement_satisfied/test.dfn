@@ -1,0 +1,24 @@
+# The caller-attached destructor's required child stays occupied through the destruction, so verification passes.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the position</file>.
+                it has the action</delete_file_destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</file>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

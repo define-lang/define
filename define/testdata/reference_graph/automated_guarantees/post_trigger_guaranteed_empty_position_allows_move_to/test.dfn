@@ -1,0 +1,18 @@
+# After trigger, a position guaranteed empty by the action allows move-to.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<spare> to position<box>::action</other>::position<item>.
+    }
+}

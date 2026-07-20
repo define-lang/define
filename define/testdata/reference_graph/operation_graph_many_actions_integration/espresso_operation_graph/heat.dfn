@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/heat> {
+    define the position<cold_water>.
+    define the position<hot_water>.
+    it happens when {
+        the position<cold_water> has a particle.
+    } and it does {
+        move the particle in position<cold_water> to position<hot_water>.
+    }
+}

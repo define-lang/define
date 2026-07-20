@@ -1,0 +1,27 @@
+# Destroying a caller-passed parent close_file cannot see into makes /test walk the merged child state and fire the child's caller-attached destructor before the parent's, both attributed to close_file.
+# Post-order: the child's destructor fires before the parent's; both are
+# attributed to close_file (the destroyer). The (test, close_file) trigger
+# edge is recorded after the contract is processed.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</parent_destructor>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</child>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

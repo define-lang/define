@@ -1,0 +1,15 @@
+# Moves item to a holder and back, requiring item to be occupied
+# when the destructor fires.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<box>.
+    }
+}

@@ -1,0 +1,17 @@
+# When the caller fills an implied position used to reach an inner action, the inner action's requirements propagate to the caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</x>.
+                it has the action</middle>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</x>.
+        create a particle in position<box>::action</middle>::position<run>.
+    }
+}

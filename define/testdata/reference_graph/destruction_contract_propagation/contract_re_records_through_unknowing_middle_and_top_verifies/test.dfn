@@ -1,0 +1,24 @@
+# Passing a caller-passed particle through mid, which does not know its destructor, re-records the Destruction Contract up to /test, which holds the required child state and verifies it satisfied.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the position</file>.
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</file>.
+        move the particle in position<my_file> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

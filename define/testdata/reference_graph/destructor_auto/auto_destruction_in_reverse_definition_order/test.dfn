@@ -1,0 +1,21 @@
+# Two local positions occupied at end of block fire destructors in reverse definition order.
+# box_b was defined later, so destructor_b fires first; destructor_a after.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box_a> {
+            it may only contain particles where {
+                it has the action</destructor_a>.
+            }
+        }
+        define the position<box_b> {
+            it may only contain particles where {
+                it has the action</destructor_b>.
+            }
+        }
+        create a particle in position<box_a>.
+        create a particle in position<box_b>.
+    }
+}

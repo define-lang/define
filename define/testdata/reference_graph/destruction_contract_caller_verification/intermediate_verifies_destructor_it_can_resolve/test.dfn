@@ -1,0 +1,19 @@
+# Filling the destructor's required-empty position inside mid and then passing the particle to close_file makes mid (not the owner /test) report the violation, attributed to mid's own interface constraint.
+# The intermediate mid reports the violation, not the owner /test.
+# Attribution is mid's own interface constraint, even though /test created
+# the particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

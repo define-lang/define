@@ -4,7 +4,6 @@ from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -40,23 +39,9 @@ def test_move_to_occupied_position(
 
 
 def test_move_updates_state_allows_create_in_source(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
@@ -74,24 +59,9 @@ def test_cannot_create_in_position_that_was_moved_into(
 
 
 def test_double_move_works(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        define the position<c>.\n"
-        "        create a particle in position<a>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        move the particle in position<b> to position<c>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
@@ -138,32 +108,9 @@ def test_round_trip_move_fails_second_return(
 
 
 def test_two_actions_same_name_one_empty_error_one_clean(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        create a particle in position<from_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -175,34 +122,9 @@ def test_two_actions_same_name_one_empty_error_one_clean(
 
 
 def test_two_actions_same_name_one_occupied_error_one_clean(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        create a particle in position<from_pos>.\n"
-        "        create a particle in position<to_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        create a particle in position<from_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -215,54 +137,16 @@ def test_two_actions_same_name_one_occupied_error_one_clean(
 
 
 def test_two_actions_with_move_same_local_names(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        create a particle in position<from_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<from_pos>.\n"
-        "        define the position<to_pos>.\n"
-        "        create a particle in position<from_pos>.\n"
-        "        move the particle in position<from_pos> to position<to_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_move_from_empty_marks_both_positions_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "        create a particle in position<b>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -274,25 +158,9 @@ def test_move_from_empty_marks_both_positions_error(
 
 
 def test_move_to_occupied_marks_both_positions_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "        create a particle in position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "        create a particle in position<b>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -305,25 +173,9 @@ def test_move_to_occupied_marks_both_positions_error(
 
 
 def test_both_from_empty_and_to_occupied_marks_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        create a particle in position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        create a particle in position<a>.\n"
-        "        create a particle in position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -342,25 +194,9 @@ def test_both_from_empty_and_to_occupied_marks_error(
 
 
 def test_error_state_does_not_affect_other_positions(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        define the position<c>.\n"
-        "        create a particle in position<a>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        create a particle in position<c>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -379,26 +215,9 @@ def test_error_state_does_not_affect_other_positions(
 
 
 def test_single_error_position_marks_both_error(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        define the position<b>.\n"
-        "        define the position<c>.\n"
-        "        create a particle in position<a>.\n"
-        "        create a particle in position<b>.\n"
-        "        move the particle in position<a> to position<b>.\n"
-        "        move the particle in position<a> to position<c>.\n"
-        "        create a particle in position<c>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -411,32 +230,9 @@ def test_single_error_position_marks_both_error(
 
 
 def test_move_from_chained_to_occupied_local_position(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<src>::position</x> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -449,30 +245,9 @@ def test_move_from_chained_to_occupied_local_position(
 
 
 def test_move_from_empty_local_chained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<src>.\n"
-                "        move the particle in position<src>::position</x> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -485,32 +260,9 @@ def test_move_from_empty_local_chained(
 
 
 def test_move_to_occupied_local_chained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src>.\n"
-                "        define the position<dest> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<dest>.\n"
-                "        create a particle in position<dest>::position</x>.\n"
-                "        move the particle in position<src> to position<dest>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -525,33 +277,9 @@ def test_move_to_occupied_local_chained(
 
 
 def test_double_move_from_local_chained_fails(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest_a>.\n"
-                "        define the position<dest_b>.\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "        move the particle in position<src>::position</x> to position<dest_a>.\n"
-                "        move the particle in position<src>::position</x> to position<dest_b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -564,93 +292,21 @@ def test_double_move_from_local_chained_fails(
 
 
 def test_move_from_local_chained_to_local(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "        move the particle in position<src>::position</x> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_from_local_to_local_chained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src>.\n"
-                "        define the position<dest> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<src> to position<dest>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_move_between_local_chained(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<src>::position</x> to position<dest>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)

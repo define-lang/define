@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<def_pos> {
+        it may only contain particles where {
+            it has the position</x>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<stmt_pos> {
+            it may only contain particles where {
+                it has the position</x>.
+            }
+        }
+        create a particle in position<stmt_pos>.
+        move the particle in position<stmt_pos> to position<def_pos>.
+    }
+}

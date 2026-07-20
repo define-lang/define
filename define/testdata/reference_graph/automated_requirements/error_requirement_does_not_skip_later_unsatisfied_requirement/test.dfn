@@ -1,0 +1,23 @@
+# An error-state requirement does not skip subsequent requirements.
+#
+# When one inferred requirement's position is error, subsequent
+# requirements must still be checked. Ensures `_check_requirements` uses
+# `continue` to skip the error one rather than `break` out of the loop.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<src>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<src>.
+        move the particle in position<src> to position<box>::action</inner>::position<a>.
+        move the particle in position<src> to position<box>::action</inner>::position<a>.
+        create a particle in position<box>::action</inner>::position<trigger_pos>.
+    }
+}

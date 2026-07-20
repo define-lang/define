@@ -1,0 +1,22 @@
+# <output> is both a requirement (the callee destroys it) and a guarantee (the
+# callee leaves it empty), so the trigger's guarantee overwrites its last
+# operation in the caller graph. other.destroy(output) still resolves to the
+# caller fill that satisfies the requirement, not to the guarantee node or the
+# trigger. The caller's refill then waits on the callee's destroy, its final
+# operation on the position.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<output>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+        create a particle in position<gateway>::action</other>::position<output>.
+    }
+}

@@ -1,0 +1,18 @@
+# The first </origin> particle and its </child> no longer exist when the
+# caller refills </origin>. The callee destroys the replacement particle, so
+# it waits on the second create of </origin>, not the child operation from the
+# previous particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</origin>.
+    it also assigns the action</other>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</origin>.
+        create a particle in position</origin>::position</child>.
+        destroy the particle in position</origin>.
+        create a particle in position</origin>.
+        create a particle in action</other>::position<trigger_pos>.
+    }
+}

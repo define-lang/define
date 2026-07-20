@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:parent_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action<my.domain.com:child_lib:/b_ctor>.
+                it has the position<my.domain.com:child_lib:/b>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position<my.domain.com:child_lib:/b>::position<my.domain.com:child_lib:/a>.
+    }
+}

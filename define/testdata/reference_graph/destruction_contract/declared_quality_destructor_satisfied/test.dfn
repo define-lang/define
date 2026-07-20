@@ -1,0 +1,24 @@
+# When the declared-quality destructor's required position is filled, close_file's verification passes and no diagnostic is produced.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</file>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</file>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

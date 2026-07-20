@@ -1,0 +1,24 @@
+# No propagation when the action is only triggered on a local position, not the interface.
+#
+# /outer has both position<iface> and position<local> constrained with action</inner>.
+# It only triggers /inner through position<local>, not through position<iface>.
+# Even though action</inner> is a constraint on position<iface>, the requirement
+# should NOT propagate through it because /inner was never triggered on that path.
+# The test pre-fills position<iface>::action</inner>::position<item> without a
+# propagation error; iface's never-triggered action</inner> is itself dead code.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<iface>.
+        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<trigger_pos>.
+    }
+}

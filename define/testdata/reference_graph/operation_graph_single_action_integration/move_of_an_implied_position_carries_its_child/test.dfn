@@ -1,0 +1,17 @@
+# The move carries the child to dest::/child without operating on that key
+# directly, so the destroy waits on the move.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</implied>.
+    define the position<run>.
+    define the position<dest> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</implied> to position<dest>.
+        destroy the particle in position<dest>::position</child>.
+    }
+}

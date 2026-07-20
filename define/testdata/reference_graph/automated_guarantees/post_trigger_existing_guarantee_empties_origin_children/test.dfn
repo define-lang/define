@@ -1,0 +1,33 @@
+# After trigger, moving a parent away empties the origin's children even if the caller filled them.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</child_q>.
+            }
+        }
+        define the position<spare> {
+            it may only contain particles where {
+                it has the position</child_q>.
+            }
+        }
+        define the position<spare2>.
+        define the position<sink>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<spare2>.
+        move the particle in position<spare> to position<local>.
+        move the particle in position<spare2> to position<local>::position</child_q>.
+        move the particle in position<local> to position<box>::action</other>::position<iface>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<iface>::position</child_q> to position<sink>.
+    }
+}

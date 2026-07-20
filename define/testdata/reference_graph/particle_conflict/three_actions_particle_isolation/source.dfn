@@ -1,0 +1,27 @@
+define the potential action<my.domain.com:my_lib:/act_one> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<shared_name>.
+        create a particle in position<shared_name>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/act_two> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<shared_name>.
+        create a particle in position<shared_name>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/act_three> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<shared_name>.
+        create a particle in position<shared_name>.
+    }
+}

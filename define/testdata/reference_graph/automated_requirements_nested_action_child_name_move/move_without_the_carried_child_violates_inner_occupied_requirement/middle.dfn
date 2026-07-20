@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<run>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</parent>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<gw>.
+        move the particle in position<iface> to position<gw>::action</inner>::position<input>.
+        create a particle in position<gw>::action</inner>::position<run>.
+    }
+}

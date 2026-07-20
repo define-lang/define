@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:child_lib:/b> {
+    it may only contain particles where {
+        it has the action</a_ctor>.
+        it has the position</a>.
+    }
+}

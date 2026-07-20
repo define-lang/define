@@ -1,0 +1,36 @@
+# After a trigger chain move-then-return, the particle retains its original constraint qualities.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare> {
+            it may only contain particles where {
+                it has the position</x>.
+            }
+        }
+        define the position<wide> {
+            it may only contain particles where {
+                it has the position</quality_a>.
+                it has the position</quality_b>.
+            }
+        }
+        define the position<needs_b> {
+            it may only contain particles where {
+                it has the position</quality_b>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<wide>.
+        move the particle in position<wide> to position<spare>::position</x>.
+        move the particle in position<spare> to position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<trigger_pos>::position</x> to position<needs_b>.
+        create a particle in position<needs_b>::position</quality_b>.
+    }
+}

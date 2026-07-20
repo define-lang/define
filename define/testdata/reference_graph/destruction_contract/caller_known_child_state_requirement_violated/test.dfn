@@ -1,0 +1,23 @@
+# Verifying a caller-attached destructor close_file cannot see fails when /test left the destructor's required position</file> empty.
+# The violation is observed at the line that triggered close_file.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</delete_file_destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

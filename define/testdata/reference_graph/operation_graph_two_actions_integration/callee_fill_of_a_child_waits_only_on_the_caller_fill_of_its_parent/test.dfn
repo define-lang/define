@@ -1,0 +1,18 @@
+# output::/a is empty by default, so the caller never touches it. The callee's
+# fill of it only needs output present, so it waits on the caller's fill of
+# output alone.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<output>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

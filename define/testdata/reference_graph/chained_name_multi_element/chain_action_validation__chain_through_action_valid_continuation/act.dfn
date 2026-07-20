@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<inner> {
+        it may only contain particles where {
+            it has the position</deeper>.
+        }
+    }
+    it happens when {
+        the position<inner> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+        destroy the particle in position<inner>::position</deeper>.
+    }
+}

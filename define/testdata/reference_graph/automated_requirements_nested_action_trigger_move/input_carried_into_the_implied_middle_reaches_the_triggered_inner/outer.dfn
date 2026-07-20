@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    it also assigns the action</middle>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<input> to action</middle>::position<input>.
+        create a particle in action</middle>::position<run>.
+    }
+}

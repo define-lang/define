@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</a>.
+            it has the position</b>.
+        }
+    }
+    define the position<keeper>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<box>::position</b>.
+        move the particle in position<box>::position</a> to position<keeper>.
+    }
+}

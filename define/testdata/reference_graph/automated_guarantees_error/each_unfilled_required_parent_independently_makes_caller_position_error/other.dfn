@@ -1,0 +1,21 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<a> {
+        it may only contain particles where {
+            it has the position</c1>.
+        }
+    }
+    define the position<b> {
+        it may only contain particles where {
+            it has the position</c2>.
+        }
+    }
+    define the position<sink_a>.
+    define the position<sink_b>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        move the particle in position<a>::position</c1> to position<sink_a>.
+        move the particle in position<b>::position</c2> to position<sink_b>.
+    }
+}

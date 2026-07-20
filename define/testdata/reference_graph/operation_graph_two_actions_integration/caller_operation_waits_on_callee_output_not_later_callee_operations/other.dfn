@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<output>.
+    define the position<late>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<output>.
+        create a particle in position<late>.
+        destroy the particle in position<late>.
+    }
+}

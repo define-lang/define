@@ -1,0 +1,19 @@
+# Nobody empties holder::/a: it is empty by default in the particle /test
+# created in <holder>. /middle never touches it either, so /inner's fill of it
+# waits on the /test create that made its parent, two levels up.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</middle>::position<gw>.
+        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<holder>.
+        create a particle in position<box>::action</middle>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</x>.
+        }
+    }
+    it happens when {
+        the position<iface> has a particle.
+    } and it does {
+        define the position<dest>.
+        move the particle in position<iface>::position</x> to position<dest>.
+        create a particle in position<iface>::position</x>.
+    }
+}

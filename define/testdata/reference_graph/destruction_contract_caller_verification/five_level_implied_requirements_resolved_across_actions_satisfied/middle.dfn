@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<incoming> {
+        it may only contain particles where {
+            it has the action</destructor>.
+            it has the position</p2>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<incoming>::position</p2>.
+        destroy the particle in position<incoming>::position</p2>.
+        move the particle in position<incoming> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

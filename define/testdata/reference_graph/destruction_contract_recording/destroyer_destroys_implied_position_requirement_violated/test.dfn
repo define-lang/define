@@ -1,0 +1,26 @@
+# The destroyed particle is in close_file's implied position</slot>, so the contract's destroyed position remaps through the implied-quality prefix (position<box>::position</slot>, not under action</close_file>).
+# Surfaced via close_file, which destroys the particle in its implied slot.
+# Implied position remaps under position<box>, not under action</close_file>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</slot>.
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the position</file>.
+                it has the action</delete_destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<box>::position</slot>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

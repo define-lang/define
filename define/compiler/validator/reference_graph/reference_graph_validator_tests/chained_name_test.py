@@ -5,8 +5,6 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
     ValidateTestdataProjectWithReferenceGraph,
 )
@@ -56,19 +54,9 @@ class TestCreateParticle:
 
     def test_chain_both_endpoints_action(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in action<act_a>::position<pos_mid>::action<act_b>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 6
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -125,19 +113,9 @@ class TestCreateParticle:
 
     def test_chain_starting_with_action(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in action<act_a>::position<pos_b>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -158,19 +136,9 @@ class TestCreateParticle:
 
     def test_local_action_name_does_not_match_position(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<a>.\n"
-            "    it happens when {\n"
-            "        the position<a> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in action<a>::position<pos_b>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -191,19 +159,9 @@ class TestCreateParticle:
 
     def test_name_error_with_chain_endpoint_check(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in action<Bad>::position<pos_other>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -232,23 +190,9 @@ class TestCreateParticle:
 
     def test_chained_local_after_short_form_global_position(
         self,
-        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<run>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position</other>::position<local>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
-            },
-        )
+        result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -268,19 +212,9 @@ class TestCreateParticle:
 
     def test_undefined_local_position_in_chain(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in position<no_pos>::action<act_b>::position<pos_c>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -349,39 +283,10 @@ class TestMoveParticle:
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_ending_with_action_in_to(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</act_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    define the position<pos_from>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_from> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in position<pos_from> to position<pos_a>::action</act_b>.\n"
-                    "        create a particle in position<pos_a>::action</act_b>::position<run>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_b.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                    "    define the position<run>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -390,34 +295,10 @@ class TestMoveParticle:
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_single_action_in_from_position(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<run>.\n"
-                    "    define the position<to_pos>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in action</act_x> to position<to_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_x.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_x> {\n"
-                    "    define the position<run>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -432,33 +313,10 @@ class TestMoveParticle:
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
     def test_single_action_in_to_position(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<from_pos>.\n"
-                    "    it happens when {\n"
-                    "        the position<from_pos> has a particle.\n"
-                    "    } and it does {\n"
-                    "        move the particle in position<from_pos> to action</act_y>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_y.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_y> {\n"
-                    "    define the position<run>.\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -473,39 +331,10 @@ class TestMoveParticle:
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
     def test_valid_chained_through_action(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+        self,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain particles where {\n"
-                    "            it has the action</act_middle>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    define the position<dest>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a> has a particle.\n"
-                    "    } and it does {\n"
-                    "        create a particle in position<pos_a>::action</act_middle>::position<inner_pos>.\n"
-                    "        move the particle in position<pos_a>::action</act_middle>::position<inner_pos> to position<dest>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "act_middle.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/act_middle> {\n"
-                    "    define the position<inner_pos>.\n"
-                    "    it happens when {\n"
-                    "        the position<inner_pos> has a particle.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            }
-        )
+        result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
 
     def test_chain_element_inside_action_not_found(
@@ -551,19 +380,9 @@ class TestMoveParticle:
 class TestDestroyParticle:
     def test_undefined_local_position_in_chain(
         self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+        validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        destroy the particle in position<no_pos>::action<act_b>::position<pos_c>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
+        results = validate_testdata_non_filesystem_with_reference_graph().file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)

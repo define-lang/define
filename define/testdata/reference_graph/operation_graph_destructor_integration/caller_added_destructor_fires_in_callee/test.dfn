@@ -1,0 +1,24 @@
+# Aspirational: when destructor triggers are recorded, action</callee>'s destroy
+# fires the caller-added destructor on the particle it destroys, including the
+# destructor's operations in the operation graph.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</callee>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<box>::action</callee>::position<target>.
+        create a particle in position<box>::action</callee>::position<run>.
+    }
+}

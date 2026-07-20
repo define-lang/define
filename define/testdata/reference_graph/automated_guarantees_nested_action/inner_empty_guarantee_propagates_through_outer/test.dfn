@@ -1,0 +1,20 @@
+# /inner moves from position<item>, guaranteeing it empty.
+#
+# /outer fills position<item> and triggers /inner, which empties it.
+# /test triggers /outer, then creates in position<item> — which should
+# succeed because /inner's empty guarantee propagates through /outer.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.
+    }
+}

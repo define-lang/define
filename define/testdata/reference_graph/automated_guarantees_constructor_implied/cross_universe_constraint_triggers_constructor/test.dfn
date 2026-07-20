@@ -1,0 +1,16 @@
+define the potential action<mv:define-lang.org:parent:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action<mv:define-lang.org:child:/construct_b>.
+                it has the position<mv:define-lang.org:child:/b>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position<mv:define-lang.org:child:/b>::position<mv:define-lang.org:child:/a>.
+        create a particle in position<box>::position<mv:define-lang.org:child:/b>.
+    }
+}

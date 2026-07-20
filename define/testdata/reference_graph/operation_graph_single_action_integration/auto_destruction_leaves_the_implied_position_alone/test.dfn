@@ -1,0 +1,13 @@
+# The implied position belongs to the particle the action is assigned to, not
+# to the action's body, so the block end destroys only position<local>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</implied>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local>.
+        create a particle in position<local>.
+        create a particle in position</implied>.
+    }
+}

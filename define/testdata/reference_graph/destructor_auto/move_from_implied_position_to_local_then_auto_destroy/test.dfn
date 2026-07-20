@@ -1,0 +1,11 @@
+# A caller-passed particle moved from an implied position into a local fires its destructor at end of block.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</implied_q>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local>.
+        move the particle in position</implied_q> to position<local>.
+    }
+}

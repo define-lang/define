@@ -1,0 +1,15 @@
+# A constructor triggers an implied action that destroys a particle the action is blind to; the constructor resolves the destructor it knows through the action's Destruction Contract, reporting its unmet requirement.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</callee>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</d>.
+            }
+        }
+        create a particle in position<box>.
+        move the particle in position<box> to action</callee>::position<incoming>.
+    }
+}

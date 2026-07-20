@@ -1,0 +1,22 @@
+# A destroy empties a position the same way a move does, and it destroys the
+# particle's child names along with it, so the same crossing applies: the
+# callee destroys the caller's </item> particle, which the caller filled a
+# </deep> inside, so the destroy waits on that fill and not on the caller's
+# fill of </item> itself, which the </deep> fill supersedes.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<input>.
+        create a particle in position<gateway>::action</other>::position<input>::position</item>.
+        create a particle in position<gateway>::action</other>::position<input>::position</item>::position</deep>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

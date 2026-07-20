@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<item>.
+    define the position<dest>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<item> to position<dest>.
+    }
+}

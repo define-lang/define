@@ -1,0 +1,22 @@
+# Second trigger fails when the dest position is still occupied from the first trigger's move guarantee.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare>.
+        define the position<spare2>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<spare2>.
+        move the particle in position<spare> to position<box>::action</other>::position<item>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<spare2> to position<box>::action</other>::position<item>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+    }
+}

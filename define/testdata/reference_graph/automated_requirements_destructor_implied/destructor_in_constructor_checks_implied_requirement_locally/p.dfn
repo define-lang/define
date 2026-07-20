@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/p> {
+    it also assigns the position</carrier>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</carrier>.
+        destroy the particle in position</carrier>.
+    }
+}

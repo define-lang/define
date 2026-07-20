@@ -1,0 +1,14 @@
+# Triggering from a constructor without filling the required occupied position fails.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+    }
+}

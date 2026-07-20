@@ -1,0 +1,19 @@
+# Triggering /inner fills out; the body empties out; re-triggering /inner re-fills out (the later guarantee wins), so a create there fails.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</inner>::position<t>.
+        destroy the particle in position<box>::action</inner>::position<out>.
+        destroy the particle in position<box>::action</inner>::position<t>.
+        create a particle in position<box>::action</inner>::position<t>.
+        create a particle in position<box>::action</inner>::position<out>.
+    }
+}

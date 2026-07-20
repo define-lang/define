@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</filler>.
+    it also assigns the action</consumer>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in action</filler>::position<trigger>.
+        create a particle in action</consumer>::position<trigger>.
+    }
+}

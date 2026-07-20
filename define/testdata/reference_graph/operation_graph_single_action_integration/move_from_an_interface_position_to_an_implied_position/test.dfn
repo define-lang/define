@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</implied>.
+    define the position<run>.
+    define the position<source>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<source>.
+        move the particle in position<source> to position</implied>.
+    }
+}

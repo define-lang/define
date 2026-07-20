@@ -1,0 +1,20 @@
+# middle runs twice, and triggers worker twice in each of its runs. middle
+# names both of its invocations of worker the same way in either run, so the
+# invocation middle itself is in has to go on the front of them to tell the
+# four runs of worker apart.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<holder> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</middle>::position<trigger_pos>.
+        destroy the particle in position<holder>::action</middle>::position<trigger_pos>.
+        create a particle in position<holder>::action</middle>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,24 @@
+# When outer knows the destructor but no required states, while middle (blind) makes the occupied-required position known-empty and inner (blind) fills the empty-required one, outer is the only place every state is known, so it reports both violations there with p2's fill site carried from inner.
+# inner filled p2; outer never touched it, so the fill site is the one the
+# contract carried up from inner.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<box>::action</outer>::position<incoming>.
+        create a particle in position<box>::action</outer>::position<run>.
+    }
+}

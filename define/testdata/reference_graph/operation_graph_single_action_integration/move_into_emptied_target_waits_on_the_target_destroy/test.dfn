@@ -1,0 +1,28 @@
+# The move waits on the target's destroy (the most recent operation on the
+# target's ancestor chain), which already waits on the destroy of the
+# target's former child (the Child Rule). So the move is ordered after that
+# child-destroy transitively -- no redundant direct edge to it.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<src> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    define the position<dest> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<dest>.
+        create a particle in position<dest>::position</child>.
+        destroy the particle in position<dest>::position</child>.
+        destroy the particle in position<dest>.
+        create a particle in position<src>.
+        create a particle in position<src>::position</child>.
+        move the particle in position<src> to position<dest>.
+    }
+}

@@ -1,0 +1,15 @@
+# inner fires the constructor when it creates a particle in its own slot,
+# but /test never occupies box, so no constructor fires for /test.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<box>::action</inner>::position<slot>.
+    }
+}

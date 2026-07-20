@@ -1,0 +1,23 @@
+# Diagnostics are sorted by source location, so box_a precedes box_b even
+# though box_b is destroyed first.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box_a> {
+            it may only contain particles where {
+                it has the action</destructor_empty>.
+            }
+        }
+        define the position<box_b> {
+            it may only contain particles where {
+                it has the action</destructor_empty>.
+            }
+        }
+        create a particle in position<box_a>.
+        create a particle in position<box_a>::action</destructor_empty>::position<item>.
+        create a particle in position<box_b>.
+        create a particle in position<box_b>::action</destructor_empty>::position<item>.
+    }
+}

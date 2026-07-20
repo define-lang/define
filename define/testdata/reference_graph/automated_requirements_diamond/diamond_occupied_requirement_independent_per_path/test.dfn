@@ -1,0 +1,30 @@
+# /shared requires position<item> occupied (first reference is a move-from).
+#
+# /act_b fills position<item> before triggering /shared — satisfying the
+# OCCUPIED requirement internally, so it does NOT propagate to /test.
+# /act_c does NOT fill position<item>, so the OCCUPIED requirement
+# propagates through /act_c to /test. The error is on test.dfn because
+# /test does not fill position<item> for /act_c's path either.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<box_b> {
+        it may only contain particles where {
+            it has the action</act_b>.
+        }
+    }
+    define the position<box_c> {
+        it may only contain particles where {
+            it has the action</act_c>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<box_b>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>.
+        create a particle in position<box_b>::action</act_b>::position<pp>.
+        create a particle in position<box_c>.
+        create a particle in position<box_c>::action</act_c>::position<gateway>.
+        create a particle in position<box_c>::action</act_c>::position<pp>.
+    }
+}

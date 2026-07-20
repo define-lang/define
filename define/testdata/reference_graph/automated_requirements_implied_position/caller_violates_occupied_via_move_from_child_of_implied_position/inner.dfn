@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/inner> {
+    it also assigns the position</implied>.
+    define the position<run>.
+    define the position<sink>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</implied>::position</child> to position<sink>.
+    }
+}

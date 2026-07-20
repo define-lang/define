@@ -1,0 +1,21 @@
+# Emptying <grandchild> reaches the caller's operation on
+# <greatgrandchild>. The later emptying of <parent> needs only that callee
+# operation because it already reaches every caller operation on the path.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<parent>.
+        create a particle in position<gateway>::action</other>::position<parent>::position</child>.
+        create a particle in position<gateway>::action</other>::position<parent>::position</child>::position</grandchild>.
+        create a particle in position<gateway>::action</other>::position<parent>::position</child>::position</grandchild>::position</greatgrandchild>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

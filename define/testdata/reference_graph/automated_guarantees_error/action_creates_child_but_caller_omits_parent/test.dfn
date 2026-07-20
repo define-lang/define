@@ -1,0 +1,20 @@
+# Action's body creates a particle in both parent and child interface positions.
+#
+# The caller doesn't fill position<item> or its child — the action
+# fills them internally, generating OccupiedByNew guarantees for both.
+# The guarantee application should succeed even though the caller
+# never set up the parent, because both are created by the action.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+    }
+}

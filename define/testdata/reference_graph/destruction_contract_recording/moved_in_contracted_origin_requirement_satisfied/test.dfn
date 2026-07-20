@@ -1,0 +1,24 @@
+# When the required position is filled before the particle is passed in, the destructor mid fires (after moving it to a local position) is satisfied.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the position</file>.
+                it has the action</delete_destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</file>.
+        move the particle in position<my_file> to position<box>::action</mid>::position<incoming>.
+        create a particle in position<box>::action</mid>::position<run>.
+    }
+}

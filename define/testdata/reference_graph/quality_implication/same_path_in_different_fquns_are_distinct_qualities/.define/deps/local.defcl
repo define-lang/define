@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:cross_implication_lib_a"
+      path: "a"
+    },
+    {
+      universe_name: "mv:define-lang.org:cross_implication_lib_b"
+      path: "b"
+    }
+  ]
+}

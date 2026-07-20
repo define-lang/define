@@ -1,0 +1,18 @@
+# An action with both occupied and empty requirements succeeds when both are satisfied.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare>.
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        move the particle in position<spare> to position<box>::action</other>::position<src>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+    }
+}

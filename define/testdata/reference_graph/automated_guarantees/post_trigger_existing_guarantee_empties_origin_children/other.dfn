@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</child_q>.
+        }
+    }
+    define the position<iface_return>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        destroy the particle in position<iface>::position</child_q>.
+        move the particle in position<iface> to position<iface_return>.
+    }
+}

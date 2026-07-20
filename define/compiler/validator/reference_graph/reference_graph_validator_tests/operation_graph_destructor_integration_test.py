@@ -13,51 +13,9 @@ _DESTRUCTORS_NOT_RECORDED = (
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTORS_NOT_RECORDED)
 def test_multiple_destructors_all_fire_on_destroy(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destruct_a.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destruct_a> {\n"
-                "    it happens when {\n"
-                "        this particle is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "        destroy the particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "destruct_b.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destruct_b> {\n"
-                "    it happens when {\n"
-                "        this particle is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "        destroy the particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destruct_a>.\n"
-                "                it has the action</destruct_b>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        destroy the particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
@@ -71,61 +29,10 @@ def test_multiple_destructors_all_fire_on_destroy(
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTORS_NOT_RECORDED)
 def test_caller_added_destructor_fires_in_callee(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
-                "    it happens when {\n"
-                "        this particle is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "        destroy the particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "callee.dfn": (
-                "define the potential action<my.domain.com:my_lib:/callee> {\n"
-                "    define the position<target>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<target>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</callee>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<carrier> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</destructor>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<carrier>.\n"
-                "        move the particle in position<carrier> to position<box>::action</callee>::position<target>.\n"
-                "        create a particle in position<box>::action</callee>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    # Aspirational: when destructor triggers are recorded, callee.destroy(target)
-    # fires the caller-added destructor on the particle it destroys, inlining the
-    # destructor's operations.
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(carrier)": [],

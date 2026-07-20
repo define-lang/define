@@ -1,0 +1,22 @@
+# The callee needs <box> occupied for two different reasons, and each reason
+# gets its own answer. Its create of </b> only fills a child name of <box>, so
+# it waits on the single most recent operation on <box> and its parent names,
+# the caller's fill of <box>, and the caller's fill of </a> must not reach it.
+# Its move empties <box>::</a>, so that one does wait on the caller's fill
+# of </a>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<box>.
+        create a particle in position<gateway>::action</other>::position<box>::position</a>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

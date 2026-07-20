@@ -4,8 +4,6 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
     ValidateTestdataProjectWithReferenceGraph,
 )
@@ -45,28 +43,9 @@ def test_destroy_already_emptied_interface_position(
 
 
 def test_destroy_parent_not_occupied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "child_pos.dfn": "define the potential position<my.domain.com:my_lib:/child_pos>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<parent> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_pos>.\n"
-                "            }\n"
-                "        }\n"
-                "        destroy the particle in position<parent>::position</child_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
@@ -78,32 +57,9 @@ def test_destroy_parent_not_occupied(
 
 
 def test_destroy_prunes_children_within_action(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "child_pos.dfn": "define the potential position<my.domain.com:my_lib:/child_pos>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<parent> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_pos>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<parent>.\n"
-                "        create a particle in position<parent>::position</child_pos>.\n"
-                "        destroy the particle in position<parent>.\n"
-                "        move the particle in position<parent>::position</child_pos> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
@@ -115,34 +71,9 @@ def test_destroy_prunes_children_within_action(
 
 
 def test_destroy_clears_error_state_on_children(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "child_pos.dfn": "define the potential position<my.domain.com:my_lib:/child_pos>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<parent> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</child_pos>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<dest>.\n"
-                "        create a particle in position<parent>.\n"
-                "        create a particle in position<parent>::position</child_pos>.\n"
-                "        create a particle in position<dest>.\n"
-                "        move the particle in position<parent>::position</child_pos> to position<dest>.\n"
-                "        destroy the particle in position<parent>.\n"
-                "        create a particle in position<parent>::position</child_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -163,68 +94,16 @@ def test_destroy_clears_error_state_on_children(
 
 
 def test_valid_destroy_local_position(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<target>.\n"
-        "        create a particle in position<target>.\n"
-        "        destroy the particle in position<target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_destroy_chained_name_not_in_constraints(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<x> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</correct>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<x> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<x>::action</wrong>::position<end>.\n"
-                "        create a particle in position<x>::action</correct>::position<end>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "correct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/correct> {\n"
-                "    define the position<end>.\n"
-                "    it happens when {\n"
-                "        the position<end> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "wrong.dfn": (
-                "define the potential action<my.domain.com:my_lib:/wrong> {\n"
-                "    define the position<end>.\n"
-                "    it happens when {\n"
-                "        the position<end> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
@@ -236,38 +115,9 @@ def test_destroy_chained_name_not_in_constraints(
 
 
 def test_destroy_chained_name_not_in_action(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</child>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<pos_a>::action</child>::position<no_such>.\n"
-                "        create a particle in position<pos_a>::action</child>::position<pos_end>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "child.dfn": (
-                "define the potential action<my.domain.com:my_lib:/child> {\n"
-                "    define the position<pos_end>.\n"
-                "    it happens when {\n"
-                "        the position<pos_end> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(

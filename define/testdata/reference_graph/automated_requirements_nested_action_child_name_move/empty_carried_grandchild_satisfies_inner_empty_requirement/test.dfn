@@ -1,0 +1,17 @@
+# Inner creates into input::/b::/c two levels below the moved iface, so leaving iface::/b::/c empty in the caller satisfies it.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<mw> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<mw>.
+        create a particle in position<mw>::action</middle>::position<iface>.
+        create a particle in position<mw>::action</middle>::position<iface>::position</b>.
+        create a particle in position<mw>::action</middle>::position<run>.
+    }
+}

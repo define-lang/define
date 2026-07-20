@@ -1,0 +1,15 @@
+# A caller-passed particle moved from an interface position into a local fires its destructor at end of block.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<incoming> {
+        it may only contain particles where {
+            it has the action</destructor>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local>.
+        move the particle in position<incoming> to position<local>.
+    }
+}

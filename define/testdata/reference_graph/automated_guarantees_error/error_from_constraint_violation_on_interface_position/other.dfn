@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<trigger_pos>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the position</quality_a>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<unconstrained>.
+        create a particle in position<unconstrained>.
+        move the particle in position<unconstrained> to position<item>.
+        create a particle in position<item>::position</quality_a>.
+    }
+}

@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    define the position<trigger_pos>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</great>.
+            }
+        }
+        move the particle in position<iface>::position</child>::position</grand> to position<local>.
+        create a particle in position<local>::position</great>::position</double>::action</inner>::position<trigger_pos>.
+    }
+}

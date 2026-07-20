@@ -1,0 +1,28 @@
+# Of three caller-attached destructors with only position</a> filled, both destructor_c and destructor_b report violations (in firing order), while destructor_a is satisfied.
+# Destructors fire in reverse assignment order, so destructor_c is verified
+# before destructor_b.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</destructor_a>.
+                it has the action</destructor_b>.
+                it has the action</destructor_c>.
+                it has the position</a>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</a>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

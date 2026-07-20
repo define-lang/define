@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/consumer> {
+    it also assigns the position</implied>.
+    define the position<trigger>.
+    define the position<sink>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        move the particle in position</implied> to position<sink>.
+        create a particle in position</implied>.
+    }
+}

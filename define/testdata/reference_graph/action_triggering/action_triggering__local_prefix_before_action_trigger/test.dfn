@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<local> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<local>.
+        create a particle in position<local>::action</other>::position<trigger_pos>.
+    }
+}

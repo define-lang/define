@@ -1,0 +1,27 @@
+# A particle carries one destructor close_file can see (declared on its target) and one it cannot (declared only on /test's my_file); the visible one surfaces through normal trigger propagation and the caller-attached one through the contract.
+# The visible destructor: close_file knows it, so its requirement propagates
+# with the destructor attached on close_file's own target (no my_file step).
+# The caller-attached destructor: close_file is blind to it, so /test verifies
+# it through the contract, attributed to my_file.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</delete_file1>.
+                it has the action</delete_file2>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

@@ -1,0 +1,18 @@
+# /middle and the /inner it implies are both assigned to the particle in
+# <local>::/parent. /inner's independent operation therefore uses that
+# position as its action parent rather than depending on its trigger.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<local> {
+        it may only contain particles where {
+            it has the position</parent>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<local>.
+        create a particle in position<local>::position</parent>.
+        create a particle in position<local>::position</parent>::action</middle>::position<trigger_pos>.
+    }
+}

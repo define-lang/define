@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    define the position<trigger_pos>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        destroy the particle in position<iface>.
+        create a particle in position<local>.
+        create a particle in position<local>::action</inner>::position<trigger_pos>.
+    }
+}

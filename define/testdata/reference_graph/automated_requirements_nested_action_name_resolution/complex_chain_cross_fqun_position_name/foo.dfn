@@ -1,0 +1,13 @@
+define the potential action<mv:define-lang.org:main_lib:/foo> {
+    define the position<trigger_pos>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<iface>::action</middle>::position<trigger_pos>.
+    }
+}

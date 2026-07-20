@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/implier_two> {
+    it also assigns the position</implied>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</implied>.
+        destroy the particle in position</implied>.
+    }
+}

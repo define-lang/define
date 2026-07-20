@@ -1,0 +1,57 @@
+# After trigger, swapping children between positions preserves each particle's qualities.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        define the position<sa> {
+            it may only contain particles where {
+                it has the position</quality_a>.
+            }
+        }
+        define the position<sb> {
+            it may only contain particles where {
+                it has the position</quality_b>.
+            }
+        }
+        define the position<needs_a> {
+            it may only contain particles where {
+                it has the position</quality_a>.
+            }
+        }
+        define the position<needs_b> {
+            it may only contain particles where {
+                it has the position</quality_b>.
+            }
+        }
+        define the position<spare> {
+            it may only contain particles where {
+                it has the position</child_q>.
+            }
+        }
+        define the position<spare2> {
+            it may only contain particles where {
+                it has the position</child_q>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<spare>.
+        create a particle in position<spare2>.
+        create a particle in position<sa>.
+        create a particle in position<sb>.
+        move the particle in position<spare> to position<box>::action</other>::position<a>.
+        move the particle in position<spare2> to position<box>::action</other>::position<b>.
+        move the particle in position<sa> to position<box>::action</other>::position<a>::position</child_q>.
+        move the particle in position<sb> to position<box>::action</other>::position<b>::position</child_q>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<a>::position</child_q> to position<needs_b>.
+        move the particle in position<box>::action</other>::position<b>::position</child_q> to position<needs_a>.
+        create a particle in position<needs_a>::position</quality_a>.
+        create a particle in position<needs_b>::position</quality_b>.
+    }
+}

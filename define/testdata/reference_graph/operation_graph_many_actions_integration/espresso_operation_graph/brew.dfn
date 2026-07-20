@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/brew> {
+    define the position<grounds>.
+    define the position<water>.
+    define the position<cup>.
+    define the position<spent_puck>.
+    it happens when {
+        the position<water> has a particle.
+    } and it does {
+        create a particle in position<cup>.
+        destroy the particle in position<water>.
+        move the particle in position<grounds> to position<spent_puck>.
+    }
+}

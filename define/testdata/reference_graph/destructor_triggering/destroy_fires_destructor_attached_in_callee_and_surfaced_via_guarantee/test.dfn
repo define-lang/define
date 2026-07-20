@@ -1,0 +1,16 @@
+# make_thing attaches a destructor in a local position then moves the particle into result, whose constraint omits the destructor; the destructor rides the OccupiedByNew guarantee up to /test, which owns the result and fires it on destroy.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</make_thing>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</make_thing>::position<run>.
+        destroy the particle in position<box>::action</make_thing>::position<result>.
+    }
+}

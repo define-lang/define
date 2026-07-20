@@ -1,0 +1,8 @@
+define the potential action<mv:define-lang.org:child:/construct_b> {
+    it also assigns the position</b>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</b>.
+    }
+}

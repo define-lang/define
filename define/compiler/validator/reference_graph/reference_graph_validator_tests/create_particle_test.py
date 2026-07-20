@@ -4,18 +4,13 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
-
-import pytest
+from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
     ValidateTestdataNonFilesystemWithReferenceGraph,
     ValidateTestdataProjectWithReferenceGraph,
 )
-from define.compiler.validator import test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -23,6 +18,7 @@ def test_short_form_global_reference(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -36,6 +32,7 @@ def test_same_fqun_reference_must_use_short_form(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -50,41 +47,17 @@ def test_same_fqun_reference_must_use_short_form(
 
 
 def test_valid_local_name(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    define the position<inner_pos>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<inner_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_cross_universe_not_configured(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<other.domain.com:other_lib:/dep>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -103,6 +76,7 @@ def test_undefined_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -112,21 +86,10 @@ def test_undefined_local_position(
 
 
 def test_local_position_defined_after_use(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        create a particle in position<later_pos>.\n"
-        "        define the position<later_pos>.\n"
-        "        create a particle in position<later_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -136,47 +99,16 @@ def test_local_position_defined_after_use(
 
 
 def test_local_position_defined_in_action_statements_before_use(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<stmt_pos>.\n"
-        "        create a particle in position<stmt_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
 def test_two_actions_with_definition_block_local_positions(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<inner_pos>.\n"
-        "        create a particle in position<inner_pos>.\n"
-        "    }\n"
-        "}\n"
-        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a particle.\n"
-        "    } and it does {\n"
-        "        define the position<inner_pos>.\n"
-        "        create a particle in position<inner_pos>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_non_filesystem_with_reference_graph(source)
+    result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
@@ -184,6 +116,7 @@ def test_single_action_in_position_reference(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -200,57 +133,17 @@ def test_single_action_in_position_reference(
 
 
 def test_create_in_local_chained_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_local_chained_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<src> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<src>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "        create a particle in position<src>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -264,75 +157,17 @@ def test_create_twice_in_local_chained_position(
 
 
 def test_create_in_chained_position_in_constructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    it also assigns the position</x>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_chained_position_in_constructor(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "construct.dfn": (
-                "define the potential action<my.domain.com:my_lib:/construct> {\n"
-                "    it also assigns the position</x>.\n"
-                "    it happens when {\n"
-                "        this particle is created.\n"
-                "    } and it does {\n"
-                "        create a particle in position</x>.\n"
-                "        create a particle in position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</construct>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)

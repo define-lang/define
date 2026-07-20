@@ -1,0 +1,23 @@
+# The move carries the whole particle, so it waits on the most recent
+# operation on each child name of <source>. The caller's two creates are
+# independent of each other, so waiting on only one of them would leave the move
+# racing the other: the particle could arrive in <holder> before that child name
+# is filled, and the caller's create would then land in a position whose parent
+# particle has left.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<source>.
+        create a particle in position<gateway>::action</other>::position<source>::position</a>.
+        create a particle in position<gateway>::action</other>::position<source>::position</b>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

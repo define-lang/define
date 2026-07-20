@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/construct> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<inner> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<inner>.
+        create a particle in position<inner>::action</other>::position<trigger_pos>.
+        create a particle in position<inner>::action</other>::position<item>.
+    }
+}

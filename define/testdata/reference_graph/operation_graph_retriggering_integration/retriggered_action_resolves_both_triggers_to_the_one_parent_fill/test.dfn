@@ -1,0 +1,25 @@
+# The caller fills <held> once and it serves both invocations: each
+# invocation's create waits on that one fill for its OCCUPIED <held>
+# requirement. The EMPTY requirement on <held>::/c is satisfied by default
+# in the first invocation (its RequirementNode falls through to the parent
+# fill) and by the caller's destroy in the second -- and that destroy
+# waits on the first invocation's create, so the two invocations' writes
+# to <held>::/c cannot race.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gw> {
+        it may only contain particles where {
+            it has the action</maker>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gw>.
+        create a particle in position<gw>::action</maker>::position<held>.
+        create a particle in position<gw>::action</maker>::position<trigger_pos>.
+        destroy the particle in position<gw>::action</maker>::position<held>::position</c>.
+        destroy the particle in position<gw>::action</maker>::position<trigger_pos>.
+        create a particle in position<gw>::action</maker>::position<trigger_pos>.
+    }
+}

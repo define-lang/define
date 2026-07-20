@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/callee> {
+    define the position<target>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<target>.
+    }
+}

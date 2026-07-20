@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/close_file> {
+    it also assigns the position</slot>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position</slot>.
+    }
+}

@@ -1,0 +1,25 @@
+# Cross-FQUN scenario: the inner action and a position it references are in a different FQUN.
+#
+# /inner is in _DEP_FQUN, has position<item> constrained with position</x> (also in
+# _DEP_FQUN), and creates in position<item>::position</x>. The propagated requirement's
+# position_name should use the source form from /outer's code for the action reference
+# (fully-qualified) and the source form from /inner's code for position</x>.
+# /test fills position<item> which /outer requires empty (it creates there)
+# /test fills position<item>::position</x> which /inner requires empty (propagated)
+define the potential action<mv:define-lang.org:main_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<iface>.
+        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>::position<mv:define-lang.org:dep_lib:/x>.
+        create a particle in position<box>::action</outer>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,21 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<pos_a> {
+        it may only contain particles where {
+            it has the action</child>.
+        }
+    }
+    it happens when {
+        the position<pos_a> has a particle.
+    } and it does {
+        create a particle in position<pos_a>::action</child>::position<no_such>.
+    }
+}

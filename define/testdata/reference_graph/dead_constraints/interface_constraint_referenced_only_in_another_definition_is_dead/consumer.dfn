@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/consumer> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the position</thing>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+    }
+}

@@ -1,0 +1,25 @@
+# Mid's interface declares the destructor and mid sees it on the received particle, but mid never knew the required child's state; it must defer to /test (the owner) without verifying or claiming attachment itself, so the single violation surfaces at /test and names /test (not mid) as the attacher.
+# mid sees the destructor but is not the owner, so it re-records the contract
+# rather than verifying: the attacher resolves to /test (the particle's
+# creator), never mid, and mid does not appear as a step.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_file>.
+        move the particle in position<my_file> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

@@ -1,0 +1,25 @@
+# A deeply-chained trigger path through nested actions in the same FQUN.
+#
+# /test triggers /foo through position<local>::position</x>::action</foo>::position<trigger_pos>.
+# /foo triggers /middle through position<iface>::action</middle>::position<trigger_pos>.
+# /middle triggers /bar through position<mid_iface>::action</bar>::position<trigger_pos>.
+# /bar requires position<item> to be empty. The propagated position_name should be:
+# position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</x>.
+            }
+        }
+        create a particle in position<local>.
+        create a particle in position<local>::position</x>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>.
+        create a particle in position<local>::position</x>::action</foo>::position<trigger_pos>.
+    }
+}

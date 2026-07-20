@@ -1,0 +1,17 @@
+# Creates then destroys a particle in its own interface position, so
+# it requires that position to be empty when the constructor runs.
+# The interface is empty when the constructor runs, so its empty requirement
+# holds.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</initializer>.
+            }
+        }
+        create a particle in position<box>.
+    }
+}

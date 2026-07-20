@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/first> {
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        create a particle in position<gw>.
+        create a particle in position<gw>::action</worker>::position<trigger_pos>.
+        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.
+        create a particle in position<gw>::action</worker>::position<trigger_pos>.
+    }
+}

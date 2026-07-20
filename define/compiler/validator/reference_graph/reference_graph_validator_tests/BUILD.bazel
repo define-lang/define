@@ -27,6 +27,7 @@ py_test(
     name = "automated_guarantees_constructor_implied_test",
     size = "small",
     srcs = ["automated_guarantees_constructor_implied_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_constructor_implied"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -38,6 +39,7 @@ py_test(
     name = "automated_guarantees_constructor_test",
     size = "small",
     srcs = ["automated_guarantees_constructor_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_constructor"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -50,6 +52,7 @@ py_test(
     name = "automated_guarantees_destructor_test",
     size = "small",
     srcs = ["automated_guarantees_destructor_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_destructor"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -61,6 +64,7 @@ py_test(
     name = "automated_guarantees_error_test",
     size = "small",
     srcs = ["automated_guarantees_error_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_error"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -75,6 +79,7 @@ py_test(
     name = "automated_guarantees_implied_position_test",
     size = "small",
     srcs = ["automated_guarantees_implied_position_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_implied_position"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -86,6 +91,7 @@ py_test(
     name = "automated_guarantees_implied_to_interface_test",
     size = "small",
     srcs = ["automated_guarantees_implied_to_interface_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_implied_to_interface"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -96,6 +102,7 @@ py_test(
     name = "automated_guarantees_nested_action_test",
     size = "small",
     srcs = ["automated_guarantees_nested_action_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_nested_action"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -110,6 +117,7 @@ py_test(
     name = "automated_guarantees_test",
     size = "small",
     srcs = ["automated_guarantees_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -124,6 +132,7 @@ py_test(
     name = "automated_guarantees_transitive_implied_identity_test",
     size = "small",
     srcs = ["automated_guarantees_transitive_implied_identity_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_transitive_implied_identity"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -136,6 +145,7 @@ py_test(
     name = "automated_guarantees_transitive_implied_occupancy_test",
     size = "small",
     srcs = ["automated_guarantees_transitive_implied_occupancy_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_transitive_implied_occupancy"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -162,6 +172,7 @@ py_test(
     name = "automated_requirements_constructor_move_test",
     size = "small",
     srcs = ["automated_requirements_constructor_move_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_constructor_move"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -175,6 +186,7 @@ py_test(
     name = "automated_requirements_constructor_propagation_test",
     size = "small",
     srcs = ["automated_requirements_constructor_propagation_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_constructor_propagation"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -202,6 +214,7 @@ py_test(
     name = "automated_requirements_destructor_implied_test",
     size = "small",
     srcs = ["automated_requirements_destructor_implied_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_destructor_implied"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -215,6 +228,7 @@ py_test(
     name = "automated_requirements_destructor_move_test",
     size = "small",
     srcs = ["automated_requirements_destructor_move_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_destructor_move"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -228,6 +242,7 @@ py_test(
     name = "automated_requirements_destructor_propagation_test",
     size = "small",
     srcs = ["automated_requirements_destructor_propagation_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_destructor_propagation"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -241,6 +256,7 @@ py_test(
     name = "automated_requirements_destructor_test",
     size = "small",
     srcs = ["automated_requirements_destructor_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_destructor"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -254,6 +270,7 @@ py_test(
     name = "automated_requirements_diamond_test",
     size = "small",
     srcs = ["automated_requirements_diamond_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_diamond"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -268,6 +285,7 @@ py_test(
     name = "automated_requirements_implied_position_test",
     size = "small",
     srcs = ["automated_requirements_implied_position_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_implied_position"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -282,6 +300,7 @@ py_test(
     name = "automated_requirements_move_test",
     size = "small",
     srcs = ["automated_requirements_move_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_move"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -296,6 +315,7 @@ py_test(
     name = "automated_requirements_nested_action_child_name_move_test",
     size = "small",
     srcs = ["automated_requirements_nested_action_child_name_move_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_nested_action_child_name_move"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -310,6 +330,7 @@ py_test(
     name = "automated_requirements_nested_action_direct_propagation_test",
     size = "small",
     srcs = ["automated_requirements_nested_action_direct_propagation_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_nested_action_direct_propagation"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -324,6 +345,7 @@ py_test(
     name = "automated_requirements_nested_action_name_resolution_test",
     size = "small",
     srcs = ["automated_requirements_nested_action_name_resolution_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_nested_action_name_resolution"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -338,6 +360,7 @@ py_test(
     name = "automated_requirements_nested_action_trigger_move_test",
     size = "small",
     srcs = ["automated_requirements_nested_action_trigger_move_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_nested_action_trigger_move"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -352,6 +375,7 @@ py_test(
     name = "automated_requirements_nested_implied_test",
     size = "small",
     srcs = ["automated_requirements_nested_implied_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_nested_implied"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -366,6 +390,7 @@ py_test(
     name = "automated_requirements_override_test",
     size = "small",
     srcs = ["automated_requirements_override_test.py"],
+    data = ["//define/testdata/reference_graph/automated_requirements_override"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -395,6 +420,7 @@ py_test(
     name = "chained_name_constraint_test",
     size = "small",
     srcs = ["chained_name_constraint_test.py"],
+    data = ["//define/testdata/reference_graph/chained_name_constraint"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -442,6 +468,7 @@ py_test(
     name = "constructor_triggering_test",
     size = "small",
     srcs = ["constructor_triggering_test.py"],
+    data = ["//define/testdata/reference_graph/constructor_triggering"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -459,7 +486,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
     ],
 )
 
@@ -480,6 +506,7 @@ py_test(
     name = "dead_constraints_test",
     size = "small",
     srcs = ["dead_constraints_test.py"],
+    data = ["//define/testdata/reference_graph/dead_constraints"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -503,6 +530,7 @@ py_test(
     name = "destruction_contract_caller_verification_test",
     size = "small",
     srcs = ["destruction_contract_caller_verification_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract_caller_verification"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -516,6 +544,7 @@ py_test(
     name = "destruction_contract_propagation_test",
     size = "small",
     srcs = ["destruction_contract_propagation_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract_propagation"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -529,6 +558,7 @@ py_test(
     name = "destruction_contract_recording_test",
     size = "small",
     srcs = ["destruction_contract_recording_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract_recording"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -542,6 +572,7 @@ py_test(
     name = "destruction_contract_test",
     size = "small",
     srcs = ["destruction_contract_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -555,6 +586,7 @@ py_test(
     name = "destructor_auto_test",
     size = "small",
     srcs = ["destructor_auto_test.py"],
+    data = ["//define/testdata/reference_graph/destructor_auto"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -568,6 +600,7 @@ py_test(
     name = "destructor_cascade_test",
     size = "small",
     srcs = ["destructor_cascade_test.py"],
+    data = ["//define/testdata/reference_graph/destructor_cascade"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -579,6 +612,7 @@ py_test(
     name = "destructor_triggering_test",
     size = "small",
     srcs = ["destructor_triggering_test.py"],
+    data = ["//define/testdata/reference_graph/destructor_triggering"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -633,6 +667,7 @@ py_test(
     name = "implied_action_triggering_test",
     size = "small",
     srcs = ["implied_action_triggering_test.py"],
+    data = ["//define/testdata/reference_graph/implied_action_triggering"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -647,6 +682,7 @@ py_test(
     name = "inferred_action_occupancy_test",
     size = "small",
     srcs = ["inferred_action_occupancy_test.py"],
+    data = ["//define/testdata/reference_graph/inferred_action_occupancy"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -658,6 +694,7 @@ py_test(
     name = "move_chained_constraint_test",
     size = "small",
     srcs = ["move_chained_constraint_test.py"],
+    data = ["//define/testdata/reference_graph/move_chained_constraint"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -669,6 +706,7 @@ py_test(
     name = "move_cross_fqun_test",
     size = "small",
     srcs = ["move_cross_fqun_test.py"],
+    data = ["//define/testdata/reference_graph/move_cross_fqun"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -728,6 +766,7 @@ py_test(
     name = "operation_graph_constructor_integration_test",
     size = "small",
     srcs = ["operation_graph_constructor_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_constructor_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -739,6 +778,7 @@ py_test(
     name = "operation_graph_destructor_integration_test",
     size = "small",
     srcs = ["operation_graph_destructor_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_destructor_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -751,6 +791,7 @@ py_test(
     name = "operation_graph_many_actions_integration_test",
     size = "small",
     srcs = ["operation_graph_many_actions_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_many_actions_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -762,6 +803,7 @@ py_test(
     name = "operation_graph_retriggering_integration_test",
     size = "small",
     srcs = ["operation_graph_retriggering_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_retriggering_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -773,6 +815,7 @@ py_test(
     name = "operation_graph_single_action_integration_test",
     size = "small",
     srcs = ["operation_graph_single_action_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_single_action_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -784,6 +827,7 @@ py_test(
     name = "operation_graph_two_actions_integration_test",
     size = "small",
     srcs = ["operation_graph_two_actions_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_two_actions_integration"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
@@ -795,6 +839,7 @@ py_test(
     name = "quality_implication_particle_test",
     size = "small",
     srcs = ["quality_implication_particle_test.py"],
+    data = ["//define/testdata/reference_graph/quality_implication_particle"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -808,6 +853,7 @@ py_test(
     name = "quality_implication_test",
     size = "small",
     srcs = ["quality_implication_test.py"],
+    data = ["//define/testdata/reference_graph/quality_implication"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -835,6 +881,7 @@ py_test(
     name = "trigger_conditions_test",
     size = "small",
     srcs = ["trigger_conditions_test.py"],
+    data = ["//define/testdata/reference_graph/trigger_conditions"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",

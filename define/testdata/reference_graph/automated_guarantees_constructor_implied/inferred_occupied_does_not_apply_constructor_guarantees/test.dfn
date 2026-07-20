@@ -1,0 +1,20 @@
+# Inferred OCCUPIED with constructor-bearing qualities does NOT apply constructor effects.
+# position<item> is inferred OCCUPIED (not created here), so /construct_a is
+# never fired for it, which the compiler reports as an untriggered action.
+# Crucially there is no CreateInOccupiedPositionDiagnostic: the constructor
+# guarantee is NOT applied to the inferred-occupied position, so creating in
+# position<item>::position</a> does not conflict with any guarantee.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the action</construct_a>.
+            it has the position</a>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<item>::position</a>.
+    }
+}

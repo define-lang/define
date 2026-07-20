@@ -1,0 +1,19 @@
+# worker guarantees nothing, so each of its two triggers leaves no
+# GuaranteeNode -- only the two distinct trigger fills. Each invocation's
+# operations wait on their own fill.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gw> {
+        it may only contain particles where {
+            it has the action</worker>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gw>.
+        create a particle in position<gw>::action</worker>::position<trigger_pos>.
+        destroy the particle in position<gw>::action</worker>::position<trigger_pos>.
+        create a particle in position<gw>::action</worker>::position<trigger_pos>.
+    }
+}

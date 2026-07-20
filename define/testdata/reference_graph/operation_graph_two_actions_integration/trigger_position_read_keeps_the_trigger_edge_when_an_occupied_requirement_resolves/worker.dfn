@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<in>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</y>.
+        }
+    }
+    it happens when {
+        the position<in> has a particle.
+    } and it does {
+        move the particle in position<in> to position<box>::position</y>.
+    }
+}

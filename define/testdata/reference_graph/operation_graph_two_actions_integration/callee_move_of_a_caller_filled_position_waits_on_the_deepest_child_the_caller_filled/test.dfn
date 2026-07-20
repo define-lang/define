@@ -1,0 +1,21 @@
+# Emptying excludes a child name that has a more recent operation on one of its
+# own child names, and that exclusion holds across the trigger as well: the
+# caller's fill of <source>::</a> is superseded by its fill of the </deep>
+# inside it, so the move waits on that one operation alone.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</other>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<source>.
+        create a particle in position<gateway>::action</other>::position<source>::position</a>.
+        create a particle in position<gateway>::action</other>::position<source>::position</a>::position</deep>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+    }
+}

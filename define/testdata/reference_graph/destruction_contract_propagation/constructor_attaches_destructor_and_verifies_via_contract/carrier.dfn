@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:my_lib:/carrier> {
+    it may only contain particles where {
+        it has the position</file>.
+        it has the action</delete_destructor>.
+    }
+}

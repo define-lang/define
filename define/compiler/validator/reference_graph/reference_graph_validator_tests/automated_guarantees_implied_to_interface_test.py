@@ -3,52 +3,18 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import (
+    ValidateTestdataProjectWithReferenceGraph,
+)
 
 _PARENT = "my.domain.com:parent_lib"
 _CHILD = "my.domain.com:child_lib"
 
 
 def test_move_interface_to_implied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<item> to position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        destroy the particle in position<box>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(
@@ -81,45 +47,9 @@ def test_move_interface_to_implied(
 
 
 def test_move_implied_to_interface(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position</implied>.\n"
-                "        move the particle in position</implied> to position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</inner>::position<item>.\n"
-                "        destroy the particle in position<box>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -144,48 +74,9 @@ def test_move_implied_to_interface(
 
 
 def test_move_interface_through_implied_back_to_interface(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<src>.\n"
-                "    define the position<dest>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        move the particle in position<src> to position</implied>.\n"
-                "        move the particle in position</implied> to position<dest>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<src>.\n"
-                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</inner>::position<dest>.\n"
-                "        destroy the particle in position<box>::action</inner>::position<src>.\n"
-                "        destroy the particle in position<box>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -225,48 +116,9 @@ def test_move_interface_through_implied_back_to_interface(
 
 
 def test_interface_to_implied_propagates_across_fqun(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "lib/implied.dfn": f"define the potential position<{_CHILD}:/implied>.\n",
-            "lib/inner.dfn": (
-                f"define the potential action<{_CHILD}:/inner> {{\n"
-                f"    it also assigns the position</implied>.\n"
-                f"    define the position<trigger_pos>.\n"
-                f"    define the position<item>.\n"
-                f"    it happens when {{\n"
-                f"        the position<trigger_pos> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        move the particle in position<item> to position</implied>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-            "test.dfn": (
-                f"define the potential action<{_PARENT}:/test> {{\n"
-                f"    define the position<run>.\n"
-                f"    it happens when {{\n"
-                f"        the position<run> has a particle.\n"
-                f"    }} and it does {{\n"
-                f"        define the position<box> {{\n"
-                f"            it may only contain particles where {{\n"
-                f"                it has the action<{_CHILD}:/inner>.\n"
-                f"                it has the position<{_CHILD}:/implied>.\n"
-                f"            }}\n"
-                f"        }}\n"
-                f"        create a particle in position<box>.\n"
-                f"        create a particle in position<box>::action<{_CHILD}:/inner>::position<item>.\n"
-                f"        create a particle in position<box>::action<{_CHILD}:/inner>::position<trigger_pos>.\n"
-                f"        destroy the particle in position<box>::action<{_CHILD}:/inner>::position<item>.\n"
-                f"        create a particle in position<box>::position<{_CHILD}:/implied>.\n"
-                f"    }}\n"
-                f"}}\n"
-            ),
-        },
-        universe_name=_PARENT,
-        local_deps={_CHILD: "lib"},
-        sub_roots={"lib": _CHILD},
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(
@@ -302,45 +154,9 @@ def test_interface_to_implied_propagates_across_fqun(
 
 
 def test_action_creates_in_both_interface_and_implied(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<item>.\n"
-                "        create a particle in position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -370,49 +186,9 @@ def test_action_creates_in_both_interface_and_implied(
 
 
 def test_swap_interface_and_implied_via_local(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_project_with_reference_graph(
-        {
-            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
-            "inner.dfn": (
-                "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    it also assigns the position</implied>.\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<_tmp>.\n"
-                "        create a particle in position</implied>.\n"
-                "        move the particle in position<item> to position<_tmp>.\n"
-                "        move the particle in position</implied> to position<item>.\n"
-                "        move the particle in position<_tmp> to position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain particles where {\n"
-                "                it has the action</inner>.\n"
-                "                it has the position</implied>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a particle in position<box>::action</inner>::position<item>.\n"
-                "        create a particle in position<box>::position</implied>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
+    result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)

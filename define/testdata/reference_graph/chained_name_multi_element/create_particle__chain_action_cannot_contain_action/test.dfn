@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<x> {
+        it may only contain particles where {
+            it has the action</foo>.
+        }
+    }
+    it happens when {
+        the position<x> has a particle.
+    } and it does {
+        create a particle in position<x>::action</foo>::action</bar>::position<y>.
+        create a particle in position<x>::action</foo>::position<inner>.
+    }
+}

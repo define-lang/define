@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<from_pos> {
+        it may only contain particles where {
+            it has the position</x>.
+        }
+    }
+    define the position<to_pos> {
+        it may only contain particles where {
+            it has the position</y>.
+        }
+    }
+    it happens when {
+        the position<from_pos> has a particle.
+    } and it does {
+        move the particle in position<from_pos> to position<to_pos>.
+        create a particle in position<from_pos>.
+        create a particle in position<from_pos>::position</x>.
+        create a particle in position<to_pos>::position</y>.
+    }
+}
