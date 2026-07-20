@@ -22,6 +22,30 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 
 
+def test_caller_overrides_implied_guarantee(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_empty_required_interface_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_intermediate_position_required(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+def test_three_level_transitive_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
 def test_satisfy_requirements_then_trigger(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
