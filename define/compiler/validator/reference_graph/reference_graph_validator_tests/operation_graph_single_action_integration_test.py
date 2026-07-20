@@ -76,36 +76,6 @@ def test_fan_out_two_operations_depend_on_one(
     }
 
 
-def test_occupied_requirement_on_input_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(input)": [],
-    }
-
-
-def test_occupied_requirement_on_parent_of_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(input::/child)": [],
-    }
-
-
-def test_occupied_requirement_on_grandparent_of_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(input::/child::/grandchild)": [],
-    }
-
-
 def test_multiway_join_and_fan_out(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -409,16 +379,6 @@ def test_operations_on_a_child_of_an_implied_position(
     }
 
 
-def test_occupied_requirement_on_an_implied_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.destroy(/implied)": [],
-    }
-
-
 def test_move_from_an_interface_position_to_an_implied_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -427,27 +387,6 @@ def test_move_from_an_interface_position_to_an_implied_position(
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(source)": [],
         "test.move(source, /implied)": ["test.create(source)"],
-    }
-
-
-def test_move_from_an_implied_position_to_an_interface_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.move(/implied, dest)": [],
-    }
-
-
-def test_move_of_an_implied_position_carries_its_child(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
-        "test.move(/implied, dest)": [],
-        "test.destroy(dest::/child)": ["test.move(/implied, dest)"],
     }
 
 

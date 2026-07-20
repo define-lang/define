@@ -788,6 +788,18 @@ py_test(
 )
 
 py_test(
+    name = "operation_graph_implied_requirements_integration_test",
+    size = "small",
+    srcs = ["operation_graph_implied_requirements_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_implied_requirements_integration"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+    ],
+)
+
+py_test(
     name = "operation_graph_many_actions_integration_test",
     size = "small",
     srcs = ["operation_graph_many_actions_integration_test.py"],
@@ -971,6 +983,7 @@ pyright_test(
         ":move_without_parent_test",
         ":operation_graph_constructor_integration_test",
         ":operation_graph_destructor_integration_test",
+        ":operation_graph_implied_requirements_integration_test",
         ":operation_graph_many_actions_integration_test",
         ":operation_graph_retriggering_integration_test",
         ":operation_graph_single_action_integration_test",
