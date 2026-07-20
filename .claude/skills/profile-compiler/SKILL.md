@@ -129,7 +129,10 @@ Create it before invoking any Bazel target: `mkdir -p tmp/profile`.
 > run the relevant `py_binary` with Bazel instead of creating its own uv
 > environment. OS Python is acceptable only for reading an existing `.prof` file
 > with standard-library `pstats`, because that does not measure compiler
-> performance.
+> performance. The commands below use `$PWD` for human readability. All agents
+> must resolve it first and pass literal absolute paths in the command: shell
+> variable expansion prevents the permission system from matching the existing
+> `bazelisk` approval rule and causes an unnecessary approval prompt.
 
 1. **Build the CLI** so a clean-compile sanity check is possible:
    `bazelisk build --noshow_progress --ui_event_filters=-info //define/compiler:main`
