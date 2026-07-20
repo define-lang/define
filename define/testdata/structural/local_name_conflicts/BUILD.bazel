@@ -1,5 +1,6 @@
 filegroup(
     name = "local_name_conflicts",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",

@@ -5,7 +5,7 @@ from pathlib import Path
 
 _TESTDATA_ROOT = Path("define/testdata")
 _PHASE_BY_TEST_DIRECTORY = {
-    "parser_tests": "parser",
+    "codegen": "codegen",
     "program_validator_tests": "structural",
     "reference_graph_validator_tests": "reference_graph",
 }

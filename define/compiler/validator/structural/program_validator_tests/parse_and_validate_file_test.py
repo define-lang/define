@@ -11,13 +11,34 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import config, exceptions, parser_exceptions
-from define.compiler.conftest import (
-    ParseAndValidateFile,
-)
+from define.compiler import config, exceptions, parser, parser_exceptions
 from define.compiler.data_structures import define_path
-from define.compiler.validator import stats, test_helpers
+from define.compiler.validator import stats, test_helpers, validation_result
 from define.compiler.validator.structural import program_validator
+
+_PARSER = parser.Parser()
+
+
+def _parse_and_validate_file(
+    source: str | bytes,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> validation_result.FileValidationResult:
+    relative_path = PurePosixPath("test.dfn")
+    source_path = tmp_path / relative_path
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    if isinstance(source, str):
+        source_path.write_text(source, encoding="utf-8")
+    else:
+        source_path.write_bytes(source)
+    monkeypatch.chdir(tmp_path)
+    results = (
+        program_validator.ProgramStructuralValidator(_PARSER)
+        .validate_program(relative_path)
+        .file_results
+    )
+    assert len(results) == 1
+    return results[0]
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
@@ -31,10 +52,10 @@ def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
 
 
 def test_returns_single_file_timing_stats(
-    parse_and_validate_file: ParseAndValidateFile,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-    result = parse_and_validate_file(source)
+    result = _parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
     assert result.exception is None
@@ -52,10 +73,12 @@ def test_returns_single_file_timing_stats(
 
 
 def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
-    parse_and_validate_file: ParseAndValidateFile,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    result = parse_and_validate_file(
-        "defin the potential position<my.domain.com:my_lib:/bad>.\n"
+    result = _parse_and_validate_file(
+        "defin the potential position<my.domain.com:my_lib:/bad>.\n",
+        tmp_path,
+        monkeypatch,
     )
 
     assert result.diagnostics == []
@@ -89,10 +112,12 @@ def test_non_filesystem_parse_error_returns_single_result():
 
 
 def test_invalid_utf8_populates_exceptions_and_source_is_none(
-    parse_and_validate_file: ParseAndValidateFile,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    result = parse_and_validate_file(
-        b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff"
+    result = _parse_and_validate_file(
+        b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff",
+        tmp_path,
+        monkeypatch,
     )
 
     assert result.diagnostics == []
@@ -111,14 +136,14 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
 
 def test_name_parser_error_at_definition_populates_exceptions(
-    parse_and_validate_file: ParseAndValidateFile,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     source = (
         "define the potential position<"
         + "mv:define-lang.org:test:files:/invalid/syntax/fqun_format/too_many_colons"
         + ">.\n"
     )
-    result = parse_and_validate_file(source)
+    result = _parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
@@ -136,7 +161,7 @@ def test_name_parser_error_at_definition_populates_exceptions(
 
 
 def test_name_parser_error_at_reference_populates_exceptions(
-    parse_and_validate_file: ParseAndValidateFile,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -145,7 +170,7 @@ def test_name_parser_error_at_reference_populates_exceptions(
         "    }\n"
         "}\n"
     )
-    result = parse_and_validate_file(source)
+    result = _parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)

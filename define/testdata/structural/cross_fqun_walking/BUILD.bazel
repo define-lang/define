@@ -1,5 +1,6 @@
 filegroup(
     name = "cross_fqun_walking",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",

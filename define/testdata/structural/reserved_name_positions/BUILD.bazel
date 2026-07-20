@@ -1,5 +1,6 @@
 filegroup(
     name = "reserved_name_positions",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",

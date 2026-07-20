@@ -5,11 +5,11 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Protocol, cast, overload
+from typing import Protocol, cast
 
 import pytest
 
-from define.compiler import ast, diagnostics, parser
+from define.compiler import ast, parser
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
@@ -105,12 +105,6 @@ class FullValidationResult:
         return self.reference_graph_result.operation_graphs
 
 
-type ParseAndValidateFile = Callable[
-    [str | bytes], validation_result.FileValidationResult
-]
-_DEFAULT_RELATIVE_PATH = PurePosixPath("path.dfn")
-
-
 class ValidateProject(Protocol):
     """Callable that validates a multi-file project and returns results."""
 
@@ -126,25 +120,6 @@ class ValidateProject(Protocol):
     ) -> validation_result.ProgramValidationResult:
         """Validate a project with the given files."""
         ...
-
-
-class ValidateSourceAsFile(Protocol):
-    """Callable that validates source as a file and returns diagnostics."""
-
-    @overload
-    def __call__(
-        self,
-        source: str,
-        expected_universe_name: str,
-    ) -> list[diagnostics.Diagnostic]: ...
-
-    @overload
-    def __call__(
-        self,
-        source: str,
-        expected_universe_name: str,
-        relative_path: PurePosixPath,
-    ) -> list[diagnostics.Diagnostic]: ...
 
 
 def _run_validation(
@@ -199,59 +174,6 @@ def validate_project(
             sub_roots=sub_roots,
             entry_file=entry_file,
         )
-
-    return _run
-
-
-@pytest.fixture
-def parse_and_validate_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> ParseAndValidateFile:
-    """Parse and validate a single source string as a file in a temp project."""
-
-    def _run(source: str | bytes) -> validation_result.FileValidationResult:
-        relative_path = PurePosixPath("test.dfn")
-        source_path = tmp_path / relative_path
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        if isinstance(source, str):
-            source_path.write_text(source, encoding="utf-8")
-        else:
-            source_path.write_bytes(source)
-        monkeypatch.chdir(tmp_path)
-        results = (
-            program_validator.ProgramStructuralValidator(_PARSER)
-            .validate_program(relative_path)
-            .file_results
-        )
-        assert len(results) == 1
-        return results[0]
-
-    return _run
-
-
-@pytest.fixture
-def validate_source_as_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> ValidateSourceAsFile:
-    """Validate one source string as a file and return diagnostics."""
-
-    def _run(
-        source: str,
-        expected_universe_name: str,
-        relative_path: PurePosixPath = _DEFAULT_RELATIVE_PATH,
-    ) -> list[diagnostics.Diagnostic]:
-        source_path = tmp_path / relative_path
-        source_path.parent.mkdir(parents=True, exist_ok=True)
-        source_path.write_text(source, encoding="utf-8")
-        test_helpers.write_project_config(tmp_path, expected_universe_name)
-        monkeypatch.chdir(tmp_path)
-        results = (
-            program_validator.ProgramStructuralValidator(_PARSER)
-            .validate_program(relative_path)
-            .file_results
-        )
-        assert len(results) == 1
-        return list(results[0].diagnostics)
 
     return _run
 
@@ -436,7 +358,6 @@ class ValidateTestdataProjectWithReferenceGraph(Protocol):
         self,
         *,
         max_workers: int | None = ...,
-        entry_file: str = ...,
     ) -> FullValidationResult:
         """Run structural and reference graph validation."""
         ...
@@ -477,18 +398,17 @@ def validate_testdata_project_with_reference_graph(
     request: pytest.FixtureRequest,
     monkeypatch: pytest.MonkeyPatch,
 ) -> ValidateTestdataProjectWithReferenceGraph:
-    """Stage and validate the current test's convention-derived project."""
+    """Validate the current test's convention-derived project."""
     directory = _testdata_directory(request)
 
     def _run(
         *,
         max_workers: int | None = None,
-        entry_file: str = "test.dfn",
     ) -> FullValidationResult:
         monkeypatch.chdir(directory)
         structural_result = program_validator.ProgramStructuralValidator(
             _PARSER
-        ).validate_program(PurePosixPath(entry_file), max_workers=max_workers)
+        ).validate_program(PurePosixPath("test.dfn"), max_workers=max_workers)
         return _run_reference_graph_validation(structural_result)
 
     return _run

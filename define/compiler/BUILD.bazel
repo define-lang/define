@@ -44,7 +44,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":ast",
-        ":diagnostics",
         ":parser",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",

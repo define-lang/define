@@ -25,6 +25,7 @@ py_test(
     size = "small",
     srcs = ["path_resolver_test.py"],
     data = [
+        "//define/testdata/codegen/generator",
         "//define/testdata/driver/driver_run",
         "//define/testdata/reference_graph/create_particle",
     ],
@@ -37,7 +38,7 @@ py_test(
     srcs = ["testdata_test.py"],
     data = _TESTDATA_TARGETS + [
         "//define/compiler:driver_test_sources",
-        "//define/compiler/parser_tests:test_sources",
+        "//define/compiler/codegen:generator_test_sources",
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:test_sources",
         "//define/compiler/validator/structural/program_validator_tests:test_sources",
     ],

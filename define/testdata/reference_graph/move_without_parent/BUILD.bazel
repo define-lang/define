@@ -1,5 +1,6 @@
 filegroup(
     name = "move_without_parent",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",

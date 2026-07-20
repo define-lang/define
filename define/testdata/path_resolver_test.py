@@ -36,3 +36,13 @@ def test_directory_for_driver_test():
     assert directory == Path(
         "define/testdata/driver/driver_run/valid_file_returns_success"
     )
+
+
+def test_directory_for_codegen_test():
+    directory = path_resolver.directory_for(
+        Path("define/compiler/codegen/generator_test.py"),
+        "test_constructor_entry_point_adds_no_diagnostics",
+    )
+    assert directory == Path(
+        "define/testdata/codegen/generator/constructor_entry_point_adds_no_diagnostics"
+    )

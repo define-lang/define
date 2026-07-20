@@ -1,0 +1,9 @@
+filegroup(
+    name = "generator",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/codegen:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)

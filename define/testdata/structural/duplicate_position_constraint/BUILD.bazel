@@ -1,5 +1,6 @@
 filegroup(
     name = "duplicate_position_constraint",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",

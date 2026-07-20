@@ -1,5 +1,6 @@
 filegroup(
     name = "automated_requirements_nested_action_trigger_move",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",

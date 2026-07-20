@@ -37,6 +37,7 @@ py_test(
     name = "generator_test",
     size = "small",
     srcs = ["generator_test.py"],
+    data = ["//define/testdata/codegen/generator"],
     deps = [
         ":generator",
         "//define/compiler:conftest",
@@ -44,6 +45,13 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
     ],
+)
+
+filegroup(
+    name = "generator_test_sources",
+    testonly = True,
+    srcs = ["generator_test.py"],
+    visibility = ["//define/testdata:__pkg__"],
 )
 
 # --- Format checking ---

@@ -3,7 +3,7 @@ filegroup(
     testonly = True,
     srcs = glob(["**"]),
     visibility = [
-        "//define/compiler:__subpackages__",
+        "//define/compiler:__pkg__",
         "//define/testdata:__pkg__",
     ],
 )

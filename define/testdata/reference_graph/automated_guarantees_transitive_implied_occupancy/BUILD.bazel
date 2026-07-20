@@ -1,5 +1,6 @@
 filegroup(
     name = "automated_guarantees_transitive_implied_occupancy",
+    testonly = True,
     srcs = glob(["**"]),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",

@@ -11,23 +11,20 @@ from define.testdata import path_resolver
 
 _TESTDATA_ROOT = Path("define/testdata")
 _TEST_SOURCE_ROOTS = {
+    "codegen": Path("define/compiler/codegen"),
     "driver": Path("define/compiler"),
-    "parser": Path("define/compiler/parser_tests"),
     "structural": Path("define/compiler/validator/structural/program_validator_tests"),
     "reference_graph": Path(
         "define/compiler/validator/reference_graph/reference_graph_validator_tests"
     ),
 }
 _NON_FILESYSTEM_FIXTURES = {
-    "parse_testdata",
     "validate_testdata_structural_non_filesystem",
     "validate_testdata_non_filesystem_with_reference_graph",
 }
 _FILESYSTEM_FIXTURES = {
-    "parse_and_validate_testdata_file",
     "validate_testdata_structural",
     "validate_testdata_project_with_reference_graph",
-    "validate_testdata_source_as_file",
     "testdata_project_directory",
 }
 _TESTDATA_FIXTURES = _NON_FILESYSTEM_FIXTURES | _FILESYSTEM_FIXTURES
