@@ -1,5 +1,5 @@
 from define.compiler import ast
-from define.compiler.validator.reference_graph import quality_assignments
+from define.compiler.validator.reference_graph import quality_assignment
 
 _LOCATION = ast.start_of_file_location()
 _FQUN = ast.Fqun(
@@ -26,8 +26,8 @@ def _quality(name: str) -> ast.GlobalTypedNameReference:
 def _build(
     direct: tuple[ast.GlobalTypedNameReference, ...],
     graph: dict[str, tuple[ast.GlobalTypedNameReference, ...]],
-) -> quality_assignments.QualityAssignments:
-    return quality_assignments.QualityAssignments.expand_implications(
+) -> quality_assignment.QualityAssignments:
+    return quality_assignment.QualityAssignments.expand_implications(
         direct, lambda quality: graph.get(quality.full_typed_name, ())
     )
 
@@ -45,10 +45,10 @@ def test_depth_first_assignment_order_and_paths():
 
     assert tuple(assignments) == (shared, second, other, first)
     shared_assignment = assignments.preferred_assignment_for(shared)
-    assert isinstance(shared_assignment, quality_assignments.ImpliedQualityAssignment)
+    assert isinstance(shared_assignment, quality_assignment.ImpliedQualityAssignment)
     second_assignment = shared_assignment.caused_by
     assert second_assignment.quality == second
-    assert isinstance(second_assignment, quality_assignments.ImpliedQualityAssignment)
+    assert isinstance(second_assignment, quality_assignment.ImpliedQualityAssignment)
     assert second_assignment.caused_by.quality == first
     assert tuple(
         assignment.quality for assignment in shared_assignment.assignment_path()
@@ -81,18 +81,18 @@ def test_later_direct_assignment_is_preferred_without_rewriting_descendant_path(
     )
 
     preferred = assignments.preferred_assignment_for(intermediate)
-    assert type(preferred) is quality_assignments.QualityAssignment
+    assert type(preferred) is quality_assignment.QualityAssignment
     descendant_assignment = next(
         assignment
         for assignment in assignments.assignments
         if assignment.quality == descendant
     )
     assert isinstance(
-        descendant_assignment, quality_assignments.ImpliedQualityAssignment
+        descendant_assignment, quality_assignment.ImpliedQualityAssignment
     )
     assert isinstance(
         descendant_assignment.caused_by,
-        quality_assignments.ImpliedQualityAssignment,
+        quality_assignment.ImpliedQualityAssignment,
     )
 
 
@@ -107,7 +107,7 @@ def test_preferred_assignment_lookup_and_quality_membership():
 
 
 def test_shared_empty_collection_is_reused():
-    assert _build((), {}) is quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
+    assert _build((), {}) is quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
 
 
 def test_sixty_four_element_chain_is_iterative():

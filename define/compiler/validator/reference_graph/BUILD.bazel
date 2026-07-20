@@ -20,7 +20,7 @@ py_library(
     srcs = ["action_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
     ],
 )
@@ -79,7 +79,7 @@ py_library(
         ":operation_graph",
         ":particle_operation",
         ":particle_tracker",
-        ":quality_assignments",
+        ":quality_assignment",
         ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -154,7 +154,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":particle_tracker",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -167,7 +167,7 @@ py_library(
     deps = [
         ":action_contract",
         ":operation_graph",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
     ],
@@ -181,7 +181,7 @@ py_test(
         ":action_contract",
         ":operation_graph",
         ":particle_tracker",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
     ],
 )
@@ -193,15 +193,15 @@ py_test(
     deps = [
         ":action_contract",
         ":particle_tracker",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
         "@pypi//pytest",
     ],
 )
 
 py_library(
-    name = "quality_assignments",
-    srcs = ["quality_assignments.py"],
+    name = "quality_assignment",
+    srcs = ["quality_assignment.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
@@ -210,11 +210,11 @@ py_library(
 )
 
 py_test(
-    name = "quality_assignments_test",
+    name = "quality_assignment_test",
     size = "small",
-    srcs = ["quality_assignments_test.py"],
+    srcs = ["quality_assignment_test.py"],
     deps = [
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
     ],
 )
@@ -235,7 +235,7 @@ py_library(
         ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
@@ -251,7 +251,7 @@ py_library(
     deps = [
         ":action_contract",
         ":particle_tracker",
-        ":quality_assignments",
+        ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -300,8 +300,8 @@ pyright_test(
         ":particle_tracker",
         ":particle_tracker_operation_graph_test",
         ":particle_tracker_test",
-        ":quality_assignments",
-        ":quality_assignments_test",
+        ":quality_assignment",
+        ":quality_assignment_test",
         ":reference_graph",
         ":reference_graph_validator",
         ":requirement_violation",

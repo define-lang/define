@@ -18,7 +18,7 @@ from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     particle_tracker,
-    quality_assignments,
+    quality_assignment,
 )
 
 
@@ -153,7 +153,7 @@ def contract_destructor(
     particle_position: ast.PositionReference,
     particle: particle_tracker.ParticleInfo,
     trigger_step: action_contract.PropagationStep,
-    quality_assignment: quality_assignments.QualityAssignment,
+    quality_assignment: quality_assignment.QualityAssignment,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
     enclosing_fqun = definition.typed_name.name_content.fqun

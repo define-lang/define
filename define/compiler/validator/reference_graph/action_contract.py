@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.validator.reference_graph import quality_assignments
+    from define.compiler.validator.reference_graph import quality_assignment
 
 
 class PositionOccupancyState(enum.Enum):
@@ -83,7 +83,7 @@ class PropagationStep:
 class ActionAssignment:
     """An action's assignment to a particle at a position."""
 
-    quality_assignment: quality_assignments.QualityAssignment
+    quality_assignment: quality_assignment.QualityAssignment
     assigned_to_position_name: ast.TypedName
 
     def propagation_chain(self) -> list[PropagationStep]:
@@ -226,7 +226,7 @@ class OccupiedByExistingGuarantee(PositionGuarantee):
 class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new particle created by the action."""
 
-    qualities: quality_assignments.QualityAssignments
+    qualities: quality_assignment.QualityAssignments
     origin_position: ast.PositionReference
 
 
@@ -291,7 +291,7 @@ class DestructionContract:
     # The action that physically performed the destruction.
     destroying_action: ast.GlobalTypedName
     # Destructors we have already verified, so consumers do not re-verify.
-    verified_destructors: quality_assignments.QualityAssignments
+    verified_destructors: quality_assignment.QualityAssignments
     # True when destroyed_position_local was auto-destroyed at block end rather
     # than by an explicit destroy statement.
     is_auto_destruction: bool
@@ -310,7 +310,7 @@ class CascadeDestructor:
     # Used only to explain the destructor assignment in diagnostics. This is the
     # preferred assignment, so a direct constraint replaces an earlier implied
     # assignment here.
-    assignment: quality_assignments.QualityAssignment
+    assignment: quality_assignment.QualityAssignment
     position: ast.PositionReference
     origin_position: ast.PositionReference
 

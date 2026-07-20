@@ -10,7 +10,7 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph,
-    quality_assignments,
+    quality_assignment,
 )
 
 if typing.TYPE_CHECKING:
@@ -26,7 +26,7 @@ class ParticleInfo:
     last_position: ast.PositionReference
     # The qualities we know that this particle has, in
     # assignment order.
-    qualities: quality_assignments.QualityAssignments
+    qualities: quality_assignment.QualityAssignments
     # The position reference where this particle was first created. The DLP 42
     # liveness check keys a move's satisfied constraints off this: a constraint is
     # only kept alive by a move if the particle was created in the position that
@@ -619,7 +619,7 @@ class ParticleTracker:
     def create(
         self,
         in_position: ast.PositionReference,
-        qualities: quality_assignments.QualityAssignments,
+        qualities: quality_assignment.QualityAssignments,
         *,
         from_caller: ast.PositionReference | None = None,
     ):

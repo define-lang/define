@@ -5,14 +5,14 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph,
     particle_tracker,
-    quality_assignments,
+    quality_assignment,
 )
 
 _LOC = ast.start_of_file_location()
 
 
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
-_NO_QUALITIES = quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
+_NO_QUALITIES = quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
 
 _CREATE = operation_graph.CreateNode
 _MOVE = operation_graph.MoveNode
@@ -67,7 +67,7 @@ def _action_chain(*elements: ast.TypedNameReference) -> ast.ActionReference:
 def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
     cause = _ref("cause")
     return action_contract.OccupiedByNewGuarantee(
-        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+        qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
         origin_position=cause,
         caused_by=cause,
         operation_positions=(cause.canonical_chained_name_tuple,),

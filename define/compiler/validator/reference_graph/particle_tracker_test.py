@@ -6,13 +6,13 @@ from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
     particle_tracker,
-    quality_assignments,
+    quality_assignment,
 )
 
 _LOC = ast.start_of_file_location()
 
 _NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
-_NO_QUALITIES = quality_assignments.EMPTY_QUALITY_ASSIGNMENTS
+_NO_QUALITIES = quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
 _LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
 _POS2_REF = ast.PositionReference(
     typed_names=(
@@ -91,8 +91,8 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
 
 def _quality_assignments(
     *qualities: ast.GlobalTypedNameReference,
-) -> quality_assignments.QualityAssignments:
-    return quality_assignments.QualityAssignments.expand_implications(
+) -> quality_assignment.QualityAssignments:
+    return quality_assignment.QualityAssignments.expand_implications(
         qualities, lambda _: ()
     )
 
@@ -1113,7 +1113,7 @@ def test_generate_flattened_guarantees_includes_callee_derived_key():
             (
                 ("position<item>",),
                 action_contract.OccupiedByNewGuarantee(
-                    qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                    qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
                     origin_position=_POS2_REF,
                     caused_by=_POS2_REF,
                     operation_positions=(),
@@ -1147,7 +1147,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
                 (
                     ("position<item>",),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
                         origin_position=_POS2_REF,
                         caused_by=_POS2_REF,
                         operation_positions=(),
@@ -1192,7 +1192,7 @@ def _make_nested_level(
                 (
                     (item,),
                     action_contract.OccupiedByNewGuarantee(
-                        qualities=quality_assignments.EMPTY_QUALITY_ASSIGNMENTS,
+                        qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
                         origin_position=_POS2_REF,
                         caused_by=_POS2_REF,
                         operation_positions=(),

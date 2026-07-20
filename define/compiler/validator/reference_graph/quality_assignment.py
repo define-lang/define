@@ -1,7 +1,5 @@
 """Assigned particle qualities and their source-order implication paths."""
 
-# TODO: Rename this module to quality_assignment.
-
 from __future__ import annotations
 
 import typing

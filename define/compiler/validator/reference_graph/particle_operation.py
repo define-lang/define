@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.validator.reference_graph import (
         particle_tracker,
-        quality_assignments,
+        quality_assignment,
     )
 
 
@@ -28,7 +28,7 @@ class Operation:
 class Create(Operation):
     """Create a new particle in a position, with the given qualities."""
 
-    qualities: quality_assignments.QualityAssignments
+    qualities: quality_assignment.QualityAssignments
 
 
 @dataclass(frozen=True, slots=True)
