@@ -824,6 +824,18 @@ py_test(
 )
 
 py_test(
+    name = "operation_graph_trigger_position_integration_test",
+    size = "small",
+    srcs = ["operation_graph_trigger_position_integration_test.py"],
+    data = ["//define/testdata/reference_graph/operation_graph_trigger_position_integration"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+    ],
+)
+
+py_test(
     name = "operation_graph_two_actions_integration_test",
     size = "small",
     srcs = ["operation_graph_two_actions_integration_test.py"],
@@ -962,6 +974,7 @@ pyright_test(
         ":operation_graph_many_actions_integration_test",
         ":operation_graph_retriggering_integration_test",
         ":operation_graph_single_action_integration_test",
+        ":operation_graph_trigger_position_integration_test",
         ":operation_graph_two_actions_integration_test",
         ":particle_conflict_test",
         ":quality_implication_particle_test",
