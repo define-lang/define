@@ -105,6 +105,12 @@ See [define/spec/spec.md] for the language specification.
   change as a rename.
 - Don't use git -C on the current directory.
 - Never use `git commit --no-verify`; fix commit hook issues instead.
+- Write specific, imperative commit subjects that describe the actual change.
+  When the reason for the change is not clear from the subject, add a concise
+  commit body explaining why it exists. Avoid vague subjects such as "Refactor
+  tests" or "Update files."
+- End commits written by an agent with the standard
+  `Co-authored-by: Agent Name (Model Name) <agent-email>` trailer.
 
 ## Tests
 
