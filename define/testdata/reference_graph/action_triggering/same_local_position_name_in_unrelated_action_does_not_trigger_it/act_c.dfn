@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/act_c> {
+    define the position<shared>.
+    it happens when {
+        the position<shared> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+    }
+}

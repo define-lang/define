@@ -1,0 +1,8 @@
+# act_a and act_c both define position<shared> as their trigger position, but
+# act_b's chained name explicitly references act_a, so act_c must not trigger.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the action</act_b>.
+        it has the action</act_c>.
+    }
+}

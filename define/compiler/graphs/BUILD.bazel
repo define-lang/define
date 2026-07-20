@@ -36,17 +36,6 @@ py_test(
     ],
 )
 
-py_test(
-    name = "action_call_graph_test",
-    size = "small",
-    srcs = ["action_call_graph_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
 py_library(
     name = "graphs",
     srcs = ["__init__.py"],
@@ -88,7 +77,6 @@ pyright_test(
         ":action_call_graph",
         ":action_call_graph_renderer",
         ":action_call_graph_renderer_test",
-        ":action_call_graph_test",
         ":graphs",
         ":reference_graph",
         ":reference_graph_test",

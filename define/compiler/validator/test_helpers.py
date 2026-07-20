@@ -4,28 +4,7 @@
 from pathlib import Path
 from pprint import pformat
 
-from define.compiler.graphs import action_call_graph
 from define.compiler.validator import validation_result
-
-
-def assert_action_calls(
-    call_graph: action_call_graph.ActionCallGraph, *actions: str
-) -> None:
-    """Assert that the given action call chain exists in the call graph."""
-    __tracebackhide__ = True
-    assert len(actions) >= 2, "Need at least two actions to form a call chain"
-    # We use edges() (not unique_edges()) so that the error message
-    # displays edges in graph insertion order, making failures easier
-    # to diagnose.
-    all_edges = call_graph.edges()
-    edge_set = set(all_edges)
-    for i in range(len(actions) - 1):
-        expected = (actions[i], actions[i + 1])
-        assert expected in edge_set, (
-            f"Expected edge {actions[i]} -> {actions[i + 1]} "
-            f"not found in action_call_graph.\n"
-            f"Available edges:\n{pformat(all_edges)}"
-        )
 
 
 def assert_no_errors(result: validation_result.ProgramValidationResult) -> None:

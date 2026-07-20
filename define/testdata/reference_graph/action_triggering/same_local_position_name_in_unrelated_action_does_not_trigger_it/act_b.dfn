@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/act_b> {
+    define the position<pp>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</act_a>.
+        }
+    }
+    it happens when {
+        the position<pp> has a particle.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</act_a>::position<shared>.
+    }
+}
