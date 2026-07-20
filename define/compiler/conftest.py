@@ -2,7 +2,6 @@
 # pyright: reportImplicitStringConcatenation=false
 """Shared test fixtures for the Define compiler."""
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Protocol, cast
@@ -57,7 +56,7 @@ class FullValidationResult:
 
 
 class ValidateProject(Protocol):
-    """Callable that validates a multi-file project and returns results."""
+    """Callable that validates a multi-file project through both phases."""
 
     def __call__(
         self,
@@ -68,43 +67,16 @@ class ValidateProject(Protocol):
         local_deps: dict[str, str] | None = ...,
         sub_roots: dict[str, str] | None = ...,
         entry_file: str = ...,
-    ) -> validation_result.ProgramValidationResult:
+    ) -> FullValidationResult:
         """Validate a project with the given files."""
         ...
-
-
-def _run_validation(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    files: dict[str, str],
-    universe_name: str,
-    max_workers: int | None = None,
-    local_deps: dict[str, str] | None = None,
-    sub_roots: dict[str, str] | None = None,
-    entry_file: str = "test.dfn",
-) -> validation_result.ProgramValidationResult:
-    test_helpers.write_project_config(tmp_path, universe_name)
-    if local_deps is not None:
-        test_helpers.write_local_deps_config(tmp_path, local_deps)
-        for dep_path in local_deps.values():
-            (tmp_path / dep_path).mkdir(parents=True, exist_ok=True)
-    if sub_roots is not None:
-        for sub_root_path, sub_universe in sub_roots.items():
-            test_helpers.write_sub_root(tmp_path, sub_root_path, sub_universe)
-    for name, content in files.items():
-        file_path = tmp_path / name
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(content, encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-    pv = program_validator.ProgramStructuralValidator(_PARSER)
-    return pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
 
 
 @pytest.fixture
 def validate_project(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> ValidateProject:
-    """Set up a multi-file project in a temp dir and validate it."""
+    """Set up a multi-file project and run both validation phases."""
 
     def _run(
         files: dict[str, str],
@@ -114,24 +86,29 @@ def validate_project(
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
         entry_file: str = "test.dfn",
-    ) -> validation_result.ProgramValidationResult:
-        return _run_validation(
-            tmp_path,
-            monkeypatch,
-            files,
-            universe_name,
+    ) -> FullValidationResult:
+        test_helpers.write_project_config(tmp_path, universe_name)
+        if local_deps is not None:
+            test_helpers.write_local_deps_config(tmp_path, local_deps)
+            for dep_path in local_deps.values():
+                (tmp_path / dep_path).mkdir(parents=True, exist_ok=True)
+        if sub_roots is not None:
+            for sub_root_path, sub_universe in sub_roots.items():
+                test_helpers.write_sub_root(tmp_path, sub_root_path, sub_universe)
+        for name, content in files.items():
+            file_path = tmp_path / name
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(content, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+        structural_result = program_validator.ProgramStructuralValidator(
+            _PARSER
+        ).validate_program(
+            PurePosixPath(entry_file),
             max_workers=max_workers,
-            local_deps=local_deps,
-            sub_roots=sub_roots,
-            entry_file=entry_file,
         )
+        return _run_reference_graph_validation(structural_result)
 
     return _run
-
-
-type ValidateNonFilesystemWithReferenceGraph = Callable[
-    [str], validation_result.ProgramValidationResult
-]
 
 
 class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
@@ -231,25 +208,6 @@ def validate_testdata_structural(
 
 
 @pytest.fixture
-def validate_non_filesystem_with_reference_graph() -> (
-    ValidateNonFilesystemWithReferenceGraph
-):
-    """Validate source text through both structural and reference graph validation."""
-
-    def _run(source: str) -> validation_result.ProgramValidationResult:
-        result = program_validator.ProgramStructuralValidator(
-            _PARSER
-        ).validate_program_non_filesystem(source)
-        reference_graph_validator.ReferenceGraphValidator(
-            result.reference_graph,
-            result.definition_results,
-        ).validate()
-        return result
-
-    return _run
-
-
-@pytest.fixture
 def validate_testdata_non_filesystem_with_reference_graph(
     request: pytest.FixtureRequest,
     monkeypatch: pytest.MonkeyPatch,
@@ -285,23 +243,6 @@ def _run_reference_graph_validation(
     )
 
 
-class ValidateProjectWithReferenceGraph(Protocol):
-    """Callable that runs structural + reference graph validation."""
-
-    def __call__(
-        self,
-        files: dict[str, str],
-        *,
-        universe_name: str = ...,
-        max_workers: int | None = ...,
-        local_deps: dict[str, str] | None = ...,
-        sub_roots: dict[str, str] | None = ...,
-        entry_file: str = ...,
-    ) -> FullValidationResult:
-        """Validate a project through both validation phases."""
-        ...
-
-
 class ValidateTestdataProjectWithReferenceGraph(Protocol):
     """Validate the convention-derived filesystem project."""
 
@@ -312,36 +253,6 @@ class ValidateTestdataProjectWithReferenceGraph(Protocol):
     ) -> FullValidationResult:
         """Run structural and reference graph validation."""
         ...
-
-
-@pytest.fixture
-def validate_project_with_reference_graph(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> ValidateProjectWithReferenceGraph:
-    """Set up a multi-file project and run both structural and reference graph validation."""
-
-    def _run(
-        files: dict[str, str],
-        *,
-        universe_name: str = "my.domain.com:my_lib",
-        max_workers: int | None = None,
-        local_deps: dict[str, str] | None = None,
-        sub_roots: dict[str, str] | None = None,
-        entry_file: str = "test.dfn",
-    ) -> FullValidationResult:
-        structural_result = _run_validation(
-            tmp_path,
-            monkeypatch,
-            files,
-            universe_name,
-            max_workers=max_workers,
-            local_deps=local_deps,
-            sub_roots=sub_roots,
-            entry_file=entry_file,
-        )
-        return _run_reference_graph_validation(structural_result)
-
-    return _run
 
 
 @pytest.fixture

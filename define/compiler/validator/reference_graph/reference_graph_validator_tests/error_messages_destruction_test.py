@@ -8,14 +8,14 @@ import textwrap
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.
 
 
 def test_destructor_requires_occupied_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "child_q.dfn": (
@@ -57,7 +57,7 @@ def test_destructor_requires_occupied_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -79,7 +79,7 @@ def test_destructor_requires_occupied_position_format(
 
 
 def test_destructor_on_particle_created_in_callee_local_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     """The propagation chain names the callee-local constraint that assigned the destructor."""
     files = {
@@ -134,7 +134,7 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -156,7 +156,7 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
 
 
 def test_destructor_requires_empty_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "child_q.dfn": (
@@ -202,7 +202,7 @@ def test_destructor_requires_empty_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -226,7 +226,7 @@ def test_destructor_requires_empty_position_format(
 
 
 def test_destructor_assigned_through_transitive_implication_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     """The diagnostic explains every implication from the constraint to the destructor."""
     files = {
@@ -284,7 +284,7 @@ def test_destructor_assigned_through_transitive_implication_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     # Implying a quality the body never references is intrinsically an unused
@@ -322,7 +322,7 @@ def test_destructor_assigned_through_transitive_implication_format(
 
 
 def test_aware_destructor_requirement_surfaces_as_action_requires_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     """When the destroying action itself knows the destructor (its target constraint declares it), an unmet destructor requirement surfaces as an ActionRequires through normal trigger propagation, whose explanation names the destruction-cascade step rather than reading as a Destruction Contract violation."""
     files = {
@@ -372,7 +372,7 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -394,7 +394,7 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
 
 
 def test_destructor_moved_guarantee_names_contracted_origin_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -417,7 +417,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "child.dfn": (
                 "define the potential position<my.domain.com:my_lib:/child>.\n"
@@ -448,7 +448,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
 
 
 def test_destructor_occupied_guarantee_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -460,7 +460,7 @@ def test_destructor_occupied_guarantee_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph({"test.dfn": test_source})
+    result = validate_project({"test.dfn": test_source})
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert (
@@ -475,7 +475,7 @@ def test_destructor_occupied_guarantee_format(
 
 
 def test_auto_destruction_destructor_requires_empty_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "child_q.dfn": (
@@ -520,7 +520,7 @@ def test_auto_destruction_destructor_requires_empty_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -546,7 +546,7 @@ def test_auto_destruction_destructor_requires_empty_position_format(
 
 
 def test_auto_destruction_destructor_requires_occupied_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "child_q.dfn": (
@@ -587,7 +587,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -611,7 +611,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
 
 
 def test_destructor_cascade_through_action_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "destructor_empty.dfn": (
@@ -664,7 +664,7 @@ def test_destructor_cascade_through_action_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -696,7 +696,7 @@ def test_destructor_cascade_through_action_format(
 
 
 def test_destruction_contract_requires_occupied_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -747,7 +747,7 @@ def test_destruction_contract_requires_occupied_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -771,7 +771,7 @@ def test_destruction_contract_requires_occupied_format(
 
 
 def test_destruction_contract_requires_empty_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     """A caller-attached destructor requires its implied position</p2> empty; a blind filler (which knows only position</p2>) fills it, so /test verifies the empty-requirement violation with the fill site carried up from the contract."""
     files = {
@@ -845,7 +845,7 @@ def test_destruction_contract_requires_empty_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -877,7 +877,7 @@ def test_destruction_contract_requires_empty_format(
 # change should show the stack of positional moves that carried the particle to
 # where it was auto-destroyed.
 def test_destruction_contract_auto_destruction_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -929,7 +929,7 @@ def test_destruction_contract_auto_destruction_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -955,7 +955,7 @@ def test_destruction_contract_auto_destruction_format(
 
 
 def test_destruction_contract_constructor_attacher_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -1009,7 +1009,7 @@ def test_destruction_contract_constructor_attacher_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -1033,7 +1033,7 @@ def test_destruction_contract_constructor_attacher_format(
 
 
 def test_destruction_contract_cascade_child_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
@@ -1092,7 +1092,7 @@ def test_destruction_contract_cascade_child_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())

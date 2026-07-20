@@ -2,10 +2,7 @@
 
 import textwrap
 
-from define.compiler.conftest import (
-    ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
-)
+from define.compiler.conftest import ValidateProject
 from define.compiler.data_structures import define_path
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
@@ -25,7 +22,7 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 
 
 def test_local_duplicate_particle_format(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -39,20 +36,20 @@ def test_local_duplicate_particle_format(
         "    }\n"
         "}\n"
     )
-    result = validate_non_filesystem_with_reference_graph(source)
-    diags = result.file_results[0].diagnostics
+    result = validate_project({"test.dfn": source})
+    diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == textwrap.dedent("""\
-        line 8, column 30
+        File "test.dfn", line 8, column 30
                 create a particle in position<pos>.
                                      ^
         a particle already exists in 'position<pos>'; it was put there at:
-        line 7, column 30""")
+        File "test.dfn", line 7, column 30""")
 
 
 def test_move_from_empty_position_format(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -66,14 +63,14 @@ def test_move_from_empty_position_format(
         "    }\n"
         "}\n"
     )
-    result = validate_non_filesystem_with_reference_graph(source)
-    diags = result.file_results[0].diagnostics
+    result = validate_project({"test.dfn": source})
+    diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert (
         formatted
         == textwrap.dedent("""\
-        line 8, column 30
+        File "test.dfn", line 8, column 30
                 move the particle in position<from_pos> to position<to_pos>.
                                      ^
         cannot move a particle from 'position<from_pos>' because it does not contain one""")
@@ -81,7 +78,7 @@ def test_move_from_empty_position_format(
 
 
 def test_deferred_position_chain_error_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -97,7 +94,7 @@ def test_deferred_position_chain_error_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "test.dfn": source,
             "pos_b.dfn": (
@@ -110,11 +107,9 @@ def test_deferred_position_chain_error_format(
             "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
         }
     )
-    test_result = next(
-        r
-        for r in result.program_result.file_results
-        if r.file_path == define_path.DefinePath("test.dfn")
-    )
+    assert len(result.program_result.file_results) == 3
+    test_result = result.program_result.file_results[0]
+    assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
@@ -129,7 +124,7 @@ def test_deferred_position_chain_error_format(
 
 
 def test_deferred_action_chain_error_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -146,7 +141,7 @@ def test_deferred_action_chain_error_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "test.dfn": source,
             "create_noop.dfn": (
@@ -162,11 +157,9 @@ def test_deferred_action_chain_error_format(
             ),
         }
     )
-    test_result = next(
-        r
-        for r in result.program_result.file_results
-        if r.file_path == define_path.DefinePath("test.dfn")
-    )
+    assert len(result.program_result.file_results) == 2
+    test_result = result.program_result.file_results[0]
+    assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
@@ -181,7 +174,7 @@ def test_deferred_action_chain_error_format(
 
 
 def test_action_requires_empty_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "other.dfn": (
@@ -213,7 +206,7 @@ def test_action_requires_empty_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -234,7 +227,7 @@ def test_action_requires_empty_position_format(
 
 
 def test_action_requires_occupied_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "other.dfn": (
@@ -266,7 +259,7 @@ def test_action_requires_occupied_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -284,7 +277,7 @@ def test_action_requires_occupied_position_format(
 
 
 def test_propagated_action_requires_empty_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "inner.dfn": (
@@ -348,7 +341,7 @@ def test_propagated_action_requires_empty_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -377,7 +370,7 @@ def test_propagated_action_requires_empty_position_format(
 
 
 def test_requirement_carried_through_two_moves_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "inner.dfn": (
@@ -452,7 +445,7 @@ def test_requirement_carried_through_two_moves_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -483,7 +476,7 @@ def test_requirement_carried_through_two_moves_format(
 
 
 def test_requirement_carried_through_actions_on_locals_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "marker.dfn": "define the potential position<my.domain.com:my_lib:/marker>.\n",
@@ -570,7 +563,7 @@ def test_requirement_carried_through_actions_on_locals_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -601,7 +594,7 @@ def test_requirement_carried_through_actions_on_locals_format(
 
 
 def test_move_violates_constraints_error_message(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -625,7 +618,7 @@ def test_move_violates_constraints_error_message(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "test.dfn": source,
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -658,7 +651,7 @@ def test_move_violates_constraints_error_message(
 
 
 def test_move_violates_constraints_error_message_cross_universe(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     child_fqun = "mv:define-lang.org:child"
     source = (
@@ -681,7 +674,7 @@ def test_move_violates_constraints_error_message_cross_universe(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "test.dfn": source,
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -706,7 +699,7 @@ def test_move_violates_constraints_error_message_cross_universe(
 
 
 def test_constructor_requires_empty_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
@@ -747,7 +740,7 @@ def test_constructor_requires_empty_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -769,7 +762,7 @@ def test_constructor_requires_empty_position_format(
 
 
 def test_constructor_requires_occupied_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
@@ -799,7 +792,7 @@ def test_constructor_requires_occupied_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -819,7 +812,7 @@ def test_constructor_requires_occupied_position_format(
 
 
 def test_implied_constructor_requires_occupied_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "carrier.dfn": (
@@ -859,7 +852,7 @@ def test_implied_constructor_requires_occupied_position_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -881,7 +874,7 @@ def test_implied_constructor_requires_occupied_position_format(
 
 
 def test_direct_constructor_constraint_is_preferred_over_implication_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     files = {
         "carrier.dfn": (
@@ -922,7 +915,7 @@ def test_direct_constructor_constraint_is_preferred_over_implication_format(
             "}\n"
         ),
     }
-    result = validate_project_with_reference_graph(files)
+    result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
@@ -942,7 +935,7 @@ def test_direct_constructor_constraint_is_preferred_over_implication_format(
 
 
 def test_destroy_in_emptied_interface_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -965,7 +958,7 @@ def test_destroy_in_emptied_interface_position_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -993,7 +986,7 @@ def test_destroy_in_emptied_interface_position_format(
 
 
 def test_destroy_in_default_empty_interface_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1014,7 +1007,7 @@ def test_destroy_in_default_empty_interface_position_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -1044,7 +1037,7 @@ def test_destroy_in_default_empty_interface_position_format(
 
 
 def test_move_from_emptied_interface_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1069,7 +1062,7 @@ def test_move_from_emptied_interface_position_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -1097,7 +1090,7 @@ def test_move_from_emptied_interface_position_format(
 
 
 def test_move_from_default_empty_interface_position_format(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
     test_source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1119,7 +1112,7 @@ def test_move_from_default_empty_interface_position_format(
         "    }\n"
         "}\n"
     )
-    result = validate_project_with_reference_graph(
+    result = validate_project(
         {
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"

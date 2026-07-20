@@ -12,7 +12,7 @@ ordinary requirement propagation does.
 import textwrap
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.
@@ -202,9 +202,9 @@ _FILES = {
 
 
 def test_destruction_contract_traces_every_trigger_hop(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    validate_project: ValidateProject,
 ):
-    result = validate_project_with_reference_graph(_FILES)
+    result = validate_project(_FILES)
     # Per the Destruction Contract rules, each destructor is verified by the first
     # caller up the stack that knows it is on the particle: d1 by outer_implied
     # (whose incoming position declares it), and d2 by /outer (which moved the
@@ -223,15 +223,12 @@ def test_destruction_contract_traces_every_trigger_hop(
     ]
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    violations = [
-        d
-        for d in all_diags
-        if isinstance(d, diagnostics.InferredRequirementViolationDiagnostic)
-    ]
-    assert len(violations) == 2
-    by_state = {d.required_empty: d for d in violations}
-    d2_diag = by_state[False]
-    d1_diag = by_state[True]
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    d2_diag = all_diags[0]
+    d1_diag = all_diags[1]
+    assert d2_diag.required_empty is False
+    assert d1_diag.required_empty is True
 
     # d1 is hidden from every trigger position below outer_implied::incoming, so
     # its contract is verified at outer_implied (the first caller that knows d1).

@@ -41,8 +41,8 @@ def test_path_mismatch_format(validate_project: ValidateProject):
         {"foo/bar.dfn": source},
         entry_file="foo/bar.dfn",
     )
-    assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
+    assert len(result.program_result.file_results) == 1
+    diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == textwrap.dedent("""\
@@ -74,13 +74,11 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
                 "    }\n"
                 "}\n"
             ),
-        }
+        },
     )
-    test_result = next(
-        r
-        for r in result.file_results
-        if r.file_path == define_path.DefinePath("test.dfn")
-    )
+    assert len(result.program_result.file_results) == 2
+    test_result = result.program_result.file_results[0]
+    assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
@@ -193,16 +191,15 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
                 "}\n"
             ),
             "end_pos.dfn": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
-        }
+        },
     )
-    test_result = next(
-        r
-        for r in result.file_results
-        if r.file_path == define_path.DefinePath("test.dfn")
-    )
+    assert len(result.program_result.file_results) == 3
+    test_result = result.program_result.file_results[0]
+    assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
-    assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    assert len(diags) == 2
+    assert isinstance(diags[1], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    formatted = diags[1].format(source.splitlines())
     assert (
         formatted
         == textwrap.dedent("""\
@@ -238,7 +235,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         local_deps={child_universe: "lib"},
         sub_roots={"lib": wrong_child_universe},
     )
-    results = result.file_results
+    results = result.program_result.file_results
     assert len(results) == 1
     assert results[0].exception is None
     diags = results[0].diagnostics
@@ -297,7 +294,7 @@ def test_not_project_root_error_message_for_subroot(
         local_deps={child_universe: "lib"},
         max_workers=1,
     )
-    results = result.file_results
+    results = result.program_result.file_results
     assert len(results) == 1
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -368,7 +365,7 @@ def test_source_file_not_found_error_message(
     validate_project: ValidateProject,
 ):
     result = validate_project({}, entry_file="nonexistent.dfn")
-    results = result.file_results
+    results = result.program_result.file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, exceptions.SourceFileNotFoundError)
