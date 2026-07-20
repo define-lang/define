@@ -24,7 +24,7 @@ py_test(
     name = "generator_integration_test",
     size = "small",
     srcs = ["generator_integration_test.py"],
-    data = ["//define/compiler/codegen/testdata:testdata_files"],
+    data = ["//define/testdata/codegen/generator_integration"],
     deps = [
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",

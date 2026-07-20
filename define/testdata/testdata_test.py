@@ -28,6 +28,8 @@ _FILESYSTEM_FIXTURES = {
     "testdata_project_directory",
 }
 _TESTDATA_FIXTURES = _NON_FILESYSTEM_FIXTURES | _FILESYSTEM_FIXTURES
+# TODO: Remove this exemption when the temporary generator_integration module is removed.
+_BULK_OWNED_MODULES = {Path("codegen/generator_integration")}
 
 # TODO: Require data-backed tests that assert diagnostics to also assert that
 # validation produced no exceptions.
@@ -63,6 +65,9 @@ def _scenario_directories() -> list[Path]:
         if not phase_root.exists():
             continue
         for module_directory in phase_root.iterdir():
+            relative_module = module_directory.relative_to(_TESTDATA_ROOT)
+            if relative_module in _BULK_OWNED_MODULES:
+                continue
             if not module_directory.is_dir():
                 raise AssertionError(
                     f"unexpected file in {phase_root}: {module_directory}"

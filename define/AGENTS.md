@@ -173,7 +173,7 @@ flowchart LR
 
 - Generator code is in `compiler/codegen/`, with the Python-specific generator
   in `compiler/codegen/literal/python/generator.py`.
-- Integration test cases for the generator live in `compiler/codegen/testdata/`.
+- Integration test cases for the generator live in `testdata/codegen/`.
 - After changing the code generator or any testdata, regenerate the expected
   outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
 

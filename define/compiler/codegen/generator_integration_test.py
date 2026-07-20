@@ -1,10 +1,9 @@
 # pyright: reportUnusedCallResult=false
 """Integration tests for code generation.
 
-Each subdirectory under testdata/ is a valid Define project containing a
-test.dfn entry point and an expected/ directory with the expected generated
-output files. Simply adding a new directory to testdata/ will cause a new
-test to be generated here.
+Each test case is a category/case directory under the shared codegen testdata
+tree containing a test.dfn entry point, an expected/ directory with the expected
+generated files, and an occupied_positions.txt runtime expectation.
 """
 
 import difflib
@@ -18,11 +17,8 @@ import pytest
 from define.compiler import driver
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_TESTDATA_ROOT = Path("define/compiler/codegen/testdata")
-
-_TEST_CASES = sorted(
-    d for d in _TESTDATA_ROOT.iterdir() if d.is_dir() and (d / "expected").is_dir()
-)
+_TESTDATA_ROOT = Path("define/testdata/codegen")
+_TEST_CASES = sorted(path.parent for path in _TESTDATA_ROOT.glob("*/*/test.dfn"))
 
 
 def _all_files(root: Path) -> dict[str, str]:
@@ -63,7 +59,7 @@ def test_test_cases_not_empty():
 @pytest.mark.parametrize(
     "test_case_dir",
     _TEST_CASES,
-    ids=[d.name for d in _TEST_CASES],
+    ids=[path.relative_to(_TESTDATA_ROOT).as_posix() for path in _TEST_CASES],
 )
 def test_generates_expected_output(
     test_case_dir: Path, monkeypatch: pytest.MonkeyPatch
@@ -81,7 +77,7 @@ def test_generates_expected_output(
 @pytest.mark.parametrize(
     "test_case_dir",
     _TEST_CASES,
-    ids=[d.name for d in _TEST_CASES],
+    ids=[path.relative_to(_TESTDATA_ROOT).as_posix() for path in _TEST_CASES],
 )
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"
@@ -98,7 +94,7 @@ def test_expected_output_runs(test_case_dir: Path):
         pytest.fail(result.stderr)
 
     occupied_file = test_case_dir / "occupied_positions.txt"
-    expected_occupied = occupied_file.read_text() if occupied_file.exists() else ""
+    expected_occupied = occupied_file.read_text()
     if result.stdout != expected_occupied:
         diff = difflib.unified_diff(
             expected_occupied.splitlines(keepends=True),
