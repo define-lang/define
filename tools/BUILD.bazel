@@ -155,6 +155,8 @@ py_binary(
 py_binary(
     name = "setup_local_dev",
     srcs = ["setup_local_dev.py"],
+    args = ["$(location @multitool//tools/uv)"],
+    data = ["@multitool//tools/uv"],
 )
 
 py_binary(

@@ -4,9 +4,11 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+RUNFILES_WORKSPACE = Path(__file__).absolute().parent.parent
+REPO_ROOT = Path(os.environ.get("BUILD_WORKSPACE_DIRECTORY", RUNFILES_WORKSPACE))
 
 LARK_TARGETS = [
     "//define/compiler/lark:lark_standalone_gen",
@@ -31,6 +33,27 @@ def _bazelisk() -> str:
         msg = "bazelisk not found on PATH"
         raise FileNotFoundError(msg)
     return path
+
+
+def sync_venv(uv_location: str):
+    """Synchronize the local venv with Bazel's Python interpreter."""
+    uv_path = (RUNFILES_WORKSPACE / uv_location).resolve()
+    uv_environment = os.environ.copy()
+    _ = uv_environment.pop("VIRTUAL_ENV", None)
+    _ = subprocess.run(
+        [
+            str(uv_path),
+            "sync",
+            "--frozen",
+            "--project",
+            str(REPO_ROOT),
+            "--python",
+            sys.executable,
+        ],
+        cwd=REPO_ROOT,
+        env=uv_environment,
+        check=True,
+    )
 
 
 def _discover_py_proto_targets() -> list[str]:
@@ -115,6 +138,7 @@ def _copy_buf_validate():
 
 def main():
     """Build Bazel-generated files and copy them into the source tree."""
+    sync_venv(sys.argv[1])
     proto_targets = _discover_py_proto_targets()
     all_targets = LARK_TARGETS + proto_targets
     print(f"Building {len(all_targets)} targets...")
