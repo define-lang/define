@@ -1,9 +1,23 @@
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
 filegroup(
     name = "constructor_triggering",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+            "**/occupied_positions.txt",
+        ],
+    ),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
         "//define/testdata:__pkg__",
     ],
+)
+
+pyright_test(
+    name = "pyright_test",
+    srcs = glob(["**/expected/**/*.py"]),
+    deps = ["//define/runtime:literal"],
 )
