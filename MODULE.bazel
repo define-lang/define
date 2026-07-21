@@ -24,7 +24,7 @@ bazel_dep(name = "rules_nodejs", version = "6.7.5")
 # Transitive overrides
 bazel_dep(name = "rules_android", version = "0.7.3")  # Fix build breakage
 bazel_dep(name = "rules_foreign_cc", version = "0.15.1")  # Bazel 9 compat
-bazel_dep(name = "with_cfg.bzl", version = "0.14.6")  # incompatible_stop_exporting_language_modules
+bazel_dep(name = "with_cfg.bzl", version = "1.0.0")  # incompatible_stop_exporting_language_modules
 
 # --- Python toolchain ---
 
