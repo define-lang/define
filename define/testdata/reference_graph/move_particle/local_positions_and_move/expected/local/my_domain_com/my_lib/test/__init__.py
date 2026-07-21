@@ -6,7 +6,6 @@ from define.runtime import literal
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override

@@ -4,11 +4,13 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
+import local.my_domain_com.my_lib.grandchild
+import local.my_domain_com.my_lib.greatgrandchild
 import local.my_domain_com.my_lib.other
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,47 +34,47 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<parent>"
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/grandchild>"
+            local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/grandchild>"
+            local.my_domain_com.my_lib.grandchild.Grandchild
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/greatgrandchild>"
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

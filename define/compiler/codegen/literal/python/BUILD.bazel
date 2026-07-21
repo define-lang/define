@@ -87,6 +87,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
+        "//define/compiler:ast",
     ],
 )
 

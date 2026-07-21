@@ -64,7 +64,6 @@ class ActionDefinitionGenerator:
 
         return template_context.ActionDefinitionContext(
             class_name=class_name,
-            typed_name=self._definition.typed_name.source_typed_name,
             module_name=module_name,
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,

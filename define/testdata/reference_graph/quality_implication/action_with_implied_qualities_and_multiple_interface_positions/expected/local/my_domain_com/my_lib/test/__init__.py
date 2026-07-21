@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.runner
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.runner.Runner,
@@ -17,17 +16,17 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<input_a>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<input_b>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<run>"
         ).create_particle()

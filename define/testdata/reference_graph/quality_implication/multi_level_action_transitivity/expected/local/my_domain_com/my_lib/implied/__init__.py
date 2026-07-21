@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.transitive_implied
 
 
 class Implied(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/implied>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.transitive_implied.TransitiveImplied,
     )
@@ -25,5 +24,5 @@ class Implied(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/transitive_implied>"
+            local.my_domain_com.my_lib.transitive_implied.TransitiveImplied
         ).create_particle()

@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.implied
 
 
 class Callee(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/callee>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
     )
@@ -25,5 +24,5 @@ class Callee(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/implied>"
+            local.my_domain_com.my_lib.implied.Implied
         ).create_particle()

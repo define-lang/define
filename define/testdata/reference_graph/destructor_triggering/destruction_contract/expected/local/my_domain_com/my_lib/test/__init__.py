@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.destructor
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -30,13 +29,13 @@ class Test(literal.Action):
         source.create_particle()
         source.move_particle_to(
             box.particle.get_action(
-                "action<my.domain.com:my_lib:/close_thing>"
+                local.my_domain_com.my_lib.close_thing.CloseThing
             ).get_interface_position(
                 "position<target>"
             )
         )
         box.particle.get_action(
-            "action<my.domain.com:my_lib:/close_thing>"
+            local.my_domain_com.my_lib.close_thing.CloseThing
         ).get_interface_position(
             "position<run>"
         ).create_particle()

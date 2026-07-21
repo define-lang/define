@@ -1,5 +1,5 @@
-action<my.domain.com:my_lib:/test>::position<gateway>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>::position<my.domain.com:my_lib:/a>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<holder>::position<my.domain.com:my_lib:/b>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>::position<local.my_domain_com.my_lib.a.A>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>::position<local.my_domain_com.my_lib.b.B>

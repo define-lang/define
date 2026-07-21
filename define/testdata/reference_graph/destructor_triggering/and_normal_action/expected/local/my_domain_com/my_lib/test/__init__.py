@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.destructor
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -23,7 +22,7 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_action(
-            "action<my.domain.com:my_lib:/beep>"
+            local.my_domain_com.my_lib.beep.Beep
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()

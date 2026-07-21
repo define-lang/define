@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.implied
 
 
 class Triggered(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/triggered>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
     )
@@ -25,5 +24,5 @@ class Triggered(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/implied>"
+            local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()

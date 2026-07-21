@@ -5,10 +5,16 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.act
+import local.my_domain_com.my_lib.end_src_a
+import local.my_domain_com.my_lib.end_src_b
+import local.my_domain_com.my_lib.end_src_c
+import local.my_domain_com.my_lib.mid_dest
+import local.my_domain_com.my_lib.mid_src_a
+import local.my_domain_com.my_lib.mid_src_b
+import local.my_domain_com.my_lib.mid_src_c
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.act.Act,
@@ -17,82 +23,82 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_a>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_a>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_a>"
+            local.my_domain_com.my_lib.mid_src_a.MidSrcA
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_a>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_a>"
+            local.my_domain_com.my_lib.mid_src_a.MidSrcA
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/end_src_a>"
+            local.my_domain_com.my_lib.end_src_a.EndSrcA
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_b>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_b>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_b>"
+            local.my_domain_com.my_lib.mid_src_b.MidSrcB
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_b>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_b>"
+            local.my_domain_com.my_lib.mid_src_b.MidSrcB
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/end_src_b>"
+            local.my_domain_com.my_lib.end_src_b.EndSrcB
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_c>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_c>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_c>"
+            local.my_domain_com.my_lib.mid_src_c.MidSrcC
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src_c>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_src_c>"
+            local.my_domain_com.my_lib.mid_src_c.MidSrcC
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/end_src_c>"
+            local.my_domain_com.my_lib.end_src_c.EndSrcC
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_dest>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_dest>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid_dest>"
+            local.my_domain_com.my_lib.mid_dest.MidDest
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()

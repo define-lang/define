@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.worker
 
 
 class Host(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/host>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.worker.Worker,
@@ -17,12 +16,12 @@ class Host(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<run>"
         ).create_particle()

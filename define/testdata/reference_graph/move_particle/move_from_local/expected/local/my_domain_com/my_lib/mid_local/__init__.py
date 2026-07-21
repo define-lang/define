@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.end_local
 
 
 class MidLocal(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_local>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.end_local.EndLocal,
     )

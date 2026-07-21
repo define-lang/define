@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.maker
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,14 +33,14 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/maker>"
+            local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/maker>"
+            local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
@@ -52,21 +51,21 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/maker>"
+            local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/maker>"
+            local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/maker>"
+            local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(

@@ -396,7 +396,7 @@ def test_auto_destruction_leaves_the_implied_position_alone(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert operation_dependencies(result.operation_graphs) == {
-        "test.create(local)": [],
+        "test.create(temporary)": [],
         "test.create(/implied)": [],
-        "test.destroy(local)": ["test.create(local)"],
+        "test.destroy(temporary)": ["test.create(temporary)"],
     }

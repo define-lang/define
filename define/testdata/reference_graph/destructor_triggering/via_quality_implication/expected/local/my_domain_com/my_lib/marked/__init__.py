@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.destructor
 
 
 class Marked(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/marked>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.destructor.Destructor,
@@ -17,7 +16,7 @@ class Marked(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/destructor>"
+            local.my_domain_com.my_lib.destructor.Destructor
         ).get_interface_position(
             "position<slot>"
         ).create_particle()

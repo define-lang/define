@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.filler
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,35 +31,35 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/filler>"
+            local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<slot>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/filler>"
+            local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/filler>"
+            local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<slot>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/filler>"
+            local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/filler>"
+            local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

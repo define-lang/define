@@ -70,8 +70,9 @@ class ActionStatementsBlockGenerator:
             if first.source_typed_name in self._interface_position_names:
                 start = "self"
                 chain_elements: list[template_context.ChainElement] = [
-                    template_context.ChainElement(
-                        accessor=template_context.ChainAccessor.POSITION_FROM_ACTION,
+                    template_context.InterfacePositionChainElement(
+                        previous_name_type=ast.NameType.ACTION,
+                        name_type=first.name_type,
                         typed_name=first.source_typed_name,
                     )
                 ]
@@ -83,32 +84,28 @@ class ActionStatementsBlockGenerator:
             chain_elements = []
         else:
             start = "self"
-            if first.name_type == ast.NameType.ACTION:
-                implied_accessor = template_context.ChainAccessor.IMPLIED_ACTION
-            else:
-                implied_accessor = template_context.ChainAccessor.IMPLIED_POSITION
             chain_elements = [
-                template_context.ChainElement(
-                    accessor=implied_accessor,
-                    typed_name=first.full_typed_name,
+                template_context.GlobalQualityChainElement(
+                    previous_name_type=None,
+                    name_type=first.name_type,
+                    class_reference=self._converter.class_reference(first),
                 )
             ]
         for i, elem in enumerate(position_reference.typed_names[1:]):
             prev = position_reference.typed_names[i]
-            chain_elements.append(
-                template_context.ChainElement(
-                    accessor=_chain_accessor(prev.name_type, elem.name_type),
+            if isinstance(elem, ast.GlobalTypedNameReference):
+                chain_element: template_context.ChainElement = (
+                    template_context.GlobalQualityChainElement(
+                        previous_name_type=prev.name_type,
+                        name_type=elem.name_type,
+                        class_reference=self._converter.class_reference(elem),
+                    )
+                )
+            else:
+                chain_element = template_context.InterfacePositionChainElement(
+                    previous_name_type=prev.name_type,
+                    name_type=elem.name_type,
                     typed_name=elem.full_typed_name,
                 )
-            )
+            chain_elements.append(chain_element)
         return template_context.PositionExpr(start=start, chain_elements=chain_elements)
-
-
-def _chain_accessor(
-    prev_type: ast.NameType, current_type: ast.NameType
-) -> template_context.ChainAccessor:
-    if prev_type == ast.NameType.ACTION:
-        return template_context.ChainAccessor.POSITION_FROM_ACTION
-    if current_type == ast.NameType.ACTION:
-        return template_context.ChainAccessor.ACTION_FROM_POSITION
-    return template_context.ChainAccessor.POSITION_FROM_POSITION

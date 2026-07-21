@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.parent
 
 
 class Other(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/other>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.parent.Parent,
     )
@@ -26,7 +25,7 @@ class Other(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/parent>"
+            local.my_domain_com.my_lib.parent.Parent
         ).move_particle_to(
             self.get_interface_position(
                 "position<out>"

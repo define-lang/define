@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.inner
 
 
 class Outer(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.inner.Inner,
     )
@@ -25,7 +24,7 @@ class Outer(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/inner>"
+            local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<run>"
         ).create_particle()

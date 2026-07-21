@@ -10,7 +10,6 @@ import local.my_domain_com.my_lib.heat
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -25,44 +24,44 @@ class Test(literal.Action):
         )
         station.create_particle()
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/grind>"
+            local.my_domain_com.my_lib.grind.Grind
         ).get_interface_position(
             "position<beans>"
         ).create_particle()
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/heat>"
+            local.my_domain_com.my_lib.heat.Heat
         ).get_interface_position(
             "position<cold_water>"
         ).create_particle()
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/grind>"
+            local.my_domain_com.my_lib.grind.Grind
         ).get_interface_position(
             "position<grounds>"
         ).move_particle_to(
             station.particle.get_action(
-                "action<my.domain.com:my_lib:/brew>"
+                local.my_domain_com.my_lib.brew.Brew
             ).get_interface_position(
                 "position<grounds>"
             )
         )
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/heat>"
+            local.my_domain_com.my_lib.heat.Heat
         ).get_interface_position(
             "position<hot_water>"
         ).move_particle_to(
             station.particle.get_action(
-                "action<my.domain.com:my_lib:/brew>"
+                local.my_domain_com.my_lib.brew.Brew
             ).get_interface_position(
                 "position<water>"
             )
         )
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/brew>"
+            local.my_domain_com.my_lib.brew.Brew
         ).get_interface_position(
             "position<cup>"
         ).destroy_particle()
         station.particle.get_action(
-            "action<my.domain.com:my_lib:/brew>"
+            local.my_domain_com.my_lib.brew.Brew
         ).get_interface_position(
             "position<spent_puck>"
         ).destroy_particle()

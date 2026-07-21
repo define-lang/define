@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.triggered
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.triggered.Triggered,
@@ -36,13 +35,13 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.get_interface_position(
             "position<source>"
         ).move_particle_to(
             self.on_particle.get_action(
-                "action<my.domain.com:my_lib:/triggered>"
+                local.my_domain_com.my_lib.triggered.Triggered
             ).get_interface_position(
                 "position<run>"
             )

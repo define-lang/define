@@ -5,10 +5,10 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_library_collection.outer_position
+import local.my_domain_com.my_library_collection.perform_operation
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_library_collection.outer_position.OuterPosition,
@@ -17,12 +17,12 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_library_collection:/outer_position>"
+            local.my_domain_com.my_library_collection.outer_position.OuterPosition
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_library_collection:/outer_position>"
+            local.my_domain_com.my_library_collection.outer_position.OuterPosition
         ).particle.get_action(
-            "action<my.domain.com:my_library_collection:/perform_operation>"
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()

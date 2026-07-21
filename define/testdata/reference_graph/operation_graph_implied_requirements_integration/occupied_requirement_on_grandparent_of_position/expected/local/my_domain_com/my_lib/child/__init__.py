@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.grandchild
 
 
 class Child(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/child>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.grandchild.Grandchild,
     )

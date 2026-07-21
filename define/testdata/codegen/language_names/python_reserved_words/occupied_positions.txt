@@ -1,3 +1,3 @@
-action<my.domain.com:my_lib:/class_var>::position<trigger_pos>
-action<my.domain.com:my_lib:/class_var_>::position<trigger_pos>
-action<my.domain.com:my_lib:/type_error>::position<pp>
+action<local.my_domain_com.my_lib.class_var.ClassVar_>::position<trigger_pos>
+action<local.my_domain_com.my_lib.class_var_.ClassVar__>::position<trigger_pos>
+action<local.my_domain_com.my_lib.type_error.TypeError_>::position<pp>

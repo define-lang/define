@@ -2,7 +2,6 @@
 
 
 class {{ definition.class_name }}(literal.Action):
-    typed_name: ClassVar[str] = "{{ definition.typed_name }}"
 {% if definition.is_constructor %}
     is_constructor: ClassVar[bool] = True
 {% endif %}
@@ -12,7 +11,7 @@ class {{ definition.class_name }}(literal.Action):
 {% if definition.implied_qualities %}
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
 {% for class_reference in definition.implied_qualities %}
-        {{ class_reference.module_name }}.{{ class_reference.class_name }},
+        {{ class_reference.qualified_name }},
 {% endfor %}
     )
 {% endif %}
@@ -28,7 +27,7 @@ class {{ definition.class_name }}(literal.Action):
                     "{{ iface.typed_name }}",
                     constraints=(
 {% for class_reference in iface.constraints %}
-                        {{ class_reference.module_name }}.{{ class_reference.class_name }},
+                        {{ class_reference.qualified_name }},
 {% endfor %}
                     ),
                 ),

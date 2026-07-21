@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.marker
 
 
 class Destructor(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/destructor>"
     is_destructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.Marker,
@@ -18,10 +17,10 @@ class Destructor(literal.Action):
     def execute(self):
         _holder = literal.LocalPosition("position<_holder>")
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/marker>"
+            local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(_holder)
         _holder.move_particle_to(
             self.on_particle.get_position(
-                "position<my.domain.com:my_lib:/marker>"
+                local.my_domain_com.my_lib.marker.Marker
             )
         )

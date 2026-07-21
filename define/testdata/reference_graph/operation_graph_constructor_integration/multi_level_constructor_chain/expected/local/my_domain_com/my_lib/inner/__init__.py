@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.construct_c
 
 
 class Inner(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/inner>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.construct_c.ConstructC,
     )

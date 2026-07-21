@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/triggered>::position<input>
-action<my.domain.com:my_lib:/triggered>::position<run>
+action<local.my_domain_com.my_lib.triggered.Triggered>::position<input>
+action<local.my_domain_com.my_lib.triggered.Triggered>::position<run>

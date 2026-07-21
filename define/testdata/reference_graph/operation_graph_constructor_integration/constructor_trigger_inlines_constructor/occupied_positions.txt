@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/test>::position<box>
-action<my.domain.com:my_lib:/test>::position<box>::position<my.domain.com:my_lib:/marker>
+action<local.my_domain_com.my_lib.test.Test>::position<box>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::position<local.my_domain_com.my_lib.marker.Marker>

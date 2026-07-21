@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.destructor
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -21,7 +20,7 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_action(
-            "action<my.domain.com:my_lib:/destructor>"
+            local.my_domain_com.my_lib.destructor.Destructor
         ).get_interface_position(
             "position<item>"
         ).create_particle()

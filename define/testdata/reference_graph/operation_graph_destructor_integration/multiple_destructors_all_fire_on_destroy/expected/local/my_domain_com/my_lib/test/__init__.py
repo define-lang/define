@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.destruct_b
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override

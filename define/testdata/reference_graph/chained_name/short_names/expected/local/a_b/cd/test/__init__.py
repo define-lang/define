@@ -5,10 +5,10 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.a_b.cd.a
+import local.a_b.cd.b
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<a.b:cd:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b.cd.a.A,
@@ -17,12 +17,12 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<a.b:cd:/a>"
+            local.a_b.cd.a.A
         ).create_particle()
         self.on_particle.get_position(
-            "position<a.b:cd:/a>"
+            local.a_b.cd.a.A
         ).particle.get_action(
-            "action<a.b:cd:/b>"
+            local.a_b.cd.b.B
         ).get_interface_position(
             "position<t>"
         ).create_particle()

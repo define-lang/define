@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
-from typing import ClassVar, override
+from typing import ClassVar, cast, override
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
 
@@ -59,19 +59,24 @@ class DuplicateConstraintError(DefineRuntimeError):
 
 
 class Quality:
-    """A quality identified by a class-level typed name: a global position or an action."""
+    """A global position or action assigned to a particle."""
 
-    typed_name: ClassVar[str]
+    TYPE_NAME: ClassVar[str]
     implied_qualities: ClassVar[tuple[type[Quality], ...]] = ()
 
     def __init__(self, on_particle: Particle):
         """Initialize with the particle this quality is assigned to."""
         self._on_particle: Particle = on_particle
 
+    @classmethod
+    def full_name(cls) -> str:
+        """Return the runtime name derived from the full Python class path."""
+        return f"{cls.TYPE_NAME}<{cls.__module__}.{cls.__name__}>"
+
     @property
     def name(self) -> str:
-        """Return the typed name of this quality."""
-        return type(self).typed_name
+        """Return the Define name derived from this quality's Python class."""
+        return type(self).full_name()
 
     @property
     def on_particle(self) -> Particle:
@@ -87,8 +92,8 @@ class Particle:
 
     def __init__(self):
         """Initialize with empty positions and actions dictionaries."""
-        self._positions: dict[str, GlobalPosition] = {}
-        self._actions: dict[str, Action] = {}
+        self._positions: dict[type[GlobalPosition], GlobalPosition] = {}
+        self._actions: dict[type[Action], Action] = {}
         self._assigned_qualities: list[Quality] = []
 
     def assign_position(self, position_class: type[GlobalPosition]):
@@ -96,21 +101,21 @@ class Particle:
         # A quality is set at most once; a repeat assignment (e.g. a constraint
         # also reached through another constraint's implication) is a no-op.
         # Genuinely duplicate constraints are rejected when a position is built.
-        if position_class.typed_name in self._positions:
+        if position_class in self._positions:
             return
         self._assign_implied_qualities(position_class)
         position = position_class(self)
         self._assigned_qualities.append(position)
-        self._positions[position_class.typed_name] = position
+        self._positions[position_class] = position
 
     def assign_action(self, action_class: type[Action]):
         """Assign an action to this particle, or do nothing if already present."""
-        if action_class.typed_name in self._actions:
+        if action_class in self._actions:
             return
         self._assign_implied_qualities(action_class)
         action = action_class(self)
         self._assigned_qualities.append(action)
-        self._actions[action_class.typed_name] = action
+        self._actions[action_class] = action
 
     def _assign_implied_qualities(self, quality_class: type[Quality]):
         for implied_class in quality_class.implied_qualities:
@@ -119,13 +124,17 @@ class Particle:
             elif issubclass(implied_class, Action):
                 self.assign_action(implied_class)
 
-    def get_position(self, name: str) -> GlobalPosition:
-        """Return the position stored under the given name."""
-        return self._positions[name]
+    def get_position[PositionType: GlobalPosition](
+        self, position_class: type[PositionType]
+    ) -> PositionType:
+        """Return the assigned position of the given type."""
+        return cast("PositionType", self._positions[position_class])
 
-    def get_action(self, name: str) -> Action:
-        """Return the action stored under the given name."""
-        return self._actions[name]
+    def get_action[ActionType: Action](
+        self, action_class: type[ActionType]
+    ) -> ActionType:
+        """Return the assigned action of the given type."""
+        return cast("ActionType", self._actions[action_class])
 
     @property
     def quality_types(self) -> frozenset[type[Quality]]:
@@ -149,6 +158,8 @@ class Particle:
         Names are returned depth-first, each parent position before the
         positions nested within its particle, in quality-assignment order.
         """
+        # TODO: Render occupied position names with Define syntax instead of
+        # Python class paths.
         return self._occupied_position_names(())
 
     def _occupied_position_names(self, prefix: tuple[str, ...]) -> list[str]:
@@ -222,7 +233,7 @@ class Position(ABC):
         for constraint_type in destination._get_constraints():
             if constraint_type not in quality_types:
                 raise UnsatisfiedConstraintError(
-                    destination.name, constraint_type.typed_name
+                    destination.name, constraint_type.full_name()
                 )
         destination._particle = self._particle
         self._particle = None
@@ -241,17 +252,18 @@ class Position(ABC):
 
 def _reject_duplicate_constraints(constraints: tuple[type[Quality], ...]):
     """Raise if the same quality appears more than once in a constraint list."""
-    seen: set[str] = set()
+    seen: set[type[Quality]] = set()
     for constraint in constraints:
-        if constraint.typed_name in seen:
-            raise DuplicateConstraintError(constraint.typed_name)
-        seen.add(constraint.typed_name)
+        if constraint in seen:
+            raise DuplicateConstraintError(constraint.full_name())
+        seen.add(constraint)
 
 
 class GlobalPosition(Quality, Position):
-    """A globally-defined position with a class-level typed name and constraints."""
+    """A globally-defined position with constraints."""
 
     constraints: ClassVar[tuple[type[Quality], ...]] = ()
+    TYPE_NAME: ClassVar[str] = "position"
 
     def __init_subclass__(cls, **kwargs: object):
         """Reject duplicate constraints when a global position class is defined."""
@@ -296,8 +308,9 @@ class LocalPosition(Position):
 
 
 class Action(Quality):
-    """A globally-defined action with a class-level typed name."""
+    """A globally-defined action."""
 
+    TYPE_NAME: ClassVar[str] = "action"
     is_constructor: ClassVar[bool] = False
     is_destructor: ClassVar[bool] = False
 

@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.sibling
 
 
 class Parent(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/parent>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.child.Child,
         local.my_domain_com.my_lib.sibling.Sibling,

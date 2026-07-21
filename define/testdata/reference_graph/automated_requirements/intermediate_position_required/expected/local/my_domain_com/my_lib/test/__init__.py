@@ -4,11 +4,12 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.leaf
+import local.my_domain_com.my_lib.mid
 import local.my_domain_com.my_lib.runner
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.runner.Runner,
@@ -17,28 +18,28 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<wrap>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/leaf>"
+            local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/runner>"
+            local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<run>"
         ).create_particle()

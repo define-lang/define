@@ -1,4 +1,4 @@
-position<my.domain.com:my_lib:/implied>
-action<my.domain.com:my_lib:/callee>::position<run>
-action<my.domain.com:my_lib:/caller>::position<run>
-action<my.domain.com:my_lib:/outer>::position<run>
+position<local.my_domain_com.my_lib.implied.Implied>
+action<local.my_domain_com.my_lib.callee.Callee>::position<run>
+action<local.my_domain_com.my_lib.caller.Caller>::position<run>
+action<local.my_domain_com.my_lib.outer.Outer>::position<run>

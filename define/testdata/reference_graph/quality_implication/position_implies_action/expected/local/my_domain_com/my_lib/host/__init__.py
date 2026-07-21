@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.helper
 
 
 class Host(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/host>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.helper.Helper,
@@ -17,7 +16,7 @@ class Host(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/helper>"
+            local.my_domain_com.my_lib.helper.Helper
         ).get_interface_position(
             "position<run>"
         ).create_particle()

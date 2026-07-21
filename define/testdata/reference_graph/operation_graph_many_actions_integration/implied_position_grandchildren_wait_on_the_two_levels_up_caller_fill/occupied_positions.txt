@@ -1,6 +1,6 @@
-position<my.domain.com:my_lib:/parent>
-position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>
-position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>::position<my.domain.com:my_lib:/grandchild1>
-position<my.domain.com:my_lib:/parent>::position<my.domain.com:my_lib:/child>::position<my.domain.com:my_lib:/grandchild2>
-action<my.domain.com:my_lib:/inner>::position<trigger_pos>
-action<my.domain.com:my_lib:/middle>::position<trigger_pos>
+position<local.my_domain_com.my_lib.parent.Parent>
+position<local.my_domain_com.my_lib.parent.Parent>::position<local.my_domain_com.my_lib.child.Child>
+position<local.my_domain_com.my_lib.parent.Parent>::position<local.my_domain_com.my_lib.child.Child>::position<local.my_domain_com.my_lib.grandchild1.Grandchild1>
+position<local.my_domain_com.my_lib.parent.Parent>::position<local.my_domain_com.my_lib.child.Child>::position<local.my_domain_com.my_lib.grandchild2.Grandchild2>
+action<local.my_domain_com.my_lib.inner.Inner>::position<trigger_pos>
+action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>

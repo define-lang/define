@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.origin
 
 
 class Other(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/other>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.origin.Origin,
     )
@@ -25,5 +24,5 @@ class Other(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/origin>"
+            local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()

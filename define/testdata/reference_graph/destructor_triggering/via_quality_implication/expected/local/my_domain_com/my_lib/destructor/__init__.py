@@ -6,7 +6,6 @@ from define.runtime import literal
 
 
 class Destructor(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/destructor>"
     is_destructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):

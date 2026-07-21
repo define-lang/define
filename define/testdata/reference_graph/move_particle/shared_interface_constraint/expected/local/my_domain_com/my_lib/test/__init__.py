@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.work
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.work.Work,
@@ -17,7 +16,7 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/work>"
+            local.my_domain_com.my_lib.work.Work
         ).get_interface_position(
             "position<run>"
         ).create_particle()

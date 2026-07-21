@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.b
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -23,9 +22,9 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_position(
-            "position<my.domain.com:my_lib:/a>"
+            local.my_domain_com.my_lib.a.A
         ).create_particle()
         box.particle.get_position(
-            "position<my.domain.com:my_lib:/b>"
+            local.my_domain_com.my_lib.b.B
         ).create_particle()
         box.destroy_particle()

@@ -1,4 +1,4 @@
-action<my.domain.com:my_lib:/test>::position<gateway>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<output>
-action<my.domain.com:my_lib:/test>::position<gateway>::action<my.domain.com:my_lib:/other>::position<output>::position<my.domain.com:my_lib:/a>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<output>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<output>::position<local.my_domain_com.my_lib.a.A>

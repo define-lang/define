@@ -4,11 +4,12 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.a
+import local.my_domain_com.my_lib.deep
 import local.my_domain_com.my_lib.other
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,34 +33,34 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<source>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/a>"
+            local.my_domain_com.my_lib.a.A
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<source>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/a>"
+            local.my_domain_com.my_lib.a.A
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/deep>"
+            local.my_domain_com.my_lib.deep.Deep
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

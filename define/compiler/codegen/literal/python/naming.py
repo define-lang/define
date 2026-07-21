@@ -26,6 +26,11 @@ class ClassReference:
     class_name: str
     module_name: str
 
+    @property
+    def qualified_name(self) -> str:
+        """Return the complete Python reference to the class."""
+        return f"{self.module_name}.{self.class_name}"
+
 
 def _authority_to_module_segment(name: str) -> str:
     """Convert an authority name segment to a valid Python module segment."""
@@ -160,7 +165,7 @@ class NameConverter:
         if constraints is None:
             return []
         return [
-            self._build_class_reference(requirement.typed_global_name)
+            self.class_reference(requirement.typed_global_name)
             for requirement in constraints.requirements
         ]
 
@@ -170,14 +175,14 @@ class NameConverter:
     ) -> list[ClassReference]:
         """Extract class references from a list of quality implication statements."""
         return [
-            self._build_class_reference(implication.typed_global_name)
+            self.class_reference(implication.typed_global_name)
             for implication in quality_implications
         ]
 
-    def _build_class_reference(
-        self,
-        typed_global_name: ast.GlobalTypedNameReference,
+    def class_reference(
+        self, typed_global_name: ast.GlobalTypedNameReference
     ) -> ClassReference:
+        """Build a reference to one generated global class."""
         name_content = typed_global_name.name_content
         cls_name = self.class_name(name_content.path.relative_path)
         fqun = name_content.fqun or typed_global_name.enclosing_fqun
@@ -185,6 +190,8 @@ class NameConverter:
         return ClassReference(class_name=cls_name, module_name=module_name)
 
 
+# TODO: Local names can shadow imported module names. Pass the imported module
+# names to the converter when generating each definition.
 class LocalNameConverter:
     """Converts local variable names to safe Python identifiers within one scope.
 

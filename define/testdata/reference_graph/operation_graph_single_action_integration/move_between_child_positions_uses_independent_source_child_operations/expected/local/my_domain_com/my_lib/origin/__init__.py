@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.second
 
 
 class Origin(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/origin>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.first.First,
         local.my_domain_com.my_lib.second.Second,

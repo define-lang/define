@@ -1,5 +1,5 @@
-action<my.domain.com:my_lib:/test>::position<box>
-action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/middle>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/middle>::position<gw>
-action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/middle>::position<gw>::action<my.domain.com:my_lib:/inner>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<box>::action<my.domain.com:my_lib:/middle>::position<gw>::action<my.domain.com:my_lib:/inner>::position<slot>
+action<local.my_domain_com.my_lib.test.Test>::position<box>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::action<local.my_domain_com.my_lib.middle.Middle>::position<gw>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::action<local.my_domain_com.my_lib.middle.Middle>::position<gw>::action<local.my_domain_com.my_lib.inner.Inner>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::action<local.my_domain_com.my_lib.middle.Middle>::position<gw>::action<local.my_domain_com.my_lib.inner.Inner>::position<slot>

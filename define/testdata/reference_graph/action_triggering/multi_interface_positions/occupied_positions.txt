@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/process>::position<config>
-action<my.domain.com:my_lib:/process>::position<trigger>
+action<local.my_domain_com.my_lib.process.Process>::position<config>
+action<local.my_domain_com.my_lib.process.Process>::position<trigger>

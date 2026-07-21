@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.end_dest
 
 
 class MidDest(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_dest>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.end_dest.EndDest,
     )

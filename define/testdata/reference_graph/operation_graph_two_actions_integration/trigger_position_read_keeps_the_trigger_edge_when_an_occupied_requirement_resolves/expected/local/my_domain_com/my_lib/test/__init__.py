@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.worker
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,14 +31,14 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<box>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<in>"
         ).create_particle()

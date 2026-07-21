@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/first>::position<trigger_pos>
-action<my.domain.com:my_lib:/second>::position<trigger_pos>
+action<local.my_domain_com.my_lib.first.First>::position<trigger_pos>
+action<local.my_domain_com.my_lib.second.Second>::position<trigger_pos>

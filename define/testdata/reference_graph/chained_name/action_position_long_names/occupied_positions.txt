@@ -1,2 +1,2 @@
-action<my.domain.com:my_library_collection:/perform_operation>::position<operation_trigger>
-action<my.domain.com:my_library_collection:/perform_operation>::position<operation_trigger>::position<my.domain.com:my_library_collection:/inner_position>
+action<local.my_domain_com.my_library_collection.perform_operation.PerformOperation>::position<operation_trigger>
+action<local.my_domain_com.my_library_collection.perform_operation.PerformOperation>::position<operation_trigger>::position<local.my_domain_com.my_library_collection.inner_position.InnerPosition>

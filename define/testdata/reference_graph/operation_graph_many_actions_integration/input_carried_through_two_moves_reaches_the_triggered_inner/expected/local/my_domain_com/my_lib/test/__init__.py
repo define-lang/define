@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.outer
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -39,7 +38,7 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/inner>"
+            local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<input>"
         ).create_particle()
@@ -52,7 +51,7 @@ class Test(literal.Action):
             self.get_interface_position(
                 "position<outer_holder>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/outer>"
+                local.my_domain_com.my_lib.outer.Outer
             ).get_interface_position(
                 "position<input>"
             )
@@ -60,7 +59,7 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<outer_holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/outer>"
+            local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<run>"
         ).create_particle()

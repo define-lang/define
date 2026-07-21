@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.parent
 
 
 class Inner(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/inner>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.parent.Parent,
     )
@@ -25,5 +24,5 @@ class Inner(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/parent>"
+            local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()

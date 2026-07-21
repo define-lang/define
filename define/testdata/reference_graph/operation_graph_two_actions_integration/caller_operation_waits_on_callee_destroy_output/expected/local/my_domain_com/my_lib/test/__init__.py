@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.other
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,21 +31,21 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<output>"
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/other>"
+            local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<output>"
         ).create_particle()

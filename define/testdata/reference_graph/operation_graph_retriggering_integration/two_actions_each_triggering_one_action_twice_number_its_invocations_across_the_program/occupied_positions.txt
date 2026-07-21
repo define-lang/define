@@ -1,4 +1,4 @@
-action<my.domain.com:my_lib:/test>::position<holder_first>
-action<my.domain.com:my_lib:/test>::position<holder_first>::action<my.domain.com:my_lib:/first>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<holder_second>
-action<my.domain.com:my_lib:/test>::position<holder_second>::action<my.domain.com:my_lib:/second>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<holder_first>
+action<local.my_domain_com.my_lib.test.Test>::position<holder_first>::action<local.my_domain_com.my_lib.first.First>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<holder_second>
+action<local.my_domain_com.my_lib.test.Test>::position<holder_second>::action<local.my_domain_com.my_lib.second.Second>::position<trigger_pos>

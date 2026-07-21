@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.marker
 
 
 class Runner(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.Marker,
     )
@@ -25,8 +24,8 @@ class Runner(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/marker>"
+            local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/marker>"
+            local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()

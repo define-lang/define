@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.c
 
 
 class B(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/b>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.c.C,
     )

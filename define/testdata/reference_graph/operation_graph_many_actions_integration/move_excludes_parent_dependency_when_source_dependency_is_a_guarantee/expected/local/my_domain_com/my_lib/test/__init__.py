@@ -5,10 +5,11 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.box
+import local.my_domain_com.my_lib.destination
+import local.my_domain_com.my_lib.producer
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.box.Box,
@@ -17,25 +18,25 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/box>"
+            local.my_domain_com.my_lib.box.Box
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/box>"
+            local.my_domain_com.my_lib.box.Box
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/producer>"
+            local.my_domain_com.my_lib.producer.Producer
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/box>"
+            local.my_domain_com.my_lib.box.Box
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/producer>"
+            local.my_domain_com.my_lib.producer.Producer
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
             self.on_particle.get_position(
-                "position<my.domain.com:my_lib:/box>"
+                local.my_domain_com.my_lib.box.Box
             ).particle.get_position(
-                "position<my.domain.com:my_lib:/destination>"
+                local.my_domain_com.my_lib.destination.Destination
             )
         )

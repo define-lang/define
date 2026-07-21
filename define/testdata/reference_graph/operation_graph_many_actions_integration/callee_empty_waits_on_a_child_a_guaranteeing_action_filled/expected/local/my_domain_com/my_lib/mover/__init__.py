@@ -4,12 +4,12 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.gc
 import local.my_domain_com.my_lib.parent
 
 
 class Mover(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/mover>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.parent.Parent,
     )
@@ -32,9 +32,9 @@ class Mover(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/parent>"
+            local.my_domain_com.my_lib.parent.Parent
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).move_particle_to(
             self.get_interface_position(
                 "position<dest>"

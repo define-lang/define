@@ -1,3 +1,3 @@
-position<my.domain.com:my_lib:/box>
-position<my.domain.com:my_lib:/box>::action<my.domain.com:my_lib:/worker>::position<trigger_pos>
-position<my.domain.com:my_lib:/box>::action<my.domain.com:my_lib:/worker>::position<result>
+position<local.my_domain_com.my_lib.box.Box>
+position<local.my_domain_com.my_lib.box.Box>::action<local.my_domain_com.my_lib.worker.Worker>::position<trigger_pos>
+position<local.my_domain_com.my_lib.box.Box>::action<local.my_domain_com.my_lib.worker.Worker>::position<result>

@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.parent_destructor
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -23,6 +22,6 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).create_particle()
         box.destroy_particle()

@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.move
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -55,7 +54,7 @@ class Test(literal.Action):
             self.get_interface_position(
                 "position<action_holder>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/move>"
+                local.my_domain_com.my_lib.move.Move
             ).get_interface_position(
                 "position<input>"
             )
@@ -63,7 +62,7 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<action_holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/move>"
+            local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
             "position<input>"
         ).move_particle_to(
@@ -77,7 +76,7 @@ class Test(literal.Action):
             self.get_interface_position(
                 "position<action_holder>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/move>"
+                local.my_domain_com.my_lib.move.Move
             ).get_interface_position(
                 "position<input>"
             )
@@ -85,14 +84,14 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<action_holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/move>"
+            local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.get_interface_position(
             "position<action_holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/move>"
+            local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
@@ -103,5 +102,5 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<dest>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/a>"
+            local.my_domain_com.my_lib.a.A
         ).create_particle()

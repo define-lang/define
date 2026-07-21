@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.worker
 
 
 class Box(literal.GlobalPosition):
-    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/box>"
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.worker.Worker,
     )

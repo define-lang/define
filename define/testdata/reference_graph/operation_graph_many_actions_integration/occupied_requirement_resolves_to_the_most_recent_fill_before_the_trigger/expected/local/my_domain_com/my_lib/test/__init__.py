@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.worker
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -50,7 +49,7 @@ class Test(literal.Action):
             self.get_interface_position(
                 "position<gw_a>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/worker>"
+                local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<slot>"
             )
@@ -58,7 +57,7 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw_a>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<slot>"
         ).move_particle_to(
@@ -72,7 +71,7 @@ class Test(literal.Action):
             self.get_interface_position(
                 "position<gw_b>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/helper>"
+                local.my_domain_com.my_lib.helper.Helper
             ).get_interface_position(
                 "position<slot>"
             )
@@ -80,21 +79,21 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw_b>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/helper>"
+            local.my_domain_com.my_lib.helper.Helper
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw_b>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/helper>"
+            local.my_domain_com.my_lib.helper.Helper
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
             self.get_interface_position(
                 "position<gw_a>"
             ).particle.get_action(
-                "action<my.domain.com:my_lib:/worker>"
+                local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<slot>"
             )
@@ -102,7 +101,7 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<gw_a>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/worker>"
+            local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

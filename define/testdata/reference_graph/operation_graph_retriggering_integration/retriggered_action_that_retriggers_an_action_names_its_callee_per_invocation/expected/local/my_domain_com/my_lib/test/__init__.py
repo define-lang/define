@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.middle
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,21 +31,21 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/middle>"
+            local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/middle>"
+            local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.get_interface_position(
             "position<holder>"
         ).particle.get_action(
-            "action<my.domain.com:my_lib:/middle>"
+            local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

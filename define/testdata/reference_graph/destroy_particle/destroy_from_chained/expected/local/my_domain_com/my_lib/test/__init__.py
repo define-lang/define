@@ -5,10 +5,11 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.act
+import local.my_domain_com.my_lib.end
+import local.my_domain_com.my_lib.mid
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.act.Act,
@@ -17,28 +18,28 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<chain_src>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/end>"
+            local.my_domain_com.my_lib.end.End
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()

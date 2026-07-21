@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/work>::position<run>
-action<my.domain.com:my_lib:/work>::position<dest>
+action<local.my_domain_com.my_lib.work.Work>::position<run>
+action<local.my_domain_com.my_lib.work.Work>::position<dest>

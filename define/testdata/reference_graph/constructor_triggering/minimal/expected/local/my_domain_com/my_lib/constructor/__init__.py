@@ -6,7 +6,6 @@ from define.runtime import literal
 
 
 class Constructor(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/constructor>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):

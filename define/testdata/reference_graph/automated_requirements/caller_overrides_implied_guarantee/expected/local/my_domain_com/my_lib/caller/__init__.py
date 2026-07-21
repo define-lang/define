@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.implied
 
 
 class Caller(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/caller>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
         local.my_domain_com.my_lib.callee.Callee,
@@ -27,10 +26,10 @@ class Caller(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/callee>"
+            local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/implied>"
+            local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()

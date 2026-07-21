@@ -11,7 +11,6 @@ import mv.a_b_c.the_lib.do_thing
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<a.b.c:the_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b_c.the_lib.do_thing.DoThing,
@@ -23,22 +22,22 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<a.b.c:the_lib:/do_thing>"
+            local.a_b_c.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<a-b.c:the_lib:/do_thing>"
+            local.a_b_c_.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<mv:a.b.c:the_lib:/do_thing>"
+            mv.a_b_c.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<a.b/c:the_lib:/do_thing>"
+            local.a_b_c__.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

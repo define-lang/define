@@ -4,12 +4,12 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.origin
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,23 +34,23 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/origin>"
+            local.my_domain_com.my_lib.origin.Origin
         ).create_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/origin>"
+            local.my_domain_com.my_lib.origin.Origin
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/origin>"
+            local.my_domain_com.my_lib.origin.Origin
         ).move_particle_to(
             self.get_interface_position(
                 "position<box>"
             ).particle.get_position(
-                "position<my.domain.com:my_lib:/destination>"
+                local.my_domain_com.my_lib.destination.Destination
             )
         )

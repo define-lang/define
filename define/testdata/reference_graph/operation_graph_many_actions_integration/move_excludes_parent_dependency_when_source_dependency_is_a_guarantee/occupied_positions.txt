@@ -1,2 +1,2 @@
-position<my.domain.com:my_lib:/box>
-position<my.domain.com:my_lib:/box>::position<my.domain.com:my_lib:/destination>
+position<local.my_domain_com.my_lib.box.Box>
+position<local.my_domain_com.my_lib.box.Box>::position<local.my_domain_com.my_lib.destination.Destination>

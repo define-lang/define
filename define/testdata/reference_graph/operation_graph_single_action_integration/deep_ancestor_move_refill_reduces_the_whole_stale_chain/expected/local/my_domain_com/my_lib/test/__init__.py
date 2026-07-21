@@ -4,11 +4,11 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.leaf
 import local.my_domain_com.my_lib.mid
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     def __init__(self, on_particle: literal.Particle):
@@ -38,26 +38,26 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).create_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/leaf>"
+            local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/leaf>"
+            local.my_domain_com.my_lib.leaf.Leaf
         ).destroy_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).destroy_particle()
         self.get_interface_position(
             "position<box>"
@@ -68,14 +68,14 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).create_particle()
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/leaf>"
+            local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
         self.get_interface_position(
             "position<source>"
@@ -87,14 +87,14 @@ class Test(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/leaf>"
+            local.my_domain_com.my_lib.leaf.Leaf
         ).destroy_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/mid>"
+            local.my_domain_com.my_lib.mid.Mid
         ).destroy_particle()
         self.get_interface_position(
             "position<box>"

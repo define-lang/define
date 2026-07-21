@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/runner>::position<run>
-action<my.domain.com:my_lib:/runner>::position<output>
+action<local.my_domain_com.my_lib.runner.Runner>::position<run>
+action<local.my_domain_com.my_lib.runner.Runner>::position<output>

@@ -6,7 +6,6 @@ from define.runtime import literal
 
 
 class ChildDestructor(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/child_destructor>"
     is_destructor: ClassVar[bool] = True
 
     @override

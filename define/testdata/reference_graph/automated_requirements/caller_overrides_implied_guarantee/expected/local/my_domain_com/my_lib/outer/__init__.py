@@ -9,7 +9,6 @@ import local.my_domain_com.my_lib.implied
 
 
 class Outer(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
         local.my_domain_com.my_lib.caller.Caller,
@@ -27,10 +26,10 @@ class Outer(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/caller>"
+            local.my_domain_com.my_lib.caller.Caller
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/implied>"
+            local.my_domain_com.my_lib.implied.Implied
         ).create_particle()

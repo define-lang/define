@@ -110,7 +110,9 @@ class PythonLiteralCodeGenerator:
     ):
         """Write the __main__.py entry point file."""
         content = _ENTRY_POINT_TEMPLATE.render(
-            entry_module_name=entry_ctx.module_name,
-            entry_class_name=entry_ctx.class_name,
+            entry_reference=naming.ClassReference(
+                module_name=entry_ctx.module_name,
+                class_name=entry_ctx.class_name,
+            ),
         )
         _ = (output_dir / "__main__.py").write_text(content)

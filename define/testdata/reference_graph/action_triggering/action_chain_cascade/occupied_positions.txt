@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/kick_off>::position<output>
-action<my.domain.com:my_lib:/kick_off>::position<output>::action<my.domain.com:my_lib:/react_a>::position<result>
+action<local.my_domain_com.my_lib.kick_off.KickOff>::position<output>
+action<local.my_domain_com.my_lib.kick_off.KickOff>::position<output>::action<local.my_domain_com.my_lib.react_a.ReactA>::position<result>

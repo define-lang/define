@@ -1,1 +1,1 @@
-action<my.domain.com:my_lib:/test>::position<item>
+action<local.my_domain_com.my_lib.test.Test>::position<item>

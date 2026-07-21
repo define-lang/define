@@ -1,4 +1,4 @@
-action<a.b.c:the_lib:/do_thing>::position<trigger_pos>
-action<a-b.c:the_lib:/do_thing>::position<trigger_pos>
-action<mv:a.b.c:the_lib:/do_thing>::position<trigger_pos>
-action<a.b/c:the_lib:/do_thing>::position<trigger_pos>
+action<local.a_b_c.the_lib.do_thing.DoThing>::position<trigger_pos>
+action<local.a_b_c_.the_lib.do_thing.DoThing>::position<trigger_pos>
+action<mv.a_b_c.the_lib.do_thing.DoThing>::position<trigger_pos>
+action<local.a_b_c__.the_lib.do_thing.DoThing>::position<trigger_pos>

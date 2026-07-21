@@ -6,7 +6,6 @@ from define.runtime import literal
 
 
 class DestructorA(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/destructor_a>"
     is_destructor: ClassVar[bool] = True
 
     @override

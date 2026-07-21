@@ -1,1 +1,1 @@
-position<my.domain.com:my_lib:/implied>
+position<local.my_domain_com.my_lib.implied.Implied>

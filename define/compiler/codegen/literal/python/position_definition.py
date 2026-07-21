@@ -37,7 +37,6 @@ class PositionDefinitionGenerator:
 
         return template_context.PositionDefinitionContext(
             class_name=class_name,
-            typed_name=self._definition.typed_name.source_typed_name,
             module_name=module_name,
             constraints=constraints,
             implied_qualities=implied_qualities,

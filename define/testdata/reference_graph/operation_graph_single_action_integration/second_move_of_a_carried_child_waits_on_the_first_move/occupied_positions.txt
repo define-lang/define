@@ -1,2 +1,2 @@
-action<my.domain.com:my_lib:/test>::position<crate>
-action<my.domain.com:my_lib:/test>::position<crate>::position<my.domain.com:my_lib:/child>
+action<local.my_domain_com.my_lib.test.Test>::position<crate>
+action<local.my_domain_com.my_lib.test.Test>::position<crate>::position<local.my_domain_com.my_lib.child.Child>

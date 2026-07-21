@@ -1,3 +1,3 @@
-action<my.domain.com:my_lib:/test>::position<gw>
-action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/filler>::position<trigger_pos>
-action<my.domain.com:my_lib:/test>::position<gw>::action<my.domain.com:my_lib:/filler>::position<slot>
+action<local.my_domain_com.my_lib.test.Test>::position<gw>
+action<local.my_domain_com.my_lib.test.Test>::position<gw>::action<local.my_domain_com.my_lib.filler.Filler>::position<trigger_pos>
+action<local.my_domain_com.my_lib.test.Test>::position<gw>::action<local.my_domain_com.my_lib.filler.Filler>::position<slot>

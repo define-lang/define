@@ -10,7 +10,6 @@ import local.my_domain_com.my_lib.type_error
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.class_var.ClassVar_,
@@ -21,17 +20,17 @@ class Test(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/class_var>"
+            local.my_domain_com.my_lib.class_var.ClassVar_
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/class_var_>"
+            local.my_domain_com.my_lib.class_var_.ClassVar__
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/type_error>"
+            local.my_domain_com.my_lib.type_error.TypeError_
         ).get_interface_position(
             "position<pp>"
         ).create_particle()

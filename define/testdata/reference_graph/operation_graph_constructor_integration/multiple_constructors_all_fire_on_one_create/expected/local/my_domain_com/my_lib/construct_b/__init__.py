@@ -8,7 +8,6 @@ import local.my_domain_com.my_lib.marker_b
 
 
 class ConstructB(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/construct_b>"
     is_constructor: ClassVar[bool] = True
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker_b.MarkerB,
@@ -17,5 +16,5 @@ class ConstructB(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/marker_b>"
+            local.my_domain_com.my_lib.marker_b.MarkerB
         ).create_particle()

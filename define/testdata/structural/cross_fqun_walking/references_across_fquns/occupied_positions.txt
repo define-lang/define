@@ -1,2 +1,2 @@
-action<my.domain.com:parent_lib:/do_thing>::position<trigger_pos>
-action<my.domain.com:child_lib:/do_thing>::position<trigger_pos>
+action<local.my_domain_com.parent_lib.do_thing.DoThing>::position<trigger_pos>
+action<local.my_domain_com.child_lib.do_thing.DoThing>::position<trigger_pos>

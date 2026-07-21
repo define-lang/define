@@ -4,12 +4,13 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
+import local.my_domain_com.my_lib.grandchild
 import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.parent
 
 
 class Middle(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/middle>"
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.parent.Parent,
         local.my_domain_com.my_lib.inner.Inner,
@@ -27,14 +28,14 @@ class Middle(literal.Action):
     @override
     def execute(self):
         self.on_particle.get_position(
-            "position<my.domain.com:my_lib:/parent>"
+            local.my_domain_com.my_lib.parent.Parent
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/child>"
+            local.my_domain_com.my_lib.child.Child
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/grandchild>"
+            local.my_domain_com.my_lib.grandchild.Grandchild
         ).destroy_particle()
         self.on_particle.get_action(
-            "action<my.domain.com:my_lib:/inner>"
+            local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()

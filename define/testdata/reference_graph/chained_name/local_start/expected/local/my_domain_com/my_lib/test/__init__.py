@@ -5,10 +5,11 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.b
+import local.my_domain_com.my_lib.c
+import local.my_domain_com.my_lib.d
 
 
 class Test(literal.Action):
-    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/test>"
     is_constructor: ClassVar[bool] = True
 
     @override
@@ -21,17 +22,17 @@ class Test(literal.Action):
         )
         a.create_particle()
         a.particle.get_position(
-            "position<my.domain.com:my_lib:/b>"
+            local.my_domain_com.my_lib.b.B
         ).create_particle()
         a.particle.get_position(
-            "position<my.domain.com:my_lib:/b>"
+            local.my_domain_com.my_lib.b.B
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/c>"
+            local.my_domain_com.my_lib.c.C
         ).create_particle()
         a.particle.get_position(
-            "position<my.domain.com:my_lib:/b>"
+            local.my_domain_com.my_lib.b.B
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/c>"
+            local.my_domain_com.my_lib.c.C
         ).particle.get_position(
-            "position<my.domain.com:my_lib:/d>"
+            local.my_domain_com.my_lib.d.D
         ).create_particle()
