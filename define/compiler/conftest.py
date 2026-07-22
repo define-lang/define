@@ -9,7 +9,6 @@ from typing import Protocol, cast
 import pytest
 
 from define.compiler import ast, parser
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import (
@@ -48,9 +47,7 @@ class FullValidationResult:
     @property
     def operation_graphs(
         self,
-    ) -> typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, operation_graph.OperationGraph
-    ]:
+    ) -> operation_graph.OperationGraphs:
         """Every action's operation dependency graph."""
         return self.reference_graph_result.operation_graphs
 

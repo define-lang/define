@@ -1,5 +1,4 @@
 from define.compiler import ast
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_resolver,
@@ -71,7 +70,7 @@ def test_repeated_action_triggers_create_distinct_instances():
     worker_graph = operation_graph.OperationGraph({})
     worker_operation = _position("work")
     _ = worker_graph.record_create(worker_operation)
-    graphs: operation_graph_resolver.OperationGraphs = typed_name_dict.TypedNameDict()
+    graphs = operation_graph.OperationGraphs()
     graphs[entry_action] = entry_graph
     graphs[worker_action] = worker_graph
 

@@ -45,7 +45,6 @@ py_library(
     deps = [
         ":ast",
         ":parser",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",

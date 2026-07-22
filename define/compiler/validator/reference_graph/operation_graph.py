@@ -26,10 +26,12 @@ in any such situation.
 
 from __future__ import annotations
 
+import collections
 import typing
 from dataclasses import dataclass, field
 
 from define.compiler import ast
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
@@ -973,3 +975,85 @@ class OperationGraph:
             self._last_operation[absolute_key] = node_id
             node_ids[absolute_key] = node_id
         return node_ids
+
+
+@dataclass(frozen=True, slots=True)
+class _CalleeGuaranteeResolution:
+    """A direct callee through which a guarantee resolves."""
+
+    trigger: ActionTrigger
+    callee_resolution: _GuaranteeResolution
+
+
+type _GuaranteeResolution = int | _CalleeGuaranteeResolution
+
+
+@typing.final
+class OperationGraphs(
+    typed_name_dict.TypedNameDict[ast.GlobalTypedName, OperationGraph]
+):
+    """The operation dependency graphs of every validated action.
+
+    Not thread-safe. Adding an operation graph mutates the inherited mapping
+    (which itself is not thread-safe), and ``resolve_guarantee`` mutates an
+    internal lazy guarantee-resolution cache.
+    """
+
+    def __init__(self):
+        """Initialize an empty operation-graph collection."""
+        super().__init__()
+        self._guarantee_resolutions: collections.defaultdict[
+            str, dict[tuple[str, ...], _GuaranteeResolution]
+        ] = collections.defaultdict(dict)
+
+    def resolve_guarantee(
+        self, guarantee: GuaranteeNode
+    ) -> tuple[list[ActionTrigger], int]:
+        """Resolve one guarantee to its Particle Operation through callee graphs."""
+        resolution = self._resolve_guaranteed_position(
+            guarantee.trigger.callee_action_name, guarantee.guaranteed_position
+        )
+        triggers = [guarantee.trigger]
+        while isinstance(resolution, _CalleeGuaranteeResolution):
+            triggers.append(resolution.trigger)
+            resolution = resolution.callee_resolution
+        return triggers, resolution
+
+    def _resolve_guaranteed_position(
+        self, action: ast.GlobalTypedName, position: tuple[str, ...]
+    ) -> _GuaranteeResolution:
+        unresolved: list[tuple[str, tuple[str, ...], ActionTrigger]] = []
+        while True:
+            action_name = action.full_typed_name
+            action_resolutions = self._guarantee_resolutions[action_name]
+            cached = action_resolutions.get(position)
+            if cached is not None:
+                resolution = cached
+                break
+
+            graph = self[action]
+            node_id = graph.last_operation_on_position(position)
+            node = graph.nodes[node_id]
+            match node:
+                case PositionOperationNode():
+                    resolution = node_id
+                    action_resolutions[position] = resolution
+                    break
+                case GuaranteeNode():
+                    trigger = node.trigger
+                    next_position = node.guaranteed_position
+                case RequirementNode():
+                    trigger = graph.last_trigger_using_requirement(node.node_id)
+                    next_position = ast.chain_in_callee(trigger.action_chain, position)
+                case _:
+                    raise TypeError(
+                        f"node {node.node_id} cannot produce an action guarantee"
+                    )
+            unresolved.append((action_name, position, trigger))
+            action = trigger.callee_action_name
+            position = next_position
+
+        for action_name, position, trigger in reversed(unresolved):
+            resolution = _CalleeGuaranteeResolution(trigger, resolution)
+            self._guarantee_resolutions[action_name][position] = resolution
+        return resolution

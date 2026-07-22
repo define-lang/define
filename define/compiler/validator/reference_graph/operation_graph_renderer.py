@@ -17,9 +17,6 @@ if typing.TYPE_CHECKING:
 # Every operation graph test names the action it validates /test.
 _ENTRY_POINT_ACTION_PATH = "/test"
 
-type _OperationGraphs = typed_name_dict.TypedNameDict[
-    ast.GlobalTypedName, operation_graph.OperationGraph
-]
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
@@ -40,7 +37,7 @@ def _action_name(action: ast.GlobalTypedName) -> str:
 
 
 def operation_dependencies(
-    operation_graphs: _OperationGraphs,
+    operation_graphs: operation_graph.OperationGraphs,
 ) -> dict[str, list[str]]:
     """Return a label for each operation the entry-point action performs or triggers, mapped to the labels it depends on."""
     for typed_name in operation_graphs:
@@ -49,7 +46,9 @@ def operation_dependencies(
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
 
 
-def action_graph(operation_graphs: _OperationGraphs) -> list[tuple[str, str]]:
+def action_graph(
+    operation_graphs: operation_graph.OperationGraphs,
+) -> list[tuple[str, str]]:
     """Return each action's directly-triggered actions as (source, target) name pairs.
 
     An action that triggers the same action twice yields two edges. Actions appear
@@ -67,7 +66,9 @@ def action_graph(operation_graphs: _OperationGraphs) -> list[tuple[str, str]]:
     return edges
 
 
-def action_graph_set(operation_graphs: _OperationGraphs) -> set[tuple[str, str]]:
+def action_graph_set(
+    operation_graphs: operation_graph.OperationGraphs,
+) -> set[tuple[str, str]]:
     """Return ``action_graph`` as a set, for assertions whose edge order is nondeterministic."""
     return set(action_graph(operation_graphs))
 
@@ -159,7 +160,7 @@ class _ActionInvocationLabels:
     the triggering it was spliced in by: ``first:worker``, ``first#2:worker``.
     """
 
-    def __init__(self, graphs: _OperationGraphs):
+    def __init__(self, graphs: operation_graph.OperationGraphs):
         """Name every triggering the actions in ``graphs`` perform."""
         self._labels: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, _InvocationLabels
@@ -211,7 +212,7 @@ class _NameResolver:
     other actions call theirs.
     """
 
-    def __init__(self, graphs: _OperationGraphs):
+    def __init__(self, graphs: operation_graph.OperationGraphs):
         """Name the operations and triggerings of every action in ``graphs``."""
         self._operation_labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
         for action, graph in graphs.items():
@@ -239,9 +240,9 @@ class _NameResolver:
 class _Program:
     """Every action's operation graph, and the names everything in them goes by."""
 
-    def __init__(self, graphs: _OperationGraphs):
+    def __init__(self, graphs: operation_graph.OperationGraphs):
         """Prepare to render the actions in ``graphs``."""
-        self._graphs: _OperationGraphs = graphs
+        self._graphs: operation_graph.OperationGraphs = graphs
         self._names: _NameResolver = _NameResolver(graphs)
 
     def to_scheduling_table(self, action: ast.GlobalTypedName) -> dict[str, list[str]]:

@@ -1076,6 +1076,118 @@ def test_guarantee_node_names_a_nested_guarantee_as_the_direct_callee_does():
     ]
 
 
+def test_operation_graphs_resolves_a_direct_guarantee():
+    caller_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    machine = _ref("machine")
+    brew = _action_chain_under("machine", "/brew")
+    coffee = _interface_ref(brew, "coffee")
+    _ = caller_graph.record_create(machine)
+    trigger = _trigger(caller_graph, brew, machine, coffee.canonical_chained_name_tuple)
+    guarantee = caller_graph.nodes[
+        caller_graph.last_operation_on_position(coffee.canonical_chained_name_tuple)
+    ]
+    assert isinstance(guarantee, operation_graph.GuaranteeNode)
+
+    callee_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    operation_node_id = callee_graph.record_create(_ref("coffee"))
+    graphs = operation_graph.OperationGraphs()
+    graphs[trigger.callee_action_name] = callee_graph
+
+    expected = (
+        [trigger],
+        operation_node_id,
+    )
+    assert graphs.resolve_guarantee(guarantee) == expected
+    assert graphs.resolve_guarantee(guarantee) == expected
+
+
+def test_operation_graphs_resolves_nested_guarantee_nodes():
+    caller_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    box = _ref("box")
+    middle = _action_chain_under("box", "/middle")
+    inner_position = ("position<worker>", "action<my.domain.com:my_lib:/inner>")
+    middle_guaranteed_position = (*inner_position, "position<out>")
+    caller_guaranteed_position = (
+        *middle.canonical_chained_name_tuple,
+        *middle_guaranteed_position,
+    )
+    _ = caller_graph.record_create(box)
+    middle_trigger = _trigger(caller_graph, middle, box, caller_guaranteed_position)
+    guarantee = caller_graph.nodes[
+        caller_graph.last_operation_on_position(caller_guaranteed_position)
+    ]
+    assert isinstance(guarantee, operation_graph.GuaranteeNode)
+
+    middle_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    worker = _ref("worker")
+    inner = _action_chain_under("worker", "/inner")
+    _ = middle_graph.record_create(worker)
+    inner_trigger = _trigger(middle_graph, inner, worker, middle_guaranteed_position)
+    inner_guarantee = middle_graph.nodes[
+        middle_graph.last_operation_on_position(middle_guaranteed_position)
+    ]
+    assert isinstance(inner_guarantee, operation_graph.GuaranteeNode)
+    inner_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    operation_node_id = inner_graph.record_create(_ref("out"))
+    graphs = operation_graph.OperationGraphs()
+    graphs[middle_trigger.callee_action_name] = middle_graph
+    graphs[inner_trigger.callee_action_name] = inner_graph
+
+    assert graphs.resolve_guarantee(inner_guarantee) == (
+        [inner_trigger],
+        operation_node_id,
+    )
+    expected = (
+        [middle_trigger, inner_trigger],
+        operation_node_id,
+    )
+    assert graphs.resolve_guarantee(guarantee) == expected
+    assert graphs.resolve_guarantee(guarantee) == expected
+
+
+def test_operation_graphs_resolves_a_guarantee_passed_through_a_requirement():
+    caller_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    box = _ref("box")
+    middle = _action_chain_under("box", "/middle")
+    brew = _action_chain_under("machine", "/brew")
+    beans = _interface_ref(brew, "beans")
+    caller_guaranteed_position = (
+        *middle.canonical_chained_name_tuple,
+        *beans.canonical_chained_name_tuple,
+    )
+    _ = caller_graph.record_create(box)
+    middle_trigger = _trigger(caller_graph, middle, box, caller_guaranteed_position)
+    guarantee = caller_graph.nodes[
+        caller_graph.last_operation_on_position(caller_guaranteed_position)
+    ]
+    assert isinstance(guarantee, operation_graph.GuaranteeNode)
+
+    machine = _ref("machine")
+    middle_graph = operation_graph.OperationGraph(
+        _requirements((machine, _OCCUPIED), (beans, _OCCUPIED)), _ref("run")
+    )
+    trigger_position = _interface_ref(brew, "run")
+    _ = middle_graph.record_create(trigger_position)
+    brew_trigger = middle_graph.record_action_trigger(
+        brew,
+        trigger_position,
+        [_ref("beans")],
+        [beans],
+        acting_on_preceding_child_operations=(),
+        required_preceding_child_operations=((),),
+    )
+    brew_graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    operation_node_id = brew_graph.record_create(_ref("beans"))
+    graphs = operation_graph.OperationGraphs()
+    graphs[middle_trigger.callee_action_name] = middle_graph
+    graphs[brew_trigger.callee_action_name] = brew_graph
+
+    assert graphs.resolve_guarantee(guarantee) == (
+        [middle_trigger, brew_trigger],
+        operation_node_id,
+    )
+
+
 def test_operation_on_a_guaranteed_position_depends_on_the_guarantee_node():
     graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
     machine = _ref("machine")

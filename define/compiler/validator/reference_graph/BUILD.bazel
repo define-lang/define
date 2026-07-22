@@ -97,6 +97,7 @@ py_library(
     deps = [
         ":action_contract",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 
@@ -120,7 +121,6 @@ py_library(
     deps = [
         ":operation_graph",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 
@@ -132,7 +132,6 @@ py_test(
         ":operation_graph",
         ":operation_graph_resolver",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 

@@ -11,12 +11,12 @@ from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
+    operation_graph,
     quality_assignment,
 )
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
-    from define.compiler.validator.reference_graph import operation_graph
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,9 +25,7 @@ class ReferenceGraphValidationResult:
 
     action_call_graph: action_call_graph.ActionCallGraph
     # The DLP 44 operation dependency graph of every action.
-    operation_graphs: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, operation_graph.OperationGraph
-    ]
+    operation_graphs: operation_graph.OperationGraphs
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -68,9 +66,7 @@ class ReferenceGraphValidator:
     def validate(self) -> ReferenceGraphValidationResult:
         """Run analysis for all definitions in a depth-first-search, post-order."""
         call_graph = action_call_graph.ActionCallGraph()
-        operation_graphs: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, operation_graph.OperationGraph
-        ] = typed_name_dict.TypedNameDict()
+        operation_graphs = operation_graph.OperationGraphs()
         # We use dfs_postorder_all rather than dfs_postorder_from because the
         # reference graph can contain multiple roots (any action or position
         # that is not referenced by anything else creates a new graph).

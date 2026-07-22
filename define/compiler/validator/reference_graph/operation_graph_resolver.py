@@ -5,8 +5,6 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-from define.compiler import ast
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import operation_graph
 
 # Resolution must be limited to substitutions that codegen can perform while
@@ -18,9 +16,7 @@ from define.compiler.validator.reference_graph import operation_graph
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
-type OperationGraphs = typed_name_dict.TypedNameDict[
-    ast.GlobalTypedName, operation_graph.OperationGraph
-]
+    from define.compiler import ast
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -53,7 +49,7 @@ class ResolvedOperationGraph:
 
     def __init__(
         self,
-        graphs: OperationGraphs,
+        graphs: operation_graph.OperationGraphs,
         callee_action_instances: dict[
             tuple[ResolvedActionInstance, int], ResolvedActionInstance
         ],
@@ -69,7 +65,7 @@ class ResolvedOperationGraph:
 
     @classmethod
     def from_graphs(
-        cls, graphs: OperationGraphs, entry_action: ast.GlobalTypedName
+        cls, graphs: operation_graph.OperationGraphs, entry_action: ast.GlobalTypedName
     ) -> ResolvedOperationGraph:
         """Resolve the full graph of operations reachable from ``entry_action``."""
         callee_action_instances: dict[
@@ -164,28 +160,15 @@ class ResolvedOperationGraph:
                     action_instance, node.caller_dependencies
                 )
             case operation_graph.GuaranteeNode():
-                callee = self._callee_instance(action_instance, node.trigger)
-                return self._resolve_guaranteed_position(
-                    callee, node.guaranteed_position
-                )
+                triggers, operation_node_id = self._graphs.resolve_guarantee(node)
+                resolved_instance = action_instance
+                for trigger in triggers:
+                    resolved_instance = self._callee_instance(
+                        resolved_instance, trigger
+                    )
+                return [ResolvedNodeId(resolved_instance, operation_node_id)]
             case _:
                 raise TypeError(f"unknown operation node type: {type(node).__name__}")
-
-    def _resolve_guaranteed_position(
-        self,
-        action_instance: ResolvedActionInstance,
-        position: tuple[str, ...],
-    ) -> list[ResolvedNodeId]:
-        """Resolve a guarantee attached to requirements across action instances."""
-        while True:
-            graph = self._graphs[action_instance.action]
-            node_id = graph.last_operation_on_position(position)
-            node = graph.nodes[node_id]
-            if not isinstance(node, operation_graph.RequirementNode):
-                return self._resolve_node(action_instance, node_id)
-            guarantee_trigger = graph.last_trigger_using_requirement(node.node_id)
-            position = ast.chain_in_callee(guarantee_trigger.action_chain, position)
-            action_instance = self._callee_instance(action_instance, guarantee_trigger)
 
     def _resolve_requirement(
         self,
