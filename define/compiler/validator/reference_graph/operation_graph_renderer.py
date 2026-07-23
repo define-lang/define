@@ -42,7 +42,10 @@ def operation_dependencies(
     """Return a label for each operation the entry-point action performs or triggers, mapped to the labels it depends on."""
     for typed_name in operation_graphs:
         if typed_name.name_content.path.name == _ENTRY_POINT_ACTION_PATH:
-            return _Program(operation_graphs).to_scheduling_table(typed_name)
+            resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
+                operation_graphs, typed_name
+            ).build()
+            return _Program(operation_graphs).to_scheduling_table(resolved)
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
 
 
@@ -245,34 +248,33 @@ class _Program:
         self._graphs: operation_graph.OperationGraphs = graphs
         self._names: _NameResolver = _NameResolver(graphs)
 
-    def to_scheduling_table(self, action: ast.GlobalTypedName) -> dict[str, list[str]]:
-        """Return a label for each operation ``action`` performs or triggers, mapped to the labels it depends on."""
-        resolved = operation_graph_resolver.ResolvedOperationGraph.from_graphs(
-            self._graphs, action
-        )
-        instance_names: dict[operation_graph_resolver.ResolvedActionInstance, str] = {
-            resolved.entry_action_instance: _action_name(action)
+    def to_scheduling_table(
+        self, resolved: operation_graph_resolver.ResolvedOperationGraph
+    ) -> dict[str, list[str]]:
+        """Render the operations and dependencies in ``resolved``."""
+        action = resolved.entry_action_execution.action
+        execution_names: dict[operation_graph_resolver.ActionExecution, str] = {
+            resolved.entry_action_execution: _action_name(action)
         }
-        labels: dict[operation_graph_resolver.ResolvedNodeId, str] = {}
-        for resolved_node in resolved.nodes:
-            action_instance = resolved_node.action_instance
-            action_instance_name = instance_names.get(action_instance)
-            if action_instance_name is None:
-                triggered_by = action_instance.triggered_by
+        labels: dict[operation_graph_resolver.ResolvedOperation, str] = {}
+        for resolved_operation in resolved.operations:
+            action_execution = resolved_operation.action_execution
+            action_execution_name = execution_names.get(action_execution)
+            if action_execution_name is None:
+                triggered_by = action_execution.triggered_by
                 if triggered_by is None:
-                    action_instance_name = _action_name(action_instance.action)
+                    action_execution_name = _action_name(action_execution.action)
                 else:
-                    action_instance_name = self._names.triggering_name(
+                    action_execution_name = self._names.triggering_name(
                         triggered_by.caller.action,
-                        instance_names[triggered_by.caller],
-                        triggered_by.trigger,
+                        execution_names[triggered_by.caller],
+                        triggered_by.action_trigger.trigger,
                     )
-                instance_names[action_instance] = action_instance_name
-            node = resolved.operation(resolved_node)
-            labels[resolved_node] = (
-                f"{action_instance_name}.{self._names.operation_name(action_instance.action, node)}"
+                execution_names[action_execution] = action_execution_name
+            labels[resolved_operation] = (
+                f"{action_execution_name}.{self._names.operation_name(action_execution.action, resolved_operation.operation)}"
             )
         return {
-            label: [labels[dependency] for dependency in resolved.dependencies(node)]
-            for node, label in labels.items()
+            label: [labels[dependency] for dependency in operation.dependencies]
+            for operation, label in labels.items()
         }

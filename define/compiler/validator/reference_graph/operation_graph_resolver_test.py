@@ -43,7 +43,7 @@ def _position(name: str) -> ast.PositionReference:
     )
 
 
-def test_repeated_action_triggers_create_distinct_instances():
+def test_repeated_action_triggers_create_distinct_executions():
     entry_action = _action("/test")
     worker_action = _action("/worker")
     entry_graph = operation_graph.OperationGraph({})
@@ -74,28 +74,28 @@ def test_repeated_action_triggers_create_distinct_instances():
     graphs[entry_action] = entry_graph
     graphs[worker_action] = worker_graph
 
-    resolved = operation_graph_resolver.ResolvedOperationGraph.from_graphs(
+    resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
         graphs, entry_action
-    )
+    ).build()
 
     (
         first_entry_node,
         second_entry_node,
         first_worker_node,
         second_worker_node,
-    ) = resolved.nodes
-    assert first_entry_node.action_instance is resolved.entry_action_instance
-    assert second_entry_node.action_instance is resolved.entry_action_instance
-    assert resolved.entry_action_instance.triggered_by is None
-    assert first_worker_node.action_instance is not second_worker_node.action_instance
-    assert first_worker_node.action_instance.action == worker_action
-    assert second_worker_node.action_instance.action == worker_action
-    first_triggered_by = first_worker_node.action_instance.triggered_by
-    second_triggered_by = second_worker_node.action_instance.triggered_by
+    ) = resolved.operations
+    assert first_entry_node.action_execution is resolved.entry_action_execution
+    assert second_entry_node.action_execution is resolved.entry_action_execution
+    assert resolved.entry_action_execution.triggered_by is None
+    assert first_worker_node.action_execution is not second_worker_node.action_execution
+    assert first_worker_node.action_execution.action == worker_action
+    assert second_worker_node.action_execution.action == worker_action
+    first_triggered_by = first_worker_node.action_execution.triggered_by
+    second_triggered_by = second_worker_node.action_execution.triggered_by
     assert first_triggered_by is not None
     assert second_triggered_by is not None
-    assert first_triggered_by.caller is resolved.entry_action_instance
-    assert second_triggered_by.caller is resolved.entry_action_instance
-    assert first_triggered_by.trigger is first_trigger
-    assert second_triggered_by.trigger is second_trigger
-    assert resolved.operation(first_worker_node).target == worker_operation
+    assert first_triggered_by.caller is resolved.entry_action_execution
+    assert second_triggered_by.caller is resolved.entry_action_execution
+    assert first_triggered_by.action_trigger.trigger is first_trigger
+    assert second_triggered_by.action_trigger.trigger is second_trigger
+    assert first_worker_node.operation.target == worker_operation

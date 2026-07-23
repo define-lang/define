@@ -321,10 +321,10 @@ def test_move_keeps_fill_dependency_when_empty_dependency_is_symbolic():
         operation_graph.RequirementNode(
             node_id=3, depends_on=[1], required_state=_OCCUPIED
         ),
-        operation_graph.CallerDependenciesNode(
+        operation_graph.CallerEmptyRuleDependenciesNode(
             node_id=4,
             depends_on=[],
-            caller_dependencies=operation_graph.CallerDependencies(
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
                 requirement_position=_key("box", "source"),
                 dependency_child_positions=frozenset(),
                 dependency_requirements=(_key("box", "destination"),),
@@ -1568,10 +1568,10 @@ def test_read_of_occupied_requirement_waits_on_a_lower_id_requirement_node():
         operation_graph.RequirementNode(
             node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
-        operation_graph.CallerDependenciesNode(
+        operation_graph.CallerEmptyRuleDependenciesNode(
             node_id=2,
             depends_on=[],
-            caller_dependencies=operation_graph.CallerDependencies(
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
                 requirement_position=_key("input"),
                 dependency_child_positions=frozenset(),
                 dependency_requirements=(),
@@ -1635,10 +1635,10 @@ def test_a_trigger_position_read_shares_the_trigger_position_requirement_node():
         operation_graph.RequirementNode(
             node_id=1, depends_on=[0], required_state=_OCCUPIED
         ),
-        operation_graph.CallerDependenciesNode(
+        operation_graph.CallerEmptyRuleDependenciesNode(
             node_id=2,
             depends_on=[],
-            caller_dependencies=operation_graph.CallerDependencies(
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
                 requirement_position=_key("run"),
                 dependency_child_positions=frozenset(),
                 dependency_requirements=(),
@@ -1796,10 +1796,10 @@ def test_grandchild_read_builds_the_full_requirement_ancestor_chain():
         operation_graph.RequirementNode(
             node_id=3, depends_on=[2], required_state=_OCCUPIED
         ),
-        operation_graph.CallerDependenciesNode(
+        operation_graph.CallerEmptyRuleDependenciesNode(
             node_id=4,
             depends_on=[],
-            caller_dependencies=operation_graph.CallerDependencies(
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
                 requirement_position=_key("box", "child", "grandchild"),
                 dependency_child_positions=frozenset(),
                 dependency_requirements=(),
@@ -1830,10 +1830,10 @@ def test_read_of_a_carried_in_parent_child_builds_the_requirement_chain():
         operation_graph.RequirementNode(
             node_id=2, depends_on=[1], required_state=_OCCUPIED
         ),
-        operation_graph.CallerDependenciesNode(
+        operation_graph.CallerEmptyRuleDependenciesNode(
             node_id=3,
             depends_on=[],
-            caller_dependencies=operation_graph.CallerDependencies(
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
                 requirement_position=_key("input", "parent"),
                 dependency_child_positions=frozenset(),
                 dependency_requirements=(),
@@ -1928,10 +1928,10 @@ def test_implied_position_grandchild_builds_the_global_requirement_chain():
     ]
 
 
-def test_emptying_a_caller_filled_position_uses_a_caller_dependencies_node():
+def test_emptying_a_caller_filled_position_uses_a_caller_empty_rule_dependencies_node():
     # The body creates a child of <source>, then moves <source> out. Emptying
     # <source> needs child operations from the caller as well as the body's
-    # create. The CallerDependenciesNode records that the body already waits on
+    # create. The CallerEmptyRuleDependenciesNode records that the body already waits on
     # <source::child>, so a caller operation on that path will be superseded.
     graph = operation_graph.OperationGraph(
         _requirements((_ref("source"), _OCCUPIED), (_ref("holder"), _EMPTY)),
@@ -1943,23 +1943,26 @@ def test_emptying_a_caller_filled_position_uses_a_caller_dependencies_node():
         _ref("holder"),
         _particle_child_operations(graph, _ref("source"), [_key("source", "child")]),
     )
-    caller_dependencies = graph.nodes[4]
+    caller_empty_rule_dependencies = graph.nodes[4]
     move = graph.nodes[5]
-    assert caller_dependencies == operation_graph.CallerDependenciesNode(
-        node_id=4,
-        depends_on=[],
-        caller_dependencies=operation_graph.CallerDependencies(
-            requirement_position=_key("source"),
-            dependency_child_positions=frozenset({("position<child>",)}),
-            dependency_requirements=(_key("holder"),),
-        ),
+    assert (
+        caller_empty_rule_dependencies
+        == operation_graph.CallerEmptyRuleDependenciesNode(
+            node_id=4,
+            depends_on=[],
+            caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
+                requirement_position=_key("source"),
+                dependency_child_positions=frozenset({("position<child>",)}),
+                dependency_requirements=(_key("holder"),),
+            ),
+        )
     )
     assert move.depends_on == [2, 4]
 
 
 def test_emptying_a_position_the_body_refilled_waits_on_the_refill():
     # The first destroy empties the caller's particle through a
-    # CallerDependenciesNode. The body then refills <slot>; the second destroy
+    # CallerEmptyRuleDependenciesNode. The body then refills <slot>; the second destroy
     # empties that body particle, so it resolves to the refill.
     graph = operation_graph.OperationGraph(
         _requirements((_ref("slot"), _OCCUPIED)), _ref("run")
@@ -1967,10 +1970,10 @@ def test_emptying_a_position_the_body_refilled_waits_on_the_refill():
     _ = graph.record_destroy(_ref("slot"), ())
     _ = graph.record_create(_ref("slot"))
     _ = graph.record_destroy(_ref("slot"), ())
-    assert graph.nodes[2] == operation_graph.CallerDependenciesNode(
+    assert graph.nodes[2] == operation_graph.CallerEmptyRuleDependenciesNode(
         node_id=2,
         depends_on=[],
-        caller_dependencies=operation_graph.CallerDependencies(
+        caller_empty_rule_dependencies=operation_graph.CallerEmptyRuleDependencies(
             requirement_position=_key("slot"),
             dependency_child_positions=frozenset(),
             dependency_requirements=(),

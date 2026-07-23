@@ -1,216 +1,207 @@
-"""Resolves symbolic dependencies between per-action operation graphs."""
+"""Resolves the full operation graph reached from one action."""
 
 from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
 
-from define.compiler.validator.reference_graph import operation_graph
-
-# Resolution must be limited to substitutions that codegen can perform while
-# consuming an operation graph. Operation graphs must already contain the
-# correct minimal direct dependencies; resolution must never compensate for
-# missing graph-construction information by analyzing or repairing the resolved
-# graph.
-
-if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
-
-    from define.compiler import ast
+from define.compiler import ast
+from define.compiler.data_structures import typed_name_dict
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_action_resolver,
+)
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class TriggeredBy:
-    """The trigger and caller that created an action instance."""
+    """The direct Action Triggering that created an action execution."""
 
-    caller: ResolvedActionInstance
-    trigger: operation_graph.ActionTrigger
+    caller: ActionExecution
+    action_trigger: operation_graph_action_resolver.ResolvedActionTrigger
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class ResolvedActionInstance:
-    """One instance of an action in the graph expanded from the entry action."""
+class ActionExecution:
+    """One execution of a resolved action."""
 
     action: ast.GlobalTypedName
     triggered_by: TriggeredBy | None
 
 
-@dataclass(frozen=True, slots=True)
-class ResolvedNodeId:
-    """The identity of a node in one action instance."""
+@dataclass(frozen=True, slots=True, eq=False)
+class ResolvedOperation:
+    """One operation and its concrete dependencies in an action execution."""
 
-    action_instance: ResolvedActionInstance
-    node_id: int
+    action_execution: ActionExecution
+    operation: operation_graph.PositionOperationNode
+    dependencies: tuple[ResolvedOperation, ...]
+
+
+type _ResolvedOperationKey = tuple[ActionExecution, int]
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedOperationGraph:
+    """The concrete operations reached from one action."""
+
+    entry_action_execution: ActionExecution
+    operations: tuple[ResolvedOperation, ...]
 
 
 @typing.final
-class ResolvedOperationGraph:
-    """A self-contained resolved view of all operations reached from one action."""
+class ResolvedOperationGraphBuilder:
+    """Build the full operation graph reached from one action."""
 
     def __init__(
         self,
         graphs: operation_graph.OperationGraphs,
-        callee_action_instances: dict[
-            tuple[ResolvedActionInstance, int], ResolvedActionInstance
-        ],
-        entry_action_instance: ResolvedActionInstance,
-        nodes: list[ResolvedNodeId],
+        entry_action: ast.GlobalTypedName,
     ):
-        """Store the already-resolved action instances and operation nodes."""
+        """Initialize resolution with all graphs and the entry action."""
         self._graphs = graphs
-        self._callee_action_instances = callee_action_instances
-        self._entry_action_instance = entry_action_instance
-        self._nodes = nodes
-        self._dependency_cache: dict[ResolvedNodeId, tuple[ResolvedNodeId, ...]] = {}
-
-    @classmethod
-    def from_graphs(
-        cls, graphs: operation_graph.OperationGraphs, entry_action: ast.GlobalTypedName
-    ) -> ResolvedOperationGraph:
-        """Resolve the full graph of operations reachable from ``entry_action``."""
-        callee_action_instances: dict[
-            tuple[ResolvedActionInstance, int], ResolvedActionInstance
+        self._entry_action = entry_action
+        self._resolved_actions = typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, operation_graph_action_resolver.ResolvedAction
+        ]()
+        self._callee_action_executions: dict[
+            tuple[ActionExecution, int],
+            ActionExecution,
         ] = {}
-        nodes: list[ResolvedNodeId] = []
-        root = ResolvedActionInstance(entry_action, triggered_by=None)
-        work: list[ResolvedActionInstance] = [root]
+        self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
+
+    def build(self) -> ResolvedOperationGraph:
+        """Build concrete operations and dependencies from the entry action."""
+        self._resolve_all_actions()
+        entry_action_execution = ActionExecution(self._entry_action, None)
+        operation_keys: list[_ResolvedOperationKey] = []
+        work = [entry_action_execution]
         while work:
-            action_instance = work.pop()
-            graph = graphs[action_instance.action]
-            nodes.extend(
-                ResolvedNodeId(action_instance, node.node_id)
-                for node in graph.nodes
-                if isinstance(node, operation_graph.PositionOperationNode)
-            )
-            callees = [
-                ResolvedActionInstance(
-                    trigger.callee_action_name,
-                    TriggeredBy(action_instance, trigger),
+            action_execution = work.pop()
+            resolved_action = self._resolved_actions[action_execution.action]
+            for node in resolved_action.graph.nodes:
+                if isinstance(node, operation_graph.PositionOperationNode):
+                    operation_keys.append((action_execution, node.node_id))
+
+            callees: list[ActionExecution] = []
+            for action_trigger in resolved_action.action_triggers:
+                callee = ActionExecution(
+                    action_trigger.trigger.callee_action_name,
+                    TriggeredBy(action_execution, action_trigger),
                 )
-                for trigger in graph.triggers
-            ]
-            for callee in callees:
-                triggered_by = callee.triggered_by
-                if triggered_by is not None:
-                    callee_action_instances[
-                        (action_instance, id(triggered_by.trigger))
-                    ] = callee
+                self._callee_action_executions[
+                    (action_execution, id(action_trigger.trigger))
+                ] = callee
+                callees.append(callee)
             work.extend(reversed(callees))
-        return cls(graphs, callee_action_instances, root, nodes)
 
-    @property
-    def entry_action_instance(self) -> ResolvedActionInstance:
-        """Return the instance of the action resolution started from."""
-        return self._entry_action_instance
+        return ResolvedOperationGraph(
+            entry_action_execution,
+            tuple(self._resolve_operation(key) for key in operation_keys),
+        )
 
-    @property
-    def nodes(self) -> Iterable[ResolvedNodeId]:
-        """Return concrete operation nodes in deterministic action-instance order."""
-        return self._nodes
+    def _resolve_all_actions(self):
+        visited_actions: set[str] = set()
+        # Walk down the callee tree and resolve them from leaf
+        # to root.
+        work = [(self._entry_action, False)]
+        while work:
+            action, callees_resolved = work.pop()
+            graph = self._graphs[action]
+            if callees_resolved:
+                self._resolved_actions[action] = (
+                    operation_graph_action_resolver.ActionResolver(
+                        graph, self._resolved_actions
+                    ).resolve()
+                )
+                continue
 
-    def operation(
-        self, resolved: ResolvedNodeId
-    ) -> operation_graph.PositionOperationNode:
-        """Return the concrete operation identified by ``resolved``."""
-        return typing.cast(
+            action_name = action.full_typed_name
+            if action_name in visited_actions:
+                continue
+            visited_actions.add(action_name)
+            work.append((action, True))
+            for trigger in reversed(graph.triggers):
+                work.append((trigger.callee_action_name, False))
+
+    def _resolve_operation(
+        self, operation_key: _ResolvedOperationKey
+    ) -> ResolvedOperation:
+        resolved = self._operation_by_key.get(operation_key)
+        if resolved is not None:
+            return resolved
+
+        action_execution, node_id = operation_key
+        resolved_action = self._resolved_actions[action_execution.action]
+        operation = typing.cast(
             "operation_graph.PositionOperationNode",
-            self._graphs[resolved.action_instance.action].nodes[resolved.node_id],
+            resolved_action.graph.nodes[node_id],
         )
-
-    def dependencies(self, node: ResolvedNodeId) -> Iterable[ResolvedNodeId]:
-        """Return the concrete operations that ``node`` directly waits on."""
-        cached = self._dependency_cache.get(node)
-        if cached is None:
-            action_instance = node.action_instance
-            local_node = self.operation(node)
-            resolved = self._resolve_ids(action_instance, local_node.depends_on)
-            # Multiple symbolic paths can reach the same operation. Cache the
-            # ordered unique result as a tuple so callers cannot mutate it.
-            cached = tuple(dict.fromkeys(resolved))
-            self._dependency_cache[node] = cached
-        return cached
-
-    def _resolve_ids(
-        self, action_instance: ResolvedActionInstance, node_ids: Iterable[int]
-    ) -> list[ResolvedNodeId]:
-        result: list[ResolvedNodeId] = []
-        for node_id in node_ids:
-            result.extend(self._resolve_node(action_instance, node_id))
-        return result
-
-    def _resolve_node(
-        self, action_instance: ResolvedActionInstance, node_id: int
-    ) -> list[ResolvedNodeId]:
-        graph = self._graphs[action_instance.action]
-        node = graph.nodes[node_id]
-        match node:
-            case operation_graph.ActionParentLastOperationNode():
-                if action_instance.triggered_by is None:
-                    return []
-                return self._resolve_node(
-                    action_instance.triggered_by.caller,
-                    action_instance.triggered_by.trigger.action_parent_last_operation_node_id,
-                )
-            case operation_graph.PositionOperationNode():
-                return [ResolvedNodeId(action_instance, node_id)]
-            case operation_graph.RequirementNode():
-                return self._resolve_requirement(action_instance, node)
-            case operation_graph.CallerDependenciesNode():
-                return self._resolve_caller_dependencies(
-                    action_instance, node.caller_dependencies
-                )
-            case operation_graph.GuaranteeNode():
-                triggers, operation_node_id = self._graphs.resolve_guarantee(node)
-                resolved_instance = action_instance
-                for trigger in triggers:
-                    resolved_instance = self._callee_instance(
-                        resolved_instance, trigger
-                    )
-                return [ResolvedNodeId(resolved_instance, operation_node_id)]
-            case _:
-                raise TypeError(f"unknown operation node type: {type(node).__name__}")
-
-    def _resolve_requirement(
-        self,
-        action_instance: ResolvedActionInstance,
-        node: operation_graph.RequirementNode,
-    ) -> list[ResolvedNodeId]:
-        if action_instance.triggered_by is None:
-            return []
-        binding = action_instance.triggered_by.trigger.bindings.get(
-            node.requirement_position
+        dependency_keys: dict[_ResolvedOperationKey, None] = {}
+        self._add_action_dependencies(
+            dependency_keys,
+            action_execution,
+            resolved_action.dependencies_by_operation_node_id[node_id],
         )
-        if binding is not None:
-            return self._resolve_node(
-                action_instance.triggered_by.caller, binding.node_id
-            )
-        return self._resolve_ids(action_instance, node.depends_on)
+        resolved = ResolvedOperation(
+            action_execution,
+            operation,
+            tuple(
+                self._resolve_operation(dependency_key)
+                for dependency_key in dependency_keys
+            ),
+        )
+        self._operation_by_key[operation_key] = resolved
+        return resolved
 
-    def _resolve_caller_dependencies(
+    def _add_action_dependencies(
         self,
-        action_instance: ResolvedActionInstance,
-        caller_dependencies: operation_graph.CallerDependencies,
-    ) -> list[ResolvedNodeId]:
-        triggered_by = action_instance.triggered_by
+        dependency_keys: dict[_ResolvedOperationKey, None],
+        action_execution: ActionExecution,
+        dependencies: operation_graph_action_resolver.ActionDependencies,
+    ):
+        for node_id in dependencies.local_operation_node_ids:
+            dependency_keys[action_execution, node_id] = None
+        for action_input in dependencies.action_inputs:
+            self._add_caller_input(dependency_keys, action_execution, action_input)
+        for guarantee in dependencies.guarantee_dependencies:
+            self._add_guarantee(dependency_keys, action_execution, guarantee)
+
+    def _add_caller_input(
+        self,
+        dependency_keys: dict[_ResolvedOperationKey, None],
+        action_execution: ActionExecution,
+        action_input: operation_graph_action_resolver.ActionInput,
+    ):
+        triggered_by = action_execution.triggered_by
         if triggered_by is None:
-            return []
-        caller = triggered_by.caller
-        caller_graph = self._graphs[caller.action]
-        substitution = caller_graph.substitute_caller_dependencies(
-            caller_dependencies, triggered_by.trigger.bindings
+            return
+        resolved_input = triggered_by.action_trigger.input_for(action_input)
+        for node_id in resolved_input.callee_dependency_node_ids:
+            dependency_keys[action_execution, node_id] = None
+        self._add_action_dependencies(
+            dependency_keys,
+            triggered_by.caller,
+            resolved_input.caller_dependencies,
         )
-        dependencies = self._resolve_ids(caller, substitution.node_ids)
-        if substitution.caller_dependencies is not None:
-            dependencies.extend(
-                self._resolve_caller_dependencies(
-                    caller, substitution.caller_dependencies
-                )
-            )
-        return dependencies
 
-    def _callee_instance(
+    def _add_guarantee(
         self,
-        action_instance: ResolvedActionInstance,
+        dependency_keys: dict[_ResolvedOperationKey, None],
+        action_execution: ActionExecution,
+        guarantee: operation_graph.GuaranteeNode,
+    ):
+        triggers, operation_node_id = self._graphs.resolve_guarantee(guarantee)
+        guaranteed_action_execution = action_execution
+        for trigger in triggers:
+            guaranteed_action_execution = self._callee_execution(
+                guaranteed_action_execution, trigger
+            )
+        dependency_keys[guaranteed_action_execution, operation_node_id] = None
+
+    def _callee_execution(
+        self,
+        action_execution: ActionExecution,
         trigger: operation_graph.ActionTrigger,
-    ) -> ResolvedActionInstance:
-        return self._callee_action_instances[(action_instance, id(trigger))]
+    ) -> ActionExecution:
+        return self._callee_action_executions[action_execution, id(trigger)]

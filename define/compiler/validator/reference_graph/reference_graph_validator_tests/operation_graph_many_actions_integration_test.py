@@ -245,9 +245,9 @@ def test_espresso_operation_graph(
         "test.destroy(station::/brew::cup)": ["brew.create(cup)"],
         "test.destroy(station::/brew::spent_puck)": ["brew.move(grounds, spent_puck)"],
         "test.destroy(station)": [
-            "brew.destroy(water)",
             "test.destroy(station::/brew::cup)",
             "test.destroy(station::/brew::spent_puck)",
+            "brew.destroy(water)",
         ],
     }
 
