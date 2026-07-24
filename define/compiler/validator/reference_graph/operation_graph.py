@@ -37,7 +37,12 @@ from define.compiler.validator.reference_graph import action_contract
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
-type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], int]]
+type PrecedingChildOperationNode = PositionOperationNode | GuaranteeNode
+type LastOperationNode = PrecedingChildOperationNode | RequirementNode
+type ActionParentOperationNode = ActionParentLastOperationNode | LastOperationNode
+type PrecedingChildOperations = Iterable[
+    tuple[tuple[str, ...], PrecedingChildOperationNode]
+]
 
 
 def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
@@ -53,7 +58,7 @@ class ChildOperation:
     # The child position relative to the required position.
     child_position: tuple[str, ...]
     # The operation node in the caller's graph.
-    node_id: int
+    operation: PrecedingChildOperationNode
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,8 +80,10 @@ class ParticleChildOperations:
         operations: list[ChildOperation] = []
         operation_positions: set[tuple[str, ...]] = set()
         operation_position_prefixes: set[tuple[str, ...]] = set()
-        for child_position, node_id in sorted(
-            preceding_operations, key=lambda operation: operation[1], reverse=True
+        for child_position, operation in sorted(
+            preceding_operations,
+            key=lambda item: item[1].node_id,
+            reverse=True,
         ):
             if (
                 child_position in operation_positions
@@ -89,7 +96,7 @@ class ParticleChildOperations:
             )
             if has_operation_on_parent_position:
                 continue
-            operations.append(ChildOperation(child_position, node_id))
+            operations.append(ChildOperation(child_position, operation))
             operation_positions.add(child_position)
             operation_position_prefixes.update(
                 child_position[:depth] for depth in range(1, len(child_position))
@@ -110,9 +117,12 @@ class ParticleChildOperations:
                 operations.append(operation)
         return operations
 
-    def all_precede(self, node_id: int) -> bool:
-        """Return whether every operation precedes ``node_id``."""
-        return not self.operations or self.operations[0].node_id < node_id
+    def all_precede(self, operation: MoveNode) -> bool:
+        """Return whether every child operation precedes ``operation``."""
+        return (
+            not self.operations
+            or self.operations[0].operation.node_id < operation.node_id
+        )
 
     def child_position_set(self) -> frozenset[tuple[str, ...]]:
         """Return the relative child positions with preceding operations."""
@@ -138,7 +148,7 @@ class CallerEmptyRuleDependencies:
 class CallerEmptyRuleSubstitution:
     """The result of substituting caller bindings into CallerEmptyRuleDependencies."""
 
-    dependency_nodes: tuple[OperationNode, ...]
+    dependency_nodes: tuple[LastOperationNode, ...]
     caller_empty_rule_dependencies: CallerEmptyRuleDependencies | None
 
 
@@ -148,7 +158,7 @@ class RequirementBinding:
 
     # The operation or RequirementNode that put the position in its required
     # state from the caller's perspective.
-    node_id: int
+    operation: LastOperationNode
     child_operations: ParticleChildOperations
 
 
@@ -163,13 +173,13 @@ class ActionTrigger:
     # The action reference this triggering fires, from the caller's perspective.
     callee: ast.ActionReference
     # The operation that triggered the callee.
-    trigger_node_id: int
+    trigger_operation: LastOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
     bindings: dict[tuple[str, ...], RequirementBinding]
     # The last operation on the callee action's parent position or one of that
     # position's transitive parent positions.
-    action_parent_last_operation_node_id: int = field(kw_only=True)
+    action_parent_last_operation: ActionParentOperationNode = field(kw_only=True)
 
     @property
     def callee_action_name(self) -> ast.GlobalTypedNameReference:
@@ -210,16 +220,17 @@ class GuaranteedPositions:
             )
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+# A node_id is unique only within one graph, so nodes use identity equality and
+# hashing when they appear in sets and mappings. Every dataclass subclass must
+# repeat eq=False because dataclass decorator options are not inherited.
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class OperationNode:
     """One operation in an action's dependency graph."""
 
     node_id: int
-    # The ids of the operations this node directly depends on (the operations
-    # that must complete before it).
-    # TODO: Store OperationNode references so consumers do not have to resolve
-    # every dependency ID through the owning OperationGraph.
-    depends_on: list[int]
+    # The operations this node directly depends on (the operations that must
+    # complete before it).
+    depends_on: tuple[OperationNode, ...]
 
     @property
     def operated_positions(self) -> tuple[tuple[str, ...], ...]:
@@ -227,12 +238,14 @@ class OperationNode:
         return ()
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class ActionParentLastOperationNode(OperationNode):
     """The caller's last operation on this action's parent position or its transitive parents."""
 
+    depends_on: tuple[()]
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class PositionOperationNode(OperationNode):
     """An operation the body performs on a written position."""
 
@@ -246,12 +259,12 @@ class PositionOperationNode(OperationNode):
         return (self.target.canonical_chained_name_tuple,)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class CreateNode(PositionOperationNode):
     """A body create in ``target``."""
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class MoveNode(PositionOperationNode):
     """A body move of a particle from ``source`` to ``target``."""
 
@@ -267,7 +280,7 @@ class MoveNode(PositionOperationNode):
         )
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class DestroyNode(PositionOperationNode):
     """A destroy of ``target``.
 
@@ -276,7 +289,7 @@ class DestroyNode(PositionOperationNode):
     """
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class GuaranteeNode(OperationNode):
     """A position a triggered action guarantees, which the callee itself operates on.
 
@@ -287,6 +300,7 @@ class GuaranteeNode(OperationNode):
     position depend on this node with ordinary edges.
     """
 
+    depends_on: tuple[LastOperationNode, ...]
     # The triggering of the action that guarantees the position.
     trigger: ActionTrigger
     # The guaranteed position, by the callee's own key for it.
@@ -301,7 +315,7 @@ class GuaranteeNode(OperationNode):
         return self.operation_positions
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class RequirementNode(OperationNode):
     """A caller-controlled contracted position an operation needs in a given state.
 
@@ -312,11 +326,10 @@ class RequirementNode(OperationNode):
     caller op at all, which is why the required state is recorded here.
     """
 
+    depends_on: tuple[ActionParentLastOperationNode | RequirementNode, ...]
     # The state this action needs the position to be in.
     required_state: action_contract.PositionOccupancyState
-    # This action's own key for the caller-controlled contracted position. Two
-    # requirement nodes on different positions are otherwise identical, so it is
-    # left out of equality to keep the tests' expected nodes readable.
+    # This action's own key for the caller-controlled contracted position.
     requirement_position: tuple[str, ...] = field(default=(), compare=False)
 
     @property
@@ -326,7 +339,7 @@ class RequirementNode(OperationNode):
         return (self.requirement_position,)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class CallerEmptyRuleDependenciesNode(OperationNode):
     """Caller dependencies needed when an action empties a required particle.
 
@@ -334,6 +347,7 @@ class CallerEmptyRuleDependenciesNode(OperationNode):
     while caller requirement bindings are substituted.
     """
 
+    depends_on: tuple[()]
     caller_empty_rule_dependencies: CallerEmptyRuleDependencies
 
 
@@ -355,7 +369,7 @@ class OperationGraph:
         RequirementNode standing in for the caller op that fired the trigger.
         """
         self._nodes: list[OperationNode] = []
-        # A position's canonical chained name -> id of the last operation on it,
+        # A position's canonical chained name -> the last operation on it,
         # for every position the body touches.
         # cProfile makes ancestor lookup through this flat mapping look like a
         # performance problem because dense action call graphs perform millions
@@ -373,7 +387,7 @@ class OperationGraph:
         # Do not retry either representation without evidence that workload
         # shape or this algorithm has materially changed; the number of semantic
         # effects constructed and propagated dominates these lookup costs.
-        self._last_operation: dict[tuple[str, ...], int] = {}
+        self._last_operation: dict[tuple[str, ...], LastOperationNode] = {}
         self._requirements: Mapping[
             tuple[str, ...], action_contract.PositionRequirement
         ] = requirements
@@ -385,42 +399,40 @@ class OperationGraph:
         # its requirements. Guarantee resolution follows this reverse binding
         # when an action passes along a guarantee without operating on its
         # position itself.
-        self._last_trigger_by_requirement_node_id: dict[int, ActionTrigger] = {}
+        self._last_trigger_by_requirement_node: dict[
+            RequirementNode, ActionTrigger
+        ] = {}
         # Every local position has the position of the particle this action is
         # assigned to as a transitive parent from the caller's perspective.
-        self._action_parent_last_operation_node_id: int = len(self._nodes)
-        self._nodes.append(
+        self._action_parent_last_operation: ActionParentLastOperationNode = (
             ActionParentLastOperationNode(
-                node_id=self._action_parent_last_operation_node_id,
-                depends_on=[],
+                node_id=len(self._nodes),
+                depends_on=(),
             )
         )
+        self._nodes.append(self._action_parent_last_operation)
         self._trigger_position_key: tuple[str, ...] = (
             trigger_position.canonical_chained_name_tuple
             if trigger_position is not None
             else ()
         )
-        self._guaranteed_positions_by_operation_node_id: dict[
-            int, tuple[tuple[str, ...], ...]
+        self._guaranteed_positions_by_operation: dict[
+            PositionOperationNode, tuple[tuple[str, ...], ...]
         ] = {}
 
     @property
     def nodes(self) -> Sequence[OperationNode]:
-        """Every node, in creation order; a node's id is its index here."""
+        """Every node, in creation order."""
         return self._nodes
 
     @property
-    def guaranteed_positions_by_operation_node_id(
+    def guaranteed_positions_by_operation(
         self,
-    ) -> dict[int, tuple[tuple[str, ...], ...]]:
+    ) -> dict[PositionOperationNode, tuple[tuple[str, ...], ...]]:
         """Return locally published guarantees grouped by Particle Operation."""
-        return self._guaranteed_positions_by_operation_node_id
+        return self._guaranteed_positions_by_operation
 
-    def operation_positions(self, node_id: int) -> tuple[tuple[str, ...], ...]:
-        """Return every position operated on by a node from this action's perspective."""
-        return self._nodes[node_id].operated_positions
-
-    def last_operation_on_position(self, key: tuple[str, ...]) -> int:
+    def last_operation_on_position(self, key: tuple[str, ...]) -> LastOperationNode:
         """Return the last operation this action performed on the position at ``key``."""
         return self._last_operation[key]
 
@@ -430,10 +442,8 @@ class OperationGraph:
         A materialized RequirementNode stands in for a caller operation, not a
         body operation, so it does not count as the body touching the position.
         """
-        node_id = self._last_operation.get(key)
-        return node_id is not None and not isinstance(
-            self._nodes[node_id], RequirementNode
-        )
+        node = self._last_operation.get(key)
+        return node is not None and not isinstance(node, RequirementNode)
 
     def record_action_trigger(
         self,
@@ -456,7 +466,7 @@ class OperationGraph:
         for the current state of the particles' child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        firing_node_id = self._last_operation[acting_on_position_key]
+        firing_operation = self._last_operation[acting_on_position_key]
         callee_action_key = callee.canonical_chained_name_tuple
         bindings: dict[tuple[str, ...], RequirementBinding] = {}
         # Trigger positions are direct children of the callee chain.
@@ -477,7 +487,7 @@ class OperationGraph:
             ParticleChildOperations.from_preceding_operations(
                 acting_on_preceding_child_operations
             ),
-            firing_node_id,
+            firing_operation,
         )
         for requirement, caller_position, preceding_child_operations in zip(
             requirements,
@@ -487,68 +497,64 @@ class OperationGraph:
         ):
             caller_position_key = caller_position.canonical_chained_name_tuple
             requirement_key = requirement.canonical_chained_name_tuple
-            binding_node_id = self._requirement_binding_node_id(caller_position_key)
-            if binding_node_id is not None:
+            binding_operation = self._requirement_binding_operation(caller_position_key)
+            if binding_operation is not None:
                 bindings[requirement_key] = self._requirement_binding(
                     ParticleChildOperations.from_preceding_operations(
                         preceding_child_operations
                     ),
-                    binding_node_id,
+                    binding_operation,
                 )
         action_parent_position = callee.parent_position()
         if action_parent_position is None:
             # The action is an implied action--it's assigned to the
             # same parent as we are.
-            action_parent_last_operation_node_id = (
-                self._action_parent_last_operation_node_id
-            )
+            action_parent_last_operation = self._action_parent_last_operation
         else:
-            action_parent_last_operation_node_id = typing.cast(
-                "int",
+            action_parent_last_operation = typing.cast(
+                "LastOperationNode",
                 self._most_recent_ancestor_chain_operation(
                     action_parent_position.canonical_chained_name_tuple
                 ),
             )
         trigger = ActionTrigger(
             callee=callee,
-            trigger_node_id=firing_node_id,
+            trigger_operation=firing_operation,
             bindings=bindings,
-            action_parent_last_operation_node_id=action_parent_last_operation_node_id,
+            action_parent_last_operation=action_parent_last_operation,
         )
         self._triggers.append(trigger)
         for binding in bindings.values():
-            binding_node = self._nodes[binding.node_id]
-            if isinstance(binding_node, RequirementNode):
-                self._last_trigger_by_requirement_node_id[binding.node_id] = trigger
+            if isinstance(binding.operation, RequirementNode):
+                self._last_trigger_by_requirement_node[binding.operation] = trigger
         return trigger
 
     def _requirement_binding(
         self,
         child_operations: ParticleChildOperations,
-        node_id: int,
+        operation: LastOperationNode,
     ) -> RequirementBinding:
         """Return the caller dependencies that satisfy a callee requirement."""
-        position_node = self._nodes[node_id]
         # A move that brought the whole particle here already depends on every
         # older child operation, so retaining them would add redundant edges.
-        if isinstance(position_node, MoveNode) and child_operations.all_precede(
-            node_id
-        ):
+        if isinstance(operation, MoveNode) and child_operations.all_precede(operation):
             child_operations = ParticleChildOperations()
-        return RequirementBinding(node_id, child_operations)
+        return RequirementBinding(operation, child_operations)
 
     @property
     def triggers(self) -> Sequence[ActionTrigger]:
         """Every action this action triggers, in the order it triggers them."""
         return self._triggers
 
-    def last_trigger_using_requirement(self, requirement_node_id: int) -> ActionTrigger:
-        """Return the last triggering that used ``requirement_node_id`` to satisfy a requirement."""
-        return self._last_trigger_by_requirement_node_id[requirement_node_id]
+    def last_trigger_using_requirement(
+        self, requirement_node: RequirementNode
+    ) -> ActionTrigger:
+        """Return the last triggering that used ``requirement_node``."""
+        return self._last_trigger_by_requirement_node[requirement_node]
 
-    def _requirement_binding_node_id(
+    def _requirement_binding_operation(
         self, caller_position_key: tuple[str, ...]
-    ) -> int | None:
+    ) -> LastOperationNode | None:
         """Return the operation on ``caller_position_key`` that satisfies a callee requirement, or None."""
         operation = self._last_operation.get(caller_position_key)
         if operation is not None:
@@ -561,9 +567,7 @@ class OperationGraph:
         if operation is not None:
             return operation
         # A move of a parent position also put this position in its current state.
-        if ancestor_operation is not None and isinstance(
-            self._nodes[ancestor_operation], MoveNode
-        ):
+        if isinstance(ancestor_operation, MoveNode):
             return ancestor_operation
         return None
 
@@ -573,50 +577,47 @@ class OperationGraph:
         empty_position: tuple[str, ...] | None = None,
         fill_position: tuple[str, ...] | None = None,
         child_operations: ParticleChildOperations | None = None,
-    ) -> list[int]:
+    ) -> tuple[OperationNode, ...]:
         """Return dependencies required before optionally emptying and filling positions."""
         if child_operations is None:
             child_operations = ParticleChildOperations()
-        fill_dependency: int | None = None
+        fill_dependency: LastOperationNode | None = None
         if fill_position is not None:
             # Filling a position waits on the most recent operation on that
             # position and its parent names, so the parent particle is present.
             fill_dependency = self._most_recent_ancestor_chain_operation(fill_position)
 
-        dependencies: list[int]
         if empty_position is not None:
             dependencies = self._empty_dependencies(
                 empty_position, child_operations, fill_dependency
             )
-        else:
-            dependencies = []
-            if fill_dependency is not None:
-                dependencies.append(fill_dependency)
-        if not dependencies:
-            return [self._action_parent_last_operation_node_id]
-        return dependencies
+            if dependencies:
+                return dependencies
+        elif fill_dependency is not None:
+            return (fill_dependency,)
+        return (self._action_parent_last_operation,)
 
     def _empty_dependencies(
         self,
         empty_position: tuple[str, ...],
         child_operations: ParticleChildOperations,
-        fill_dependency: int | None,
-    ) -> list[int]:
+        fill_dependency: LastOperationNode | None,
+    ) -> tuple[LastOperationNode | CallerEmptyRuleDependenciesNode, ...]:
         """Add the emptied particle's operations and apply the Empty Rule."""
-        candidates: set[int] = set()
+        candidates: set[LastOperationNode | CallerEmptyRuleDependenciesNode] = set()
         emptied_ancestor = self._most_recent_ancestor_chain_operation(empty_position)
         if emptied_ancestor is not None:
-            node = self._nodes[emptied_ancestor]
             if (
-                isinstance(node, RequirementNode)
-                and node.requirement_position == empty_position
+                isinstance(emptied_ancestor, RequirementNode)
+                and emptied_ancestor.requirement_position == empty_position
             ):
                 dependency_requirements: tuple[tuple[str, ...], ...] = ()
                 if fill_dependency is not None:
-                    fill_node = self._nodes[fill_dependency]
-                    if isinstance(fill_node, RequirementNode):
+                    if isinstance(fill_dependency, RequirementNode):
                         # Allow the caller to apply the Move Rule.
-                        dependency_requirements = (fill_node.requirement_position,)
+                        dependency_requirements = (
+                            fill_dependency.requirement_position,
+                        )
                     else:
                         # We are going to apply the Move Rule here inside this action
                         # (during _reduce dependencies).
@@ -628,7 +629,7 @@ class OperationGraph:
                         dependency_requirements=dependency_requirements,
                     )
                 )
-                candidates.add(caller_empty_rule_dependencies.node_id)
+                candidates.add(caller_empty_rule_dependencies)
             else:
                 candidates.add(emptied_ancestor)
                 if fill_dependency is not None:
@@ -636,22 +637,28 @@ class OperationGraph:
         elif fill_dependency is not None:
             candidates.add(fill_dependency)
         candidates.update(
-            operation.node_id for operation in child_operations.operations
+            child_operation.operation for child_operation in child_operations.operations
         )
         return self._reduce_dependencies(candidates)
 
-    def _reduce_dependencies(self, candidates: set[int]) -> list[int]:
+    def _reduce_dependencies[DependencyNodeT: OperationNode](
+        self, candidates: set[DependencyNodeT]
+    ) -> tuple[DependencyNodeT, ...]:
         """Apply the Empty Rule to candidate dependencies."""
-        dependencies: list[int] = []
+        dependencies: list[DependencyNodeT] = []
         newer_positions: set[tuple[str, ...]] = set()
         newer_position_prefixes: set[tuple[str, ...]] = set()
-        for node_id in sorted(candidates, reverse=True):
-            positions = self.operation_positions(node_id)
+        for node in sorted(
+            candidates,
+            key=lambda item: item.node_id,
+            reverse=True,
+        ):
+            positions = node.operated_positions
             has_newer_related_operation = self._has_related_position(
                 positions, newer_positions, newer_position_prefixes
             )
             if not has_newer_related_operation:
-                dependencies.append(node_id)
+                dependencies.append(node)
             # An operation covered by a newer operation still covers every older
             # operation that shares one of its other positions. Keeping its
             # positions here preserves that ordering through chains of moves.
@@ -661,7 +668,7 @@ class OperationGraph:
                     position[:depth] for depth in range(1, len(position))
                 )
         dependencies.reverse()
-        return dependencies
+        return tuple(dependencies)
 
     @staticmethod
     def _has_related_position(
@@ -680,24 +687,24 @@ class OperationGraph:
 
     def _most_recent_ancestor_chain_operation(
         self, position: tuple[str, ...]
-    ) -> int | None:
+    ) -> LastOperationNode | None:
         """Return the most recent operation on ``position``'s ancestor chain, materializing requirements as needed."""
-        ancestor: int | None = None
+        ancestor: LastOperationNode | None = None
         for length in range(1, len(position) + 1):
             key = position[:length]
             existing = self._last_operation.get(key)
             if existing is not None:
-                if ancestor is None or existing > ancestor:
+                if ancestor is None or existing.node_id > ancestor.node_id:
                     ancestor = existing
                 continue
-            materialized_id = self._maybe_materialize_requirement_node(key, ancestor)
-            if materialized_id is not None:
-                ancestor = materialized_id
+            materialized = self._maybe_materialize_requirement_node(key, ancestor)
+            if materialized is not None:
+                ancestor = materialized
         return ancestor
 
     def _maybe_materialize_requirement_node(
-        self, key: tuple[str, ...], ancestor: int | None
-    ) -> int | None:
+        self, key: tuple[str, ...], ancestor: LastOperationNode | None
+    ) -> RequirementNode | None:
         """Materialize a RequirementNode standing in for the caller op on ``key``, or None."""
         requirement = self._requirements.get(key)
         if requirement is not None:
@@ -709,43 +716,39 @@ class OperationGraph:
             return None
         # There is an ancestor operation, and isn't a requirement node (meaning we are already
         # past requirements on this position).
-        if ancestor is not None and not isinstance(
-            self._nodes[ancestor], RequirementNode
-        ):
+        if ancestor is not None and not isinstance(ancestor, RequirementNode):
             return None
         return self._add_requirement_node(key, ancestor, required_state)
 
     def _add_requirement_node(
         self,
         key: tuple[str, ...],
-        ancestor: int | None,
+        ancestor: RequirementNode | None,
         required_state: action_contract.PositionOccupancyState,
-    ) -> int:
-        """Add a RequirementNode standing in for the caller op on ``key``, returning its id."""
-        node_id = len(self._nodes)
+    ) -> RequirementNode:
+        """Add a RequirementNode standing in for the caller operation on ``key``."""
         dependency = ancestor
         if dependency is None:
-            dependency = self._action_parent_last_operation_node_id
+            dependency = self._action_parent_last_operation
         node = RequirementNode(
-            node_id=node_id,
+            node_id=len(self._nodes),
             required_state=required_state,
             requirement_position=key,
-            depends_on=[dependency],
+            depends_on=(dependency,),
         )
         self._nodes.append(node)
         # A later body operation on the position must still chain onto this node,
         # but an existing operation there stays the most recent one.
-        _ = self._last_operation.setdefault(key, node_id)
-        return node_id
+        _ = self._last_operation.setdefault(key, node)
+        return node
 
     def _add_caller_empty_rule_dependencies(
         self, caller_empty_rule_dependencies: CallerEmptyRuleDependencies
     ) -> CallerEmptyRuleDependenciesNode:
         """Add and return the caller contribution for emptying a required particle."""
-        node_id = len(self._nodes)
         node = CallerEmptyRuleDependenciesNode(
-            node_id=node_id,
-            depends_on=[],
+            node_id=len(self._nodes),
+            depends_on=(),
             caller_empty_rule_dependencies=caller_empty_rule_dependencies,
         )
         self._nodes.append(node)
@@ -765,7 +768,9 @@ class OperationGraph:
                 caller_empty_rule_dependencies.dependency_child_positions
             )
         )
-        candidates = {operation.node_id for operation in child_operations}
+        candidates: set[LastOperationNode] = {
+            child_operation.operation for child_operation in child_operations
+        }
         for requirement in caller_empty_rule_dependencies.dependency_requirements:
             # The Fill Rule allows its dependency to come from a transitive parent position.
             # _first_requirement_binding therefore checks the position and
@@ -777,7 +782,7 @@ class OperationGraph:
             # created a separate requirement against the parent position, and so no binding
             # is necessary here.
             if binding is not None:
-                candidates.add(binding.node_id)
+                candidates.add(binding.operation)
 
         requirement_position_in_caller = self._occupied_requirement_position(
             callee_requirement_binding
@@ -789,15 +794,12 @@ class OperationGraph:
                 not child_operations
                 and not caller_empty_rule_dependencies.dependency_child_positions
             ):
-                # callee_requirement_binding.node_id is the operation on the emptied
+                # callee_requirement_binding.operation is the operation on the emptied
                 # position. When there are no later child-position operations, it
                 # remains the required dependency per the Empty Rule.
-                candidates.add(callee_requirement_binding.node_id)
+                candidates.add(callee_requirement_binding.operation)
             return CallerEmptyRuleSubstitution(
-                tuple(
-                    self._nodes[node_id]
-                    for node_id in self._reduce_dependencies(candidates)
-                ),
+                self._reduce_dependencies(candidates),
                 None,
             )
 
@@ -806,7 +808,7 @@ class OperationGraph:
         # Apply what we can of the Empty Rule now to this caller's operations before
         # propagating dependencies from this caller's occupied requirement to its caller.
         dependencies = self._reduce_dependencies(candidates)
-        node_ids: list[int] = []
+        dependency_nodes: list[PrecedingChildOperationNode] = []
         dependency_requirements: list[tuple[str, ...]] = []
         seen_dependency_requirements: set[tuple[str, ...]] = set()
         dependency_child_positions = set(
@@ -815,25 +817,23 @@ class OperationGraph:
         dependency_child_positions.update(
             caller_empty_rule_dependencies.dependency_child_positions
         )
-        for node_id in dependencies:
-            if isinstance(self._nodes[node_id], RequirementNode):
-                requirement_position = typing.cast(
-                    "RequirementNode", self._nodes[node_id]
-                ).requirement_position
+        for node in dependencies:
+            if isinstance(node, RequirementNode):
+                requirement_position = node.requirement_position
                 if requirement_position not in seen_dependency_requirements:
                     dependency_requirements.append(requirement_position)
                     seen_dependency_requirements.add(requirement_position)
                 continue
-            node_ids.append(node_id)
+            dependency_nodes.append(node)
             # This remains linear in the positions on the dependencies because
             # each position is examined once, without comparing dependencies.
             self._add_positions_relative_to_particle(
                 dependency_child_positions,
-                node_id,
+                node,
                 requirement_position_in_caller,
             )
         return CallerEmptyRuleSubstitution(
-            tuple(self._nodes[node_id] for node_id in node_ids),
+            tuple(dependency_nodes),
             CallerEmptyRuleDependencies(
                 requirement_position=requirement_position_in_caller,
                 dependency_child_positions=frozenset(dependency_child_positions),
@@ -845,7 +845,7 @@ class OperationGraph:
         self, binding: RequirementBinding
     ) -> tuple[str, ...] | None:
         """Return the occupied requirement position represented by ``binding``."""
-        node = self._nodes[binding.node_id]
+        node = binding.operation
         if not isinstance(node, RequirementNode):
             return None
         if node.required_state is not action_contract.PositionOccupancyState.OCCUPIED:
@@ -867,11 +867,11 @@ class OperationGraph:
     def _add_positions_relative_to_particle(
         self,
         relative_positions: set[tuple[str, ...]],
-        node_id: int,
+        node: PrecedingChildOperationNode,
         particle_position: tuple[str, ...],
     ):
         """Add a node's transitive parent and child positions relative to ``particle_position``."""
-        for position in self.operation_positions(node_id):
+        for position in node.operated_positions:
             shared_depth = min(len(position), len(particle_position))
             if position[:shared_depth] != particle_position[:shared_depth]:
                 continue
@@ -881,27 +881,25 @@ class OperationGraph:
             else:
                 relative_positions.add(position[len(particle_position) :])
 
-    def record_create(self, target: ast.PositionReference) -> int:
+    def record_create(self, target: ast.PositionReference) -> CreateNode:
         """Record a body create in ``target``."""
         key = target.canonical_chained_name_tuple
         depends_on = self._operation_dependencies(fill_position=key)
-        node_id = len(self._nodes)
-        self._nodes.append(
-            CreateNode(
-                node_id=node_id,
-                target=target,
-                depends_on=depends_on,
-            )
+        node = CreateNode(
+            node_id=len(self._nodes),
+            target=target,
+            depends_on=depends_on,
         )
-        self._last_operation[key] = node_id
-        return node_id
+        self._nodes.append(node)
+        self._last_operation[key] = node
+        return node
 
     def record_move(
         self,
         source: ast.PositionReference,
         target: ast.PositionReference,
         preceding_child_operations: PrecedingChildOperations,
-    ) -> int:
+    ) -> MoveNode:
         """Record a body move from ``source`` to ``target``."""
         child_operations = ParticleChildOperations.from_preceding_operations(
             preceding_child_operations
@@ -913,24 +911,22 @@ class OperationGraph:
             fill_position=target_key,
             child_operations=child_operations,
         )
-        node_id = len(self._nodes)
-        self._nodes.append(
-            MoveNode(
-                node_id=node_id,
-                target=target,
-                source=source,
-                depends_on=depends_on,
-            )
+        node = MoveNode(
+            node_id=len(self._nodes),
+            target=target,
+            source=source,
+            depends_on=depends_on,
         )
-        self._last_operation[source_key] = node_id
-        self._last_operation[target_key] = node_id
-        return node_id
+        self._nodes.append(node)
+        self._last_operation[source_key] = node
+        self._last_operation[target_key] = node
+        return node
 
     def record_destroy(
         self,
         target: ast.PositionReference,
         preceding_child_operations: PrecedingChildOperations,
-    ) -> int:
+    ) -> DestroyNode:
         """Record a destroy of ``target``.
 
         The single node covers the whole cascade, including the child positions
@@ -944,23 +940,21 @@ class OperationGraph:
             empty_position=key,
             child_operations=child_operations,
         )
-        node_id = len(self._nodes)
-        self._nodes.append(
-            DestroyNode(
-                node_id=node_id,
-                target=target,
-                depends_on=depends_on,
-            )
+        node = DestroyNode(
+            node_id=len(self._nodes),
+            target=target,
+            depends_on=depends_on,
         )
-        self._last_operation[key] = node_id
-        return node_id
+        self._nodes.append(node)
+        self._last_operation[key] = node
+        return node
 
     def record_guarantees(
         self,
         trigger: ActionTrigger,
         callee_chain: tuple[str, ...],
         guaranteed_positions: GuaranteedPositions,
-    ) -> dict[tuple[str, ...], int]:
+    ) -> dict[tuple[str, ...], GuaranteeNode]:
         """Record the positions ``trigger`` guarantees, as nodes hanging off it.
 
         Each key is a contracted position's absolute key. That position's last
@@ -978,35 +972,31 @@ class OperationGraph:
         # largest profile. It failed to reduce compiler CPU: alternating
         # unprofiled runs averaged 8.013s before and 8.037s after, so the
         # prototype was rejected as a CPU optimization.
-        node_ids: dict[tuple[str, ...], int] = {}
+        nodes: dict[tuple[str, ...], GuaranteeNode] = {}
         for absolute_key, operation_positions in guaranteed_positions.items():
-            node_id = len(self._nodes)
-            self._nodes.append(
-                GuaranteeNode(
-                    node_id=node_id,
-                    trigger=trigger,
-                    guaranteed_position=ast.chain_in_callee(callee_chain, absolute_key),
-                    depends_on=[trigger.trigger_node_id],
-                    operation_positions=operation_positions,
-                )
+            node = GuaranteeNode(
+                node_id=len(self._nodes),
+                trigger=trigger,
+                guaranteed_position=ast.chain_in_callee(callee_chain, absolute_key),
+                depends_on=(trigger.trigger_operation,),
+                operation_positions=operation_positions,
             )
-            self._last_operation[absolute_key] = node_id
-            node_ids[absolute_key] = node_id
-        return node_ids
+            self._nodes.append(node)
+            self._last_operation[absolute_key] = node
+            nodes[absolute_key] = node
+        return nodes
 
     def record_guaranteed_positions(self, positions: Iterable[tuple[str, ...]]):
         """Record guarantees published by this action's Particle Operations."""
-        positions_by_operation_node_id: dict[int, list[tuple[str, ...]]] = {}
+        positions_by_operation: dict[PositionOperationNode, list[tuple[str, ...]]] = {}
         for position in positions:
-            node_id = self._last_operation.get(position)
-            if node_id is None or not isinstance(
-                self._nodes[node_id], PositionOperationNode
-            ):
+            node = self._last_operation.get(position)
+            if not isinstance(node, PositionOperationNode):
                 continue
-            positions_by_operation_node_id.setdefault(node_id, []).append(position)
-        self._guaranteed_positions_by_operation_node_id = {
-            node_id: tuple(guaranteed_positions)
-            for node_id, guaranteed_positions in positions_by_operation_node_id.items()
+            positions_by_operation.setdefault(node, []).append(position)
+        self._guaranteed_positions_by_operation = {
+            operation: tuple(guaranteed_positions)
+            for operation, guaranteed_positions in positions_by_operation.items()
         }
 
 
@@ -1018,7 +1008,7 @@ class _CalleeGuaranteeResolution:
     callee_resolution: _GuaranteeResolution
 
 
-type _GuaranteeResolution = int | _CalleeGuaranteeResolution
+type _GuaranteeResolution = PositionOperationNode | _CalleeGuaranteeResolution
 
 
 @typing.final
@@ -1041,7 +1031,7 @@ class OperationGraphs(
 
     def resolve_guarantee(
         self, guarantee: GuaranteeNode
-    ) -> tuple[list[ActionTrigger], int]:
+    ) -> tuple[list[ActionTrigger], PositionOperationNode]:
         """Resolve one guarantee to its Particle Operation through callee graphs."""
         resolution = self._resolve_guaranteed_position(
             guarantee.trigger.callee_action_name, guarantee.guaranteed_position
@@ -1065,23 +1055,18 @@ class OperationGraphs(
                 break
 
             graph = self[action]
-            node_id = graph.last_operation_on_position(position)
-            node = graph.nodes[node_id]
+            node = graph.last_operation_on_position(position)
             match node:
                 case PositionOperationNode():
-                    resolution = node_id
+                    resolution = node
                     action_resolutions[position] = resolution
                     break
                 case GuaranteeNode():
                     trigger = node.trigger
                     next_position = node.guaranteed_position
                 case RequirementNode():
-                    trigger = graph.last_trigger_using_requirement(node.node_id)
+                    trigger = graph.last_trigger_using_requirement(node)
                     next_position = ast.chain_in_callee(trigger.action_chain, position)
-                case _:
-                    raise TypeError(
-                        f"node {node.node_id} cannot produce an action guarantee"
-                    )
             unresolved.append((action_name, position, trigger))
             action = trigger.callee_action_name
             position = next_position

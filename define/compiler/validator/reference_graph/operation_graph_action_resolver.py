@@ -31,7 +31,7 @@ type ActionInput = CallerInputNode | operation_graph.CallerEmptyRuleDependencies
 class ActionDependencies:
     """Dependencies of an operation in one reusable action graph."""
 
-    local_operation_node_ids: tuple[int, ...] = ()
+    local_operations: tuple[operation_graph.PositionOperationNode, ...] = ()
     action_inputs: tuple[ActionInput, ...] = ()
     guarantee_dependencies: tuple[operation_graph.GuaranteeNode, ...] = ()
 
@@ -50,14 +50,14 @@ class _ActionDependenciesBuilder:
     """Collect action dependencies in graph order."""
 
     def __init__(self):
-        self.local_operation_node_ids: list[int] = []
+        self.local_operations: list[operation_graph.PositionOperationNode] = []
         self.action_inputs: list[ActionInput] = []
         self.guarantee_dependencies: list[operation_graph.GuaranteeNode] = []
 
     def add_dependency(self, node: operation_graph.OperationNode):
         match node:
             case operation_graph.PositionOperationNode():
-                self.local_operation_node_ids.append(node.node_id)
+                self.local_operations.append(node)
             case (
                 operation_graph.ActionParentLastOperationNode()
                 | operation_graph.RequirementNode()
@@ -72,7 +72,7 @@ class _ActionDependenciesBuilder:
     def build(self) -> ActionDependencies:
         """Build immutable dependencies in graph order."""
         return ActionDependencies(
-            local_operation_node_ids=tuple(self.local_operation_node_ids),
+            local_operations=tuple(self.local_operations),
             action_inputs=tuple(self.action_inputs),
             guarantee_dependencies=tuple(self.guarantee_dependencies),
         )
@@ -84,7 +84,7 @@ class ResolvedActionTriggerInput:
 
     callee_input: ActionInput
     caller_dependencies: ActionDependencies
-    callee_dependency_node_ids: tuple[int, ...]
+    callee_dependencies: tuple[operation_graph.PositionOperationNode, ...]
 
 
 @typing.final
@@ -94,23 +94,19 @@ class _ActionTriggerDependencyResolver:
     def __init__(
         self,
         caller_graph: operation_graph.OperationGraph,
-        callee_graph: operation_graph.OperationGraph,
         trigger: operation_graph.ActionTrigger,
     ):
         """Initialize with one direct caller, triggered action, and ActionTrigger."""
         self._caller_graph = caller_graph
-        self._callee_graph = callee_graph
         self._trigger = trigger
 
-    def action_parent_operation(self) -> operation_graph.OperationNode:
+    def action_parent_operation(self) -> operation_graph.ActionParentOperationNode:
         """Return the caller operation on the triggered action's parent position."""
-        return self._caller_graph.nodes[
-            self._trigger.action_parent_last_operation_node_id
-        ]
+        return self._trigger.action_parent_last_operation
 
     def bound_requirement_operation(
         self, requirement: operation_graph.RequirementNode
-    ) -> operation_graph.OperationNode | None:
+    ) -> operation_graph.LastOperationNode | None:
         """Return the caller operation bound to ``requirement``.
 
         ``None`` means an empty requirement is satisfied because the position
@@ -119,13 +115,15 @@ class _ActionTriggerDependencyResolver:
         binding = self._trigger.bindings.get(requirement.requirement_position)
         if binding is None:
             return None
-        return self._caller_graph.nodes[binding.node_id]
+        return binding.operation
 
     def empty_by_default_parent_operations(
         self, requirement: operation_graph.RequirementNode
-    ) -> Iterable[operation_graph.OperationNode]:
+    ) -> Iterable[
+        operation_graph.ActionParentLastOperationNode | operation_graph.RequirementNode
+    ]:
         """Return callee parent operations preceding an empty-by-default requirement."""
-        return (self._callee_graph.nodes[node_id] for node_id in requirement.depends_on)
+        return requirement.depends_on
 
     def substitute_empty_rule_dependencies(
         self, node: operation_graph.CallerEmptyRuleDependenciesNode
@@ -149,12 +147,11 @@ class _ActionTriggerDependencyResolver:
 
     def _resolve_input_node(self, node: CallerInputNode) -> ResolvedActionTriggerInput:
         dependencies = _ActionDependenciesBuilder()
-        callee_dependency_node_ids: list[int] = []
-        self._add_input_node(dependencies, callee_dependency_node_ids, node)
+        self._add_input_node(dependencies, node)
         return ResolvedActionTriggerInput(
             node,
             dependencies.build(),
-            tuple(callee_dependency_node_ids),
+            (),
         )
 
     def _resolve_caller_empty_rule_input(
@@ -176,7 +173,6 @@ class _ActionTriggerDependencyResolver:
     def _add_input_node(
         self,
         dependencies: _ActionDependenciesBuilder,
-        callee_dependency_node_ids: list[int],
         node: CallerInputNode,
     ):
         match node:
@@ -188,21 +184,7 @@ class _ActionTriggerDependencyResolver:
                     dependencies.add_dependency(operation)
                     return
                 for parent_operation in self.empty_by_default_parent_operations(node):
-                    if isinstance(
-                        parent_operation,
-                        (
-                            operation_graph.ActionParentLastOperationNode,
-                            operation_graph.RequirementNode,
-                            operation_graph.CallerEmptyRuleDependenciesNode,
-                        ),
-                    ):
-                        self._add_input_node(
-                            dependencies,
-                            callee_dependency_node_ids,
-                            parent_operation,
-                        )
-                    else:
-                        callee_dependency_node_ids.append(parent_operation.node_id)
+                    self._add_input_node(dependencies, parent_operation)
             case operation_graph.CallerEmptyRuleDependenciesNode():
                 self._add_empty_rule_substitution(
                     dependencies, self.substitute_empty_rule_dependencies(node)
@@ -242,7 +224,9 @@ class ResolvedAction:
     """The dependency interface of one reusable action."""
 
     graph: operation_graph.OperationGraph
-    dependencies_by_operation_node_id: dict[int, ActionDependencies]
+    dependencies_by_operation: dict[
+        operation_graph.PositionOperationNode, ActionDependencies
+    ]
     inputs: tuple[ActionInput, ...]
     action_triggers: tuple[ResolvedActionTrigger, ...]
 
@@ -259,9 +243,11 @@ class ActionResolver:
         """Initialize resolution with one graph and its resolved direct callees."""
         self._graph = graph
         self._resolved_actions = resolved_actions
-        self._dependencies_by_operation_node_id: dict[int, ActionDependencies] = {}
+        self._dependencies_by_operation: dict[
+            operation_graph.PositionOperationNode, ActionDependencies
+        ] = {}
         self._inputs: list[ActionInput] = []
-        self._caller_input_node_ids: set[int] = set()
+        self._caller_input_nodes: set[CallerInputNode] = set()
         self._action_triggers: list[ResolvedActionTrigger] = []
 
     def resolve(self) -> ResolvedAction:
@@ -269,10 +255,8 @@ class ActionResolver:
         for node in self._graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            dependencies = ActionDependencies.for_nodes(
-                self._graph.nodes[node_id] for node_id in node.depends_on
-            )
-            self._dependencies_by_operation_node_id[node.node_id] = dependencies
+            dependencies = ActionDependencies.for_nodes(node.depends_on)
+            self._dependencies_by_operation[node] = dependencies
             self._record_caller_dependencies(dependencies)
 
         for trigger in self._graph.triggers:
@@ -280,7 +264,7 @@ class ActionResolver:
 
         return ResolvedAction(
             self._graph,
-            self._dependencies_by_operation_node_id,
+            self._dependencies_by_operation,
             tuple(self._inputs),
             tuple(self._action_triggers),
         )
@@ -289,9 +273,7 @@ class ActionResolver:
         self, trigger: operation_graph.ActionTrigger
     ) -> ResolvedActionTrigger:
         callee = self._resolved_actions[trigger.callee_action_name]
-        dependency_resolver = _ActionTriggerDependencyResolver(
-            self._graph, callee.graph, trigger
-        )
+        dependency_resolver = _ActionTriggerDependencyResolver(self._graph, trigger)
         inputs: list[ResolvedActionTriggerInput] = []
         for callee_input in callee.inputs:
             resolved_input = dependency_resolver.resolve_input(callee_input)
@@ -303,6 +285,6 @@ class ActionResolver:
         for action_input in dependencies.action_inputs:
             if isinstance(action_input, operation_graph.CallerEmptyRuleDependencies):
                 self._inputs.append(action_input)
-            elif action_input.node_id not in self._caller_input_node_ids:
-                self._caller_input_node_ids.add(action_input.node_id)
+            elif action_input not in self._caller_input_nodes:
+                self._caller_input_nodes.add(action_input)
                 self._inputs.append(action_input)

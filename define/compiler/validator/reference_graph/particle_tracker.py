@@ -56,7 +56,7 @@ class _NodeState:
     # so child-operation snapshots only need to be built when an operation uses one.
     # TODO: Reconsider the boundary between particle tracking and operation-graph
     # construction; this is operation-graph metadata stored here for reparenting.
-    operation_node_id: int | None = None
+    operation_node: operation_graph.PrecedingChildOperationNode | None = None
 
 
 @dataclass
@@ -611,9 +611,9 @@ class ParticleTracker:
 
     def _preceding_child_operations(
         self, key: tuple[str, ...]
-    ) -> Iterator[tuple[tuple[str, ...], int]]:
+    ) -> Iterator[tuple[tuple[str, ...], operation_graph.PrecedingChildOperationNode]]:
         return self._store.state.selected_subtree_items(
-            key, lambda state: state.operation_node_id
+            key, lambda state: state.operation_node
         )
 
     def create(
@@ -641,9 +641,9 @@ class ParticleTracker:
         if existing is not None and existing.particle_info is not None:
             raise ValueError(f"position {key} is already occupied")
         # Only a body create becomes a node in the operation graph.
-        operation_node_id: int | None = None
+        operation_node: operation_graph.CreateNode | None = None
         if from_caller is None:
-            operation_node_id = self._operation_graph.record_create(in_position)
+            operation_node = self._operation_graph.record_create(in_position)
         info = ParticleInfo(
             last_position=in_position,
             qualities=qualities,
@@ -653,10 +653,10 @@ class ParticleTracker:
         if existing is not None:
             existing.particle_info = info
             existing.emptied_by = None
-            existing.operation_node_id = operation_node_id
+            existing.operation_node = operation_node
         else:
             self._store.state[key] = _NodeState(
-                particle_info=info, operation_node_id=operation_node_id
+                particle_info=info, operation_node=operation_node
             )
 
     def destroy(self, in_position: ast.PositionReference):
@@ -670,7 +670,7 @@ class ParticleTracker:
         if existing is None or existing.particle_info is None:
             raise ValueError(f"position {key} is not occupied")
         # Record before the subtree is deleted, so graph dependencies see the children.
-        operation_node_id = self._operation_graph.record_destroy(
+        operation_node = self._operation_graph.record_destroy(
             in_position, self._preceding_child_operations(key)
         )
         del self._store.state[key]
@@ -679,7 +679,7 @@ class ParticleTracker:
             del self._store.error[key]
         self._record_body_write(key)
         self._store.state[key] = _NodeState(
-            emptied_by=in_position, operation_node_id=operation_node_id
+            emptied_by=in_position, operation_node=operation_node
         )
 
     def get_emptied_by(
@@ -711,7 +711,7 @@ class ParticleTracker:
         source_info = self._store.state[from_key].particle_info
         if source_info is None:
             raise ValueError(f"source position {from_key} is empty")
-        operation_node_id = self._operation_graph.record_move(
+        operation_node = self._operation_graph.record_move(
             source, target, self._preceding_child_operations(from_key)
         )
         # Both positions are touched by this one move statement, so they share a
@@ -728,9 +728,9 @@ class ParticleTracker:
             # destroyed). Delete it before moving so move_subtree succeeds.
             del self._store.state[to_key]
         self._store.state.move_subtree(from_key, to_key)
-        self._store.state[to_key].operation_node_id = operation_node_id
+        self._store.state[to_key].operation_node = operation_node
         self._store.state[from_key] = _NodeState(
-            emptied_by=source, operation_node_id=operation_node_id
+            emptied_by=source, operation_node=operation_node
         )
         self._store.rekey_records_for_move(from_key, to_key)
 
@@ -870,10 +870,8 @@ class ParticleTracker:
 
         state = self._store.state.get(key)
         operation_positions: tuple[tuple[str, ...], ...] = ()
-        if state is not None and state.operation_node_id is not None:
-            operation_positions = self._operation_graph.operation_positions(
-                state.operation_node_id
-            )
+        if state is not None and state.operation_node is not None:
+            operation_positions = state.operation_node.operated_positions
         if state is not None and state.particle_info is not None:
             info = state.particle_info
             if not info.from_caller:
@@ -963,9 +961,9 @@ class ParticleTracker:
         # - Passing each accepted guarantee directly to the operation graph
         #   looked like it would remove duplicated work: it eliminated the
         #   temporary accepted-guarantee list, the second recording pass, and the
-        #   node-id mapping pass. Creating a shared-effect object for each
-        #   guarantee instead made validation 3.1% slower, so the prototype was
-        #   rejected.
+        #   operation-node association pass. Creating a shared-effect object for
+        #   each guarantee instead made validation 3.1% slower, so the prototype
+        #   was rejected.
         # Do not repeat these deferral experiments unless the prototype preserves
         # the ordering behavior above and remains memory-efficient on the largest
         # dense action call graph.
@@ -1013,10 +1011,10 @@ class ParticleTracker:
                 touched_guarantees,
             ),
         )
-        for key, node_id in guarantee_nodes.items():
+        for key, node in guarantee_nodes.items():
             state = self._store.state.get(key)
             if state is not None:
-                state.operation_node_id = node_id
+                state.operation_node = node
         for child in pending_guarantee.guarantees.nested:
             child_position = pending_guarantee.key_for(child.triggered_action)
             child_nested_guarantee = _PendingGuarantee(

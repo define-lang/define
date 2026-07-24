@@ -23,12 +23,12 @@ type _ActionOperationLabels = typed_name_dict.TypedNameDict[
 # One triggering of one action, by the operation that fired it and the action it
 # fires. An action names each of its own triggerings, and one operation can fire
 # more than one of them.
-type _TriggerKey = tuple[int, str]
+type _TriggerKey = tuple[operation_graph.LastOperationNode, str]
 
 
 def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
     """Return the key that tells one triggering an action performs from the next."""
-    return (trigger.trigger_node_id, trigger.callee_action_name.full_typed_name)
+    return (trigger.trigger_operation, trigger.callee_action_name.full_typed_name)
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -77,11 +77,11 @@ def action_graph_set(
 
 
 class _OperationLabels:
-    """The label of every operation of one graph, by node id."""
+    """The label of every operation of one graph."""
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Label every operation in ``graph``."""
-        self._labels: dict[int, str] = {}
+        self._labels: dict[operation_graph.PositionOperationNode, str] = {}
         times_seen: dict[str, int] = {}
         for node in graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
@@ -91,11 +91,11 @@ class _OperationLabels:
             # than once, which every operation after the first says in its label.
             count = times_seen.get(label, 0) + 1
             times_seen[label] = count
-            self._labels[node.node_id] = label if count == 1 else f"{label}#{count}"
+            self._labels[node] = label if count == 1 else f"{label}#{count}"
 
-    def __getitem__(self, node_id: int) -> str:
-        """Return the label of the operation at ``node_id``."""
-        return self._labels[node_id]
+    def __getitem__(self, node: operation_graph.PositionOperationNode) -> str:
+        """Return the label of ``node``."""
+        return self._labels[node]
 
     @classmethod
     def _operation_label(cls, node: operation_graph.PositionOperationNode) -> str:
@@ -228,7 +228,7 @@ class _NameResolver:
         self, action: ast.GlobalTypedName, node: operation_graph.PositionOperationNode
     ) -> str:
         """Return what ``action`` calls the operation at ``node``, such as ``move(item, dest)``."""
-        return self._operation_labels[action][node.node_id]
+        return self._operation_labels[action][node]
 
     def triggering_name(
         self,

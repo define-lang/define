@@ -38,7 +38,9 @@ class ResolvedOperation:
     dependencies: tuple[ResolvedOperation, ...]
 
 
-type _ResolvedOperationKey = tuple[ActionExecution, int]
+type _ResolvedOperationKey = tuple[
+    ActionExecution, operation_graph.PositionOperationNode
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,7 +83,7 @@ class ResolvedOperationGraphBuilder:
             resolved_action = self._resolved_actions[action_execution.action]
             for node in resolved_action.graph.nodes:
                 if isinstance(node, operation_graph.PositionOperationNode):
-                    operation_keys.append((action_execution, node.node_id))
+                    operation_keys.append((action_execution, node))
 
             callees: list[ActionExecution] = []
             for action_trigger in resolved_action.action_triggers:
@@ -131,17 +133,13 @@ class ResolvedOperationGraphBuilder:
         if resolved is not None:
             return resolved
 
-        action_execution, node_id = operation_key
+        action_execution, operation = operation_key
         resolved_action = self._resolved_actions[action_execution.action]
-        operation = typing.cast(
-            "operation_graph.PositionOperationNode",
-            resolved_action.graph.nodes[node_id],
-        )
         dependency_keys: dict[_ResolvedOperationKey, None] = {}
         self._add_action_dependencies(
             dependency_keys,
             action_execution,
-            resolved_action.dependencies_by_operation_node_id[node_id],
+            resolved_action.dependencies_by_operation[operation],
         )
         resolved = ResolvedOperation(
             action_execution,
@@ -160,8 +158,8 @@ class ResolvedOperationGraphBuilder:
         action_execution: ActionExecution,
         dependencies: operation_graph_action_resolver.ActionDependencies,
     ):
-        for node_id in dependencies.local_operation_node_ids:
-            dependency_keys[action_execution, node_id] = None
+        for operation in dependencies.local_operations:
+            dependency_keys[action_execution, operation] = None
         for action_input in dependencies.action_inputs:
             self._add_caller_input(dependency_keys, action_execution, action_input)
         for guarantee in dependencies.guarantee_dependencies:
@@ -177,8 +175,8 @@ class ResolvedOperationGraphBuilder:
         if triggered_by is None:
             return
         resolved_input = triggered_by.action_trigger.input_for(action_input)
-        for node_id in resolved_input.callee_dependency_node_ids:
-            dependency_keys[action_execution, node_id] = None
+        for operation in resolved_input.callee_dependencies:
+            dependency_keys[action_execution, operation] = None
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
@@ -191,13 +189,13 @@ class ResolvedOperationGraphBuilder:
         action_execution: ActionExecution,
         guarantee: operation_graph.GuaranteeNode,
     ):
-        triggers, operation_node_id = self._graphs.resolve_guarantee(guarantee)
+        triggers, operation = self._graphs.resolve_guarantee(guarantee)
         guaranteed_action_execution = action_execution
         for trigger in triggers:
             guaranteed_action_execution = self._callee_execution(
                 guaranteed_action_execution, trigger
             )
-        dependency_keys[guaranteed_action_execution, operation_node_id] = None
+        dependency_keys[guaranteed_action_execution, operation] = None
 
     def _callee_execution(
         self,

@@ -46,17 +46,15 @@ def _position(name: str) -> ast.PositionReference:
 def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     graph = operation_graph.OperationGraph({})
     work = _position("work")
-    create_id = graph.record_create(work)
-    destroy_id = graph.record_destroy(work, ())
+    create = graph.record_create(work)
+    destroy = graph.record_destroy(work, ())
     resolved = operation_graph_action_resolver.ActionResolver(graph, {}).resolve()
 
-    create_dependencies = resolved.dependencies_by_operation_node_id[create_id]
+    create_dependencies = resolved.dependencies_by_operation[create]
     assert create_dependencies.action_inputs == (graph.nodes[0],)
-    assert resolved.dependencies_by_operation_node_id[
-        destroy_id
-    ] == operation_graph_action_resolver.ActionDependencies(
-        local_operation_node_ids=(create_id,)
-    )
+    assert resolved.dependencies_by_operation[
+        destroy
+    ] == operation_graph_action_resolver.ActionDependencies(local_operations=(create,))
 
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
@@ -81,7 +79,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         caller_graph, {worker_action: resolved_callee}
     ).resolve()
     (resolved_trigger,) = resolved.action_triggers
-    action_parent = caller_graph.nodes[trigger.action_parent_last_operation_node_id]
+    action_parent = trigger.action_parent_last_operation
     assert isinstance(action_parent, operation_graph.ActionParentLastOperationNode)
 
     assert resolved_trigger == operation_graph_action_resolver.ResolvedActionTrigger(
@@ -92,10 +90,10 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
                 caller_dependencies=operation_graph_action_resolver.ActionDependencies(
                     action_inputs=(action_parent,)
                 ),
-                callee_dependency_node_ids=(),
+                callee_dependencies=(),
             ),
         ),
     )
     (caller_input,) = resolved.inputs
     assert isinstance(caller_input, operation_graph.OperationNode)
-    assert caller_input.node_id == trigger.action_parent_last_operation_node_id
+    assert caller_input is trigger.action_parent_last_operation

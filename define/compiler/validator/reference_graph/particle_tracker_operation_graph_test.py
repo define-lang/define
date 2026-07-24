@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+import typing
+
 from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -77,9 +79,10 @@ def _occupied_by_new() -> action_contract.OccupiedByNewGuarantee:
 def _last_operation(
     tracker: particle_tracker.ParticleTracker, position: ast.PositionReference
 ) -> int:
-    return tracker.operation_graph.last_operation_on_position(
+    operation = tracker.operation_graph.last_operation_on_position(
         position.canonical_chained_name_tuple
     )
+    return tracker.operation_graph.nodes.index(operation)
 
 
 def _kinds(
@@ -88,8 +91,20 @@ def _kinds(
     return [type(node) for node in tracker.operation_graph.nodes]
 
 
-def _deps(tracker: particle_tracker.ParticleTracker, node_id: int) -> list[int]:
-    return list(tracker.operation_graph.nodes[node_id].depends_on)
+def _deps(tracker: particle_tracker.ParticleTracker, node_index: int) -> list[int]:
+    return [
+        tracker.operation_graph.nodes.index(dependency)
+        for dependency in tracker.operation_graph.nodes[node_index].depends_on
+    ]
+
+
+def _last_operation_node(
+    tracker: particle_tracker.ParticleTracker, node_index: int
+) -> operation_graph.LastOperationNode:
+    return typing.cast(
+        "operation_graph.LastOperationNode",
+        tracker.operation_graph.nodes[node_index],
+    )
 
 
 _DUMMY_ACTION = ast.ActionDefinition(
@@ -424,13 +439,14 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     assert list(tracker.operation_graph.triggers) == [
         operation_graph.ActionTrigger(
             action_chain,
-            2,
+            _last_operation_node(tracker, 2),
             {
                 ("position<run>",): operation_graph.RequirementBinding(
-                    2, operation_graph.ParticleChildOperations()
+                    _last_operation_node(tracker, 2),
+                    operation_graph.ParticleChildOperations(),
                 )
             },
-            action_parent_last_operation_node_id=1,
+            action_parent_last_operation=_last_operation_node(tracker, 1),
         )
     ]
 
