@@ -330,6 +330,5 @@ pyright_test(
         ":reference_graph_validator",
         ":requirement_violation",
         ":test_helpers",
-        "//define/compiler/validator:validation_result",
     ],
 )

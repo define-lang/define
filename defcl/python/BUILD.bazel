@@ -64,11 +64,13 @@ format_test(
 # package or its sub-packages, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
+    include_subpackages = True,
     deps = [
         ":exceptions",
         ":parser",
         ":parser_test",
         ":python",
+        "//defcl/python/lark",
         "//defcl/python/validator",
         "//defcl/python/validator:semantics",
         "//defcl/python/validator:semantics_test",

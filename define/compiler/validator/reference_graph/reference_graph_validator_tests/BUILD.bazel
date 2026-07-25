@@ -943,6 +943,7 @@ pyright_test(
         ":automated_requirements_constructor_test",
         ":automated_requirements_destructor_implied_test",
         ":automated_requirements_destructor_move_test",
+        ":automated_requirements_destructor_propagation_test",
         ":automated_requirements_destructor_test",
         ":automated_requirements_diamond_test",
         ":automated_requirements_implied_position_test",
@@ -993,7 +994,7 @@ pyright_test(
         ":quality_implication_particle_test",
         ":quality_implication_test",
         ":reference_graph_validator_tests",
+        ":test_helpers",
         ":trigger_conditions_test",
-        "//define/compiler:conftest",
     ],
 )

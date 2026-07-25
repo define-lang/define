@@ -1,4 +1,4 @@
-"""Keep direct Python target dependencies synchronized with imports."""
+"""Keep Python dependencies and type-check coverage synchronized."""
 
 from __future__ import annotations
 
@@ -29,10 +29,24 @@ class PythonTarget:
 
 
 @dataclass(frozen=True)
-class DependencyChanges:
-    """Differences between declared and imported dependencies."""
+class PyrightTarget:
+    """A pyright test that type-checks Python targets."""
 
-    target: PythonTarget
+    label: str
+    build_file: Path
+    deps: frozenset[str]
+    kept_deps: frozenset[str] = frozenset()
+    include_subpackages: bool = False
+
+
+type DependencyTarget = PythonTarget | PyrightTarget
+
+
+@dataclass(frozen=True)
+class DependencyChanges:
+    """Differences between declared and expected dependencies."""
+
+    target: DependencyTarget
     expected: frozenset[str]
 
     @property
@@ -71,6 +85,7 @@ class RepositoryAnalysis:
     module_owners: dict[str, str]
     external_module_owners: dict[str, str]
     conftest_fixtures: dict[Path, frozenset[str]]
+    pyright_targets: tuple[PyrightTarget, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -133,6 +148,22 @@ def _rule_name(call: ast.Call) -> str | None:
     return None
 
 
+def _has_keyword(call: ast.Call, attribute: str) -> bool:
+    return any(keyword.arg == attribute for keyword in call.keywords)
+
+
+def _absolute_label(package: Path, value: str) -> str:
+    return _canonical_label(
+        _package_label(package, value[1:]) if value.startswith(":") else value
+    )
+
+
+def _declared_deps(call: ast.Call, package: Path) -> frozenset[str]:
+    return frozenset(
+        _absolute_label(package, value) for value in _string_list(call, "deps")
+    )
+
+
 def _kept_deps(lines: list[str], call: ast.Call, package: Path) -> frozenset[str]:
     if call.end_lineno is None:
         raise ValueError("Could not locate the end of a rule with a # keep dependency")
@@ -149,11 +180,7 @@ def _kept_deps(lines: list[str], call: ast.Call, package: Path) -> frozenset[str
             raise ValueError(f"Invalid # keep dependency: {line.strip()}") from error
         if not isinstance(value, str):
             raise ValueError(f"Invalid # keep dependency: {line.strip()}")
-        kept.add(
-            _canonical_label(
-                _package_label(package, value[1:]) if value.startswith(":") else value
-            )
-        )
+        kept.add(_absolute_label(package, value))
     return frozenset(kept)
 
 
@@ -163,8 +190,9 @@ def _package_label(package: Path, target: str) -> str:
 
 def _load_targets(
     repository: Path,
-) -> tuple[list[PythonTarget], dict[str, str]]:
+) -> tuple[list[PythonTarget], list[PyrightTarget], dict[str, str]]:
     targets: list[PythonTarget] = []
+    pyright_targets: list[PyrightTarget] = []
     proto_sources: dict[str, Path] = {}
     py_proto_deps: dict[str, str] = {}
     for build_file in repository.rglob("BUILD.bazel"):
@@ -197,6 +225,16 @@ def _load_targets(
                     if dependency.startswith(":"):
                         dependency = _package_label(package, dependency[1:])
                     py_proto_deps[label] = dependency
+            elif rule_class == "pyright_test" and not _has_keyword(call, "srcs"):
+                pyright_targets.append(
+                    PyrightTarget(
+                        label=label,
+                        build_file=relative_build_file,
+                        deps=_declared_deps(call, package),
+                        kept_deps=_kept_deps(lines, call, package),
+                        include_subpackages=_has_keyword(call, "include_subpackages"),
+                    )
+                )
             elif rule_class in PYTHON_RULE_CLASSES:
                 sources = _string_list(call, "srcs")
                 if len(sources) != 1:
@@ -213,14 +251,7 @@ def _load_targets(
                         rule_class=rule_class,
                         build_file=relative_build_file,
                         source=package / sources[0].removeprefix(":"),
-                        deps=frozenset(
-                            _canonical_label(
-                                _package_label(package, value[1:])
-                                if value.startswith(":")
-                                else value
-                            )
-                            for value in _string_list(call, "deps")
-                        ),
+                        deps=_declared_deps(call, package),
                         kept_deps=_kept_deps(lines, call, package),
                         generated_source=sources[0].startswith(":"),
                     )
@@ -242,7 +273,7 @@ def _load_targets(
         source = proto_sources.get(proto_dep)
         if source is not None:
             module_owners[module_name(source.with_suffix("")) + "_pb2"] = label
-    return targets, module_owners
+    return targets, pyright_targets, module_owners
 
 
 def module_name(source: Path) -> str:
@@ -448,7 +479,7 @@ def _find_rule_bounds(contents: str, target_name: str) -> tuple[int, int]:
     raise ValueError(f"Could not locate target {target_name}")
 
 
-def _render_label(label: str, target: PythonTarget) -> str:
+def _render_label(label: str, target: DependencyTarget) -> str:
     package = target.label.rsplit(":", 1)[0]
     if label.startswith(f"{package}:"):
         return f":{label.rsplit(':', 1)[1]}"
@@ -460,7 +491,7 @@ def _render_label(label: str, target: PythonTarget) -> str:
 
 
 def replace_deps(
-    rule_lines: list[str], deps: frozenset[str], target: PythonTarget
+    rule_lines: list[str], deps: frozenset[str], target: DependencyTarget
 ) -> list[str]:
     """Replace or add a rule's deps attribute."""
     text = "".join(rule_lines)
@@ -517,15 +548,18 @@ def _apply_changes(repository: Path, changes: list[DependencyChanges]) -> None:
         _ = build_file.write_text("".join(lines))
 
 
-def _selected_targets(
-    parsed_targets: tuple[ParsedTarget, ...], files: list[Path], repository: Path
-) -> tuple[ParsedTarget, ...]:
-    if not files:
-        return parsed_targets
-    selected_files = {
+def _relative_files(files: list[Path], repository: Path) -> frozenset[Path]:
+    return frozenset(
         path.resolve().relative_to(repository) if path.is_absolute() else path
         for path in files
-    }
+    )
+
+
+def _selected_targets(
+    parsed_targets: tuple[ParsedTarget, ...], selected_files: frozenset[Path]
+) -> tuple[ParsedTarget, ...]:
+    if not selected_files:
+        return parsed_targets
     changed_conftest_packages = {
         path.parent for path in selected_files if path.name == "conftest.py"
     }
@@ -550,7 +584,7 @@ def _load_repository(
     repository: Path,
     external_module_owners: dict[str, str],
 ) -> RepositoryAnalysis:
-    targets, module_owners = _load_targets(repository)
+    targets, pyright_targets, module_owners = _load_targets(repository)
     parsed_targets = tuple(
         ParsedTarget(
             target,
@@ -573,6 +607,7 @@ def _load_repository(
         module_owners,
         external_module_owners,
         conftest_fixtures,
+        tuple(pyright_targets),
     )
 
 
@@ -581,14 +616,73 @@ def load_repository(repository: Path) -> RepositoryAnalysis:
     return _load_repository(repository, _external_module_owners())
 
 
+def _pyright_owner(
+    pyright_by_package: dict[Path, PyrightTarget], python_package: Path
+) -> PyrightTarget | None:
+    package = python_package
+    while package.parts:
+        possible_owner = pyright_by_package.get(package)
+        if possible_owner is not None and (
+            package == python_package or possible_owner.include_subpackages
+        ):
+            return possible_owner
+        package = package.parent
+    return None
+
+
+def _pyright_dependency_changes(
+    repository_analysis: RepositoryAnalysis,
+    selected_targets: tuple[ParsedTarget, ...],
+    selected_files: frozenset[Path],
+) -> tuple[DependencyChanges, ...]:
+    pyright_targets = repository_analysis.pyright_targets
+    expected_by_label: dict[str, set[str]] = {
+        target.label: set(target.kept_deps) for target in pyright_targets
+    }
+    pyright_by_package = {
+        target.build_file.parent: target for target in pyright_targets
+    }
+    owner_by_python_label: dict[str, PyrightTarget] = {}
+    for parsed_target in repository_analysis.parsed_targets:
+        python_target = parsed_target.target
+        owner = _pyright_owner(pyright_by_package, python_target.build_file.parent)
+        if owner is None:
+            continue
+        owner_by_python_label[python_target.label] = owner
+        expected_by_label[owner.label].add(python_target.label)
+
+    if selected_files:
+        selected_pyright_labels = {
+            pyright_target.label
+            for pyright_target in pyright_targets
+            if pyright_target.build_file in selected_files
+        }
+        selected_pyright_labels.update(
+            owner.label
+            for parsed_target in selected_targets
+            if (owner := owner_by_python_label.get(parsed_target.target.label))
+            is not None
+        )
+    else:
+        selected_pyright_labels = {target.label for target in pyright_targets}
+
+    changes: list[DependencyChanges] = []
+    for target in pyright_targets:
+        if target.label not in selected_pyright_labels:
+            continue
+        expected = frozenset(expected_by_label[target.label])
+        if target.deps != expected:
+            changes.append(DependencyChanges(target, expected))
+    return tuple(changes)
+
+
 def analyze_targets(
     repository_analysis: RepositoryAnalysis, files: list[Path]
 ) -> AnalysisResults:
     """Analyze selected targets without modifying repository files."""
+    selected_files = _relative_files(files, repository_analysis.repository)
     parsed_targets = _selected_targets(
-        repository_analysis.parsed_targets,
-        files,
-        repository_analysis.repository,
+        repository_analysis.parsed_targets, selected_files
     )
     import_analyses = {
         parsed_target.target.label: analyze_imports(
@@ -603,7 +697,7 @@ def analyze_targets(
         for label, analysis in import_analyses.items()
         if analysis.unresolved
     }
-    changes = tuple(
+    dependency_changes = tuple(
         DependencyChanges(parsed_target.target, expected)
         for parsed_target in parsed_targets
         if (
@@ -616,7 +710,10 @@ def analyze_targets(
         )
         != parsed_target.target.deps
     )
-    return AnalysisResults(changes, unresolved)
+    pyright_changes = _pyright_dependency_changes(
+        repository_analysis, parsed_targets, selected_files
+    )
+    return AnalysisResults(dependency_changes + pyright_changes, unresolved)
 
 
 def report_results(

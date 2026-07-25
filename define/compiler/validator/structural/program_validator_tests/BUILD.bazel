@@ -358,7 +358,5 @@ pyright_test(
         ":trigger_conditions_test",
         ":universe_without_authority_test",
         ":unreferenced_positions_test",
-        "//define/compiler:conftest",
-        "//define/compiler/validator:test_helpers",
     ],
 )

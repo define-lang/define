@@ -337,3 +337,85 @@ def test_load_repository_rejects_malformed_keep_dependency(tmp_path: Path):
 
     with pytest.raises(ValueError, match="Invalid # keep dependency"):
         _ = check_python_deps.load_repository(tmp_path)
+
+
+def test_repository_analysis_updates_nearest_pyright_test_dependencies(
+    tmp_path: Path,
+):
+    tools = tmp_path / "tools"
+    child = tools / "child"
+    grandchild = child / "grandchild"
+    grandchild.mkdir(parents=True)
+    _ = (tools / "first.py").write_text("")
+    _ = (child / "second.py").write_text("")
+    _ = (grandchild / "third.py").write_text("")
+    _ = (tools / "BUILD.bazel").write_text(
+        """py_library(name = "first", srcs = ["first.py"])
+py_library(name = "generated", srcs = [":generated.py"])
+pyright_test(
+    name = "pyright_test",
+    include_subpackages = True,
+    deps = [
+        ":first",
+        ":generated",
+        "//kept:dependency",  # keep
+        "//old:unused",
+    ],
+)
+pyright_test(
+    name = "generated_pyright_test",
+    srcs = glob(["generated/**/*.py"]),
+    deps = ["//define/runtime:literal"],
+)
+"""
+    )
+    _ = (child / "BUILD.bazel").write_text(
+        'py_test(name = "second", srcs = ["second.py"])\n'
+    )
+    _ = (grandchild / "BUILD.bazel").write_text(
+        """py_library(name = "third", srcs = ["third.py"])
+pyright_test(name = "pyright_test", deps = [":third"])
+"""
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+    results = check_python_deps.analyze_targets(
+        repository, [Path("tools/child/second.py")]
+    )
+
+    assert len(results.changes) == 1
+    change = results.changes[0]
+    assert change.target.label == "//tools:pyright_test"
+    assert change.expected == {
+        "//kept:dependency",
+        "//tools:first",
+        "//tools/child:second",
+    }
+    assert change.missing == {"//tools/child:second"}
+    assert change.unnecessary == {"//old:unused", "//tools:generated"}
+    assert check_python_deps.report_results(repository, results, check_only=False) == 1
+    contents = (tools / "BUILD.bazel").read_text()
+    assert '"//kept:dependency",  # keep' in contents
+    assert '"//tools/child:second",' in contents
+    assert "//old:unused" not in contents
+    assert '"//define/runtime:literal"' in contents
+
+
+def test_pyright_test_does_not_implicitly_cover_subpackages(tmp_path: Path):
+    tools = tmp_path / "tools"
+    child = tools / "child"
+    child.mkdir(parents=True)
+    _ = (tools / "first.py").write_text("")
+    _ = (child / "second.py").write_text("")
+    _ = (tools / "BUILD.bazel").write_text(
+        """py_library(name = "first", srcs = ["first.py"])
+pyright_test(name = "pyright_test", deps = [":first"])
+"""
+    )
+    _ = (child / "BUILD.bazel").write_text(
+        'py_library(name = "second", srcs = ["second.py"])\n'
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert check_python_deps.analyze_targets(repository, []).changes == ()

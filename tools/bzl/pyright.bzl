@@ -72,7 +72,7 @@ _pyright_deps = rule(
     },
 )
 
-def pyright_test(name, deps = [], srcs = [], **kwargs):
+def pyright_test(name, deps = [], srcs = [], include_subpackages = False, **kwargs):
     """Type-check Python sources in this package with basedpyright.
 
     Args:
@@ -81,6 +81,9 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
             py_binary). Their sources are type-checked and their
             transitive deps provide import resolution.
         srcs: Additional Python source files not covered by any target.
+        include_subpackages: Whether deps also contains Python targets from
+            packages below this one. Read from the BUILD file by
+            tools/check_python_deps.py.
         **kwargs: Additional py_test attributes (tags, size, etc.).
     """
     _pyright_deps(

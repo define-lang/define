@@ -285,6 +285,7 @@ format_test(
 # package or any of its sub-packages, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
+    include_subpackages = True,
     deps = [
         ":analyze_profile",
         ":check_python_deps",
