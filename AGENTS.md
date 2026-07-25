@@ -80,9 +80,31 @@ See [define/spec/spec.md] for the language specification.
   `disable_feature=True`.
 - Do not add `-> None` return annotations unless a type checker explicitly
   requires one.
+- Avoid redundant casts and assignment annotations when the type checker can
+  infer the exact type.
 - Use comprehensions only when their iteration and filtering are immediately
   readable. Use ordinary control flow for comprehensions with nested iteration,
   multiple conditions, or nontrivial expressions.
+
+## Design
+
+- Code should express current requirements directly. When changing a design,
+  remove superseded paths, transitional wrappers, and abstractions retained only
+  for the previous design unless compatibility is an explicit requirement.
+- Design APIs and data types for their actual consumers. Avoid speculative
+  generality.
+- Do not create a dataclass merely to wrap one field.
+- Prefer a real superclass when several values are instances of one genuine
+  concept. Do not replace one concept with a union that every consumer must
+  immediately unpack.
+- Choose mutable or immutable collections according to an actual consumer's
+  requirements. Do not copy internal data into immutable collections merely by
+  convention.
+- Before deduplicating values, prove that duplicates are possible and
+  semantically identical. Prefer preventing accidental duplicates by
+  construction.
+- Do not add defensive defaults, optional states, or fallback behavior without a
+  reachable need. Rely on established invariants.
 
 ## Terminology
 
@@ -193,8 +215,9 @@ BUILD file generator.
 - Run and check coverage after writing new tests.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
-- After changing the code generator or any codegen testdata, regenerate expected
-  outputs:
+- After changing code generation, run the codegen tests. Regenerate expected
+  outputs only when the generated output is intentionally changing, and review
+  the resulting output diff before accepting it:
   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:regenerate_codegen_testdata`
 
 ### Python Dependencies
