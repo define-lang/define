@@ -5,6 +5,7 @@ from pathlib import Path
 from define.compiler import ast, diagnostics
 from define.compiler.codegen.literal.python import generator as python_generator
 from define.compiler.graphs import reference_graph
+from define.compiler.validator.reference_graph import operation_graph
 
 
 class CodeGenerator:
@@ -13,6 +14,7 @@ class CodeGenerator:
     def generate(
         self,
         graph: reference_graph.ReferenceGraph,
+        operation_graphs: operation_graph.OperationGraphs,
         entry_file_definitions: tuple[ast.QualityDefinition, ...],
         output_dir: Path,
     ) -> list[diagnostics.Diagnostic]:
@@ -46,6 +48,8 @@ class CodeGenerator:
                 )
             ]
 
+        # TODO: Diagnose entry-point requirements that cannot be satisfied
+        # because no caller triggers the entry point.
         python_gen = python_generator.PythonLiteralCodeGenerator()
-        python_gen.generate(graph, entry_point, output_dir)
+        python_gen.generate(graph, operation_graphs, entry_point, output_dir)
         return []

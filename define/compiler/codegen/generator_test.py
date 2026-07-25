@@ -6,6 +6,7 @@ from define.compiler import diagnostics
 from define.compiler.codegen import generator
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator import validation_result
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -15,8 +16,15 @@ def _generate(
 ) -> list[diagnostics.Diagnostic]:
     first_file = program_result.file_results[0]
     entry_file_definitions = tuple(r.definition for r in first_file.definition_results)
+    reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
+        program_result.reference_graph,
+        program_result.definition_results,
+    ).validate()
     return generator.CodeGenerator().generate(
-        program_result.reference_graph, entry_file_definitions, tmp_path
+        program_result.reference_graph,
+        reference_graph_result.operation_graphs,
+        entry_file_definitions,
+        tmp_path,
     )
 
 

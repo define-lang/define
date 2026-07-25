@@ -6,6 +6,9 @@ import typing
 from dataclasses import dataclass
 from typing import cast
 
+# TODO: NetworkX seems like a heavy dependency for the basic path queries and
+# DFS traversals used by ReferenceGraph; consider replacing it with a small
+# purpose-built graph representation.
 import networkx as nx
 
 if typing.TYPE_CHECKING:

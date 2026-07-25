@@ -40,3 +40,31 @@ def test_multiple_constructors_all_fire_on_one_create(
         "construct_a.create(/marker_a)": ["test.create(box)"],
         "construct_b.create(/marker_b)": ["test.create(box)"],
     }
+
+
+def test_three_constructors_all_fire_on_one_create(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "construct_a.create(/marker_a)": ["test.create(box)"],
+        "construct_b.create(/marker_b)": ["test.create(box)"],
+        "construct_c.create(/marker_c)": ["test.create(box)"],
+    }
+
+
+def test_multiple_constructors_run_in_parallel_with_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "construct_a.create(scratch)": ["test.create(box)"],
+        "construct_a.destroy(scratch)": ["construct_a.create(scratch)"],
+        "construct_b.create(scratch)": ["test.create(box)"],
+        "construct_b.destroy(scratch)": ["construct_b.create(scratch)"],
+        "test.destroy(box)": ["test.create(box)"],
+    }

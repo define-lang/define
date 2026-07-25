@@ -108,6 +108,7 @@ py_library(
     deps = [
         ":operation_graph",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 
@@ -143,7 +144,6 @@ py_library(
         ":operation_graph",
         ":operation_graph_action_resolver",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 

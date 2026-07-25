@@ -1,5 +1,26 @@
+from define.compiler import ast
 from define.compiler.codegen.literal.python import naming
 from define.compiler.data_structures import define_path
+
+_LOCATION = ast.start_of_file_location()
+_FQUN = ast.Fqun(
+    multiverse=None,
+    authority=ast.Authority(name="my.domain.com", location=_LOCATION),
+    universe=ast.Universe(name="my_lib", location=_LOCATION),
+    location=_LOCATION,
+)
+
+
+def _action_name(path: str) -> ast.GlobalTypedNameInDefinition:
+    return ast.GlobalTypedNameInDefinition(
+        name_type=ast.NameType.ACTION,
+        name_content=ast.DefinitionGlobalNameContent(
+            fqun=_FQUN,
+            path=ast.GlobalPathName(name=path, location=_LOCATION),
+            location=_LOCATION,
+        ),
+        location=_LOCATION,
+    )
 
 
 def test_class_name_normal():
@@ -37,52 +58,77 @@ def test_class_name_double_conflict():
     assert second == "ClassVar__"
 
 
-def test_local_name_normal():
-    local = naming.LocalNameConverter()
-    assert local.convert("typing") == "typing"
+def test_guarantees_class_reference():
+    converter = naming.NameConverter()
+    assert converter.guarantees_class_reference(
+        _action_name("/worker")
+    ) == naming.ClassReference(
+        class_name="WorkerGuarantees",
+        module_name="local.my_domain_com.my_lib.worker",
+    )
 
 
-def test_local_name_self():
-    local = naming.LocalNameConverter()
-    assert local.convert("self") == "self_"
+def test_guarantees_class_reference_is_stable():
+    converter = naming.NameConverter()
+    first = converter.guarantees_class_reference(_action_name("/worker"))
+    second = converter.guarantees_class_reference(_action_name("/worker"))
+    assert (
+        first
+        == second
+        == naming.ClassReference(
+            class_name="WorkerGuarantees",
+            module_name="local.my_domain_com.my_lib.worker",
+        )
+    )
 
 
-def test_local_name_literal():
-    local = naming.LocalNameConverter()
-    assert local.convert("literal") == "literal_"
+def test_guarantees_class_reference_avoids_definition_class_conflict():
+    converter = naming.NameConverter()
+    definition_class = converter.class_name(define_path.DefinePath("worker_guarantees"))
+    guarantees_class = converter.guarantees_class_reference(_action_name("/worker"))
+    assert definition_class == "WorkerGuarantees"
+    assert guarantees_class.class_name == "WorkerGuarantees_"
 
 
-def test_local_name_keyword():
-    local = naming.LocalNameConverter()
-    assert local.convert("class") == "class_"
+def test_name_allocator_preserves_first_candidate():
+    allocator = naming.NameAllocator()
+    assert allocator.allocate("name") == "name"
 
 
-def test_local_name_builtin():
-    local = naming.LocalNameConverter()
-    assert local.convert("super") == "super_"
+def test_name_allocator_numbers_repeated_candidates():
+    allocator = naming.NameAllocator()
+    assert [allocator.allocate("name") for _ in range(3)] == [
+        "name",
+        "name_2",
+        "name_3",
+    ]
 
 
-def test_local_name_cached():
-    local = naming.LocalNameConverter()
-    first = local.convert("self")
-    second = local.convert("self")
-    assert first == second == "self_"
+def test_name_allocator_skips_conflicting_source_suffixes():
+    allocator = naming.NameAllocator()
+    assert allocator.allocate("name") == "name"
+    assert allocator.allocate("name_2") == "name_2"
+    assert allocator.allocate("name") == "name_3"
 
 
-def test_local_name_double_conflict():
-    local = naming.LocalNameConverter()
-    first = local.convert("self")
-    second = local.convert("self_")
-    assert first == "self_"
-    assert second == "self__"
+def test_name_allocator_skips_conflicting_generated_suffixes():
+    allocator = naming.NameAllocator()
+    assert allocator.allocate("name") == "name"
+    assert allocator.allocate("name") == "name_2"
+    assert allocator.allocate("name_2") == "name_2_2"
 
 
-def test_local_name_double_conflict_reverse_order():
-    local = naming.LocalNameConverter()
-    first = local.convert("self_")
-    second = local.convert("self")
-    assert first == "self_"
-    assert second == "self__"
+def test_name_allocator_honors_reserved_names():
+    allocator = naming.NameAllocator(("action", "scheduler"))
+    assert allocator.allocate("action") == "action_2"
+    assert allocator.allocate("scheduler") == "scheduler_2"
+
+
+def test_name_allocators_are_independent_namespaces():
+    first = naming.NameAllocator()
+    second = naming.NameAllocator()
+    assert first.allocate("name") == "name"
+    assert second.allocate("name") == "name"
 
 
 def test_authority_segment_simple():

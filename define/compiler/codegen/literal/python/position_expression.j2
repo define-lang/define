@@ -1,0 +1,30 @@
+{% macro position_expression(expr, extra_indent="") -%}
+    {%- if expr.local_position_member_name is none -%}
+self.action
+    {%- else -%}
+self.{{ expr.local_position_member_name }}
+    {%- endif -%}
+    {%- for element in expr.chain_elements -%}
+        {% if element.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
+.particle.get_position(
+{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}        )
+        {%- elif element.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
+.particle.get_action(
+{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}        )
+        {%- elif element.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
+.get_interface_position(
+{{ extra_indent }}            "{{ element.typed_name }}"
+{{ extra_indent }}        )
+        {%- elif element.accessor == ChainAccessor.IMPLIED_ACTION -%}
+.on_particle.get_action(
+{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}        )
+        {%- elif element.accessor == ChainAccessor.IMPLIED_POSITION -%}
+.on_particle.get_position(
+{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}        )
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}

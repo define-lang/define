@@ -8,7 +8,7 @@ from typing import Protocol, cast
 
 import pytest
 
-from define.compiler import ast, parser
+from define.compiler import parser
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import (
@@ -19,17 +19,6 @@ from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
 
 _PARSER = parser.Parser()
-
-
-def parse_and_transform(
-    source: str, file_path: PurePosixPath | None = None
-) -> ast.Program:
-    """Parse and transform source into an AST Program via the shared parser."""
-    result = _PARSER.parse_and_transform(source, file_path=file_path)
-    assert result.diagnostics == []
-    assert result.exception is None
-    assert result.program is not None
-    return result.program
 
 
 @dataclass

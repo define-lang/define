@@ -5,12 +5,13 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-from define.compiler import ast
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_action_resolver,
 )
+
+if typing.TYPE_CHECKING:
+    from define.compiler import ast
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -63,12 +64,10 @@ class ResolvedOperationGraphBuilder:
         """Initialize resolution with all graphs and the entry action."""
         self._graphs = graphs
         self._entry_action = entry_action
-        self._resolved_actions = typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, operation_graph_action_resolver.ResolvedAction
-        ]()
+        self._resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
         self._callee_action_executions: dict[
-            tuple[ActionExecution, int],
             ActionExecution,
+            list[tuple[operation_graph.ActionTrigger, ActionExecution]],
         ] = {}
         self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
 
@@ -91,9 +90,9 @@ class ResolvedOperationGraphBuilder:
                     action_trigger.trigger.callee_action_name,
                     TriggeredBy(action_execution, action_trigger),
                 )
-                self._callee_action_executions[
-                    (action_execution, id(action_trigger.trigger))
-                ] = callee
+                self._callee_action_executions.setdefault(action_execution, []).append(
+                    (action_trigger.trigger, callee)
+                )
                 callees.append(callee)
             work.extend(reversed(callees))
 
@@ -104,18 +103,12 @@ class ResolvedOperationGraphBuilder:
 
     def _resolve_all_actions(self):
         visited_actions: set[str] = set()
-        # Walk down the callee tree and resolve them from leaf
-        # to root.
         work = [(self._entry_action, False)]
         while work:
             action, callees_resolved = work.pop()
             graph = self._graphs[action]
             if callees_resolved:
-                self._resolved_actions[action] = (
-                    operation_graph_action_resolver.ActionResolver(
-                        graph, self._resolved_actions
-                    ).resolve()
-                )
+                _ = self._resolved_actions.resolve(action)
                 continue
 
             action_name = action.full_typed_name
@@ -141,6 +134,13 @@ class ResolvedOperationGraphBuilder:
             action_execution,
             resolved_action.dependencies_by_operation[operation],
         )
+        for caller_input in resolved_action.caller_inputs:
+            if operation in caller_input.operation_consumers:
+                self._add_caller_input(
+                    dependency_keys,
+                    action_execution,
+                    caller_input,
+                )
         resolved = ResolvedOperation(
             action_execution,
             operation,
@@ -160,8 +160,6 @@ class ResolvedOperationGraphBuilder:
     ):
         for operation in dependencies.local_operations:
             dependency_keys[action_execution, operation] = None
-        for action_input in dependencies.action_inputs:
-            self._add_caller_input(dependency_keys, action_execution, action_input)
         for guarantee in dependencies.guarantee_dependencies:
             self._add_guarantee(dependency_keys, action_execution, guarantee)
 
@@ -169,19 +167,25 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        action_input: operation_graph_action_resolver.ActionInput,
+        caller_input: operation_graph_action_resolver.ResolvedCallerInput,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
             return
-        resolved_input = triggered_by.action_trigger.input_for(action_input)
-        for operation in resolved_input.callee_dependencies:
-            dependency_keys[action_execution, operation] = None
+        resolved_input = triggered_by.action_trigger.input_for(caller_input)
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
             resolved_input.caller_dependencies,
         )
+        caller_action = self._resolved_actions[triggered_by.caller.action]
+        for caller_caller_input in caller_action.caller_inputs:
+            if resolved_input in caller_caller_input.triggered_input_consumers:
+                self._add_caller_input(
+                    dependency_keys,
+                    triggered_by.caller,
+                    caller_caller_input,
+                )
 
     def _add_guarantee(
         self,
@@ -189,17 +193,23 @@ class ResolvedOperationGraphBuilder:
         action_execution: ActionExecution,
         guarantee: operation_graph.GuaranteeNode,
     ):
-        triggers, operation = self._graphs.resolve_guarantee(guarantee)
+        resolution = self._graphs.resolve_guarantee(guarantee)
         guaranteed_action_execution = action_execution
-        for trigger in triggers:
+        for trigger in resolution.triggers:
             guaranteed_action_execution = self._callee_execution(
                 guaranteed_action_execution, trigger
             )
-        dependency_keys[guaranteed_action_execution, operation] = None
+        dependency_keys[guaranteed_action_execution, resolution.operation] = None
 
     def _callee_execution(
         self,
         action_execution: ActionExecution,
         trigger: operation_graph.ActionTrigger,
     ) -> ActionExecution:
-        return self._callee_action_executions[action_execution, id(trigger)]
+        return next(
+            callee
+            for child_trigger, callee in self._callee_action_executions[
+                action_execution
+            ]
+            if child_trigger is trigger
+        )

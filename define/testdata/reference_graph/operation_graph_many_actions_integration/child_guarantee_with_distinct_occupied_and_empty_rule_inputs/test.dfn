@@ -1,0 +1,21 @@
+# Child's local operation depends on the occupied Action Parent, while Middle's
+# move needs the Empty Rule dependencies for that same <source> position. Child
+# also guarantees <result>, which Middle waits for before moving the parent and
+# which Test consumes through the parent's new name.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<result>.
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</middle>::position<source>.
+        create a particle in position<gateway>::action</middle>::position<source>::position</marker>.
+        create a particle in position<gateway>::action</middle>::position<trigger_pos>.
+        move the particle in position<gateway>::action</middle>::position<holder>::action</child>::position<result> to position<result>.
+    }
+}

@@ -1,0 +1,99 @@
+"""Action context for literal Python code generation."""
+
+from __future__ import annotations
+
+import enum
+import typing
+from dataclasses import dataclass
+
+if typing.TYPE_CHECKING:
+    from define.compiler.codegen.literal.python import naming, template_context
+    from define.compiler.validator.reference_graph import (
+        operation_graph,
+        operation_graph_action_resolver,
+    )
+
+
+class ActionRole(enum.Enum):
+    """The runtime role of one generated action definition."""
+
+    ACTION = enum.auto()
+    ENTRY_POINT = enum.auto()
+    DESTRUCTOR = enum.auto()
+
+    @property
+    def has_execute_method(self) -> bool:
+        """Whether the runtime invokes this action through execute()."""
+        return self is not ActionRole.ACTION
+
+
+@dataclass
+class ActionDefinitionContext:
+    """Template context for rendering an action definition class."""
+
+    class_name: str
+    module_name: str
+    execution: template_context.ActionExecutionContext
+    role: ActionRole
+    interface_positions: list[template_context.InterfacePositionContext]
+    implied_qualities: list[naming.ClassReference]
+
+    @property
+    def needs_classvar(self) -> bool:
+        """Whether the generated class has class variables."""
+        return bool(self.implied_qualities)
+
+    @property
+    def imports(self) -> list[str]:
+        """External modules imported by this definition."""
+        class_references: list[naming.ClassReference] = []
+        class_references.extend(self.implied_qualities)
+        for interface_position in self.interface_positions:
+            class_references.extend(interface_position.constraints)
+        for statement in self.execution.local_position_statements:
+            class_references.extend(statement.constraints)
+            if statement.position is not None:
+                class_references.extend(statement.position.class_references)
+            if statement.to_position is not None:
+                class_references.extend(statement.to_position.class_references)
+        for fragment in self.execution.fragments:
+            for statement in fragment.statements:
+                if statement.position is not None:
+                    class_references.extend(statement.position.class_references)
+                if statement.to_position is not None:
+                    class_references.extend(statement.to_position.class_references)
+        for triggered_action in self.execution.triggered_actions:
+            if triggered_action.action is not None:
+                class_references.extend(triggered_action.action.class_references)
+            class_references.append(triggered_action.execution_class)
+        return sorted(
+            {class_reference.module_name for class_reference in class_references}
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ChildGuarantees:
+    """A generated child's guarantee interface and its member in the caller."""
+
+    member_name: str
+    callee_interface: GuaranteeInterface
+
+
+@dataclass(frozen=True, slots=True)
+class GuaranteeInterface:
+    """Generated guarantee members exposed across one action boundary."""
+
+    class_reference: naming.ClassReference
+    child_guarantees: dict[operation_graph.ActionTrigger, ChildGuarantees]
+    # Guarantee paths end at the Position Operation that publishes the
+    # guarantee; its value here is the generated task-list member name.
+    guarantee_names_by_operation: dict[operation_graph.PositionOperationNode, str]
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedAction:
+    """Generated context and caller-facing interface of one action."""
+
+    context: ActionDefinitionContext
+    input_method_names: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
+    guarantee_interface: GuaranteeInterface | None

@@ -7,6 +7,140 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
+def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/shared)": [],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.create(/shared::/marker)": ["test.create(/shared)"],
+        "middle.create(/shared::/child_a::trigger_pos)": ["test.create(/shared)"],
+        "middle.create(/shared::/child_b::trigger_pos)": ["test.create(/shared)"],
+        "child_a.create(scratch)": ["test.create(/shared)"],
+        "child_a.destroy(scratch)": ["child_a.create(scratch)"],
+        "child_b.create(scratch)": ["test.create(/shared)"],
+        "child_b.destroy(scratch)": ["child_b.create(scratch)"],
+    }
+
+
+def test_two_child_actions_trigger_in_parallel(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/first::trigger_pos)": ["test.create(box)"],
+        "test.create(box::/second::trigger_pos)": ["test.create(box)"],
+        "first.destroy(trigger_pos)": ["test.create(box::/first::trigger_pos)"],
+        "second.destroy(trigger_pos)": ["test.create(box::/second::trigger_pos)"],
+        "test.destroy(box)": [
+            "first.destroy(trigger_pos)",
+            "second.destroy(trigger_pos)",
+        ],
+    }
+
+
+def test_action_trigger_and_empty_rule_use_the_same_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(source::/child::trigger_pos)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "child.create(scratch)": ["test.create(gateway::/middle::source)"],
+        "child.destroy(scratch)": ["child.create(scratch)"],
+        "middle.move(source, holder)": ["middle.create(source::/child::trigger_pos)"],
+    }
+
+
+def test_empty_rule_adds_a_caller_child_operation_to_a_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::source::/marker)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(source::/child::trigger_pos)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "child.create(scratch)": ["test.create(gateway::/middle::source)"],
+        "child.destroy(scratch)": ["child.create(scratch)"],
+        "middle.move(source, holder)": [
+            "middle.create(source::/child::trigger_pos)",
+            "test.create(gateway::/middle::source::/marker)",
+        ],
+    }
+
+
+def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::source::/marker)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(source::/child::trigger_pos)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "middle.move(source, holder)": [
+            "middle.create(source::/child::trigger_pos)",
+            "child.create(result)",
+            "test.create(gateway::/middle::source::/marker)",
+        ],
+        "test.move(gateway::/middle::holder::/child::result, result)": [
+            "middle.move(source, holder)"
+        ],
+    }
+
+
+def test_child_guarantee_with_distinct_occupied_and_empty_rule_inputs(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::source::/marker)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(source::/child::trigger_pos)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "child.create(scratch)": ["test.create(gateway::/middle::source)"],
+        "child.destroy(scratch)": ["child.create(scratch)"],
+        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "middle.move(source, holder)": [
+            "middle.create(source::/child::trigger_pos)",
+            "child.create(result)",
+            "test.create(gateway::/middle::source::/marker)",
+        ],
+        "test.move(gateway::/middle::holder::/child::result, result)": [
+            "middle.move(source, holder)"
+        ],
+    }
+
+
 def test_actions_with_identically_named_child_actions_have_distinct_instances(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -476,5 +610,25 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
         "inner.create(out)": ["test.create(box::/outer::gw::/middle::igw)"],
         "test.move(box::/outer::gw::/middle::igw::/inner::out, result)": [
             "inner.create(out)"
+        ],
+    }
+
+
+def test_triggered_action_input_depends_on_multiple_guarantees(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/parent)": [],
+        "test.create(/parent::/child_a)": ["test.create(/parent)"],
+        "test.create(/parent::/child_b)": ["test.create(/parent)"],
+        "test.create(/filler::trigger_pos)": [],
+        "test.create(/mover::trigger_pos)": [],
+        "filler.create(/parent::/child_a::/gc)": ["test.create(/parent::/child_a)"],
+        "filler.create(/parent::/child_b::/gc)": ["test.create(/parent::/child_b)"],
+        "mover.move(/parent, dest)": [
+            "filler.create(/parent::/child_a::/gc)",
+            "filler.create(/parent::/child_b::/gc)",
         ],
     }

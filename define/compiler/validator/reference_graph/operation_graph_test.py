@@ -236,6 +236,24 @@ def _trigger(
     return trigger
 
 
+def _trigger_fields(trigger: operation_graph.ActionTrigger) -> tuple[object, ...]:
+    return (
+        trigger.callee,
+        trigger.trigger_operation,
+        trigger.bindings,
+        trigger.action_parent_last_operation,
+    )
+
+
+def _assert_triggers(
+    graph: operation_graph.OperationGraph,
+    expected: list[operation_graph.ActionTrigger],
+):
+    assert [_trigger_fields(trigger) for trigger in graph.triggers] == [
+        _trigger_fields(trigger) for trigger in expected
+    ]
+
+
 def _dependencies[OperationNodeT: operation_graph.OperationNode](
     graph: operation_graph.OperationGraph, *node_indices: int
 ) -> tuple[OperationNodeT, ...]:
@@ -245,10 +263,10 @@ def _dependencies[OperationNodeT: operation_graph.OperationNode](
     )
 
 
-def _last_operation_node(
+def _position_operation_node(
     graph: operation_graph.OperationGraph, node_index: int
-) -> operation_graph.LastOperationNode:
-    return typing.cast("operation_graph.LastOperationNode", graph.nodes[node_index])
+) -> operation_graph.PositionOperationNode:
+    return typing.cast("operation_graph.PositionOperationNode", graph.nodes[node_index])
 
 
 def _preceding_child_operation_node(
@@ -873,19 +891,22 @@ def test_trigger_records_the_firing_operation_as_the_trigger_position_satisfier(
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(
-            brew,
-            _last_operation_node(graph, 2),
-            {
-                ("position<run>",): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 2),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        )
-    ]
+    _assert_triggers(
+        graph,
+        [
+            operation_graph.ActionTrigger(
+                brew,
+                _position_operation_node(graph, 2),
+                {
+                    ("position<run>",): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 2),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            )
+        ],
+    )
 
 
 def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
@@ -906,23 +927,26 @@ def test_trigger_records_the_operation_that_satisfies_a_callee_requirement():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=((),),
     )
-    assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(
-            brew,
-            _last_operation_node(graph, 3),
-            {
-                ("position<run>",): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 3),
-                    operation_graph.ParticleChildOperations(),
-                ),
-                ("position<beans>",): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 2),
-                    operation_graph.ParticleChildOperations(),
-                ),
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        )
-    ]
+    _assert_triggers(
+        graph,
+        [
+            operation_graph.ActionTrigger(
+                brew,
+                _position_operation_node(graph, 3),
+                {
+                    ("position<run>",): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 3),
+                        operation_graph.ParticleChildOperations(),
+                    ),
+                    ("position<beans>",): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 2),
+                        operation_graph.ParticleChildOperations(),
+                    ),
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            )
+        ],
+    )
 
 
 def test_trigger_records_a_requirement_node_for_a_requirement_it_passes_to_its_caller():
@@ -1003,19 +1027,22 @@ def test_trigger_records_no_satisfier_for_a_requirement_nothing_satisfies():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=((),),
     )
-    assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(
-            brew,
-            _last_operation_node(graph, 2),
-            {
-                ("position<run>",): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 2),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        )
-    ]
+    _assert_triggers(
+        graph,
+        [
+            operation_graph.ActionTrigger(
+                brew,
+                _position_operation_node(graph, 2),
+                {
+                    ("position<run>",): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 2),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            )
+        ],
+    )
 
 
 def test_one_operation_records_a_trigger_for_each_action_it_fires():
@@ -1042,30 +1069,33 @@ def test_one_operation_records_a_trigger_for_each_action_it_fires():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(
-            brew,
-            _last_operation_node(graph, 1),
-            {
-                (): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 1),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        ),
-        operation_graph.ActionTrigger(
-            grind,
-            _last_operation_node(graph, 1),
-            {
-                (): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 1),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        ),
-    ]
+    _assert_triggers(
+        graph,
+        [
+            operation_graph.ActionTrigger(
+                brew,
+                _position_operation_node(graph, 1),
+                {
+                    (): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 1),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            ),
+            operation_graph.ActionTrigger(
+                grind,
+                _position_operation_node(graph, 1),
+                {
+                    (): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 1),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            ),
+        ],
+    )
 
 
 def test_each_triggering_names_the_operation_that_fired_it():
@@ -1092,30 +1122,33 @@ def test_each_triggering_names_the_operation_that_fired_it():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    assert list(graph.triggers) == [
-        operation_graph.ActionTrigger(
-            brew,
-            _last_operation_node(graph, 1),
-            {
-                (): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 1),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 1),
-        ),
-        operation_graph.ActionTrigger(
-            grind,
-            _last_operation_node(graph, 2),
-            {
-                (): operation_graph.RequirementBinding(
-                    _last_operation_node(graph, 2),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(graph, 2),
-        ),
-    ]
+    _assert_triggers(
+        graph,
+        [
+            operation_graph.ActionTrigger(
+                brew,
+                _position_operation_node(graph, 1),
+                {
+                    (): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 1),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 1),
+            ),
+            operation_graph.ActionTrigger(
+                grind,
+                _position_operation_node(graph, 2),
+                {
+                    (): operation_graph.RequirementBinding(
+                        _position_operation_node(graph, 2),
+                        operation_graph.ParticleChildOperations(),
+                    )
+                },
+                action_parent_last_operation=_position_operation_node(graph, 2),
+            ),
+        ],
+    )
 
 
 def test_guarantee_adds_a_guarantee_node_hanging_off_the_trigger():
@@ -1287,7 +1320,7 @@ def test_operation_graphs_resolves_a_direct_guarantee():
     graphs = operation_graph.OperationGraphs()
     graphs[trigger.callee_action_name] = callee_graph
 
-    expected = (
+    expected = operation_graph.GuaranteePath(
         [trigger],
         operation,
     )
@@ -1325,11 +1358,11 @@ def test_operation_graphs_resolves_nested_guarantee_nodes():
     graphs[middle_trigger.callee_action_name] = middle_graph
     graphs[inner_trigger.callee_action_name] = inner_graph
 
-    assert graphs.resolve_guarantee(inner_guarantee) == (
+    assert graphs.resolve_guarantee(inner_guarantee) == operation_graph.GuaranteePath(
         [inner_trigger],
         operation,
     )
-    expected = (
+    expected = operation_graph.GuaranteePath(
         [middle_trigger, inner_trigger],
         operation,
     )
@@ -1372,7 +1405,7 @@ def test_operation_graphs_resolves_a_guarantee_passed_through_a_requirement():
     graphs[middle_trigger.callee_action_name] = middle_graph
     graphs[brew_trigger.callee_action_name] = brew_graph
 
-    assert graphs.resolve_guarantee(guarantee) == (
+    assert graphs.resolve_guarantee(guarantee) == operation_graph.GuaranteePath(
         [middle_trigger, brew_trigger],
         operation,
     )

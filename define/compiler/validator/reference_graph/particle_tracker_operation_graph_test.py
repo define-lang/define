@@ -436,19 +436,16 @@ def test_apply_guarantees_tags_the_trigger_with_its_action():
     # The fill of the trigger position is the operation that fires the callee, and
     # is what satisfies the callee's requirement on that position; the box that
     # merely holds it fires nothing.
-    assert list(tracker.operation_graph.triggers) == [
-        operation_graph.ActionTrigger(
-            action_chain,
+    (trigger,) = tracker.operation_graph.triggers
+    assert trigger.callee == action_chain
+    assert trigger.trigger_operation is _last_operation_node(tracker, 2)
+    assert trigger.bindings == {
+        ("position<run>",): operation_graph.RequirementBinding(
             _last_operation_node(tracker, 2),
-            {
-                ("position<run>",): operation_graph.RequirementBinding(
-                    _last_operation_node(tracker, 2),
-                    operation_graph.ParticleChildOperations(),
-                )
-            },
-            action_parent_last_operation=_last_operation_node(tracker, 1),
+            operation_graph.ParticleChildOperations(),
         )
-    ]
+    }
+    assert trigger.action_parent_last_operation is _last_operation_node(tracker, 1)
 
 
 def test_apply_guarantees_records_ordering_edge_for_touched_unchanged_position():

@@ -17,6 +17,8 @@ if typing.TYPE_CHECKING:
 _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
+_EXECUTION_CLASS_SUFFIX = "Execution"
+_GUARANTEES_CLASS_SUFFIX = "Guarantees"
 
 
 @dataclass
@@ -26,19 +28,40 @@ class ClassReference:
     class_name: str
     module_name: str
 
-    @property
-    def qualified_name(self) -> str:
-        """Return the complete Python reference to the class."""
-        return f"{self.module_name}.{self.class_name}"
-
 
 def _authority_to_module_segment(name: str) -> str:
     """Convert an authority name segment to a valid Python module segment."""
     return name.translate(_AUTHORITY_CHAR_TABLE)
 
 
+@typing.final
+class NameAllocator:
+    """Allocate unique names within one generated Python namespace."""
+
+    def __init__(self, reserved: tuple[str, ...] = ()):
+        """Initialize with names that generated members may not use."""
+        self._used: set[str] = set(reserved)
+        self._next_suffix: dict[str, int] = {}
+
+    def allocate(self, candidate: str) -> str:
+        """Return the first available name based on ``candidate``."""
+        if candidate not in self._used:
+            self._used.add(candidate)
+            return candidate
+        suffix = self._next_suffix.get(candidate, 2)
+        while f"{candidate}_{suffix}" in self._used:
+            suffix += 1
+        name = f"{candidate}_{suffix}"
+        self._used.add(name)
+        self._next_suffix[candidate] = suffix + 1
+        return name
+
+
 def file_path_for_module(module_name: str) -> Path:
     """Convert a dotted module name to an __init__.py file path."""
+    # TODO: Truncate module path components that exceed the filesystem limit
+    # and append a stable digest. Python identifiers have no length limit, but
+    # filesystems commonly limit each path component to 255 bytes.
     return Path(*module_name.split(".")) / "__init__.py"
 
 
@@ -49,14 +72,6 @@ _CLASS_EXTRA_RESERVED: frozenset[str] = frozenset(
         "literal",
         "main",
         "override",
-    }
-)
-
-# Names used inside method bodies in generated Python code.
-_LOCAL_VAR_EXTRA_RESERVED: frozenset[str] = frozenset(
-    {
-        "literal",
-        "self",
     }
 )
 
@@ -93,6 +108,8 @@ class NameConverter:
     """
 
     _class_names: dict[define_path.DefinePath, str]
+    _execution_class_names: dict[define_path.DefinePath, str]
+    _guarantees_class_names: dict[define_path.DefinePath, str]
     _used_class_names: set[str]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
@@ -100,6 +117,8 @@ class NameConverter:
     def __init__(self):
         """Initialize with empty name caches."""
         self._class_names = {}
+        self._execution_class_names = {}
+        self._guarantees_class_names = {}
         self._used_class_names = set()
         self._authority_names = {}
         self._used_authority_names = set()
@@ -116,6 +135,50 @@ class NameConverter:
         self._class_names[path] = safe
         self._used_class_names.add(safe)
         return safe
+
+    def execution_class_name(self, path: define_path.DefinePath) -> str:
+        """Return a unique class name for one action's generated execution state."""
+        existing = self._execution_class_names.get(path)
+        if existing is not None:
+            return existing
+        raw = self.class_name(path) + _EXECUTION_CLASS_SUFFIX
+        safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
+        self._execution_class_names[path] = safe
+        self._used_class_names.add(safe)
+        return safe
+
+    def execution_class_reference(
+        self, typed_global_name: ast.GlobalTypedNameReference
+    ) -> ClassReference:
+        """Build a reference to one generated action execution class."""
+        action_class = self.class_reference(typed_global_name)
+        return ClassReference(
+            class_name=self.execution_class_name(
+                typed_global_name.name_content.path.relative_path
+            ),
+            module_name=action_class.module_name,
+        )
+
+    def _guarantees_class_name(self, path: define_path.DefinePath) -> str:
+        """Return a unique class name for one action's guarantee continuations."""
+        existing = self._guarantees_class_names.get(path)
+        if existing is not None:
+            return existing
+        raw = self.class_name(path) + _GUARANTEES_CLASS_SUFFIX
+        safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
+        self._guarantees_class_names[path] = safe
+        self._used_class_names.add(safe)
+        return safe
+
+    def guarantees_class_reference(
+        self, typed_global_name: ast.GlobalTypedNameInDefinition
+    ) -> ClassReference:
+        """Build a reference to one generated action guarantee class."""
+        name_content = typed_global_name.name_content
+        return ClassReference(
+            class_name=self._guarantees_class_name(name_content.path.relative_path),
+            module_name=self.module_name(name_content),
+        )
 
     def authority_segment(self, authority: str) -> str:
         """Convert an authority string to a unique Python module segment.
@@ -146,15 +209,9 @@ class NameConverter:
         parts.extend(path.relative_path.parts)
         return parts
 
-    def module_name(self, name_content: ast.GlobalNameContent) -> str:
-        """Compute the dotted Python module name for a global name.
-
-        The name_content must have a non-None fqun.
-        """
-        fqun = name_content.fqun
-        if fqun is None:
-            raise ValueError("name_content.fqun must not be None")
-        parts = self._module_name_parts(fqun, name_content.path)
+    def module_name(self, name_content: ast.DefinitionGlobalNameContent) -> str:
+        """Compute the dotted Python module name for a global definition."""
+        parts = self._module_name_parts(name_content.fqun, name_content.path)
         return ".".join(parts)
 
     def constraints_to_class_references(
@@ -188,30 +245,3 @@ class NameConverter:
         fqun = name_content.fqun or typed_global_name.enclosing_fqun
         module_name = ".".join(self._module_name_parts(fqun, name_content.path))
         return ClassReference(class_name=cls_name, module_name=module_name)
-
-
-# TODO: Local names can shadow imported module names. Pass the imported module
-# names to the converter when generating each definition.
-class LocalNameConverter:
-    """Converts local variable names to safe Python identifiers within one scope.
-
-    Names are converted on the fly; each converted name is tracked so that
-    later names that collide with earlier mangled names get further mangled.
-    """
-
-    _names: dict[str, str]
-    _used: set[str]
-
-    def __init__(self):
-        """Initialize with an empty name mapping."""
-        self._names = {}
-        self._used = set()
-
-    def convert(self, name: str) -> str:
-        """Convert a local variable name to a safe Python identifier."""
-        if name in self._names:
-            return self._names[name]
-        safe = _make_unique(name, _LOCAL_VAR_EXTRA_RESERVED, self._used)
-        self._names[name] = safe
-        self._used.add(safe)
-        return safe

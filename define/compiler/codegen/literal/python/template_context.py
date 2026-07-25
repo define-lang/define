@@ -7,23 +7,6 @@ from define.compiler import ast
 from define.compiler.codegen.literal.python import naming
 
 
-def _compute_imports(
-    class_references: list[naming.ClassReference], own_module_name: str
-) -> list[naming.ClassReference]:
-    """Deduplicate and sort imports, excluding self-references."""
-    seen: set[str] = set()
-    imports: list[naming.ClassReference] = []
-    for class_reference in class_references:
-        if (
-            class_reference.module_name != own_module_name
-            and class_reference.module_name not in seen
-        ):
-            seen.add(class_reference.module_name)
-            imports.append(class_reference)
-    imports.sort(key=lambda imp: imp.module_name)
-    return imports
-
-
 class StatementKind(enum.Enum):
     """Discriminator for statement types in templates."""
 
@@ -88,17 +71,17 @@ class InterfacePositionChainElement(ChainElement):
 class PositionExpr:
     """A position expression for use in templates."""
 
-    start: str
-    chain_elements: list[ChainElement] = field(default_factory=list)
+    local_position_member_name: str | None
+    chain_elements: list[ChainElement]
 
     @property
-    def class_references(self) -> tuple[naming.ClassReference, ...]:
+    def class_references(self) -> list[naming.ClassReference]:
         """Return global classes referenced by this expression."""
-        return tuple(
+        return [
             element.class_reference
             for element in self.chain_elements
             if isinstance(element, GlobalQualityChainElement)
-        )
+        ]
 
 
 @dataclass
@@ -106,7 +89,7 @@ class ActionStatementContext:
     """Template-friendly representation of an action statement."""
 
     kind: StatementKind
-    local_var_name: str | None = None
+    local_position_member_name: str | None = None
     local_typed_name: str | None = None
     constraints: list[naming.ClassReference] = field(default_factory=list)
     position: PositionExpr | None = None
@@ -114,50 +97,134 @@ class ActionStatementContext:
 
 
 @dataclass
+class ActionFragmentContext:
+    """Template context for one directly called action fragment."""
+
+    method_name: str
+    statements: list[ActionStatementContext]
+    successor_fragment_method_names: list[str]
+    triggered_input_successor_method_names: list[str]
+    triggered_action_successor_init_method_names: list[str]
+    execution_input_successor_method_names: list[str]
+    guarantee_publication_names: list[str]
+    dependency_count: int
+
+
+@dataclass
+class TriggeredActionContext:
+    """One direct action triggering used by generated dependency wiring."""
+
+    action: PositionExpr | None
+    execution_class: naming.ClassReference
+    init_method_name: str
+    execution_name: str
+    child_guarantees_name: str | None
+
+    @property
+    def execution_needs_action(self) -> bool:
+        """Whether the triggered execution receives its Action instance."""
+        return self.action is not None
+
+    @property
+    def execution_needs_guarantees(self) -> bool:
+        """Whether the triggered execution receives guarantee continuations."""
+        return self.child_guarantees_name is not None
+
+
+@dataclass
+class ChildGuaranteesContext:
+    """A guarantee bundle for one direct Action Triggering."""
+
+    name: str
+    class_reference: naming.ClassReference
+
+
+@dataclass
+class GuaranteesContext:
+    """Generated guarantees for one action execution."""
+
+    class_name: str
+    child_guarantees: list[ChildGuaranteesContext]
+    publications: list[str]
+
+
+@dataclass
+class GuaranteeRegistrationContext:
+    """One generated task registration for a consumed guarantee."""
+
+    child_guarantees_names: list[str]
+    guarantee_name: str
+    method_name: str
+
+
+@dataclass
+class TriggeredActionInputContext:
+    """One generated method that delivers a dependency to a direct callee."""
+
+    triggered_action_execution_name: str
+    callee_input_method_name: str
+    method_name: str
+    dependency_count: int
+
+
+@dataclass
+class CallerInputContext:
+    """Fragments released by one input from an action's caller."""
+
+    input_method_name: str
+    fragment_method_names: list[str]
+    triggered_input_method_names: list[str]
+
+
+@dataclass
+class ActionExecutionContext:
+    """Template context for operation-graph execution of one action."""
+
+    execution_class_name: str
+    local_position_statements: list[ActionStatementContext]
+    fragments: list[ActionFragmentContext]
+    execute_fragment_method_names: list[str]
+    caller_inputs: list[CallerInputContext]
+    triggered_actions: list[TriggeredActionContext]
+    triggered_action_inputs: list[TriggeredActionInputContext]
+    guarantee_registrations: list[GuaranteeRegistrationContext]
+    guarantees: GuaranteesContext | None
+    needs_action: bool = field(init=False)
+
+    def __post_init__(self):
+        """Determine whether this execution accesses its Action instance."""
+        for fragment in self.fragments:
+            for statement in fragment.statements:
+                if (
+                    statement.position is not None
+                    and statement.position.local_position_member_name is None
+                ):
+                    self.needs_action = True
+                    return
+                if (
+                    statement.to_position is not None
+                    and statement.to_position.local_position_member_name is None
+                ):
+                    self.needs_action = True
+                    return
+        self.needs_action = any(
+            triggered_action.action is not None
+            and triggered_action.action.local_position_member_name is None
+            for triggered_action in self.triggered_actions
+        )
+
+    @property
+    def needs_guarantees(self) -> bool:
+        """Whether this execution publishes or consumes guarantees."""
+        return self.guarantees is not None
+
+
+@dataclass
 class InterfacePositionContext:
     """Template context for an interface position in an action definition."""
 
     typed_name: str
-    constraints: list[naming.ClassReference] = field(default_factory=list)
-
-
-@dataclass
-class ActionDefinitionContext:
-    """Template context for rendering an action definition class."""
-
-    class_name: str
-    module_name: str
-    interface_positions: list[InterfacePositionContext] = field(default_factory=list)
-    trigger_position_name: str = ""
-    is_constructor: bool = False
-    is_destructor: bool = False
-    body_statements: list[ActionStatementContext] = field(default_factory=list)
-    implied_qualities: list[naming.ClassReference] = field(default_factory=list)
-
-    @property
-    def needs_override(self) -> bool:
-        """Whether the generated class needs the @override decorator."""
-        return True
-
-    @property
-    def needs_classvar(self) -> bool:
-        """Whether the generated class has class variables."""
-        return bool(self.is_constructor or self.is_destructor or self.implied_qualities)
-
-    @property
-    def imports(self) -> list[naming.ClassReference]:
-        """Deduplicated, sorted imports needed by this definition."""
-        class_references: list[naming.ClassReference] = []
-        class_references.extend(self.implied_qualities)
-        for iface in self.interface_positions:
-            class_references.extend(iface.constraints)
-        for stmt in self.body_statements:
-            class_references.extend(stmt.constraints)
-            if stmt.position is not None:
-                class_references.extend(stmt.position.class_references)
-            if stmt.to_position is not None:
-                class_references.extend(stmt.to_position.class_references)
-        return _compute_imports(class_references, self.module_name)
+    constraints: list[naming.ClassReference]
 
 
 @dataclass
@@ -166,13 +233,8 @@ class PositionDefinitionContext:
 
     class_name: str
     module_name: str
-    constraints: list[naming.ClassReference] = field(default_factory=list)
-    implied_qualities: list[naming.ClassReference] = field(default_factory=list)
-
-    @property
-    def needs_override(self) -> bool:
-        """Whether the generated class needs the @override decorator."""
-        return False
+    constraints: list[naming.ClassReference]
+    implied_qualities: list[naming.ClassReference]
 
     @property
     def needs_classvar(self) -> bool:
@@ -180,9 +242,11 @@ class PositionDefinitionContext:
         return bool(self.constraints or self.implied_qualities)
 
     @property
-    def imports(self) -> list[naming.ClassReference]:
-        """Deduplicated, sorted imports needed by this definition."""
+    def imports(self) -> list[str]:
+        """External modules imported by this definition."""
         class_references: list[naming.ClassReference] = []
         class_references.extend(self.constraints)
         class_references.extend(self.implied_qualities)
-        return _compute_imports(class_references, self.module_name)
+        return sorted(
+            {class_reference.module_name for class_reference in class_references}
+        )

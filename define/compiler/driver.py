@@ -22,7 +22,10 @@ from define.compiler import (
 )
 from define.compiler.codegen import generator
 from define.compiler.validator import validation_result
-from define.compiler.validator.reference_graph import reference_graph_validator
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    reference_graph_validator,
+)
 from define.compiler.validator.structural import program_validator
 
 
@@ -46,6 +49,7 @@ class DriverResult:
 
     result: validation_result.ProgramValidationResult
     overall_stats: overall_stats.OverallStats
+    operation_graphs: operation_graph.OperationGraphs
 
 
 class Driver:
@@ -77,15 +81,19 @@ class Driver:
         """Run reference-graph validation and wrap the program result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
-        _ = reference_graph_validator.ReferenceGraphValidator(
+        reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
             program_result.reference_graph,
             program_result.definition_results,
         ).validate()
+        # TODO: Retain only the validation data needed after this point so the
+        # remaining compiler state can be released before code generation.
         return DriverResult(
             result=program_result,
             overall_stats=overall_stats.calculate_overall_stats(
-                program_result.file_results, program_result.config_loading_time_ns
+                program_result.file_results,
+                program_result.config_loading_time_ns,
             ),
+            operation_graphs=reference_graph_result.operation_graphs,
         )
 
     def compile_program(self, path: Path, output_dir: Path) -> DriverResult:
@@ -104,11 +112,12 @@ class Driver:
         program_result = driver_result.result
         first_file = program_result.file_results[0]
         entry_file_definitions = tuple(
-            r.definition for r in first_file.definition_results
+            result.definition for result in first_file.definition_results
         )
         codegen = generator.CodeGenerator()
         gen_diagnostics = codegen.generate(
             program_result.reference_graph,
+            driver_result.operation_graphs,
             entry_file_definitions,
             output_dir,
         )

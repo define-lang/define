@@ -1,8 +1,7 @@
 # pyright: reportUnusedCallResult=false
 # pyright: reportImplicitStringConcatenation=false
 
-from define.compiler import ast
-from define.compiler.conftest import parse_and_transform
+from define.compiler import ast, test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
@@ -11,7 +10,7 @@ _FQUN = "my.domain.com:my_lib"
 
 
 def _parse(source: str) -> validation_result.FileValidationResult:
-    program = parse_and_transform(source)
+    program = test_helpers.parse_and_transform(source)
     return validation_result.FileValidationResult(
         exception=None,
         source=source,

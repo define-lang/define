@@ -31,6 +31,20 @@ def test_trigger_inlines_callee(
     }
 
 
+def test_local_create_and_action_trigger_run_in_parallel(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/other::trigger_pos)": [],
+        "other.create(other_item)": [],
+        "other.destroy(other_item)": ["other.create(other_item)"],
+        "test.create(local_item)": [],
+        "test.destroy(local_item)": ["test.create(local_item)"],
+    }
+
+
 def test_callee_fill_of_a_child_waits_only_on_the_caller_fill_of_its_parent(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -539,6 +553,21 @@ def test_triggered_action_with_no_guarantees_still_runs(
         "worker.create(scratch)": ["test.create(gw)"],
         "worker.destroy(scratch)": ["worker.create(scratch)"],
         "test.create(note)": [],
+    }
+
+
+def test_triggered_action_input_releases_two_parallel_local_operation_chains(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/worker::trigger_pos)": ["test.create(gateway)"],
+        "worker.create(first)": ["test.create(gateway)"],
+        "worker.destroy(first)": ["worker.create(first)"],
+        "worker.create(second)": ["test.create(gateway)"],
+        "worker.destroy(second)": ["worker.create(second)"],
     }
 
 

@@ -1,54 +1,35 @@
-{% macro pos(expr, extra_indent="") -%}
-{{ expr.start }}
-{%- for element in expr.chain_elements -%}
-{% if element.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
-.particle.get_position(
-{{ extra_indent }}            {{ element.class_reference.qualified_name }}
-{{ extra_indent }}        )
-{%- elif element.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
-.particle.get_action(
-{{ extra_indent }}            {{ element.class_reference.qualified_name }}
-{{ extra_indent }}        )
-{%- elif element.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
-.get_interface_position(
-{{ extra_indent }}            "{{ element.typed_name }}"
-{{ extra_indent }}        )
-{%- elif element.accessor == ChainAccessor.IMPLIED_ACTION -%}
-.on_particle.get_action(
-{{ extra_indent }}            {{ element.class_reference.qualified_name }}
-{{ extra_indent }}        )
-{%- elif element.accessor == ChainAccessor.IMPLIED_POSITION -%}
-.on_particle.get_position(
-{{ extra_indent }}            {{ element.class_reference.qualified_name }}
-{{ extra_indent }}        )
-{%- endif %}
-{%- endfor %}
-{%- endmacro %}
-{% for stmt in statements %}
-{% if stmt.kind == StatementKind.LOCAL_POSITION %}
-{% if stmt.constraints %}
-        {{ stmt.local_var_name }} = literal.LocalPosition(
+{% from "position_expression.j2" import position_expression %}
+{% macro action_statements(statements) %}
+    {% for stmt in statements %}
+        {% if stmt.kind == StatementKind.LOCAL_POSITION %}
+            {% if stmt.constraints %}
+        self.{{ stmt.local_position_member_name }} = literal.LocalPosition(
             "{{ stmt.local_typed_name }}",
             constraints=(
-{% for class_reference in stmt.constraints %}
-                {{ class_reference.qualified_name }},
-{% endfor %}
+                {% for class_reference in stmt.constraints %}
+                {{ class_reference.module_name }}.{{ class_reference.class_name }},
+                {% endfor %}
             ),
+            scheduler=self.scheduler,
         )
-{% else %}
-        {{ stmt.local_var_name }} = literal.LocalPosition("{{ stmt.local_typed_name }}")
-{% endif %}
-{% elif stmt.kind == StatementKind.CREATE_PARTICLE %}
-        {{ pos(stmt.position) }}.create_particle()
-{% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
-        {{ pos(stmt.position) }}.destroy_particle()
-{% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
-{% if stmt.to_position.chain_elements %}
-        {{ pos(stmt.position) }}.move_particle_to(
-            {{ pos(stmt.to_position, "    ") }}
+            {% else %}
+        self.{{ stmt.local_position_member_name }} = literal.LocalPosition(
+            "{{ stmt.local_typed_name }}",
+            scheduler=self.scheduler,
         )
-{% else %}
-        {{ pos(stmt.position) }}.move_particle_to({{ pos(stmt.to_position) }})
-{% endif %}
-{% endif %}
-{% endfor %}
+            {% endif %}
+        {% elif stmt.kind == StatementKind.CREATE_PARTICLE %}
+        {{ position_expression(stmt.position) }}.create_particle()
+        {% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
+        {{ position_expression(stmt.position) }}.destroy_particle()
+        {% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
+            {% if stmt.to_position.chain_elements %}
+        {{ position_expression(stmt.position) }}.move_particle_to(
+            {{ position_expression(stmt.to_position, "    ") }}
+        )
+            {% else %}
+        {{ position_expression(stmt.position) }}.move_particle_to({{ position_expression(stmt.to_position) }})
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}

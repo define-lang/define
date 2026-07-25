@@ -25,7 +25,7 @@ py_test(
     srcs = ["ast_test.py"],
     deps = [
         ":ast",
-        ":conftest",
+        ":test_helpers",
         "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
     ],
@@ -43,7 +43,6 @@ py_library(
     srcs = ["conftest.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":ast",
         ":parser",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:test_helpers",
@@ -139,6 +138,7 @@ py_library(
         ":parser",
         "//define/compiler/codegen:generator",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -343,6 +343,17 @@ py_library(
 )
 
 py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":parser",
+    ],
+)
+
+py_library(
     name = "transformer",
     srcs = ["transformer.py"],
     visibility = [
@@ -362,7 +373,7 @@ py_test(
     srcs = ["transformer_test.py"],
     deps = [
         ":ast",
-        ":conftest",
+        ":test_helpers",
     ],
 )
 
@@ -407,6 +418,7 @@ pyright_test(
         ":parser",
         ":parser_error_classification",
         ":parser_exceptions",
+        ":test_helpers",
         ":transformer",
         ":transformer_test",
     ],

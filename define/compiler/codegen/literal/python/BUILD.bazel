@@ -4,14 +4,100 @@ load("//tools/bzl:jinja2.bzl", "jinja_templates")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "action_context",
+    srcs = ["action_context.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":naming",
+        ":template_context",
+        "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+    ],
+)
+
+py_library(
     name = "action_definition",
     srcs = ["action_definition.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":action_context",
+        ":action_execution",
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+    ],
+)
+
+py_library(
+    name = "action_execution",
+    srcs = ["action_execution.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":action_context",
+        ":action_guarantees",
+        ":action_names",
         ":action_statements",
         ":naming",
         ":template_context",
         "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+    ],
+)
+
+py_library(
+    name = "action_guarantees",
+    srcs = ["action_guarantees.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":action_context",
+        ":action_names",
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/reference_graph:operation_graph",
+    ],
+)
+
+py_library(
+    name = "action_names",
+    srcs = ["action_names.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":action_context",
+        ":naming",
+        "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+    ],
+)
+
+py_test(
+    name = "action_names_test",
+    size = "small",
+    srcs = ["action_names_test.py"],
+    deps = [
+        ":action_context",
+        ":action_names",
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:test_helpers",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
     ],
 )
 
@@ -23,6 +109,7 @@ py_library(
         ":naming",
         ":template_context",
         "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
 
@@ -32,13 +119,17 @@ py_library(
     data = [":templates"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":action_context",
         ":action_definition",
         ":naming",
         ":position_definition",
         ":template_context",
         ":template_env",
         "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator/reference_graph:operation_graph",
         "@pypi//jinja2",
     ],
 )
@@ -60,6 +151,7 @@ py_test(
     srcs = ["naming_test.py"],
     deps = [
         ":naming",
+        "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
     ],
 )
@@ -121,7 +213,12 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_context",
         ":action_definition",
+        ":action_execution",
+        ":action_guarantees",
+        ":action_names",
+        ":action_names_test",
         ":action_statements",
         ":generator",
         ":naming",

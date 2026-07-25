@@ -1,0 +1,15 @@
+{% macro action_guarantees(guarantees) %}
+    {% if guarantees %}
+
+
+@final
+class {{ guarantees.class_name }}:
+    def __init__(self):
+        {% for publication in guarantees.publications %}
+        self.{{ publication }}: list[literal.Task] = []
+        {% endfor %}
+        {% for child in guarantees.child_guarantees %}
+        self.{{ child.name }} = {{ child.class_reference.module_name }}.{{ child.class_reference.class_name }}()
+        {% endfor %}
+    {% endif %}
+{% endmacro %}

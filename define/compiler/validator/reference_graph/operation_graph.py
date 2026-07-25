@@ -162,7 +162,7 @@ class RequirementBinding:
     child_operations: ParticleChildOperations
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class ActionTrigger:
     """One triggering of a callee, and what satisfies each requirement of the callee.
 
@@ -173,7 +173,7 @@ class ActionTrigger:
     # The action reference this triggering fires, from the caller's perspective.
     callee: ast.ActionReference
     # The operation that triggered the callee.
-    trigger_operation: LastOperationNode
+    trigger_operation: PositionOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
     bindings: dict[tuple[str, ...], RequirementBinding]
@@ -466,7 +466,10 @@ class OperationGraph:
         for the current state of the particles' child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        firing_operation = self._last_operation[acting_on_position_key]
+        firing_operation = typing.cast(
+            "PositionOperationNode",
+            self._last_operation[acting_on_position_key],
+        )
         callee_action_key = callee.canonical_chained_name_tuple
         bindings: dict[tuple[str, ...], RequirementBinding] = {}
         # Trigger positions are direct children of the callee chain.
@@ -1011,6 +1014,14 @@ class _CalleeGuaranteeResolution:
 type _GuaranteeResolution = PositionOperationNode | _CalleeGuaranteeResolution
 
 
+@dataclass(slots=True)
+class GuaranteePath:
+    """Action Triggerings from a guarantee to its publishing Particle Operation."""
+
+    triggers: list[ActionTrigger]
+    operation: PositionOperationNode
+
+
 @typing.final
 class OperationGraphs(
     typed_name_dict.TypedNameDict[ast.GlobalTypedName, OperationGraph]
@@ -1029,9 +1040,7 @@ class OperationGraphs(
             str, dict[tuple[str, ...], _GuaranteeResolution]
         ] = collections.defaultdict(dict)
 
-    def resolve_guarantee(
-        self, guarantee: GuaranteeNode
-    ) -> tuple[list[ActionTrigger], PositionOperationNode]:
+    def resolve_guarantee(self, guarantee: GuaranteeNode) -> GuaranteePath:
         """Resolve one guarantee to its Particle Operation through callee graphs."""
         resolution = self._resolve_guaranteed_position(
             guarantee.trigger.callee_action_name, guarantee.guaranteed_position
@@ -1040,7 +1049,7 @@ class OperationGraphs(
         while isinstance(resolution, _CalleeGuaranteeResolution):
             triggers.append(resolution.trigger)
             resolution = resolution.callee_resolution
-        return triggers, resolution
+        return GuaranteePath(triggers, resolution)
 
     def _resolve_guaranteed_position(
         self, action: ast.GlobalTypedName, position: tuple[str, ...]

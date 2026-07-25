@@ -317,6 +317,30 @@ class LocalTypedNameReference(TypedName):
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
+@dataclass(frozen=True, slots=True)
+class SourceFormTypedNameParts:
+    """Source-form parts parsed from one full typed name."""
+
+    name_type: NameType
+    source_name: str
+    is_global: bool
+
+
+def source_form_typed_name_parts(
+    typed_name: str,
+    current_fqun: str,
+) -> SourceFormTypedNameParts:
+    """Return source-form parts for one full typed name."""
+    name_type, canonical_name = typed_name[:-1].split("<", 1)
+    is_global = canonical_name.startswith("/") or ":/" in canonical_name
+    source_name = canonical_name.removeprefix(current_fqun + ":")
+    return SourceFormTypedNameParts(
+        name_type=NameType(name_type),
+        source_name=source_name,
+        is_global=is_global,
+    )
+
+
 # A position's canonical chained name, as stored in tries, contracts, and the
 # operation graph.
 # TODO: Make this a real class with methods (starting with the chain_*

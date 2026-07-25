@@ -13,6 +13,16 @@ py_library(
 )
 
 py_test(
+    name = "literal_scheduler_test",
+    size = "small",
+    srcs = ["literal_scheduler_test.py"],
+    deps = [
+        ":literal",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "literal_test",
     size = "small",
     srcs = ["literal_test.py"],
@@ -44,6 +54,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":literal",
+        ":literal_scheduler_test",
         ":literal_test",
         ":runtime",
     ],

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import operation_graph
 
 # Resolution must be limited to substitutions that codegen can perform while
@@ -19,72 +20,91 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
-type CallerInputNode = (
-    operation_graph.ActionParentLastOperationNode
-    | operation_graph.RequirementNode
-    | operation_graph.CallerEmptyRuleDependenciesNode
+type _CallerInputNode = (
+    operation_graph.ActionParentLastOperationNode | operation_graph.RequirementNode
 )
-type ActionInput = CallerInputNode | operation_graph.CallerEmptyRuleDependencies
+type _CallerInputDependencyNode = (
+    _CallerInputNode | operation_graph.CallerEmptyRuleDependenciesNode
+)
+type _CallerInputDependency = (
+    _CallerInputDependencyNode | operation_graph.CallerEmptyRuleDependencies
+)
 
 
 @dataclass(frozen=True, slots=True)
 class ActionDependencies:
-    """Dependencies of an operation in one reusable action graph."""
+    """Dependencies resolved within one reusable action graph."""
 
-    local_operations: tuple[operation_graph.PositionOperationNode, ...] = ()
-    action_inputs: tuple[ActionInput, ...] = ()
-    guarantee_dependencies: tuple[operation_graph.GuaranteeNode, ...] = ()
-
-    @classmethod
-    def for_nodes(
-        cls, nodes: Iterable[operation_graph.OperationNode]
-    ) -> ActionDependencies:
-        """Create dependencies for a list of operation-graph nodes."""
-        dependencies = _ActionDependenciesBuilder()
-        for node in nodes:
-            dependencies.add_dependency(node)
-        return dependencies.build()
+    local_operations: list[operation_graph.PositionOperationNode]
+    guarantee_dependencies: list[operation_graph.GuaranteeNode]
 
 
-class _ActionDependenciesBuilder:
-    """Collect action dependencies in graph order."""
-
-    def __init__(self):
-        self.local_operations: list[operation_graph.PositionOperationNode] = []
-        self.action_inputs: list[ActionInput] = []
-        self.guarantee_dependencies: list[operation_graph.GuaranteeNode] = []
-
-    def add_dependency(self, node: operation_graph.OperationNode):
+def _partition_dependencies(
+    nodes: Iterable[operation_graph.OperationNode],
+) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
+    """Separate local Particle Operations and guarantees from caller inputs."""
+    local_operations: list[operation_graph.PositionOperationNode] = []
+    guarantee_dependencies: list[operation_graph.GuaranteeNode] = []
+    caller_input_dependencies: list[_CallerInputDependency] = []
+    for node in nodes:
         match node:
             case operation_graph.PositionOperationNode():
-                self.local_operations.append(node)
+                local_operations.append(node)
             case (
                 operation_graph.ActionParentLastOperationNode()
                 | operation_graph.RequirementNode()
                 | operation_graph.CallerEmptyRuleDependenciesNode()
             ):
-                self.action_inputs.append(node)
+                caller_input_dependencies.append(node)
             case operation_graph.GuaranteeNode():
-                self.guarantee_dependencies.append(node)
+                guarantee_dependencies.append(node)
             case _:
                 raise TypeError(f"unknown operation node type: {type(node).__name__}")
-
-    def build(self) -> ActionDependencies:
-        """Build immutable dependencies in graph order."""
-        return ActionDependencies(
-            local_operations=tuple(self.local_operations),
-            action_inputs=tuple(self.action_inputs),
-            guarantee_dependencies=tuple(self.guarantee_dependencies),
-        )
+    return (
+        ActionDependencies(local_operations, guarantee_dependencies),
+        caller_input_dependencies,
+    )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
+class ResolvedCallerInput:
+    """A caller input and the operations and triggered inputs that consume it."""
+
+    operation_consumers: list[operation_graph.PositionOperationNode] = field(
+        default_factory=list, init=False
+    )
+    triggered_input_consumers: list[ResolvedActionTriggerInput] = field(
+        default_factory=list, init=False
+    )
+
+
+@dataclass(slots=True, eq=False)
+class ResolvedActionParentInput(ResolvedCallerInput):
+    """An Action Parent input."""
+
+    node: operation_graph.ActionParentLastOperationNode
+
+
+@dataclass(slots=True, eq=False)
+class ResolvedRequirementInput(ResolvedCallerInput):
+    """A requirement input."""
+
+    node: operation_graph.RequirementNode
+
+
+@dataclass(slots=True, eq=False)
+class ResolvedEmptyRuleInput(ResolvedCallerInput):
+    """Empty Rule dependencies supplied by an action's caller."""
+
+    dependencies: operation_graph.CallerEmptyRuleDependencies
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ResolvedActionTriggerInput:
     """One direct callee input resolved from the caller's perspective."""
 
-    callee_input: ActionInput
+    callee_input: ResolvedCallerInput
     caller_dependencies: ActionDependencies
-    callee_dependencies: tuple[operation_graph.PositionOperationNode, ...]
 
 
 @typing.final
@@ -96,122 +116,97 @@ class _ActionTriggerDependencyResolver:
         caller_graph: operation_graph.OperationGraph,
         trigger: operation_graph.ActionTrigger,
     ):
-        """Initialize with one direct caller, triggered action, and ActionTrigger."""
+        """Initialize with one direct caller and Action Triggering."""
         self._caller_graph = caller_graph
         self._trigger = trigger
+        # Empty-by-default requirements can share long parent-name chains, so
+        # retaining each visited result prevents quadratic traversal when this
+        # triggering resolves sibling requirements.
+        self._caller_dependency_by_input_node: dict[
+            operation_graph.RequirementNode,
+            operation_graph.ActionParentOperationNode,
+        ] = {}
 
-    def action_parent_operation(self) -> operation_graph.ActionParentOperationNode:
-        """Return the caller operation on the triggered action's parent position."""
-        return self._trigger.action_parent_last_operation
-
-    def bound_requirement_operation(
-        self, requirement: operation_graph.RequirementNode
-    ) -> operation_graph.LastOperationNode | None:
-        """Return the caller operation bound to ``requirement``.
-
-        ``None`` means an empty requirement is satisfied because the position
-        is empty by default.
-        """
-        binding = self._trigger.bindings.get(requirement.requirement_position)
-        if binding is None:
-            return None
-        return binding.operation
-
-    def empty_by_default_parent_operations(
-        self, requirement: operation_graph.RequirementNode
-    ) -> Iterable[
-        operation_graph.ActionParentLastOperationNode | operation_graph.RequirementNode
-    ]:
-        """Return callee parent operations preceding an empty-by-default requirement."""
-        return requirement.depends_on
-
-    def substitute_empty_rule_dependencies(
-        self, node: operation_graph.CallerEmptyRuleDependenciesNode
-    ) -> operation_graph.CallerEmptyRuleSubstitution:
-        """Substitute caller bindings into one callee Empty Rule dependency set."""
-        return self._caller_graph.substitute_caller_empty_rule_dependencies(
-            node.caller_empty_rule_dependencies, self._trigger.bindings
-        )
-
-    def resolve_input(self, callee_input: ActionInput) -> ResolvedActionTriggerInput:
-        """Resolve a triggered action's input from the caller's perspective."""
+    def resolve_input(
+        self, callee_input: ResolvedCallerInput
+    ) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
+        """Return action-local dependencies and caller inputs for one callee input."""
         match callee_input:
-            case operation_graph.CallerEmptyRuleDependencies():
+            case ResolvedEmptyRuleInput():
                 return self._resolve_caller_empty_rule_input(callee_input)
-            case (
-                operation_graph.ActionParentLastOperationNode()
-                | operation_graph.RequirementNode()
-                | operation_graph.CallerEmptyRuleDependenciesNode()
-            ):
-                return self._resolve_input_node(callee_input)
-
-    def _resolve_input_node(self, node: CallerInputNode) -> ResolvedActionTriggerInput:
-        dependencies = _ActionDependenciesBuilder()
-        self._add_input_node(dependencies, node)
-        return ResolvedActionTriggerInput(
-            node,
-            dependencies.build(),
-            (),
-        )
+            case ResolvedActionParentInput() | ResolvedRequirementInput():
+                return _partition_dependencies(
+                    (self._caller_dependency_for_input_node(callee_input.node),)
+                )
+            case _:
+                raise TypeError(
+                    f"unknown caller input type: {type(callee_input).__name__}"
+                )
 
     def _resolve_caller_empty_rule_input(
         self,
-        caller_empty_rule_dependencies: operation_graph.CallerEmptyRuleDependencies,
-    ) -> ResolvedActionTriggerInput:
+        callee_input: ResolvedEmptyRuleInput,
+    ) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
         """Resolve propagated Empty Rule dependencies into the direct caller."""
         substitution = self._caller_graph.substitute_caller_empty_rule_dependencies(
-            caller_empty_rule_dependencies, self._trigger.bindings
+            callee_input.dependencies, self._trigger.bindings
         )
-        dependencies = _ActionDependenciesBuilder()
-        self._add_empty_rule_substitution(dependencies, substitution)
-        return ResolvedActionTriggerInput(
-            caller_empty_rule_dependencies,
-            dependencies.build(),
-            (),
+        dependencies, caller_input_dependencies = _partition_dependencies(
+            substitution.dependency_nodes
         )
-
-    def _add_input_node(
-        self,
-        dependencies: _ActionDependenciesBuilder,
-        node: CallerInputNode,
-    ):
-        match node:
-            case operation_graph.ActionParentLastOperationNode():
-                dependencies.add_dependency(self.action_parent_operation())
-            case operation_graph.RequirementNode():
-                operation = self.bound_requirement_operation(node)
-                if operation is not None:
-                    dependencies.add_dependency(operation)
-                    return
-                for parent_operation in self.empty_by_default_parent_operations(node):
-                    self._add_input_node(dependencies, parent_operation)
-            case operation_graph.CallerEmptyRuleDependenciesNode():
-                self._add_empty_rule_substitution(
-                    dependencies, self.substitute_empty_rule_dependencies(node)
-                )
-
-    def _add_empty_rule_substitution(
-        self,
-        dependencies: _ActionDependenciesBuilder,
-        substitution: operation_graph.CallerEmptyRuleSubstitution,
-    ):
-        for node in substitution.dependency_nodes:
-            dependencies.add_dependency(node)
         if substitution.caller_empty_rule_dependencies is not None:
-            dependencies.action_inputs.append(
+            caller_input_dependencies.append(
                 substitution.caller_empty_rule_dependencies
             )
+        return dependencies, caller_input_dependencies
+
+    def _caller_dependency_for_input_node(
+        self,
+        node: _CallerInputNode,
+    ) -> operation_graph.ActionParentOperationNode:
+        if isinstance(node, operation_graph.ActionParentLastOperationNode):
+            return self._trigger.action_parent_last_operation
+        # Direct bindings are already constant-time and are the common path.
+        # Checking them before the cache avoids its lookup, allocation, and
+        # insertion overhead when there is no requirement chain to traverse.
+        binding = self._trigger.bindings.get(node.requirement_position)
+        if binding is not None:
+            return binding.operation
+
+        unresolved: list[operation_graph.RequirementNode] = []
+        current = node
+        while True:
+            dependency = self._caller_dependency_by_input_node.get(current)
+            if dependency is not None:
+                break
+            unresolved.append(current)
+            (parent_input,) = current.depends_on
+            if isinstance(parent_input, operation_graph.ActionParentLastOperationNode):
+                dependency = self._trigger.action_parent_last_operation
+                break
+            binding = self._trigger.bindings.get(parent_input.requirement_position)
+            if binding is not None:
+                dependency = binding.operation
+                break
+            current = parent_input
+        for unresolved_node in unresolved:
+            self._caller_dependency_by_input_node[unresolved_node] = dependency
+        return dependency
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class ResolvedActionTrigger:
     """The dependency interface of one direct Action Triggering."""
 
     trigger: operation_graph.ActionTrigger
-    inputs: tuple[ResolvedActionTriggerInput, ...]
+    inputs: list[ResolvedActionTriggerInput]
 
-    def input_for(self, callee_input: ActionInput) -> ResolvedActionTriggerInput:
+    def input_for(
+        self, callee_input: ResolvedCallerInput
+    ) -> ResolvedActionTriggerInput:
         """Return the resolution of ``callee_input`` through this Action Triggering."""
+        # This is inefficient but acceptable because this is used only by the
+        # test-only resolved-operation-graph renderer.
         return next(
             resolved_input
             for resolved_input in self.inputs
@@ -227,27 +222,29 @@ class ResolvedAction:
     dependencies_by_operation: dict[
         operation_graph.PositionOperationNode, ActionDependencies
     ]
-    inputs: tuple[ActionInput, ...]
-    action_triggers: tuple[ResolvedActionTrigger, ...]
+    caller_inputs: list[ResolvedCallerInput]
+    action_triggers: list[ResolvedActionTrigger]
 
 
 @typing.final
-class ActionResolver:
+class _ActionResolver:
     """Build the dependency interface of one reusable action."""
 
     def __init__(
         self,
         graph: operation_graph.OperationGraph,
-        resolved_actions: Mapping[ast.GlobalTypedName, ResolvedAction],
+        resolved_callees: Mapping[ast.GlobalTypedName, ResolvedAction],
     ):
         """Initialize resolution with one graph and its resolved direct callees."""
         self._graph = graph
-        self._resolved_actions = resolved_actions
+        self._resolved_callees = resolved_callees
         self._dependencies_by_operation: dict[
             operation_graph.PositionOperationNode, ActionDependencies
         ] = {}
-        self._inputs: list[ActionInput] = []
-        self._caller_input_nodes: set[CallerInputNode] = set()
+        self._caller_inputs: list[ResolvedCallerInput] = []
+        self._caller_input_by_node: dict[
+            _CallerInputDependencyNode, ResolvedCallerInput
+        ] = {}
         self._action_triggers: list[ResolvedActionTrigger] = []
 
     def resolve(self) -> ResolvedAction:
@@ -255,9 +252,9 @@ class ActionResolver:
         for node in self._graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            dependencies = ActionDependencies.for_nodes(node.depends_on)
-            self._dependencies_by_operation[node] = dependencies
-            self._record_caller_dependencies(dependencies)
+            self._dependencies_by_operation[node] = (
+                self._resolve_operation_dependencies(node)
+            )
 
         for trigger in self._graph.triggers:
             self._action_triggers.append(self._resolve_action_trigger(trigger))
@@ -265,26 +262,105 @@ class ActionResolver:
         return ResolvedAction(
             self._graph,
             self._dependencies_by_operation,
-            tuple(self._inputs),
-            tuple(self._action_triggers),
+            self._caller_inputs,
+            self._action_triggers,
         )
+
+    def _resolve_operation_dependencies(
+        self, operation: operation_graph.PositionOperationNode
+    ) -> ActionDependencies:
+        dependencies, caller_input_dependencies = _partition_dependencies(
+            operation.depends_on
+        )
+        self._record_operation_caller_inputs(caller_input_dependencies, operation)
+        return dependencies
 
     def _resolve_action_trigger(
         self, trigger: operation_graph.ActionTrigger
     ) -> ResolvedActionTrigger:
-        callee = self._resolved_actions[trigger.callee_action_name]
+        callee = self._resolved_callees[trigger.callee_action_name]
         dependency_resolver = _ActionTriggerDependencyResolver(self._graph, trigger)
         inputs: list[ResolvedActionTriggerInput] = []
-        for callee_input in callee.inputs:
-            resolved_input = dependency_resolver.resolve_input(callee_input)
+        for callee_input in callee.caller_inputs:
+            caller_dependencies, caller_input_dependencies = (
+                dependency_resolver.resolve_input(callee_input)
+            )
+            resolved_input = ResolvedActionTriggerInput(
+                callee_input, caller_dependencies
+            )
             inputs.append(resolved_input)
-            self._record_caller_dependencies(resolved_input.caller_dependencies)
-        return ResolvedActionTrigger(trigger, tuple(inputs))
+            self._record_triggered_input_caller_inputs(
+                caller_input_dependencies, resolved_input
+            )
+        return ResolvedActionTrigger(trigger, inputs)
 
-    def _record_caller_dependencies(self, dependencies: ActionDependencies):
-        for action_input in dependencies.action_inputs:
-            if isinstance(action_input, operation_graph.CallerEmptyRuleDependencies):
-                self._inputs.append(action_input)
-            elif action_input not in self._caller_input_nodes:
-                self._caller_input_nodes.add(action_input)
-                self._inputs.append(action_input)
+    def _record_operation_caller_inputs(
+        self,
+        caller_input_dependencies: list[_CallerInputDependency],
+        operation: operation_graph.PositionOperationNode,
+    ):
+        for dependency in caller_input_dependencies:
+            self._caller_input_for(dependency).operation_consumers.append(operation)
+
+    def _record_triggered_input_caller_inputs(
+        self,
+        caller_input_dependencies: list[_CallerInputDependency],
+        triggered_input: ResolvedActionTriggerInput,
+    ):
+        for dependency in caller_input_dependencies:
+            self._caller_input_for(dependency).triggered_input_consumers.append(
+                triggered_input
+            )
+
+    def _caller_input_for(
+        self, dependency: _CallerInputDependency
+    ) -> ResolvedCallerInput:
+        if isinstance(dependency, operation_graph.CallerEmptyRuleDependencies):
+            caller_input = ResolvedEmptyRuleInput(dependency)
+            self._caller_inputs.append(caller_input)
+            return caller_input
+        caller_input = self._caller_input_by_node.get(dependency)
+        if caller_input is None:
+            match dependency:
+                case operation_graph.ActionParentLastOperationNode():
+                    caller_input = ResolvedActionParentInput(dependency)
+                case operation_graph.RequirementNode():
+                    caller_input = ResolvedRequirementInput(dependency)
+                case operation_graph.CallerEmptyRuleDependenciesNode():
+                    caller_input = ResolvedEmptyRuleInput(
+                        dependency.caller_empty_rule_dependencies
+                    )
+            self._caller_input_by_node[dependency] = caller_input
+            self._caller_inputs.append(caller_input)
+        return caller_input
+
+
+@typing.final
+class ResolvedActions:
+    """Resolve and retain reusable action dependency interfaces."""
+
+    # TODO: For parallel codegen, coordinate each action with a single-assignment
+    # future. The first thread to claim an action resolves it; other threads wait
+    # for the same result or exception.
+
+    def __init__(self, operation_graphs: operation_graph.OperationGraphs):
+        """Initialize with the validated operation graphs."""
+        self._operation_graphs = operation_graphs
+        self._resolved: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, ResolvedAction
+        ] = typed_name_dict.TypedNameDict()
+
+    def resolve(self, action: ast.GlobalTypedName) -> ResolvedAction:
+        """Resolve an action whose direct callees have already been resolved."""
+        resolved = self._resolved.get(action)
+        if resolved is not None:
+            return resolved
+        resolved = _ActionResolver(
+            self._operation_graphs[action], self._resolved
+        ).resolve()
+        self._resolved[action] = resolved
+        return resolved
+
+    def __getitem__(self, action: ast.GlobalTypedName) -> ResolvedAction:
+        """Return a resolved action."""
+        return self._resolved[action]

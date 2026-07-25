@@ -6,8 +6,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast
-from define.compiler.conftest import parse_and_transform
+from define.compiler import ast, test_helpers
 from define.compiler.data_structures import define_path
 
 _LOC = ast.start_of_file_location()
@@ -27,7 +26,7 @@ def _position_reference_for(chained_name: str) -> ast.PositionReference:
         "    }\n"
         "}\n"
     )
-    program = parse_and_transform(source)
+    program = test_helpers.parse_and_transform(source)
     action_definition = program.definitions[0]
     assert isinstance(action_definition, ast.ActionDefinition)
     for statement in action_definition.action_statements.statements:
@@ -37,14 +36,14 @@ def _position_reference_for(chained_name: str) -> ast.PositionReference:
 
 
 def _parse_position(source: str) -> ast.PositionDefinition:
-    definition = parse_and_transform(source).definitions[0]
+    definition = test_helpers.parse_and_transform(source).definitions[0]
     if not isinstance(definition, ast.PositionDefinition):
         raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
     return definition
 
 
 def _parse_action(source: str) -> ast.ActionDefinition:
-    definition = parse_and_transform(source).definitions[0]
+    definition = test_helpers.parse_and_transform(source).definitions[0]
     if not isinstance(definition, ast.ActionDefinition):
         raise TypeError(f"Expected ActionDefinition, got {type(definition)}")
     return definition
@@ -72,6 +71,37 @@ def _make_fqun(
         universe=ast.Universe(name=universe, location=_LOC),
         location=_LOC,
     )
+
+
+class TestSourceFormTypedNameParts:
+    def test_local_name(self):
+        assert ast.source_form_typed_name_parts("position<item>", _FQUN) == (
+            ast.SourceFormTypedNameParts(
+                name_type=ast.NameType.POSITION,
+                source_name="item",
+                is_global=False,
+            )
+        )
+
+    def test_global_name_in_current_universe_uses_short_source_form(self):
+        assert ast.source_form_typed_name_parts(
+            "position<my.domain.com:my_lib:/item>",
+            _FQUN,
+        ) == ast.SourceFormTypedNameParts(
+            name_type=ast.NameType.POSITION,
+            source_name="/item",
+            is_global=True,
+        )
+
+    def test_global_name_in_external_multiverse_keeps_full_source_form(self):
+        assert ast.source_form_typed_name_parts(
+            "action<mv:other.example:other_lib:/run>",
+            _FQUN,
+        ) == ast.SourceFormTypedNameParts(
+            name_type=ast.NameType.ACTION,
+            source_name="mv:other.example:other_lib:/run",
+            is_global=True,
+        )
 
 
 class TestFqunCanonical:

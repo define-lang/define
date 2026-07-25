@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</other>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<local_item>.
+        create a particle in action</other>::position<trigger_pos>.
+        create a particle in position<local_item>.
+    }
+}

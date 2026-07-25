@@ -50,6 +50,34 @@ def test_repeated_operation_on_same_position(
     }
 
 
+def test_two_parallel_operations(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(a)": [],
+        "test.create(b)": [],
+        "test.destroy(a)": ["test.create(a)"],
+        "test.destroy(b)": ["test.create(b)"],
+    }
+
+
+def test_three_parallel_operations(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(a)": [],
+        "test.create(b)": [],
+        "test.create(c)": [],
+        "test.destroy(a)": ["test.create(a)"],
+        "test.destroy(b)": ["test.create(b)"],
+        "test.destroy(c)": ["test.create(c)"],
+    }
+
+
 def test_join_operation_waits_on_two_predecessors(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -1,0 +1,2 @@
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>
+action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.worker.Worker>::position<trigger_pos>

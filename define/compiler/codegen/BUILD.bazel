@@ -4,6 +4,30 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "action_plan",
+    srcs = ["action_plan.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+    ],
+)
+
+py_test(
+    name = "action_plan_test",
+    size = "small",
+    srcs = ["action_plan_test.py"],
+    deps = [
+        ":action_plan",
+        "//define/compiler:ast",
+        "//define/compiler:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph",
+    ],
+)
+
+py_library(
     name = "codegen",
     srcs = ["__init__.py"],
 )
@@ -23,6 +47,7 @@ py_library(
         "//define/compiler:diagnostics",
         "//define/compiler/codegen/literal/python:generator",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
 
@@ -51,6 +76,7 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
     ],
 )
 
@@ -76,6 +102,8 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_plan",
+        ":action_plan_test",
         ":codegen",
         ":generated_program_runner",
         ":generator",

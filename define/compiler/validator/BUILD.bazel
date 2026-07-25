@@ -71,7 +71,7 @@ py_test(
         ":stats",
         ":validation_result",
         "//define/compiler:ast",
-        "//define/compiler:conftest",
+        "//define/compiler:test_helpers",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/graphs:reference_graph",
     ],

@@ -43,25 +43,56 @@ def _position(name: str) -> ast.PositionReference:
     )
 
 
+def test_resolved_actions_retains_resolved_action():
+    action = _action("/test")
+    graph = operation_graph.OperationGraph({})
+    graphs = operation_graph.OperationGraphs()
+    graphs[action] = graph
+    resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
+
+    resolved = resolved_actions.resolve(action)
+
+    assert resolved_actions[action] is resolved
+
+
+def test_resolved_actions_reuses_resolved_action():
+    action = _action("/test")
+    graph = operation_graph.OperationGraph({})
+    graphs = operation_graph.OperationGraphs()
+    graphs[action] = graph
+    resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
+    resolved = resolved_actions.resolve(action)
+
+    assert resolved_actions.resolve(action) is resolved
+
+
 def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
+    action = _action("/test")
     graph = operation_graph.OperationGraph({})
     work = _position("work")
     create = graph.record_create(work)
     destroy = graph.record_destroy(work, ())
-    resolved = operation_graph_action_resolver.ActionResolver(graph, {}).resolve()
+    graphs = operation_graph.OperationGraphs()
+    graphs[action] = graph
+    resolved = operation_graph_action_resolver.ResolvedActions(graphs).resolve(action)
 
-    create_dependencies = resolved.dependencies_by_operation[create]
-    assert create_dependencies.action_inputs == (graph.nodes[0],)
+    (caller_input,) = resolved.caller_inputs
+    assert isinstance(
+        caller_input, operation_graph_action_resolver.ResolvedActionParentInput
+    )
+    assert caller_input.node is graph.nodes[0]
+    assert caller_input.operation_consumers == [create]
+    assert caller_input.triggered_input_consumers == []
     assert resolved.dependencies_by_operation[
         destroy
-    ] == operation_graph_action_resolver.ActionDependencies(local_operations=(create,))
+    ] == operation_graph_action_resolver.ActionDependencies([create], [])
 
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
     worker_action = _action("/worker")
     caller_graph = operation_graph.OperationGraph({})
     trigger_position = _position("run")
-    _ = caller_graph.record_create(trigger_position)
+    trigger_position_create = caller_graph.record_create(trigger_position)
     trigger = caller_graph.record_action_trigger(
         _action_reference(worker_action),
         trigger_position,
@@ -72,28 +103,28 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     )
     callee_graph = operation_graph.OperationGraph({})
     _ = callee_graph.record_create(_position("work"))
-    resolved_callee = operation_graph_action_resolver.ActionResolver(
-        callee_graph, {}
-    ).resolve()
-    resolved = operation_graph_action_resolver.ActionResolver(
-        caller_graph, {worker_action: resolved_callee}
-    ).resolve()
+    caller_action = _action("/caller")
+    graphs = operation_graph.OperationGraphs()
+    graphs[worker_action] = callee_graph
+    graphs[caller_action] = caller_graph
+    resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
+    resolved_callee = resolved_actions.resolve(worker_action)
+    resolved = resolved_actions.resolve(caller_action)
     (resolved_trigger,) = resolved.action_triggers
     action_parent = trigger.action_parent_last_operation
     assert isinstance(action_parent, operation_graph.ActionParentLastOperationNode)
 
-    assert resolved_trigger == operation_graph_action_resolver.ResolvedActionTrigger(
-        trigger,
-        (
-            operation_graph_action_resolver.ResolvedActionTriggerInput(
-                callee_input=resolved_callee.inputs[0],
-                caller_dependencies=operation_graph_action_resolver.ActionDependencies(
-                    action_inputs=(action_parent,)
-                ),
-                callee_dependencies=(),
-            ),
-        ),
+    assert resolved_trigger.trigger is trigger
+    (resolved_input,) = resolved_trigger.inputs
+    assert resolved_input.callee_input is resolved_callee.caller_inputs[0]
+    assert (
+        resolved_input.caller_dependencies
+        == operation_graph_action_resolver.ActionDependencies([], [])
     )
-    (caller_input,) = resolved.inputs
-    assert isinstance(caller_input, operation_graph.OperationNode)
-    assert caller_input is trigger.action_parent_last_operation
+    (caller_input,) = resolved.caller_inputs
+    assert isinstance(
+        caller_input, operation_graph_action_resolver.ResolvedActionParentInput
+    )
+    assert caller_input.node is action_parent
+    assert caller_input.operation_consumers == [trigger_position_create]
+    assert caller_input.triggered_input_consumers == [resolved_input]

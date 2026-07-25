@@ -2,11 +2,195 @@
 
 from __future__ import annotations
 
+import itertools
 import os
+import queue
+import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
 from typing import ClassVar, cast, override
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
+
+type Task = Callable[[], None]
+type Tasks = Sequence[Task]
+
+
+class Join:
+    """A dependency join that releases its continuation on the final arrival."""
+
+    def __init__(self, arrivals: int):
+        """Initialize a join requiring ``arrivals`` arrivals."""
+        # CPython's count increment is atomic, including in free-threaded
+        # builds. Join intentionally depends on that implementation detail
+        # because it avoids lock contention between parallel arrivals.
+        self._arrivals: itertools.count[int] = itertools.count(1)
+        self._final_arrival: int = arrivals
+
+    def arrive(self) -> bool:
+        """Return true exactly once, on the final expected arrival."""
+        return next(self._arrivals) == self._final_arrival
+
+
+class Scheduler:
+    """One execution of a literally transpiled Define program."""
+
+    # The core lifecycle matches the concepts from the Starting Define Programs
+    # section of the spec, implemented in start().
+    #
+    # After creating the view point position and triggering its constructor,
+    # that constructor will do some combination of executing in this thread
+    # (the same thread that called start()) and submitting concurrent tasks.
+    # If the start() thread finishes before the other submitted threads, it
+    # waits on _finish_scheduled_work before terminating.
+    #
+    # Other work arrives via one of the various submit or continue_with methods.
+    # Those create worker threads that drain a SimpleQueue for any available work.
+    # Threads are spun up only on demand, under the belief that many workloads
+    # will not need the full thread pool.
+    #
+    # We keep track of the total tasks currently running and the tasks in
+    # the queue using _unfinished_tasks. The scheduler does not terminate until
+    # that number hits 0. This design is fine for our Python implementation,
+    # but in any native implementation that single counter would be a serious
+    # scalability bottleneck (threading performance would be dominated by cache
+    # coherence traffic in the CPU as threads contended for the task counter).
+    # The mutex in _condition guards _unfinished_tasks and is used to notify
+    # the main thread when there are no remaining tasks. (Only the main thread
+    # calls wait().)
+    #
+    # Scheduler intentionally implements its own work pool instead of using
+    # ThreadPoolExecutor. Generated branches can be extremely fine-grained and
+    # can submit more branches recursively, so Scheduler must independently track
+    # unfinished work and failures even if an executor manages the threads. An
+    # executor would additionally allocate and synchronize a Future for every
+    # branch, and its public API cannot let the caller execute queued work while
+    # waiting. This shared queue and explicit worker lifecycle avoid that
+    # duplicate infrastructure and was substantially faster for fine-grained
+    # branches in benchmarks.
+
+    def __init__(self, *, max_threads: int | None = None):
+        """Initialize a single-use scheduler with a bounded execution thread count."""
+        if max_threads is None:
+            max_threads = os.process_cpu_count() or 1
+        if type(max_threads) is not int or max_threads < 1:
+            raise ValueError("max_threads must be a positive integer or None")
+        self._max_threads: int = max_threads
+        self._started: bool = False
+        self._queue: queue.SimpleQueue[Task | None] = queue.SimpleQueue()
+        self._workers: list[threading.Thread] = []
+        self._idle_workers: threading.Semaphore = threading.Semaphore(0)
+        self._condition: threading.Condition = threading.Condition()
+        self._unfinished_tasks: int = 0
+        self._failure: Exception | None = None
+
+    def submit(self, task: Task):
+        """Make a generated parallel branch available for execution."""
+        worker: threading.Thread | None = None
+        # Normally, _condition only gates _unfinished_tasks. However, we also
+        # need some mutex to reserve permission to create a new worker. We
+        # could make a whole separate mutex, but it would be just for this
+        # one location, so might as well just re-use _condition.
+        with self._condition:
+            self._unfinished_tasks += 1
+            if (
+                # There is no idle worker that can accept this job.
+                not self._idle_workers.acquire(blocking=False)
+                # We are not at our limit of workers.
+                and len(self._workers) < self._max_threads - 1
+            ):
+                worker = threading.Thread(target=self._worker, daemon=True)
+                self._workers.append(worker)
+        if worker is not None:
+            worker.start()
+        self._queue.put(task)
+
+    def submit_all(self, methods: Tasks):
+        """Make every bound method available for parallel execution."""
+        for method in methods:
+            self.submit(method)
+
+    def continue_with(self, methods: Tasks):
+        """Submit all but one bound method and run the final one directly."""
+        if not methods:
+            return
+        for index in range(len(methods) - 1):
+            self.submit(methods[index])
+        methods[-1]()
+
+    def start(self, entry_point: type[EntryPoint]):
+        """Execute the Define program startup sequence once."""
+        if self._started:
+            raise RuntimeError("a Scheduler instance can only be started once")
+        self._started = True
+        view_point_position = LocalPosition(
+            "position<view_point>", constraints=(entry_point,), scheduler=self
+        )
+        try:
+            view_point_position.create_particle()
+            view_point_position.particle.get_action(entry_point).execute(self)
+        except Exception as exception:  # noqa: BLE001
+            # Scheduler must finish and close workers before re-raising the failure.
+            self._record_failure(exception)
+        self._finish_scheduled_work()
+        self._close_workers()
+        if self._failure is not None:
+            raise self._failure
+        if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
+            for chained_name in view_point_position.particle.occupied_position_names():
+                print(chained_name)
+
+    def _worker(self):
+        while True:
+            task = self._queue.get()
+            # Sending None is how we signal the thread to shut down.
+            if task is None:
+                return
+            self._run_task(task)
+            self._idle_workers.release()
+
+    def _run_task(self, task: Task):
+        try:
+            if self._failure is None:
+                task()
+        except Exception as exception:  # noqa: BLE001
+            # Exceptions cannot propagate directly from a worker to the primary thread.
+            self._record_failure(exception)
+        finally:
+            with self._condition:
+                self._unfinished_tasks -= 1
+                self._condition.notify()
+
+    def _record_failure(self, exception: Exception):
+        with self._condition:
+            if self._failure is None:
+                self._failure = exception
+
+    def _finish_scheduled_work(self):
+        while True:
+            if not self._queue.empty():
+                # The try/except exists only for the race where a worker
+                # takes the final task after empty() reports false. Since
+                # Python 3.11, entering a try that throws no exception is free.
+                # However, throwing the exception is expensive, which is why we
+                # do the cheaper empty() check above, first.
+                try:
+                    task = self._queue.get_nowait()
+                except queue.Empty:
+                    pass
+                else:
+                    self._run_task(cast("Task", task))
+                    continue
+            with self._condition:
+                if self._unfinished_tasks == 0:
+                    return
+                _ = self._condition.wait()
+
+    def _close_workers(self):
+        for _ in self._workers:
+            self._queue.put(None)
+        for worker in self._workers:
+            worker.join()
 
 
 class DefineRuntimeError(Exception):
@@ -90,11 +274,17 @@ class Quality:
 class Particle:
     """A particle in the Define universe."""
 
-    def __init__(self):
+    def __init__(self, scheduler: Scheduler | None = None):
         """Initialize with empty positions and actions dictionaries."""
+        self._scheduler: Scheduler = scheduler if scheduler is not None else Scheduler()
         self._positions: dict[type[GlobalPosition], GlobalPosition] = {}
         self._actions: dict[type[Action], Action] = {}
         self._assigned_qualities: list[Quality] = []
+
+    @property
+    def scheduler(self) -> Scheduler:
+        """Return the Scheduler executing operations on this particle."""
+        return self._scheduler
 
     def assign_position(self, position_class: type[GlobalPosition]):
         """Assign a position to this particle, or do nothing if already present."""
@@ -136,6 +326,7 @@ class Particle:
         """Return the assigned action of the given type."""
         return cast("ActionType", self._actions[action_class])
 
+    # TODO: Cache this?
     @property
     def quality_types(self) -> frozenset[type[Quality]]:
         """Return the set of constraint types satisfied by this particle."""
@@ -145,12 +336,6 @@ class Particle:
         """Run the Destruction Cascade, unassigning qualities in reverse order."""
         for quality in reversed(self._assigned_qualities):
             quality.before_parent_particle_destroyed()
-
-    def run_constructors(self):
-        """Run each constructor quality, in the order it was assigned (DLP 32)."""
-        for quality in self._assigned_qualities:
-            if isinstance(quality, Action) and quality.is_constructor:
-                quality.execute()
 
     def occupied_position_names(self) -> list[str]:
         """Return chained names of occupied positions reachable from this particle.
@@ -189,6 +374,11 @@ class Position(ABC):
 
     @property
     @abstractmethod
+    def scheduler(self) -> Scheduler:
+        """Return the Scheduler executing operations on this position."""
+
+    @property
+    @abstractmethod
     def name(self) -> str:
         """Return the name of this position."""
 
@@ -212,15 +402,12 @@ class Position(ABC):
         """Create a particle in this position. Raises if one exists."""
         if self._particle is not None:
             raise ParticleExistsError(self.name)
-        self._particle = Particle()
+        self._particle = Particle(self.scheduler)
         for constraint_type in self._get_constraints():
             if issubclass(constraint_type, GlobalPosition):
                 self._particle.assign_position(constraint_type)
             elif issubclass(constraint_type, Action):
                 self._particle.assign_action(constraint_type)
-        # Constructors fire on creation only, never on a move into this position
-        # (DLP 32), so they run here rather than in _after_particle_arrived.
-        self._particle.run_constructors()
         self._after_particle_arrived()
 
     def move_particle_to(self, destination: Position):
@@ -229,9 +416,8 @@ class Position(ABC):
             raise NoParticleError(self.name)
         if destination._particle is not None:
             raise ParticleExistsError(destination.name)
-        quality_types = self._particle.quality_types
         for constraint_type in destination._get_constraints():
-            if constraint_type not in quality_types:
+            if constraint_type not in self._particle.quality_types:
                 raise UnsatisfiedConstraintError(
                     destination.name, constraint_type.full_name()
                 )
@@ -265,6 +451,12 @@ class GlobalPosition(Quality, Position):
     constraints: ClassVar[tuple[type[Quality], ...]] = ()
     TYPE_NAME: ClassVar[str] = "position"
 
+    @property
+    @override
+    def scheduler(self) -> Scheduler:
+        """Return the Scheduler executing operations on this position."""
+        return self.on_particle.scheduler
+
     def __init_subclass__(cls, **kwargs: object):
         """Reject duplicate constraints when a global position class is defined."""
         super().__init_subclass__(**kwargs)
@@ -288,12 +480,21 @@ class LocalPosition(Position):
         self,
         name: str,
         constraints: tuple[type[Quality], ...] = (),
+        *,
+        scheduler: Scheduler,
     ):
-        """Initialize a local position with the given name and optional constraints."""
+        """Initialize a local position in the given scheduler."""
         super().__init__()
         _reject_duplicate_constraints(constraints)
         self._name: str = name
         self._constraints: tuple[type[Quality], ...] = constraints
+        self._scheduler: Scheduler = scheduler
+
+    @property
+    @override
+    def scheduler(self) -> Scheduler:
+        """Return the Scheduler executing operations on this position."""
+        return self._scheduler
 
     @property
     @override
@@ -311,87 +512,61 @@ class Action(Quality):
     """A globally-defined action."""
 
     TYPE_NAME: ClassVar[str] = "action"
-    is_constructor: ClassVar[bool] = False
-    is_destructor: ClassVar[bool] = False
 
     def __init__(
         self,
         on_particle: Particle,
-        interface_positions: list[InterfacePosition] | None = None,
-        trigger_position_name: str | None = None,
+        interface_positions: Sequence[LocalPosition] = (),
     ):
-        """Initialize with the assigned particle and optional interface positions."""
+        """Initialize with the assigned particle and its interface positions."""
         super().__init__(on_particle)
-        self._interface_positions: dict[str, InterfacePosition] = {
-            pos.name: pos for pos in (interface_positions or [])
+        self._interface_positions: dict[str, LocalPosition] = {
+            position.name: position for position in interface_positions
         }
-        self._trigger_position_name: str | None = trigger_position_name
-        if self._trigger_position_name is not None:
-            self._interface_positions[self._trigger_position_name].set_is_trigger_for(
-                self
-            )
 
-    def get_interface_position(self, name: str) -> InterfacePosition:
+    def get_interface_position(self, name: str) -> LocalPosition:
         """Return the interface position with the given name."""
         return self._interface_positions[name]
 
     @property
-    def interface_positions(self) -> tuple[InterfacePosition, ...]:
+    def interface_positions(self) -> tuple[LocalPosition, ...]:
         """Return this action's interface positions, in declaration order."""
         return tuple(self._interface_positions.values())
 
-    @property
-    def should_execute(self) -> bool:
-        """Return whether the trigger position has a particle."""
-        if self._trigger_position_name is None:
-            return False
-        return self._interface_positions[self._trigger_position_name].has_particle
-
-    def execute(self):
-        """Execute the action body. Override in subclasses."""
-
     @override
     def before_parent_particle_destroyed(self):
-        if self.is_destructor:
-            self.execute()
         for interface_position in reversed(self._interface_positions.values()):
             if interface_position.has_particle:
                 interface_position.destroy_particle()
 
 
-class InterfacePosition(LocalPosition):
-    """A position that serves as an interface for an action's trigger condition."""
+class EntryPoint(Action):
+    """An action that starts a Scheduler."""
 
-    def __init__(
-        self,
-        name: str,
-        constraints: tuple[type[Quality], ...] = (),
-    ):
-        """Initialize an interface position with the given name and optional constraints."""
-        super().__init__(name, constraints)
-        self._trigger_action: Action | None = None
+    def execute(self, _scheduler: Scheduler) -> None:
+        """Execute this entry point."""
+        raise NotImplementedError
 
-    def set_is_trigger_for(self, action: Action):
-        """Mark this position as a trigger condition for the given action."""
-        self._trigger_action = action
+
+class Destructor(Action):
+    """An action invoked during the Destruction Cascade."""
+
+    def execute(self, _scheduler: Scheduler) -> None:
+        """Execute this destructor."""
+        raise NotImplementedError
 
     @override
-    def _after_particle_arrived(self):
-        if self._trigger_action is not None and self._trigger_action.should_execute:
-            self._trigger_action.execute()
+    def before_parent_particle_destroyed(self):
+        self.execute(self.on_particle.scheduler)
+        super().before_parent_particle_destroyed()
 
 
-def start(entry_point: type[Action]):
+def start(entry_point: type[EntryPoint], scheduler: Scheduler | None = None):
     """Execute the Define program startup sequence (DLP 33).
 
-    Creates the anonymous view point position, whose only constraint is the
-    entry-point constructor, then creates the view point particle in it. The
-    creation assigns the constructor and fires it, running the program.
+    Creates the anonymous view point position and particle, assigns the entry
+    action, and executes it.
     """
-    view_point_position = LocalPosition(
-        "position<view_point>", constraints=(entry_point,)
-    )
-    view_point_position.create_particle()
-    if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
-        for chained_name in view_point_position.particle.occupied_position_names():
-            print(chained_name)
+    if scheduler is None:
+        scheduler = Scheduler()
+    scheduler.start(entry_point)
