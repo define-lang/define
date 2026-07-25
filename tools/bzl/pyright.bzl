@@ -72,8 +72,12 @@ _pyright_deps = rule(
     },
 )
 
-def pyright_test(name, deps = [], srcs = [], include_subpackages = False, **kwargs):
+def pyright_test(name, deps = [], srcs = [], **kwargs):
     """Type-check Python sources in this package with basedpyright.
+
+    Tag a target "include-subpackages" when deps also lists Python targets
+    from packages below this one. tools/check_python_deps.py reads that tag
+    to decide which pyright_test is expected to cover each Python target.
 
     Args:
         name: Test target name.
@@ -81,9 +85,6 @@ def pyright_test(name, deps = [], srcs = [], include_subpackages = False, **kwar
             py_binary). Their sources are type-checked and their
             transitive deps provide import resolution.
         srcs: Additional Python source files not covered by any target.
-        include_subpackages: Whether deps also contains Python targets from
-            packages below this one. Read from the BUILD file by
-            tools/check_python_deps.py.
         **kwargs: Additional py_test attributes (tags, size, etc.).
     """
     _pyright_deps(
@@ -94,6 +95,8 @@ def pyright_test(name, deps = [], srcs = [], include_subpackages = False, **kwar
 
     env = dict(kwargs.pop("env", {}))
     env["FORCE_COLOR"] = "1"
+
+    tags = ["no-lint", "pyright"] + kwargs.pop("tags", [])
 
     _py_test(
         name = name,
@@ -114,6 +117,6 @@ def pyright_test(name, deps = [], srcs = [], include_subpackages = False, **kwar
             "@pypi//types_pyyaml",
         ],
         env = env,
-        tags = ["no-lint", "pyright"],
+        tags = tags,
         **kwargs
     )

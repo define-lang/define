@@ -152,6 +152,10 @@ def _has_keyword(call: ast.Call, attribute: str) -> bool:
     return any(keyword.arg == attribute for keyword in call.keywords)
 
 
+def _has_tag(call: ast.Call, tag: str) -> bool:
+    return tag in _string_list(call, "tags")
+
+
 def _absolute_label(package: Path, value: str) -> str:
     return _canonical_label(
         _package_label(package, value[1:]) if value.startswith(":") else value
@@ -232,7 +236,7 @@ def _load_targets(
                         build_file=relative_build_file,
                         deps=_declared_deps(call, package),
                         kept_deps=_kept_deps(lines, call, package),
-                        include_subpackages=_has_keyword(call, "include_subpackages"),
+                        include_subpackages=_has_tag(call, "include-subpackages"),
                     )
                 )
             elif rule_class in PYTHON_RULE_CLASSES:

@@ -354,7 +354,7 @@ def test_repository_analysis_updates_nearest_pyright_test_dependencies(
 py_library(name = "generated", srcs = [":generated.py"])
 pyright_test(
     name = "pyright_test",
-    include_subpackages = True,
+    tags = ["include-subpackages"],
     deps = [
         ":first",
         ":generated",
