@@ -124,6 +124,19 @@ py_test(
 )
 
 py_library(
+    name = "operation_graph_labeler",
+    testonly = True,
+    srcs = ["operation_graph_labeler.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        ":operation_graph",
+        ":operation_graph_resolver",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+    ],
+)
+
+py_library(
     name = "operation_graph_renderer",
     testonly = True,
     srcs = ["operation_graph_renderer.py"],
@@ -316,6 +329,7 @@ pyright_test(
         ":operation_graph",
         ":operation_graph_action_resolver",
         ":operation_graph_action_resolver_test",
+        ":operation_graph_labeler",
         ":operation_graph_renderer",
         ":operation_graph_resolver",
         ":operation_graph_resolver_test",
