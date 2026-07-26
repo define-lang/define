@@ -1,8 +1,9 @@
-"""Renders an action's operation graph as a readable map of dependencies, for tests."""
+"""Readable labels for resolved operations and Action Executions."""
 
 from __future__ import annotations
 
 import typing
+from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
@@ -14,9 +15,6 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
-# Every operation graph test names the action it validates /test.
-_ENTRY_POINT_ACTION_PATH = "/test"
-
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
@@ -27,53 +25,13 @@ type _TriggerKey = tuple[operation_graph.LastOperationNode, str]
 
 
 def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
-    """Return the key that tells one triggering an action performs from the next."""
+    """Return the identity of one Action Triggering performed by an action."""
     return (trigger.trigger_operation, trigger.callee_action_name.full_typed_name)
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
     """Return an action's name without its universe or path, such as ``test``."""
     return action.name_content.path.name.removeprefix("/")
-
-
-def operation_dependencies(
-    operation_graphs: operation_graph.OperationGraphs,
-) -> dict[str, list[str]]:
-    """Return a label for each operation the entry-point action performs or triggers, mapped to the labels it depends on."""
-    for typed_name in operation_graphs:
-        if typed_name.name_content.path.name == _ENTRY_POINT_ACTION_PATH:
-            resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
-                operation_graphs, typed_name
-            ).build()
-            return _Program(operation_graphs).to_scheduling_table(resolved)
-    raise KeyError(_ENTRY_POINT_ACTION_PATH)
-
-
-def action_graph(
-    operation_graphs: operation_graph.OperationGraphs,
-) -> list[tuple[str, str]]:
-    """Return each action's directly-triggered actions as (source, target) name pairs.
-
-    An action that triggers the same action twice yields two edges. Actions appear
-    in reference-graph post-order and their triggerings in the order they perform
-    them, so the result is deterministic. A reference-graph diamond can still make
-    two sibling actions' relative order nondeterministic; assertions spanning such
-    actions should compare ``action_graph_set``.
-    """
-    edges: list[tuple[str, str]] = []
-    for action, graph in operation_graphs.items():
-        for trigger in graph.triggers:
-            edges.append(
-                (action.source_typed_name, trigger.callee_action_name.full_typed_name)
-            )
-    return edges
-
-
-def action_graph_set(
-    operation_graphs: operation_graph.OperationGraphs,
-) -> set[tuple[str, str]]:
-    """Return ``action_graph`` as a set, for assertions whose edge order is nondeterministic."""
-    return set(action_graph(operation_graphs))
 
 
 class _OperationLabels:
@@ -121,7 +79,7 @@ class _OperationLabels:
 
 
 class _InvocationLabels:
-    """The name one action gives each action it triggers, by the triggering."""
+    """The local name one action gives each action it triggers."""
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Name every action ``graph`` triggers."""
@@ -140,16 +98,30 @@ class _InvocationLabels:
             self._callees.append(trigger.callee_action_name)
 
     def __getitem__(self, trigger: operation_graph.ActionTrigger) -> str:
-        """Return the name of the action ``trigger`` fires."""
+        """Return the local name of the action ``trigger`` fires."""
         return self._names[_trigger_key(trigger)]
 
     def names(self) -> Iterable[str]:
-        """Return the name of every action this action triggers."""
+        """Return the local name of every action this action triggers."""
         return self._names.values()
 
     def callees(self) -> Iterable[ast.GlobalTypedNameReference]:
         """Return the action every triggering of this action fires."""
         return self._callees
+
+
+@dataclass(frozen=True, slots=True)
+class TriggeredActionExecutionName:
+    """A triggered Action Execution's local name and qualification rule."""
+
+    local_name: str
+    uses_caller_name: bool
+
+    def render(self, caller_execution_name: str) -> str:
+        """Render the complete name from the caller's Action Execution name."""
+        if self.uses_caller_name:
+            return f"{caller_execution_name}:{self.local_name}"
+        return self.local_name
 
 
 class _ActionInvocationLabels:
@@ -196,18 +168,19 @@ class _ActionInvocationLabels:
     def name(
         self,
         action: ast.GlobalTypedName,
-        spliced_name: str,
         trigger: operation_graph.ActionTrigger,
-    ) -> str:
-        """Return the name of the action ``trigger`` fires, triggered from the copy of ``action`` named ``spliced_name``."""
-        name = self._labels[action][trigger]
-        if name in self._ambiguous[action]:
-            return f"{spliced_name}:{name}"
-        return name
+    ) -> TriggeredActionExecutionName:
+        """Return the local name and qualification rule for ``trigger``."""
+        local_name = self._labels[action][trigger]
+        return TriggeredActionExecutionName(
+            local_name=local_name,
+            uses_caller_name=local_name in self._ambiguous[action],
+        )
 
 
-class _NameResolver:
-    """The name every operation and every triggering in the program goes by.
+@typing.final
+class OperationGraphLabeler:
+    """The names every operation and Action Execution in a program go by.
 
     Both are decided across the whole program at once: an action's operations are
     labeled with its own name for them wherever it is spliced in, and whether a
@@ -216,65 +189,79 @@ class _NameResolver:
     """
 
     def __init__(self, graphs: operation_graph.OperationGraphs):
-        """Name the operations and triggerings of every action in ``graphs``."""
+        """Prepare labels for every action in ``graphs``."""
         self._operation_labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
         for action, graph in graphs.items():
             self._operation_labels[action] = _OperationLabels(graph)
-        self._invocation_labels: _ActionInvocationLabels = _ActionInvocationLabels(
-            graphs
-        )
+        self._invocation_labels = _ActionInvocationLabels(graphs)
 
-    def operation_name(
-        self, action: ast.GlobalTypedName, node: operation_graph.PositionOperationNode
-    ) -> str:
-        """Return what ``action`` calls the operation at ``node``, such as ``move(item, dest)``."""
-        return self._operation_labels[action][node]
+    @staticmethod
+    def entry_action_execution_name(action: ast.GlobalTypedName) -> str:
+        """Return the name of an entry Action Execution."""
+        return _action_name(action)
 
-    def triggering_name(
+    def operation_label(
         self,
         action: ast.GlobalTypedName,
-        spliced_name: str,
-        trigger: operation_graph.ActionTrigger,
+        node: operation_graph.PositionOperationNode,
     ) -> str:
-        """Return the name of the action ``trigger`` fires, triggered from the copy of ``action`` named ``spliced_name``."""
-        return self._invocation_labels.name(action, spliced_name, trigger)
+        """Return ``action``'s local label for ``node``."""
+        return self._operation_labels[action][node]
 
+    def triggered_action_execution_name(
+        self,
+        action: ast.GlobalTypedName,
+        trigger: operation_graph.ActionTrigger,
+    ) -> TriggeredActionExecutionName:
+        """Return the name rule for the Action Execution fired by ``trigger``."""
+        return self._invocation_labels.name(action, trigger)
 
-class _Program:
-    """Every action's operation graph, and the names everything in them goes by."""
-
-    def __init__(self, graphs: operation_graph.OperationGraphs):
-        """Prepare to render the actions in ``graphs``."""
-        self._graphs: operation_graph.OperationGraphs = graphs
-        self._names: _NameResolver = _NameResolver(graphs)
-
-    def to_scheduling_table(
-        self, resolved: operation_graph_resolver.ResolvedOperationGraph
-    ) -> dict[str, list[str]]:
-        """Render the operations and dependencies in ``resolved``."""
-        action = resolved.entry_action_execution.action
+    def resolved_operation_labels(
+        self,
+        resolved: operation_graph_resolver.ResolvedOperationGraph,
+    ) -> dict[operation_graph_resolver.ResolvedOperation, str]:
+        """Return the complete label of every operation in ``resolved``."""
         execution_names: dict[operation_graph_resolver.ActionExecution, str] = {
-            resolved.entry_action_execution: _action_name(action)
+            resolved.entry_action_execution: self.entry_action_execution_name(
+                resolved.entry_action_execution.action
+            )
         }
         labels: dict[operation_graph_resolver.ResolvedOperation, str] = {}
         for resolved_operation in resolved.operations:
-            action_execution = resolved_operation.action_execution
-            action_execution_name = execution_names.get(action_execution)
-            if action_execution_name is None:
-                triggered_by = action_execution.triggered_by
-                if triggered_by is None:
-                    action_execution_name = _action_name(action_execution.action)
-                else:
-                    action_execution_name = self._names.triggering_name(
-                        triggered_by.caller.action,
-                        execution_names[triggered_by.caller],
-                        triggered_by.action_trigger.trigger,
-                    )
-                execution_names[action_execution] = action_execution_name
-            labels[resolved_operation] = (
-                f"{action_execution_name}.{self._names.operation_name(action_execution.action, resolved_operation.operation)}"
+            labels[resolved_operation] = ".".join(
+                (
+                    self._action_execution_name(
+                        resolved_operation.action_execution, execution_names
+                    ),
+                    self.operation_label(
+                        resolved_operation.action_execution.action,
+                        resolved_operation.operation,
+                    ),
+                )
             )
-        return {
-            label: [labels[dependency] for dependency in operation.dependencies]
-            for operation, label in labels.items()
-        }
+        return labels
+
+    def _action_execution_name(
+        self,
+        action_execution: operation_graph_resolver.ActionExecution,
+        execution_names: dict[operation_graph_resolver.ActionExecution, str],
+    ) -> str:
+        unnamed_executions: list[operation_graph_resolver.ActionExecution] = []
+        current_execution = action_execution
+        while current_execution not in execution_names:
+            triggered_by = typing.cast(
+                "operation_graph_resolver.TriggeredBy",
+                current_execution.triggered_by,
+            )
+            unnamed_executions.append(current_execution)
+            current_execution = triggered_by.caller
+        for unnamed_execution in reversed(unnamed_executions):
+            triggered_by = typing.cast(
+                "operation_graph_resolver.TriggeredBy",
+                unnamed_execution.triggered_by,
+            )
+            execution_names[unnamed_execution] = self.triggered_action_execution_name(
+                triggered_by.caller.action,
+                triggered_by.action_trigger.trigger,
+            ).render(execution_names[triggered_by.caller])
+        return execution_names[action_execution]
