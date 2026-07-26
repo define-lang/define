@@ -212,7 +212,10 @@ BUILD file generator.
 - Always run the full test suite
   (`bazelisk test --noshow_progress --ui_event_filters=-info //...`) when done
   working, to make sure nothing is broken.
-- Run and check coverage after writing new tests.
+- After test changes have stabilized, run coverage once before final handoff.
+  Inspect the combined report and confirm that newly added or changed production
+  branches are covered; a successful coverage command alone is not a coverage
+  check. Do not rerun full coverage after every incremental test edit.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 - After changing code generation, run the codegen tests. Regenerate expected

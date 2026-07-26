@@ -133,6 +133,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":constants",
+        ":diagnostics",
         ":exceptions",
         ":overall_stats",
         ":parser",

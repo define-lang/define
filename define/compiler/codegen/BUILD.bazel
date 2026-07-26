@@ -44,7 +44,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler:diagnostics",
         "//define/compiler/codegen/literal/python:generator",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator/reference_graph:operation_graph",
@@ -74,7 +73,6 @@ py_test(
         ":generated_program_runner",
         ":generator",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",

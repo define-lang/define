@@ -151,6 +151,19 @@ class ProgramValidationResult:
     ]
 
     @property
+    def entry_action(self) -> ast.ActionDefinition | None:
+        """Return the entry file's constructor, if it defines one."""
+        return next(
+            (
+                definition_result.definition
+                for definition_result in self.file_results[0].definition_results
+                if isinstance(definition_result.definition, ast.ActionDefinition)
+                and definition_result.definition.is_constructor
+            ),
+            None,
+        )
+
+    @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:
         """All diagnostics from all file results."""
         return [d for r in self.file_results for d in r.diagnostics]

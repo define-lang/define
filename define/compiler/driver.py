@@ -16,6 +16,7 @@ from typing import TextIO
 
 from define.compiler import (
     constants,
+    diagnostics,
     exceptions,
     overall_stats,
     parser,
@@ -111,18 +112,21 @@ class Driver:
             return driver_result
         program_result = driver_result.result
         first_file = program_result.file_results[0]
-        entry_file_definitions = tuple(
-            result.definition for result in first_file.definition_results
-        )
+        entry_action = program_result.entry_action
+        if entry_action is None:
+            first_file.add_file_diagnostic(
+                diagnostics.EntryPointNotConstructorDiagnostic(
+                    location=first_file.definition_results[0].definition.location
+                )
+            )
+            return driver_result
         codegen = generator.CodeGenerator()
-        gen_diagnostics = codegen.generate(
+        codegen.generate(
             program_result.reference_graph,
             driver_result.operation_graphs,
-            entry_file_definitions,
+            entry_action,
             output_dir,
         )
-        for diagnostic in gen_diagnostics:
-            first_file.add_file_diagnostic(diagnostic)
         return driver_result
 
     @staticmethod

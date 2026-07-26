@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics
 from define.compiler.codegen import generated_program_runner, generator
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator import validation_result
@@ -15,17 +14,17 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def _generate(
     program_result: validation_result.ProgramValidationResult,
     tmp_path: Path,
-) -> list[diagnostics.Diagnostic]:
-    first_file = program_result.file_results[0]
-    entry_file_definitions = tuple(r.definition for r in first_file.definition_results)
+):
     reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
         program_result.reference_graph,
         program_result.definition_results,
     ).validate()
-    return generator.CodeGenerator().generate(
+    entry_action = program_result.entry_action
+    assert entry_action is not None
+    generator.CodeGenerator().generate(
         program_result.reference_graph,
         reference_graph_result.operation_graphs,
-        entry_file_definitions,
+        entry_action,
         tmp_path,
     )
 
@@ -37,39 +36,7 @@ def test_constructor_entry_point_adds_no_diagnostics(
     program_result = validate_testdata_structural_non_filesystem()
 
     assert_no_errors(program_result)
-    result = _generate(program_result, tmp_path)
-
-    assert result == []
-
-
-def test_position_entry_point_adds_diagnostic(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-    tmp_path: Path,
-):
-    program_result = validate_testdata_structural_non_filesystem()
-
-    assert_no_errors(program_result)
-    result = _generate(program_result, tmp_path)
-
-    assert len(result) == 1
-    assert isinstance(result[0], diagnostics.EntryPointNotConstructorDiagnostic)
-    assert result[0].location.line == 1
-    assert result[0].location.column == 1
-
-
-def test_non_constructor_action_entry_point_adds_diagnostic(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-    tmp_path: Path,
-):
-    program_result = validate_testdata_structural_non_filesystem()
-
-    assert_no_errors(program_result)
-    result = _generate(program_result, tmp_path)
-
-    assert len(result) == 1
-    assert isinstance(result[0], diagnostics.EntryPointNotConstructorDiagnostic)
-    assert result[0].location.line == 1
-    assert result[0].location.column == 1
+    _generate(program_result, tmp_path)
 
 
 def test_file_with_position_and_constructor_passes(
@@ -79,7 +46,7 @@ def test_file_with_position_and_constructor_passes(
     program_result = validate_testdata_structural_non_filesystem()
 
     assert_no_errors(program_result)
-    assert _generate(program_result, tmp_path) == []
+    _generate(program_result, tmp_path)
     main_file = tmp_path / "__main__.py"
     assert main_file.exists()
     assert main_file.stat().st_size > 0
@@ -92,7 +59,7 @@ def test_constructor_chosen_when_position_constrains_it(
     program_result = validate_testdata_structural_non_filesystem()
 
     assert_no_errors(program_result)
-    assert _generate(program_result, tmp_path) == []
+    _generate(program_result, tmp_path)
     main_file = tmp_path / "__main__.py"
     assert main_file.exists()
     assert main_file.stat().st_size > 0
@@ -109,7 +76,7 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
     program_result = validate_testdata_structural_non_filesystem()
 
     assert_no_errors(program_result)
-    assert _generate(program_result, tmp_path) == []
+    _generate(program_result, tmp_path)
     # The generated __main__.py starts a scheduler with one thread per CPU, which
     # makes the order of the submitted fragment and the cascade a race. A single
     # thread leaves the fragment queued until the scheduler drains it at shutdown,

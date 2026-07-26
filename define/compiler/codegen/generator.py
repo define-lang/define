@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
 from define.compiler.codegen.literal.python import generator as python_generator
 from define.compiler.graphs import reference_graph
 from define.compiler.validator.reference_graph import operation_graph
@@ -15,41 +15,16 @@ class CodeGenerator:
         self,
         graph: reference_graph.ReferenceGraph,
         operation_graphs: operation_graph.OperationGraphs,
-        entry_file_definitions: tuple[ast.QualityDefinition, ...],
+        entry_action: ast.ActionDefinition,
         output_dir: Path,
-    ) -> list[diagnostics.Diagnostic]:
+    ):
         """Generate code for a validated Define program.
-
-        Finds the entry point (a constructor) among the given definitions.
-        Returns diagnostics if entry point validation fails, or an empty list
-        on success.
 
         Expects a ReferenceGraph from a ProgramValidationResult with no
         errors. Has undefined behavior (including potentially crashing)
         if the graph comes from a validation with errors.
         """
-        if not entry_file_definitions:
-            raise ValueError(
-                "entry_file_definitions must be non-empty; the structural validator should have rejected an empty entry file"
-            )
-
-        entry_point = None
-        for definition in entry_file_definitions:
-            if (
-                isinstance(definition, ast.ActionDefinition)
-                and definition.is_constructor
-            ):
-                entry_point = definition
-
-        if entry_point is None:
-            return [
-                diagnostics.EntryPointNotConstructorDiagnostic(
-                    location=entry_file_definitions[0].location
-                )
-            ]
-
         # TODO: Diagnose entry-point requirements that cannot be satisfied
         # because no caller triggers the entry point.
         python_gen = python_generator.PythonLiteralCodeGenerator()
-        python_gen.generate(graph, operation_graphs, entry_point, output_dir)
-        return []
+        python_gen.generate(graph, operation_graphs, entry_action, output_dir)
