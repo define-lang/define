@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
+import pytest
+
 from define.compiler import diagnostics
-from define.compiler.codegen import generator
+from define.compiler.codegen import generated_program_runner, generator
 from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
@@ -94,3 +96,39 @@ def test_constructor_chosen_when_position_constrains_it(
     main_file = tmp_path / "__main__.py"
     assert main_file.exists()
     assert main_file.stat().st_size > 0
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="a destructor's submitted fragment can outlive the cascade that fired it",
+)
+def test_destructor_fragments_finish_before_cascade_frees_positions(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+    tmp_path: Path,
+):
+    program_result = validate_testdata_structural_non_filesystem()
+
+    assert_no_errors(program_result)
+    assert _generate(program_result, tmp_path) == []
+    # The generated __main__.py starts a scheduler with one thread per CPU, which
+    # makes the order of the submitted fragment and the cascade a race. A single
+    # thread leaves the fragment queued until the scheduler drains it at shutdown,
+    # so the interleaving is the same on every machine.
+    (tmp_path / "single_thread_main.py").write_text(
+        """\
+from define.runtime import literal
+
+import local.my_domain_com.my_lib.test
+
+literal.start(
+    local.my_domain_com.my_lib.test.Test, literal.Scheduler(max_threads=1)
+)
+""",
+        encoding="utf-8",
+    )
+
+    completed = generated_program_runner.run_generated_program(
+        tmp_path, "single_thread_main.py"
+    )
+
+    assert (completed.returncode, completed.stderr) == (0, "")
