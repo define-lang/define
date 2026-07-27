@@ -428,3 +428,79 @@ def test_auto_destruction_leaves_the_implied_position_alone(
         "test.create(/implied)": [],
         "test.destroy(temporary)": ["test.create(temporary)"],
     }
+
+
+def test_destruction_cascade_branches_at_siblings_and_joins_at_parent(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
+        "test.create(box::/sibling)": ["test.create(box)"],
+        "test.destroy(box)": [
+            "test.create(box::/child::/grandchild)",
+            "test.create(box::/sibling)",
+        ],
+    }
+
+
+def test_destruction_cascade_routes_prior_empty_descendant_to_its_particle(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
+        "test.destroy(box::/child::/grandchild)": [
+            "test.create(box::/child::/grandchild)",
+        ],
+        "test.destroy(box)": ["test.destroy(box::/child::/grandchild)"],
+    }
+
+
+def test_destruction_cascade_omits_known_empty_interface_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(parent)": [],
+        "test.create(parent::/child)": ["test.create(parent)"],
+        "test.move(parent::/child, destination)": ["test.create(parent::/child)"],
+        "test.destroy(parent)": ["test.move(parent::/child, destination)"],
+    }
+
+
+def test_destruction_cascade_omits_known_empty_implied_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/parent)": [],
+        "test.create(/parent::/child)": ["test.create(/parent)"],
+        "test.move(/parent::/child, destination)": ["test.create(/parent::/child)"],
+        "test.destroy(/parent)": ["test.move(/parent::/child, destination)"],
+    }
+
+
+def test_destruction_cascade_branches_from_one_preceding_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.create(source::/b)": ["test.create(source)"],
+        "test.move(source, destination)": [
+            "test.create(source::/a)",
+            "test.create(source::/b)",
+        ],
+        "test.destroy(destination)": ["test.move(source, destination)"],
+    }

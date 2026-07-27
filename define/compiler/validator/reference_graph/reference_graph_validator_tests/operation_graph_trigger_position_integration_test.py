@@ -75,3 +75,17 @@ def test_operation_on_a_child_of_the_trigger_position(
         "test.move(source, /triggered::run)": ["test.create(source::/child)"],
         "triggered.destroy(run::/child)": ["test.move(source, /triggered::run)"],
     }
+
+
+def test_destroy_of_trigger_particle_conditionally_destroys_unknown_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.move(source, /triggered::run)": ["test.create(source::/a)"],
+        "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
+        "triggered.destroy(/target)": ["triggered.move(run, /target)"],
+    }

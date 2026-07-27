@@ -632,3 +632,43 @@ def test_triggered_action_input_depends_on_multiple_guarantees(
             "filler.create(/parent::/child_b::/gc)",
         ],
     }
+
+
+def test_destruction_cascade_child_state_crosses_two_actions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.create(source::/b)": ["test.create(source)"],
+        "test.move(source, /middle::run)": [
+            "test.create(source::/a)",
+            "test.create(source::/b)",
+        ],
+        "middle.move(run, /inner::inner_run)": ["test.move(source, /middle::run)"],
+        "inner.destroy(inner_run)": ["middle.move(run, /inner::inner_run)"],
+    }
+
+
+def test_destruction_cascade_unions_children_from_two_callers(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/middle_a::run)": [],
+        "test.create(/middle_b::run)": [],
+        "middle_a.create(box)": [],
+        "middle_a.create(box::/a)": ["middle_a.create(box)"],
+        "middle_a.move(box, /destroyer::run)": ["middle_a.create(box::/a)"],
+        "middle_a:destroyer.destroy(run)": ["middle_a.move(box, /destroyer::run)"],
+        "middle_b.create(box)": [],
+        "middle_b.create(box::/b)": ["middle_b.create(box)"],
+        "middle_b.move(box, /destroyer::run)": [
+            "middle_b.create(box::/b)",
+            "middle_a:destroyer.destroy(run)",
+        ],
+        "middle_b:destroyer.destroy(run)": ["middle_b.move(box, /destroyer::run)"],
+    }

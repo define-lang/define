@@ -583,3 +583,18 @@ def test_trigger_inlines_callee_internal_dependencies(
         "other.destroy(scratch)": ["other.create(scratch)"],
         "other.create(output)": ["test.create(gateway)"],
     }
+
+
+def test_local_cascade_conditionally_destroys_unknown_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.move(source, /triggered::run)": ["test.create(source::/a)"],
+        "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
+        "triggered.move(/target, local)": ["triggered.move(run, /target)"],
+        "triggered.destroy(local)": ["triggered.move(/target, local)"],
+    }
