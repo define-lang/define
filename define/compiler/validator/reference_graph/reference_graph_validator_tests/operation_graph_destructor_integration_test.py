@@ -11,6 +11,18 @@ _DESTRUCTORS_NOT_RECORDED = (
 )
 
 
+def test_destructor_independent_chains_and_operation_after_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.destroy(box)": ["test.create(box)"],
+        "test.create(box)#2": ["test.destroy(box)"],
+    }
+
+
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTORS_NOT_RECORDED)
 def test_multiple_destructors_all_fire_on_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
