@@ -11,6 +11,7 @@ def run_generated_program(
     entry_script: str = "__main__.py",
     *,
     trace_file: Path | None = None,
+    max_threads: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Execute a generated program and capture its occupied positions.
 
@@ -19,6 +20,7 @@ def run_generated_program(
         entry_script: A script in that directory to run instead of the generated
             entry point, for a test that needs to start the program differently.
         trace_file: A file to receive the generated program's operation trace.
+        max_threads: The maximum scheduler threads for this execution.
     """
     generated_environment = {
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -28,6 +30,8 @@ def run_generated_program(
     }
     if trace_file is not None:
         generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(trace_file)
+    if max_threads is not None:
+        generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)
     return subprocess.run(
         [sys.executable, str(generated_dir / entry_script)],
         env=os.environ | generated_environment,

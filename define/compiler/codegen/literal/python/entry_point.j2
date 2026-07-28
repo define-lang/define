@@ -10,7 +10,7 @@ import {{ entry_reference.module_name }}
 
 def main():
 {% if trace_operations %}
-    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler = tracing.TracingScheduler()
     literal.start({{ entry_reference.module_name }}.{{ entry_reference.class_name }}, scheduler)
     tracing.write_operation_trace(scheduler.records)
 {% else %}

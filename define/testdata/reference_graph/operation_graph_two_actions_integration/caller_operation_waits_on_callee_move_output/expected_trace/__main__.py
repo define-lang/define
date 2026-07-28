@@ -7,7 +7,7 @@ import local.my_domain_com.my_lib.test
 
 
 def main():
-    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler = tracing.TracingScheduler()
     literal.start(local.my_domain_com.my_lib.test.Test, scheduler)
     tracing.write_operation_trace(scheduler.records)
 

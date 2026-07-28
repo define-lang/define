@@ -11,6 +11,7 @@ from collections.abc import Callable, Sequence
 from typing import ClassVar, cast, override
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
+_MAX_THREADS_ENV_VAR = "DEFINE_MAX_THREADS"
 
 type Task = Callable[[], None]
 type Tasks = Sequence[Task]
@@ -72,7 +73,16 @@ class Scheduler:
     def __init__(self, *, max_threads: int | None = None):
         """Initialize a single-use scheduler with a bounded execution thread count."""
         if max_threads is None:
-            max_threads = os.process_cpu_count() or 1
+            configured_max_threads = os.environ.get(_MAX_THREADS_ENV_VAR)
+            if configured_max_threads is None:
+                max_threads = os.process_cpu_count() or 1
+            else:
+                try:
+                    max_threads = int(configured_max_threads)
+                except ValueError:
+                    raise ValueError(
+                        "DEFINE_MAX_THREADS must be a positive integer"
+                    ) from None
         if type(max_threads) is not int or max_threads < 1:
             raise ValueError("max_threads must be a positive integer or None")
         self._max_threads: int = max_threads

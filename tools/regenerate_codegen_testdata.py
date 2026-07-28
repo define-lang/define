@@ -24,6 +24,7 @@ def _regenerate_case(
     trace_operations: bool,
     display_root: Path,
     trace_file: Path | None = None,
+    max_threads: int | None = None,
 ) -> tuple[bool, str]:
     expected_dir = case_dir / expected_directory_name
     if expected_dir.exists():
@@ -44,6 +45,7 @@ def _regenerate_case(
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
         trace_file=trace_file,
+        max_threads=max_threads,
     )
     if runtime_result.returncode != 0:
         print(f"  {case_dir.relative_to(display_root)}: FAILED")
@@ -91,6 +93,7 @@ def main():
             trace_operations=True,
             display_root=TRACING_TESTDATA_ROOT,
             trace_file=case_dir / "operation_trace.json",
+            max_threads=1,
         )
         if not case_success:
             success = False

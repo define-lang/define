@@ -8,32 +8,65 @@ import pytest
 from define.runtime import literal
 
 
+def _assert_execution_thread_count(
+    scheduler: literal.Scheduler,
+    expected_count: int,
+):
+    barrier = threading.Barrier(expected_count)
+    execution_threads: set[int] = set()
+    execution_threads_lock = threading.Lock()
+
+    def branch():
+        with execution_threads_lock:
+            execution_threads.add(threading.get_ident())
+        _ = barrier.wait()
+
+    class Entry(literal.EntryPoint):
+        typed_name: ClassVar[str] = "action<entry>"
+
+        @override
+        def execute(self, scheduler: literal.Scheduler):
+            for _ in range(expected_count - 1):
+                scheduler.submit(branch)
+            branch()
+
+    scheduler.start(Entry)
+
+    assert len(execution_threads) == expected_count
+
+
 class TestScheduler:
+    def test_default_max_threads_uses_environment(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("DEFINE_MAX_THREADS", "2")
+
+        _assert_execution_thread_count(literal.Scheduler(), 2)
+
+    def test_explicit_max_threads_overrides_environment(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("DEFINE_MAX_THREADS", "1")
+
+        _assert_execution_thread_count(literal.Scheduler(max_threads=2), 2)
+
+    @pytest.mark.parametrize("value", ["invalid", "0", "-1"])
+    def test_rejects_invalid_environment_max_threads(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        value: str,
+    ):
+        monkeypatch.setenv("DEFINE_MAX_THREADS", value)
+
+        with pytest.raises(ValueError, match="positive integer"):
+            _ = literal.Scheduler()
+
     def test_default_max_threads_uses_process_count(
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setattr(os, "process_cpu_count", lambda: 3)
-        barrier = threading.Barrier(3)
-        execution_threads: set[int] = set()
-        execution_threads_lock = threading.Lock()
 
-        def branch():
-            with execution_threads_lock:
-                execution_threads.add(threading.get_ident())
-            _ = barrier.wait()
-
-        class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                scheduler.submit(branch)
-                scheduler.submit(branch)
-                branch()
-
-        literal.Scheduler().start(Entry)
-
-        assert len(execution_threads) == 3
+        _assert_execution_thread_count(literal.Scheduler(), 3)
 
     @pytest.mark.parametrize("value", [0, -1])
     def test_rejects_invalid_max_threads(self, value: int):
@@ -55,28 +88,7 @@ class TestScheduler:
             scheduler.start(Entry)
 
     def test_calling_thread_counts_toward_max_threads(self):
-        scheduler = literal.Scheduler(max_threads=3)
-        barrier = threading.Barrier(3)
-        execution_threads: set[int] = set()
-        execution_threads_lock = threading.Lock()
-
-        def branch():
-            with execution_threads_lock:
-                execution_threads.add(threading.get_ident())
-            _ = barrier.wait()
-
-        class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                scheduler.submit(branch)
-                scheduler.submit(branch)
-                branch()
-
-        scheduler.start(Entry)
-
-        assert len(execution_threads) == 3
+        _assert_execution_thread_count(literal.Scheduler(max_threads=3), 3)
 
     def test_one_thread_drains_submitted_work_without_workers(self):
         scheduler = literal.Scheduler(max_threads=1)
