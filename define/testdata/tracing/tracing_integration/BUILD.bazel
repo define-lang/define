@@ -1,0 +1,15 @@
+filegroup(
+    name = "tracing_integration",
+    testonly = True,
+    srcs = glob([
+        "**/.define/**",
+        "**/*.dfn",
+        "**/expected_trace/**",
+        "**/operation_trace.json",
+    ]),
+    visibility = [
+        "//define/compiler/codegen:__pkg__",
+        "//define/testdata:__pkg__",
+        "//define/testdata/tracing:__pkg__",
+    ],
+)

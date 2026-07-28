@@ -37,6 +37,8 @@ class ActionDefinitionContext:
     role: ActionRole
     interface_positions: list[template_context.InterfacePositionContext]
     implied_qualities: list[naming.ClassReference]
+    trace_operations: bool = False
+    trace_action_name: str | None = None
 
     @property
     def needs_classvar(self) -> bool:

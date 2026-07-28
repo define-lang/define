@@ -1,0 +1,38 @@
+[
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "box::/b",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "box::/a",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "destroy",
+    "target": "box",
+    "occurrence": 1
+  }
+]

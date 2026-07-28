@@ -1,0 +1,278 @@
+[
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "holder",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "holder::/middle::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle"
+    },
+    "operation_name": "create",
+    "target": "gw",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "destroy",
+    "target": "holder::/middle::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "holder::/middle::trigger_pos",
+    "occurrence": 2
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle#2"
+    },
+    "operation_name": "create",
+    "target": "gw",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle"
+    },
+    "operation_name": "create",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle#2"
+    },
+    "operation_name": "create",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle#2"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle#2"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle"
+    },
+    "operation_name": "destroy",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle"
+    },
+    "operation_name": "create",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 2
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "worker#2"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "worker#2"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle#2"
+    },
+    "operation_name": "destroy",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle#2"
+    },
+    "operation_name": "create",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 2
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle#2"
+      },
+      "action_name": "worker#2"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle#2"
+      },
+      "action_name": "worker#2"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle"
+    },
+    "operation_name": "destroy",
+    "target": "gw",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle#2"
+    },
+    "operation_name": "destroy",
+    "target": "gw",
+    "occurrence": 1
+  }
+]

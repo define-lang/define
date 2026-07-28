@@ -97,16 +97,41 @@ class Driver:
             operation_graphs=reference_graph_result.operation_graphs,
         )
 
-    def compile_program(self, path: Path, output_dir: Path) -> DriverResult:
+    def compile_program(
+        self,
+        path: Path,
+        output_dir: Path,
+        *,
+        trace_operations: bool = False,
+    ) -> DriverResult:
         """Validate and then run code generation on a source file."""
-        return self._generate_code(self.validate_program(path), output_dir)
+        return self._generate_code(
+            self.validate_program(path),
+            output_dir,
+            trace_operations=trace_operations,
+        )
 
-    def compile_source(self, source: str, output_dir: Path) -> DriverResult:
+    def compile_source(
+        self,
+        source: str,
+        output_dir: Path,
+        *,
+        trace_operations: bool = False,
+    ) -> DriverResult:
         """Validate source text in non-filesystem mode and run code generation."""
-        return self._generate_code(self.validate_source(source), output_dir)
+        return self._generate_code(
+            self.validate_source(source),
+            output_dir,
+            trace_operations=trace_operations,
+        )
 
     @staticmethod
-    def _generate_code(driver_result: DriverResult, output_dir: Path) -> DriverResult:
+    def _generate_code(
+        driver_result: DriverResult,
+        output_dir: Path,
+        *,
+        trace_operations: bool = False,
+    ) -> DriverResult:
         """Run code generation on an already-validated result."""
         if driver_result.result.has_errors():
             return driver_result
@@ -126,6 +151,7 @@ class Driver:
             driver_result.operation_graphs,
             entry_action,
             output_dir,
+            trace_operations=trace_operations,
         )
         return driver_result
 

@@ -118,6 +118,43 @@ class Scheduler:
             self.submit(methods[index])
         methods[-1]()
 
+    def execution_created(
+        self,
+        _caller: object | None,
+        _action_name: str,
+        /,
+    ) -> object | None:
+        """Observe creation of an Action Execution."""
+        return None
+
+    def create_completed(
+        self,
+        _execution: object | None,
+        _position_name: str,
+        _occurrence: int,
+        /,
+    ):
+        """Observe completion of a Create."""
+
+    def move_completed(
+        self,
+        _execution: object | None,
+        _source_name: str,
+        _destination_name: str,
+        _occurrence: int,
+        /,
+    ):
+        """Observe completion of a Move."""
+
+    def destroy_completed(
+        self,
+        _execution: object | None,
+        _position_name: str,
+        _occurrence: int,
+        /,
+    ):
+        """Observe completion of a Destroy."""
+
     def start(self, entry_point: type[EntryPoint]):
         """Execute the Define program startup sequence once."""
         if self._started:
@@ -137,6 +174,7 @@ class Scheduler:
         if self._failure is not None:
             raise self._failure
         if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
+            # TODO: Write occupied-position reporting to a configured file.
             for chained_name in view_point_position.particle.occupied_position_names():
                 print(chained_name)
 

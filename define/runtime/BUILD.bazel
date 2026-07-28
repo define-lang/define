@@ -38,6 +38,26 @@ py_library(
     visibility = ["//define:__subpackages__"],
 )
 
+py_library(
+    name = "tracing",
+    srcs = ["tracing.py"],
+    visibility = [
+        "//define:__subpackages__",
+        "//tools:__pkg__",
+    ],
+    deps = [":literal"],
+)
+
+py_test(
+    name = "tracing_test",
+    size = "small",
+    srcs = ["tracing_test.py"],
+    deps = [
+        ":tracing",
+        "@pypi//pytest",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -57,5 +77,7 @@ pyright_test(
         ":literal_scheduler_test",
         ":literal_test",
         ":runtime",
+        ":tracing",
+        ":tracing_test",
     ],
 )

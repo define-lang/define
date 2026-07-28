@@ -2,7 +2,10 @@
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import naming, template_context
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_labeler,
+)
 
 
 class ActionStatementsGenerator:
@@ -13,14 +16,20 @@ class ActionStatementsGenerator:
     _defining_typed_name: ast.GlobalTypedNameInDefinition
     _interface_position_names: set[str]
     _local_position_names: dict[str, str]
+    _operation_labels: operation_graph_labeler.OperationGraphLabeler | None
 
     def __init__(
         self,
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
         local_position_names: dict[str, str],
+        operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
     ):
-        """Initialize with the action definition to generate data for."""
+        """Initialize with the action definition to generate data for.
+
+        ``operation_labels`` is present for traced generation and absent for
+        ordinary generation.
+        """
         self._block = definition.action_statements
         self._converter = converter
         self._defining_typed_name = definition.typed_name
@@ -29,6 +38,7 @@ class ActionStatementsGenerator:
             for interface_position in definition.interface_positions
         }
         self._local_position_names = local_position_names
+        self._operation_labels = operation_labels
 
     def build_local_positions(self) -> list[template_context.ActionStatementContext]:
         """Build template data for the action's local position definitions."""
@@ -55,22 +65,33 @@ class ActionStatementsGenerator:
         node: operation_graph.PositionOperationNode,
     ) -> template_context.ActionStatementContext:
         """Build template data for one operation-graph node."""
+        local_label = (
+            self._operation_labels.operation_label(
+                self._defining_typed_name,
+                node,
+            )
+            if self._operation_labels is not None
+            else None
+        )
         match node:
             case operation_graph.CreateNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.CREATE_PARTICLE,
                     position=self._build_position_expr(node.target),
+                    operation_label=local_label,
                 )
             case operation_graph.DestroyNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.DESTROY_PARTICLE,
                     position=self._build_position_expr(node.target),
+                    operation_label=local_label,
                 )
             case operation_graph.MoveNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.MOVE_PARTICLE,
                     position=self._build_position_expr(node.source),
                     to_position=self._build_position_expr(node.target),
+                    operation_label=local_label,
                 )
             case _:
                 raise TypeError(

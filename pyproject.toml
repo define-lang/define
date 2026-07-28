@@ -64,6 +64,15 @@ known-first-party = ["define", "defcl", "tools"]
     "I001", # Import ordering depends on isort first-party config of the target project.
     "N801", # Generated code may produce non-CapWords class names.
 ]
+"**/testdata/**/expected_trace/**/*.py" = [
+    "D100", # Generated code doesn't need module docstrings.
+    "D101", # Generated code doesn't need class docstrings.
+    "D102", # Generated code doesn't need method docstrings.
+    "D103", # Generated code doesn't need function docstrings.
+    "D107", # Generated code doesn't need __init__ docstrings.
+    "I001", # Import ordering depends on isort first-party config of the target project.
+    "N801", # Generated code may produce non-CapWords class names.
+]
 "**/*_test.py" = [
     "S101", # Allow assert statements.
     "D100", # Don't require docstrings on test modules.
@@ -87,7 +96,10 @@ known-first-party = ["define", "defcl", "tools"]
 force-exclude = true
 
 [tool.ruff.format]
-exclude = ["**/testdata/**/expected/**/*.py"]
+exclude = [
+    "**/testdata/**/expected/**/*.py",
+    "**/testdata/**/expected_trace/**/*.py",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
@@ -159,6 +171,11 @@ reportImplicitRelativeImport = false
 
 [[tool.basedpyright.executionEnvironments]]
 root = "define/testdata/structural"
+extraPaths = ["."]
+reportImplicitRelativeImport = false
+
+[[tool.basedpyright.executionEnvironments]]
+root = "define/testdata/tracing"
 extraPaths = ["."]
 reportImplicitRelativeImport = false
 

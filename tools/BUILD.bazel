@@ -133,6 +133,7 @@ py_binary(
         "//define/compiler:driver",
         "//define/compiler/codegen:generated_program_runner",
         "//define/runtime:literal",  # keep
+        "//define/runtime:tracing",  # keep
     ],
 )
 

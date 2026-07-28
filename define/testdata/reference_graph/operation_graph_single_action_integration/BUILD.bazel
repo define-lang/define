@@ -1,9 +1,17 @@
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+_TRACING_TESTDATA_EXCLUDES = [
+    "**/expected_trace/**",
+    "**/operation_trace.json",
+]
+
 filegroup(
     name = "codegen_testdata",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = _TRACING_TESTDATA_EXCLUDES,
+    ),
     visibility = ["//define/testdata/codegen:__pkg__"],
 )
 
@@ -15,7 +23,7 @@ filegroup(
         exclude = [
             "**/expected/**",
             "**/occupied_positions.txt",
-        ],
+        ] + _TRACING_TESTDATA_EXCLUDES,
     ),
     visibility = [
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
@@ -27,6 +35,9 @@ filegroup(
 
 pyright_test(
     name = "pyright_test",
-    srcs = glob(["**/expected/**/*.py"]),
-    deps = ["//define/runtime:literal"],
+    srcs = glob(["**/*.py"]),
+    deps = [
+        "//define/runtime:literal",
+        "//define/runtime:tracing",
+    ],
 )

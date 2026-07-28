@@ -5,6 +5,7 @@ from dataclasses import InitVar, dataclass, field
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import naming
+from define.compiler.validator.reference_graph import operation_graph_labeler
 
 
 class StatementKind(enum.Enum):
@@ -94,6 +95,7 @@ class ActionStatementContext:
     constraints: list[naming.ClassReference] = field(default_factory=list)
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
+    operation_label: operation_graph_labeler.OperationLabel | None = None
 
 
 @dataclass
@@ -119,6 +121,7 @@ class TriggeredActionContext:
     init_method_name: str
     execution_name: str
     child_guarantees_name: str | None
+    trace_action_name: str | None = None
 
     @property
     def execution_needs_action(self) -> bool:
@@ -189,6 +192,7 @@ class ActionExecutionContext:
     triggered_action_inputs: list[TriggeredActionInputContext]
     guarantee_registrations: list[GuaranteeRegistrationContext]
     guarantees: GuaranteesContext | None
+    trace_operations: bool = False
     needs_action: bool = field(init=False)
 
     def __post_init__(self):

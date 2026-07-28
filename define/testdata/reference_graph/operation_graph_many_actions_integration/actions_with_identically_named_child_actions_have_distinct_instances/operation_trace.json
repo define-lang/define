@@ -1,0 +1,152 @@
+[
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "/second::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "second"
+    },
+    "operation_name": "create",
+    "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "/first::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "first"
+    },
+    "operation_name": "create",
+    "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "second"
+    },
+    "operation_name": "create",
+    "target": "box::/inner::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "second"
+      },
+      "action_name": "inner"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "second"
+      },
+      "action_name": "inner"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "first"
+    },
+    "operation_name": "create",
+    "target": "box::/inner::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "first"
+      },
+      "action_name": "inner"
+    },
+    "operation_name": "create",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "first"
+      },
+      "action_name": "inner"
+    },
+    "operation_name": "destroy",
+    "target": "scratch",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "second"
+    },
+    "operation_name": "destroy",
+    "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "first"
+    },
+    "operation_name": "destroy",
+    "target": "box",
+    "occurrence": 1
+  }
+]

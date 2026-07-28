@@ -14,7 +14,10 @@ from define.compiler.codegen.literal.python import (
     template_context,
 )
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import operation_graph_action_resolver
+from define.compiler.validator.reference_graph import (
+    operation_graph_action_resolver,
+    operation_graph_labeler,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,12 +41,18 @@ class ActionExecutionGenerator:
             ast.GlobalTypedName, action_context.GeneratedAction
         ],
         plan: action_plan.ActionPlan,
+        operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
     ):
-        """Initialize execution lowering with its action and generated callees."""
+        """Initialize execution lowering with its action and generated callees.
+
+        ``operation_labels`` is present for traced generation and absent for
+        ordinary generation.
+        """
         self._definition = definition
         self._converter = converter
         self._generated_actions = generated_actions
         self._plan = plan
+        self._operation_labels = operation_labels
 
     def generate(self) -> GeneratedExecution:
         """Generate the execution context and caller-facing interface."""
@@ -56,6 +65,7 @@ class ActionExecutionGenerator:
             self._definition,
             self._converter,
             names.local_positions,
+            self._operation_labels,
         )
         local_position_statements = block_generator.build_local_positions()
         guarantees = action_guarantees.ActionGuaranteesGenerator(
@@ -84,6 +94,7 @@ class ActionExecutionGenerator:
             triggered_action_inputs=self._generate_triggered_inputs(names),
             guarantee_registrations=guarantees.guarantee_registrations,
             guarantees=guarantees.context,
+            trace_operations=self._operation_labels is not None,
         )
         return GeneratedExecution(
             context,
@@ -163,6 +174,14 @@ class ActionExecutionGenerator:
                     init_method_name=action_trigger_names.initializer_name,
                     execution_name=action_trigger_names.execution_name,
                     child_guarantees_name=child_guarantees_name,
+                    trace_action_name=(
+                        self._operation_labels.triggered_action_execution_name(
+                            self._definition.typed_name,
+                            trigger,
+                        ).local_name
+                        if self._operation_labels is not None
+                        else None
+                    ),
                 )
             )
         return triggered_actions

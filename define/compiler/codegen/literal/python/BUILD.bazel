@@ -27,6 +27,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 
@@ -45,6 +46,7 @@ py_library(
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 
@@ -110,6 +112,7 @@ py_library(
         ":template_context",
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 
@@ -130,6 +133,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
         "@pypi//jinja2",
     ],
 )
@@ -180,6 +184,7 @@ py_library(
     deps = [
         ":naming",
         "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 

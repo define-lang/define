@@ -17,7 +17,10 @@ from define.compiler.codegen.literal.python import (
 )
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import reference_graph
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_labeler,
+)
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
@@ -45,9 +48,16 @@ class PythonLiteralCodeGenerator:
         operation_graphs: operation_graph.OperationGraphs,
         entry_point: ast.ActionDefinition,
         output_dir: Path,
+        *,
+        trace_operations: bool = False,
     ):
         """Generate Python files for the entry-point constructor and its references."""
         plans = action_plan.ActionPlans(operation_graphs, entry_point.typed_name)
+        operation_labels = (
+            operation_graph_labeler.OperationGraphLabeler(operation_graphs)
+            if trace_operations
+            else None
+        )
         converter = naming.NameConverter()
         action_contexts: list[action_context.ActionDefinitionContext] = []
         position_contexts: list[template_context.PositionDefinitionContext] = []
@@ -69,6 +79,7 @@ class PythonLiteralCodeGenerator:
                     role,
                     generated_actions,
                     plan,
+                    operation_labels,
                 ).generate()
                 generated_actions[definition.typed_name] = generated_action
                 action_contexts.append(generated_action.context)
@@ -139,5 +150,6 @@ class PythonLiteralCodeGenerator:
                 module_name=entry_ctx.module_name,
                 class_name=entry_ctx.class_name,
             ),
+            trace_operations=entry_ctx.trace_operations,
         )
         _ = (output_dir / "__main__.py").write_text(content)

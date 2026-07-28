@@ -23,6 +23,10 @@ type _ActionOperationLabels = typed_name_dict.TypedNameDict[
 # more than one of them.
 type _TriggerKey = tuple[operation_graph.LastOperationNode, str]
 
+_CREATE_OPERATION_NAME = "create"
+_MOVE_OPERATION_NAME = "move"
+_DESTROY_OPERATION_NAME = "destroy"
+
 
 def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
     """Return the identity of one Action Triggering performed by an action."""
@@ -34,39 +38,70 @@ def _action_name(action: ast.GlobalTypedName) -> str:
     return action.name_content.path.name.removeprefix("/")
 
 
+@dataclass(frozen=True, slots=True)
+class OperationLabel:
+    """An action's local structured name for one Position Operation."""
+
+    operation_name: str
+    source: str | None
+    target: str
+    occurrence: int
+
+    @typing.override
+    def __str__(self) -> str:
+        """Render this local operation name."""
+        positions = (
+            self.target if self.source is None else f"{self.source}, {self.target}"
+        )
+        label = f"{self.operation_name}({positions})"
+        if self.occurrence == 1:
+            return label
+        return f"{label}#{self.occurrence}"
+
+
 class _OperationLabels:
     """The label of every operation of one graph."""
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Label every operation in ``graph``."""
-        self._labels: dict[operation_graph.PositionOperationNode, str] = {}
-        times_seen: dict[str, int] = {}
+        self._labels: dict[operation_graph.PositionOperationNode, OperationLabel] = {}
+        times_seen: dict[tuple[str, str | None, str], int] = {}
         for node in graph.nodes:
             if not isinstance(node, operation_graph.PositionOperationNode):
                 continue
-            label = self._operation_label(node)
+            operation_name, source, target = self._operation_parts(node)
+            key = (operation_name, source, target)
             # An action can perform the same operation on the same position more
             # than once, which every operation after the first says in its label.
-            count = times_seen.get(label, 0) + 1
-            times_seen[label] = count
-            self._labels[node] = label if count == 1 else f"{label}#{count}"
+            occurrence = times_seen.get(key, 0) + 1
+            times_seen[key] = occurrence
+            self._labels[node] = OperationLabel(
+                operation_name,
+                source,
+                target,
+                occurrence,
+            )
 
-    def __getitem__(self, node: operation_graph.PositionOperationNode) -> str:
+    def __getitem__(
+        self, node: operation_graph.PositionOperationNode
+    ) -> OperationLabel:
         """Return the label of ``node``."""
         return self._labels[node]
 
     @classmethod
-    def _operation_label(cls, node: operation_graph.PositionOperationNode) -> str:
-        """Return the label of one operation, such as ``move(item, dest)``."""
+    def _operation_parts(
+        cls, node: operation_graph.PositionOperationNode
+    ) -> tuple[str, str | None, str]:
+        """Return the operation name and positions of one operation."""
         target = cls._position_name(node.target)
         match node:
             case operation_graph.CreateNode():
-                return f"create({target})"
+                return _CREATE_OPERATION_NAME, None, target
             case operation_graph.MoveNode():
                 source = cls._position_name(node.source)
-                return f"move({source}, {target})"
+                return _MOVE_OPERATION_NAME, source, target
             case operation_graph.DestroyNode():
-                return f"destroy({target})"
+                return _DESTROY_OPERATION_NAME, None, target
             case _:
                 raise TypeError(f"unknown operation node type: {type(node).__name__}")
 
@@ -185,7 +220,9 @@ class OperationGraphLabeler:
     Both are decided across the whole program at once: an action's operations are
     labeled with its own name for them wherever it is spliced in, and whether a
     triggering's name says which triggering spliced it in depends on what the
-    other actions call theirs.
+    other actions call theirs. Construction prepares every label across the
+    supplied graphs, so callers should construct a labeler only when they will
+    use it.
     """
 
     def __init__(self, graphs: operation_graph.OperationGraphs):
@@ -204,7 +241,7 @@ class OperationGraphLabeler:
         self,
         action: ast.GlobalTypedName,
         node: operation_graph.PositionOperationNode,
-    ) -> str:
+    ) -> OperationLabel:
         """Return ``action``'s local label for ``node``."""
         return self._operation_labels[action][node]
 
@@ -233,9 +270,11 @@ class OperationGraphLabeler:
                     self._action_execution_name(
                         resolved_operation.action_execution, execution_names
                     ),
-                    self.operation_label(
-                        resolved_operation.action_execution.action,
-                        resolved_operation.operation,
+                    str(
+                        self.operation_label(
+                            resolved_operation.action_execution.action,
+                            resolved_operation.operation,
+                        )
                     ),
                 )
             )

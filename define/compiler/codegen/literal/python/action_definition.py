@@ -11,6 +11,7 @@ from define.compiler.codegen.literal.python import (
     template_context,
 )
 from define.compiler.data_structures import typed_name_dict
+from define.compiler.validator.reference_graph import operation_graph_labeler
 
 
 @typing.final
@@ -26,13 +27,19 @@ class ActionDefinitionGenerator:
             ast.GlobalTypedName, action_context.GeneratedAction
         ],
         plan: action_plan.ActionPlan,
+        operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
     ):
-        """Initialize with one action and its already-generated callees."""
+        """Initialize with one action and its already-generated callees.
+
+        ``operation_labels`` is present for traced generation and absent for
+        ordinary generation.
+        """
         self._definition = definition
         self._converter = converter
         self._role = role
         self._generated_actions = generated_actions
         self._plan = plan
+        self._operation_labels = operation_labels
 
     def generate(self) -> action_context.GeneratedAction:
         """Generate the action definition and its caller-facing interface."""
@@ -53,6 +60,7 @@ class ActionDefinitionGenerator:
             self._converter,
             self._generated_actions,
             self._plan,
+            self._operation_labels,
         ).generate()
         context = action_context.ActionDefinitionContext(
             class_name=class_name,
@@ -64,6 +72,14 @@ class ActionDefinitionGenerator:
                 self._converter.implied_qualities_to_class_references(
                     self._definition.quality_implications,
                 )
+            ),
+            trace_operations=self._operation_labels is not None,
+            trace_action_name=(
+                self._operation_labels.entry_action_execution_name(
+                    self._definition.typed_name
+                )
+                if self._operation_labels is not None
+                else None
             ),
         )
         return action_context.GeneratedAction(

@@ -56,6 +56,10 @@ class {{ definition.class_name }}({{ action_base_class(definition.role) }}):
             self,
         {% endif %}
             scheduler,
+        {% if definition.trace_operations %}
+            None,
+            "{{ definition.trace_action_name }}",
+        {% endif %}
         {% if definition.execution.needs_guarantees %}
             {{ definition.execution.guarantees.class_name }}(),
         {% endif %}

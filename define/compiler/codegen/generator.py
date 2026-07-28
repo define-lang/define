@@ -17,6 +17,8 @@ class CodeGenerator:
         operation_graphs: operation_graph.OperationGraphs,
         entry_action: ast.ActionDefinition,
         output_dir: Path,
+        *,
+        trace_operations: bool = False,
     ):
         """Generate code for a validated Define program.
 
@@ -27,4 +29,10 @@ class CodeGenerator:
         # TODO: Diagnose entry-point requirements that cannot be satisfied
         # because no caller triggers the entry point.
         python_gen = python_generator.PythonLiteralCodeGenerator()
-        python_gen.generate(graph, operation_graphs, entry_action, output_dir)
+        python_gen.generate(
+            graph,
+            operation_graphs,
+            entry_action,
+            output_dir,
+            trace_operations=trace_operations,
+        )

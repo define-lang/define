@@ -6,7 +6,12 @@ from define.compiler.validator.reference_graph import (
 )
 
 
-def _resolved_labels(result: conftest.FullValidationResult) -> list[str]:
+def _resolved(
+    result: conftest.FullValidationResult,
+) -> tuple[
+    operation_graph_labeler.OperationGraphLabeler,
+    operation_graph_resolver.ResolvedOperationGraph,
+]:
     test_helpers.assert_no_errors(result.program_result)
     entry_action = next(
         action
@@ -17,11 +22,15 @@ def _resolved_labels(result: conftest.FullValidationResult) -> list[str]:
         result.operation_graphs,
         entry_action,
     ).build()
-    return list(
-        operation_graph_labeler.OperationGraphLabeler(result.operation_graphs)
-        .resolved_operation_labels(resolved)
-        .values()
+    return (
+        operation_graph_labeler.OperationGraphLabeler(result.operation_graphs),
+        resolved,
     )
+
+
+def _resolved_labels(result: conftest.FullValidationResult) -> list[str]:
+    labels, resolved = _resolved(result)
+    return list(labels.resolved_operation_labels(resolved).values())
 
 
 def test_duplicate_operations_receive_numbered_labels(
@@ -48,6 +57,18 @@ define the potential action<my.domain.com:my_lib:/test> {
         "test.create(item)",
         "test.destroy(item)",
         "test.create(item)#2",
+    ]
+    labels, resolved = _resolved(result)
+    assert [
+        labels.operation_label(
+            operation.action_execution.action,
+            operation.operation,
+        )
+        for operation in resolved.operations
+    ] == [
+        operation_graph_labeler.OperationLabel("create", None, "item", 1),
+        operation_graph_labeler.OperationLabel("destroy", None, "item", 1),
+        operation_graph_labeler.OperationLabel("create", None, "item", 2),
     ]
 
 

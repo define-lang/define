@@ -18,6 +18,6 @@ filegroup(
 
 pyright_test(
     name = "pyright_test",
-    srcs = glob(["**/expected/**/*.py"]),
+    srcs = glob(["**/*.py"]),
     deps = ["//define/runtime:literal"],
 )

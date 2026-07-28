@@ -154,6 +154,19 @@ class TestScheduler:
 
         assert calls == ["first", "second"]
 
+    def test_default_operation_tracing_hooks_are_no_ops(self):
+        scheduler = literal.Scheduler()
+
+        execution = scheduler.execution_created(
+            None,
+            "test",
+        )
+        scheduler.create_completed(execution, "item", 1)
+        scheduler.move_completed(execution, "item", "destination", 1)
+        scheduler.destroy_completed(execution, "destination", 1)
+
+        assert execution is None
+
     def test_simultaneous_submissions_execute_once_within_thread_limit(self):
         scheduler = literal.Scheduler(max_threads=5)
         submit_together = threading.Barrier(5)
