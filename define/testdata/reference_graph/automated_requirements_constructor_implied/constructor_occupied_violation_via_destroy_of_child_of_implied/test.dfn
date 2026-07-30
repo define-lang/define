@@ -1,3 +1,6 @@
+# The first constructor creates /q. The second constructor therefore reaches
+# /q::/child through a particle supplied by another action, rather than one it
+# created itself.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -5,7 +8,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
-                it has the action</p>.
+                it has the action</create_parent>.
+                it has the action</destroy_child>.
             }
         }
         create a particle in position<box>.

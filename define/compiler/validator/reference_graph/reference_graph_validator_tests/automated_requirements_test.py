@@ -400,6 +400,29 @@ def test_constructor_satisfies_requirements(
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
 
 
+def test_locally_created_parent_does_not_infer_child_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+
+
+def test_empty_child_of_locally_created_parent_is_a_local_violation(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diag.location.line == 8
+    assert diag.location.column == 33
+    assert diag.location.end_line == 8
+    assert diag.location.end_column == 68
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.position_name == "position</parent>::position</child>"
+
+
 def test_no_requirement_check_on_unknown_global_chain_start(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

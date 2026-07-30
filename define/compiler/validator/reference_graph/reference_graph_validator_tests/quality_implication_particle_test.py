@@ -30,11 +30,20 @@ def test_move_between_implied_positions(
     assert_no_errors(result.program_result)
 
 
-def test_chained_child_access_via_implied_position(
+def test_child_of_locally_created_implied_particle_is_known_empty(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diag.location.line == 8
+    assert diag.location.column == 33
+    assert diag.location.end_line == 8
+    assert diag.location.end_column == 68
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.position_name == "position</parent>::position</child>"
 
 
 def test_destroy_after_create_in_implied_position(

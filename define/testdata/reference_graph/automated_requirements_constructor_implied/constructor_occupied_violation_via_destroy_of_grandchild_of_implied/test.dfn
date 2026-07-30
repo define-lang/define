@@ -1,3 +1,5 @@
+# The first constructor creates both ancestors so the second constructor
+# specifically requires the grandchild it destroys.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -5,7 +7,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
-                it has the action</p>.
+                it has the action</create_ancestors>.
+                it has the action</destroy_grandchild>.
             }
         }
         create a particle in position<box>.

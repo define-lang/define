@@ -1846,12 +1846,20 @@ class ActionPostorderValidator:
         # position still do create requirements.)
         if self._trigger_position_name == position.canonical_chained_name:
             return None
-        parent_origin = self._parent_particle_comes_from_caller(parent)
-        if parent_origin is not None:
+        if parent is not None:
+            parent_occupancy = self._tracker.get_occupancy_info(parent)
+            # "parent_occupancy.occupant is None" should be impossible here, but it does our
+            # type narrowing for the check below.
+            if parent_occupancy.has_error or parent_occupancy.occupant is None:
+                return None
+            if not parent_occupancy.occupant.from_caller:
+                return None
             # The particle was moved in from a contracted position, so we
-            # put the requirement on that origin, not whatever position we are
-            # inferring a requirement for.
-            return position.replace_parent_position_with_prefix(parent_origin)
+            # put the requirement on that origin, not whatever position we
+            # are inferring a requirement for.
+            return position.replace_parent_position_with_prefix(
+                parent_occupancy.occupant.origin_position
+            )
         if self._starts_with_contracted_name(position):
             return position
         return None
