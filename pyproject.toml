@@ -147,6 +147,9 @@ pytest_add_cli_args = [
     "--deselect=define/compiler/codegen/generator_integration_test.py::test_expected_output_runs",
 ]
 
+[tool.coverage.run]
+branch = true
+
 [tool.basedpyright]
 # Do not disable any rules here. Fix type errors in source code instead.
 stubPath = "typestubs"
