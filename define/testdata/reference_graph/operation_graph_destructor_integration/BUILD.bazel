@@ -5,12 +5,16 @@ _TRACING_TESTDATA_EXCLUDES = [
     "**/operation_trace.json",
 ]
 
+_CODEGEN_TESTDATA_EXCLUDES = [
+    "default_empty_destructor_position_uses_parent_fill/**",
+]
+
 filegroup(
     name = "codegen_testdata",
     testonly = True,
     srcs = glob(
         ["**"],
-        exclude = _TRACING_TESTDATA_EXCLUDES,
+        exclude = _CODEGEN_TESTDATA_EXCLUDES + _TRACING_TESTDATA_EXCLUDES,
     ),
     visibility = ["//define/testdata/codegen:__pkg__"],
 )

@@ -43,22 +43,6 @@ class _ResolvedRequirement:
     occupancy: action_contract.ChildOccupancy
 
 
-@dataclass(frozen=True, slots=True)
-class _DestructionTarget:
-    """One particle the destruction cascade destroys."""
-
-    position: ast.PositionReference
-    particle_is_known_to_exist: bool
-
-
-@dataclass(frozen=True, slots=True)
-class _DestructionCascade:
-    """The result of walking one destruction cascade."""
-
-    destructors: list[action_contract.CascadeDestructor]
-    targets: list[_DestructionTarget]
-
-
 class ActionPostorderValidator:
     """Validates an action definition during a DFS post-order walk of the reference graph."""
 
@@ -452,61 +436,41 @@ class ActionPostorderValidator:
                 ),
             )
 
-    def _walk_destruction_cascade(
-        self,
-        destroyed_position: ast.PositionReference,
-        *,
-        is_auto_destruction: bool,
-    ) -> _DestructionCascade:
-        """Record a Destruction Contract for each caller-passed particle in a destruction cascade.
-
-        Return the destructors to fire and destruction targets in postorder.
-        """
-        destructors: list[action_contract.CascadeDestructor] = []
-        targets: list[_DestructionTarget] = []
-        particle = self._tracker.get_occupant(destroyed_position)
-        self._walk_cascade_for_occupied_position(
-            destroyed_position,
-            particle,
-            destroyed_position,
-            destructors,
-            targets,
-            is_auto_destruction=is_auto_destruction,
-        )
-        return _DestructionCascade(destructors, targets)
-
-    def _destroy_cascade_target(self, target: _DestructionTarget):
-        """Destroy one particle in the destruction cascade."""
-        if target.particle_is_known_to_exist:
-            self._tracker.destroy(target.position)
-        else:
-            self._tracker.destroy_if_occupied(target.position)
-
-    def _walk_cascade_for_occupied_position(
+    def _execute_destruction_cascade(
         self,
         position: ast.PositionReference,
         particle: particle_tracker.ParticleInfo,
         explicitly_destroyed_position: ast.PositionReference,
-        destructors: list[action_contract.CascadeDestructor],
-        targets: list[_DestructionTarget],
+        scope: scope_tracker.ScopeTracker,
         *,
-        is_auto_destruction: bool,
+        is_auto_destruction: bool = False,
+        auto_destruction_target: ast.PositionReference | None = None,
+        destroy_particle: bool = True,
     ):
+        """Execute one occupied particle's destruction cascade."""
+        destruction_contract = (
+            self._destruction_contract_for(
+                position,
+                particle,
+                explicitly_destroyed_position,
+                is_auto_destruction=is_auto_destruction,
+            )
+            if particle.from_caller
+            else None
+        )
         # A particle keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
-        # Here, we walk the tree of particles in a depth-first postorder traversal
-        # as required by the destruction cascade.
         for assignment in reversed(particle.qualities.assignments):
             quality = assignment.quality
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
-                self._walk_cascade_child_into(
+                self._execute_cascade_child(
                     child,
                     particle,
                     explicitly_destroyed_position,
-                    destructors,
-                    targets,
+                    scope,
                     is_auto_destruction=is_auto_destruction,
+                    auto_destruction_target=auto_destruction_target,
                 )
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
@@ -516,49 +480,45 @@ class ActionPostorderValidator:
                     continue
                 definition = definition_result.definition
                 if definition.is_destructor:
-                    preferred_assignment = particle.qualities.preferred_assignment_for(
-                        quality
-                    )
-                    destructors.append(
+                    self._run_destructor(
                         action_contract.CascadeDestructor(
-                            assignment=preferred_assignment,
+                            assignment=particle.qualities.preferred_assignment_for(
+                                quality
+                            ),
                             position=position,
                             origin_position=particle.origin_position,
-                        )
+                        ),
+                        scope,
+                        auto_destruction_target=auto_destruction_target,
                     )
                 for interface_position in reversed(definition.interface_positions):
                     child = position.with_position_suffix(
                         quality, interface_position.typed_name
                     )
-                    self._walk_cascade_child_into(
+                    self._execute_cascade_child(
                         child,
                         particle,
                         explicitly_destroyed_position,
-                        destructors,
-                        targets,
+                        scope,
                         is_auto_destruction=is_auto_destruction,
+                        auto_destruction_target=auto_destruction_target,
                     )
-        if particle.from_caller:
-            self._destruction_contracts.append(
-                self._destruction_contract_for(
-                    position,
-                    particle,
-                    explicitly_destroyed_position,
-                    is_auto_destruction=is_auto_destruction,
-                )
-            )
-        targets.append(_DestructionTarget(position, particle_is_known_to_exist=True))
+        if destruction_contract is not None:
+            self._destruction_contracts.append(destruction_contract)
+        if destroy_particle:
+            self._tracker.destroy(position)
 
-    def _walk_cascade_child_into(
+    def _execute_cascade_child(
         self,
         position: ast.PositionReference,
         parent_particle: particle_tracker.ParticleInfo,
         explicitly_destroyed_position: ast.PositionReference,
-        destructors: list[action_contract.CascadeDestructor],
-        targets: list[_DestructionTarget],
+        scope: scope_tracker.ScopeTracker,
         *,
         is_auto_destruction: bool,
+        auto_destruction_target: ast.PositionReference | None,
     ):
+        """Execute destruction for one position reached during a cascade."""
         occupancy = self._tracker.get_occupancy_info(position)
         if occupancy.has_error:
             return
@@ -568,17 +528,15 @@ class ActionPostorderValidator:
             if parent_particle.from_caller and not self._tracker.has_been_touched(
                 position
             ):
-                targets.append(
-                    _DestructionTarget(position, particle_is_known_to_exist=False)
-                )
+                self._tracker.destroy_if_occupied(position)
             return
-        self._walk_cascade_for_occupied_position(
+        self._execute_destruction_cascade(
             position,
             occupancy.occupant,
             explicitly_destroyed_position,
-            destructors,
-            targets,
+            scope,
             is_auto_destruction=is_auto_destruction,
+            auto_destruction_target=auto_destruction_target,
         )
 
     def _destruction_contract_for(
@@ -603,43 +561,40 @@ class ActionPostorderValidator:
             is_auto_destruction=is_auto_destruction,
         )
 
-    def _run_destructors(
+    def _run_destructor(
         self,
-        destructors: list[action_contract.CascadeDestructor],
+        destructor: action_contract.CascadeDestructor,
         scope: scope_tracker.ScopeTracker,
         auto_destruction_target: ast.PositionReference | None = None,
     ):
-        """Trigger each destructor that fires during a destruction cascade."""
+        """Trigger one destructor at its point in a destruction cascade."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
         # quality of the particle in `position`, so its interface positions
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
-        for destructor in destructors:
-            # _collect_cascade_destructors already verified the destructor's
-            # definition loaded.
-            quality = destructor.assignment.quality
-            contract = self._action_contracts[quality]
-            action_chain = destructor.position.with_action_suffix(quality)
-            self._propagate_destructor_requirements(
-                contract, action_chain, scope, destructor.assignment
+        quality = destructor.assignment.quality
+        contract = self._action_contracts[quality]
+        action_chain = destructor.position.with_action_suffix(quality)
+        self._propagate_destructor_requirements(
+            contract, action_chain, scope, destructor.assignment
+        )
+        caller_positions = [
+            requirement.position.in_caller(action_chain)
+            for requirement in contract.requirements.values()
+        ]
+        self._check_destructor_requirements(
+            contract,
+            destructor,
+            caller_positions,
+            auto_destruction_target=auto_destruction_target,
+        )
+        self._action_edges.append(
+            action_call_graph.ActionGraphEdge(
+                source=self._definition.typed_name.source_typed_name,
+                target=quality.full_typed_name,
             )
-            caller_positions = [
-                requirement.position.in_caller(action_chain)
-                for requirement in contract.requirements.values()
-            ]
-            self._check_destructor_requirements(
-                contract,
-                destructor,
-                caller_positions,
-                auto_destruction_target=auto_destruction_target,
-            )
-            self._action_edges.append(
-                action_call_graph.ActionGraphEdge(
-                    source=self._definition.typed_name.source_typed_name,
-                    target=quality.full_typed_name,
-                )
-            )
+        )
 
     def _propagate_destructor_requirements(
         self,
@@ -1250,14 +1205,14 @@ class ActionPostorderValidator:
             if occupancy.has_error or occupancy.occupant is None:
                 continue
             auto_destruction_target = occupancy.occupant.last_position
-            cascade = self._walk_destruction_cascade(position, is_auto_destruction=True)
-            self._run_destructors(
-                cascade.destructors,
+            self._execute_destruction_cascade(
+                position,
+                occupancy.occupant,
+                position,
                 scope,
+                is_auto_destruction=True,
                 auto_destruction_target=auto_destruction_target,
             )
-            for target in cascade.targets:
-                self._destroy_cascade_target(target)
 
     def _analyze_create(
         self,
@@ -1302,12 +1257,13 @@ class ActionPostorderValidator:
         )
 
         def before_destroy():
-            cascade = self._walk_destruction_cascade(
-                stmt.target_position, is_auto_destruction=False
+            self._execute_destruction_cascade(
+                stmt.target_position,
+                self._tracker.get_occupant(stmt.target_position),
+                stmt.target_position,
+                scope,
+                destroy_particle=False,
             )
-            self._run_destructors(cascade.destructors, scope)
-            for index in range(len(cascade.targets) - 1):
-                self._destroy_cascade_target(cascade.targets[index])
 
         diags = self._executor.execute_destroy(
             particle_operation.Destroy(target=stmt.target_position),

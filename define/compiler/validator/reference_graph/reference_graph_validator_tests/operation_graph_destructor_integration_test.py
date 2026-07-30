@@ -23,6 +23,19 @@ def test_destructor_independent_chains_and_operation_after_destroy(
     }
 
 
+def test_default_empty_destructor_position_uses_parent_fill(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(carrier)": [],
+        "test.create(carrier::/callee::src)": ["test.create(carrier)"],
+        "test.create(carrier::/callee::trigger_pos)": ["test.create(carrier)"],
+        "callee.destroy(src)": ["test.create(carrier::/callee::src)"],
+    }
+
+
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTORS_NOT_RECORDED)
 def test_multiple_destructors_all_fire_on_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
