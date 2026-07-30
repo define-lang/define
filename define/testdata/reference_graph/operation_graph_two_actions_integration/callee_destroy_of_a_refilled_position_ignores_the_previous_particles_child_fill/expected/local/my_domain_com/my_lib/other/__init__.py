@@ -4,6 +4,7 @@ from typing import ClassVar, final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.origin
 
 
@@ -41,11 +42,25 @@ class OtherExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.join_for_destroy_global_position_origin = literal.Join(2)
+
+    def accept_for_empty_rule_global_position_origin__global_position_child(self):
+        self.destroy_global_position_origin__global_position_child()
 
     def accept_for_empty_rule_global_position_origin(self):
         self.destroy_global_position_origin()
 
+    def destroy_global_position_origin__global_position_child(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.origin.Origin
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle_if_occupied()
+        self.destroy_global_position_origin()
+
     def destroy_global_position_origin(self):
+        if not self.join_for_destroy_global_position_origin.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()

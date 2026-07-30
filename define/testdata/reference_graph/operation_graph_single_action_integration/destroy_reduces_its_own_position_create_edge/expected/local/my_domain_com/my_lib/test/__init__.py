@@ -53,4 +53,9 @@ class TestExecution:
         ).create_particle()
         self.action.get_interface_position(
             "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<box>"
         ).destroy_particle()

@@ -50,12 +50,23 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_position(
+            local.my_domain_com.my_lib.grandchild.Grandchild
+        ).destroy_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
         self.destroy_position_box()
 
     def create_position_box__global_position_sibling(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).create_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        ).destroy_particle()
         self.destroy_position_box()
 
     def destroy_position_box(self):

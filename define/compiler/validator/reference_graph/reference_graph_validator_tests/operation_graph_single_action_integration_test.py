@@ -113,9 +113,11 @@ def test_multiway_join_and_fan_out(
         "test.create(box)": [],
         "test.create(box::/a)": ["test.create(box)"],
         "test.create(box::/b)": ["test.create(box)"],
+        "test.destroy(box::/a)": ["test.create(box::/a)"],
+        "test.destroy(box::/b)": ["test.create(box::/b)"],
         "test.destroy(box)": [
-            "test.create(box::/a)",
-            "test.create(box::/b)",
+            "test.destroy(box::/b)",
+            "test.destroy(box::/a)",
         ],
     }
 
@@ -129,9 +131,13 @@ def test_destroy_reduces_to_the_deepest_touched_descendant(
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
-        "test.destroy(box)": [
+        "test.destroy(box::/child::/grandchild)": [
             "test.create(box::/child::/grandchild)",
         ],
+        "test.destroy(box::/child)": [
+            "test.destroy(box::/child::/grandchild)",
+        ],
+        "test.destroy(box)": ["test.destroy(box::/child)"],
     }
 
 
@@ -143,9 +149,8 @@ def test_destroy_reduces_its_own_position_create_edge(
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
-        "test.destroy(box)": [
-            "test.create(box::/child)",
-        ],
+        "test.destroy(box::/child)": ["test.create(box::/child)"],
+        "test.destroy(box)": ["test.destroy(box::/child)"],
     }
 
 
@@ -206,7 +211,25 @@ def test_move_excludes_an_earlier_move_reached_through_a_child_move(
             "test.move(box::/origin, box::/middle)"
         ],
         "test.move(box, holder)": ["test.move(box::/middle, box::/target)"],
-        "test.destroy(holder)": ["test.move(box, holder)"],
+        "test.destroy(holder::/target)": ["test.move(box, holder)"],
+        "test.destroy(holder)": ["test.destroy(holder::/target)"],
+    }
+
+
+def test_newer_parent_operation_supersedes_an_older_child_operation(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/origin)": ["test.create(box)"],
+        "test.create(box::/origin::/deep)": ["test.create(box::/origin)"],
+        "test.move(box::/origin, box::/target)": ["test.create(box::/origin::/deep)"],
+        "test.move(box, holder)": ["test.move(box::/origin, box::/target)"],
+        "test.destroy(holder::/target::/deep)": ["test.move(box, holder)"],
+        "test.destroy(holder::/target)": ["test.destroy(holder::/target::/deep)"],
+        "test.destroy(holder)": ["test.destroy(holder::/target)"],
     }
 
 
@@ -403,7 +426,8 @@ def test_operations_on_a_child_of_an_implied_position(
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(/implied)": [],
         "test.create(/implied::/child)": ["test.create(/implied)"],
-        "test.destroy(/implied)": ["test.create(/implied::/child)"],
+        "test.destroy(/implied::/child)": ["test.create(/implied::/child)"],
+        "test.destroy(/implied)": ["test.destroy(/implied::/child)"],
     }
 
 
@@ -440,9 +464,16 @@ def test_destruction_cascade_branches_at_siblings_and_joins_at_parent(
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
         "test.create(box::/sibling)": ["test.create(box)"],
-        "test.destroy(box)": [
+        "test.destroy(box::/child::/grandchild)": [
             "test.create(box::/child::/grandchild)",
-            "test.create(box::/sibling)",
+        ],
+        "test.destroy(box::/child)": [
+            "test.destroy(box::/child::/grandchild)",
+        ],
+        "test.destroy(box::/sibling)": ["test.create(box::/sibling)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/sibling)",
+            "test.destroy(box::/child)",
         ],
     }
 
@@ -459,7 +490,10 @@ def test_destruction_cascade_routes_prior_empty_descendant_to_its_particle(
         "test.destroy(box::/child::/grandchild)": [
             "test.create(box::/child::/grandchild)",
         ],
-        "test.destroy(box)": ["test.destroy(box::/child::/grandchild)"],
+        "test.destroy(box::/child)": [
+            "test.destroy(box::/child::/grandchild)",
+        ],
+        "test.destroy(box)": ["test.destroy(box::/child)"],
     }
 
 
@@ -502,5 +536,10 @@ def test_destruction_cascade_branches_from_one_preceding_move(
             "test.create(source::/a)",
             "test.create(source::/b)",
         ],
-        "test.destroy(destination)": ["test.move(source, destination)"],
+        "test.destroy(destination::/a)": ["test.move(source, destination)"],
+        "test.destroy(destination::/b)": ["test.move(source, destination)"],
+        "test.destroy(destination)": [
+            "test.destroy(destination::/b)",
+            "test.destroy(destination::/a)",
+        ],
     }

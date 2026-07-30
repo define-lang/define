@@ -10,6 +10,11 @@ from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
+_DESTRUCTOR_ORDERING_NOT_REPRESENTED = (
+    "Destructor ordering is not represented in the operation graph, so cascade "
+    "children are destroyed before the parent destructor uses them."
+)
+
 
 def _generate(
     program_result: validation_result.ProgramValidationResult,
@@ -65,10 +70,7 @@ def test_constructor_chosen_when_position_constrains_it(
     assert main_file.stat().st_size > 0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="a destructor's submitted fragment can outlive the cascade that fired it",
-)
+@pytest.mark.xfail(strict=True, reason=_DESTRUCTOR_ORDERING_NOT_REPRESENTED)
 def test_destructor_fragments_finish_before_cascade_frees_positions(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
     tmp_path: Path,
@@ -77,25 +79,77 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
 
     assert_no_errors(program_result)
     _generate(program_result, tmp_path)
-    # The generated __main__.py starts a scheduler with one thread per CPU, which
-    # makes the order of the submitted fragment and the cascade a race. A single
-    # thread leaves the fragment queued until the scheduler drains it at shutdown,
-    # so the interleaving is the same on every machine.
-    (tmp_path / "single_thread_main.py").write_text(
-        """\
-from define.runtime import literal
-
-import local.my_domain_com.my_lib.test
-
-literal.start(
-    local.my_domain_com.my_lib.test.Test, literal.Scheduler(max_threads=1)
-)
-""",
-        encoding="utf-8",
+    completed = generated_program_runner.run_generated_program(
+        tmp_path,
+        max_threads=1,
     )
 
+    assert (completed.returncode, completed.stderr) == (0, "")
+
+
+@pytest.mark.xfail(strict=True, reason=_DESTRUCTOR_ORDERING_NOT_REPRESENTED)
+def test_destructor_and_known_children_with_caller_known_occupancy(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+    tmp_path: Path,
+):
+    program_result = validate_testdata_structural_non_filesystem()
+
+    assert_no_errors(program_result)
+    _generate(program_result, tmp_path)
     completed = generated_program_runner.run_generated_program(
-        tmp_path, "single_thread_main.py"
+        tmp_path,
+        max_threads=1,
+    )
+
+    assert (completed.returncode, completed.stderr) == (0, "")
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Child position existence known only two callers above is not propagated "
+        "to the destroyer's destruction cascade."
+    ),
+)
+def test_destructor_with_children_known_only_two_callers_up(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+    tmp_path: Path,
+):
+    program_result = validate_testdata_structural_non_filesystem()
+
+    assert_no_errors(program_result)
+    _generate(program_result, tmp_path)
+    destroyer = (
+        tmp_path / "local" / "my_domain_com" / "my_lib" / "destroyer" / "__init__.py"
+    )
+
+    assert "global_position_extra" in destroyer.read_text()
+    completed = generated_program_runner.run_generated_program(
+        tmp_path,
+        max_threads=1,
+    )
+
+    assert (completed.returncode, completed.stderr) == (0, "")
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "A destructor known only two callers above is not propagated to the "
+        "destroyer, so its child positions are destroyed before it executes."
+    ),
+)
+def test_destructor_known_only_two_callers_up(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+    tmp_path: Path,
+):
+    program_result = validate_testdata_structural_non_filesystem()
+
+    assert_no_errors(program_result)
+    _generate(program_result, tmp_path)
+    completed = generated_program_runner.run_generated_program(
+        tmp_path,
+        max_threads=1,
     )
 
     assert (completed.returncode, completed.stderr) == (0, "")

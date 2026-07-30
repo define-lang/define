@@ -89,6 +89,11 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_a.QualityA
         ).create_particle()
+        self.action.get_interface_position(
+            "position<input_a>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.quality_a.QualityA
+        ).destroy_particle()
         self.destroy_position_input_a()
 
     def create_position_input_b__global_position_quality_b(self):
@@ -97,6 +102,11 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_b.QualityB
         ).create_particle()
+        self.action.get_interface_position(
+            "position<input_b>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.quality_b.QualityB
+        ).destroy_particle()
         self.destroy_position_input_b()
 
     def destroy_position_input_a(self):

@@ -51,4 +51,19 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.d.D
         ).create_particle()
+        self.local_position_a.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).particle.get_position(
+            local.my_domain_com.my_lib.c.C
+        ).particle.get_position(
+            local.my_domain_com.my_lib.d.D
+        ).destroy_particle()
+        self.local_position_a.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).particle.get_position(
+            local.my_domain_com.my_lib.c.C
+        ).destroy_particle()
+        self.local_position_a.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
         self.local_position_a.destroy_particle()

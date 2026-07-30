@@ -48,6 +48,7 @@ class TriggeredExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.join_for_destroy_global_position_target = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_position_target()
@@ -60,10 +61,29 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.submit(self.destroy_global_position_target)
+        self.scheduler.submit(self.destroy_global_position_target__global_position_b)
+        self.scheduler.submit(self.destroy_global_position_target__global_position_a)
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
+    def destroy_global_position_target__global_position_b(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.target.Target
+        ).particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle_if_occupied()
+        self.destroy_global_position_target()
+
+    def destroy_global_position_target__global_position_a(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.target.Target
+        ).particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle_if_occupied()
+        self.destroy_global_position_target()
+
     def destroy_global_position_target(self):
+        if not self.join_for_destroy_global_position_target.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()

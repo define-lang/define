@@ -131,8 +131,11 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
             "test.create(gateway::/other::input::/item)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.destroy(input::/item)": [
+        "other.destroy_if_occupied(input::/item::/deep)": [
             "test.create(gateway::/other::input::/item::/deep)"
+        ],
+        "other.destroy(input::/item)": [
+            "other.destroy_if_occupied(input::/item::/deep)"
         ],
     }
 
@@ -145,10 +148,12 @@ def test_callee_destroy_of_a_refilled_position_ignores_the_previous_particles_ch
     assert operation_dependencies(result.operation_graphs) == {
         "test.create(/origin)": [],
         "test.create(/origin::/child)": ["test.create(/origin)"],
-        "test.destroy(/origin)": ["test.create(/origin::/child)"],
+        "test.destroy(/origin::/child)": ["test.create(/origin::/child)"],
+        "test.destroy(/origin)": ["test.destroy(/origin::/child)"],
         "test.create(/origin)#2": ["test.destroy(/origin)"],
         "test.create(/other::trigger_pos)": [],
-        "other.destroy(/origin)": ["test.create(/origin)#2"],
+        "other.destroy_if_occupied(/origin::/child)": ["test.create(/origin)#2"],
+        "other.destroy(/origin)": ["other.destroy_if_occupied(/origin::/child)"],
     }
 
 
@@ -445,10 +450,14 @@ def test_intermediate_callee_emptying_reaches_a_deeper_caller_operation(
             "test.create(gateway::/other::parent::/child::/grandchild)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.destroy(parent::/child::/grandchild)": [
+        "other.destroy_if_occupied(parent::/child::/grandchild::/greatgrandchild)": [
             "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)"
         ],
-        "other.destroy(parent)": ["other.destroy(parent::/child::/grandchild)"],
+        "other.destroy(parent::/child::/grandchild)": [
+            "other.destroy_if_occupied(parent::/child::/grandchild::/greatgrandchild)"
+        ],
+        "other.destroy(parent::/child)": ["other.destroy(parent::/child::/grandchild)"],
+        "other.destroy(parent)": ["other.destroy(parent::/child)"],
     }
 
 
@@ -596,5 +605,8 @@ def test_local_cascade_conditionally_destroys_unknown_child(
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
         "triggered.move(/target, local)": ["triggered.move(run, /target)"],
-        "triggered.destroy(local)": ["triggered.move(/target, local)"],
+        "triggered.destroy_if_occupied(local::/b)": ["triggered.move(/target, local)"],
+        "triggered.destroy(local)": [
+            "triggered.destroy_if_occupied(local::/b)",
+        ],
     }

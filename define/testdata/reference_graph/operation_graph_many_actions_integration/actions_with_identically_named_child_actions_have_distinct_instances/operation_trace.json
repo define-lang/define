@@ -134,7 +134,31 @@
       "action_name": "second"
     },
     "operation_name": "destroy",
+    "target": "box::/inner::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "second"
+    },
+    "operation_name": "destroy",
     "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "first"
+    },
+    "operation_name": "destroy",
+    "target": "box::/inner::trigger_pos",
     "occurrence": 1
   },
   {

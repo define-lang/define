@@ -4,7 +4,9 @@ from typing import ClassVar, final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.parent
+import local.my_domain_com.my_lib.sibling
 
 
 class Inner(literal.Action):
@@ -41,11 +43,36 @@ class InnerExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.join_for_destroy_global_position_parent = literal.Join(3)
+
+    def accept_for_empty_rule_global_position_parent__global_position_sibling(self):
+        self.destroy_global_position_parent__global_position_sibling()
+
+    def accept_for_empty_rule_global_position_parent__global_position_child(self):
+        self.destroy_global_position_parent__global_position_child()
 
     def accept_for_empty_rule_global_position_parent(self):
         self.destroy_global_position_parent()
 
+    def destroy_global_position_parent__global_position_sibling(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        ).destroy_particle_if_occupied()
+        self.destroy_global_position_parent()
+
+    def destroy_global_position_parent__global_position_child(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle_if_occupied()
+        self.destroy_global_position_parent()
+
     def destroy_global_position_parent(self):
+        if not self.join_for_destroy_global_position_parent.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()

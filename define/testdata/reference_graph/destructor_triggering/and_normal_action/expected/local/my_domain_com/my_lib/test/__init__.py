@@ -48,10 +48,15 @@ class TestExecution:
             "position<trigger>"
         ).create_particle()
         self.init_trigger_position_box__global_action_beep__execution()
-        self.scheduler.submit(self.destroy_position_box)
+        self.scheduler.submit(self.destroy_position_box__global_action_beep__position_trigger)
         self.trigger_position_box__global_action_beep__action_parent()
 
-    def destroy_position_box(self):
+    def destroy_position_box__global_action_beep__position_trigger(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.beep.Beep
+        ).get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
         self.local_position_box.destroy_particle()
 
     def init_trigger_position_box__global_action_beep__execution(self):

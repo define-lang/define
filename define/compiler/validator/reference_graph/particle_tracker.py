@@ -186,8 +186,9 @@ class _PendingNestedGuarantees:
         # subtree, so a query on an implied position would never apply it.
         prefix = nested_guarantee.parent_position
         self._by_prefix.setdefault(prefix, []).append(nested_guarantee)
-        if len(prefix) > self._longest_pending_guarantee_key:
-            self._longest_pending_guarantee_key = len(prefix)
+        self._longest_pending_guarantee_key = max(
+            self._longest_pending_guarantee_key, len(prefix)
+        )
 
     def drain_shortest_first(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""
@@ -498,7 +499,8 @@ class ParticleTracker:
         if self._store.has_error_in_chain(key):
             return OccupancyInfo(has_error=True, occupant=None)
         return OccupancyInfo(
-            has_error=False, occupant=self._store.occupant_or_none(key)
+            has_error=False,
+            occupant=self._store.occupant_or_none(key),
         )
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
@@ -513,37 +515,6 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_been_touched(key)
 
-    def nearest_particle_above_if_state_unknown(
-        self, in_position: ast.PositionReference
-    ) -> tuple[tuple[str, ...], ParticleInfo] | None:
-        """Return the nearest particle above unless this position's state is known.
-
-        The state is known when either: (a) the current position was touched
-        in this action or (b) the parent particle was created in this action.
-        (If the parent was passed in from the caller, we don't know if this
-        position is occupied or empty.)
-        """
-        key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
-        if self._store.has_been_touched(key):
-            return None
-        parent_key = ast.chain_parent_position(key)
-        if parent_key is not None:
-            parent_particle = self._store.occupant_or_none(parent_key)
-            if parent_particle is not None and not parent_particle.from_caller:
-                return None
-        if len(key) == 1:
-            return None
-        ancestor_key = self._store.state.find_longest_prefix_where(
-            key[:-1], lambda node_state: node_state.particle_info is not None
-        )
-        if ancestor_key is None:
-            return None
-        particle_info = self._store.state[ancestor_key].particle_info
-        if particle_info is None:
-            raise ValueError(f"position {ancestor_key} lost its particle")
-        return ancestor_key, particle_info
-
     # Requirement propagation can query dozens or hundreds of positions for each
     # triggered action and millions over a large action call graph. Keeping this
     # operation batched lets trie lookup reuse common position prefixes instead
@@ -557,14 +528,9 @@ class ParticleTracker:
         for position in positions:
             key = position.canonical_chained_name_tuple
             self._apply_pending_guarantees_up_to(key)
-            state_is_known = self._store.has_been_touched(key)
-            parent_key = ast.chain_parent_position(key)
-            if parent_key is not None:
-                parent_particle = self._store.occupant_or_none(parent_key)
-                state_is_known = state_is_known or (
-                    parent_particle is not None and not parent_particle.from_caller
-                )
-            search_key = key[:-1] if not state_is_known and len(key) > 1 else None
+            search_key = (
+                key[:-1] if not self._state_is_known(key) and len(key) > 1 else None
+            )
             search_key_by_position.append(search_key)
             if search_key is not None:
                 search_keys.append(search_key)
@@ -573,6 +539,15 @@ class ParticleTracker:
             nearest_ancestors[search_key] if search_key is not None else None
             for search_key in search_key_by_position
         ]
+
+    def _state_is_known(self, key: tuple[str, ...]) -> bool:
+        if self._store.has_been_touched(key):
+            return True
+        parent_key = ast.chain_parent_position(key)
+        if parent_key is None:
+            return True
+        parent_particle = self._store.occupant_or_none(parent_key)
+        return parent_particle is not None and not parent_particle.from_caller
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
@@ -669,11 +644,37 @@ class ParticleTracker:
         existing = self._store.state.get(key)
         if existing is None or existing.particle_info is None:
             raise ValueError(f"position {key} is not occupied")
+        self._record_destroy(in_position, particle_is_known_to_exist=True)
+
+    def destroy_if_occupied(self, in_position: ast.PositionReference):
+        """Remove a particle if this position is occupied at runtime."""
+        key = in_position.canonical_chained_name_tuple
+        self._apply_pending_guarantees_up_to(key)
+        self._ensure_action_parent(key)
+        self._record_destroy(in_position, particle_is_known_to_exist=False)
+
+    def _record_destroy(
+        self,
+        in_position: ast.PositionReference,
+        *,
+        particle_is_known_to_exist: bool,
+    ):
+        """Record one particle destruction and its resulting empty state."""
+        key = in_position.canonical_chained_name_tuple
         # Record before the subtree is deleted, so graph dependencies see the children.
-        operation_node = self._operation_graph.record_destroy(
-            in_position, self._preceding_child_operations(key)
-        )
-        del self._store.state[key]
+        preceding_child_operations = self._preceding_child_operations(key)
+        if particle_is_known_to_exist:
+            operation_node = self._operation_graph.record_destroy(
+                in_position,
+                preceding_child_operations,
+            )
+            # We have to del to remove all the children in the trie.
+            del self._store.state[key]
+        else:
+            operation_node = self._operation_graph.record_destroy_if_occupied(
+                in_position,
+                preceding_child_operations,
+            )
         # Destroying puts all children back into a known state (they don't exist).
         if key in self._store.error:
             del self._store.error[key]

@@ -4,6 +4,7 @@ from typing import final, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marked
 
 
@@ -41,7 +42,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         guarantees.trigger_position_box__global_action_marked.guarantee_global_action_destructor__position_slot.append(
-            self.destroy_position_box
+            self.destroy_position_box__global_action_destructor__position_slot
         )
         self.trigger_position_box__global_action_marked__execution: local.my_domain_com.my_lib.marked.MarkedExecution
         self.join_for_trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot = literal.Join(2)
@@ -52,7 +53,12 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot)
         self.trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot()
 
-    def destroy_position_box(self):
+    def destroy_position_box__global_action_destructor__position_slot(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.destructor.Destructor
+        ).get_interface_position(
+            "position<slot>"
+        ).destroy_particle()
         self.local_position_box.destroy_particle()
 
     def init_trigger_position_box__global_action_marked__execution(self):

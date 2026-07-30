@@ -62,6 +62,14 @@ class TestExecution:
             "box::/a",
             1,
         )
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "box::/a",
+            1,
+        )
         self.destroy_position_box()
 
     def create_position_box__global_position_b(self):
@@ -69,6 +77,14 @@ class TestExecution:
             local.my_domain_com.my_lib.b.B
         ).create_particle()
         self.scheduler.create_completed(
+            self.trace_execution,
+            "box::/b",
+            1,
+        )
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
             "box::/b",
             1,

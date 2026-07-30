@@ -8,6 +8,7 @@ import local.my_domain_com.my_lib.construct_a
 import local.my_domain_com.my_lib.construct_b
 import local.my_domain_com.my_lib.destruct_a
 import local.my_domain_com.my_lib.destruct_b
+import local.my_domain_com.my_lib.marker
 
 
 class Test(literal.EntryPoint):
@@ -58,7 +59,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         guarantees.trigger_position_box__global_action_construct_b.guarantee_global_position_marker.append(
-            self.destroy_position_box
+            self.destroy_position_box__global_position_marker
         )
         guarantees.trigger_position_box__global_action_construct_a.guarantee_global_position_marker.append(
             self.trigger_position_box__global_action_construct_b__for_empty_rule_global_position_marker
@@ -78,7 +79,12 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_box__global_action_construct_a__when_empty_global_position_marker)
         self.trigger_position_box__global_action_construct_b__for_empty_rule_global_position_marker()
 
-    def destroy_position_box(self):
+    def destroy_position_box__global_position_marker(self):
+        self.action.get_interface_position(
+            "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker.Marker
+        ).destroy_particle()
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()

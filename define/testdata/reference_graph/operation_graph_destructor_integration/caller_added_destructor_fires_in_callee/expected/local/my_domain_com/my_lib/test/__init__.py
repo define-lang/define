@@ -85,8 +85,16 @@ class TestExecution:
             "position<run>"
         ).create_particle()
         self.init_trigger_position_box__global_action_callee__execution()
-        self.scheduler.submit(self.destroy_position_box)
+        self.scheduler.submit(self.destroy_position_box__global_action_callee__position_run)
         self.trigger_position_box__global_action_callee__for_empty_rule_position_target()
+
+    def destroy_position_box__global_action_callee__position_run(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.callee.Callee
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.destroy_position_box()
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

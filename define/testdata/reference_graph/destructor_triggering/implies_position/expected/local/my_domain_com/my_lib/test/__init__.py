@@ -39,4 +39,7 @@ class TestExecution:
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.marker.Marker
+        ).destroy_particle()
         self.local_position_box.destroy_particle()

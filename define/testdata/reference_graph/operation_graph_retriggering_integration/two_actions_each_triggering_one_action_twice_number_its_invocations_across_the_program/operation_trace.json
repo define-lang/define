@@ -260,8 +260,32 @@
       "action_name": "second"
     },
     "operation_name": "destroy",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 2
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "second"
+    },
+    "operation_name": "destroy",
     "target": "gw",
     "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "first"
+    },
+    "operation_name": "destroy",
+    "target": "gw::/worker::trigger_pos",
+    "occurrence": 2
   },
   {
     "execution": {

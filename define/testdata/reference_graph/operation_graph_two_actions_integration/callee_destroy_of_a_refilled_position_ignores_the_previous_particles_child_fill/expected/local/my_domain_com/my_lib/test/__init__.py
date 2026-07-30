@@ -44,7 +44,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.trigger_global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_global_action_other__for_empty_rule_global_position_origin = literal.Join(2)
+        self.join_for_trigger_global_action_other__for_empty_rule_global_position_origin__global_position_child = literal.Join(2)
 
     def create_global_position_origin(self):
         self.action.on_particle.get_position(
@@ -57,11 +57,16 @@ class TestExecution:
         ).create_particle()
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).create_particle()
-        self.trigger_global_action_other__for_empty_rule_global_position_origin()
+        self.trigger_global_action_other__for_empty_rule_global_position_origin__global_position_child()
 
     def create_global_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -70,6 +75,7 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_global_action_other__execution()
+        self.scheduler.submit(self.trigger_global_action_other__for_empty_rule_global_position_origin__global_position_child)
         self.trigger_global_action_other__for_empty_rule_global_position_origin()
 
     def init_trigger_global_action_other__execution(self):
@@ -82,7 +88,10 @@ class TestExecution:
             self.guarantees.trigger_global_action_other,
         )
 
-    def trigger_global_action_other__for_empty_rule_global_position_origin(self):
-        if not self.join_for_trigger_global_action_other__for_empty_rule_global_position_origin.arrive():
+    def trigger_global_action_other__for_empty_rule_global_position_origin__global_position_child(self):
+        if not self.join_for_trigger_global_action_other__for_empty_rule_global_position_origin__global_position_child.arrive():
             return
+        self.trigger_global_action_other__execution.accept_for_empty_rule_global_position_origin__global_position_child()
+
+    def trigger_global_action_other__for_empty_rule_global_position_origin(self):
         self.trigger_global_action_other__execution.accept_for_empty_rule_global_position_origin()

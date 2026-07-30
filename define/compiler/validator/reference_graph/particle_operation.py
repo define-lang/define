@@ -168,7 +168,9 @@ class ParticleOperationExecutor:
         return []
 
     def execute_destroy(
-        self, op: Destroy, before_destroy: Callable[[], None] = lambda: None
+        self,
+        op: Destroy,
+        before_destroy: Callable[[], None],
     ) -> list[diagnostics.Diagnostic]:
         """Execute the Destroy operation.
 
@@ -176,6 +178,11 @@ class ParticleOperationExecutor:
         particle is removed. Destructors must fire while the particle
         still exists, so the caller passes their firing in here.
         """
+        # TODO: Revisit the executor's responsibility for Particle Operations.
+        # The validator expands and executes destruction-cascade children, while
+        # this method validates the statement and executes only its final explicit
+        # destruction. That ownership split forces the validator to exclude the
+        # last cascade target from ``before_destroy``.
         parent_diags = self._check_parents_occupied(op.target)
         if parent_diags:
             self._tracker.mark_error(op.target)

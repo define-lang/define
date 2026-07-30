@@ -43,4 +43,9 @@ class TestExecution:
         ).create_particle()
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()

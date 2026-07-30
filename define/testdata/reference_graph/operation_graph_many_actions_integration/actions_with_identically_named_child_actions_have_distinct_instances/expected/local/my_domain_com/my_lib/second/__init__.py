@@ -53,10 +53,15 @@ class SecondExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_position_box__global_action_inner__execution()
-        self.scheduler.submit(self.destroy_position_box)
+        self.scheduler.submit(self.destroy_position_box__global_action_inner__position_trigger_pos)
         self.trigger_position_box__global_action_inner__action_parent()
 
-    def destroy_position_box(self):
+    def destroy_position_box__global_action_inner__position_trigger_pos(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
         self.local_position_box.destroy_particle()
 
     def init_trigger_position_box__global_action_inner__execution(self):

@@ -286,6 +286,21 @@ class TestDestroyParticle:
             pos.destroy_particle()
         assert exc_info.value.position_name == "test"
 
+    def test_destroy_if_occupied_ignores_empty_position(self):
+        pos = _local_position("test")
+
+        pos.destroy_particle_if_occupied()
+
+        assert not pos.has_particle
+
+    def test_destroy_if_occupied_destroys_particle(self):
+        pos = _local_position("test")
+        pos.create_particle()
+
+        pos.destroy_particle_if_occupied()
+
+        assert not pos.has_particle
+
     def test_destroy_then_create_succeeds(self):
         pos = _local_position("test")
         pos.create_particle()
@@ -326,7 +341,7 @@ class TestDestroyParticle:
 
         assert executed == []
 
-    def test_destroy_cascades_into_child_position_destructor(self):
+    def test_destroy_does_not_destroy_a_child_position(self):
         executed: list[str] = []
 
         class ChildDestructor(literal.Destructor):
@@ -346,12 +361,13 @@ class TestDestroyParticle:
 
         pos.destroy_particle()
 
-        assert executed == ["child destroyed"]
+        assert executed == []
+        assert child_position.has_particle
 
-    def test_destroy_unassigns_qualities_in_reverse_order(self):
+    def test_destroy_executes_current_particle_destructors_in_reverse_order(self):
         order: list[str] = []
 
-        class ChildDtorA(literal.Destructor):
+        class DtorA(literal.Destructor):
             @override
             def execute(self, scheduler: literal.Scheduler):
                 order.append("A")
@@ -361,33 +377,23 @@ class TestDestroyParticle:
             def execute(self, scheduler: literal.Scheduler):
                 order.append("B")
 
-        class ChildDtorC(literal.Destructor):
+        class DtorC(literal.Destructor):
             @override
             def execute(self, scheduler: literal.Scheduler):
                 order.append("C")
 
-        class PosA(literal.GlobalPosition):
-            pass
-
-        class PosC(literal.GlobalPosition):
-            pass
-
         pos = _local_position("test")
         pos.create_particle()
         particle = pos.particle
-        particle.assign_position(PosA)
-        particle.get_position(PosA).create_particle()
-        particle.get_position(PosA).particle.assign_action(ChildDtorA)
+        particle.assign_action(DtorA)
         particle.assign_action(DtorB)
-        particle.assign_position(PosC)
-        particle.get_position(PosC).create_particle()
-        particle.get_position(PosC).particle.assign_action(ChildDtorC)
+        particle.assign_action(DtorC)
 
         pos.destroy_particle()
 
         assert order == ["C", "B", "A"]
 
-    def test_destroy_tears_down_interface_positions_in_reverse_order(self):
+    def test_destroy_does_not_destroy_action_interface_positions(self):
         order: list[str] = []
 
         class IfaceDtor1(literal.Destructor):
@@ -427,29 +433,11 @@ class TestDestroyParticle:
 
         pos.destroy_particle()
 
-        assert order == ["iface2", "iface1"]
+        assert order == []
+        assert iface1.has_particle
+        assert iface2.has_particle
 
-    def test_destroy_with_empty_interface_position_does_not_raise(self):
-        class MyAction(literal.Action):
-            def __init__(self, on_particle: literal.Particle):
-                super().__init__(
-                    on_particle,
-                    interface_positions=[
-                        _local_position(
-                            "position</iface>", scheduler=on_particle.scheduler
-                        ),
-                    ],
-                )
-
-        pos = _local_position("test")
-        pos.create_particle()
-        pos.particle.assign_action(MyAction)
-
-        pos.destroy_particle()
-
-        assert not pos.has_particle
-
-    def test_destructor_runs_before_its_interface_positions_destroyed(self):
+    def test_destructor_does_not_destroy_its_interface_positions(self):
         order: list[str] = []
 
         class IfaceChildDtor(literal.Destructor):
@@ -482,66 +470,8 @@ class TestDestroyParticle:
 
         pos.destroy_particle()
 
-        assert order == ["destructor", "iface_torn_down"]
-
-    def test_destroy_cascades_depth_first_not_breadth_first(self):
-        order: list[str] = []
-
-        class ChildPos(literal.GlobalPosition):
-            pass
-
-        class Left(literal.GlobalPosition):
-            pass
-
-        class Right(literal.GlobalPosition):
-            pass
-
-        class DtorL1(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("L1")
-
-        class DtorL2(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("L2")
-
-        class DtorR1(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("R1")
-
-        class DtorR2(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("R2")
-
-        root = _local_position("test")
-        root.create_particle()
-        particle = root.particle
-
-        particle.assign_position(Left)
-        left = particle.get_position(Left)
-        left.create_particle()
-        left.particle.assign_position(ChildPos)
-        left.particle.get_position(ChildPos).create_particle()
-        left.particle.get_position(ChildPos).particle.assign_action(DtorL2)
-        left.particle.assign_action(DtorL1)
-
-        particle.assign_position(Right)
-        right = particle.get_position(Right)
-        right.create_particle()
-        right.particle.assign_position(ChildPos)
-        right.particle.get_position(ChildPos).create_particle()
-        right.particle.get_position(ChildPos).particle.assign_action(DtorR2)
-        right.particle.assign_action(DtorR1)
-
-        root.destroy_particle()
-
-        # The right branch is fully destroyed (R1 then its grandchild R2) before
-        # the left branch is touched. Breadth-first would instead interleave the
-        # branches as ["R1", "L1", "R2", "L2"].
-        assert order == ["R1", "R2", "L1", "L2"]
+        assert order == ["destructor"]
+        assert iface.has_particle
 
 
 class TestStart:

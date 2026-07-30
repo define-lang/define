@@ -96,6 +96,7 @@ class ActionStatementContext:
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
     operation_label: operation_graph_labeler.OperationLabel | None = None
+    destroy_if_occupied: bool = False
 
 
 @dataclass

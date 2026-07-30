@@ -151,10 +151,16 @@ def test_actions_with_identically_named_child_actions_have_distinct_instances(
         "test.create(/second::trigger_pos)": [],
         "first.create(box)": [],
         "first.create(box::/inner::trigger_pos)": ["first.create(box)"],
-        "first.destroy(box)": ["first.create(box::/inner::trigger_pos)"],
+        "first.destroy(box::/inner::trigger_pos)": [
+            "first.create(box::/inner::trigger_pos)"
+        ],
+        "first.destroy(box)": ["first.destroy(box::/inner::trigger_pos)"],
         "second.create(box)": [],
         "second.create(box::/inner::trigger_pos)": ["second.create(box)"],
-        "second.destroy(box)": ["second.create(box::/inner::trigger_pos)"],
+        "second.destroy(box::/inner::trigger_pos)": [
+            "second.create(box::/inner::trigger_pos)"
+        ],
+        "second.destroy(box)": ["second.destroy(box::/inner::trigger_pos)"],
         "first:inner.create(scratch)": ["first.create(box)"],
         "first:inner.destroy(scratch)": ["first:inner.create(scratch)"],
         "second:inner.create(scratch)": ["second.create(box)"],
@@ -195,6 +201,26 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.destroy(slot)": ["test.move(source, box::/middle::gw::/inner::slot)"],
+    }
+
+
+def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/destination)": [],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.move(/destination, /input::/marker)": [
+            "test.create(/input)",
+            "test.create(/destination)",
+        ],
+        "middle.create(/inner::trigger_pos)": [],
+        "inner.move(/input, /destination)": [
+            "middle.move(/destination, /input::/marker)"
+        ],
     }
 
 
@@ -446,13 +472,22 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
         ],
         "test.create(/parent::/sibling)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],
-        "middle.destroy(/parent::/child::/grandchild)": [
+        "middle.destroy_if_occupied(/parent::/child::/grandchild::/greatgrandchild)": [
             "test.create(/parent::/child::/grandchild::/greatgrandchild)"
         ],
+        "middle.destroy(/parent::/child::/grandchild)": [
+            "middle.destroy_if_occupied(/parent::/child::/grandchild::/greatgrandchild)"
+        ],
         "middle.create(/inner::trigger_pos)": [],
-        "inner.destroy(/parent)": [
+        "inner.destroy_if_occupied(/parent::/sibling)": [
+            "test.create(/parent::/sibling)"
+        ],
+        "inner.destroy_if_occupied(/parent::/child)": [
             "middle.destroy(/parent::/child::/grandchild)",
-            "test.create(/parent::/sibling)",
+        ],
+        "inner.destroy(/parent)": [
+            "inner.destroy_if_occupied(/parent::/sibling)",
+            "inner.destroy_if_occupied(/parent::/child)",
         ],
     }
 
@@ -475,10 +510,23 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
         "middle.create(gw::/inner::run)": ["middle.create(gw)"],
         "inner.create(input::/parent::/a)": ["middle.move(iface, gw::/inner::input)"],
         "inner.create(input::/parent::/b)": ["middle.move(iface, gw::/inner::input)"],
+        "middle.destroy(gw::/inner::input::/parent::/b)": [
+            "inner.create(input::/parent::/b)"
+        ],
+        "middle.destroy(gw::/inner::input::/parent::/a)": [
+            "inner.create(input::/parent::/a)"
+        ],
+        "middle.destroy(gw::/inner::input::/parent)": [
+            "middle.destroy(gw::/inner::input::/parent::/b)",
+            "middle.destroy(gw::/inner::input::/parent::/a)",
+        ],
+        "middle.destroy(gw::/inner::input)": [
+            "middle.destroy(gw::/inner::input::/parent)"
+        ],
+        "middle.destroy(gw::/inner::run)": ["middle.create(gw::/inner::run)"],
         "middle.destroy(gw)": [
-            "middle.create(gw::/inner::run)",
-            "inner.create(input::/parent::/a)",
-            "inner.create(input::/parent::/b)",
+            "middle.destroy(gw::/inner::input)",
+            "middle.destroy(gw::/inner::run)",
         ],
     }
 

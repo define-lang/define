@@ -157,10 +157,22 @@ def _empty_rule_input(
     position_name: str,
 ) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
     return operation_graph_action_resolver.ResolvedEmptyRuleInput(
-        operation_graph.CallerEmptyRuleDependencies(
+        operation_graph.CallerParticleEmptyRuleDependencies(
             requirement_position=(f"position<{position_name}>",),
             dependency_child_positions=frozenset(),
             dependency_requirements=(),
+        )
+    )
+
+
+def _child_position_input(
+    requirement_name: str,
+    child_name: str,
+) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
+    return operation_graph_action_resolver.ResolvedEmptyRuleInput(
+        operation_graph.CallerChildPositionEmptyRuleDependencies(
+            requirement_position=(f"position<{requirement_name}>",),
+            emptied_position=(f"position<{child_name}>",),
         )
     )
 
@@ -268,6 +280,14 @@ def test_requirement_input_names_include_required_state():
     assert _input_method_names(empty, occupied) == {
         empty: "accept_when_empty_position_empty",
         occupied: "accept_when_occupied_position_occupied",
+    }
+
+
+def test_child_position_input_name():
+    child_position = _child_position_input("parent", "child")
+
+    assert _input_method_names(child_position) == {
+        child_position: "accept_for_empty_rule_position_parent__position_child"
     }
 
 

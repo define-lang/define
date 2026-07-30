@@ -1,5 +1,10 @@
 # pyright: reportUnusedCallResult=false
 
+# TODO: Evaluate how much this unit suite catches beyond the reference-graph
+# integration tests. Keep cases that isolate meaningful ParticleTracker
+# invariants, and remove cases whose maintenance cost only duplicates integration
+# coverage.
+
 import pytest
 
 from define.compiler import ast
@@ -24,6 +29,7 @@ _POS2_REF = ast.PositionReference(
     ),
     location=_LOC2,
 )
+
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -946,11 +952,17 @@ def test_generate_own_guarantees_skips_occupied_by_existing_at_origin():
 
 
 def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     a_name = _make_local_ref("a")
     b_name = _make_local_ref("b")
     a_ref = _make_position_ref([a_name])
     b_ref = _make_position_ref([b_name], location=_LOC2)
+    requirements = {
+        ("position<a>",): _make_requirement(
+            action_contract.PositionOccupancyState.OCCUPIED,
+            a_ref,
+        )
+    }
+    tracker = particle_tracker.ParticleTracker(requirements)
 
     tracker.create(a_ref, _NO_QUALITIES, from_caller=a_ref)
     tracker.move(a_ref, b_ref)
@@ -991,19 +1003,19 @@ def test_generate_own_guarantees_emits_unchanged_for_touched_inferred_empty():
 
 
 def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
-    tracker = particle_tracker.ParticleTracker(_NO_REQUIREMENTS)
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
+    requirements = {
+        ("position<x>",): _make_requirement(
+            action_contract.PositionOccupancyState.OCCUPIED,
+            x_ref,
+        )
+    }
+    tracker = particle_tracker.ParticleTracker(requirements)
 
     tracker.create(x_ref, _NO_QUALITIES, from_caller=x_ref)
     destroy_ref = _make_position_ref([_make_local_ref("x", location=_LOC2)], _LOC2)
     tracker.destroy(destroy_ref)
-
-    requirements = {
-        ("position<x>",): _make_requirement(
-            action_contract.PositionOccupancyState.OCCUPIED, x_ref
-        )
-    }
 
     guarantees = tracker.generate_own_guarantees((x_name,), (), requirements)
 

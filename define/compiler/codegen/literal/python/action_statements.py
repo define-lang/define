@@ -80,6 +80,13 @@ class ActionStatementsGenerator:
                     position=self._build_position_expr(node.target),
                     operation_label=local_label,
                 )
+            case operation_graph.DestroyIfOccupiedNode():
+                return template_context.ActionStatementContext(
+                    kind=template_context.StatementKind.DESTROY_PARTICLE,
+                    position=self._build_position_expr(node.target),
+                    operation_label=local_label,
+                    destroy_if_occupied=True,
+                )
             case operation_graph.DestroyNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.DESTROY_PARTICLE,

@@ -54,7 +54,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.trigger_position_gateway__global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild = literal.Join(2)
+        self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild = literal.Join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -104,7 +104,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
         ).create_particle()
-        self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild()
+        self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild()
 
     def create_position_gateway__global_action_other__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -115,7 +115,9 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_position_gateway__global_action_other__execution()
+        self.scheduler.submit(self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild)
         self.scheduler.submit(self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild)
+        self.scheduler.submit(self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child)
         self.trigger_position_gateway__global_action_other__for_empty_rule_position_parent()
 
     def init_trigger_position_gateway__global_action_other__execution(self):
@@ -130,10 +132,16 @@ class TestExecution:
             self.guarantees.trigger_position_gateway__global_action_other,
         )
 
-    def trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
-        if not self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild.arrive():
+    def trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
+        if not self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.arrive():
             return
+        self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild()
+
+    def trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild()
+
+    def trigger_position_gateway__global_action_other__for_empty_rule_position_parent__global_position_child(self):
+        self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_parent__global_position_child()
 
     def trigger_position_gateway__global_action_other__for_empty_rule_position_parent(self):
         self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_parent()

@@ -71,10 +71,15 @@ class FirstExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_position_gw__global_action_worker_2__execution()
-        self.scheduler.submit(self.destroy_position_gw)
+        self.scheduler.submit(self.destroy_position_gw__global_action_worker__position_trigger_pos_2)
         self.trigger_position_gw__global_action_worker_2__action_parent()
 
-    def destroy_position_gw(self):
+    def destroy_position_gw__global_action_worker__position_trigger_pos_2(self):
+        self.local_position_gw.particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
         self.local_position_gw.destroy_particle()
 
     def init_trigger_position_gw__global_action_worker__execution(self):

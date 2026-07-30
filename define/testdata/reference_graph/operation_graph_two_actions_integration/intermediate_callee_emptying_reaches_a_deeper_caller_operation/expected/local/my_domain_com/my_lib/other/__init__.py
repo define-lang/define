@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
+import local.my_domain_com.my_lib.greatgrandchild
 
 
 class Other(literal.Action):
@@ -46,21 +47,53 @@ class OtherExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.join_for_destroy_position_parent__global_position_child__global_position_grandchild = literal.Join(2)
+        self.join_for_destroy_position_parent__global_position_child = literal.Join(2)
         self.join_for_destroy_position_parent = literal.Join(2)
+
+    def accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
+        self.destroy_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild()
 
     def accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         self.destroy_position_parent__global_position_child__global_position_grandchild()
 
+    def accept_for_empty_rule_position_parent__global_position_child(self):
+        self.destroy_position_parent__global_position_child()
+
     def accept_for_empty_rule_position_parent(self):
         self.destroy_position_parent()
 
-    def destroy_position_parent__global_position_child__global_position_grandchild(self):
+    def destroy_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
+        ).particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        ).destroy_particle_if_occupied()
+        self.destroy_position_parent__global_position_child__global_position_grandchild()
+
+    def destroy_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_destroy_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
+        self.action.get_interface_position(
+            "position<parent>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_position(
+            local.my_domain_com.my_lib.grandchild.Grandchild
+        ).destroy_particle()
+        self.destroy_position_parent__global_position_child()
+
+    def destroy_position_parent__global_position_child(self):
+        if not self.join_for_destroy_position_parent__global_position_child.arrive():
+            return
+        self.action.get_interface_position(
+            "position<parent>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
         self.destroy_position_parent()
 

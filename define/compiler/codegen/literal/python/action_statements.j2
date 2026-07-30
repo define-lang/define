@@ -28,7 +28,11 @@
         )
             {% endif %}
         {% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
+            {% if stmt.destroy_if_occupied %}
+        {{ position_expression(stmt.position) }}.destroy_particle_if_occupied()
+            {% else %}
         {{ position_expression(stmt.position) }}.destroy_particle()
+            {% endif %}
             {% if stmt.operation_label is not none %}
         self.scheduler.destroy_completed(
             self.trace_execution,

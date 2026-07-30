@@ -1,0 +1,4 @@
+position<local.my_domain_com.my_lib.destination.Destination>
+position<local.my_domain_com.my_lib.destination.Destination>::position<local.my_domain_com.my_lib.marker.Marker>
+action<local.my_domain_com.my_lib.inner.Inner>::position<trigger_pos>
+action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>

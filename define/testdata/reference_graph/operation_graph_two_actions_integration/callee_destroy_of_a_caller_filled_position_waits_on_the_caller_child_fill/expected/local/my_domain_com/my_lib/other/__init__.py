@@ -4,6 +4,7 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.deep
 import local.my_domain_com.my_lib.item
 
 
@@ -45,11 +46,27 @@ class OtherExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.join_for_destroy_position_input__global_position_item = literal.Join(2)
+
+    def accept_for_empty_rule_position_input__global_position_item__global_position_deep(self):
+        self.destroy_position_input__global_position_item__global_position_deep()
 
     def accept_for_empty_rule_position_input__global_position_item(self):
         self.destroy_position_input__global_position_item()
 
+    def destroy_position_input__global_position_item__global_position_deep(self):
+        self.action.get_interface_position(
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.item.Item
+        ).particle.get_position(
+            local.my_domain_com.my_lib.deep.Deep
+        ).destroy_particle_if_occupied()
+        self.destroy_position_input__global_position_item()
+
     def destroy_position_input__global_position_item(self):
+        if not self.join_for_destroy_position_input__global_position_item.arrive():
+            return
         self.action.get_interface_position(
             "position<input>"
         ).particle.get_position(

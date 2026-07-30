@@ -44,12 +44,18 @@ class TestExecution:
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
         self.destroy_position_box()
 
     def create_position_box__global_position_b(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
         self.destroy_position_box()
 
     def destroy_position_box(self):

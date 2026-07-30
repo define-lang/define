@@ -26,6 +26,7 @@ type _TriggerKey = tuple[operation_graph.LastOperationNode, str]
 _CREATE_OPERATION_NAME = "create"
 _MOVE_OPERATION_NAME = "move"
 _DESTROY_OPERATION_NAME = "destroy"
+_DESTROY_IF_OCCUPIED_OPERATION_NAME = "destroy_if_occupied"
 
 
 def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
@@ -100,6 +101,8 @@ class _OperationLabels:
             case operation_graph.MoveNode():
                 source = cls._position_name(node.source)
                 return _MOVE_OPERATION_NAME, source, target
+            case operation_graph.DestroyIfOccupiedNode():
+                return _DESTROY_IF_OCCUPIED_OPERATION_NAME, None, target
             case operation_graph.DestroyNode():
                 return _DESTROY_OPERATION_NAME, None, target
             case _:

@@ -87,5 +87,10 @@ def test_destroy_of_trigger_particle_conditionally_destroys_unknown_children(
         "test.create(source::/a)": ["test.create(source)"],
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
-        "triggered.destroy(/target)": ["triggered.move(run, /target)"],
+        "triggered.destroy_if_occupied(/target::/b)": ["triggered.move(run, /target)"],
+        "triggered.destroy_if_occupied(/target::/a)": ["triggered.move(run, /target)"],
+        "triggered.destroy(/target)": [
+            "triggered.destroy_if_occupied(/target::/b)",
+            "triggered.destroy_if_occupied(/target::/a)",
+        ],
     }

@@ -90,4 +90,9 @@ class TestExecution:
         )
         self.action.get_interface_position(
             "position<holder>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.target.Target
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<holder>"
         ).destroy_particle()

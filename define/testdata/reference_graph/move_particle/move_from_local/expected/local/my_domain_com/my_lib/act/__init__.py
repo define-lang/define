@@ -155,4 +155,12 @@ class ActExecution:
                 local.my_domain_com.my_lib.end_local.EndLocal
             )
         )
+        self.local_position_local_chain_dest.particle.get_position(
+            local.my_domain_com.my_lib.mid_local.MidLocal
+        ).particle.get_position(
+            local.my_domain_com.my_lib.end_local.EndLocal
+        ).destroy_particle()
+        self.local_position_local_chain_dest.particle.get_position(
+            local.my_domain_com.my_lib.mid_local.MidLocal
+        ).destroy_particle()
         self.local_position_local_chain_dest.destroy_particle()

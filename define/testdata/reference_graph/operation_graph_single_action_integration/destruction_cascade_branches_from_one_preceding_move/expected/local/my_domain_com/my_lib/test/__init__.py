@@ -38,6 +38,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.join_for_move_position_source_to_position_destination = literal.Join(2)
+        self.join_for_destroy_position_destination = literal.Join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -60,4 +61,22 @@ class TestExecution:
         if not self.join_for_move_position_source_to_position_destination.arrive():
             return
         self.local_position_source.move_particle_to(self.local_position_destination)
+        self.scheduler.submit(self.destroy_position_destination__global_position_b)
+        self.destroy_position_destination__global_position_a()
+
+    def destroy_position_destination__global_position_b(self):
+        self.local_position_destination.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
+        self.destroy_position_destination()
+
+    def destroy_position_destination__global_position_a(self):
+        self.local_position_destination.particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
+        self.destroy_position_destination()
+
+    def destroy_position_destination(self):
+        if not self.join_for_destroy_position_destination.arrive():
+            return
         self.local_position_destination.destroy_particle()

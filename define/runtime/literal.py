@@ -315,9 +315,6 @@ class Quality:
         """Return the particle this quality is assigned to."""
         return self._on_particle
 
-    def before_parent_particle_destroyed(self):
-        """Run when the owning particle is being destroyed. Override in subclasses."""
-
 
 class Particle:
     """A particle in the Define universe."""
@@ -381,9 +378,10 @@ class Particle:
         return frozenset(type(q) for q in self._assigned_qualities)
 
     def destroy(self):
-        """Run the Destruction Cascade, unassigning qualities in reverse order."""
+        """Execute this particle's destructors in reverse assignment order."""
         for quality in reversed(self._assigned_qualities):
-            quality.before_parent_particle_destroyed()
+            if isinstance(quality, Destructor):
+                quality.execute(self.scheduler)
 
     def occupied_position_names(self) -> list[str]:
         """Return chained names of occupied positions reachable from this particle.
@@ -474,11 +472,16 @@ class Position(ABC):
         destination._after_particle_arrived()
 
     def destroy_particle(self):
-        """Destroy the particle in this position, running the Destruction Cascade."""
+        """Destroy the particle in this position, executing its destructors."""
         if self._particle is None:
             raise NoParticleError(self.name)
         self._particle.destroy()
         self._particle = None
+
+    def destroy_particle_if_occupied(self):
+        """Destroy this position's particle if it has one."""
+        if self._particle is not None:
+            self.destroy_particle()
 
     def _after_particle_arrived(self):  # noqa: B027
         """Run after a particle arrives. Override in subclasses."""
@@ -514,11 +517,6 @@ class GlobalPosition(Quality, Position):
     def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
-
-    @override
-    def before_parent_particle_destroyed(self):
-        if self.has_particle:
-            self.destroy_particle()
 
 
 class LocalPosition(Position):
@@ -581,12 +579,6 @@ class Action(Quality):
         """Return this action's interface positions, in declaration order."""
         return tuple(self._interface_positions.values())
 
-    @override
-    def before_parent_particle_destroyed(self):
-        for interface_position in reversed(self._interface_positions.values()):
-            if interface_position.has_particle:
-                interface_position.destroy_particle()
-
 
 class EntryPoint(Action):
     """An action that starts a Scheduler."""
@@ -602,11 +594,6 @@ class Destructor(Action):
     def execute(self, _scheduler: Scheduler) -> None:
         """Execute this destructor."""
         raise NotImplementedError
-
-    @override
-    def before_parent_particle_destroyed(self):
-        self.execute(self.on_particle.scheduler)
-        super().before_parent_particle_destroyed()
 
 
 def start(entry_point: type[EntryPoint], scheduler: Scheduler | None = None):

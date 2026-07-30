@@ -219,19 +219,6 @@ py_library(
 )
 
 py_test(
-    name = "particle_tracker_operation_graph_test",
-    size = "small",
-    srcs = ["particle_tracker_operation_graph_test.py"],
-    deps = [
-        ":action_contract",
-        ":operation_graph",
-        ":particle_tracker",
-        ":quality_assignment",
-        "//define/compiler:ast",
-    ],
-)
-
-py_test(
     name = "particle_tracker_test",
     size = "small",
     srcs = ["particle_tracker_test.py"],
@@ -347,7 +334,6 @@ pyright_test(
         ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",
-        ":particle_tracker_operation_graph_test",
         ":particle_tracker_test",
         ":quality_assignment",
         ":quality_assignment_test",

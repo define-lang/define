@@ -146,8 +146,9 @@ class ActionNameGenerator:
         """Return the method name for a caller input."""
         match resolved_input:
             case operation_graph_action_resolver.ResolvedEmptyRuleInput():
+                dependencies = resolved_input.dependencies
                 identifier = self._typed_chain_identifier(
-                    resolved_input.dependencies.requirement_position
+                    dependencies.full_emptied_position
                 )
                 return _EMPTY_RULE_CALLER_INPUT_PREFIX + identifier
             case operation_graph_action_resolver.ResolvedActionParentInput():

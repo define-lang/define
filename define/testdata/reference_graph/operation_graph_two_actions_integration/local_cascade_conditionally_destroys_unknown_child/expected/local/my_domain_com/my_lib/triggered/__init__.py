@@ -69,8 +69,11 @@ class TriggeredExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_local)
-        self.scheduler.submit(self.destroy_position_local)
+        self.scheduler.submit(self.destroy_position_local__global_position_b)
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_target)
 
-    def destroy_position_local(self):
+    def destroy_position_local__global_position_b(self):
+        self.local_position_local.particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle_if_occupied()
         self.local_position_local.destroy_particle()
