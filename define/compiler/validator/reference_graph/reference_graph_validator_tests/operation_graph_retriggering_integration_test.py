@@ -1,3 +1,5 @@
+import pytest
+
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -5,6 +7,9 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING = (
+    "destroying actions do not yet include caller-dependent child positions"
+)
 
 
 def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
@@ -18,6 +23,37 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
         "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
         "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
+def test_repeated_destroying_action_invocations_include_caller_dependent_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(first)": [],
+        "test.create(first::/child)": ["test.create(first)"],
+        "test.move(first, /destroyer::run)": ["test.create(first::/child)"],
+        "destroyer.destroy_if_occupied(run::/child)": [
+            "test.move(first, /destroyer::run)"
+        ],
+        "destroyer.destroy(run)": [
+            "destroyer.destroy_if_occupied(run::/child)",
+        ],
+        "test.create(second)": [],
+        "test.create(second::/child)": ["test.create(second)"],
+        "test.move(second, /destroyer::run)": [
+            "test.create(second::/child)",
+            "destroyer.destroy(run)",
+        ],
+        "destroyer#2.destroy_if_occupied(run::/child)": [
+            "test.move(second, /destroyer::run)"
+        ],
+        "destroyer#2.destroy(run)": [
+            "destroyer#2.destroy_if_occupied(run::/child)",
+        ],
     }
 
 

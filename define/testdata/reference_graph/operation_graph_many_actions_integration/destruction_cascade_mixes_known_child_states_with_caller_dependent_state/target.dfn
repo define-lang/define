@@ -1,0 +1,7 @@
+define the potential position<my.domain.com:my_lib:/target> {
+    it may only contain particles where {
+        it has the position</known_empty>.
+        it has the position</known_occupied>.
+        it has the position</maybe_child>.
+    }
+}

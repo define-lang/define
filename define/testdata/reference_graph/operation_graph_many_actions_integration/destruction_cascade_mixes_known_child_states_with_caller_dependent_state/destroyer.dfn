@@ -1,0 +1,26 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    it also assigns the position</destination>.
+    it also assigns the position</target>.
+    define the position<run> {
+        it may only contain particles where {
+            it has the position</known_empty>.
+            it has the position</known_occupied>.
+            it has the position</maybe_child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</known_empty>.
+                it has the position</known_occupied>.
+            }
+        }
+        move the particle in position<run> to position</target>.
+        move the particle in position</target> to position<local>.
+        move the particle in position<local>::position</known_empty> to position</destination>.
+        create a particle in position<local>::position</known_occupied>.
+        destroy the particle in position<local>.
+    }
+}
