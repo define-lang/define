@@ -909,13 +909,15 @@ class ParticleTracker:
             and requirement.required_state
             == action_contract.PositionOccupancyState.EMPTY
         ):
-            # A required-empty requirement is only inferred from operating on the
-            # position, so a required-empty position that ends empty was always
-            # touched and so gets an UnchangedGuarantee.
-            return action_contract.UnchangedGuarantee(
-                caused_by=caused_by,
-                operation_positions=operation_positions,
-            )
+            # A requirement propagated from a callee doesn't mean the callee
+            # operated on that position directly. (It could have been a transitive
+            # callee that did it.)
+            if self._position_was_touched(key):
+                return action_contract.UnchangedGuarantee(
+                    caused_by=caused_by,
+                    operation_positions=operation_positions,
+                )
+            return None
         return action_contract.EmptyGuarantee(
             caused_by=caused_by,
             operation_positions=operation_positions,
