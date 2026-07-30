@@ -207,24 +207,24 @@ BUILD file generator.
   `bazelisk build --noshow_progress --ui_event_filters=-info //...`
 - Test all targets:
   `bazelisk test --noshow_progress --ui_event_filters=-info //...`
-- Run coverage:
-  `bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov //...`
-- During development, run the smallest relevant test targets. Do not run full
-  coverage while iterating.
-- After code or test changes have stabilized, use the coverage command once for
-  final repository-wide validation. Coverage already runs the tests, so do not
-  also run the full test suite immediately before or after it. Inspect the
-  combined report and confirm that newly added or changed production branches
-  are covered; a successful coverage command alone is not a coverage check.
-- For build, configuration, or dependency changes with no production or test
-  code to inspect, use the full-test-suite command for final repository-wide
-  validation instead.
+- Run tests after making changes to code. When in doubt, test all targets.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 - After changing code generation, run the codegen tests. Regenerate expected
   outputs only when the generated output is intentionally changing, and review
   the resulting output diff before accepting it:
   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:regenerate_codegen_testdata`
+
+### Coverage
+
+- You can run coverage via:
+  `bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov //...`
+- After you make any significant change to code, use the coverage command once
+  for final repository-wide validation. Coverage already runs the tests, so do
+  not also run the full test suite immediately before or after it. Inspect the
+  combined report and confirm that newly added or changed production branches
+  are covered, other than unreachable defensive checks and code that exists only
+  for type narrowing.
 
 ### Python Dependencies
 
