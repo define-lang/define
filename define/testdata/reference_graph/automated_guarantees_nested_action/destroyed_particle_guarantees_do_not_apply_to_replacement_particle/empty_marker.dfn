@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/empty_marker> {
+    it also assigns the position</marker>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        destroy the particle in position</marker>.
+    }
+}

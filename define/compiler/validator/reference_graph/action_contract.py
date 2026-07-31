@@ -6,17 +6,13 @@ import enum
 import typing
 from dataclasses import dataclass, field
 
+from define.compiler.validator.reference_graph import operation_graph_model
+
 if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
 
-
-class PositionOccupancyState(enum.Enum):
-    """The occupancy state of an interface position."""
-
-    EMPTY = enum.auto()
-    OCCUPIED = enum.auto()
-    ERROR = enum.auto()
+PositionOccupancyState = operation_graph_model.PositionOccupancyState
 
 
 @dataclass(frozen=True, slots=True)
@@ -252,19 +248,20 @@ class Guarantees:
     # get unbounded memory growth from re-copying guarantees as we walk up a
     # call stack (and unbounded compute growth from having to iterate through
     # them and copy them).
-    nested: tuple[NestedGuarantees, ...]
+    nested: NestedGuaranteesByActionChain
 
 
 @dataclass(frozen=True, slots=True)
 class NestedGuarantees:
-    """A callee's guarantees, referenced at the position that triggers it.
+    """A callee's guarantees."""
 
-    ```triggered_action``` is the chained name path at the actual trigger
-    site, for the triggered action.
-    """
-
-    triggered_action: tuple[str, ...]
     guarantees: Guarantees
+    trigger: operation_graph_model.ActionTrigger
+
+
+type NestedGuaranteesByActionChain = tuple[
+    tuple[tuple[str, ...], NestedGuarantees], ...
+]
 
 
 @dataclass(frozen=True)

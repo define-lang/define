@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<trigger_pos>.
+    define the position<source> {
+        it may only contain particles where {
+            it has the action</child>.
+            it has the position</marker>.
+        }
+    }
+    define the position<intermediate>.
+    define the position<holder> {
+        it may only contain particles where {
+            it has the action</child>.
+            it has the position</marker>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<source>::action</child>::position<trigger_pos>.
+        move the particle in position<source> to position<intermediate>.
+        move the particle in position<intermediate> to position<holder>.
+    }
+}

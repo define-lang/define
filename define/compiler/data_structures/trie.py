@@ -202,49 +202,45 @@ class StrictReparentingTrie[V]:
         self._unlink_from_parent(key)
         return result
 
-    def root_children(self) -> StrictReparentingTrie[V]:
-        """Return a trie whose root entries are the children of all root nodes."""
-        result: StrictReparentingTrie[V] = StrictReparentingTrie()
-        for root_segment in self._children.get((), ()):
-            root_key = (root_segment,)
-            for child_segment in self._children.get(root_key, ()):
-                child_key = (root_segment, child_segment)
-                child_len = len(child_key)
-                for old in self._collect_subtree(child_key):
-                    new = (child_segment, *old[child_len:])
-                    result._values[new] = self._values[old]
-                    existing = self._children.get(old)
-                    if existing is not None:
-                        result._children[new] = set(existing)
-                result._children.setdefault((), set()).add(child_segment)
-        return result
+    def restore_subtree(
+        self, target: TrieKey, subtree: StrictReparentingTrie[V], root_value: V
+    ):
+        """Consume a popped subtree and restore it at target with a new root value.
 
-    def graft_subtree(self, key: TrieKey, subtree: StrictReparentingTrie[V]):
-        """Attach a subtree's root entries as children of key.
+        The target key must not already exist. Its parent must exist (strict
+        tries) or is auto-created (lenient tries). The subtree must not be used
+        after this operation.
 
-        Each root entry in the subtree becomes a child of the node at key.
-        The node at key must already exist. The child keys must not already
-        exist.
-
-        Raises KeyError if key doesn't exist.
-        Raises TargetExistsError if any child already exists.
+        Raises KeyError if the target's parent doesn't exist.
+        Raises TargetExistsError if the target already exists.
         """
-        if not key:
+        if not target:
             raise EmptyKeyError("key must not be empty")
-        if key not in self._values:
-            raise KeyError(key)
-        root_segments = subtree._children.get((), set())
-        for segment in root_segments:
-            if (*key, segment) in self._values:
-                raise TargetExistsError(f"child key already exists: {segment}")
-        for sub_key, value in subtree._values.items():
-            new = key + sub_key
-            self._values[new] = value
-            existing = subtree._children.get(sub_key)
-            if existing is not None:
-                self._children[new] = set(existing)
-        if root_segments:
-            self._children.setdefault(key, set()).update(root_segments)
+        self._ensure_parent(target)
+        if target in self._values:
+            raise TargetExistsError(f"target key already exists: {target}")
+
+        subtree_values = subtree._values
+        subtree_children = subtree._children
+        subtree_root = (next(iter(subtree_children[()])),)
+        del subtree_values[subtree_root]
+        self._values[target] = root_value
+        if not subtree_values:
+            self._children.setdefault(target[:-1], set()).add(target[-1])
+            return
+
+        # Flat dictionary passes avoid the traversal bookkeeping that synthetic
+        # benchmarks showed was substantially slower for consumed subtrees.
+        for old, value in subtree_values.items():
+            self._values[target + old[1:]] = value
+
+        root_children = subtree_children.pop(subtree_root, None)
+        if root_children is not None:
+            self._children[target] = root_children
+        del subtree_children[()]
+        for old, child_segments in subtree_children.items():
+            self._children[target + old[1:]] = child_segments
+        self._children.setdefault(target[:-1], set()).add(target[-1])
 
     def items(self) -> ItemsView[TrieKey, V]:
         """Yield all (key, value) pairs in the trie."""

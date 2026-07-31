@@ -1,0 +1,19 @@
+# The destroyed particle's later occupied guarantee must not replace the moved particle's earlier empty guarantee.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</middle>::position<source>.
+        create a particle in position<gateway>::action</middle>::position<source>::position</marker>.
+        create a particle in position<gateway>::action</middle>::position<target>.
+        create a particle in position<gateway>::action</middle>::position<run>.
+        create a particle in position<gateway>::action</middle>::position<target>::position</marker>.
+    }
+}

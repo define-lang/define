@@ -60,7 +60,6 @@ class ActionPostorderValidator:
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContract]
-    _nested_guarantees: list[action_contract.NestedGuarantees]
     _dead_tracker: dead_constraint_tracker.DeadConstraintTracker
 
     def __init__(
@@ -85,7 +84,6 @@ class ActionPostorderValidator:
         self._action_edges = []
         self._inferred_requirements = {}
         self._destruction_contracts = []
-        self._nested_guarantees = []
         self._dead_tracker = dead_constraint_tracker.DeadConstraintTracker()
 
     @property
@@ -711,14 +709,12 @@ class ActionPostorderValidator:
             action_assignment=action_assignment,
         )
         self._check_destructor_requirements_from_contracts(contract, action_chain)
-        self._nested_guarantees.append(
-            self._tracker.apply_guarantees(
-                action_chain,
-                contract.guarantees,
-                acting_on_position,
-                requirement_positions,
-                caller_requirement_positions,
-            )
+        self._tracker.apply_guarantees(
+            action_chain,
+            contract.guarantees,
+            acting_on_position,
+            requirement_positions,
+            caller_requirement_positions,
         )
         self._dead_tracker.mark_alive(action_chain)
         self._action_edges.append(
@@ -1747,13 +1743,14 @@ class ActionPostorderValidator:
         if self._action_definition.is_destructor:
             guarantees = self._check_destructor_guarantees()
         else:
+            own_guarantees = self._tracker.generate_own_guarantees(
+                self._action_definition.interface_position_names,
+                self._implied_quality_list,
+                self._inferred_requirements,
+            )
             guarantees = action_contract.Guarantees(
-                own=self._tracker.generate_own_guarantees(
-                    self._action_definition.interface_position_names,
-                    self._implied_quality_list,
-                    self._inferred_requirements,
-                ),
-                nested=tuple(self._nested_guarantees),
+                own=own_guarantees,
+                nested=self._tracker.nested_guarantees(),
             )
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,

@@ -20,6 +20,7 @@ py_library(
     srcs = ["action_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":operation_graph_model",
         ":quality_assignment",
         "//define/compiler:ast",
     ],
@@ -96,6 +97,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":operation_graph_model",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -145,6 +147,13 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
     ],
+)
+
+py_library(
+    name = "operation_graph_model",
+    srcs = ["operation_graph_model.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler:ast"],
 )
 
 py_library(
@@ -212,6 +221,7 @@ py_library(
     deps = [
         ":action_contract",
         ":operation_graph",
+        ":operation_graph_model",
         ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
@@ -224,6 +234,7 @@ py_test(
     srcs = ["particle_tracker_test.py"],
     deps = [
         ":action_contract",
+        ":operation_graph",
         ":particle_tracker",
         ":quality_assignment",
         "//define/compiler:ast",
@@ -328,6 +339,7 @@ pyright_test(
         ":operation_graph_action_resolver_test",
         ":operation_graph_labeler",
         ":operation_graph_labeler_test",
+        ":operation_graph_model",
         ":operation_graph_renderer",
         ":operation_graph_resolver",
         ":operation_graph_resolver_test",

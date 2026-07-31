@@ -49,6 +49,40 @@ def test_create_twice_in_interface_position(
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
+def test_later_transitive_guarantee_wins_between_sibling_calls(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</item>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, "action<my.domain.com:my_lib:/run_both>"),
+        (
+            "action<my.domain.com:my_lib:/run_both>",
+            "action<my.domain.com:my_lib:/call_fill>",
+        ),
+        (
+            "action<my.domain.com:my_lib:/run_both>",
+            "action<my.domain.com:my_lib:/call_empty>",
+        ),
+        (
+            "action<my.domain.com:my_lib:/call_fill>",
+            "action<my.domain.com:my_lib:/fill_item>",
+        ),
+        (
+            "action<my.domain.com:my_lib:/call_empty>",
+            "action<my.domain.com:my_lib:/empty_item>",
+        ),
+    }
+
+
 def test_untouched_interface_position_preserved_after_trigger(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

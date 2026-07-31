@@ -697,6 +697,30 @@ class TestChainParentPosition:
         )
 
 
+class TestIsPrefix:
+    def test_equal_chained_name(self):
+        chained_name = ("position<parent>", "position<child>")
+        assert ast.is_prefix(chained_name, chained_name)
+
+    def test_parent_name(self):
+        assert ast.is_prefix(
+            ("position<parent>",),
+            ("position<parent>", "position<child>"),
+        )
+
+    def test_child_name(self):
+        assert not ast.is_prefix(
+            ("position<parent>", "position<child>"),
+            ("position<parent>",),
+        )
+
+    def test_different_name(self):
+        assert not ast.is_prefix(
+            ("position<other>",),
+            ("position<parent>", "position<child>"),
+        )
+
+
 class TestChainInCallee:
     def test_interface_position_is_a_child_of_the_action(self):
         caller = _position_reference_for(

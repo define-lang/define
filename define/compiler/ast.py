@@ -350,6 +350,11 @@ def source_form_typed_name_parts(
 type ChainedNameTuple = tuple[str, ...]
 
 
+def is_prefix(prefix: ChainedNameTuple, chained_name: ChainedNameTuple) -> bool:
+    """Return whether ``prefix`` is a parent name of or equal to ``chained_name``."""
+    return len(prefix) <= len(chained_name) and chained_name[: len(prefix)] == prefix
+
+
 def chain_starts_with_global(key: ChainedNameTuple) -> bool:
     """Return whether the leftmost element of a chained-name key is a global."""
     return "/" in key[0]

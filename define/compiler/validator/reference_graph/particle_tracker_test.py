@@ -10,6 +10,7 @@ import pytest
 from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
+    operation_graph,
     particle_tracker,
     quality_assignment,
 )
@@ -563,6 +564,25 @@ def _make_action_ref(path: str) -> ast.GlobalTypedNameReference:
         ),
         enclosing_fqun=_FQUN,
         location=_LOC,
+    )
+
+
+def _make_action_trigger(path: str) -> operation_graph.ActionTrigger:
+    return operation_graph.ActionTrigger(
+        callee=ast.ActionReference(
+            typed_names=(_make_action_ref(path),),
+            location=_LOC,
+        ),
+        trigger_operation=operation_graph.CreateNode(
+            node_id=1,
+            depends_on=(),
+            target=_POS2_REF,
+        ),
+        bindings={},
+        action_parent_last_operation=operation_graph.ActionParentLastOperationNode(
+            node_id=0,
+            depends_on=(),
+        ),
     )
 
 
@@ -1152,8 +1172,8 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
     tracker.create(box_ref, _NO_QUALITIES, from_caller=box_ref)
     trigger_ref = _make_position_ref([_make_local_ref("trigger")])
     tracker.create(trigger_ref, _NO_QUALITIES)
+    nested_trigger = _make_action_trigger("/other")
     nested = action_contract.NestedGuarantees(
-        triggered_action=("action<my.domain.com:my_lib:/other>",),
         guarantees=action_contract.Guarantees(
             own=[
                 (
@@ -1168,6 +1188,7 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
             ],
             nested=(),
         ),
+        trigger=nested_trigger,
     )
     # The particle in position<box> has a triggered action whose guarantees
     # carry the nested guarantee; apply_guarantees always gets that action chain.
@@ -1176,7 +1197,9 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
     )
     tracker.apply_guarantees(
         box_trigger,
-        action_contract.Guarantees(own=[], nested=(nested,)),
+        action_contract.Guarantees(
+            own=[], nested=((nested_trigger.action_chain, nested),)
+        ),
         trigger_ref,
         [],
         [],
@@ -1195,23 +1218,27 @@ def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
 def _make_nested_level(
     action_path: str,
     item: str,
-    child_nested: tuple[action_contract.NestedGuarantees, ...],
-) -> action_contract.NestedGuarantees:
-    return action_contract.NestedGuarantees(
-        triggered_action=(f"action<my.domain.com:my_lib:{action_path}>",),
-        guarantees=action_contract.Guarantees(
-            own=[
-                (
-                    (item,),
-                    action_contract.OccupiedByNewGuarantee(
-                        qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
-                        origin_position=_POS2_REF,
-                        caused_by=_POS2_REF,
-                        operation_positions=(),
+    child_nested: action_contract.NestedGuaranteesByActionChain,
+) -> tuple[tuple[str, ...], action_contract.NestedGuarantees]:
+    trigger = _make_action_trigger(action_path)
+    return (
+        trigger.action_chain,
+        action_contract.NestedGuarantees(
+            guarantees=action_contract.Guarantees(
+                own=[
+                    (
+                        (item,),
+                        action_contract.OccupiedByNewGuarantee(
+                            qualities=quality_assignment.EMPTY_QUALITY_ASSIGNMENTS,
+                            origin_position=_POS2_REF,
+                            caused_by=_POS2_REF,
+                            operation_positions=(),
+                        ),
                     ),
-                )
-            ],
-            nested=child_nested,
+                ],
+                nested=child_nested,
+            ),
+            trigger=trigger,
         ),
     )
 

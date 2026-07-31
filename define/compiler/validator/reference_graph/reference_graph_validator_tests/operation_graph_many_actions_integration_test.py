@@ -117,6 +117,37 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     }
 
 
+def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::source::/marker)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(source::/child::trigger_pos)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "middle.move(source, intermediate)": [
+            "middle.create(source::/child::trigger_pos)",
+            "child.create(result)",
+            "test.create(gateway::/middle::source::/marker)",
+        ],
+        "middle.move(intermediate, holder)": [
+            "middle.move(source, intermediate)",
+            "test.create(gateway)",
+        ],
+        "test.move(gateway::/middle::holder::/child::result, result)": [
+            "middle.move(intermediate, holder)"
+        ],
+    }
+
+
 def test_child_guarantee_with_distinct_occupied_and_empty_rule_inputs(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -664,6 +695,55 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
         "test.move(box::/outer::gw::/middle::igw::/inner::out, result)": [
             "inner.create(out)"
         ],
+    }
+
+
+def test_transitive_child_guarantee_follows_particle_through_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/outer::source)": ["test.create(gateway)"],
+        "test.create(gateway::/outer::source::/middle::inner_parent)": [
+            "test.create(gateway::/outer::source)"
+        ],
+        "test.create(gateway::/outer::trigger_pos)": ["test.create(gateway)"],
+        "outer.create(source::/middle::trigger_pos)": [
+            "test.create(gateway::/outer::source)"
+        ],
+        "middle.create(inner_parent::/inner::trigger_pos)": [
+            "test.create(gateway::/outer::source::/middle::inner_parent)"
+        ],
+        "inner.create(result)": [
+            "test.create(gateway::/outer::source::/middle::inner_parent)"
+        ],
+        "outer.move(source, destination)": [
+            "outer.create(source::/middle::trigger_pos)",
+            "middle.create(inner_parent::/inner::trigger_pos)",
+            "inner.create(result)",
+        ],
+        "test.move(gateway::/outer::destination::/middle::inner_parent::/inner::result, result)": [
+            "outer.move(source, destination)"
+        ],
+    }
+
+
+def test_later_transitive_guarantee_wins_between_sibling_calls(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/run_both::trigger_pos)": [],
+        "test.create(/item)": ["empty_item.destroy(/item)"],
+        "run_both.create(/call_fill::trigger_pos)": [],
+        "run_both.create(/call_empty::trigger_pos)": [],
+        "call_fill.create(/fill_item::trigger_pos)": [],
+        "fill_item.create(/item)": [],
+        "call_empty.create(/empty_item::trigger_pos)": [],
+        "empty_item.destroy(/item)": ["fill_item.create(/item)"],
     }
 
 

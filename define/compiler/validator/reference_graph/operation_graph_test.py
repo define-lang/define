@@ -86,6 +86,56 @@ def test_last_operation_on_position_raises_for_an_untouched_position():
         _ = graph.last_operation_on_position(_ref("other").canonical_chained_name_tuple)
 
 
+def test_last_operation_on_position_or_parents_includes_parent_names():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    parent = _ref("parent")
+    operation = graph.record_create(parent)
+
+    descendant_positions = (
+        _ref("parent", "child"),
+        _ref("parent", "child", "grandchild"),
+        _ref("parent", "child", "grandchild", "great_grandchild"),
+    )
+    for position in descendant_positions:
+        assert (
+            graph.last_operation_on_position_or_parents(
+                position.canonical_chained_name_tuple
+            )
+            is operation
+        )
+
+
+def test_last_operation_on_position_or_parents_uses_newest_operation():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    child = _ref("parent", "child")
+    _ = graph.record_create(child)
+    parent_operation = graph.record_create(_ref("parent"))
+
+    assert (
+        graph.last_operation_on_position_or_parents(
+            _ref(
+                "parent", "child", "grandchild", "great_grandchild"
+            ).canonical_chained_name_tuple
+        )
+        is parent_operation
+    )
+
+
+def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent():
+    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    _ = graph.record_create(_ref("parent"))
+    child_operation = graph.record_create(_ref("parent", "child"))
+
+    assert (
+        graph.last_operation_on_position_or_parents(
+            _ref(
+                "parent", "child", "grandchild", "great_grandchild"
+            ).canonical_chained_name_tuple
+        )
+        is child_operation
+    )
+
+
 def test_particle_child_operations_excludes_operations_on_the_same_paths():
     child_operations = (
         operation_graph.ParticleChildOperations.from_preceding_operations(
