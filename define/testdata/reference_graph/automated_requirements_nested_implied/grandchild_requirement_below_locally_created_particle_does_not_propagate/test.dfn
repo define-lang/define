@@ -1,3 +1,5 @@
+# The caller cannot determine a child of the particle created by
+# action</create_parent>, so the grandchild requirement must fail locally.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -5,12 +7,10 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
-                it has the action</outer>.
+                it has the action</create_parent>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<source>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::action</create_parent>::position<run>.
     }
 }

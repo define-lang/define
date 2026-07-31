@@ -54,7 +54,6 @@ def test_repeated_action_triggers_create_distinct_executions():
         _action_reference(worker_action),
         first_trigger_position,
         (),
-        (),
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -62,7 +61,6 @@ def test_repeated_action_triggers_create_distinct_executions():
     second_trigger = entry_graph.record_action_trigger(
         _action_reference(worker_action),
         second_trigger_position,
-        (),
         (),
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),

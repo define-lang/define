@@ -113,26 +113,6 @@ class ActionPostorderValidator:
             impl.typed_global_name for impl in self._definition.quality_implications
         )
 
-    def _maybe_infer_requirement(
-        self,
-        required_state: action_contract.PositionOccupancyState,
-        position: ast.PositionReference,
-        parent: ast.PositionReference | None,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Infer a requirement for a contracted position the first time it is referenced."""
-        inferred_from_chain = self._chain_for_inferred_requirement(position, parent)
-        if inferred_from_chain is None:
-            return
-        self._record_requirement(
-            required_state=required_state,
-            contracted_position=inferred_from_chain,
-            local_position=position,
-            inferred_at=inferred_from_chain.location,
-            propagated_from=None,
-            scope=scope,
-        )
-
     def _record_requirement(
         self,
         *,
@@ -173,18 +153,6 @@ class ActionPostorderValidator:
         # Revisit only if those consumers or the propagation pipeline change
         # substantially.
         requirement_key = contracted_position.canonical_chained_name_tuple
-        # This both prevents us from double-inferring requirements, and also
-        # implements the "caller requirements override callee requirements" part
-        # of the spec (when recording propagated requirements).
-        if requirement_key in self._inferred_requirements:
-            return
-        # If a position has been touched by a guarantee or any particle
-        # statement already, no requirement should be emitted. This handles the
-        # situation where one triggered action creates an EmptyGuarantee and
-        # another action or caller tries to then destroy / move from that same
-        # position.
-        if self._tracker.has_been_touched(contracted_position):
-            return
         self._inferred_requirements[requirement_key] = (
             action_contract.PositionRequirement(
                 required_state=required_state,
@@ -214,162 +182,36 @@ class ActionPostorderValidator:
                 particle_operation.AssumeEmpty(target=local_position)
             )
 
+    # TODO: Classify every Position Requirement once, in one batched tracker
+    # query, as either needing propagation or local violation checking. The
+    # current propagation pass inspects position state and particle provenance,
+    # records assumptions for propagated requirements, and then the checking
+    # pass queries every position again. A combined result must classify all
+    # requirements from the pre-assumption state and retain occupancy information
+    # for the requirements that need local violation checking.
     def _propagate_action_requirements(
         self,
-        contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
-        caller_positions: list[ast.PositionReference],
+        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
         action_assignment: action_contract.ActionAssignment | None,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
-        action_parent = action_chain.parent_position()
-        parent_origin = self._parent_particle_comes_from_caller(action_parent)
-        if parent_origin is not None:
-            caller_path_to_action = action_chain.replace_parent_position_with_prefix(
-                parent_origin
-            )
-        elif (
-            isinstance(action_chain.typed_names[0], ast.GlobalTypedNameReference)
-            and action_chain.typed_names[0].name_type == ast.NameType.ACTION
-        ):
-            caller_path_to_action = action_chain
-        else:
-            # We created the action's parent particle in this action.
-            caller_path_to_action = None
-        nearest_particles = self._tracker.nearest_particles_above_if_state_unknown(
-            caller_positions
+        propagated_requirements = self._tracker.propagated_requirements(
+            requirements_in_caller
         )
-        for inner_req, local_position, nearest_particle in zip(
-            contract.requirements.values(),
-            caller_positions,
-            nearest_particles,
-            strict=True,
-        ):
-            self._maybe_propagate_one_requirement(
-                inner_req,
-                action_chain,
-                caller_path_to_action,
-                action_parent,
-                scope,
-                local_position,
-                nearest_particle,
-                action_assignment,
-            )
-
-    def _maybe_propagate_one_requirement(
-        self,
-        inner_req: action_contract.PositionRequirement,
-        action_chain: ast.ActionReference,
-        caller_path_to_action: ast.ChainedName | None,
-        action_parent: ast.PositionReference | None,
-        scope: scope_tracker.ScopeTracker,
-        local_position: ast.PositionReference,
-        nearest_particle: tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None,
-        action_assignment: action_contract.ActionAssignment | None,
-    ):
-        """Propagate ``inner_req`` when the caller must satisfy it.
-
-        There are two different propagation situations:
-        1. The callee's parent position was created by our caller, in which case
-           we propagate all requirements that the current action did not satisfy.
-        2. The callee's parent position was created by us (the current action) in
-           which case we only propagate requirements when one of the particles
-           in the callee's contracted positions came from our caller.
-
-        To understand Case 2: it happens when the _parent_ particle of one of our
-        contracted positions was moved by us (the current action) from one of our
-        _own_ contracted positions. For example, let's say the requirement is on
-        interface::b::c. We had our_interface with ::b::c as child positions, but
-        all we did in this action is "move our_interface to interface." We don't
-        actually _know_ the state of "b" and its child "c". Only our caller knows.
-        """
-        moved_particle = self._ancestor_from_contracted_position(
-            nearest_particle, action_parent
-        )
-        if moved_particle is not None:
-            owner_key, owner = moved_particle
-            # Make it the child of the contracted position, not the child of this
-            # action.
-            contracted_position = ast.PositionReference(
-                location=local_position.location,
-                typed_names=(
-                    *owner.origin_position.typed_names,
-                    *local_position.typed_names[len(owner_key) :],
+        for propagated in propagated_requirements:
+            self._record_requirement(
+                required_state=(
+                    propagated.requirement_in_caller.requirement.required_state
                 ),
+                contracted_position=propagated.contracted_position,
+                local_position=propagated.requirement_in_caller.caller_position,
+                inferred_at=action_chain.location,
+                propagated_from=propagated.requirement_in_caller.requirement,
+                scope=scope,
+                action_assignment=action_assignment,
             )
-        elif caller_path_to_action is action_chain:
-            # local_position is already inner_req.position.in_caller(action_chain),
-            # so when the caller reaches the action through action_chain unchanged
-            # the contracted position is that same position.
-            contracted_position = local_position
-        elif caller_path_to_action is not None:
-            # inner_req.position:
-            #   position<iface>::position</box_target>::position</q>
-            # contracted_position:
-            #   position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
-            contracted_position = inner_req.position.in_caller(caller_path_to_action)
-        else:
-            return
-        self._record_requirement(
-            required_state=inner_req.required_state,
-            contracted_position=contracted_position,
-            local_position=local_position,
-            inferred_at=action_chain.location,
-            propagated_from=inner_req,
-            scope=scope,
-            action_assignment=action_assignment,
-        )
-
-    def _ancestor_from_contracted_position(
-        self,
-        nearest_ancestor: tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None,
-        action_parent: ast.PositionReference | None,
-    ) -> tuple[tuple[str, ...], particle_tracker.ParticleInfo] | None:
-        """If any of our parents were moved from a contracted position, return that ancestor's position and the particle in it."""
-        if nearest_ancestor is None:
-            # The ancestor is an implied action with no parent name.
-            return None
-        ancestor_position, ancestor_particle = nearest_ancestor
-        if not ancestor_particle.from_caller:
-            # This action created the ancestor, so it was not moved from a
-            # contracted position.
-            return None
-        if (
-            action_parent is not None
-            and ancestor_position == action_parent.canonical_chained_name_tuple
-        ):
-            # The ancestor is the direct parent of the action. It's from the caller,
-            # but that's what our normal propagation path handles, so
-            # _maybe_propagate_one_requirement will just handle it.
-            return None
-        if (
-            ancestor_position
-            == ancestor_particle.origin_position.canonical_chained_name_tuple
-        ):
-            # The particle is still in its origin position, so it hasn't been moved.
-            return None
-        return nearest_ancestor
-
-    def _parent_particle_comes_from_caller(
-        self,
-        parent: ast.PositionReference | None,
-    ) -> ast.PositionReference | None:
-        """Return the parent particle's contracted-position origin chain if it came from the caller."""
-        if parent is None:
-            return None
-        # This check is necessary because we have to run _maybe_infer_requirement
-        # before the executor runs its parent-occupancy check, so we can run into
-        # situations where the developer has written a statement that operates on
-        # the child of a non-existent particle. The executor's parent check
-        # will later detect this situation, emit a diagnostic, and mark the
-        # relevant position error.
-        if not self._tracker.is_occupied(parent):
-            return None
-        particle_info = self._tracker.get_occupant(parent)
-        if not particle_info.from_caller:
-            return None
-        return particle_info.origin_position
 
     def _maybe_infer_requirements_on_chain(
         self,
@@ -381,22 +223,26 @@ class ActionPostorderValidator:
 
         The leaf position uses the given required_state; all parent positions
         use OCCUPIED, since a parent must be occupied for its child to be
-        accessible. Walks root-to-leaf so the tracker trie has parent nodes
-        in place when children are inserted.
+        accessible.
         """
-        previous_parent: ast.PositionReference | None = None
-        for parent in position.walk_parent_positions():
-            # Note: We pass previous_parent down here because it avoids
-            # a lot of parent_position calls (a lot of allocations, avoids
-            # a lot of constructing new canonical_chained_name_tuple fields).
-            self._maybe_infer_requirement(
-                action_contract.PositionOccupancyState.OCCUPIED,
-                parent,
-                previous_parent,
-                scope,
+        inferred_positions = self._tracker.direct_requirement_positions(
+            position,
+            self._interface_positions,
+        )
+        for resolved_position in inferred_positions:
+            local_position = resolved_position.local_position
+            self._record_requirement(
+                required_state=(
+                    required_state
+                    if local_position == position
+                    else action_contract.PositionOccupancyState.OCCUPIED
+                ),
+                contracted_position=resolved_position.contracted_position,
+                local_position=local_position,
+                inferred_at=resolved_position.contracted_position.location,
+                propagated_from=None,
+                scope=scope,
             )
-            previous_parent = parent
-        self._maybe_infer_requirement(required_state, position, previous_parent, scope)
 
     def _run_constructors(
         self,
@@ -574,17 +420,16 @@ class ActionPostorderValidator:
         quality = destructor.assignment.quality
         contract = self._action_contracts[quality]
         action_chain = destructor.position.with_action_suffix(quality)
-        self._propagate_destructor_requirements(
-            contract, action_chain, scope, destructor.assignment
+        requirements_in_caller = contract.requirements_in_caller(action_chain)
+        self._propagate_action_requirements(
+            action_chain,
+            scope,
+            requirements_in_caller,
+            destructor.action_assignment(),
         )
-        caller_positions = [
-            requirement.position.in_caller(action_chain)
-            for requirement in contract.requirements.values()
-        ]
         self._check_destructor_requirements(
-            contract,
             destructor,
-            caller_positions,
+            requirements_in_caller,
             auto_destruction_target=auto_destruction_target,
         )
         self._action_edges.append(
@@ -593,46 +438,6 @@ class ActionPostorderValidator:
                 target=quality.full_typed_name,
             )
         )
-
-    def _propagate_destructor_requirements(
-        self,
-        contract: action_contract.ActionContract,
-        action_chain: ast.ActionReference,
-        scope: scope_tracker.ScopeTracker,
-        quality_assignment: quality_assignment.QualityAssignment,
-    ):
-        """Propagate requirements into this action's contract when the destroyed particle itself was from a contracted position."""
-        # For `move position<incoming> to position<local_box>.` followed by
-        # `destroy position<local_box>.`:
-        # action_chain:
-        #   position<local_box>::action</destructor>
-        # parent_origin:
-        #   position<incoming>
-        # caller_path_to_destructor:
-        #   position<incoming>::action</destructor>
-        parent_origin = self._parent_particle_comes_from_caller(
-            action_chain.parent_position()
-        )
-        if parent_origin is None:
-            return
-        caller_path_to_destructor = action_chain.replace_parent_position_with_prefix(
-            parent_origin
-        )
-        for inner_req in contract.requirements.values():
-            self._record_requirement(
-                required_state=inner_req.required_state,
-                contracted_position=inner_req.position.in_caller(
-                    caller_path_to_destructor
-                ),
-                local_position=inner_req.position.in_caller(action_chain),
-                inferred_at=caller_path_to_destructor.location,
-                propagated_from=inner_req,
-                scope=scope,
-                action_assignment=action_contract.ActionAssignment(
-                    quality_assignment=quality_assignment,
-                    assigned_to_position_name=parent_origin.typed_names[-1],
-                ),
-            )
 
     def _check_interface_fill_trigger(
         self,
@@ -689,23 +494,16 @@ class ActionPostorderValidator:
         # (req.position.in_caller(action_chain)). Deriving it is a fresh
         # allocation, so compute it once here and hand the same objects to all
         # three rather than rebuilding it three times per requirement per trigger.
-        requirement_positions = [
-            requirement.position for requirement in contract.requirements.values()
-        ]
-        caller_requirement_positions = [
-            position.in_caller(action_chain) for position in requirement_positions
-        ]
+        requirements_in_caller = contract.requirements_in_caller(action_chain)
         self._propagate_action_requirements(
-            contract,
             action_chain,
             scope,
-            caller_requirement_positions,
+            requirements_in_caller,
             action_assignment,
         )
         self._check_requirements(
-            contract,
             acting_on_position,
-            caller_requirement_positions,
+            requirements_in_caller,
             action_assignment=action_assignment,
         )
         self._check_destructor_requirements_from_contracts(contract, action_chain)
@@ -713,8 +511,7 @@ class ActionPostorderValidator:
             action_chain,
             contract.guarantees,
             acting_on_position,
-            requirement_positions,
-            caller_requirement_positions,
+            requirements_in_caller,
         )
         self._dead_tracker.mark_alive(action_chain)
         self._action_edges.append(
@@ -726,16 +523,15 @@ class ActionPostorderValidator:
 
     def _check_requirements(
         self,
-        contract: action_contract.ActionContract,
         acting_on_position: ast.PositionReference,
-        caller_positions: list[ast.PositionReference],
+        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
         *,
         action_assignment: action_contract.ActionAssignment | None,
     ):
         """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position.
 
-        ``caller_positions`` are the contract's requirement positions from the
-        caller's perspective, in ``contract.requirements`` order.
+        ``requirements_in_caller`` contains the contract's requirements and
+        their positions from the caller's perspective.
         """
         # Action trigger:
         #   the chain that fired the trigger:
@@ -744,11 +540,11 @@ class ActionPostorderValidator:
         #     position<box>::action</outer>::position<trigger>
         #   req.position:
         #     position<iface>::action</inner>::position<item>
-        #   caller_positions entry (full_caller_chain):
+        #   requirement_in_caller.caller_position (full_caller_chain):
         #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
-        for req, full_caller_chain in zip(
-            contract.requirements.values(), caller_positions, strict=True
-        ):
+        for requirement_in_caller in requirements_in_caller:
+            req = requirement_in_caller.requirement
+            full_caller_chain = requirement_in_caller.caller_position
             violated, occupant = self._requirement_violation_occupant(
                 full_caller_chain, req
             )
@@ -785,15 +581,14 @@ class ActionPostorderValidator:
 
     def _check_destructor_requirements(
         self,
-        contract: action_contract.ActionContract,
         destructor: action_contract.CascadeDestructor,
-        caller_positions: list[ast.PositionReference],
+        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
         *,
         auto_destruction_target: ast.PositionReference | None,
     ):
-        for req, full_caller_chain in zip(
-            contract.requirements.values(), caller_positions, strict=True
-        ):
+        for requirement_in_caller in requirements_in_caller:
+            req = requirement_in_caller.requirement
+            full_caller_chain = requirement_in_caller.caller_position
             violated, occupant = self._requirement_violation_occupant(
                 full_caller_chain, req
             )
@@ -1831,45 +1626,6 @@ class ActionPostorderValidator:
                 )
             )
         return action_contract.Guarantees(own=rewritten, nested=())
-
-    def _chain_for_inferred_requirement(
-        self,
-        position: ast.PositionReference,
-        parent: ast.PositionReference | None,
-    ) -> ast.PositionReference | None:
-        """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
-        # The population of the trigger position itself is handled elsewhere and
-        # doesn't create a requirement. (However, actions on children of the
-        # position still do create requirements.)
-        if self._trigger_position_name == position.canonical_chained_name:
-            return None
-        if parent is not None:
-            parent_occupancy = self._tracker.get_occupancy_info(parent)
-            # "parent_occupancy.occupant is None" should be impossible here, but it does our
-            # type narrowing for the check below.
-            if parent_occupancy.has_error or parent_occupancy.occupant is None:
-                return None
-            if not parent_occupancy.occupant.from_caller:
-                return None
-            # The particle was moved in from a contracted position, so we
-            # put the requirement on that origin, not whatever position we
-            # are inferring a requirement for.
-            return position.replace_parent_position_with_prefix(
-                parent_occupancy.occupant.origin_position
-            )
-        if self._starts_with_contracted_name(position):
-            return position
-        return None
-
-    def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
-        """Whether the chain's first name is a contracted name of this action."""
-        # The structural validator guarantees the name is defined, so we don't
-        # re-check. An action's own interface positions are contracted; an
-        # implied quality is global.
-        return (
-            position.starts_with_global
-            or position.typed_names[0].full_typed_name in self._interface_positions
-        )
 
     def _local_definition_cache_key(
         self,

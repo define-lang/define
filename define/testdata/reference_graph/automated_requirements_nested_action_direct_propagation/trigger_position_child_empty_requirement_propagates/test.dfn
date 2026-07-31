@@ -1,14 +1,12 @@
 # A requirement on a child of the trigger position propagates through the chain.
 #
 # /inner has a trigger position constrained with position</x>, and creates in
-# position<trigger_pos>::position</x> (EMPTY requirement on that child). /outer
-# triggers /inner via its interface position. The EMPTY requirement on the trigger
-# position's child propagates to /outer's contract, and /test pre-fills it.
-# Filling the nested trigger at line 13 fires /inner, which creates in
-# trigger_pos::position</x> via guarantee. Line 14 then tries to create
-# in the same position, which is already occupied.
-# /test fills position<trigger_pos> which /outer requires empty (it creates there)
-# /test fills position<trigger_pos>::position</x> which /inner requires empty (propagated)
+# position<trigger_pos>::position</x>, requiring that child to be empty. /outer
+# moves its caller-provided position<source> particle into /inner's trigger
+# position. The EMPTY requirement on the trigger position's child therefore maps
+# back to position<source>::position</x> in /outer's contract. /test pre-fills
+# that child before triggering /outer. When /inner runs, its create finds the
+# child already occupied.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -21,8 +19,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.
-        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>.
+        create a particle in position<box>::action</outer>::position<source>.
+        create a particle in position<box>::action</outer>::position<source>::position</x>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

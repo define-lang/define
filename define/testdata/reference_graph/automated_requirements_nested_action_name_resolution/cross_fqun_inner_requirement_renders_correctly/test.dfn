@@ -4,8 +4,9 @@
 # _DEP_FQUN), and creates in position<item>::position</x>. The propagated requirement's
 # position_name should use the source form from /outer's code for the action reference
 # (fully-qualified) and the source form from /inner's code for position</x>.
-# /test fills position<item> which /outer requires empty (it creates there)
-# /test fills position<item>::position</x> which /inner requires empty (propagated)
+# /test supplies position<item>, satisfying /inner's occupied parent
+# requirement, and fills position<item>::position</x>, violating /inner's
+# propagated empty requirement.
 define the potential action<mv:define-lang.org:main_lib:/test> {
     define the position<run>.
     it happens when {

@@ -185,6 +185,14 @@ class PositionRequirement:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class PositionRequirementInCaller:
+    """A callee's Position Requirement expressed from its caller's perspective."""
+
+    requirement: PositionRequirement
+    caller_position: ast.PositionReference
+
+
 @dataclass(frozen=True)
 class PositionGuarantee:
     """An automatically inferred guarantee about an interface position after action completion."""
@@ -328,3 +336,15 @@ class ActionContract:
     destruction_contracts: list[DestructionContract]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
+
+    def requirements_in_caller(
+        self, action_chain: ast.ActionReference
+    ) -> list[PositionRequirementInCaller]:
+        """Express every Position Requirement from the caller's perspective."""
+        return [
+            PositionRequirementInCaller(
+                requirement=requirement,
+                caller_position=requirement.position.in_caller(action_chain),
+            )
+            for requirement in self.requirements.values()
+        ]

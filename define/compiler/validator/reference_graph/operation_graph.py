@@ -203,8 +203,7 @@ class OperationGraph:
         self,
         callee: ast.ActionReference,
         acting_on_position: ast.PositionReference,
-        requirements: Sequence[ast.PositionReference],
-        caller_requirement_positions: Sequence[ast.PositionReference],
+        requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
         acting_on_preceding_child_operations: PrecedingChildOperations,
         required_preceding_child_operations: Iterable[PrecedingChildOperations],
@@ -214,10 +213,10 @@ class OperationGraph:
         The firing operation is the one that filled ``acting_on_position`` (a trigger position
         for an action, or the action being operated on by a constructor/destructor).
 
-        ``caller_requirement_positions`` are ``requirements`` already expressed
-        from the caller's perspective (``requirement.in_caller(callee)``), in the
-        same order. The child-operation arguments identify operations responsible
-        for the current state of the particles' child positions.
+        ``requirements_in_caller`` pairs each callee requirement with its
+        position from the caller's perspective. The child-operation arguments
+        identify operations responsible for the current state of the particles'
+        child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_operation = typing.cast(
@@ -246,14 +245,15 @@ class OperationGraph:
             ),
             firing_operation,
         )
-        for requirement, caller_position, preceding_child_operations in zip(
-            requirements,
-            caller_requirement_positions,
+        for requirement_in_caller, preceding_child_operations in zip(
+            requirements_in_caller,
             required_preceding_child_operations,
             strict=True,
         ):
+            requirement = requirement_in_caller.requirement
+            caller_position = requirement_in_caller.caller_position
             caller_position_key = caller_position.canonical_chained_name_tuple
-            requirement_key = requirement.canonical_chained_name_tuple
+            requirement_key = requirement.position.canonical_chained_name_tuple
             binding_operation = self._requirement_binding_operation(caller_position_key)
             if binding_operation is not None:
                 bindings[requirement_key] = self._requirement_binding(

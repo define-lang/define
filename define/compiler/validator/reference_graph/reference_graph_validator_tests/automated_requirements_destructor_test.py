@@ -17,6 +17,7 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
+_DESTROY_CARRIER = "action<my.domain.com:my_lib:/destroy_carrier>"
 _P = "action<my.domain.com:my_lib:/p>"
 
 # Moves its own interface position's particle out and back, so it requires
@@ -287,6 +288,63 @@ def test_locally_created_interface_particle_fires_destructor_locally(
         },
     )
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+
+
+def test_locally_created_destructor_parent_propagates_requirement_from_moved_child(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 16
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.required_empty is False
+    assert diag.action_name == _DESTROY_CARRIER
+    assert diag.position_name == (
+        "position<box>::action</destroy_carrier>::position<incoming>::position</child>"
+    )
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTROY_CARRIER,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<carrier>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 13,
+            "column": 28,
+            "file_path": "destroy_carrier.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _DESTROY_CARRIER,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 18,
+            "column": 33,
+            "file_path": "destroy_carrier.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )
+    assert result.action_call_graph.edges() == [
+        (_DESTROY_CARRIER, _DESTRUCTOR),
+        (_TEST, _DESTROY_CARRIER),
+    ]
 
 
 def test_destructor_in_constructor_checks_interface_requirement_locally(

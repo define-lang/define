@@ -112,7 +112,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 13
+    assert diag.location.line == 18
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _MIDDLE
@@ -127,7 +127,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 13,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -135,7 +135,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
-            "line": 8,
+            "line": 7,
             "column": 30,
             "file_path": "middle.dfn",
         },

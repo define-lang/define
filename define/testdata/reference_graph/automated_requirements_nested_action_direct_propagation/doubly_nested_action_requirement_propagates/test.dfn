@@ -1,14 +1,10 @@
 # Three levels of nesting: /test triggers /outer, /outer triggers /middle, /middle triggers /inner.
 #
 # /inner requires position<item> to be empty. Each intermediate has a non-trigger
-# interface position with the inner action as a constraint. /outer fills
-# position<mid_iface> before triggering /middle (satisfying /middle's OCCUPIED
-# requirement), which infers EMPTY on position<mid_iface> in /outer's contract.
-# The EMPTY requirement on position<item> propagates through /middle and /outer to
-# /test. The test pre-fills both position<mid_iface> and position<item>, producing
-# two EMPTY violations.
-# /test fills position<mid_iface> which /outer requires empty (it creates there)
-# /test fills position<item> which /inner requires empty (propagated through /middle and /outer)
+# interface position with the inner action as a constraint. /test supplies
+# position<mid_iface>, satisfying /middle's OCCUPIED requirement. The EMPTY
+# requirement on position<item> propagates through /middle and /outer to /test,
+# which pre-fills it.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {

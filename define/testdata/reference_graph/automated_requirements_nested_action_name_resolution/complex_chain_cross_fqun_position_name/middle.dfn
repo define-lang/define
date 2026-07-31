@@ -8,7 +8,6 @@ define the potential action<mv:define-lang.org:main_lib:/middle> {
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<mid_iface>::action<mv:define-lang.org:dep_lib:/bar>::position<item>.
         create a particle in position<mid_iface>::action<mv:define-lang.org:dep_lib:/bar>::position<trigger_pos>.
     }
 }

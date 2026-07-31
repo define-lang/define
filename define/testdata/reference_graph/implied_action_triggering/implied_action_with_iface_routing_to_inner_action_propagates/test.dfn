@@ -7,9 +7,14 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</middle>.
+                it has the action</implied_outer>.
             }
         }
         create a particle in position<box>.
+        create a particle in position<box>::action</implied_outer>::position<run>.
+        destroy the particle in position<box>::action</implied_outer>::position<run>.
+        destroy the particle in position<box>::action</implied_outer>::position<iface>.
+        create a particle in position<box>::action</implied_outer>::position<iface>.
         create a particle in position<box>::action</middle>::position<run>.
     }
 }

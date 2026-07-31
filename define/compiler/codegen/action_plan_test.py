@@ -203,7 +203,6 @@ def test_callee_continuation_ends_a_direct_call_chain():
         callee_reference,
         item,
         (),
-        (),
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -247,7 +246,6 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
     _ = caller_graph.record_action_trigger(
         callee,
         trigger_position,
-        (),
         (),
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),

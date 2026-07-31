@@ -19,6 +19,8 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_CREATE_PARENT = "action<my.domain.com:my_lib:/create_parent>"
+_INSPECT_GRANDCHILD = "action<my.domain.com:my_lib:/inspect_grandchild>"
 
 _X_DEFINITION = "define the potential position<my.domain.com:my_lib:/x>.\n"
 
@@ -323,6 +325,48 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _MIDDLE),
         (_MIDDLE, _INNER),
+    }
+
+
+def test_grandchild_requirement_below_locally_created_particle_does_not_propagate(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 9
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("create_parent.dfn")
+    assert diag.action_name == _INSPECT_GRANDCHILD
+    assert diag.required_empty is False
+    assert diag.position_name == (
+        "position</parent>::action</inspect_grandchild>::position<child>"
+        "::position</grandchild>"
+    )
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _CREATE_PARENT,
+            "triggered_quality_name": _INSPECT_GRANDCHILD,
+            "line": 9,
+            "column": 30,
+            "file_path": "create_parent.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INSPECT_GRANDCHILD,
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "inspect_grandchild.dfn",
+        },
+    )
+    assert action_graph_set(result.operation_graphs) == {
+        (_CREATE_PARENT, _INSPECT_GRANDCHILD),
+        (_TEST, _CREATE_PARENT),
     }
 
 

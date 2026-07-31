@@ -5,10 +5,15 @@ define the potential action<my.domain.com:my_lib:/outer> {
             it has the action</inner>.
         }
     }
+    define the position<source> {
+        it may only contain particles where {
+            it has the position</x>.
+        }
+    }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
         # Here we fail to fill inner's trigger_pos::/x.
-        create a particle in position<iface>::action</inner>::position<trigger_pos>.
+        move the particle in position<source> to position<iface>::action</inner>::position<trigger_pos>.
     }
 }

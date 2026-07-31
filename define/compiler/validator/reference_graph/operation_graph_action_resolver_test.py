@@ -97,7 +97,6 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         _action_reference(worker_action),
         trigger_position,
         (),
-        (),
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )

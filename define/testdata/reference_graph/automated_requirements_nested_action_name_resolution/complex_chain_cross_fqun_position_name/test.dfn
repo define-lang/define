@@ -1,7 +1,7 @@
 # Same structure as the same-FQUN complex chain, but /bar lives in a different FQUN.
 #
 # /bar is in dep_lib and has an interface position with a constraint on position</x>,
-# requiring position<item>::position</x> to be empty. /middle fills /bar's
+# requiring position<item>::position</x> to be empty. /test supplies /bar's
 # position<item> to satisfy the occupied requirement. The propagated position_name
 # should render /bar and its positions with canonical FQUN names:
 # position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<dep_fqun:/bar>::position<item>::position<dep_fqun:/x>

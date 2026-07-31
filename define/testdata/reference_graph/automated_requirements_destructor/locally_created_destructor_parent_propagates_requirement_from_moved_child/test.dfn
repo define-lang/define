@@ -1,0 +1,18 @@
+# The destroyed carrier is local, but the particle moved into its destructor
+# interface came from the caller. The destructor's requirement on that
+# particle's child therefore propagates through position<incoming>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</destroy_carrier>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</destroy_carrier>::position<incoming>.
+        create a particle in position<box>::action</destroy_carrier>::position<run>.
+    }
+}

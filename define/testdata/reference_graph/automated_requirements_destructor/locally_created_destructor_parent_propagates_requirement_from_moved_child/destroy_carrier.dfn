@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/destroy_carrier> {
+    define the position<incoming> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<carrier>.
+        move the particle in position<incoming> to position<carrier>::action</destructor>::position<item>.
+        destroy the particle in position<carrier>.
+    }
+}
