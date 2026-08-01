@@ -1,0 +1,7 @@
+define the potential position<mv:define-lang.org:parent_universe:/earlier>.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position</earlier>.
+        it has the position<mv:define-lang.org:child_universe:/target>.
+    }
+}

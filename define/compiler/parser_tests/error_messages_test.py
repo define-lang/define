@@ -13,6 +13,16 @@ from define.compiler import parser_exceptions
 from define.compiler.parser_tests.conftest import Parse
 
 
+def test_empty_source_error_message(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("")
+    assert str(exc_info.value) == textwrap.dedent("""\
+        line 1, column 1
+
+        ^
+        Expected a global definition like 'define the potential ...'""")
+
+
 def test_error_message_without_path(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
         parse("\ufeffdefine the potential position<standard:/path>.\n")

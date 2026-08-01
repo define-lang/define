@@ -295,12 +295,15 @@ class TestConstructorTriggering:
         assert action_graph(result.operation_graphs) == [(_TEST, _P)]
 
 
-def test_circular_dependency_skips_trigger_check(
+def test_action_interface_reference_with_circular_contract_reports_circular_references(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 20
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 61
+    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[1].location.line == 3
+    assert all_diags[1].location.column == 20

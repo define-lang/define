@@ -173,8 +173,6 @@ class PositionRequirement:
         other_action = self.propagated_from.enclosing_action
         if other_action.is_destructor:
             kind = PropagationKind.DESTRUCTOR_CASCADE
-        elif other_action.is_constructor:
-            kind = PropagationKind.CONSTRUCTOR_TRIGGER
         else:
             kind = PropagationKind.ACTION_TRIGGER
         return PropagationStep(

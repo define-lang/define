@@ -19,6 +19,14 @@ def test_empty_file(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
+def test_unmatched_close_brace(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("}\n")
+    assert exc_info.value.token == "}"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
 def test_file_all_newlines(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("\n\n\n")

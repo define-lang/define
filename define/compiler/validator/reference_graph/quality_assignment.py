@@ -145,9 +145,5 @@ class QualityAssignments:
         """Iterate over assigned qualities in semantic assignment order."""
         return (assignment.quality for assignment in self.assignments)
 
-    def __reversed__(self) -> Iterator[ast.GlobalTypedNameReference]:
-        """Iterate over assigned qualities in reverse semantic assignment order."""
-        return (assignment.quality for assignment in reversed(self.assignments))
-
 
 EMPTY_QUALITY_ASSIGNMENTS = QualityAssignments(())

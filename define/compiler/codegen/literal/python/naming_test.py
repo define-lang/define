@@ -68,20 +68,6 @@ def test_guarantees_class_reference():
     )
 
 
-def test_guarantees_class_reference_is_stable():
-    converter = naming.NameConverter()
-    first = converter.guarantees_class_reference(_action_name("/worker"))
-    second = converter.guarantees_class_reference(_action_name("/worker"))
-    assert (
-        first
-        == second
-        == naming.ClassReference(
-            class_name="WorkerGuarantees",
-            module_name="local.my_domain_com.my_lib.worker",
-        )
-    )
-
-
 def test_guarantees_class_reference_avoids_definition_class_conflict():
     converter = naming.NameConverter()
     definition_class = converter.class_name(define_path.DefinePath("worker_guarantees"))

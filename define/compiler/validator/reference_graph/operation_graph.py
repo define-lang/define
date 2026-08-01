@@ -393,10 +393,10 @@ class OperationGraph:
         else:
             # Not a position we have a requirement on.
             return None
-        # There is an ancestor operation, and isn't a requirement node (meaning we are already
-        # past requirements on this position).
         if ancestor is not None and not isinstance(ancestor, RequirementNode):
-            return None
+            raise ValueError(
+                f"cannot materialize caller requirement {key} after a body operation"
+            )
         return self._add_requirement_node(key, ancestor, required_state)
 
     def _add_requirement_node(

@@ -148,6 +148,36 @@ def test_non_filesystem_reference_walks_into_sub_root(
     assert result.file_results[2].root_prefix == define_path.DefinePath("lib")
 
 
+def test_back_reference_to_earlier_definition_does_not_load_file_non_filesystem(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert len(result.file_results) == 2
+    assert_no_errors(result)
+    assert str(result.file_results[0].file_path) == "<string>"
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+
+
+def test_same_target_file_referenced_as_two_types_loads_once_non_filesystem(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert len(result.file_results) == 2
+    assert result.all_exceptions == []
+    assert str(result.file_results[0].file_path) == "<string>"
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].file_path == "lib/target.dfn"
+    assert diags[0].definition_name == (
+        "action<mv:define-lang.org:child_universe:/target>"
+    )
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 27
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+    assert result.file_results[1].diagnostics == []
+
+
 def test_non_filesystem_cross_universe_reference(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
