@@ -139,13 +139,6 @@ class OperationGraph:
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
         self._triggers: list[ActionTrigger] = []
-        # The last triggering that used each RequirementNode to satisfy one of
-        # its requirements. Guarantee resolution follows this reverse binding
-        # when an action passes along a guarantee without operating on its
-        # position itself.
-        self._last_trigger_by_requirement_node: dict[
-            RequirementNode, ActionTrigger
-        ] = {}
         # Every local position has the position of the particle this action is
         # assigned to as a transitive parent from the caller's perspective.
         self._action_parent_last_operation: ActionParentLastOperationNode = (
@@ -281,9 +274,6 @@ class OperationGraph:
             action_parent_last_operation=action_parent_last_operation,
         )
         self._triggers.append(trigger)
-        for binding in bindings.values():
-            if isinstance(binding.operation, RequirementNode):
-                self._last_trigger_by_requirement_node[binding.operation] = trigger
         return trigger
 
     def _requirement_binding(
@@ -302,12 +292,6 @@ class OperationGraph:
     def triggers(self) -> Sequence[ActionTrigger]:
         """Every action this action triggers, in the order it triggers them."""
         return self._triggers
-
-    def last_trigger_using_requirement(
-        self, requirement_node: RequirementNode
-    ) -> ActionTrigger:
-        """Return the last triggering that used ``requirement_node``."""
-        return self._last_trigger_by_requirement_node[requirement_node]
 
     def _requirement_binding_operation(
         self, caller_position_key: tuple[str, ...]
@@ -769,17 +753,6 @@ class OperationGraph:
         }
 
 
-@dataclass(frozen=True, slots=True)
-class _CalleeGuaranteeResolution:
-    """A direct callee through which a guarantee resolves."""
-
-    trigger: ActionTrigger
-    callee_resolution: _GuaranteeResolution
-
-
-type _GuaranteeResolution = PositionOperationNode | _CalleeGuaranteeResolution
-
-
 @dataclass(slots=True)
 class GuaranteePath:
     """Action Triggerings from a guarantee to its publishing Particle Operation."""
@@ -803,53 +776,21 @@ class OperationGraphs(
         """Initialize an empty operation-graph collection."""
         super().__init__()
         self._guarantee_resolutions: collections.defaultdict[
-            str, dict[tuple[str, ...], _GuaranteeResolution]
+            str, dict[tuple[str, ...], PositionOperationNode]
         ] = collections.defaultdict(dict)
 
     def resolve_guarantee(self, guarantee: GuaranteeNode) -> GuaranteePath:
         """Resolve one guarantee to its Particle Operation through callee graphs."""
         triggers = [guarantee.trigger, *guarantee.nested_triggers]
-        resolution = self._resolve_guaranteed_position(
-            triggers[-1].callee_action_name, guarantee.guaranteed_position
-        )
-        while isinstance(resolution, _CalleeGuaranteeResolution):
-            triggers.append(resolution.trigger)
-            resolution = resolution.callee_resolution
-        return GuaranteePath(triggers, resolution)
-
-    def _resolve_guaranteed_position(
-        self, action: ast.GlobalTypedName, position: tuple[str, ...]
-    ) -> _GuaranteeResolution:
-        unresolved: list[tuple[str, tuple[str, ...], tuple[ActionTrigger, ...]]] = []
-        while True:
-            action_name = action.full_typed_name
-            action_resolutions = self._guarantee_resolutions[action_name]
-            cached = action_resolutions.get(position)
-            if cached is not None:
-                resolution = cached
-                break
-
+        action = triggers[-1].callee_action_name
+        position = guarantee.guaranteed_position
+        action_resolutions = self._guarantee_resolutions[action.full_typed_name]
+        operation = action_resolutions.get(position)
+        if operation is None:
             graph = self[action]
-            node = graph.last_operation_on_position_or_parents(position)
-            match node:
-                case PositionOperationNode():
-                    resolution = node
-                    action_resolutions[position] = resolution
-                    break
-                case GuaranteeNode():
-                    triggers = (node.trigger, *node.nested_triggers)
-                    action = triggers[-1].callee_action_name
-                    next_position = node.guaranteed_position
-                case RequirementNode():
-                    trigger = graph.last_trigger_using_requirement(node)
-                    triggers = (trigger,)
-                    action = trigger.callee_action_name
-                    next_position = ast.chain_in_callee(trigger.action_chain, position)
-            unresolved.append((action_name, position, triggers))
-            position = next_position
-
-        for action_name, position, triggers in reversed(unresolved):
-            for trigger in reversed(triggers):
-                resolution = _CalleeGuaranteeResolution(trigger, resolution)
-            self._guarantee_resolutions[action_name][position] = resolution
-        return resolution
+            operation = typing.cast(
+                "PositionOperationNode",
+                graph.last_operation_on_position_or_parents(position),
+            )
+            action_resolutions[position] = operation
+        return GuaranteePath(triggers, operation)

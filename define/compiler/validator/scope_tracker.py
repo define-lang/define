@@ -17,25 +17,25 @@ class ScopeTracker:
 
     def __init__(self):
         """Initialize an empty scope tracker."""
-        self._definitions: ChainMap[str, ast.AnyPositionDefinition] = ChainMap()
+        self._definitions: ChainMap[str, ast.LocalPositionDefinition] = ChainMap()
 
     def enter_child_scope(self):
         """Push a new child scope layer for nested blocks."""
         self._definitions = self._definitions.new_child()
 
-    def add_definition(self, definition: ast.AnyPositionDefinition):
+    def add_definition(self, definition: ast.LocalPositionDefinition):
         """Add a position definition to scope."""
         key = definition.typed_name.source_typed_name
         self._definitions[key] = definition
 
-    def current_scope_definitions(self) -> Reversible[ast.AnyPositionDefinition]:
+    def current_scope_definitions(self) -> Reversible[ast.LocalPositionDefinition]:
         """Return the position definitions added directly to the current (innermost) scope, in insertion order."""
         # ChainMap.maps is typed as list[MutableMapping[...]], whose .values()
         # returns a non-reversible ValuesView. In practice every layer is a real
         # dict (ChainMap initializes maps[0] = {} and new_child() defaults the
         # same way), so the underlying dict_values does support __reversed__.
         inner = typing.cast(
-            "dict[str, ast.AnyPositionDefinition]", self._definitions.maps[0]
+            "dict[str, ast.LocalPositionDefinition]", self._definitions.maps[0]
         )
         return inner.values()
 
@@ -60,6 +60,6 @@ class ScopeTracker:
         """Check if a typed name reference is defined in the current (innermost) scope only."""
         return name.full_typed_name in self._definitions.maps[0]
 
-    def get_definition(self, name: ast.TypedName) -> ast.AnyPositionDefinition:
+    def get_definition(self, name: ast.TypedName) -> ast.LocalPositionDefinition:
         """Return the position definition for a typed name."""
         return self._definitions[name.full_typed_name]

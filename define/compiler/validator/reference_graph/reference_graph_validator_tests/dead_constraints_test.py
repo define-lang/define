@@ -80,6 +80,13 @@ def test_constraint_on_interface_position_filled_by_create_is_alive(
     assert_no_errors(result.program_result)
 
 
+def test_child_name_on_occupied_interface_position_is_alive_with_occupied_implied_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+
+
 def test_constraint_on_interface_position_filled_then_destroyed_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

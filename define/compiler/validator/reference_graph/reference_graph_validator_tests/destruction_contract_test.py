@@ -13,6 +13,7 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_CALLER = "action<my.domain.com:my_lib:/caller>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _DELETE_FILE1 = "action<my.domain.com:my_lib:/delete_file1>"
 _DELETE_FILE2 = "action<my.domain.com:my_lib:/delete_file2>"
@@ -22,6 +23,63 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _DESTRUCTOR_C = "action<my.domain.com:my_lib:/destructor_c>"
+
+
+def test_circular_destructor_contract_is_skipped(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</close_file>"
+    assert all_diags[0].position_name == "position<dependency>"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == PurePosixPath("destructor.dfn")
+    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[1].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
+    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.column == 24
+    assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
+    assert result.action_call_graph.edges() == [(_TEST, _CLOSE_FILE)]
+
+
+def test_circular_caller_attached_destructor_contract_is_skipped(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</caller>"
+    assert all_diags[0].position_name == "position<dependency>"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == PurePosixPath("destructor.dfn")
+    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[1].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == PurePosixPath("caller.dfn")
+    assert result.action_call_graph.edges() == [(_CALLER, _CLOSE_FILE)]
+
+
+def test_missing_caller_attached_destructor_is_reported_and_skipped(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].file_path == "missing_destructor.dfn"
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 35
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert result.action_call_graph.edges() == [(_TEST, _CLOSE_FILE)]
 
 
 def test_caller_known_child_state_requirement_satisfied(

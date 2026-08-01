@@ -119,13 +119,6 @@ class _ActionTriggerDependencyResolver:
         """Initialize with one direct caller and Action Triggering."""
         self._caller_graph = caller_graph
         self._trigger = trigger
-        # Empty-by-default requirements can share long parent-name chains, so
-        # retaining each visited result prevents quadratic traversal when this
-        # triggering resolves sibling requirements.
-        self._caller_dependency_by_input_node: dict[
-            operation_graph.RequirementNode,
-            operation_graph.ActionParentOperationNode,
-        ] = {}
 
     def resolve_input(
         self, callee_input: ResolvedCallerInput
@@ -173,25 +166,13 @@ class _ActionTriggerDependencyResolver:
         if binding is not None:
             return binding.operation
 
-        unresolved: list[operation_graph.RequirementNode] = []
-        current = node
-        while True:
-            dependency = self._caller_dependency_by_input_node.get(current)
-            if dependency is not None:
-                break
-            unresolved.append(current)
-            (parent_input,) = current.depends_on
-            if isinstance(parent_input, operation_graph.ActionParentLastOperationNode):
-                dependency = self._trigger.action_parent_last_operation
-                break
-            binding = self._trigger.bindings.get(parent_input.requirement_position)
-            if binding is not None:
-                dependency = binding.operation
-                break
-            current = parent_input
-        for unresolved_node in unresolved:
-            self._caller_dependency_by_input_node[unresolved_node] = dependency
-        return dependency
+        # Position Requirements form a chain through parent names, so this node has
+        # exactly one direct input: the nearest parent-name requirement, or the
+        # action parent's last operation when there is no parent-name requirement.
+        (parent_input,) = node.depends_on
+        if isinstance(parent_input, operation_graph.ActionParentLastOperationNode):
+            return self._trigger.action_parent_last_operation
+        return self._trigger.bindings[parent_input.requirement_position].operation
 
 
 @dataclass(frozen=True, slots=True, eq=False)

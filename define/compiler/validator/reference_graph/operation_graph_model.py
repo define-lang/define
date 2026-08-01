@@ -435,9 +435,14 @@ class RequirementNode(OperationNode):
     on ``requirement_position`` before the trigger. A position can be empty
     without any operation emptying it, so an empty requirement can have no such
     caller op at all, which is why the required state is recorded here.
+
+    ``depends_on`` contains exactly one node. It is the RequirementNode for the
+    nearest parent name with a Position Requirement, or the action parent's last
+    operation when there is no such parent requirement. This represents the rule
+    that every position in a chained name except the last must contain a particle.
     """
 
-    depends_on: tuple[ActionParentLastOperationNode | RequirementNode, ...]
+    depends_on: tuple[ActionParentLastOperationNode | RequirementNode]
     # The state this action needs the position to be in.
     required_state: PositionOccupancyState
     # This action's own key for the caller-controlled contracted position.

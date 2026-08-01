@@ -82,8 +82,7 @@ class QualityAssignments:
             direct_assignment = QualityAssignment(direct_quality)
             existing = seen.get(direct_quality.full_typed_name)
             if existing is not None:
-                if isinstance(existing, ImpliedQualityAssignment):
-                    direct_overrides.append(direct_assignment)
+                direct_overrides.append(direct_assignment)
                 continue
             seen[direct_quality.full_typed_name] = direct_assignment
             cls._expand_depth_first(

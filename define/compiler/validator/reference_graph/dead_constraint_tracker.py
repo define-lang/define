@@ -118,8 +118,6 @@ class DeadConstraintTracker:
         it implies a required quality is itself dead, and the spec wants the
         implied quality declared directly.
         """
-        if not self._candidates:
-            return
         origin_name = origin.canonical_chained_name
         for quality in required:
             self._remove((origin_name, quality.full_typed_name))
@@ -135,8 +133,6 @@ class DeadConstraintTracker:
         (it ends occupied), whose constraints therefore define a particle a caller
         consumes -- the opposite of the "actions as containers" pattern.
         """
-        if not self._candidates:
-            return
         for constraint in constraints:
             self._remove((position.full_typed_name, constraint.full_typed_name))
 

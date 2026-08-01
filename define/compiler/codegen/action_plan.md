@@ -140,13 +140,11 @@ Guarantee routing must never scan callers of an action, collect requests across
 the reachable program, compute a whole-program fixed point, or specialize one
 action's plan for the set of callers in a particular program.
 
-`GuaranteeNode` already identifies the direct callee relationship with its
-`trigger` and `guaranteed_position`; it needs no additional operation-graph
-metadata. `OperationGraphs.resolve_guarantee()` follows one requested guarantee
-through successive callee graphs and returns its complete `ActionTrigger` list
-and final Particle Operation node. Resolution follows both `GuaranteeNode` links
-and pass-through `RequirementNode` links, the latter through
-`OperationGraph.last_trigger_using_requirement()`.
+`GuaranteeNode` already identifies the complete callee route with its `trigger`,
+`nested_triggers`, and `guaranteed_position`; it needs no additional
+operation-graph metadata. `OperationGraphs.resolve_guarantee()` uses the final
+callee graph to return the complete `ActionTrigger` list and final Particle
+Operation node.
 
 This resolution is definition-level and independent of action instances. The
 resolver, planner, and code generator retain the operation nodes and

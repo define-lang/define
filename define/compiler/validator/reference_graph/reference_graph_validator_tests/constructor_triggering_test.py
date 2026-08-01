@@ -102,7 +102,7 @@ def test_move_into_position_does_not_fire_constructor(
     assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 
 
-def test_create_constructor_with_unloaded_file_no_crash(
+def test_missing_constructor_file_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

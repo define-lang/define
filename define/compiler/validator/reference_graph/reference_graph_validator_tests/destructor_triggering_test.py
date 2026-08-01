@@ -159,7 +159,7 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     assert result.action_call_graph.edges() == []
 
 
-def test_destroy_destructor_with_unloaded_file_no_crash(
+def test_missing_destructor_file_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

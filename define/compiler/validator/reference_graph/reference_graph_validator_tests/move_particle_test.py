@@ -96,6 +96,19 @@ def test_undefined_to_position(
     assert diags[0].location.column == 52
 
 
+def test_undefined_move_destination_is_not_treated_as_defined_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    diags = result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].local_name == "position<no_such_pos>"
+    assert diags[0].location.line == 12
+    assert diags[0].location.column == 52
+
+
 def test_both_positions_undefined(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

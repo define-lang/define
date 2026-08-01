@@ -143,10 +143,13 @@ def _requirement_input(
     position_name: str,
     required_state: action_contract.PositionOccupancyState,
 ) -> operation_graph_action_resolver.ResolvedRequirementInput:
+    action_parent_input = operation_graph.ActionParentLastOperationNode(
+        node_id=0, depends_on=()
+    )
     return operation_graph_action_resolver.ResolvedRequirementInput(
         operation_graph.RequirementNode(
-            node_id=0,
-            depends_on=(),
+            node_id=1,
+            depends_on=(action_parent_input,),
             required_state=required_state,
             requirement_position=(f"position<{position_name}>",),
         )

@@ -28,6 +28,36 @@ def test_short_form_global_reference(
     assert all_diags[0].location.column == 30
 
 
+def test_create_in_interface_of_missing_action_reports_reference_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].file_path == "missing.dfn"
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+
+def test_create_in_missing_global_position_reports_reference_errors(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].source_global_name == "position</missing>"
+    assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/missing>"
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[1].file_path == "missing.dfn"
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+
+
 def test_same_fqun_reference_must_use_short_form(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

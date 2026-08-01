@@ -23,6 +23,61 @@ def test_create_in_implied_position(
     assert_no_errors(result.program_result)
 
 
+def test_duplicate_direct_constraint_triggers_action_once(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert all_diags[0].constraint_name == "action</requirer>"
+    assert all_diags[0].first_constraint_line == 5
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/requirer>"
+    assert all_diags[1].position_name == "position<box>::position</slot>"
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
+            "line": 6,
+            "column": 24,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/requirer>",
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 33,
+            "file_path": "requirer.dfn",
+        },
+    )
+    assert result.action_call_graph.edges() == [
+        (
+            "action<my.domain.com:my_lib:/test>",
+            "action<my.domain.com:my_lib:/requirer>",
+        )
+    ]
+
+
 def test_move_between_implied_positions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

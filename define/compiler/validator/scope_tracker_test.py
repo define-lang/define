@@ -26,22 +26,6 @@ def _make_local_def(
     )
 
 
-def _make_global_position_def(
-    path: str,
-    constraints: ast.PositionConstraintBlock | None = None,
-    location: ast.SourceLocation = _LOC,
-) -> ast.PositionDefinition:
-    return ast.PositionDefinition(
-        name=ast.DefinitionGlobalNameContent(
-            fqun=_FQUN,
-            path=ast.GlobalPathName(name=path, location=location),
-            location=location,
-        ),
-        constraints=constraints,
-        location=location,
-    )
-
-
 def _make_local_typed_name(
     name: str, name_type: ast.NameType = ast.NameType.POSITION
 ) -> ast.LocalTypedNameReference:
@@ -148,24 +132,6 @@ def test_action_name_does_not_match_position():
 
     assert tracker.is_defined(pos_ref) is True
     assert tracker.is_defined(act_ref) is False
-
-
-def test_add_global_position_definition():
-    tracker = scope_tracker.ScopeTracker()
-    global_def = _make_global_position_def("/my_pos")
-    tracker.add_definition(global_def)
-
-    ref = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
-    assert tracker.is_defined(ref) is True
-
-
-def test_global_position_defined_on_line():
-    location = ast.SourceLocation(line=5, column=1, end_line=5, end_column=1)
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_global_position_def("/my_pos", location=location))
-
-    ref = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
-    assert tracker.defined_on_line(ref) == 5
 
 
 def _make_position_ref(

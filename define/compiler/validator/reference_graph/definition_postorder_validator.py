@@ -258,11 +258,12 @@ class ActionPostorderValidator:
             definition_result = self._definition_results.get(quality)
             # The constructor's file may have failed to load or parse, which is
             # reported elsewhere; skipping it here keeps the cascade crash-free.
-            if definition_result is None or not isinstance(
-                definition_result.definition, ast.ActionDefinition
-            ):
+            if definition_result is None:
                 continue
-            if not definition_result.definition.is_constructor:
+            definition = typing.cast(
+                "ast.ActionDefinition", definition_result.definition
+            )
+            if not definition.is_constructor:
                 continue
             contract = self._action_contracts[quality]
             # The constructor is a quality of the particle in `position`, so its
@@ -318,11 +319,11 @@ class ActionPostorderValidator:
                 )
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
-                if definition_result is None or not isinstance(
-                    definition_result.definition, ast.ActionDefinition
-                ):
+                if definition_result is None:
                     continue
-                definition = definition_result.definition
+                definition = typing.cast(
+                    "ast.ActionDefinition", definition_result.definition
+                )
                 if definition.is_destructor:
                     self._run_destructor(
                         action_contract.CascadeDestructor(
@@ -418,7 +419,9 @@ class ActionPostorderValidator:
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
         quality = destructor.assignment.quality
-        contract = self._action_contracts[quality]
+        contract = self._action_contracts.get(quality)
+        if contract is None:
+            return
         action_chain = destructor.position.with_action_suffix(quality)
         requirements_in_caller = contract.requirements_in_caller(action_chain)
         self._propagate_action_requirements(
@@ -450,8 +453,7 @@ class ActionPostorderValidator:
         i.e., we're directly filling an action's interface position.
         """
         interface_position = position.get_last_action_children()
-        if interface_position is None:
-            return
+        interface_position = typing.cast("ast.PositionReference", interface_position)
         # Only trigger when filling a single interface position directly,
         # not children of interface positions.
         if len(interface_position.typed_names) != 1:
@@ -615,12 +617,11 @@ class ActionPostorderValidator:
             quality = assignment.quality
             if quality.name_type != ast.NameType.ACTION:
                 continue
-            definition_result = self._definition_results.get(quality)
-            if definition_result is None or not isinstance(
-                definition_result.definition, ast.ActionDefinition
-            ):
-                continue
-            if definition_result.definition.is_destructor:
+            definition_result = self._definition_results[quality]
+            definition = typing.cast(
+                "ast.ActionDefinition", definition_result.definition
+            )
+            if definition.is_destructor:
                 # We pick the assignment that the developer wrote most explicitly:
                 # either the one directly written here, or the one transitively
                 # implied.
@@ -672,14 +673,12 @@ class ActionPostorderValidator:
         if occupancy.has_error or occupancy.occupant is None:
             return
         caller_particle = occupancy.occupant
-        destroying_definition_result = self._definition_results.get(
+        destroying_definition_result = self._definition_results[
             destruction_contract.destroying_action
+        ]
+        destroying_definition = typing.cast(
+            "ast.ActionDefinition", destroying_definition_result.definition
         )
-        destroying_definition = None
-        if destroying_definition_result is not None and isinstance(
-            destroying_definition_result.definition, ast.ActionDefinition
-        ):
-            destroying_definition = destroying_definition_result.definition
         # Only the action that created the particle may treat an untouched child as
         # empty; otherwise an untouched child's state is error, because a higher caller
         # could have filled it before passing it.
@@ -753,7 +752,7 @@ class ActionPostorderValidator:
         position: ast.PositionReference,
         *,
         destruction_contract: action_contract.DestructionContract,
-        destroying_definition: ast.ActionDefinition | None,
+        destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
@@ -790,11 +789,11 @@ class ActionPostorderValidator:
                 )
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
-                if definition_result is None or not isinstance(
-                    definition_result.definition, ast.ActionDefinition
-                ):
+                if definition_result is None:
                     continue
-                definition = definition_result.definition
+                definition = typing.cast(
+                    "ast.ActionDefinition", definition_result.definition
+                )
                 preferred_assignment = particle.qualities.preferred_assignment_for(
                     quality
                 )
@@ -839,7 +838,7 @@ class ActionPostorderValidator:
         particle_position: ast.PositionReference,
         particle: particle_tracker.ParticleInfo,
         destruction_contract: action_contract.DestructionContract,
-        destroying_definition: ast.ActionDefinition | None,
+        destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
         quality_assignment: quality_assignment.QualityAssignment,
@@ -848,7 +847,7 @@ class ActionPostorderValidator:
     ) -> bool:
         """Verify one destructor found in the cascade; return whether it was fully resolved here."""
         destructor_contract = self._action_contracts.get(destructor_quality)
-        if destructor_contract is None or destroying_definition is None:
+        if destructor_contract is None:
             return False
         action_chain = particle_position.with_action_suffix(destructor_quality)
         # A destructor is checked exactly once: only at the action that knows the
@@ -983,8 +982,6 @@ class ActionPostorderValidator:
         reverse definition order, firing destructors along the way.
         """
         for definition in reversed(scope.current_scope_definitions()):
-            if not isinstance(definition, ast.LocalPositionDefinition):
-                continue
             position = ast.PositionReference(
                 typed_names=(definition.typed_name,),
                 location=definition.location,
@@ -1421,16 +1418,14 @@ class ActionPostorderValidator:
     def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
         return self._action_definition.interface_positions_by_name
 
-    def _mark_output_interface_constraints_alive(
+    def _mark_occupied_interface_constraints_alive(
         self, own_guarantees: list[action_contract.GuaranteePair]
     ):
-        """Mark alive the constraints of every interface position the action exposes as output (DLP 42).
+        """Mark alive constraints of interface positions guaranteed occupied at action completion (DLP 42).
 
-        An interface position is output iff the action's own contract guarantees
-        it holds a particle at the end (OccupiedByNew or OccupiedByExisting); its
-        constraints then define a particle a caller consumes. Reading the actual
-        first-level guarantees is correct however the position was filled, with no
-        separate occupancy bookkeeping.
+        Its constraints define a particle a caller consumes. Reading the actual
+        first-level guarantees is correct however the position became occupied,
+        with no separate occupancy bookkeeping.
         """
         if not self._dead_tracker.has_pending():
             return
@@ -1509,27 +1504,25 @@ class ActionPostorderValidator:
         # the state that the Trigger Conditions Block says they have.
         trigger_ref = self._action_definition.trigger_position_reference
         if trigger_ref is not None:
-            typed_name = trigger_ref.typed_names[0]
-            if scope.is_defined(typed_name):
-                qualities = self._get_transitive_required_qualities(trigger_ref, scope)
-                # DLP 37: We assume trigger points are occupied upon the start
-                # of the action, but we can only assume they have the qualities
-                # they are declared with.
-                self._executor.execute_assume_occupied(
-                    particle_operation.AssumeOccupied(
-                        target=trigger_ref,
-                        qualities=qualities,
-                        contracted_position_chain=trigger_ref,
-                    )
+            qualities = self._get_transitive_required_qualities(trigger_ref, scope)
+            # DLP 37: We assume trigger points are occupied upon the start
+            # of the action, but we can only assume they have the qualities
+            # they are declared with.
+            self._executor.execute_assume_occupied(
+                particle_operation.AssumeOccupied(
+                    target=trigger_ref,
+                    qualities=qualities,
+                    contracted_position_chain=trigger_ref,
                 )
+            )
 
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
 
-        # The contract's own guarantees tell us which interface positions the
-        # action exposes as output, which keeps their constraints alive (DLP 42).
+        # The contract's own guarantees identify occupied interface positions,
+        # which keeps their constraints alive (DLP 42).
         contract = self._generate_contract()
-        self._mark_output_interface_constraints_alive(contract.guarantees.own)
+        self._mark_occupied_interface_constraints_alive(contract.guarantees.own)
         self._check_dead_constraints()
         return contract
 
