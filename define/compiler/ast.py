@@ -597,21 +597,6 @@ class ChainedName(ASTNode):
             return self.with_prefix(parent)
         return self.with_prefix(caller_chain)
 
-    def replace_parent_position_with_prefix(self, new_prefix: ChainedName) -> Self:
-        """Return a new chain with everything up to and including the parent_position replaced with the new prefix."""
-        parent = self.parent_position()
-        if parent is None:
-            raise ValueError(
-                f"cannot replace parent prefix on a single-element chain: {self.source_chained_name}"
-            )
-        return type(self)(
-            location=self.location,
-            typed_names=(
-                *new_prefix.typed_names,
-                *self.typed_names[len(parent.typed_names) :],
-            ),
-        )
-
 
 @dataclass(frozen=True, slots=True, init=False)
 class PositionReference(ChainedName):
