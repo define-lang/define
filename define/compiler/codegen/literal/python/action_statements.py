@@ -133,9 +133,6 @@ class ActionStatementsGenerator:
                     first.name_content.name
                 ]
                 chain_elements = []
-        elif first.full_typed_name == self._defining_typed_name.full_typed_name:
-            local_position_member_name = None
-            chain_elements = []
         else:
             local_position_member_name = None
             chain_elements = [

@@ -54,14 +54,12 @@ class ActionDefinitionContext:
             class_references.extend(interface_position.constraints)
         for statement in self.execution.local_position_statements:
             class_references.extend(statement.constraints)
-            if statement.position is not None:
-                class_references.extend(statement.position.class_references)
-            if statement.to_position is not None:
-                class_references.extend(statement.to_position.class_references)
         for fragment in self.execution.fragments:
             for statement in fragment.statements:
-                if statement.position is not None:
-                    class_references.extend(statement.position.class_references)
+                position = typing.cast(
+                    "template_context.PositionExpr", statement.position
+                )
+                class_references.extend(position.class_references)
                 if statement.to_position is not None:
                     class_references.extend(statement.to_position.class_references)
         for triggered_action in self.execution.triggered_actions:

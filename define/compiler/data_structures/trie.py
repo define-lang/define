@@ -104,11 +104,10 @@ class StrictReparentingTrie[V]:
     def _unlink_from_parent(self, key: TrieKey):
         """Remove key's last segment from its parent's child set."""
         parent = key[:-1]
-        siblings = self._children.get(parent)
-        if siblings is not None:
-            siblings.discard(key[-1])
-            if not siblings:
-                del self._children[parent]
+        siblings = self._children[parent]
+        siblings.discard(key[-1])
+        if not siblings:
+            del self._children[parent]
 
     def __delitem__(self, key: TrieKey):
         """Remove key and all descendants. Raises KeyError if missing."""
@@ -234,9 +233,7 @@ class StrictReparentingTrie[V]:
         for old, value in subtree_values.items():
             self._values[target + old[1:]] = value
 
-        root_children = subtree_children.pop(subtree_root, None)
-        if root_children is not None:
-            self._children[target] = root_children
+        self._children[target] = subtree_children.pop(subtree_root)
         del subtree_children[()]
         for old, child_segments in subtree_children.items():
             self._children[target + old[1:]] = child_segments

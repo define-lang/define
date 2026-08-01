@@ -109,7 +109,6 @@ class NameConverter:
 
     _class_names: dict[define_path.DefinePath, str]
     _execution_class_names: dict[define_path.DefinePath, str]
-    _guarantees_class_names: dict[define_path.DefinePath, str]
     _used_class_names: set[str]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
@@ -118,7 +117,6 @@ class NameConverter:
         """Initialize with empty name caches."""
         self._class_names = {}
         self._execution_class_names = {}
-        self._guarantees_class_names = {}
         self._used_class_names = set()
         self._authority_names = {}
         self._used_authority_names = set()
@@ -161,12 +159,8 @@ class NameConverter:
 
     def _guarantees_class_name(self, path: define_path.DefinePath) -> str:
         """Return a unique class name for one action's guarantee continuations."""
-        existing = self._guarantees_class_names.get(path)
-        if existing is not None:
-            return existing
         raw = self.class_name(path) + _GUARANTEES_CLASS_SUFFIX
         safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
-        self._guarantees_class_names[path] = safe
         self._used_class_names.add(safe)
         return safe
 
@@ -203,8 +197,8 @@ class NameConverter:
             parts.append(fqun.multiverse.name)
         else:
             parts.append(constants.DEFAULT_MULTIVERSE)
-        if fqun.authority is not None:
-            parts.append(self.authority_segment(fqun.authority.name))
+        authority = typing.cast("ast.Authority", fqun.authority)
+        parts.append(self.authority_segment(authority.name))
         parts.append(fqun.universe.name)
         parts.extend(path.relative_path.parts)
         return parts
