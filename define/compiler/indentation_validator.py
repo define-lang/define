@@ -58,14 +58,13 @@ def validate_indentation(
         # we don't spam the developer with a hundred messages if they mis-indented
         # one line and then similarly indented all the next ones.
         if stripped.startswith("}"):
-            if block_stack:
-                expected = block_stack.pop()
-                if actual_indent != expected:
-                    result.append(
-                        _make_diagnostic(
-                            line_number, line, expected, actual_indent, file_path
-                        )
+            expected = block_stack.pop()
+            if actual_indent != expected:
+                result.append(
+                    _make_diagnostic(
+                        line_number, line, expected, actual_indent, file_path
                     )
+                )
             if stripped.endswith(" {"):
                 block_stack.append(actual_indent)
         else:

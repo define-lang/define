@@ -796,8 +796,6 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     @property
     def formatted_propagation_chain(self) -> str:
         """Render the labeled propagation chain for the diagnostic message."""
-        if not self.propagation_chain:
-            return ""
         lines = ["This error happens because:"]
         for step in self.propagation_chain:
             lines.append(f"  {self._format_propagation_step(step)}:")

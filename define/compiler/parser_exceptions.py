@@ -57,9 +57,7 @@ class DefineSyntaxError(exceptions.DefineError):
         else:
             header = f"line {self.line}, column {self.column}"
         context = _escape_invisible(self.context.rstrip("\n"))
-        if context:
-            return f"{header}\n{context}\n{self.message}"
-        return f"{header}\n{self.message}"
+        return f"{header}\n{context}\n{self.message}"
 
 
 class DefineTokenError(DefineSyntaxError):

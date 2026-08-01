@@ -101,14 +101,11 @@ class DefineTransformer(
     @_strip_discard
     def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
         """Assemble the top-level definitions into a Program."""
-        if items:
-            location = ast.SourceLocation.from_ast_or_token(
-                start=items[0],
-                end=items[-1],
-                file_path=self._context.file_path,
-            )
-        else:
-            location = ast.start_of_file_location(self._context.file_path)
+        location = ast.SourceLocation.from_ast_or_token(
+            start=items[0],
+            end=items[-1],
+            file_path=self._context.file_path,
+        )
         return ast.Program(definitions=tuple(items), location=location)
 
     @_strip_discard
