@@ -1,0 +1,21 @@
+# Middle moves the caller particle out of position<source>, fills
+# position<source> with a replacement particle, and then triggers /inner on the
+# moved particle. /inner's requirement belongs to the moved particle. Destroying
+# position<item> on the replacement particle and then destroying the replacement
+# must not depend on the caller operation that filled the moved particle's
+# position<item>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<gateway> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</middle>::position<source>.
+        create a particle in position<gateway>::action</middle>::position<source>::action</inner>::position<item>.
+        create a particle in position<gateway>::action</middle>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,18 @@
+# Refilling a position after moving its particle must not prevent the moved
+# particle's existing children from satisfying requirements after the move.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</outer>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</outer>::position<iface>.
+        # This Create Particle Statement satisfies the propagated occupied requirement.
+        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<run>.
+    }
+}

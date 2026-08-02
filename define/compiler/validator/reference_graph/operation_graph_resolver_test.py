@@ -46,7 +46,7 @@ def _position(name: str) -> ast.PositionReference:
 def test_repeated_action_triggers_create_distinct_executions():
     entry_action = _action("/test")
     worker_action = _action("/worker")
-    entry_graph = operation_graph.OperationGraph({})
+    entry_graph = operation_graph.OperationGraph()
     first_trigger_position = _position("first")
     second_trigger_position = _position("second")
     _ = entry_graph.record_create(first_trigger_position)
@@ -65,7 +65,7 @@ def test_repeated_action_triggers_create_distinct_executions():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    worker_graph = operation_graph.OperationGraph({})
+    worker_graph = operation_graph.OperationGraph()
     worker_operation = _position("work")
     _ = worker_graph.record_create(worker_operation)
     graphs = operation_graph.OperationGraphs()

@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:my_lib:/fillable> {
+    it may only contain particles where {
+        it has the action</call_fill>.
+        it has the position</item>.
+    }
+}

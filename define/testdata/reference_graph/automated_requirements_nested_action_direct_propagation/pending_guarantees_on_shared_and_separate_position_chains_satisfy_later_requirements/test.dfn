@@ -1,0 +1,23 @@
+# The pending occupied guarantees include parent and child names on the left
+# chain and another guarantee on the right chain. One requirement batch applies
+# all three.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</consume_combined>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</consume_combined>::position<left>.
+        create a particle in position<box>::action</consume_combined>::position<left>::position</prepared_input>.
+        create a particle in position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</child>.
+        create a particle in position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</child>::action</call_child>::position<trigger_pos>.
+        create a particle in position<box>::action</consume_combined>::position<left>::position</prepared_input>::action</call_parent>::position<trigger_pos>.
+        create a particle in position<box>::action</consume_combined>::position<right>.
+        create a particle in position<box>::action</consume_combined>::position<right>::position</fillable>.
+        create a particle in position<box>::action</consume_combined>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/consume_branches> {
+    define the position<trigger_pos>.
+    define the position<left> {
+        it may only contain particles where {
+            it has the position</fillable>.
+        }
+    }
+    define the position<right> {
+        it may only contain particles where {
+            it has the position</fillable>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        destroy the particle in position<left>::position</fillable>::position</item>.
+        destroy the particle in position<right>::position</fillable>::position</item>.
+    }
+}

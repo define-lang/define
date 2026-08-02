@@ -20,7 +20,6 @@ if typing.TYPE_CHECKING:
         Collection,
         Iterable,
         Iterator,
-        Mapping,
         Sequence,
     )
 
@@ -60,6 +59,7 @@ class ResolvedRequirementPosition:
 
     local_position: ast.PositionReference
     contracted_position: ast.PositionReference
+    required_state: action_contract.PositionOccupancyState
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +235,65 @@ class _PendingNestedGuarantees:
             while prefix in self._by_prefix:
                 yield from self._by_prefix.pop(prefix)
             length += 1
+
+    def drain_shortest_first_for(
+        self, keys: Iterable[tuple[str, ...]]
+    ) -> Iterator[_PendingGuarantee]:
+        """Yield and remove pending guarantees on the paths to ``keys``.
+
+        Keys may be in any order and are processed in the order supplied. Keys
+        with common prefixes are faster when adjacent because their already
+        drained prefixes are reused, but adjacency is not required for
+        correctness. Guarantees on each individual path are yielded from the
+        shortest prefix to the longest.
+        """
+        # Requirement propagation usually has no pending guarantees, so avoid
+        # consuming its keys or performing any chained-name comparisons then.
+        if not self._by_prefix:
+            self._longest_pending_guarantee_key = 0
+            return
+        previous_key: tuple[str, ...] | None = None
+        for key in keys:
+            if previous_key is None:
+                # A pending implied-action guarantee can use the empty tuple as
+                # its prefix, so the first path must begin there.
+                length = 0
+            else:
+                # Every prefix shared with the preceding path was already fully
+                # drained. Find the first prefix unique to this path instead of
+                # repeating those dictionary lookups.
+                common_depth = 0
+                common_depth_limit = min(
+                    len(previous_key),
+                    len(key),
+                    # No pending prefix can be longer than this cached depth, so
+                    # comparing additional names cannot let us skip more lookups.
+                    self._longest_pending_guarantee_key,
+                )
+                while (
+                    common_depth < common_depth_limit
+                    and previous_key[common_depth] == key[common_depth]
+                ):
+                    common_depth += 1
+                # ``common_depth`` is the length of the last shared prefix; the
+                # next length is therefore the first prefix not yet drained.
+                length = common_depth + 1
+            key_len = len(key)
+            # A guarantee applies when its prefix is the queried position or one
+            # of its parent names. Prefixes beyond either bound cannot match.
+            while length <= key_len and length <= self._longest_pending_guarantee_key:
+                prefix = key[:length]
+                # Applying a guarantee can add another pending guarantee at this
+                # same prefix, so do not advance until the prefix stays empty.
+                while prefix in self._by_prefix:
+                    yield from self._by_prefix.pop(prefix)
+                # Once no pending guarantees remain, no later path can yield
+                # anything.
+                if not self._by_prefix:
+                    self._longest_pending_guarantee_key = 0
+                    return
+                length += 1
+            previous_key = key
 
     def drain_at_or_below(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield guarantees whose prefixes equal ``key`` or have it as a parent name."""
@@ -508,16 +567,8 @@ class _ParticleStateStore:
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
 
-    def __init__(
-        self,
-        requirements: Mapping[tuple[str, ...], action_contract.PositionRequirement],
-        trigger_position: ast.PositionReference | None = None,
-    ):
-        """Initialize an empty particle tracker.
-
-        ``requirements`` is the validator's inferred-requirements map;
-        ``trigger_position`` is this action's own trigger position.
-        """
+    def __init__(self):
+        """Initialize an empty particle tracker."""
         self._store: _ParticleStateStore = _ParticleStateStore()
         self._pending: _PendingNestedGuarantees = _PendingNestedGuarantees()
         self._nested_guarantees: _CurrentActionNestedGuarantees = (
@@ -527,7 +578,7 @@ class ParticleTracker:
         # once per trigger.
         self._body_operation_number: int = 0
         self._operation_graph: operation_graph.OperationGraph = (
-            operation_graph.OperationGraph(requirements, trigger_position)
+            operation_graph.OperationGraph()
         )
 
     @property
@@ -612,20 +663,21 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.has_been_touched(key)
 
-    def direct_requirement_positions(
+    def infer_direct_requirements(
         self,
         position: ast.PositionReference,
+        required_state: action_contract.PositionOccupancyState,
         interface_position_names: Collection[str],
     ) -> list[ResolvedRequirementPosition]:
-        """Resolve directly inferred requirement positions into the caller's names."""
-        positions = list(position.walk_parent_positions())
-        positions.append(position)
+        """Infer direct requirements and record their RequirementNodes when needed."""
+        self._apply_pending_guarantees_up_to(position.canonical_chained_name_tuple)
         resolved_positions: list[ResolvedRequirementPosition] = []
         for (
             requirement_position,
             nearest_particle,
         ) in self._requirement_position_candidates(
-            positions, lambda candidate_position: candidate_position
+            position.walk_position_prefixes(),
+            lambda candidate_position: candidate_position,
         ):
             # Requirements are inferred before particles are created, so there
             # may be no from_caller flag to inspect. Without a particle above this
@@ -638,12 +690,24 @@ class ParticleTracker:
                 in interface_position_names
             ):
                 continue
+            contracted_position = self._contracted_position_for_requirement(
+                requirement_position, nearest_particle
+            )
+            requirement_state = (
+                required_state
+                if requirement_position == position
+                else action_contract.PositionOccupancyState.OCCUPIED
+            )
+            self._record_requirement_in_operation_graph(
+                contracted_position,
+                requirement_state,
+                nearest_particle,
+            )
             resolved_positions.append(
                 ResolvedRequirementPosition(
                     local_position=requirement_position,
-                    contracted_position=self._contracted_position_for_requirement(
-                        requirement_position, nearest_particle
-                    ),
+                    contracted_position=contracted_position,
+                    required_state=requirement_state,
                 )
             )
         return resolved_positions
@@ -653,11 +717,11 @@ class ParticleTracker:
     # operation batched lets trie lookup reuse common position prefixes instead
     # of repeating the ancestor search for every requirement. This is an important
     # performance optimization in the design of the compiler.
-    def propagated_requirements(
+    def propagate_requirements(
         self,
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
     ) -> list[PropagatedRequirement]:
-        """Resolve propagated requirement positions into the caller's names.
+        """Propagate requirements and record their RequirementNodes when needed.
 
         There are two different propagation situations:
         1. The callee's parent position was created by our caller, in which case
@@ -673,6 +737,10 @@ class ParticleTracker:
         all we did in this action is "move our_interface to interface." We don't
         actually _know_ the state of "b" and its child "c". Only our caller knows.
         """
+        self._apply_pending_guarantees_up_to_all(
+            requirement.caller_position.canonical_chained_name_tuple
+            for requirement in requirements_in_caller
+        )
         propagated_requirements: list[PropagatedRequirement] = []
         for (
             requirement_in_caller,
@@ -682,12 +750,18 @@ class ParticleTracker:
             lambda requirement: requirement.caller_position,
         ):
             position = requirement_in_caller.caller_position
+            contracted_position = self._contracted_position_for_requirement(
+                position, nearest_particle
+            )
+            self._record_requirement_in_operation_graph(
+                contracted_position,
+                requirement_in_caller.requirement.required_state,
+                nearest_particle,
+            )
             propagated_requirements.append(
                 PropagatedRequirement(
                     requirement_in_caller=requirement_in_caller,
-                    contracted_position=self._contracted_position_for_requirement(
-                        position, nearest_particle
-                    ),
+                    contracted_position=contracted_position,
                 )
             )
         return propagated_requirements
@@ -710,7 +784,6 @@ class ParticleTracker:
         for candidate in candidates:
             position = position_for_candidate(candidate)
             key = position.canonical_chained_name_tuple
-            self._apply_pending_guarantees_up_to(key)
             # If we have touched a position, then the current action overrides any
             # requirements from its callees.
             if self._store.has_error_in_chain(key) or self._store.has_been_touched(key):
@@ -748,6 +821,22 @@ class ParticleTracker:
                 *position.typed_names[len(owner_key) :],
             ),
         )
+
+    def _record_requirement_in_operation_graph(
+        self,
+        contracted_position: ast.PositionReference,
+        required_state: action_contract.PositionOccupancyState,
+        nearest_particle: tuple[tuple[str, ...], ParticleInfo] | None,
+    ):
+        if nearest_particle is not None:
+            particle = nearest_particle[1]
+            # If the parent was moved, then its move operation is the only thing
+            # that needs to go into the graph. That move operation already generated
+            # a RequirementNode, and _that_ is what will depend on the caller operation.
+            # Any later child operation will depend only on that move operation.
+            if particle.last_position != particle.origin_position:
+                return
+        self._operation_graph.record_requirement(contracted_position, required_state)
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
@@ -1400,6 +1489,11 @@ class ParticleTracker:
     def _apply_pending_guarantees_up_to(self, key: tuple[str, ...]):
         """Apply any nested guarantee on the path from root to ``key``."""
         for pending_guarantee in self._pending.drain_shortest_first(key):
+            self._apply_pending_guarantee(pending_guarantee)
+
+    def _apply_pending_guarantees_up_to_all(self, keys: Iterable[tuple[str, ...]]):
+        """Apply nested guarantees on the paths to any of ``keys``."""
+        for pending_guarantee in self._pending.drain_shortest_first_for(keys):
             self._apply_pending_guarantee(pending_guarantee)
 
     def _fully_resolve_pending_guarantees(self, key: tuple[str, ...]):

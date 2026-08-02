@@ -195,7 +195,6 @@ py_test(
     size = "small",
     srcs = ["operation_graph_test.py"],
     deps = [
-        ":action_contract",
         ":operation_graph",
         "//define/compiler:ast",
         "@pypi//pytest",

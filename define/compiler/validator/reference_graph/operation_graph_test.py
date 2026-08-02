@@ -34,10 +34,9 @@ import functools
 import pytest
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import action_contract, operation_graph
+from define.compiler.validator.reference_graph import operation_graph
 
 _LOC = ast.start_of_file_location()
-_NO_REQUIREMENTS: dict[tuple[str, ...], action_contract.PositionRequirement] = {}
 
 
 def _ref(*names: str) -> ast.PositionReference:
@@ -75,7 +74,7 @@ def test_operation_nodes_use_identity_equality():
 
 
 def test_last_operation_on_position_raises_for_an_untouched_position():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph = operation_graph.OperationGraph()
     box = _ref("box")
     operation = graph.record_create(box)
 
@@ -87,7 +86,7 @@ def test_last_operation_on_position_raises_for_an_untouched_position():
 
 
 def test_last_operation_on_position_or_parents_includes_parent_names():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph = operation_graph.OperationGraph()
     parent = _ref("parent")
     operation = graph.record_create(parent)
 
@@ -106,7 +105,7 @@ def test_last_operation_on_position_or_parents_includes_parent_names():
 
 
 def test_last_operation_on_position_or_parents_uses_newest_operation():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph = operation_graph.OperationGraph()
     child = _ref("parent", "child")
     _ = graph.record_create(child)
     parent_operation = graph.record_create(_ref("parent"))
@@ -122,7 +121,7 @@ def test_last_operation_on_position_or_parents_uses_newest_operation():
 
 
 def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent():
-    graph = operation_graph.OperationGraph(_NO_REQUIREMENTS, _ref("run"))
+    graph = operation_graph.OperationGraph()
     _ = graph.record_create(_ref("parent"))
     child_operation = graph.record_create(_ref("parent", "child"))
 

@@ -98,23 +98,11 @@ if typing.TYPE_CHECKING:
 class OperationGraph:
     """An append-only dependency graph of one action's particle operations."""
 
-    def __init__(
-        self,
-        requirements: Mapping[tuple[str, ...], action_contract.PositionRequirement],
-        trigger_position: ast.PositionReference | None = None,
-    ):
-        """Create an empty graph.
-
-        ``requirements`` is the validator's inferred-requirements map, shared by
-        reference: it is empty at construction and fills in as the body is
-        analyzed, one requirement recorded just before the operation that needs it.
-        ``trigger_position`` is this action's own trigger position: the body reads
-        it filled without an operation of its own, so like a requirement it gets a
-        RequirementNode standing in for the caller op that fired the trigger.
-        """
+    def __init__(self):
+        """Create an empty operation graph."""
         self._nodes: list[OperationNode] = []
-        # A position's canonical chained name -> the last operation on it,
-        # for every position the body touches.
+        # A position's canonical chained name -> its last body operation or
+        # recorded requirement.
         # cProfile makes ancestor lookup through this flat mapping look like a
         # performance problem because dense action call graphs perform millions
         # of prefix checks. Unprofiled experiments in July 2026 showed that the
@@ -132,9 +120,6 @@ class OperationGraph:
         # shape or this algorithm has materially changed; the number of semantic
         # effects constructed and propagated dominates these lookup costs.
         self._last_operation: dict[tuple[str, ...], LastOperationNode] = {}
-        self._requirements: Mapping[
-            tuple[str, ...], action_contract.PositionRequirement
-        ] = requirements
         # Every triggering this action performs, in the order it performs them.
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
@@ -148,11 +133,6 @@ class OperationGraph:
             )
         )
         self._nodes.append(self._action_parent_last_operation)
-        self._trigger_position_key: tuple[str, ...] = (
-            trigger_position.canonical_chained_name_tuple
-            if trigger_position is not None
-            else ()
-        )
         self.guaranteed_positions_by_operation: dict[
             PositionOperationNode, tuple[tuple[str, ...], ...]
         ] = {}
@@ -186,11 +166,33 @@ class OperationGraph:
     def body_touched_key(self, key: tuple[str, ...]) -> bool:
         """Return whether the body performed a real operation on exactly this key.
 
-        A materialized RequirementNode stands in for a caller operation, not a
+        A recorded RequirementNode stands in for a caller operation, not a
         body operation, so it does not count as the body touching the position.
         """
         node = self._last_operation.get(key)
         return node is not None and not isinstance(node, RequirementNode)
+
+    def record_requirement(
+        self,
+        position: ast.PositionReference,
+        required_state: action_contract.PositionOccupancyState,
+    ):
+        """Record the caller operation represented by a position requirement."""
+        key = position.canonical_chained_name_tuple
+        ancestor = typing.cast(
+            "RequirementNode | None",
+            self._most_recent_ancestor_chain_operation(key[:-1]),
+        )
+        if ancestor is None:
+            ancestor = self._action_parent_last_operation
+        node = RequirementNode(
+            node_id=len(self._nodes),
+            required_state=required_state,
+            requirement_position=key,
+            depends_on=(ancestor,),
+        )
+        self._nodes.append(node)
+        self._last_operation[key] = node
 
     def record_action_trigger(
         self,
@@ -300,13 +302,9 @@ class OperationGraph:
         operation = self._last_operation.get(caller_position_key)
         if operation is not None:
             return operation
-        # We need to materialize RequirementNodes to propagate to the caller.
         ancestor_operation = self._most_recent_ancestor_chain_operation(
             caller_position_key
         )
-        operation = self._last_operation.get(caller_position_key)
-        if operation is not None:
-            return operation
         # A move of a parent position also put this position in its current state.
         if isinstance(ancestor_operation, MoveNode):
             return ancestor_operation
@@ -367,59 +365,18 @@ class OperationGraph:
     def _most_recent_ancestor_chain_operation(
         self, position: tuple[str, ...]
     ) -> LastOperationNode | None:
-        """Return the most recent operation on ``position``'s ancestor chain, materializing requirements as needed."""
+        """Return the most recent operation on ``position``'s ancestor chain."""
         ancestor: LastOperationNode | None = None
         for length in range(1, len(position) + 1):
             key = position[:length]
             existing = self._last_operation.get(key)
-            if existing is not None:
-                if ancestor is None or existing.node_id > ancestor.node_id:
-                    ancestor = existing
-                continue
-            materialized = self._maybe_materialize_requirement_node(key, ancestor)
-            if materialized is not None:
-                ancestor = materialized
+            # Most parent names have no operation; among those that do, a newer
+            # operation wins even when it is on a more-distant parent name.
+            if existing is not None and (
+                ancestor is None or existing.node_id > ancestor.node_id
+            ):
+                ancestor = existing
         return ancestor
-
-    def _maybe_materialize_requirement_node(
-        self, key: tuple[str, ...], ancestor: LastOperationNode | None
-    ) -> RequirementNode | None:
-        """Materialize a RequirementNode standing in for the caller op on ``key``, or None."""
-        requirement = self._requirements.get(key)
-        if requirement is not None:
-            required_state = requirement.required_state
-        elif key == self._trigger_position_key:
-            required_state = action_contract.PositionOccupancyState.OCCUPIED
-        else:
-            # Not a position we have a requirement on.
-            return None
-        if ancestor is not None and not isinstance(ancestor, RequirementNode):
-            raise ValueError(
-                f"cannot materialize caller requirement {key} after a body operation"
-            )
-        return self._add_requirement_node(key, ancestor, required_state)
-
-    def _add_requirement_node(
-        self,
-        key: tuple[str, ...],
-        ancestor: RequirementNode | None,
-        required_state: action_contract.PositionOccupancyState,
-    ) -> RequirementNode:
-        """Add a RequirementNode standing in for the caller operation on ``key``."""
-        dependency = ancestor
-        if dependency is None:
-            dependency = self._action_parent_last_operation
-        node = RequirementNode(
-            node_id=len(self._nodes),
-            required_state=required_state,
-            requirement_position=key,
-            depends_on=(dependency,),
-        )
-        self._nodes.append(node)
-        # A later body operation on the position must still chain onto this node,
-        # but an existing operation there stays the most recent one.
-        _ = self._last_operation.setdefault(key, node)
-        return node
 
     def _add_caller_empty_rule_dependencies(
         self, caller_empty_rule_dependencies: CallerEmptyRuleDependencies

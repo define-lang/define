@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/consume_chain> {
+    define the position<trigger_pos>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</prepared_input>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        destroy the particle in position<input>::position</prepared_input>::position</parent_marker>.
+        destroy the particle in position<input>::position</prepared_input>::position</child>::position</child_marker>.
+    }
+}

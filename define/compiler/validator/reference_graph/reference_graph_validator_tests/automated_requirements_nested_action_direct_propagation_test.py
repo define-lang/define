@@ -22,6 +22,16 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
+_CALL_FILL = "action<my.domain.com:my_lib:/call_fill>"
+_CONSUME_ITEM = "action<my.domain.com:my_lib:/consume_item>"
+_FILL_ITEM = "action<my.domain.com:my_lib:/fill_item>"
+_CONSUME_CHAIN = "action<my.domain.com:my_lib:/consume_chain>"
+_CONSUME_BRANCHES = "action<my.domain.com:my_lib:/consume_branches>"
+_CONSUME_COMBINED = "action<my.domain.com:my_lib:/consume_combined>"
+_CALL_CHILD = "action<my.domain.com:my_lib:/call_child>"
+_CALL_PARENT = "action<my.domain.com:my_lib:/call_parent>"
+_FILL_CHILD = "action<my.domain.com:my_lib:/fill_child>"
+_FILL_PARENT = "action<my.domain.com:my_lib:/fill_parent>"
 
 
 def test_inner_chained_action_empty_requirement_propagates(
@@ -149,6 +159,61 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
+    }
+
+
+def test_pending_transitive_guarantee_satisfies_later_action_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _CALL_FILL),
+        (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CONSUME_ITEM),
+        (_CONSUME_ITEM, _CALL_FILL),
+    }
+
+
+def test_pending_guarantees_on_one_position_chain_satisfy_later_requirements(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _CALL_PARENT),
+        (_CALL_PARENT, _FILL_PARENT),
+        (_TEST, _CALL_CHILD),
+        (_CALL_CHILD, _FILL_CHILD),
+        (_TEST, _CONSUME_CHAIN),
+    }
+
+
+def test_pending_guarantees_on_separate_position_chains_satisfy_later_requirements(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _CALL_FILL),
+        (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CONSUME_BRANCHES),
+    }
+
+
+def test_pending_guarantees_on_shared_and_separate_position_chains_satisfy_later_requirements(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _CALL_PARENT),
+        (_CALL_PARENT, _FILL_PARENT),
+        (_TEST, _CALL_CHILD),
+        (_CALL_CHILD, _FILL_CHILD),
+        (_TEST, _CALL_FILL),
+        (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CONSUME_COMBINED),
     }
 
 

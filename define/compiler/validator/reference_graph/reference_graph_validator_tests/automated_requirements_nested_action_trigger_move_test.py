@@ -351,3 +351,114 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
     }
+
+
+def test_requirement_on_moved_particle_is_satisfied_after_origin_is_refilled(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+
+
+def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 15
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 15
+    assert diagnostic.location.end_column == 74
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.action_name == _OUTER
+    assert diagnostic.required_empty is False
+    assert (
+        diagnostic.position_name
+        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+    )
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 19,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 33,
+            "file_path": "inner.dfn",
+        },
+    )
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _OUTER),
+        (_OUTER, _INNER),
+    }
+
+
+def test_missing_middle_child_violates_inner_requirement_after_move(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 16
+    assert diagnostic.location.end_column == 83
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.action_name == _MIDDLE
+    assert diagnostic.required_empty is False
+    assert (
+        diagnostic.position_name
+        == "position<box>::action</middle>::position<gateway>::action</inner>::position<source>::position</child>"
+    )
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 11,
+            "column": 30,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 33,
+            "file_path": "inner.dfn",
+        },
+    )
+    assert action_graph_set(result.operation_graphs) == {
+        (_TEST, _MIDDLE),
+        (_MIDDLE, _INNER),
+    }

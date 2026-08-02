@@ -590,32 +590,35 @@ class TestGetLastActionChildren:
         assert result.source_chained_name == "position<trigger>"
 
 
-class TestWalkParentPositions:
+class TestWalkPositionPrefixes:
     def test_single_element(self):
         pos = _position_reference_for("position<local>")
-        assert list(pos.walk_parent_positions()) == []
+        prefixes = [p.source_chained_name for p in pos.walk_position_prefixes()]
+        assert prefixes == ["position<local>"]
 
     def test_two_positions(self):
         pos = _position_reference_for("position<local>::position</x>")
-        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
-        assert parents == ["position<local>"]
+        prefixes = [p.source_chained_name for p in pos.walk_position_prefixes()]
+        assert prefixes == ["position<local>", "position<local>::position</x>"]
 
     def test_position_action_position_position(self):
         pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
-        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
-        assert parents == [
+        prefixes = [p.source_chained_name for p in pos.walk_position_prefixes()]
+        assert prefixes == [
             "position<local>",
             "position<local>::action</act>::position<iface>",
+            "position<local>::action</act>::position<iface>::position</child>",
         ]
 
     def test_three_positions_no_action(self):
         pos = _position_reference_for("position<local>::position</x>::position</y>")
-        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
-        assert parents == [
+        prefixes = [p.source_chained_name for p in pos.walk_position_prefixes()]
+        assert prefixes == [
             "position<local>",
             "position<local>::position</x>",
+            "position<local>::position</x>::position</y>",
         ]
 
 

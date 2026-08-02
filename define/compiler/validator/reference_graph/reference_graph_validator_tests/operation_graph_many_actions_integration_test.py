@@ -10,6 +10,9 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING = (
     "destroying actions do not yet include caller-dependent child positions"
 )
+_RESOLVED_PARENT_DEPENDENCY_NOT_REDUCED = (
+    "Action Resolution retains a parent operation already preceding a child operation"
+)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -114,6 +117,62 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
         "test.move(gateway::/middle::holder::/child::result, result)": [
             "middle.move(source, holder)"
         ],
+    }
+
+
+def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::source)": ["test.create(gateway)"],
+        "test.create(gateway::/middle::source::/inner::item)": [
+            "test.create(gateway::/middle::source)"
+        ],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.move(source, holder)": [
+            "test.create(gateway::/middle::source::/inner::item)"
+        ],
+        "middle.create(source)": ["middle.move(source, holder)"],
+        "middle.create(holder::/inner::trigger_pos)": ["middle.move(source, holder)"],
+        "inner.destroy(item)": ["middle.move(source, holder)"],
+        # This dependency belongs on the replacement particle in position<source>,
+        # not the caller particle that Middle moved to position<holder>.
+        "middle.create(source::/inner::item)": ["middle.create(source)"],
+        "middle.destroy(source::/inner::item)": ["middle.create(source::/inner::item)"],
+        "middle.destroy(source)": ["middle.destroy(source::/inner::item)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_RESOLVED_PARENT_DEPENDENCY_NOT_REDUCED)
+def test_middle_child_operation_reaches_inner_move_and_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::gateway)": ["test.create(box)"],
+        "test.create(box::/middle::gateway::/inner::source)": [
+            "test.create(box::/middle::gateway)"
+        ],
+        "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.create(gateway::/inner::source::/child)": [
+            "test.create(box::/middle::gateway::/inner::source)"
+        ],
+        "middle.create(gateway::/inner::trigger_pos)": [
+            "test.create(box::/middle::gateway)"
+        ],
+        # middle.create(gateway::/inner::source::/child) already waits for
+        # test.create(box::/middle::gateway::/inner::source), which waits for
+        # test.create(box::/middle::gateway), so it is the move's only necessary
+        # direct dependency.
+        "inner.move(source, destination)": [
+            "middle.create(gateway::/inner::source::/child)"
+        ],
+        "inner.destroy(destination::/child)": ["inner.move(source, destination)"],
     }
 
 

@@ -494,16 +494,16 @@ class ChainedName(ASTNode):
                 )
         return None
 
-    def walk_parent_positions(self) -> Iterator[PositionReference]:
-        """Yield parent position prefixes from root toward this position.
+    def walk_position_prefixes(self) -> Iterator[PositionReference]:
+        """Yield every position prefix in chained-name order.
 
         For ``position<a>::action</x>::position</b>::position</c>``, yields
-        references for ``position<a>`` and
-        ``position<a>::action</x>::position</b>``, but not the full chain
-        itself. Actions are skipped (bundled with the next position).
+        references for ``position<a>``,
+        ``position<a>::action</x>::position</b>``, and the full chain itself.
+        Actions are skipped (bundled with the next position).
         """
         names = self.typed_names
-        for i, elem in enumerate(names[:-1]):
+        for i, elem in enumerate(names):
             if elem.name_type != NameType.ACTION:
                 yield PositionReference(
                     location=self.location,

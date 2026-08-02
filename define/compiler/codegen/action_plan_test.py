@@ -78,21 +78,8 @@ def _fragment_operations(
     return tuple(fragment.operations)
 
 
-def _empty_requirement(
-    position: ast.PositionReference,
-) -> dict[tuple[str, ...], action_contract.PositionRequirement]:
-    return {
-        position.canonical_chained_name_tuple: action_contract.PositionRequirement(
-            required_state=action_contract.PositionOccupancyState.EMPTY,
-            position=position,
-            inferred_at=position.location,
-            enclosing_action=_DUMMY_ACTION,
-        )
-    }
-
-
 def test_serial_operations_form_one_fragment():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     item = _position("item")
     create = graph.record_create(item)
     destroy = graph.record_destroy(item, ())
@@ -107,7 +94,7 @@ def test_serial_operations_form_one_fragment():
 
 
 def test_triggered_action_has_no_execute_fragments():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     _ = graph.record_create(_position("item"))
 
     plan = _triggered_plan(graph)
@@ -116,7 +103,7 @@ def test_triggered_action_has_no_execute_fragments():
 
 
 def test_fan_out_forms_parallel_serial_fragments():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     first = _position("first")
     second = _position("second")
     first_create = graph.record_create(first)
@@ -134,7 +121,7 @@ def test_fan_out_forms_parallel_serial_fragments():
 
 
 def test_join_starts_a_new_fragment():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     source = _position("source")
     destination = _position("destination")
     source_create = graph.record_create(source)
@@ -156,7 +143,8 @@ def test_join_starts_a_new_fragment():
 def test_entry_action_resolves_independent_empty_requirement_away():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph(_empty_requirement(destination))
+    graph = operation_graph.OperationGraph()
+    graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
     create = graph.record_create(item)
     move = graph.record_move(item, destination, ())
 
@@ -170,7 +158,8 @@ def test_entry_action_resolves_independent_empty_requirement_away():
 def test_triggered_action_preserves_independent_caller_input():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph(_empty_requirement(destination))
+    graph = operation_graph.OperationGraph()
+    graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
     create = graph.record_create(item)
     move = graph.record_move(item, destination, ())
 
@@ -191,7 +180,7 @@ def test_triggered_action_preserves_independent_caller_input():
 def test_callee_continuation_ends_a_direct_call_chain():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph({})
+    caller_graph = operation_graph.OperationGraph()
     item = _position("item")
     create = caller_graph.record_create(item)
     callee_position = _position_reference(
@@ -207,7 +196,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
         required_preceding_child_operations=(),
     )
     destroy = caller_graph.record_destroy(item, ())
-    callee_graph = operation_graph.OperationGraph({})
+    callee_graph = operation_graph.OperationGraph()
     _ = callee_graph.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
     graphs[callee_definition.typed_name] = callee_graph
@@ -234,7 +223,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
 def test_triggered_action_input_uses_its_resolved_caller_dependency():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph({})
+    caller_graph = operation_graph.OperationGraph()
     gateway = _position("gateway")
     gateway_create = caller_graph.record_create(gateway)
     trigger_position = _position_reference(
@@ -251,7 +240,10 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
         required_preceding_child_operations=(),
     )
     output = _position("output")
-    callee_graph = operation_graph.OperationGraph(_empty_requirement(output))
+    callee_graph = operation_graph.OperationGraph()
+    callee_graph.record_requirement(
+        output, action_contract.PositionOccupancyState.EMPTY
+    )
     _ = callee_graph.record_create(output)
     graphs = operation_graph.OperationGraphs()
     graphs[callee_definition.typed_name] = callee_graph
@@ -273,7 +265,7 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
 
 
 def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     first = _position("first")
     second = _position("second")
     first_create = graph.record_create(first)
@@ -302,7 +294,7 @@ def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
 
 
 def test_move_guarantee_publication_separates_source_and_target():
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     source = _position("source")
     target = _position("target")
     _ = graph.record_create(source)

@@ -45,7 +45,7 @@ def _position(name: str) -> ast.PositionReference:
 
 def test_resolved_actions_retains_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -57,7 +57,7 @@ def test_resolved_actions_retains_resolved_action():
 
 def test_resolved_actions_reuses_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -68,7 +68,7 @@ def test_resolved_actions_reuses_resolved_action():
 
 def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     action = _action("/test")
-    graph = operation_graph.OperationGraph({})
+    graph = operation_graph.OperationGraph()
     work = _position("work")
     create = graph.record_create(work)
     destroy = graph.record_destroy(work, ())
@@ -90,7 +90,7 @@ def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
     worker_action = _action("/worker")
-    caller_graph = operation_graph.OperationGraph({})
+    caller_graph = operation_graph.OperationGraph()
     trigger_position = _position("run")
     trigger_position_create = caller_graph.record_create(trigger_position)
     trigger = caller_graph.record_action_trigger(
@@ -100,7 +100,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    callee_graph = operation_graph.OperationGraph({})
+    callee_graph = operation_graph.OperationGraph()
     _ = callee_graph.record_create(_position("work"))
     caller_action = _action("/caller")
     graphs = operation_graph.OperationGraphs()

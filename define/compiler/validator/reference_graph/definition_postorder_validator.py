@@ -96,10 +96,7 @@ class ActionPostorderValidator:
 
     @cached_property
     def _tracker(self) -> particle_tracker.ParticleTracker:
-        return particle_tracker.ParticleTracker(
-            self._inferred_requirements,
-            self._action_definition.trigger_position_reference,
-        )
+        return particle_tracker.ParticleTracker()
 
     @cached_property
     def _executor(self) -> particle_operation.ParticleOperationExecutor:
@@ -197,7 +194,7 @@ class ActionPostorderValidator:
         action_assignment: action_contract.ActionAssignment | None,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
-        propagated_requirements = self._tracker.propagated_requirements(
+        propagated_requirements = self._tracker.propagate_requirements(
             requirements_in_caller
         )
         for propagated in propagated_requirements:
@@ -225,21 +222,18 @@ class ActionPostorderValidator:
         use OCCUPIED, since a parent must be occupied for its child to be
         accessible.
         """
-        inferred_positions = self._tracker.direct_requirement_positions(
+        inferred_requirements = self._tracker.infer_direct_requirements(
             position,
+            required_state,
             self._interface_positions,
         )
-        for resolved_position in inferred_positions:
-            local_position = resolved_position.local_position
+        for resolved_requirement in inferred_requirements:
+            local_position = resolved_requirement.local_position
             self._record_requirement(
-                required_state=(
-                    required_state
-                    if local_position == position
-                    else action_contract.PositionOccupancyState.OCCUPIED
-                ),
-                contracted_position=resolved_position.contracted_position,
+                required_state=resolved_requirement.required_state,
+                contracted_position=resolved_requirement.contracted_position,
                 local_position=local_position,
-                inferred_at=resolved_position.contracted_position.location,
+                inferred_at=resolved_requirement.contracted_position.location,
                 propagated_from=None,
                 scope=scope,
             )
@@ -1505,6 +1499,10 @@ class ActionPostorderValidator:
         trigger_ref = self._action_definition.trigger_position_reference
         if trigger_ref is not None:
             qualities = self._get_transitive_required_qualities(trigger_ref, scope)
+            self._tracker.operation_graph.record_requirement(
+                trigger_ref,
+                action_contract.PositionOccupancyState.OCCUPIED,
+            )
             # DLP 37: We assume trigger points are occupied upon the start
             # of the action, but we can only assume they have the qualities
             # they are declared with.
