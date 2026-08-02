@@ -54,7 +54,6 @@ class TestExecution:
         self.trigger_position_box__global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_box__global_action_middle__when_empty_position_gateway__global_action_inner__position_source__global_position_child = literal.Join(2)
         self.join_for_trigger_position_box__global_action_middle__when_empty_position_gateway__global_action_inner__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_middle__for_empty_rule_position_gateway__global_action_inner__position_source = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -72,8 +71,7 @@ class TestExecution:
             "position<gateway>"
         ).create_particle()
         self.scheduler.submit(self.create_position_box__global_action_middle__position_gateway__global_action_inner__position_source)
-        self.scheduler.submit(self.trigger_position_box__global_action_middle__when_empty_position_gateway__global_action_inner__position_trigger_pos)
-        self.trigger_position_box__global_action_middle__for_empty_rule_position_gateway__global_action_inner__position_source()
+        self.trigger_position_box__global_action_middle__when_empty_position_gateway__global_action_inner__position_trigger_pos()
 
     def create_position_box__global_action_middle__position_gateway__global_action_inner__position_source(self):
         self.action.get_interface_position(
@@ -125,6 +123,4 @@ class TestExecution:
         self.trigger_position_box__global_action_middle__execution.accept_when_empty_position_gateway__global_action_inner__position_trigger_pos()
 
     def trigger_position_box__global_action_middle__for_empty_rule_position_gateway__global_action_inner__position_source(self):
-        if not self.join_for_trigger_position_box__global_action_middle__for_empty_rule_position_gateway__global_action_inner__position_source.arrive():
-            return
         self.trigger_position_box__global_action_middle__execution.accept_for_empty_rule_position_gateway__global_action_inner__position_source()

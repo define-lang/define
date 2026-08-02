@@ -422,17 +422,25 @@ class OperationGraph:
             child_operation.operation for child_operation in child_operations
         }
         for requirement in particle_dependencies.dependency_requirements:
-            # The Fill Rule allows its dependency to come from a transitive parent position.
-            # _first_requirement_binding therefore checks the position and
-            # its parent-position prefixes until it finds the caller binding that supplies
-            # the dependency.
-            binding = self._first_requirement_binding(requirement, bindings)
-            # Note: None means this is an EMPTY requirement that is satisfied by default
-            # (there was no specific operation that emptied the position). The Fill Rule
-            # created a separate requirement against the parent position, and so no binding
-            # is necessary here.
-            if binding is not None:
-                candidates.add(binding.operation)
+            # The Fill Rule allows an EMPTY requirement to depend on an
+            # operation on any parent position. Search the required position
+            # and its parent-position prefixes for that operation.
+            for depth in range(len(requirement), 0, -1):
+                binding_position = requirement[:depth]
+                binding = bindings.get(binding_position)
+                if binding is None:
+                    continue
+                # The Move Rule combines the dependencies for emptying the
+                # source position and filling the target position, then applies
+                # the Empty Rule comparison. When filling the target depends on
+                # a Particle Operation on a transitive parent position of the
+                # source, a more recent Particle Operation on the source or one
+                # of its transitive child positions remains as the dependency.
+                if not ast.is_prefix(
+                    binding_position, particle_dependencies.requirement_position
+                ):
+                    candidates.add(binding.operation)
+                break
 
         requirement_position_in_caller = self._occupied_requirement_position(
             callee_requirement_binding
@@ -533,18 +541,6 @@ class OperationGraph:
         if not isinstance(node, RequirementNode):
             return None
         return node.requirement_position
-
-    @staticmethod
-    def _first_requirement_binding(
-        requirement_position: tuple[str, ...],
-        bindings: Mapping[tuple[str, ...], RequirementBinding],
-    ) -> RequirementBinding | None:
-        """Return the first supplied binding in a requirement's parent chain."""
-        for depth in range(len(requirement_position), 0, -1):
-            binding = bindings.get(requirement_position[:depth])
-            if binding is not None:
-                return binding
-        return None
 
     def _add_positions_relative_to_particle(
         self,

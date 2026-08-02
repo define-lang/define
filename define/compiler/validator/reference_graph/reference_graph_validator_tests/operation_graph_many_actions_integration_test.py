@@ -10,9 +10,6 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING = (
     "destroying actions do not yet include caller-dependent child positions"
 )
-_RESOLVED_PARENT_DEPENDENCY_NOT_REDUCED = (
-    "Action Resolution retains a parent operation already preceding a child operation"
-)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -146,7 +143,6 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_RESOLVED_PARENT_DEPENDENCY_NOT_REDUCED)
 def test_middle_child_operation_reaches_inner_move_and_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
