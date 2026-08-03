@@ -20,6 +20,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
+_CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 
 
 def test_caller_overrides_implied_guarantee(
@@ -270,6 +271,50 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, "action<my.domain.com:my_lib:/inner>")
     }
+
+
+def test_error_at_child_name_does_not_hide_parent_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].action_name == _CLOSE_FILE
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</close_file>::position<target>::position</parent>"
+    )
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 23,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 49,
+            "file_path": "close_file.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[1].position_name == "position<spare>"
+    assert all_diags[1].is_action_interface_position is False
+    assert all_diags[1].inferred_at is None
 
 
 def test_multiple_requirements_one_empty_one_occupied(
