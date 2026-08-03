@@ -39,9 +39,9 @@ def test_walk_returns_results_in_encounter_order(
 def test_duplicate_does_not_corrupt_reference_resolution(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(max_workers=1, entry_file="root.dfn")
+    result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == define_path.DefinePath("root.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[1].diagnostics == []

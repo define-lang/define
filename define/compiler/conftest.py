@@ -71,6 +71,9 @@ def validate_project(
         max_workers: int | None = None,
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
+        # Pass entry_file only when the entry path itself is the behavior under test,
+        # such as a test of path mismatches or of a missing entry file. Otherwise
+        # do not pass this; leave it as the default.
         entry_file: str = "test.dfn",
     ) -> FullValidationResult:
         test_helpers.write_project_config(tmp_path, universe_name)
@@ -122,12 +125,13 @@ class ValidateTestdataStructuralNonFilesystem(Protocol):
 class ValidateTestdataStructural(Protocol):
     """Validate the convention-derived filesystem project structurally."""
 
-    # TODO: Audit every entry_file override. Prefer test.dfn defining /test unless
-    # the entry path itself is behavior under test.
     def __call__(
         self,
         *,
         max_workers: int | None = ...,
+        # Pass this only when the entry path itself is the behavior under test,
+        # such as a test of path mismatches or of a missing entry file. Every
+        # other test lets test.dfn define /test.
         entry_file: str = ...,
     ) -> validation_result.ProgramValidationResult:
         """Run structural validation."""

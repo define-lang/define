@@ -13,14 +13,14 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def test_matching_authority_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert_no_errors(result)
 
 
 def test_mismatched_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -31,13 +31,13 @@ def test_mismatched_universe(
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
     assert diags[0].location.end_column == 54
-    assert diags[0].location.file_path == PurePosixPath("path.dfn")
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
 def test_mismatched_authority(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -51,7 +51,7 @@ def test_mismatched_authority(
 def test_mismatched_multiverse(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -67,14 +67,14 @@ def test_mismatched_multiverse(
 def test_none_skips_check(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert_no_errors(result)
 
 
 def test_standard_universe_matching(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -89,14 +89,14 @@ def test_standard_universe_matching(
 def test_authority_with_path(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert_no_errors(result)
 
 
 def test_authority_with_path_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -110,5 +110,5 @@ def test_authority_with_path_mismatch(
 def test_multiverse_matching(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="path.dfn")
+    result = validate_testdata_structural()
     assert_no_errors(result)

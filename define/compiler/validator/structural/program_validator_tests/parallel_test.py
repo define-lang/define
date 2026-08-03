@@ -16,13 +16,13 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_fan_out(validate_testdata_structural: ValidateTestdataStructural):
-    result = validate_testdata_structural(entry_file="root.dfn", max_workers=4)
+    result = validate_testdata_structural(max_workers=4)
     assert len(result.file_results) == 11
     assert_no_errors(result)
 
 
 def test_deep_chain(validate_testdata_structural: ValidateTestdataStructural):
-    result = validate_testdata_structural(entry_file="a.dfn", max_workers=4)
+    result = validate_testdata_structural(max_workers=4)
     assert len(result.file_results) == 5
     assert_no_errors(result)
 
@@ -30,7 +30,7 @@ def test_deep_chain(validate_testdata_structural: ValidateTestdataStructural):
 def test_diamond_dependency(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="top.dfn", max_workers=4)
+    result = validate_testdata_structural(max_workers=4)
     assert len(result.file_results) == 4
     assert_no_errors(result)
 
@@ -38,9 +38,9 @@ def test_diamond_dependency(
 def test_wrong_type_detected_without_deferral(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="root.dfn", max_workers=1)
+    result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 4
-    assert result.file_results[0].file_path == define_path.DefinePath("root.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == define_path.DefinePath("hub.dfn")
     assert result.file_results[1].diagnostics == []

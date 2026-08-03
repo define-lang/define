@@ -1,4 +1,4 @@
-define the potential action<my.domain.com:my_lib:/foo> {
+define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</bar>.
     define the position<run>.
     it happens when {

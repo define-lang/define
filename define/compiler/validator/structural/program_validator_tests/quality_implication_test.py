@@ -189,18 +189,18 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start(
 def test_circular_implication_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    result = validate_testdata_structural(entry_file="foo.dfn")
+    result = validate_testdata_structural()
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == define_path.DefinePath("foo.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == define_path.DefinePath("bar.dfn")
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
-        "action<my.domain.com:my_lib:/foo>",
+        "action<my.domain.com:my_lib:/test>",
         "action<my.domain.com:my_lib:/bar>",
-        "action<my.domain.com:my_lib:/foo>",
+        "action<my.domain.com:my_lib:/test>",
     ]
     assert diags[0].location.line == 2
     assert diags[0].location.column == 25
