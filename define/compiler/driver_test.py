@@ -188,7 +188,7 @@ class TestSourceValidation:
         driver_result = driver.Driver(_PARSER).validate_source(source)
         assert len(driver_result.result.file_results) == 1
         assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].source == source
+        assert driver_result.result.file_results[0].source_lines == source.splitlines()
 
     def test_duplicate_definition_reports_diagnostic(self):
         source = (

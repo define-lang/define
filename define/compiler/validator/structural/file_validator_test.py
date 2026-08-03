@@ -71,7 +71,7 @@ class TestFileStructuralValidatorSuccess:
 
         assert result.exception is None
         assert result.diagnostics == []
-        assert result.source == source
+        assert result.source_lines == source.splitlines()
         assert len(result.definition_results) == 1
         assert (
             result.definition_results[0].definition.typed_name.name_type == "position"

@@ -59,7 +59,7 @@ def test_returns_single_file_timing_stats(
 
     assert result.diagnostics == []
     assert result.exception is None
-    assert result.source == source
+    assert result.source_lines == source.splitlines()
     assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
@@ -83,7 +83,7 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
-    assert result.source is not None
+    assert result.source_lines is not None
     assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
@@ -122,7 +122,7 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-    assert result.source is None
+    assert result.source_lines is None
     assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
@@ -147,7 +147,7 @@ def test_name_parser_error_at_definition_populates_exceptions(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
-    assert result.source == source
+    assert result.source_lines == source.splitlines()
     assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats

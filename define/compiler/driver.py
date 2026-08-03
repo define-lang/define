@@ -234,13 +234,12 @@ class Driver:
             if result.exception is not None:
                 all_error_strings.append(str(result.exception))
             if result.diagnostics:
-                if result.source is None:
+                if result.source_lines is None:
                     raise ValueError(
-                        "result.source must be set when there are diagnostics"
+                        "result.source_lines must be set when there are diagnostics"
                     )
-                source_lines = result.source.splitlines()
                 for diagnostic in result.diagnostics:
-                    all_error_strings.append(diagnostic.format(source_lines))
+                    all_error_strings.append(diagnostic.format(result.source_lines))
 
         if all_error_strings:
             print(constants.ERROR_DIVIDER.join(all_error_strings), file=error_stream)

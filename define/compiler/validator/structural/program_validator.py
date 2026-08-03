@@ -56,7 +56,7 @@ class _FileWorkPool:
         self._fv = file_validator.FileStructuralValidator(parser_instance)
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
-    def __enter__(self) -> _FileWorkPool:
+    def __enter__(self) -> typing.Self:
         return self
 
     def __exit__(self, *args: object):
@@ -663,7 +663,7 @@ def _make_config_error_result(
     tracker = stats.ValidationStatsTracker()
     return validation_result.FileValidationResult(
         exception=error,
-        source=None,
+        source_lines=None,
         file_path=file_path,
         root_prefix=root_prefix,
         stats=tracker.build(),

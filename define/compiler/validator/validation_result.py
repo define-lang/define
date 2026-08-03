@@ -64,8 +64,7 @@ class FileValidationResult:
     """Validation output for one source file."""
 
     exception: AnyValidationException | None
-    # TODO: Should this just be source_lines?
-    source: str | None
+    source_lines: list[str] | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     stats: stats.ValidationTimingStats

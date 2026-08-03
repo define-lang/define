@@ -86,7 +86,7 @@ class FileStructuralValidator:
         if load_error is not None:
             return validation_result.FileValidationResult(
                 exception=load_error,
-                source=None,
+                source_lines=None,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
@@ -134,7 +134,7 @@ class FileStructuralValidator:
             )
             return validation_result.FileValidationResult(
                 exception=parse_result.exception,
-                source=source,
+                source_lines=source.splitlines(),
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
@@ -163,7 +163,7 @@ class FileStructuralValidator:
 
         return validation_result.FileValidationResult(
             exception=None,
-            source=source,
+            source_lines=source.splitlines(),
             file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),

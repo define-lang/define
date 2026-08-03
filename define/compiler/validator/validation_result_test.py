@@ -13,7 +13,7 @@ def _parse(source: str) -> validation_result.FileValidationResult:
     program = test_helpers.parse_and_transform(source)
     return validation_result.FileValidationResult(
         exception=None,
-        source=source,
+        source_lines=source.splitlines(),
         file_path=define_path.DefinePath("test.dfn"),
         root_prefix=define_path.EMPTY,
         stats=stats.ValidationTimingStats(),
