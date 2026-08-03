@@ -41,7 +41,6 @@
         )
             {% endif %}
         {% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
-            {# TODO: Always use the parenthesized multiline form instead of branching on the rendered Position Reference's shape. #}
             {% if stmt.to_position.chain_elements %}
         {{ position_expression(stmt.position) }}.move_particle_to(
             {{ position_expression(stmt.to_position, "    ") }}
