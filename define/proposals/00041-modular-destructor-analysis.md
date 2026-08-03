@@ -79,7 +79,8 @@ their own action.
 
 Thus, the action that destroys a particle verifies any destructors that _it_
 added immediately, acting as though the destructor action was triggered and ran
-synchronously.
+synchronously immediately before destruction of the particle the destructor is
+attached to.
 
 The complexity of the solution comes in when you have to deal with destructors
 that were added by the caller.

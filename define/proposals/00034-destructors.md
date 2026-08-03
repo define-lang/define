@@ -224,8 +224,10 @@ Blocks, and so they may _not_ refer to the particle itself.
 During the destruction cascade defined in
 [DLP 31](00031-destroying-particles.md), destruction conditions are checked
 before the particles of an action would be destroyed. If the action would
-trigger, it runs _synchronously_ during the cascade, completing before the
-cascade continues.
+trigger, it is logically triggered at that point during the cascade, and should
+be _verified_ as though that is when it triggered. (However, its actual moment
+of triggering at runtime is determined in the normal way that Define determines
+when actions trigger, described in a later proposal.)
 
 This is an exception to the rule that actions may not trigger during the
 cascade.

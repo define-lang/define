@@ -1439,8 +1439,9 @@ particle is in a particular state.
 During the destruction cascade described in
 [Cascading Destruction](#cascading-destruction), the compiler checks destructor
 conditions immediately before the particles in the interface position of the
-action would be destroyed. Destructors logically trigger before the destruction
-of the particle they are assigned to.
+action would be destroyed, and triggers any destructors assigned to that
+particle. Destructors behave identically to normally triggered actions, in terms
+of their concurrency behavior.
 
 This is an exception to the rule that actions may not trigger during the
 cascade.
