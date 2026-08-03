@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the position</marker_a>.
+            it has the position</marker_b>.
+            it has the position</maybe_empty>.
+            it has the action</destruct>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<holder_a>.
+        define the position<holder_b>.
+        move the particle in position<run>::position</marker_a> to position<holder_a>.
+        move the particle in position<holder_a> to position<run>::position</marker_a>.
+        move the particle in position<run>::position</marker_b> to position<holder_b>.
+        move the particle in position<holder_b> to position<run>::position</marker_b>.
+        create a particle in position<run>::position</maybe_empty>.
+        destroy the particle in position<run>::position</maybe_empty>.
+        destroy the particle in position<run>.
+    }
+}

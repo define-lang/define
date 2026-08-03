@@ -19,12 +19,11 @@ class ActionRole(enum.Enum):
 
     ACTION = enum.auto()
     ENTRY_POINT = enum.auto()
-    DESTRUCTOR = enum.auto()
 
     @property
     def has_execute_method(self) -> bool:
         """Whether the runtime invokes this action through execute()."""
-        return self is not ActionRole.ACTION
+        return self is ActionRole.ENTRY_POINT
 
 
 @dataclass

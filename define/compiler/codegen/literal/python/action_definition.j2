@@ -4,8 +4,6 @@
 {% macro action_base_class(role) -%}
     {%- if role == ActionRole.ENTRY_POINT -%}
 literal.EntryPoint
-    {%- elif role == ActionRole.DESTRUCTOR -%}
-literal.Destructor
     {%- else -%}
 literal.Action
     {%- endif -%}

@@ -21,34 +21,6 @@ _TESTDATA_ROOT = Path("define/testdata/codegen")
 _TEST_CASES = sorted(
     Path(path).parent for path in glob.glob(str(_TESTDATA_ROOT / "*/*/test.dfn"))
 )
-_DESTRUCTOR_ORDERING_NOT_REPRESENTED = (
-    "Destructor ordering is not represented in the operation graph, so cascade "
-    "children are destroyed before the parent destructor uses them."
-)
-_DESTRUCTOR_ORDERING_CASES = {
-    "destructor_triggering/implies_position",
-    "destructor_triggering/occupied_interface",
-    "destructor_triggering/via_quality_implication",
-    (
-        "operation_graph_destructor_integration/"
-        "multiple_constructors_and_destructors_modify_same_implied_position"
-    ),
-}
-_RUNTIME_TEST_CASES: list[object] = []
-for test_case in _TEST_CASES:
-    test_case_id = test_case.relative_to(_TESTDATA_ROOT).as_posix()
-    if test_case_id in _DESTRUCTOR_ORDERING_CASES:
-        _RUNTIME_TEST_CASES.append(
-            pytest.param(
-                test_case,
-                marks=pytest.mark.xfail(
-                    strict=True,
-                    reason=_DESTRUCTOR_ORDERING_NOT_REPRESENTED,
-                ),
-            )
-        )
-    else:
-        _RUNTIME_TEST_CASES.append(pytest.param(test_case))
 
 
 def test_test_cases_not_empty():
@@ -75,7 +47,7 @@ def test_generates_expected_output(
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    _RUNTIME_TEST_CASES,
+    _TEST_CASES,
     ids=[path.relative_to(_TESTDATA_ROOT).as_posix() for path in _TEST_CASES],
 )
 def test_expected_output_runs(test_case_dir: Path):

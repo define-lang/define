@@ -429,6 +429,12 @@ class ActionPostorderValidator:
             requirements_in_caller,
             auto_destruction_target=auto_destruction_target,
         )
+        self._tracker.trigger_action(
+            action_chain,
+            contract.guarantees,
+            destructor.position,
+            requirements_in_caller,
+        )
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
@@ -503,7 +509,7 @@ class ActionPostorderValidator:
             action_assignment=action_assignment,
         )
         self._check_destructor_requirements_from_contracts(contract, action_chain)
-        self._tracker.apply_guarantees(
+        self._tracker.trigger_action(
             action_chain,
             contract.guarantees,
             acting_on_position,

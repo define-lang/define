@@ -41,14 +41,32 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.trigger_position_box__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_trigger_position_box__global_action_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
+        self.init_trigger_position_box__global_action_destructor__execution()
+        self.scheduler.submit(self.destroy_position_box)
+        self.scheduler.submit(self.trigger_position_box__global_action_destructor__action_parent)
+        self.trigger_position_box__global_action_destructor__action_parent()
+
+    def destroy_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
+
+    def init_trigger_position_box__global_action_destructor__execution(self):
+        self.trigger_position_box__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+        )
+
+    def trigger_position_box__global_action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__global_action_destructor__action_parent.arrive():
+            return
+        self.trigger_position_box__global_action_destructor__execution.accept_action_parent()

@@ -1,0 +1,21 @@
+# The destructor and child-position occupancy are known by the caller, but the
+# particle is destroyed by an action whose position is from the caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</marker_a>.
+                it has the position</marker_b>.
+                it has the position</maybe_empty>.
+                it has the action</destruct>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</marker_a>.
+        create a particle in position<source>::position</marker_b>.
+        move the particle in position<source> to action</middle>::position<run>.
+    }
+}

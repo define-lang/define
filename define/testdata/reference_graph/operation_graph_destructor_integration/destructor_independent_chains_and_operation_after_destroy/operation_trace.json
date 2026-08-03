@@ -11,24 +11,6 @@
   {
     "execution": {
       "caller": null,
-      "action_name": "destructor"
-    },
-    "operation_name": "create",
-    "target": "second",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": null,
-      "action_name": "destructor"
-    },
-    "operation_name": "destroy",
-    "target": "second",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": null,
       "action_name": "test"
     },
     "operation_name": "destroy",
@@ -46,7 +28,34 @@
   },
   {
     "execution": {
-      "caller": null,
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destructor"
+    },
+    "operation_name": "create",
+    "target": "second",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destructor"
+    },
+    "operation_name": "destroy",
+    "target": "second",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
       "action_name": "destructor"
     },
     "operation_name": "create",
@@ -55,7 +64,10 @@
   },
   {
     "execution": {
-      "caller": null,
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
       "action_name": "destructor"
     },
     "operation_name": "destroy",

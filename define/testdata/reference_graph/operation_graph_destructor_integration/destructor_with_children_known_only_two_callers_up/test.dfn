@@ -1,0 +1,21 @@
+# The parent destructor is learned through a Destruction Contract, while the
+# directly known child destructor must finish before its occupied positions are
+# destroyed.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</extra>.
+                it has the action</destruct>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</extra>.
+        create a particle in position<source>::position</extra>::position</marker_a>.
+        create a particle in position<source>::position</extra>::position</marker_b>.
+        move the particle in position<source> to action</middle>::position<run>.
+    }
+}

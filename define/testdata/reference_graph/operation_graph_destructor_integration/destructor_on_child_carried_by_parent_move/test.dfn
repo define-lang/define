@@ -1,0 +1,18 @@
+# The parent move is the firing Particle Operation for the destructor assigned
+# to its carried child particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<staging> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<box>.
+        create a particle in position<staging>.
+        create a particle in position<staging>::position</child>.
+        move the particle in position<staging> to position<box>.
+        destroy the particle in position<box>.
+    }
+}

@@ -5,6 +5,7 @@ from typing import final, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
+import local.my_domain_com.my_lib.child_destructor
 import local.my_domain_com.my_lib.parent_destructor
 
 
@@ -33,13 +34,49 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
+        self.trigger_position_box__global_position_child__global_action_child_destructor__execution: local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution
+        self.trigger_position_box__global_action_parent_destructor__execution: local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution
+        self.join_for_trigger_position_box__global_position_child__global_action_child_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__global_action_parent_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
+        self.init_trigger_position_box__global_action_parent_destructor__execution()
+        self.scheduler.submit(self.create_position_box__global_position_child)
+        self.scheduler.submit(self.trigger_position_box__global_action_parent_destructor__action_parent)
+        self.trigger_position_box__global_action_parent_destructor__action_parent()
+
+    def create_position_box__global_position_child(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
+        self.init_trigger_position_box__global_position_child__global_action_child_destructor__execution()
+        self.scheduler.submit(self.destroy_position_box__global_position_child)
+        self.scheduler.submit(self.trigger_position_box__global_position_child__global_action_child_destructor__action_parent)
+        self.trigger_position_box__global_position_child__global_action_child_destructor__action_parent()
+
+    def destroy_position_box__global_position_child(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
         self.local_position_box.destroy_particle()
+
+    def init_trigger_position_box__global_position_child__global_action_child_destructor__execution(self):
+        self.trigger_position_box__global_position_child__global_action_child_destructor__execution = local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution(
+            self.scheduler,
+        )
+
+    def init_trigger_position_box__global_action_parent_destructor__execution(self):
+        self.trigger_position_box__global_action_parent_destructor__execution = local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution(
+            self.scheduler,
+        )
+
+    def trigger_position_box__global_position_child__global_action_child_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__global_position_child__global_action_child_destructor__action_parent.arrive():
+            return
+        self.trigger_position_box__global_position_child__global_action_child_destructor__execution.accept_action_parent()
+
+    def trigger_position_box__global_action_parent_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__global_action_parent_destructor__action_parent.arrive():
+            return
+        self.trigger_position_box__global_action_parent_destructor__execution.accept_action_parent()

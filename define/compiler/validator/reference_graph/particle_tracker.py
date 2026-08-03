@@ -1222,14 +1222,14 @@ class ParticleTracker:
             key
         ) or self._store.ever_set_by_callee(key)
 
-    def apply_guarantees(
+    def trigger_action(
         self,
         action_chain: ast.ActionReference,
         guarantees: action_contract.Guarantees,
         acting_on_position: ast.PositionReference,
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
     ):
-        """Apply the guarantees for a triggered action.
+        """Record an Action Triggering and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.

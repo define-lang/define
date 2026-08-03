@@ -310,45 +310,7 @@ class TestDestroyParticle:
 
         assert pos.has_particle
 
-    def test_destroy_fires_destructor(self):
-        executed_in: list[literal.Scheduler] = []
-
-        class MyDestructor(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                executed_in.append(scheduler)
-
-        pos = _local_position("test")
-        pos.create_particle()
-        pos.particle.assign_action(MyDestructor)
-
-        pos.destroy_particle()
-
-        assert executed_in == [pos.scheduler]
-
-    def test_destroy_does_not_fire_non_destructor(self):
-        executed: list[str] = []
-
-        class MyAction(literal.Action):
-            def execute(self, _scheduler: literal.Scheduler):
-                executed.append("ran")
-
-        pos = _local_position("test")
-        pos.create_particle()
-        pos.particle.assign_action(MyAction)
-
-        pos.destroy_particle()
-
-        assert executed == []
-
     def test_destroy_does_not_destroy_a_child_position(self):
-        executed: list[str] = []
-
-        class ChildDestructor(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                executed.append("child destroyed")
-
         class ChildPosition(literal.GlobalPosition):
             pass
 
@@ -357,55 +319,12 @@ class TestDestroyParticle:
         pos.particle.assign_position(ChildPosition)
         child_position = pos.particle.get_position(ChildPosition)
         child_position.create_particle()
-        child_position.particle.assign_action(ChildDestructor)
 
         pos.destroy_particle()
 
-        assert executed == []
         assert child_position.has_particle
 
-    def test_destroy_executes_current_particle_destructors_in_reverse_order(self):
-        order: list[str] = []
-
-        class DtorA(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("A")
-
-        class DtorB(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("B")
-
-        class DtorC(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("C")
-
-        pos = _local_position("test")
-        pos.create_particle()
-        particle = pos.particle
-        particle.assign_action(DtorA)
-        particle.assign_action(DtorB)
-        particle.assign_action(DtorC)
-
-        pos.destroy_particle()
-
-        assert order == ["C", "B", "A"]
-
     def test_destroy_does_not_destroy_action_interface_positions(self):
-        order: list[str] = []
-
-        class IfaceDtor1(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("iface1")
-
-        class IfaceDtor2(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("iface2")
-
         class MyAction(literal.Action):
             def __init__(self, on_particle: literal.Particle):
                 super().__init__(
@@ -426,52 +345,13 @@ class TestDestroyParticle:
         action = pos.particle.get_action(MyAction)
         iface1 = action.get_interface_position("position</iface1>")
         iface1.create_particle()
-        iface1.particle.assign_action(IfaceDtor1)
         iface2 = action.get_interface_position("position</iface2>")
         iface2.create_particle()
-        iface2.particle.assign_action(IfaceDtor2)
 
         pos.destroy_particle()
 
-        assert order == []
         assert iface1.has_particle
         assert iface2.has_particle
-
-    def test_destructor_does_not_destroy_its_interface_positions(self):
-        order: list[str] = []
-
-        class IfaceChildDtor(literal.Destructor):
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("iface_torn_down")
-
-        class MyDestructor(literal.Destructor):
-            def __init__(self, on_particle: literal.Particle):
-                super().__init__(
-                    on_particle,
-                    interface_positions=[
-                        _local_position(
-                            "position</iface>", scheduler=on_particle.scheduler
-                        ),
-                    ],
-                )
-
-            @override
-            def execute(self, scheduler: literal.Scheduler):
-                order.append("destructor")
-
-        pos = _local_position("test")
-        pos.create_particle()
-        pos.particle.assign_action(MyDestructor)
-        action = pos.particle.get_action(MyDestructor)
-        iface = action.get_interface_position("position</iface>")
-        iface.create_particle()
-        iface.particle.assign_action(IfaceChildDtor)
-
-        pos.destroy_particle()
-
-        assert order == ["destructor"]
-        assert iface.has_particle
 
 
 class TestStart:

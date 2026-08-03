@@ -489,6 +489,6 @@ class ActionPlans:
         action = definition.typed_name
         resolved_action = self._resolved_actions.resolve(action)
         builder = _ActionPlanBuilder(resolved_action, self._operation_graphs)
-        if action == self._entry_action or definition.is_destructor:
+        if action == self._entry_action:
             return builder.build_executed_action()
         return builder.build_triggered_action()

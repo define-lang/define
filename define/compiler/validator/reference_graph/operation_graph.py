@@ -216,7 +216,10 @@ class OperationGraph:
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
         firing_operation = typing.cast(
             "PositionOperationNode",
-            self._last_operation[acting_on_position_key],
+            # Need to check the parents because destructors trigger on child
+            # positions of the passed-in particle, so it's the last operation
+            # on their parent that matters.
+            self.last_operation_on_position_or_parents(acting_on_position_key),
         )
         callee_action_key = callee.canonical_chained_name_tuple
         bindings: dict[tuple[str, ...], RequirementBinding] = {}

@@ -1,0 +1,15 @@
+# The destructor is assigned to a particle created by a callee guarantee.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</maker>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</maker>::position<run>.
+        destroy the particle in position<box>::action</maker>::position<result>.
+    }
+}

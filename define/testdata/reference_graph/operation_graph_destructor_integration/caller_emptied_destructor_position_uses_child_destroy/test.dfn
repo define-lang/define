@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<carrier> {
+        it may only contain particles where {
+            it has the action</callee>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</marker>.
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<carrier>.
+        create a particle in position<source>.
+        create a particle in position<source>::position</marker>.
+        destroy the particle in position<source>::position</marker>.
+        move the particle in position<source> to position<carrier>::action</callee>::position<src>.
+        create a particle in position<carrier>::action</callee>::position<trigger_pos>.
+    }
+}

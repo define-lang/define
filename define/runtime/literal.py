@@ -377,12 +377,6 @@ class Particle:
         """Return the set of constraint types satisfied by this particle."""
         return frozenset(type(q) for q in self._assigned_qualities)
 
-    def destroy(self):
-        """Execute this particle's destructors in reverse assignment order."""
-        for quality in reversed(self._assigned_qualities):
-            if isinstance(quality, Destructor):
-                quality.execute(self.scheduler)
-
     def occupied_position_names(self) -> list[str]:
         """Return chained names of occupied positions reachable from this particle.
 
@@ -472,10 +466,9 @@ class Position(ABC):
         destination._after_particle_arrived()
 
     def destroy_particle(self):
-        """Destroy the particle in this position, executing its destructors."""
+        """Destroy the particle in this position."""
         if self._particle is None:
             raise NoParticleError(self.name)
-        self._particle.destroy()
         self._particle = None
 
     def destroy_particle_if_occupied(self):
@@ -585,14 +578,6 @@ class EntryPoint(Action):
 
     def execute(self, _scheduler: Scheduler) -> None:
         """Execute this entry point."""
-        raise NotImplementedError
-
-
-class Destructor(Action):
-    """An action invoked during the Destruction Cascade."""
-
-    def execute(self, _scheduler: Scheduler) -> None:
-        """Execute this destructor."""
         raise NotImplementedError
 
 

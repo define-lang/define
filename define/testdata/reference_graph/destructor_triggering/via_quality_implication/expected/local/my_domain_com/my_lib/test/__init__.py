@@ -23,6 +23,7 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self):
         self.trigger_position_box__global_action_marked = local.my_domain_com.my_lib.marked.MarkedGuarantees()
+        self.trigger_position_box__global_action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
 
 
 @final
@@ -41,17 +42,24 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__global_action_marked.guarantee_global_action_destructor__position_slot.append(
+        guarantees.trigger_position_box__global_action_destructor.guarantee_position_slot.append(
             self.destroy_position_box__global_action_destructor__position_slot
         )
+        guarantees.trigger_position_box__global_action_marked.guarantee_global_action_destructor__position_slot.append(
+            self.trigger_position_box__global_action_destructor__for_empty_rule_position_slot
+        )
         self.trigger_position_box__global_action_marked__execution: local.my_domain_com.my_lib.marked.MarkedExecution
+        self.trigger_position_box__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot = literal.Join(2)
+        self.join_for_trigger_position_box__global_action_destructor__for_empty_rule_position_slot = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
         self.init_trigger_position_box__global_action_marked__execution()
+        self.init_trigger_position_box__global_action_destructor__execution()
         self.scheduler.submit(self.trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot)
-        self.trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot()
+        self.scheduler.submit(self.trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot)
+        self.trigger_position_box__global_action_destructor__for_empty_rule_position_slot()
 
     def destroy_position_box__global_action_destructor__position_slot(self):
         self.local_position_box.particle.get_action(
@@ -71,7 +79,22 @@ class TestExecution:
             self.guarantees.trigger_position_box__global_action_marked,
         )
 
+    def init_trigger_position_box__global_action_destructor__execution(self):
+        action = self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.destructor.Destructor
+        )
+        self.trigger_position_box__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            action,
+            self.scheduler,
+            self.guarantees.trigger_position_box__global_action_destructor,
+        )
+
     def trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot(self):
         if not self.join_for_trigger_position_box__global_action_marked__when_empty_global_action_destructor__position_slot.arrive():
             return
         self.trigger_position_box__global_action_marked__execution.accept_when_empty_global_action_destructor__position_slot()
+
+    def trigger_position_box__global_action_destructor__for_empty_rule_position_slot(self):
+        if not self.join_for_trigger_position_box__global_action_destructor__for_empty_rule_position_slot.arrive():
+            return
+        self.trigger_position_box__global_action_destructor__execution.accept_for_empty_rule_position_slot()

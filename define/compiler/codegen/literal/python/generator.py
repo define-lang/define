@@ -68,8 +68,6 @@ class PythonLiteralCodeGenerator:
             if isinstance(definition, ast.ActionDefinition):
                 if definition.typed_name == entry_point.typed_name:
                     role = action_context.ActionRole.ENTRY_POINT
-                elif definition.is_destructor:
-                    role = action_context.ActionRole.DESTRUCTOR
                 else:
                     role = action_context.ActionRole.ACTION
                 plan = plans.plan_for(definition)

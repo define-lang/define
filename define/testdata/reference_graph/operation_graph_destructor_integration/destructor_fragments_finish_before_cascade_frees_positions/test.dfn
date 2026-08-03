@@ -1,0 +1,19 @@
+# The destructor has two independent chains which both precede destruction of
+# their occupied implied-position particles.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</marker_a>.
+                it has the position</marker_b>.
+                it has the action</destruct>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</marker_a>.
+        create a particle in position<box>::position</marker_b>.
+        destroy the particle in position<box>.
+    }
+}

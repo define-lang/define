@@ -1,0 +1,2 @@
+action<local.my_domain_com.my_lib.test.Test>::position<carrier>
+action<local.my_domain_com.my_lib.test.Test>::position<carrier>::action<local.my_domain_com.my_lib.callee.Callee>::position<trigger_pos>

@@ -49,8 +49,12 @@ class TestExecution:
         self.scheduler = scheduler
         self.trigger_position_box__global_action_construct_a__execution: local.my_domain_com.my_lib.construct_a.ConstructAExecution
         self.trigger_position_box__global_action_construct_b__execution: local.my_domain_com.my_lib.construct_b.ConstructBExecution
+        self.trigger_position_box__global_action_destruct_b__execution: local.my_domain_com.my_lib.destruct_b.DestructBExecution
+        self.trigger_position_box__global_action_destruct_a__execution: local.my_domain_com.my_lib.destruct_a.DestructAExecution
         self.join_for_trigger_position_box__global_action_construct_a__action_parent = literal.Join(2)
         self.join_for_trigger_position_box__global_action_construct_b__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__global_action_destruct_b__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__global_action_destruct_a__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -58,11 +62,17 @@ class TestExecution:
         ).create_particle()
         self.init_trigger_position_box__global_action_construct_a__execution()
         self.init_trigger_position_box__global_action_construct_b__execution()
+        self.init_trigger_position_box__global_action_destruct_b__execution()
+        self.init_trigger_position_box__global_action_destruct_a__execution()
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__global_action_construct_a__action_parent)
         self.scheduler.submit(self.trigger_position_box__global_action_construct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__global_action_destruct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__global_action_destruct_a__action_parent)
         self.scheduler.submit(self.trigger_position_box__global_action_construct_a__action_parent)
-        self.trigger_position_box__global_action_construct_b__action_parent()
+        self.scheduler.submit(self.trigger_position_box__global_action_construct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__global_action_destruct_b__action_parent)
+        self.trigger_position_box__global_action_destruct_a__action_parent()
 
     def destroy_position_box(self):
         self.action.get_interface_position(
@@ -79,6 +89,16 @@ class TestExecution:
             self.scheduler,
         )
 
+    def init_trigger_position_box__global_action_destruct_b__execution(self):
+        self.trigger_position_box__global_action_destruct_b__execution = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
+            self.scheduler,
+        )
+
+    def init_trigger_position_box__global_action_destruct_a__execution(self):
+        self.trigger_position_box__global_action_destruct_a__execution = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
+            self.scheduler,
+        )
+
     def trigger_position_box__global_action_construct_a__action_parent(self):
         if not self.join_for_trigger_position_box__global_action_construct_a__action_parent.arrive():
             return
@@ -88,3 +108,13 @@ class TestExecution:
         if not self.join_for_trigger_position_box__global_action_construct_b__action_parent.arrive():
             return
         self.trigger_position_box__global_action_construct_b__execution.accept_action_parent()
+
+    def trigger_position_box__global_action_destruct_b__action_parent(self):
+        if not self.join_for_trigger_position_box__global_action_destruct_b__action_parent.arrive():
+            return
+        self.trigger_position_box__global_action_destruct_b__execution.accept_action_parent()
+
+    def trigger_position_box__global_action_destruct_a__action_parent(self):
+        if not self.join_for_trigger_position_box__global_action_destruct_a__action_parent.arrive():
+            return
+        self.trigger_position_box__global_action_destruct_a__execution.accept_action_parent()
