@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import hashlib
 import keyword
 import typing
 from dataclasses import dataclass
@@ -19,6 +20,40 @@ _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
 _EXECUTION_CLASS_SUFFIX = "Execution"
 _GUARANTEES_CLASS_SUFFIX = "Guarantees"
+
+# Filesystems commonly limit each path component to 255 bytes. Python
+# identifiers have no such limit, but a module's dotted name is also written
+# into generated `import` statements, so every component of that dotted name
+# must already respect the filesystem limit for the import to resolve to the
+# file this compiler writes.
+_MODULE_COMPONENT_BYTE_LIMIT = 255
+# 8 bytes keeps distinct components apart well past the number of definitions
+# a single program can hold, and the digest must stay a pure function of the
+# component so that a module name never depends on what else was compiled.
+_MODULE_COMPONENT_DIGEST_BYTES = 8
+
+
+def _truncate_module_component(component: str) -> str:
+    """Shorten one module-name component to fit the filesystem byte limit.
+
+    The digest covers the full original component, so two components that
+    share an over-long prefix still truncate to distinct results.
+    """
+    # An ASCII component's character count is its byte count, and str.isascii()
+    # reads a flag cached on the string, so names that cannot exceed the limit
+    # are cleared without encoding a copy of every component the compiler names.
+    if component.isascii() and len(component) <= _MODULE_COMPONENT_BYTE_LIMIT:
+        return component
+    encoded = component.encode()
+    if len(encoded) <= _MODULE_COMPONENT_BYTE_LIMIT:
+        return component
+    digest = hashlib.blake2b(encoded, digest_size=_MODULE_COMPONENT_DIGEST_BYTES)
+    suffix = f"_{digest.hexdigest()}"
+    prefix_byte_limit = _MODULE_COMPONENT_BYTE_LIMIT - len(suffix.encode())
+    # Slicing bytes can split a multi-byte UTF-8 sequence; errors="ignore"
+    # drops the resulting incomplete trailing bytes instead of raising.
+    prefix = encoded[:prefix_byte_limit].decode("utf-8", errors="ignore")
+    return prefix + suffix
 
 
 @dataclass
@@ -58,10 +93,11 @@ class NameAllocator:
 
 
 def file_path_for_module(module_name: str) -> Path:
-    """Convert a dotted module name to an __init__.py file path."""
-    # TODO: Truncate module path components that exceed the filesystem limit
-    # and append a stable digest. Python identifiers have no length limit, but
-    # filesystems commonly limit each path component to 255 bytes.
+    """Convert a dotted module name to an __init__.py file path.
+
+    Callers must obtain ``module_name`` from ``NameConverter``, which already
+    truncates each component to the filesystem byte limit.
+    """
     return Path(*module_name.split(".")) / "__init__.py"
 
 
@@ -201,7 +237,7 @@ class NameConverter:
         parts.append(self.authority_segment(authority.name))
         parts.append(fqun.universe.name)
         parts.extend(path.relative_path.parts)
-        return parts
+        return [_truncate_module_component(part) for part in parts]
 
     def module_name(self, name_content: ast.DefinitionGlobalNameContent) -> str:
         """Compute the dotted Python module name for a global definition."""
