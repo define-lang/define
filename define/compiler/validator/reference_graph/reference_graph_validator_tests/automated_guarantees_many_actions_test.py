@@ -3,9 +3,6 @@
 # because the automated guarantee/requirement scenarios are complex enough to need
 # prose explanations of what each test verifies.
 
-# TODO: Rename this and every other test file that talks about "nested actions"
-# to just be "many_actions".
-
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics

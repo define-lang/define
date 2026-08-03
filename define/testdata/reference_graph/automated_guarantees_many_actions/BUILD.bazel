@@ -1,5 +1,5 @@
 filegroup(
-    name = "automated_requirements_nested_action_direct_propagation",
+    name = "automated_guarantees_many_actions",
     testonly = True,
     srcs = glob(["**"]),
     visibility = [

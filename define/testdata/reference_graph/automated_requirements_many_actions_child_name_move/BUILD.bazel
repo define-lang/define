@@ -1,5 +1,5 @@
 filegroup(
-    name = "automated_requirements_nested_action_trigger_move",
+    name = "automated_requirements_many_actions_child_name_move",
     testonly = True,
     srcs = glob(["**"]),
     visibility = [
