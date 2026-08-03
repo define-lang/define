@@ -1,4 +1,5 @@
 # pyright: reportPrivateUsage=false
+from pathlib import Path
 from typing import ClassVar, override
 
 import pytest
@@ -368,7 +369,7 @@ class TestStart:
         assert fired == [Entry]
 
     def test_reports_occupied_positions_when_env_var_set(
-        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ):
         class Entry(literal.EntryPoint):
             def __init__(self, on_particle: literal.Particle):
@@ -385,25 +386,30 @@ class TestStart:
             def execute(self, scheduler: literal.Scheduler):
                 self.get_interface_position("position<output>").create_particle()
 
-        monkeypatch.setenv("DEFINE_REPORT_OCCUPIED_POSITIONS", "1")
+        occupied_positions_file = tmp_path / "occupied_positions.txt"
+        monkeypatch.setenv(
+            "DEFINE_REPORT_OCCUPIED_POSITIONS", str(occupied_positions_file)
+        )
         literal.start(Entry)
 
         assert (
-            capsys.readouterr().out == "action<literal_test.Entry>::position<output>\n"
+            occupied_positions_file.read_text()
+            == "action<literal_test.Entry>::position<output>\n"
         )
 
     def test_no_report_when_env_var_unset(
-        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ):
         class Entry(literal.EntryPoint):
             @override
             def execute(self, scheduler: literal.Scheduler):
                 pass
 
+        occupied_positions_file = tmp_path / "occupied_positions.txt"
         monkeypatch.delenv("DEFINE_REPORT_OCCUPIED_POSITIONS", raising=False)
         literal.start(Entry)
 
-        assert capsys.readouterr().out == ""
+        assert not occupied_positions_file.exists()
 
 
 class TestOccupiedPositionNames:

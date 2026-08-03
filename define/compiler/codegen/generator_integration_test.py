@@ -53,15 +53,15 @@ def test_generates_expected_output(
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"
     result = generated_program_runner.run_generated_program(expected_dir)
-    if result.returncode != 0:
-        pytest.fail(result.stderr)
+    if result.process.returncode != 0:
+        pytest.fail(result.process.stderr)
 
     occupied_file = test_case_dir / "occupied_positions.txt"
     expected_occupied = occupied_file.read_text()
-    if result.stdout != expected_occupied:
+    if result.occupied_positions != expected_occupied:
         diff = difflib.unified_diff(
             expected_occupied.splitlines(keepends=True),
-            result.stdout.splitlines(keepends=True),
+            result.occupied_positions.splitlines(keepends=True),
             fromfile="expected occupied_positions.txt",
             tofile="actual program output",
         )

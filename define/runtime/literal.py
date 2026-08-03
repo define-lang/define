@@ -8,6 +8,7 @@ import queue
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import ClassVar, cast, override
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
@@ -183,10 +184,12 @@ class Scheduler:
         self._close_workers()
         if self._failure is not None:
             raise self._failure
-        if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
-            # TODO: Write occupied-position reporting to a configured file.
-            for chained_name in view_point_position.particle.occupied_position_names():
-                print(chained_name)
+        occupied_positions_file = os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR)
+        if occupied_positions_file is not None:
+            occupied_names = view_point_position.particle.occupied_position_names()
+            _ = Path(occupied_positions_file).write_text(
+                "".join(f"{chained_name}\n" for chained_name in occupied_names)
+            )
 
     def _worker(self):
         while True:

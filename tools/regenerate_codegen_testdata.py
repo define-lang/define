@@ -47,12 +47,12 @@ def _regenerate_case(
         trace_file=trace_file,
         max_threads=max_threads,
     )
-    if runtime_result.returncode != 0:
+    if runtime_result.process.returncode != 0:
         print(f"  {case_dir.relative_to(display_root)}: FAILED")
-        print(runtime_result.stderr)
+        print(runtime_result.process.stderr)
         return False, ""
     print(f"  {case_dir.relative_to(display_root)}: OK")
-    return True, runtime_result.stdout
+    return True, runtime_result.occupied_positions
 
 
 def _regenerate_codegen_case(case_dir: Path) -> bool:

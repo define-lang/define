@@ -96,8 +96,8 @@ def _trace(
         trace_file=trace_file,
         max_threads=max_threads,
     )
-    if runtime_result.returncode != 0:
-        pytest.fail(runtime_result.stderr)
+    if runtime_result.process.returncode != 0:
+        pytest.fail(runtime_result.process.stderr)
     return trace_analysis.read_operation_trace(trace_file)
 
 

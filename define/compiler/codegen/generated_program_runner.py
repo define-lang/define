@@ -3,7 +3,17 @@
 import os
 import subprocess
 import sys
+import tempfile
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class GeneratedProgramResult:
+    """The outcome of executing a generated program."""
+
+    process: subprocess.CompletedProcess[str]
+    occupied_positions: str
 
 
 def run_generated_program(
@@ -12,7 +22,7 @@ def run_generated_program(
     *,
     trace_file: Path | None = None,
     max_threads: int | None = None,
-) -> subprocess.CompletedProcess[str]:
+) -> GeneratedProgramResult:
     """Execute a generated program and capture its occupied positions.
 
     Args:
@@ -22,20 +32,27 @@ def run_generated_program(
         trace_file: A file to receive the generated program's operation trace.
         max_threads: The maximum scheduler threads for this execution.
     """
-    generated_environment = {
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONPATH": os.pathsep.join([str(generated_dir), *sys.path]),
-        # TODO: Make this generate to an output file if truthy.
-        "DEFINE_REPORT_OCCUPIED_POSITIONS": "1",
-    }
-    if trace_file is not None:
-        generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(trace_file)
-    if max_threads is not None:
-        generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)
-    return subprocess.run(
-        [sys.executable, str(generated_dir / entry_script)],
-        env=os.environ | generated_environment,
-        capture_output=True,
-        text=True,
-        check=False,
+    # Closing the file leaves it in place for the generated program to write,
+    # and it is still removed when this block ends.
+    with tempfile.NamedTemporaryFile(delete_on_close=False) as report_file:
+        report_file.close()
+        generated_environment = {
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONPATH": os.pathsep.join([str(generated_dir), *sys.path]),
+            "DEFINE_REPORT_OCCUPIED_POSITIONS": report_file.name,
+        }
+        if trace_file is not None:
+            generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(trace_file)
+        if max_threads is not None:
+            generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)
+        process = subprocess.run(
+            [sys.executable, str(generated_dir / entry_script)],
+            env=os.environ | generated_environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        occupied_positions = Path(report_file.name).read_text()
+    return GeneratedProgramResult(
+        process=process, occupied_positions=occupied_positions
     )
