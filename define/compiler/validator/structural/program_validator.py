@@ -7,9 +7,10 @@ per-file validation to FileStructuralValidator workers.
 
 from __future__ import annotations
 
+import queue
 import time
 import typing
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 
 if typing.TYPE_CHECKING:
@@ -40,8 +41,8 @@ class _DeferredReferenceEdge:
 class _FileWorkPool:
     """Manages a thread pool for parallel file validation."""
 
-    _max_workers: int | None
-    _submitted: list[Future[validation_result.FileValidationResult]]
+    _pending: int
+    _completed: queue.SimpleQueue[Future[validation_result.FileValidationResult]]
     _executor: ThreadPoolExecutor
     _fv: file_validator.FileStructuralValidator
 
@@ -51,8 +52,8 @@ class _FileWorkPool:
         max_workers: int | None = None,
     ):
         """Initialize with pool configuration only — no side effects."""
-        self._max_workers = max_workers
-        self._submitted = []
+        self._pending = 0
+        self._completed = queue.SimpleQueue()
         self._fv = file_validator.FileStructuralValidator(parser_instance)
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
@@ -73,18 +74,24 @@ class _FileWorkPool:
             return result
 
         future = self._executor.submit(_validate)
-        self._submitted.append(future)
+        self._pending += 1
+        # add_done_callback pushes from the worker thread the moment a file
+        # finishes, so no completion waits on another one and collecting a
+        # completion costs O(1). Scanning every still-pending future instead
+        # made the coordinator quadratic in the number of files in the program.
+        future.add_done_callback(self._completed.put)
 
     def wait_for_next(self) -> validation_result.FileValidationResult:
         """Block until the next file completes."""
-        for completed in as_completed(self._submitted):
-            self._submitted.remove(completed)
-            return completed.result()
-        raise RuntimeError("wait_for_next called with no pending futures")
+        if not self._pending:
+            raise RuntimeError("wait_for_next called with no pending futures")
+        future = self._completed.get()
+        self._pending -= 1
+        return future.result()
 
     def has_pending(self) -> bool:
         """Return True if there are submitted files not yet collected."""
-        return bool(self._submitted)
+        return self._pending > 0
 
 
 class ProgramStructuralValidator:
