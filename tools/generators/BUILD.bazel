@@ -24,6 +24,24 @@ py_test(
 )
 
 py_binary(
+    name = "generate_deep_pipeline_source",
+    srcs = ["generate_deep_pipeline_source.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generate_deep_pipeline_source_test",
+    size = "small",
+    srcs = ["generate_deep_pipeline_source_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generate_deep_pipeline_source",
+        "//define/compiler:driver",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "generate_large_define_source",
     srcs = ["generate_large_define_source.py"],
     visibility = ["//tools:__pkg__"],

@@ -38,6 +38,7 @@ that shape stresses, how to scale it, and every knob with its default, so run
 | B      | `generate_action_graph_source`     | reference-graph validation      |
 | C      | `generate_operation_graph_source`  | operation-graph construction    |
 | D      | `generate_reference_graph_project` | cross-file reference resolution |
+| E      | `generate_deep_pipeline_source`    | requirement propagation         |
 
 **Asked to profile the compiler, with nothing specific in mind:** run every
 generator on its defaults, which are sized for exactly this. The headline

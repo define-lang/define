@@ -249,6 +249,8 @@ pyright_test(
         ":validate_proposals",
         "//tools/generators:generate_action_graph_source",
         "//tools/generators:generate_action_graph_source_test",
+        "//tools/generators:generate_deep_pipeline_source",
+        "//tools/generators:generate_deep_pipeline_source_test",
         "//tools/generators:generate_large_define_source",
         "//tools/generators:generate_large_define_source_test",
         "//tools/generators:generate_operation_graph_source",
