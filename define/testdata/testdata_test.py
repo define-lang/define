@@ -91,11 +91,8 @@ def _scenario_directories() -> list[Path]:
                 raise AssertionError(
                     f"unexpected file in {phase_root}: {module_directory}"
                 )
-            build_file = module_directory / "BUILD.bazel"
-            if not build_file.is_file():
-                raise AssertionError(f"missing module BUILD file: {build_file}")
             for scenario_directory in module_directory.iterdir():
-                if scenario_directory == build_file:
+                if scenario_directory == module_directory / "BUILD.bazel":
                     continue
                 if not scenario_directory.is_dir():
                     raise AssertionError(

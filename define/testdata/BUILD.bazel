@@ -1,7 +1,14 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:package_checks.bzl", "require_subpackages")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+require_subpackages([
+    "driver/**",
+    "reference_graph/**",
+    "structural/**",
+])
 
 _TESTDATA_PACKAGES = subpackages(include = ["**"])
 
