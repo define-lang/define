@@ -532,21 +532,38 @@ class _ParticleStateStore:
             ever_set_by_callee=existing is not None and existing.ever_set_by_callee,
         )
 
-    def record_callee_write(
-        self,
-        key: tuple[str, ...],
-        body_operation_number: int,
-        depth: int,
-        *,
-        occupant_is_callee_derived: bool,
-    ):
-        """Record that a callee's contract authored ``key`` at ``(body_operation_number, depth)``."""
-        self._write_record[key] = _WriteRecord(
-            body_operation_number,
-            depth,
-            is_from_callee=occupant_is_callee_derived,
-            ever_set_by_callee=True,
-        )
+    def record_callee_write(self, key: tuple[str, ...], record: _WriteRecord):
+        """Record that a callee's contract authored ``key``."""
+        self._write_record[key] = record
+
+    def try_add_action_parent(self, key: tuple[str, ...]) -> tuple[str, ...] | None:
+        """Create ``key``'s action intermediate when that is the only absent parent name.
+
+        Returns the first absent parent name of ``key``, or None when every
+        parent name of ``key`` is present.
+        """
+        # A strict trie holds a parent name for every key it holds, so a single
+        # present parent name means the whole chain above it is present too.
+        # That is why two probes settle a question about every parent name.
+        parent_key = key[:-1]
+        if not parent_key or parent_key in self._state:
+            return None
+        # The parent name is absent, so the invariant above says nothing about
+        # the rest of the chain and the grandparent has to be probed too.
+        grandparent_key = parent_key[:-1]
+        if not grandparent_key or grandparent_key in self._state:
+            # The parent name is the only absent one. A strict trie refuses a
+            # write whose own parent name is missing, so this is the only case
+            # where the compiler may add the action intermediate. A parent name
+            # that is anything else is a position the caller never filled.
+            if parent_key[-1].startswith(_ACTION_KEY_PREFIX):
+                self._state[parent_key] = _NodeState()
+                return None
+            return parent_key
+        # Two or more names are absent, so only a walk can say which of them the
+        # caller left unfilled first.
+        present_prefix = self._state.existing_prefix(key)
+        return (*present_prefix, key[len(present_prefix)])
 
     def rekey_records_for_move(
         self, from_key: tuple[str, ...], to_key: tuple[str, ...]
@@ -1520,6 +1537,24 @@ class ParticleTracker:
             trie.StrictReparentingTrie[list[action_contract.NestedGuarantees]],
         ] = {}
 
+        # Every write below shares this callee's operation number and depth, and a
+        # _WriteRecord is immutable, so the loop reuses these two instead of
+        # building an identical record for every guaranteed position. This loop
+        # applies every guarantee of every action triggered anywhere in the
+        # program, so those constructions dominated guarantee propagation.
+        callee_derived_write = _WriteRecord(
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            is_from_callee=True,
+            ever_set_by_callee=True,
+        )
+        caller_identity_write = _WriteRecord(
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            is_from_callee=False,
+            ever_set_by_callee=True,
+        )
+
         for name, guarantee in guarantees:
             key = pending_guarantee.key_for(name)
 
@@ -1532,20 +1567,27 @@ class ParticleTracker:
             ):
                 continue
 
-            if not self._check_key_exists_for_guarantee(key, guarantee):
+            # Almost every guarantee names a child of the callee's own action
+            # intermediate, which no earlier operation has created, so creating
+            # it is the common path here rather than the exceptional one. A key
+            # comes back only when the caller of this action never filled a
+            # position that the guaranteed position is a child name of.
+            missing_key = self._store.try_add_action_parent(key)
+            if missing_key is not None:
+                self._store.error[missing_key] = _ErrorState(
+                    caused_by=guarantee.caused_by
+                )
                 continue
 
+            # OccupiedByExisting depends on caller-passed particle identity, so
+            # it must be resolved here (a distant caller can't reconstruct it)
+            # and emitted as this block's own guarantee. Other guarantee types
+            # are re-derivable in any caller, so they stay behind the nested guarantee.
             self._store.record_callee_write(
                 key,
-                pending_guarantee.body_operation_number,
-                pending_guarantee.call_chain_depth,
-                # OccupiedByExisting depends on caller-passed particle identity, so
-                # it must be resolved here (a distant caller can't reconstruct it)
-                # and emitted as this block's own guarantee. Other guarantee types
-                # are re-derivable in any caller, so they stay behind the nested guarantee.
-                occupant_is_callee_derived=not isinstance(
-                    guarantee, action_contract.OccupiedByExistingGuarantee
-                ),
+                caller_identity_write
+                if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
+                else callee_derived_write,
             )
 
             operation_graph_positions.append((key, guarantee.operation_positions))
@@ -1636,38 +1678,6 @@ class ParticleTracker:
         saved_nested_guarantees.update(
             self._nested_guarantees.pop_subtrees(at_or_below)
         )
-
-    def _check_key_exists_for_guarantee(
-        self,
-        key: tuple[str, ...],
-        guarantee: action_contract.PositionGuarantee,
-    ) -> bool:
-        """Check whether the parent path for a guarantee key is present.
-
-        This happens only when the caller of an action did not fill a required
-        position and now we are trying to apply a guarantee to a child of that
-        position. If that happened for this key, we mark the first missing node
-        as error and return False to indicate the guarantee should be skipped.
-
-        Returns True when the parent path is fully in the state trie, creating
-        an action intermediate when that is the only missing parent name.
-        """
-        ancestor_key = self._store.state.existing_prefix(key)
-        if len(ancestor_key) >= len(key) - 1:
-            return True
-        # The action intermediate is the only parent name the compiler may add.
-        first_missing = key[len(ancestor_key)]
-        can_bridge = len(ancestor_key) == len(key) - 2 and first_missing.startswith(
-            _ACTION_KEY_PREFIX
-        )
-        if can_bridge:
-            self._store.state[key[:-1]] = _NodeState()
-            return True
-        # The caller never filled a required position ancestor.
-        # Mark the first missing node as error.
-        missing_key = (*ancestor_key, first_missing)
-        self._store.error[missing_key] = _ErrorState(caused_by=guarantee.caused_by)
-        return False
 
     def _apply_existing_guarantee(
         self,
