@@ -6,7 +6,10 @@ import typing
 from dataclasses import dataclass, field
 
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_model,
+)
 
 # Resolution must be limited to substitutions that codegen can perform while
 # consuming an operation graph. Operation graphs must already contain the
@@ -21,13 +24,14 @@ if typing.TYPE_CHECKING:
 
 
 type _CallerInputNode = (
-    operation_graph.ActionParentLastOperationNode | operation_graph.RequirementNode
+    operation_graph_model.ActionParentLastOperationNode
+    | operation_graph_model.RequirementNode
 )
 type _CallerInputDependencyNode = (
-    _CallerInputNode | operation_graph.CallerEmptyRuleDependenciesNode
+    _CallerInputNode | operation_graph_model.CallerEmptyRuleDependenciesNode
 )
 type _CallerInputDependency = (
-    _CallerInputDependencyNode | operation_graph.CallerEmptyRuleDependencies
+    _CallerInputDependencyNode | operation_graph_model.CallerEmptyRuleDependencies
 )
 
 
@@ -35,28 +39,28 @@ type _CallerInputDependency = (
 class ActionDependencies:
     """Dependencies resolved within one reusable action graph."""
 
-    local_operations: list[operation_graph.PositionOperationNode]
-    guarantee_dependencies: list[operation_graph.GuaranteeNode]
+    local_operations: list[operation_graph_model.PositionOperationNode]
+    guarantee_dependencies: list[operation_graph_model.GuaranteeNode]
 
 
 def _partition_dependencies(
-    nodes: Iterable[operation_graph.OperationNode],
+    nodes: Iterable[operation_graph_model.OperationNode],
 ) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
     """Separate local Particle Operations and guarantees from caller inputs."""
-    local_operations: list[operation_graph.PositionOperationNode] = []
-    guarantee_dependencies: list[operation_graph.GuaranteeNode] = []
+    local_operations: list[operation_graph_model.PositionOperationNode] = []
+    guarantee_dependencies: list[operation_graph_model.GuaranteeNode] = []
     caller_input_dependencies: list[_CallerInputDependency] = []
     for node in nodes:
         match node:
-            case operation_graph.PositionOperationNode():
+            case operation_graph_model.PositionOperationNode():
                 local_operations.append(node)
             case (
-                operation_graph.ActionParentLastOperationNode()
-                | operation_graph.RequirementNode()
-                | operation_graph.CallerEmptyRuleDependenciesNode()
+                operation_graph_model.ActionParentLastOperationNode()
+                | operation_graph_model.RequirementNode()
+                | operation_graph_model.CallerEmptyRuleDependenciesNode()
             ):
                 caller_input_dependencies.append(node)
-            case operation_graph.GuaranteeNode():
+            case operation_graph_model.GuaranteeNode():
                 guarantee_dependencies.append(node)
             case _:
                 raise TypeError(f"unknown operation node type: {type(node).__name__}")
@@ -70,7 +74,7 @@ def _partition_dependencies(
 class ResolvedCallerInput:
     """A caller input and the operations and triggered inputs that consume it."""
 
-    operation_consumers: list[operation_graph.PositionOperationNode] = field(
+    operation_consumers: list[operation_graph_model.PositionOperationNode] = field(
         default_factory=list, init=False
     )
     triggered_input_consumers: list[ResolvedActionTriggerInput] = field(
@@ -82,21 +86,21 @@ class ResolvedCallerInput:
 class ResolvedActionParentInput(ResolvedCallerInput):
     """An Action Parent input."""
 
-    node: operation_graph.ActionParentLastOperationNode
+    node: operation_graph_model.ActionParentLastOperationNode
 
 
 @dataclass(slots=True, eq=False)
 class ResolvedRequirementInput(ResolvedCallerInput):
     """A requirement input."""
 
-    node: operation_graph.RequirementNode
+    node: operation_graph_model.RequirementNode
 
 
 @dataclass(slots=True, eq=False)
 class ResolvedEmptyRuleInput(ResolvedCallerInput):
     """Empty Rule dependencies supplied by an action's caller."""
 
-    dependencies: operation_graph.CallerEmptyRuleDependencies
+    dependencies: operation_graph_model.CallerEmptyRuleDependencies
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -114,7 +118,7 @@ class _ActionTriggerDependencyResolver:
     def __init__(
         self,
         caller_graph: operation_graph.OperationGraph,
-        trigger: operation_graph.ActionTrigger,
+        trigger: operation_graph_model.ActionTrigger,
     ):
         """Initialize with one direct caller and Action Triggering."""
         self._caller_graph = caller_graph
@@ -156,8 +160,8 @@ class _ActionTriggerDependencyResolver:
     def _caller_dependency_for_input_node(
         self,
         node: _CallerInputNode,
-    ) -> operation_graph.ActionParentOperationNode:
-        if isinstance(node, operation_graph.ActionParentLastOperationNode):
+    ) -> operation_graph_model.ActionParentOperationNode:
+        if isinstance(node, operation_graph_model.ActionParentLastOperationNode):
             return self._trigger.action_parent_last_operation
         # Direct bindings are already constant-time and are the common path.
         # Checking them before the cache avoids its lookup, allocation, and
@@ -170,7 +174,9 @@ class _ActionTriggerDependencyResolver:
         # exactly one direct input: the nearest parent-name requirement, or the
         # action parent's last operation when there is no parent-name requirement.
         (parent_input,) = node.depends_on
-        if isinstance(parent_input, operation_graph.ActionParentLastOperationNode):
+        if isinstance(
+            parent_input, operation_graph_model.ActionParentLastOperationNode
+        ):
             return self._trigger.action_parent_last_operation
         return self._trigger.bindings[parent_input.requirement_position].operation
 
@@ -179,7 +185,7 @@ class _ActionTriggerDependencyResolver:
 class ResolvedActionTrigger:
     """The dependency interface of one direct Action Triggering."""
 
-    trigger: operation_graph.ActionTrigger
+    trigger: operation_graph_model.ActionTrigger
     inputs: list[ResolvedActionTriggerInput]
 
     def input_for(
@@ -201,7 +207,7 @@ class ResolvedAction:
 
     graph: operation_graph.OperationGraph
     dependencies_by_operation: dict[
-        operation_graph.PositionOperationNode, ActionDependencies
+        operation_graph_model.PositionOperationNode, ActionDependencies
     ]
     caller_inputs: list[ResolvedCallerInput]
     action_triggers: list[ResolvedActionTrigger]
@@ -220,7 +226,7 @@ class _ActionResolver:
         self._graph = graph
         self._resolved_callees = resolved_callees
         self._dependencies_by_operation: dict[
-            operation_graph.PositionOperationNode, ActionDependencies
+            operation_graph_model.PositionOperationNode, ActionDependencies
         ] = {}
         self._caller_inputs: list[ResolvedCallerInput] = []
         self._caller_input_by_node: dict[
@@ -231,7 +237,7 @@ class _ActionResolver:
     def resolve(self) -> ResolvedAction:
         """Resolve the action's operations and direct Action Triggerings."""
         for node in self._graph.nodes:
-            if not isinstance(node, operation_graph.PositionOperationNode):
+            if not isinstance(node, operation_graph_model.PositionOperationNode):
                 continue
             self._dependencies_by_operation[node] = (
                 self._resolve_operation_dependencies(node)
@@ -248,7 +254,7 @@ class _ActionResolver:
         )
 
     def _resolve_operation_dependencies(
-        self, operation: operation_graph.PositionOperationNode
+        self, operation: operation_graph_model.PositionOperationNode
     ) -> ActionDependencies:
         dependencies, caller_input_dependencies = _partition_dependencies(
             operation.depends_on
@@ -257,7 +263,7 @@ class _ActionResolver:
         return dependencies
 
     def _resolve_action_trigger(
-        self, trigger: operation_graph.ActionTrigger
+        self, trigger: operation_graph_model.ActionTrigger
     ) -> ResolvedActionTrigger:
         callee = self._resolved_callees[trigger.callee_action_name]
         dependency_resolver = _ActionTriggerDependencyResolver(self._graph, trigger)
@@ -278,7 +284,7 @@ class _ActionResolver:
     def _record_operation_caller_inputs(
         self,
         caller_input_dependencies: list[_CallerInputDependency],
-        operation: operation_graph.PositionOperationNode,
+        operation: operation_graph_model.PositionOperationNode,
     ):
         for dependency in caller_input_dependencies:
             self._caller_input_for(dependency).operation_consumers.append(operation)
@@ -296,18 +302,18 @@ class _ActionResolver:
     def _caller_input_for(
         self, dependency: _CallerInputDependency
     ) -> ResolvedCallerInput:
-        if isinstance(dependency, operation_graph.CallerEmptyRuleDependencies):
+        if isinstance(dependency, operation_graph_model.CallerEmptyRuleDependencies):
             caller_input = ResolvedEmptyRuleInput(dependency)
             self._caller_inputs.append(caller_input)
             return caller_input
         caller_input = self._caller_input_by_node.get(dependency)
         if caller_input is None:
             match dependency:
-                case operation_graph.ActionParentLastOperationNode():
+                case operation_graph_model.ActionParentLastOperationNode():
                     caller_input = ResolvedActionParentInput(dependency)
-                case operation_graph.RequirementNode():
+                case operation_graph_model.RequirementNode():
                     caller_input = ResolvedRequirementInput(dependency)
-                case operation_graph.CallerEmptyRuleDependenciesNode():
+                case operation_graph_model.CallerEmptyRuleDependenciesNode():
                     caller_input = ResolvedEmptyRuleInput(
                         dependency.caller_empty_rule_dependencies
                     )

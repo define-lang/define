@@ -34,7 +34,10 @@ import functools
 import pytest
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_model,
+)
 
 _LOC = ast.start_of_file_location()
 
@@ -54,8 +57,8 @@ def _ref(*names: str) -> ast.PositionReference:
 
 
 @functools.cache
-def _operation_node(node_index: int) -> operation_graph.MoveNode:
-    return operation_graph.MoveNode(
+def _operation_node(node_index: int) -> operation_graph_model.MoveNode:
+    return operation_graph_model.MoveNode(
         node_id=node_index,
         source=_ref(f"source{node_index}"),
         target=_ref(f"target{node_index}"),
@@ -64,8 +67,8 @@ def _operation_node(node_index: int) -> operation_graph.MoveNode:
 
 
 def test_operation_nodes_use_identity_equality():
-    one = operation_graph.CreateNode(node_id=1, target=_ref("one"), depends_on=())
-    equivalent = operation_graph.CreateNode(
+    one = operation_graph_model.CreateNode(node_id=1, target=_ref("one"), depends_on=())
+    equivalent = operation_graph_model.CreateNode(
         node_id=1, target=_ref("one"), depends_on=()
     )
 
@@ -137,7 +140,7 @@ def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent()
 
 def test_particle_child_operations_excludes_operations_on_the_same_paths():
     child_operations = (
-        operation_graph.ParticleChildOperations.from_preceding_operations(
+        operation_graph_model.ParticleChildOperations.from_preceding_operations(
             (
                 (("position<a>",), _operation_node(2)),
                 (("position<b>",), _operation_node(3)),
@@ -147,13 +150,13 @@ def test_particle_child_operations_excludes_operations_on_the_same_paths():
 
     assert child_operations.operations_not_on_same_paths_as(
         frozenset({("position<a>", "position<deep>")})
-    ) == [operation_graph.ChildOperation(("position<b>",), _operation_node(3))]
+    ) == [operation_graph_model.ChildOperation(("position<b>",), _operation_node(3))]
 
 
 def test_particle_child_operations_scales_to_wide_particles():
     child_count = 10_000
     child_operations = (
-        operation_graph.ParticleChildOperations.from_preceding_operations(
+        operation_graph_model.ParticleChildOperations.from_preceding_operations(
             ((f"position<c{index}>",), _operation_node(index))
             for index in range(child_count)
         )
@@ -162,10 +165,10 @@ def test_particle_child_operations_scales_to_wide_particles():
     operations = child_operations.operations_not_on_same_paths_as(frozenset())
 
     assert len(operations) == child_count
-    assert operations[0] == operation_graph.ChildOperation(
+    assert operations[0] == operation_graph_model.ChildOperation(
         ("position<c9999>",), _operation_node(9999)
     )
-    assert operations[-1] == operation_graph.ChildOperation(
+    assert operations[-1] == operation_graph_model.ChildOperation(
         ("position<c0>",), _operation_node(0)
     )
 
@@ -180,10 +183,12 @@ def test_particle_child_operations_scales_to_wide_particles():
                 (("position<b>",), _operation_node(3)),
             ),
             {
-                operation_graph.ChildOperation(
+                operation_graph_model.ChildOperation(
                     ("position<a>", "position<deep>"), _operation_node(4)
                 ),
-                operation_graph.ChildOperation(("position<b>",), _operation_node(3)),
+                operation_graph_model.ChildOperation(
+                    ("position<b>",), _operation_node(3)
+                ),
             },
         ),
         (
@@ -193,8 +198,12 @@ def test_particle_child_operations_scales_to_wide_particles():
                 (("position<b>",), _operation_node(3)),
             ),
             {
-                operation_graph.ChildOperation(("position<a>",), _operation_node(4)),
-                operation_graph.ChildOperation(("position<b>",), _operation_node(3)),
+                operation_graph_model.ChildOperation(
+                    ("position<a>",), _operation_node(4)
+                ),
+                operation_graph_model.ChildOperation(
+                    ("position<b>",), _operation_node(3)
+                ),
             },
         ),
         (
@@ -202,18 +211,22 @@ def test_particle_child_operations_scales_to_wide_particles():
                 (("position<a>",), _operation_node(2)),
                 (("position<a>",), _operation_node(4)),
             ),
-            {operation_graph.ChildOperation(("position<a>",), _operation_node(4))},
+            {
+                operation_graph_model.ChildOperation(
+                    ("position<a>",), _operation_node(4)
+                )
+            },
         ),
     ],
 )
 def test_particle_child_operations_keeps_only_newest_comparable_operations(
     preceding_operations: tuple[
-        tuple[tuple[str, ...], operation_graph.PrecedingChildOperationNode], ...
+        tuple[tuple[str, ...], operation_graph_model.PrecedingChildOperationNode], ...
     ],
-    expected_operations: set[operation_graph.ChildOperation],
+    expected_operations: set[operation_graph_model.ChildOperation],
 ):
     child_operations = (
-        operation_graph.ParticleChildOperations.from_preceding_operations(
+        operation_graph_model.ParticleChildOperations.from_preceding_operations(
             preceding_operations
         )
     )
@@ -225,17 +238,19 @@ def test_particle_child_operations_keeps_only_newest_comparable_operations(
 
 
 def test_particle_child_operations_matches_parent_and_child_paths():
-    operation_a = operation_graph.ChildOperation(("position<a>",), _operation_node(1))
-    operation_b_deep = operation_graph.ChildOperation(
+    operation_a = operation_graph_model.ChildOperation(
+        ("position<a>",), _operation_node(1)
+    )
+    operation_b_deep = operation_graph_model.ChildOperation(
         ("position<b>", "position<deep>"), _operation_node(2)
     )
-    operation_c_first = operation_graph.ChildOperation(
+    operation_c_first = operation_graph_model.ChildOperation(
         ("position<c>", "position<first>"), _operation_node(3)
     )
-    operation_c_second = operation_graph.ChildOperation(
+    operation_c_second = operation_graph_model.ChildOperation(
         ("position<c>", "position<second>"), _operation_node(4)
     )
-    child_operations = operation_graph.ParticleChildOperations(
+    child_operations = operation_graph_model.ParticleChildOperations(
         (
             operation_c_second,
             operation_c_first,
@@ -258,22 +273,22 @@ def test_particle_child_operations_matches_parent_and_child_paths():
 
 
 def test_particle_child_operations_reduces_matching_dependencies():
-    older_operation = operation_graph.MoveNode(
+    older_operation = operation_graph_model.MoveNode(
         node_id=1,
         source=_ref("box", "a", "child"),
         target=_ref("older_target"),
         depends_on=(),
     )
-    newer_operation = operation_graph.MoveNode(
+    newer_operation = operation_graph_model.MoveNode(
         node_id=2,
         source=_ref("box", "a"),
         target=_ref("newer_target"),
         depends_on=(),
     )
-    child_operations = operation_graph.ParticleChildOperations(
+    child_operations = operation_graph_model.ParticleChildOperations(
         (
-            operation_graph.ChildOperation(("position<a>",), newer_operation),
-            operation_graph.ChildOperation(
+            operation_graph_model.ChildOperation(("position<a>",), newer_operation),
+            operation_graph_model.ChildOperation(
                 ("position<a>", "position<child>"), older_operation
             ),
         )
@@ -286,10 +301,10 @@ def test_particle_child_operations_reduces_matching_dependencies():
 
 def test_particle_child_operations_returns_a_shared_dependency_once():
     operation = _operation_node(1)
-    child_operations = operation_graph.ParticleChildOperations(
+    child_operations = operation_graph_model.ParticleChildOperations(
         (
-            operation_graph.ChildOperation(("position<a>",), operation),
-            operation_graph.ChildOperation(
+            operation_graph_model.ChildOperation(("position<a>",), operation),
+            operation_graph_model.ChildOperation(
                 ("position<a>", "position<child>"), operation
             ),
         )
@@ -302,7 +317,7 @@ def test_particle_child_operations_returns_a_shared_dependency_once():
 
 def test_particle_child_operations_all_precede():
     child_operations = (
-        operation_graph.ParticleChildOperations.from_preceding_operations(
+        operation_graph_model.ParticleChildOperations.from_preceding_operations(
             (
                 (("position<a>",), _operation_node(2)),
                 (("position<b>",), _operation_node(4)),
@@ -312,4 +327,6 @@ def test_particle_child_operations_all_precede():
 
     assert child_operations.all_precede(_operation_node(5))
     assert not child_operations.all_precede(_operation_node(4))
-    assert operation_graph.ParticleChildOperations().all_precede(_operation_node(0))
+    assert operation_graph_model.ParticleChildOperations().all_precede(
+        _operation_node(0)
+    )

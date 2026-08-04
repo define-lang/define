@@ -109,6 +109,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":operation_graph",
+        ":operation_graph_model",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -121,6 +122,7 @@ py_test(
     deps = [
         ":operation_graph",
         ":operation_graph_action_resolver",
+        ":operation_graph_model",
         "//define/compiler:ast",
     ],
 )
@@ -131,6 +133,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":operation_graph",
+        ":operation_graph_model",
         ":operation_graph_resolver",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
@@ -175,6 +178,7 @@ py_library(
     deps = [
         ":operation_graph",
         ":operation_graph_action_resolver",
+        ":operation_graph_model",
         "//define/compiler:ast",
     ],
 )
@@ -196,6 +200,7 @@ py_test(
     srcs = ["operation_graph_test.py"],
     deps = [
         ":operation_graph",
+        ":operation_graph_model",
         "//define/compiler:ast",
         "@pypi//pytest",
     ],

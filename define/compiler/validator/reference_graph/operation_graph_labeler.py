@@ -9,6 +9,7 @@ from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     operation_graph,
+    operation_graph_model,
     operation_graph_resolver,
 )
 
@@ -21,7 +22,7 @@ type _ActionOperationLabels = typed_name_dict.TypedNameDict[
 # One triggering of one action, by the operation that fired it and the action it
 # fires. An action names each of its own triggerings, and one operation can fire
 # more than one of them.
-type _TriggerKey = tuple[operation_graph.LastOperationNode, str]
+type _TriggerKey = tuple[operation_graph_model.LastOperationNode, str]
 
 _CREATE_OPERATION_NAME = "create"
 _MOVE_OPERATION_NAME = "move"
@@ -29,7 +30,7 @@ _DESTROY_OPERATION_NAME = "destroy"
 _DESTROY_IF_OCCUPIED_OPERATION_NAME = "destroy_if_occupied"
 
 
-def _trigger_key(trigger: operation_graph.ActionTrigger) -> _TriggerKey:
+def _trigger_key(trigger: operation_graph_model.ActionTrigger) -> _TriggerKey:
     """Return the identity of one Action Triggering performed by an action."""
     return (trigger.trigger_operation, trigger.callee_action_name.full_typed_name)
 
@@ -65,10 +66,12 @@ class _OperationLabels:
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Label every operation in ``graph``."""
-        self._labels: dict[operation_graph.PositionOperationNode, OperationLabel] = {}
+        self._labels: dict[
+            operation_graph_model.PositionOperationNode, OperationLabel
+        ] = {}
         times_seen: dict[tuple[str, str | None, str], int] = {}
         for node in graph.nodes:
-            if not isinstance(node, operation_graph.PositionOperationNode):
+            if not isinstance(node, operation_graph_model.PositionOperationNode):
                 continue
             operation_name, source, target = self._operation_parts(node)
             key = (operation_name, source, target)
@@ -84,26 +87,26 @@ class _OperationLabels:
             )
 
     def __getitem__(
-        self, node: operation_graph.PositionOperationNode
+        self, node: operation_graph_model.PositionOperationNode
     ) -> OperationLabel:
         """Return the label of ``node``."""
         return self._labels[node]
 
     @classmethod
     def _operation_parts(
-        cls, node: operation_graph.PositionOperationNode
+        cls, node: operation_graph_model.PositionOperationNode
     ) -> tuple[str, str | None, str]:
         """Return the operation name and positions of one operation."""
         target = cls._position_name(node.target)
         match node:
-            case operation_graph.CreateNode():
+            case operation_graph_model.CreateNode():
                 return _CREATE_OPERATION_NAME, None, target
-            case operation_graph.MoveNode():
+            case operation_graph_model.MoveNode():
                 source = cls._position_name(node.source)
                 return _MOVE_OPERATION_NAME, source, target
-            case operation_graph.DestroyIfOccupiedNode():
+            case operation_graph_model.DestroyIfOccupiedNode():
                 return _DESTROY_IF_OCCUPIED_OPERATION_NAME, None, target
-            case operation_graph.DestroyNode():
+            case operation_graph_model.DestroyNode():
                 return _DESTROY_OPERATION_NAME, None, target
             case _:
                 raise TypeError(f"unknown operation node type: {type(node).__name__}")
@@ -135,7 +138,7 @@ class _InvocationLabels:
             )
             self._callees.append(trigger.callee_action_name)
 
-    def __getitem__(self, trigger: operation_graph.ActionTrigger) -> str:
+    def __getitem__(self, trigger: operation_graph_model.ActionTrigger) -> str:
         """Return the local name of the action ``trigger`` fires."""
         return self._names[_trigger_key(trigger)]
 
@@ -206,7 +209,7 @@ class _ActionInvocationLabels:
     def name(
         self,
         action: ast.GlobalTypedName,
-        trigger: operation_graph.ActionTrigger,
+        trigger: operation_graph_model.ActionTrigger,
     ) -> TriggeredActionExecutionName:
         """Return the local name and qualification rule for ``trigger``."""
         local_name = self._labels[action][trigger]
@@ -243,7 +246,7 @@ class OperationGraphLabeler:
     def operation_label(
         self,
         action: ast.GlobalTypedName,
-        node: operation_graph.PositionOperationNode,
+        node: operation_graph_model.PositionOperationNode,
     ) -> OperationLabel:
         """Return ``action``'s local label for ``node``."""
         return self._operation_labels[action][node]
@@ -251,7 +254,7 @@ class OperationGraphLabeler:
     def triggered_action_execution_name(
         self,
         action: ast.GlobalTypedName,
-        trigger: operation_graph.ActionTrigger,
+        trigger: operation_graph_model.ActionTrigger,
     ) -> TriggeredActionExecutionName:
         """Return the name rule for the Action Execution fired by ``trigger``."""
         return self._invocation_labels.name(action, trigger)

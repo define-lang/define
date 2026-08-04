@@ -12,7 +12,10 @@ from define.compiler.codegen.literal.python import (
     template_context,
 )
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import operation_graph
+from define.compiler.validator.reference_graph import (
+    operation_graph,
+    operation_graph_model,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,9 +82,9 @@ class ActionGuaranteesGenerator:
 
     def _child_guarantees(
         self,
-    ) -> dict[operation_graph.ActionTrigger, action_context.ChildGuarantees]:
+    ) -> dict[operation_graph_model.ActionTrigger, action_context.ChildGuarantees]:
         child_guarantees: dict[
-            operation_graph.ActionTrigger, action_context.ChildGuarantees
+            operation_graph_model.ActionTrigger, action_context.ChildGuarantees
         ] = {}
         for action_trigger in self._plan.action_triggers:
             callee_interface = self._generated_actions[
@@ -96,8 +99,8 @@ class ActionGuaranteesGenerator:
 
     def _guarantee_names_by_operation(
         self,
-    ) -> dict[operation_graph.PositionOperationNode, str]:
-        names: dict[operation_graph.PositionOperationNode, str] = {}
+    ) -> dict[operation_graph_model.PositionOperationNode, str]:
+        names: dict[operation_graph_model.PositionOperationNode, str] = {}
         for publication in self._plan.guarantee_publications:
             names[publication.operation] = self._names.guarantee_publications[
                 publication
@@ -108,7 +111,7 @@ class ActionGuaranteesGenerator:
         self,
         class_reference: naming.ClassReference,
         child_guarantees: dict[
-            operation_graph.ActionTrigger, action_context.ChildGuarantees
+            operation_graph_model.ActionTrigger, action_context.ChildGuarantees
         ],
     ) -> template_context.GuaranteesContext:
         return template_context.GuaranteesContext(

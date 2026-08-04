@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_action_resolver,
+    operation_graph_model,
 )
 
 if typing.TYPE_CHECKING:
@@ -18,7 +19,7 @@ if typing.TYPE_CHECKING:
 class ActionFragment:
     """A maximal direct-call chain of Particle Operations."""
 
-    operations: list[operation_graph.PositionOperationNode]
+    operations: list[operation_graph_model.PositionOperationNode]
     guarantee_dependencies: list[operation_graph.GuaranteePath] = field(
         init=False, default_factory=list
     )
@@ -26,7 +27,7 @@ class ActionFragment:
     triggered_input_successors: list[TriggeredActionInput] = field(
         init=False, default_factory=list
     )
-    triggered_action_successors: list[operation_graph.ActionTrigger] = field(
+    triggered_action_successors: list[operation_graph_model.ActionTrigger] = field(
         init=False, default_factory=list
     )
     execution_input_successors: list[TriggeredActionInput] = field(
@@ -51,7 +52,7 @@ class CallerInput:
 class _PlanDependencies:
     """Dependencies of one fragment or triggered-action input."""
 
-    local_operations: list[operation_graph.PositionOperationNode]
+    local_operations: list[operation_graph_model.PositionOperationNode]
     guarantee_dependencies: list[operation_graph.GuaranteePath]
 
     @staticmethod
@@ -72,7 +73,7 @@ class _PlanDependencies:
 class TriggeredActionInput:
     """One direct callee input connected to dependencies in its caller."""
 
-    action_trigger: operation_graph.ActionTrigger
+    action_trigger: operation_graph_model.ActionTrigger
     callee_input: operation_graph_action_resolver.ResolvedCallerInput
     guarantee_dependencies: list[operation_graph.GuaranteePath]
     dependency_count: int
@@ -82,7 +83,7 @@ class TriggeredActionInput:
 class GuaranteePublication:
     """Source and target guarantees published by one local Particle Operation."""
 
-    operation: operation_graph.PositionOperationNode
+    operation: operation_graph_model.PositionOperationNode
     guaranteed_source: tuple[str, ...] | None
     guaranteed_target: tuple[str, ...] | None
 
@@ -94,7 +95,7 @@ class ActionPlan:
     fragments: list[ActionFragment]
     execute_fragments: list[ActionFragment]
     caller_inputs: list[CallerInput]
-    action_triggers: list[operation_graph.ActionTrigger]
+    action_triggers: list[operation_graph_model.ActionTrigger]
     triggered_action_inputs: list[TriggeredActionInput]
     guarantee_publications: list[GuaranteePublication]
 
@@ -109,7 +110,9 @@ class _FragmentTopology:
     """
 
     fragments: list[ActionFragment]
-    fragment_for_operation: dict[operation_graph.PositionOperationNode, ActionFragment]
+    fragment_for_operation: dict[
+        operation_graph_model.PositionOperationNode, ActionFragment
+    ]
 
 
 @typing.final
@@ -125,11 +128,11 @@ class _FragmentTopologyBuilder:
         self,
         graph: operation_graph.OperationGraph,
         dependencies: dict[
-            operation_graph.PositionOperationNode,
+            operation_graph_model.PositionOperationNode,
             operation_graph_action_resolver.ActionDependencies,
         ],
         guaranteed_positions_by_operation: dict[
-            operation_graph.PositionOperationNode, tuple[tuple[str, ...], ...]
+            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
         ],
         resolved_action_triggers: list[
             operation_graph_action_resolver.ResolvedActionTrigger
@@ -140,15 +143,15 @@ class _FragmentTopologyBuilder:
         self._operations = [
             node
             for node in graph.nodes
-            if isinstance(node, operation_graph.PositionOperationNode)
+            if isinstance(node, operation_graph_model.PositionOperationNode)
         ]
         self._local_predecessors: dict[
-            operation_graph.PositionOperationNode,
-            list[operation_graph.PositionOperationNode],
+            operation_graph_model.PositionOperationNode,
+            list[operation_graph_model.PositionOperationNode],
         ] = {}
         self._local_successors: dict[
-            operation_graph.PositionOperationNode,
-            list[operation_graph.PositionOperationNode],
+            operation_graph_model.PositionOperationNode,
+            list[operation_graph_model.PositionOperationNode],
         ] = {operation: [] for operation in self._operations}
         for operation, operation_dependencies in dependencies.items():
             predecessors = operation_dependencies.local_operations
@@ -175,7 +178,7 @@ class _FragmentTopologyBuilder:
         fragment_operations = self._fragment_operations()
         fragments = [ActionFragment(operations) for operations in fragment_operations]
         fragment_for_operation: dict[
-            operation_graph.PositionOperationNode, ActionFragment
+            operation_graph_model.PositionOperationNode, ActionFragment
         ] = {}
         for fragment in fragments:
             for operation in fragment.operations:
@@ -192,13 +195,13 @@ class _FragmentTopologyBuilder:
 
     def _fragment_operations(
         self,
-    ) -> list[list[operation_graph.PositionOperationNode]]:
+    ) -> list[list[operation_graph_model.PositionOperationNode]]:
         heads = [
             operation
             for operation in self._operations
             if not self._can_follow_predecessor(operation)
         ]
-        fragments: list[list[operation_graph.PositionOperationNode]] = []
+        fragments: list[list[operation_graph_model.PositionOperationNode]] = []
         for head in heads:
             chain = [head]
             while True:
@@ -213,7 +216,7 @@ class _FragmentTopologyBuilder:
         return fragments
 
     def _can_follow_predecessor(
-        self, operation: operation_graph.PositionOperationNode
+        self, operation: operation_graph_model.PositionOperationNode
     ) -> bool:
         predecessors = self._local_predecessors[operation]
         if len(predecessors) != 1:
@@ -275,11 +278,11 @@ class _ActionPlanBuilder:
     def _build(
         self,
         dependencies: dict[
-            operation_graph.PositionOperationNode,
+            operation_graph_model.PositionOperationNode,
             operation_graph_action_resolver.ActionDependencies,
         ],
         guaranteed_positions_by_operation: dict[
-            operation_graph.PositionOperationNode, tuple[tuple[str, ...], ...]
+            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
         ],
         caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
         *,
@@ -329,7 +332,7 @@ class _ActionPlanBuilder:
     def _plan_triggered_actions(
         self,
         fragment_for_operation: dict[
-            operation_graph.PositionOperationNode, ActionFragment
+            operation_graph_model.PositionOperationNode, ActionFragment
         ],
         caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
     ) -> _TriggeredActions:
@@ -378,10 +381,10 @@ class _ActionPlanBuilder:
     def _plan_guarantee_publications(
         self,
         guaranteed_positions_by_operation: dict[
-            operation_graph.PositionOperationNode, tuple[tuple[str, ...], ...]
+            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
         ],
         fragment_for_operation: dict[
-            operation_graph.PositionOperationNode, ActionFragment
+            operation_graph_model.PositionOperationNode, ActionFragment
         ],
     ) -> list[GuaranteePublication]:
         publications: list[GuaranteePublication] = []
@@ -390,7 +393,7 @@ class _ActionPlanBuilder:
             publication_positions,
         ) in guaranteed_positions_by_operation.items():
             guaranteed_source = None
-            if isinstance(operation, operation_graph.MoveNode):
+            if isinstance(operation, operation_graph_model.MoveNode):
                 source = operation.source.canonical_chained_name_tuple
                 if source in publication_positions:
                     guaranteed_source = source
@@ -407,7 +410,7 @@ class _ActionPlanBuilder:
     def _plan_fragments(
         self,
         dependencies: dict[
-            operation_graph.PositionOperationNode,
+            operation_graph_model.PositionOperationNode,
             operation_graph_action_resolver.ActionDependencies,
         ],
         topology: _FragmentTopology,
@@ -435,7 +438,7 @@ class _ActionPlanBuilder:
             operation_graph_action_resolver.ResolvedCallerInput
         ],
         fragment_for_operation: dict[
-            operation_graph.PositionOperationNode, ActionFragment
+            operation_graph_model.PositionOperationNode, ActionFragment
         ],
         triggered_actions: _TriggeredActions,
     ) -> list[CallerInput]:

@@ -2,6 +2,7 @@ from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_action_resolver,
+    operation_graph_model,
 )
 
 _LOCATION = ast.start_of_file_location()
@@ -111,7 +112,9 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     resolved = resolved_actions.resolve(caller_action)
     (resolved_trigger,) = resolved.action_triggers
     action_parent = trigger.action_parent_last_operation
-    assert isinstance(action_parent, operation_graph.ActionParentLastOperationNode)
+    assert isinstance(
+        action_parent, operation_graph_model.ActionParentLastOperationNode
+    )
 
     assert resolved_trigger.trigger is trigger
     (resolved_input,) = resolved_trigger.inputs

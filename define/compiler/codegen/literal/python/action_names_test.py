@@ -14,8 +14,8 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.reference_graph import (
     action_contract,
-    operation_graph,
     operation_graph_action_resolver,
+    operation_graph_model,
 )
 
 if typing.TYPE_CHECKING:
@@ -69,7 +69,7 @@ define the potential action<my.domain.com:my_lib:/test> {{
 
 def _action_triggers(
     validate_project: conftest.ValidateProject,
-) -> collections.abc.Sequence[operation_graph.ActionTrigger]:
+) -> collections.abc.Sequence[operation_graph_model.ActionTrigger]:
     result = validate_project(
         {
             "test.dfn": """\
@@ -130,7 +130,7 @@ define the potential action<my.domain.com:my_lib:/worker_2> {
 def _create_fragment(position_name: str) -> action_plan.ActionFragment:
     return action_plan.ActionFragment(
         [
-            operation_graph.CreateNode(
+            operation_graph_model.CreateNode(
                 node_id=0,
                 depends_on=(),
                 target=_position(position_name),
@@ -143,11 +143,11 @@ def _requirement_input(
     position_name: str,
     required_state: action_contract.PositionOccupancyState,
 ) -> operation_graph_action_resolver.ResolvedRequirementInput:
-    action_parent_input = operation_graph.ActionParentLastOperationNode(
+    action_parent_input = operation_graph_model.ActionParentLastOperationNode(
         node_id=0, depends_on=()
     )
     return operation_graph_action_resolver.ResolvedRequirementInput(
-        operation_graph.RequirementNode(
+        operation_graph_model.RequirementNode(
             node_id=1,
             depends_on=(action_parent_input,),
             required_state=required_state,
@@ -160,7 +160,7 @@ def _empty_rule_input(
     position_name: str,
 ) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
     return operation_graph_action_resolver.ResolvedEmptyRuleInput(
-        operation_graph.CallerParticleEmptyRuleDependencies(
+        operation_graph_model.CallerParticleEmptyRuleDependencies(
             requirement_position=(f"position<{position_name}>",),
             dependency_child_positions=frozenset(),
             dependency_requirements=(),
@@ -173,7 +173,7 @@ def _child_position_input(
     child_name: str,
 ) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
     return operation_graph_action_resolver.ResolvedEmptyRuleInput(
-        operation_graph.CallerChildPositionEmptyRuleDependencies(
+        operation_graph_model.CallerChildPositionEmptyRuleDependencies(
             requirement_position=(f"position<{requirement_name}>",),
             emptied_position=(f"position<{child_name}>",),
         )
@@ -268,7 +268,7 @@ def test_local_position_names():
 
 def test_action_parent_input_name():
     action_parent = operation_graph_action_resolver.ResolvedActionParentInput(
-        operation_graph.ActionParentLastOperationNode(node_id=0, depends_on=())
+        operation_graph_model.ActionParentLastOperationNode(node_id=0, depends_on=())
     )
 
     assert _input_method_names(action_parent) == {action_parent: "accept_action_parent"}

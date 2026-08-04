@@ -9,8 +9,8 @@ from define.compiler.codegen.literal.python import action_context, naming
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     action_contract,
-    operation_graph,
     operation_graph_action_resolver,
+    operation_graph_model,
 )
 
 _ACCEPT_CALLER_INPUT_PREFIX = "accept_"
@@ -57,7 +57,7 @@ class ActionNames:
     # The execution method for each caller input.
     caller_inputs: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
     # The initializer method and execution member for each Action Triggering.
-    triggered_actions: dict[operation_graph.ActionTrigger, TriggeredActionNames]
+    triggered_actions: dict[operation_graph_model.ActionTrigger, TriggeredActionNames]
     # The execution method for each triggered action input.
     triggered_inputs: dict[action_plan.TriggeredActionInput, str]
     # The execution method for each action fragment.
@@ -65,7 +65,7 @@ class ActionNames:
     # The guarantees task-list member for each guarantee publication.
     guarantee_publications: dict[action_plan.GuaranteePublication, str]
     # The guarantees member for each Action Triggering whose callee has guarantees.
-    child_guarantees: dict[operation_graph.ActionTrigger, str]
+    child_guarantees: dict[operation_graph_model.ActionTrigger, str]
 
 
 @typing.final
@@ -170,9 +170,9 @@ class ActionNameGenerator:
 
     def _triggered_action_base_names(
         self,
-    ) -> dict[operation_graph.ActionTrigger, str]:
+    ) -> dict[operation_graph_model.ActionTrigger, str]:
         allocator = naming.NameAllocator()
-        names: dict[operation_graph.ActionTrigger, str] = {}
+        names: dict[operation_graph_model.ActionTrigger, str] = {}
         for action_trigger in self._plan.action_triggers:
             names[action_trigger] = allocator.allocate(
                 _TRIGGERED_ACTION_PREFIX
@@ -182,9 +182,9 @@ class ActionNameGenerator:
 
     def _triggered_action_names(
         self,
-        base_names: dict[operation_graph.ActionTrigger, str],
-    ) -> dict[operation_graph.ActionTrigger, TriggeredActionNames]:
-        names: dict[operation_graph.ActionTrigger, TriggeredActionNames] = {}
+        base_names: dict[operation_graph_model.ActionTrigger, str],
+    ) -> dict[operation_graph_model.ActionTrigger, TriggeredActionNames]:
+        names: dict[operation_graph_model.ActionTrigger, TriggeredActionNames] = {}
         for action_trigger in self._plan.action_triggers:
             base_name = base_names[action_trigger]
             names[action_trigger] = TriggeredActionNames(
@@ -199,7 +199,7 @@ class ActionNameGenerator:
 
     def _triggered_input_method_names(
         self,
-        triggered_action_base_names: dict[operation_graph.ActionTrigger, str],
+        triggered_action_base_names: dict[operation_graph_model.ActionTrigger, str],
     ) -> dict[action_plan.TriggeredActionInput, str]:
         method_names: dict[action_plan.TriggeredActionInput, str] = {}
         for triggered_input in self._plan.triggered_action_inputs:
@@ -227,10 +227,10 @@ class ActionNameGenerator:
 
     def _child_guarantees_names(
         self,
-        triggered_action_base_names: dict[operation_graph.ActionTrigger, str],
+        triggered_action_base_names: dict[operation_graph_model.ActionTrigger, str],
         allocator: naming.NameAllocator,
-    ) -> dict[operation_graph.ActionTrigger, str]:
-        child_guarantees_names: dict[operation_graph.ActionTrigger, str] = {}
+    ) -> dict[operation_graph_model.ActionTrigger, str]:
+        child_guarantees_names: dict[operation_graph_model.ActionTrigger, str] = {}
         for action_trigger in self._plan.action_triggers:
             generated_callee = self._generated_actions[
                 action_trigger.callee_action_name
@@ -291,16 +291,16 @@ class ActionNameGenerator:
                 first_operation.target.canonical_chained_name_tuple
             )
             match first_operation:
-                case operation_graph.MoveNode():
+                case operation_graph_model.MoveNode():
                     source = self._typed_chain_identifier(
                         first_operation.source.canonical_chained_name_tuple
                     )
                     base = (
                         _MOVE_FRAGMENT_PREFIX + source + _MOVE_TARGET_SEPARATOR + target
                     )
-                case operation_graph.CreateNode():
+                case operation_graph_model.CreateNode():
                     base = _CREATE_FRAGMENT_PREFIX + target
-                case operation_graph.DestroyNode():
+                case operation_graph_model.DestroyNode():
                     base = _DESTROY_FRAGMENT_PREFIX + target
                 case _:
                     raise TypeError(

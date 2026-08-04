@@ -9,8 +9,8 @@ from dataclasses import dataclass
 if typing.TYPE_CHECKING:
     from define.compiler.codegen.literal.python import naming, template_context
     from define.compiler.validator.reference_graph import (
-        operation_graph,
         operation_graph_action_resolver,
+        operation_graph_model,
     )
 
 
@@ -83,10 +83,10 @@ class GuaranteeInterface:
     """Generated guarantee members exposed across one action boundary."""
 
     class_reference: naming.ClassReference
-    child_guarantees: dict[operation_graph.ActionTrigger, ChildGuarantees]
+    child_guarantees: dict[operation_graph_model.ActionTrigger, ChildGuarantees]
     # Guarantee paths end at the Position Operation that publishes the
     # guarantee; its value here is the generated task-list member name.
-    guarantee_names_by_operation: dict[operation_graph.PositionOperationNode, str]
+    guarantee_names_by_operation: dict[operation_graph_model.PositionOperationNode, str]
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,6 +11,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
+        "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
 
@@ -24,6 +25,7 @@ py_test(
         "//define/compiler:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
 

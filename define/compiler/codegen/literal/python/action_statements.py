@@ -3,8 +3,8 @@
 from define.compiler import ast
 from define.compiler.codegen.literal.python import naming, template_context
 from define.compiler.validator.reference_graph import (
-    operation_graph,
     operation_graph_labeler,
+    operation_graph_model,
 )
 
 
@@ -62,7 +62,7 @@ class ActionStatementsGenerator:
 
     def build_operation(
         self,
-        node: operation_graph.PositionOperationNode,
+        node: operation_graph_model.PositionOperationNode,
     ) -> template_context.ActionStatementContext:
         """Build template data for one operation-graph node."""
         local_label = (
@@ -74,26 +74,26 @@ class ActionStatementsGenerator:
             else None
         )
         match node:
-            case operation_graph.CreateNode():
+            case operation_graph_model.CreateNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.CREATE_PARTICLE,
                     position=self._build_position_expr(node.target),
                     operation_label=local_label,
                 )
-            case operation_graph.DestroyIfOccupiedNode():
+            case operation_graph_model.DestroyIfOccupiedNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.DESTROY_PARTICLE,
                     position=self._build_position_expr(node.target),
                     operation_label=local_label,
                     destroy_if_occupied=True,
                 )
-            case operation_graph.DestroyNode():
+            case operation_graph_model.DestroyNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.DESTROY_PARTICLE,
                     position=self._build_position_expr(node.target),
                     operation_label=local_label,
                 )
-            case operation_graph.MoveNode():
+            case operation_graph_model.MoveNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.MOVE_PARTICLE,
                     position=self._build_position_expr(node.source),

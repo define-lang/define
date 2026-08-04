@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_action_resolver,
+    operation_graph_model,
 )
 
 if typing.TYPE_CHECKING:
@@ -35,12 +36,12 @@ class ResolvedOperation:
     """One operation and its concrete dependencies in an action execution."""
 
     action_execution: ActionExecution
-    operation: operation_graph.PositionOperationNode
+    operation: operation_graph_model.PositionOperationNode
     dependencies: tuple[ResolvedOperation, ...]
 
 
 type _ResolvedOperationKey = tuple[
-    ActionExecution, operation_graph.PositionOperationNode
+    ActionExecution, operation_graph_model.PositionOperationNode
 ]
 
 
@@ -67,7 +68,7 @@ class ResolvedOperationGraphBuilder:
         self._resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
         self._callee_action_executions: dict[
             ActionExecution,
-            list[tuple[operation_graph.ActionTrigger, ActionExecution]],
+            list[tuple[operation_graph_model.ActionTrigger, ActionExecution]],
         ] = {}
         self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
 
@@ -81,7 +82,7 @@ class ResolvedOperationGraphBuilder:
             action_execution = work.pop()
             resolved_action = self._resolved_actions[action_execution.action]
             for node in resolved_action.graph.nodes:
-                if isinstance(node, operation_graph.PositionOperationNode):
+                if isinstance(node, operation_graph_model.PositionOperationNode):
                     operation_keys.append((action_execution, node))
 
             callees: list[ActionExecution] = []
@@ -191,7 +192,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        guarantee: operation_graph.GuaranteeNode,
+        guarantee: operation_graph_model.GuaranteeNode,
     ):
         resolution = self._graphs.resolve_guarantee(guarantee)
         guaranteed_action_execution = action_execution
@@ -204,7 +205,7 @@ class ResolvedOperationGraphBuilder:
     def _callee_execution(
         self,
         action_execution: ActionExecution,
-        trigger: operation_graph.ActionTrigger,
+        trigger: operation_graph_model.ActionTrigger,
     ) -> ActionExecution:
         return next(
             callee

@@ -3,6 +3,7 @@ from define.compiler.codegen import action_plan
 from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph,
+    operation_graph_model,
 )
 
 
@@ -74,7 +75,7 @@ def _triggered_plan(graph: operation_graph.OperationGraph) -> action_plan.Action
 
 def _fragment_operations(
     fragment: action_plan.ActionFragment,
-) -> tuple[operation_graph.PositionOperationNode, ...]:
+) -> tuple[operation_graph_model.PositionOperationNode, ...]:
     return tuple(fragment.operations)
 
 
