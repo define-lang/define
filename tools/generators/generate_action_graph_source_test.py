@@ -6,7 +6,7 @@ import pytest
 from define.compiler import ast, parser
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
-from tools import generate_action_graph_source as gen
+from tools.generators import generate_action_graph_source as gen
 
 
 def _parse_and_transform(source: str) -> ast.Program:

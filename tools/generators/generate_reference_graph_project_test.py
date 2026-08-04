@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from define.compiler import driver
-from tools import generate_reference_graph_project as gen
+from tools.generators import generate_reference_graph_project as gen
 
 
 class TestGenerateProjectFiles:

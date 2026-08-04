@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:operation_graph"
-DEFAULT_REPETITIONS = 150
+DEFAULT_REPETITIONS = 700
 DEFAULT_MOVE_CHAIN_LENGTH = 24
 DEFAULT_TREE_DEPTH = 32
 DEFAULT_WIDE_CHILDREN = 48
@@ -485,7 +485,20 @@ def write_to_path(
 def main() -> None:
     """Entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Generate a Define source file that stresses the operation graph."
+        description="""Generate a Define source file whose bodies stress the operation graph.
+
+Emits one .dfn whose action body repeats statement families, each aimed at a
+specific operation dependency rule: a move ladder, a deep position chain moved
+at once and destroyed child by child, a wide particle whose operated-on child
+positions must be filtered into a move's child-operation snapshot, a sibling
+move ladder under one parent particle, and worker pods whose Action Guarantees
+the body consumes. The other profiling sources contain few or no move
+statements, so this is the shape that warms operation-graph construction.
+
+Scale it with --repetitions for body length; --tree-depth makes the
+ancestor-chain walk quadratically more expensive. The generated source
+compiles to zero diagnostics.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     _ = parser.add_argument(
         "--output",

@@ -1,0 +1,90 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+
+py_binary(
+    name = "generate_action_graph_source",
+    srcs = ["generate_action_graph_source.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generate_action_graph_source_test",
+    size = "small",
+    srcs = ["generate_action_graph_source_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generate_action_graph_source",
+        "//define/compiler:ast",
+        "//define/compiler:parser",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "generate_large_define_source",
+    srcs = ["generate_large_define_source.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generate_large_define_source_test",
+    size = "small",
+    srcs = ["generate_large_define_source_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generate_large_define_source",
+        "//define/compiler:ast",
+        "//define/compiler:parser",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "generate_operation_graph_source",
+    srcs = ["generate_operation_graph_source.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generate_operation_graph_source_test",
+    size = "small",
+    srcs = ["generate_operation_graph_source_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generate_operation_graph_source",
+        "//define/compiler:ast",
+        "//define/compiler:parser",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "generate_reference_graph_project",
+    srcs = ["generate_reference_graph_project.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generate_reference_graph_project_test",
+    size = "small",
+    srcs = ["generate_reference_graph_project_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generate_reference_graph_project",
+        "//define/compiler:driver",
+        "@pypi//pytest",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)

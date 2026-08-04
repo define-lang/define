@@ -274,7 +274,7 @@ py_library(
     srcs = ["reference_graph_validator.py"],
     visibility = [
         "//define/compiler:__subpackages__",
-        "//tools:__pkg__",
+        "//tools:__subpackages__",
     ],
     deps = [
         ":action_contract",

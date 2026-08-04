@@ -38,69 +38,12 @@ py_binary(
 )
 
 py_binary(
-    name = "generate_action_graph_source",
-    srcs = ["generate_action_graph_source.py"],
-)
-
-py_test(
-    name = "generate_action_graph_source_test",
-    size = "small",
-    srcs = ["generate_action_graph_source_test.py"],
-    deps = [
-        ":generate_action_graph_source",
-        "//define/compiler:ast",
-        "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_binary(
-    name = "generate_large_define_source",
-    srcs = ["generate_large_define_source.py"],
-)
-
-py_test(
-    name = "generate_large_define_source_test",
-    size = "small",
-    srcs = ["generate_large_define_source_test.py"],
-    deps = [
-        ":generate_large_define_source",
-        "//define/compiler:ast",
-        "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
     deps = [
         "@pypi//lark",
         "@pypi//regex",  # keep
-    ],
-)
-
-py_binary(
-    name = "generate_operation_graph_source",
-    srcs = ["generate_operation_graph_source.py"],
-)
-
-py_test(
-    name = "generate_operation_graph_source_test",
-    size = "small",
-    srcs = ["generate_operation_graph_source_test.py"],
-    deps = [
-        ":generate_operation_graph_source",
-        "//define/compiler:ast",
-        "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -117,22 +60,6 @@ py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
-)
-
-py_binary(
-    name = "generate_reference_graph_project",
-    srcs = ["generate_reference_graph_project.py"],
-)
-
-py_test(
-    name = "generate_reference_graph_project_test",
-    size = "small",
-    srcs = ["generate_reference_graph_project_test.py"],
-    deps = [
-        ":generate_reference_graph_project",
-        "//define/compiler:driver",
-        "@pypi//pytest",
-    ],
 )
 
 py_binary(
@@ -308,16 +235,8 @@ pyright_test(
         ":check_python_deps",
         ":check_python_deps_test",
         ":compile_jinja_templates",
-        ":generate_action_graph_source",
-        ":generate_action_graph_source_test",
-        ":generate_large_define_source",
-        ":generate_large_define_source_test",
         ":generate_lark_standalone",
-        ":generate_operation_graph_source",
-        ":generate_operation_graph_source_test",
         ":generate_programming_languages",
-        ":generate_reference_graph_project",
-        ":generate_reference_graph_project_test",
         ":git_commit_via_api",
         ":j2lint_runner",
         ":regenerate_codegen_testdata",
@@ -326,5 +245,13 @@ pyright_test(
         ":sync_agent_permissions",
         ":update_toolchains",
         ":validate_proposals",
+        "//tools/generators:generate_action_graph_source",
+        "//tools/generators:generate_action_graph_source_test",
+        "//tools/generators:generate_large_define_source",
+        "//tools/generators:generate_large_define_source_test",
+        "//tools/generators:generate_operation_graph_source",
+        "//tools/generators:generate_operation_graph_source_test",
+        "//tools/generators:generate_reference_graph_project",
+        "//tools/generators:generate_reference_graph_project_test",
     ],
 )

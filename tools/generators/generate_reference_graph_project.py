@@ -14,6 +14,11 @@ from pathlib import Path
 from typing import cast
 
 DEFAULT_UNIVERSE_NAME = "mv:define-lang.org:bench"
+DEFAULT_MODULES = 24000
+DEFAULT_LAYERS = 20
+DEFAULT_FAN_OUT = 3
+DEFAULT_UTILITY_FRACTION = 0.3
+DEFAULT_SEED = 7
 _PACKAGE_COUNT = 512
 
 
@@ -66,11 +71,11 @@ def _targets_for(
 
 
 def generate_project_files(
-    modules: int = 4000,
-    layers: int = 20,
-    fan_out: int = 3,
-    utility_fraction: float = 0.3,
-    seed: int = 7,
+    modules: int = DEFAULT_MODULES,
+    layers: int = DEFAULT_LAYERS,
+    fan_out: int = DEFAULT_FAN_OUT,
+    utility_fraction: float = DEFAULT_UTILITY_FRACTION,
+    seed: int = DEFAULT_SEED,
     universe_name: str = DEFAULT_UNIVERSE_NAME,
 ) -> dict[str, str]:
     """Return every file of the project, keyed by its path below the project root."""
@@ -123,25 +128,59 @@ def generate_project_files(
 def main():
     """Write a generated project to the requested directory."""
     parser = argparse.ArgumentParser(
-        description="Generate a many-file Define project with cross-file references."
+        description="""Generate a many-file Define project with heavy cross-file referencing.
+
+Writes a project directory rather than one file: each file defines one
+potential position whose Position Constraint Block references positions
+defined in deeper layers, so every reference is a global reference into
+another file. The other profiling sources are each a single file, so this is
+the only shape that exercises per-file parallel validation, cross-file
+reference resolution, and the reference graph. --utility-fraction of
+references aim at a small set of deepest-layer definitions, giving the graph
+the high fan-in that real dependency graphs have.
+
+Scale it with --modules for file count and --layers for reference depth.
+--seed makes the shape reproducible. The generated project validates to zero
+diagnostics; its entry point is a position rather than a constructor action,
+so profile it through validate_program rather than a full compile.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     _ = parser.add_argument(
         "--output", type=Path, required=True, help="Project root to write"
     )
     _ = parser.add_argument(
-        "--modules", type=int, default=4000, help="Definitions, one per file"
+        "--modules",
+        type=int,
+        default=DEFAULT_MODULES,
+        help=f"Definitions, one per file (default: {DEFAULT_MODULES})",
     )
-    _ = parser.add_argument("--layers", type=int, default=20, help="Reference depth")
     _ = parser.add_argument(
-        "--fan-out", type=int, default=3, help="References per definition"
+        "--layers",
+        type=int,
+        default=DEFAULT_LAYERS,
+        help=f"Layers of references from entry to leaf (default: {DEFAULT_LAYERS})",
+    )
+    _ = parser.add_argument(
+        "--fan-out",
+        type=int,
+        default=DEFAULT_FAN_OUT,
+        help=f"References each definition makes (default: {DEFAULT_FAN_OUT})",
     )
     _ = parser.add_argument(
         "--utility-fraction",
         type=float,
-        default=0.3,
-        help="Share of references aimed at high fan-in definitions",
+        default=DEFAULT_UTILITY_FRACTION,
+        help=(
+            "Share of references aimed at a small set of deepest-layer"
+            f" definitions (default: {DEFAULT_UTILITY_FRACTION})"
+        ),
     )
-    _ = parser.add_argument("--seed", type=int, default=7, help="Shape seed")
+    _ = parser.add_argument(
+        "--seed",
+        type=int,
+        default=DEFAULT_SEED,
+        help=f"Makes the generated shape reproducible (default: {DEFAULT_SEED})",
+    )
     args = parser.parse_args()
 
     output = cast("Path", args.output)

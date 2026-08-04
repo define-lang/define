@@ -49,9 +49,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_graph"
-DEFAULT_LAYERS = 6
-DEFAULT_WIDTH = 16
-DEFAULT_FAN_OUT = 8
+DEFAULT_LAYERS = 22
+DEFAULT_WIDTH = 64
+DEFAULT_FAN_OUT = 32
 DEFAULT_DESTRUCTOR_FRACTION = 0.5
 
 _MIN_LAYERS = 2
@@ -304,7 +304,22 @@ def write_to_path(
 def main() -> None:
     """Entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Generate a Define source file with a dense action call graph."
+        description="""Generate a Define source file with a dense action call graph.
+
+Emits one .dfn holding a layered directed acyclic graph of potential actions,
+all reachable from the entry-point constructor action /test, so every action
+is validated. Each action references next-layer actions through its `out`
+interface position's constraint, and destroys the particle in its `src`
+interface position, which infers an Action Requirement and records a
+Destruction Contract. This is the validation-bound profiling shape: guarantee
+propagation across triggers, requirement inference, and destruction-contract
+generation.
+
+Scale it with --layers, --width, and --fan-out, which make the graph deeper,
+wider, or denser. Do not scale it by chasing a line count: the cost is in
+cross-action validation rather than in text. The generated source compiles to
+zero diagnostics.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     _ = parser.add_argument(
         "--output",

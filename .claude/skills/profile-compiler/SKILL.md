@@ -28,61 +28,31 @@ user explicitly asks.
 
 ## The source shapes
 
-Each source stresses a different part of the compiler. Profile **all of them**
-unless the user asks for a subset — the headline comparison (parse-bound vs
-validation-bound, and which validation machinery dominates) is itself a result
-worth presenting. Generate each fresh on every run so it is reproducible from
-the stated parameters, and confirm each reaches **zero diagnostics**, so the
-profile reflects the full pipeline rather than an early exit on error.
+The generators live in `tools/generators/`. Each one's `--help` describes what
+that shape stresses, how to scale it, and every knob with its default, so run
+`--help` rather than assuming — and rather than looking for those details here.
 
-### Source A — single large action (parse-heavy)
+| Source | Generator                          | Stresses                        |
+| ------ | ---------------------------------- | ------------------------------- |
+| A      | `generate_large_define_source`     | parsing                         |
+| B      | `generate_action_graph_source`     | reference-graph validation      |
+| C      | `generate_operation_graph_source`  | operation-graph construction    |
+| D      | `generate_reference_graph_project` | cross-file reference resolution |
 
-`tools/generate_large_define_source.py`. One enormous Action Statements Block
-plus a pool of positions and actions, so a large share of the run is the bundled
-lark lexer and parser. Knobs: `--lines`, `--max-chain-length` (longer chains
-stress reference-graph validation).
+**Asked to profile the compiler, with nothing specific in mind:** run every
+generator on its defaults, which are sized for exactly this. The headline
+contrast between them — parse-bound versus validation-bound, and which
+validation machinery dominates — is itself a result worth presenting.
 
-### Source B — dense action call graph (validation-heavy)
+**Profiling something specific:** choose the shape and the knobs that reach the
+code in question, deciding from the generators' `--help`, and say what you chose
+and why. Size it so the compiler spends **at least 20 seconds** on the generated
+source: a shorter run is dominated by startup and noise and rarely shows
+anything worth acting on.
 
-`tools/generate_action_graph_source.py`. A layered directed acyclic graph of
-potential actions reachable from the entry-point constructor action `/test`,
-where each action references next-layer actions through its `out` interface
-position's constraint, so every action is validated. Every action destroys the
-particle in its `src` interface position, which infers an Action Requirement and
-records a Destruction Contract; `--destructor-fraction` of actions also carry a
-real destructor, exercising the destruction cascade. This is the
-reference-graph-dominated counterpart to Source A: guarantee propagation across
-triggers, requirement inference, and destruction-contract generation.
-
-Scale it with `--layers`, `--width`, and `--fan-out` — a wider, deeper, or
-denser graph — rather than by chasing a line count, because its cost is in
-cross-action validation rather than in text.
-
-### Source C — move-heavy bodies (operation-graph heavy)
-
-`tools/generate_operation_graph_source.py`. Sources A and B leave the operation
-dependency graph (DLP 44, `operation_graph.py`) nearly cold — B contains no move
-statements at all — so Source C exists to warm it. Its action body repeats
-statement families each aimed at a specific dependency rule: a move ladder, a
-deep position chain moved at once and destroyed child by child, a wide particle
-whose operated-on child positions must be filtered into a move's child-operation
-snapshot, a sibling move ladder under one parent particle, and worker pods whose
-Action Guarantees the body consumes. Knobs: `--repetitions`,
-`--move-chain-length`, `--tree-depth` (deeper chains make the ancestor-chain
-walk quadratically more expensive), `--wide-children`, `--pods`, `--retriggers`.
-
-### Source D — wide multi-file project (reference-graph heavy)
-
-`tools/generate_reference_graph_project.py`. The other sources are each a single
-file, so Source D is the only one that exercises per-file parallel validation,
-cross-file global reference resolution, and the reference graph. It generates a
-project holding one potential position per file, whose Position Constraint Block
-references positions in deeper layers; `--utility-fraction` of those references
-aim at a small set of deepest-layer definitions, giving the graph the high
-fan-in real dependency graphs have. Profile it through `validate_program` on the
-generated project root. Knobs: `--modules` (files), `--layers` (reference
-depth), `--fan-out` (references per definition), `--utility-fraction` (fan-in
-concentration), `--seed` (shape).
+Generate each source fresh on every run so it is reproducible from its
+parameters, and confirm each reaches **zero diagnostics**, so the profile
+reflects the full pipeline rather than an early exit on error.
 
 ## Workflow
 
@@ -99,9 +69,9 @@ expansion doesn't defeat the permission system's `bazelisk` approval rule and
 cause an unnecessary prompt.
 
 1. **Generate each source fresh**, overriding knobs if the user asked:
-   `bazelisk run //tools:generate_large_define_source -- --output <absolute path> …`.
-   Pass `--help` to a generator for its knobs and defaults rather than assuming
-   them.
+   `bazelisk run //tools/generators:generate_large_define_source -- --output <absolute path>`.
+   The defaults are the intended profiling shape; pass `--help` before
+   overriding anything.
 2. **Profile.** `tools/run_profile.py` profiles `driver.compile_source` in
    process — the non-filesystem compile path — which keeps interpreter startup
    and click dispatch out of the profile. It takes a single source file, so

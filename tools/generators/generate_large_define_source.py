@@ -54,8 +54,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 DEFAULT_FQUN = "mv:define-lang.org:large_program:/test"
-DEFAULT_TARGET_LINES = 1_000_000
-DEFAULT_MAX_CHAIN_LENGTH = 100
+DEFAULT_TARGET_LINES = 150_000
+DEFAULT_MAX_CHAIN_LENGTH = 25
 
 # Cross-universe position definitions in 2-part and 3-part FQUN forms,
 # emitted to exercise the multi-format FQUN parser path. Currently
@@ -515,7 +515,15 @@ def write_to_path(
 def main() -> None:
     """Entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Generate a large, syntactically-diverse Define source file."
+        description="""Generate a large, syntactically-diverse Define source file.
+
+Emits one .dfn holding a single enormous Action Statements Block plus a pool
+of positions and actions. The bulk of compiling it is the bundled lark lexer
+and parser, so this is the parse-bound profiling shape. Longer chained
+references also push work into reference-graph validation.
+
+Scale it with --lines. The generated source compiles to zero diagnostics.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     _ = parser.add_argument(
         "--output",
