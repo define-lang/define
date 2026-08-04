@@ -201,6 +201,11 @@ BUILD file generator.
   and `pyright_test` should be grouped in separate sections and need not be
   alphabetized with the normal rules.
 
+### Git Worktrees
+
+- Run `bazelisk clean --expunge` in a worktree before deleting it.
+- Add any directory holding worktrees to `.bazelignore`.
+
 ### Building and Testing
 
 - Build all targets:
