@@ -16,7 +16,6 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from collections.abc import (
-        Callable,
         Collection,
         Iterable,
         Iterator,
@@ -671,31 +670,30 @@ class ParticleTracker:
     ) -> list[ResolvedRequirementPosition]:
         """Infer direct requirements and record their RequirementNodes when needed."""
         self._apply_pending_guarantees_up_to(position.canonical_chained_name_tuple)
+        position_is_contracted = (
+            position.starts_with_global
+            or position.typed_names[0].full_typed_name in interface_position_names
+        )
+        canonical_position_prefixes = position.canonical_position_prefixes()
         resolved_positions: list[ResolvedRequirementPosition] = []
-        for (
-            requirement_position,
-            nearest_particle,
-        ) in self._requirement_position_candidates(
-            position.walk_position_prefixes(),
-            lambda candidate_position: candidate_position,
+        for requirement_index, nearest_particle in self._requirement_indices_for_caller(
+            canonical_position_prefixes
         ):
-            # Requirements are inferred before particles are created, so there
-            # may be no from_caller flag to inspect. Without a particle above this
-            # position, it depends on the caller only when its first name is
-            # contracted: either an implied quality or one of this action's
-            # interface positions.
-            if nearest_particle is None and not (
-                requirement_position.starts_with_global
-                or requirement_position.typed_names[0].full_typed_name
-                in interface_position_names
-            ):
+            # A non-contracted position contributes an Action Requirement only
+            # when a parent position has a particle passed in by the caller.
+            # We do this check early before constructing PositionReference objects
+            # or doing any other work. This is an important performance improvement.
+            if nearest_particle is None and not position_is_contracted:
                 continue
+            requirement_position = position.position_prefix(
+                len(canonical_position_prefixes[requirement_index])
+            )
             contracted_position = self._contracted_position_for_requirement(
                 requirement_position, nearest_particle
             )
             requirement_state = (
                 required_state
-                if requirement_position == position
+                if requirement_position is position
                 else action_contract.PositionOccupancyState.OCCUPIED
             )
             self._record_requirement_in_operation_graph(
@@ -737,18 +735,16 @@ class ParticleTracker:
         all we did in this action is "move our_interface to interface." We don't
         actually _know_ the state of "b" and its child "c". Only our caller knows.
         """
-        self._apply_pending_guarantees_up_to_all(
+        canonical_positions = [
             requirement.caller_position.canonical_chained_name_tuple
             for requirement in requirements_in_caller
-        )
+        ]
+        self._apply_pending_guarantees_up_to_all(canonical_positions)
         propagated_requirements: list[PropagatedRequirement] = []
-        for (
-            requirement_in_caller,
-            nearest_particle,
-        ) in self._requirement_position_candidates(
-            requirements_in_caller,
-            lambda requirement: requirement.caller_position,
+        for requirement_index, nearest_particle in self._requirement_indices_for_caller(
+            canonical_positions
         ):
+            requirement_in_caller = requirements_in_caller[requirement_index]
             position = requirement_in_caller.caller_position
             contracted_position = self._contracted_position_for_requirement(
                 position, nearest_particle
@@ -766,43 +762,39 @@ class ParticleTracker:
             )
         return propagated_requirements
 
-    def _requirement_position_candidates[T](
+    def _requirement_indices_for_caller(
         self,
-        candidates: Iterable[T],
-        position_for_candidate: Callable[[T], ast.PositionReference],
-    ) -> Iterator[tuple[T, tuple[tuple[str, ...], ParticleInfo] | None]]:
-        """Filter Position Requirement candidates by occupancy and particle origin.
+        canonical_positions: Sequence[ast.ChainedNameTuple],
+    ) -> Iterator[tuple[int, tuple[tuple[str, ...], ParticleInfo] | None]]:
+        """Yield indices of requirements that the caller must fulfill.
 
-        A candidate is excluded when its position has known occupancy, when its
-        position or a parent position has error occupancy state, or when its
-        nearest occupied parent position has a particle that was not passed in by
-        the caller. Each yielded candidate is paired with the nearest particle
-        passed in by the caller, or None when no parent position is occupied.
+        Each requirement index is paired with the nearest particle passed in by
+        the caller, or ``None`` when no parent position is occupied.
         """
-        parent_position_chains: list[tuple[str, ...]] = []
-        unresolved_candidates: list[tuple[T, tuple[str, ...] | None]] = []
-        for candidate in candidates:
-            position = position_for_candidate(candidate)
-            key = position.canonical_chained_name_tuple
+        parent_positions: list[ast.ChainedNameTuple] = []
+        unresolved_requirements: list[tuple[int, ast.ChainedNameTuple | None]] = []
+        for requirement_index, canonical_position in enumerate(canonical_positions):
             # If we have touched a position, then the current action overrides any
             # requirements from its callees.
-            if self._store.has_error_in_chain(key) or self._store.has_been_touched(key):
+            if self._store.has_error_in_chain(
+                canonical_position
+            ) or self._store.has_been_touched(canonical_position):
                 continue
-            parent_position_chain = key[:-1] if len(key) > 1 else None
-            unresolved_candidates.append((candidate, parent_position_chain))
-            if parent_position_chain is not None:
-                parent_position_chains.append(parent_position_chain)
-        nearest_ancestors = self._store.nearest_occupied_ancestors(
-            parent_position_chains
-        )
-        for candidate, parent_position_chain in unresolved_candidates:
+            parent_position = (
+                canonical_position[:-1] if len(canonical_position) > 1 else None
+            )
+            unresolved_requirements.append((requirement_index, parent_position))
+            if parent_position is not None:
+                parent_positions.append(parent_position)
+        nearest_ancestors = self._store.nearest_occupied_ancestors(parent_positions)
+        for requirement_index, parent_position in unresolved_requirements:
             nearest_particle = (
-                nearest_ancestors[parent_position_chain]
-                if parent_position_chain is not None
+                nearest_ancestors[parent_position]
+                if parent_position is not None
                 else None
             )
             if nearest_particle is None or nearest_particle[1].from_caller:
-                yield candidate, nearest_particle
+                yield requirement_index, nearest_particle
 
     def _contracted_position_for_requirement(
         self,

@@ -12,7 +12,6 @@ from define.compiler import constants
 from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import PurePosixPath
 
     from define.compiler.lark import lark_standalone
@@ -494,22 +493,6 @@ class ChainedName(ASTNode):
                 )
         return None
 
-    def walk_position_prefixes(self) -> Iterator[PositionReference]:
-        """Yield every position prefix in chained-name order.
-
-        For ``position<a>::action</x>::position</b>::position</c>``, yields
-        references for ``position<a>``,
-        ``position<a>::action</x>::position</b>``, and the full chain itself.
-        Actions are skipped (bundled with the next position).
-        """
-        names = self.typed_names
-        for i, elem in enumerate(names):
-            if elem.name_type != NameType.ACTION:
-                yield PositionReference(
-                    location=self.location,
-                    typed_names=names[: i + 1],
-                )
-
     def parent_position(self) -> PositionReference | None:
         """Return the nearest parent position, or None for single-element chains."""
         names = self.typed_names
@@ -620,6 +603,25 @@ class PositionReference(ChainedName):
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
             )
+
+    def canonical_position_prefixes(self) -> list[ChainedNameTuple]:
+        """Return each position prefix in canonical chained-name form."""
+        canonical_chained_name = self.canonical_chained_name_tuple
+        position_prefixes: list[ChainedNameTuple] = []
+        for name_index, typed_name in enumerate(self.typed_names):
+            if typed_name.name_type != NameType.ACTION:
+                position_prefixes.append(canonical_chained_name[: name_index + 1])
+        return position_prefixes
+
+    def position_prefix(self, name_count: int) -> PositionReference:
+        """Return the position prefix containing ``name_count`` typed names."""
+        if name_count == len(self.typed_names):
+            return self
+        return PositionReference(
+            location=self.location,
+            typed_names=self.typed_names[:name_count],
+            canonical_chained_name_tuple=self.canonical_chained_name_tuple[:name_count],
+        )
 
 
 @dataclass(frozen=True, slots=True, init=False)
