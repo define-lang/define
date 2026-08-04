@@ -114,6 +114,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -150,6 +151,7 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

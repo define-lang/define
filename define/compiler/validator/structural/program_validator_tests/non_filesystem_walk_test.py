@@ -15,7 +15,9 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def test_external_universe_no_project_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(
@@ -31,6 +33,7 @@ def test_config_failure_still_validates_same_file_cycles(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -53,7 +56,9 @@ def test_config_failure_still_validates_same_file_cycles(
 def test_external_universe_without_local_deps(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -66,7 +71,9 @@ def test_external_universe_without_local_deps(
 def test_external_universe_not_in_local_deps(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -79,7 +86,9 @@ def test_external_universe_not_in_local_deps(
 def test_external_universe_invalid_local_deps(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -91,7 +100,9 @@ def test_external_universe_invalid_local_deps(
 def test_external_universe_configured_but_no_sub_root_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -105,6 +116,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
 ):
     child_b = "mv:define-lang.org:child_b"
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
@@ -122,7 +134,9 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
 def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -182,6 +196,7 @@ def test_non_filesystem_cross_universe_reference(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
     assert result.file_results[0].exception is None
@@ -201,6 +216,7 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
     diags = result.file_results[0].diagnostics
@@ -219,6 +235,7 @@ def test_unknown_universe_and_sub_root_config_errors_in_source_order(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -237,6 +254,7 @@ def test_two_unknown_universes_for_same_path_each_diagnosed(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -293,6 +311,7 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1

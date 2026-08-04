@@ -28,7 +28,9 @@ def test_valid_constructor(
 def test_undefined_local_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -40,7 +42,9 @@ def test_undefined_local_name(
 def test_action_type_in_trigger_condition_is_rejected(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)

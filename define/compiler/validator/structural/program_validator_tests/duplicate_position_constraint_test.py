@@ -19,7 +19,9 @@ def test_no_duplicate_constraints_ok(
 def test_duplicate_constraint_in_global_position_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)

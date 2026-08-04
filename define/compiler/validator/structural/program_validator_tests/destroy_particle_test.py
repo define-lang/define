@@ -15,6 +15,7 @@ def test_undefined_local_position_in_destroy(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     results = result.file_results
     assert results[0].exception is None
     diags = results[0].diagnostics
@@ -26,6 +27,7 @@ def test_non_self_ref_global_in_action_body(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
     results = result.file_results
     assert results[0].exception is None
     diags = results[0].diagnostics

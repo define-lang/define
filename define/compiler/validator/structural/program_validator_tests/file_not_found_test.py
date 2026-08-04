@@ -15,10 +15,9 @@ def test_entrypoint_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(entry_file="nonexistent.dfn")
+    assert len(result.all_exceptions) == 1
+    assert isinstance(result.all_exceptions[0], exceptions.SourceFileNotFoundError)
     assert len(result.file_results) == 1
-    assert isinstance(
-        result.file_results[0].exception, exceptions.SourceFileNotFoundError
-    )
     assert result.file_results[0].diagnostics == []
 
 
@@ -39,6 +38,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None

@@ -16,7 +16,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
@@ -49,6 +51,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -64,7 +67,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
@@ -98,6 +103,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -112,6 +118,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -126,7 +133,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
@@ -158,7 +167,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -188,7 +199,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
@@ -221,7 +234,9 @@ class TestCreateParticle:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)

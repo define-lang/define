@@ -88,6 +88,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -113,6 +114,7 @@ def test_assumed_occupied_trigger_position_does_not_fire_the_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     assert action_graph(result.operation_graphs) == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
@@ -180,6 +182,7 @@ def test_self_trigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -192,6 +195,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -217,6 +221,7 @@ def test_no_body_effect_when_create_target_has_error_state(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -235,6 +240,7 @@ def test_no_body_effect_when_move_target_has_error_state(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -253,6 +259,7 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -299,6 +306,7 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)

@@ -18,7 +18,9 @@ def test_different_names_no_error(
 def test_duplicate_name_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -92,7 +94,9 @@ def test_action_statements_local_name_no_error(
 def test_action_statements_duplicate_name_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -105,7 +109,9 @@ def test_action_statements_duplicate_name_error(
 def test_action_statements_name_conflicts_with_parent_scope(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)

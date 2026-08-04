@@ -39,6 +39,7 @@ def test_wrong_type_detected_without_deferral(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
     assert len(result.file_results) == 4
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
@@ -85,8 +86,8 @@ def test_reference_edges_resolve_by_file_completion_order(
     ):
         result = validate_testdata_structural(max_workers=2)
 
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
-    assert all(r.exception is None for r in result.file_results)
     assert len(result.file_results[0].diagnostics) == 2
     diag0 = result.file_results[0].diagnostics[0]
     assert isinstance(diag0, diagnostics.ReferencedDefinitionNotFoundDiagnostic)

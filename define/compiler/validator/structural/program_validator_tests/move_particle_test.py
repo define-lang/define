@@ -26,6 +26,7 @@ def test_move_from_a_chained_position_to_itself(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)

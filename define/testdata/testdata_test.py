@@ -28,9 +28,9 @@ _FILESYSTEM_FIXTURES = {
     "testdata_project_directory",
 }
 _TESTDATA_FIXTURES = _NON_FILESYSTEM_FIXTURES | _FILESYSTEM_FIXTURES
-
-# TODO: Require data-backed tests that assert diagnostics to also assert that
-# validation produced no exceptions.
+_DIAGNOSTIC_ATTRIBUTES = {"diagnostics", "all_diagnostics"}
+_EXCEPTION_ATTRIBUTE = "all_exceptions"
+_NO_ERRORS_HELPER = "assert_no_errors"
 
 
 def _fixture_arguments(
@@ -54,6 +54,25 @@ def _test_functions(
                 if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     functions.append((node.name, member))
     return tuple(functions)
+
+
+def _attribute_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    return {node.attr for node in ast.walk(function) if isinstance(node, ast.Attribute)}
+
+
+def _called_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    return {
+        node.func.id
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+
+def _test_source_files() -> list[Path]:
+    files: list[Path] = []
+    for source_root in _TEST_SOURCE_ROOTS.values():
+        files.extend(source_root.glob("*_test.py"))
+    return sorted(files)
 
 
 def _scenario_directories() -> list[Path]:
@@ -124,3 +143,25 @@ def test_testdata_directories_have_consumers():
             assert not source_path.exists(), (
                 f"filesystem testdata cannot contain source.dfn: {source_path}"
             )
+
+
+def test_data_backed_tests_assert_on_exceptions():
+    """A test that reads diagnostics must also say what exceptions it expects."""
+    unchecked: list[str] = []
+    for test_file in _test_source_files():
+        for _, function in _test_functions(test_file):
+            if not _fixture_arguments(function):
+                continue
+            attributes = _attribute_names(function)
+            if not attributes & _DIAGNOSTIC_ATTRIBUTES:
+                continue
+            if _EXCEPTION_ATTRIBUTE in attributes:
+                continue
+            if _NO_ERRORS_HELPER in _called_names(function):
+                continue
+            unchecked.append(f"{test_file}:{function.lineno} {function.name}")
+    assert unchecked == [], (
+        "data-backed tests that read diagnostics must also assert on "
+        + f"{_EXCEPTION_ATTRIBUTE} or call {_NO_ERRORS_HELPER}:\n"
+        + "\n".join(unchecked)
+    )

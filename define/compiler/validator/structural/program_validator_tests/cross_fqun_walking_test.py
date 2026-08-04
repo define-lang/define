@@ -93,6 +93,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -124,6 +125,7 @@ def test_already_loaded_root_fqun_mismatch(
 ):
     second_child = "mv:define-lang.org:second_child"
     result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -217,6 +219,7 @@ def test_sub_root_conflict_continues_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -252,6 +255,7 @@ def test_path_inside_other_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -281,6 +285,7 @@ def test_path_inside_other_universe_skips_further_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -315,6 +320,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
 ):
     wrong_fqun = "mv:define-lang.org:totally_wrong"
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -346,6 +352,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -395,6 +402,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -416,6 +424,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
 ):
     child_b = "mv:define-lang.org:child_b"
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -437,6 +446,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -453,6 +463,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -499,6 +510,7 @@ def test_same_path_in_known_and_unknown_universes_still_walks_into_known(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -517,6 +529,7 @@ def test_same_path_in_two_unknown_universes_diagnoses_each(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2

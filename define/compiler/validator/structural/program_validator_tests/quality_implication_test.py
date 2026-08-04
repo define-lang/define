@@ -20,6 +20,7 @@ def test_non_self_ref_global_in_action_body(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -81,7 +82,9 @@ def test_duplicate_implication_in_action_error(
 def test_three_duplicate_implication_two_errors(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    results = validate_testdata_structural_non_filesystem().file_results
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
@@ -101,6 +104,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
 ):
     implied_fqun = "mv:define-lang.org:implied_dup_implication"
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -190,6 +194,7 @@ def test_circular_implication_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
@@ -265,6 +270,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

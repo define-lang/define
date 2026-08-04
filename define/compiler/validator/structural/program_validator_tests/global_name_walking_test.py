@@ -40,6 +40,7 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
@@ -60,6 +61,7 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -95,6 +97,7 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -126,6 +129,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
         side_effect=recording_validate_file,
     ):
         result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert validated_paths == ["test.dfn", "target.dfn"]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
@@ -224,6 +228,7 @@ def test_unknown_universe_across_files_reported_per_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     for diag in all_diags:
@@ -252,6 +257,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
+    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics

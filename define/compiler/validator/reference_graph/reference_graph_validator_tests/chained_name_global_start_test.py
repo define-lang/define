@@ -16,7 +16,9 @@ class TestUnnecessarySelfReference:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -33,7 +35,9 @@ class TestUnnecessarySelfReference:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -49,7 +53,9 @@ class TestUnnecessarySelfReference:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -61,7 +67,9 @@ class TestUnnecessarySelfReference:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -73,7 +81,9 @@ class TestUnnecessarySelfReference:
         self,
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
-        results = validate_testdata_non_filesystem_with_reference_graph().file_results
+        result = validate_testdata_non_filesystem_with_reference_graph()
+        assert result.all_exceptions == []
+        results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -94,6 +104,7 @@ class TestUnknownGlobalChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -142,6 +153,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -165,6 +177,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -190,6 +203,7 @@ class TestMissingDefinitionInChain:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
+        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
