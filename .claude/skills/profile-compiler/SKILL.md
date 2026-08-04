@@ -72,12 +72,22 @@ cause an unnecessary prompt.
    `bazelisk run //tools/generators:generate_large_define_source -- --output <absolute path>`.
    The defaults are the intended profiling shape; pass `--help` before
    overriding anything.
-2. **Profile.** `tools/run_profile.py` profiles `driver.compile_source` in
-   process — the non-filesystem compile path — which keeps interpreter startup
-   and click dispatch out of the profile. It takes a single source file, so
-   profile a multi-file project through `validate_program` on its root instead.
-   Confirm each run reports no errors; a run with diagnostics is not a valid
-   full-pipeline sample, so stop and report it.
+2. **Profile.** `//tools:run_profile` has a mode for each kind of shape:
+   - `--source <file.dfn>` profiles `driver.compile_source` in process — the
+     non-filesystem compile path — which keeps interpreter startup and click
+     dispatch out of the profile.
+   - `--project <dir>` profiles a whole directory through `validate_program`,
+     for a shape whose entry point is a position rather than a constructor
+     action. It pins the work pool to one worker, which matters: cProfile is
+     built on `sys.monitoring`, whose profiler tool is process-global, so one
+     profiler already sees every worker thread — but two threads interleaving
+     into its shared call stack would scramble the timings. Do not hand-roll
+     per-thread profilers to work around this; `Profile.enable()` on a second
+     thread raises `ValueError: Another profiling tool is already active`.
+
+   Confirm each run reports `has_errors=False`; a run with diagnostics is not a
+   valid full-pipeline sample, so stop and report it.
+
 3. **Analyze** each `.prof` with `tools/analyze_profile.py` (both the with-lark
    and without-lark views come from one file). `--exclude-file` defaults to
    `lark_standalone.py`. The "without" view drops that file's functions and, for
@@ -110,6 +120,12 @@ keyed to a stale name silently reports zero. The phases worth separating:
   (`definition_postorder_validator.py`), guarantee propagation
   (`particle_tracker.py`), and operation-graph construction
   (`operation_graph.py`, its `record_*` methods)
+
+Keep those sub-parts disjoint by checking which file actually enters which.
+
+A `--project` run has a phase the single-file shapes don't: the coordinator's
+work-pool bookkeeping (`concurrent.futures`, `threading`). Report it as tottime
+rather than cumtime, because coordinator and worker frames overlap in wall time.
 
 | Phase | cumtime | % of run |
 | ----- | ------: | -------: |
