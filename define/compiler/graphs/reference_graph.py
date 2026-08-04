@@ -65,6 +65,9 @@ class ReferenceGraph:
         self._add_name(definition_name)
         self._definition_by_name[definition_name] = definition
 
+    # Algorithm: Incremental cycle detection using a topological numbering. The
+    # stored depths form the numbering, but unlike a total topological order,
+    # unrelated definitions may have the same depth.
     def try_add_edge(self, edge: ReferenceEdge) -> DetectedCycle | None:
         """Add a reference unless it would create a cycle.
 
@@ -117,6 +120,8 @@ class ReferenceGraph:
             self._references_by_name[definition_name] = {}
             self._depth_by_name[definition_name] = 0
 
+    # Algorithm: Worklist-based forward propagation of topological-depth
+    # constraints.
     def _increase_depths_or_find_cycle(
         self, referencing_name: str, referenced_name: str
     ) -> bool:
@@ -149,6 +154,8 @@ class ReferenceGraph:
                     )
         return False
 
+    # Algorithm: Breadth-first search, with one list for each distance from the
+    # starting definition.
     def _shortest_reference_path(
         self, starting_name: str, destination_name: str
     ) -> list[str]:
@@ -165,6 +172,9 @@ class ReferenceGraph:
             names_at_current_distance = names_at_next_distance
         return _build_path(predecessor_by_name, destination_name)
 
+    # Algorithm: Iterative depth-first search in post-order. The stack replaces
+    # the call stack so a long reference chain cannot exceed Python's recursion
+    # limit.
     def _names_in_postorder(self, starting_names: Iterable[str]) -> Iterator[str]:
         """Yield reachable names in depth-first post-order."""
         visited_names: set[str] = set()
@@ -193,6 +203,7 @@ class ReferenceGraph:
                     yield current_name
 
 
+# Algorithm: Predecessor-chain path reconstruction for breadth-first search.
 def _build_path(
     predecessor_by_name: dict[str, str | None], destination_name: str
 ) -> list[str]:
