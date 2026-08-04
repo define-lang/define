@@ -222,6 +222,10 @@ class ActionExecutionGenerator:
                     names.triggered_inputs[triggered_input]
                     for triggered_input in caller_input.triggered_inputs
                 ],
+                destructor_execution_init_methods=[
+                    names.triggered_actions[destructor_trigger].initializer_name
+                    for destructor_trigger in caller_input.destructor_triggers
+                ],
             )
             for caller_input in self._plan.caller_inputs
         ]

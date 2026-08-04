@@ -7,6 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destruct
 import local.my_domain_com.my_lib.marker_a
 import local.my_domain_com.my_lib.marker_b
+import local.my_domain_com.my_lib.maybe_empty
 import local.my_domain_com.my_lib.middle
 
 
@@ -47,6 +48,7 @@ class TestExecution:
             constraints=(
                 local.my_domain_com.my_lib.marker_a.MarkerA,
                 local.my_domain_com.my_lib.marker_b.MarkerB,
+                local.my_domain_com.my_lib.maybe_empty.MaybeEmpty,
                 local.my_domain_com.my_lib.destruct.Destruct,
             ),
             scheduler=self.scheduler,

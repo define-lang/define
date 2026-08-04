@@ -1237,6 +1237,8 @@ class ParticleTracker:
         guarantees: action_contract.Guarantees,
         acting_on_position: ast.PositionReference,
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
+        *,
+        is_destructor: bool,
     ):
         """Record an Action Triggering and apply the triggered action's guarantees.
 
@@ -1279,6 +1281,7 @@ class ParticleTracker:
             action_chain,
             acting_on_position,
             requirements_in_caller,
+            is_destructor=is_destructor,
             acting_on_preceding_child_operations=self._preceding_child_operations(
                 acting_on_position_key
             ),

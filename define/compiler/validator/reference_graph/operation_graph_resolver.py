@@ -179,14 +179,12 @@ class ResolvedOperationGraphBuilder:
             triggered_by.caller,
             resolved_input.caller_dependencies,
         )
-        caller_action = self._resolved_actions[triggered_by.caller.action]
-        for caller_caller_input in caller_action.caller_inputs:
-            if resolved_input in caller_caller_input.triggered_input_consumers:
-                self._add_caller_input(
-                    dependency_keys,
-                    triggered_by.caller,
-                    caller_caller_input,
-                )
+        for caller_input_dependency in resolved_input.caller_input_dependencies:
+            self._add_caller_input(
+                dependency_keys,
+                triggered_by.caller,
+                caller_input_dependency,
+            )
 
     def _add_guarantee(
         self,

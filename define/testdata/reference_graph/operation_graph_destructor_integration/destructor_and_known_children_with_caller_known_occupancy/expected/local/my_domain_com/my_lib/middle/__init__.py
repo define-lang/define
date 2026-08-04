@@ -8,6 +8,7 @@ import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct
 import local.my_domain_com.my_lib.marker_a
 import local.my_domain_com.my_lib.marker_b
+import local.my_domain_com.my_lib.maybe_empty
 
 
 class Middle(literal.Action):
@@ -24,6 +25,7 @@ class Middle(literal.Action):
                     constraints=(
                         local.my_domain_com.my_lib.marker_a.MarkerA,
                         local.my_domain_com.my_lib.marker_b.MarkerB,
+                        local.my_domain_com.my_lib.maybe_empty.MaybeEmpty,
                         local.my_domain_com.my_lib.destruct.Destruct,
                     ),
                     scheduler=on_particle.scheduler,
@@ -53,6 +55,8 @@ class MiddleExecution:
         self.trigger_global_action_destroyer__execution: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.join_for_trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_a = literal.Join(2)
         self.join_for_trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_b = literal.Join(2)
+        self.join_for_trigger_global_action_destroyer__when_empty_position_run__global_position_maybe_empty = literal.Join(2)
+        self.join_for_trigger_global_action_destroyer__when_occupied_position_run = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_action_destroyer__position_run()
@@ -70,10 +74,14 @@ class MiddleExecution:
         self.init_trigger_global_action_destroyer__execution()
         self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_a)
         self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_b)
+        self.scheduler.submit(self.trigger_global_action_destroyer__when_empty_position_run__global_position_maybe_empty)
+        self.scheduler.submit(self.trigger_global_action_destroyer__when_occupied_position_run)
         self.scheduler.submit_all(self.guarantees.guarantee_position_run)
         self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_a)
         self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run__global_position_marker_b)
-        self.trigger_global_action_destroyer__for_empty_rule_position_run()
+        self.scheduler.submit(self.trigger_global_action_destroyer__when_empty_position_run__global_position_maybe_empty)
+        self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run)
+        self.trigger_global_action_destroyer__when_occupied_position_run()
 
     def init_trigger_global_action_destroyer__execution(self):
         action = self.action.on_particle.get_action(
@@ -95,5 +103,15 @@ class MiddleExecution:
             return
         self.trigger_global_action_destroyer__execution.accept_for_empty_rule_position_run__global_position_marker_b()
 
+    def trigger_global_action_destroyer__when_empty_position_run__global_position_maybe_empty(self):
+        if not self.join_for_trigger_global_action_destroyer__when_empty_position_run__global_position_maybe_empty.arrive():
+            return
+        self.trigger_global_action_destroyer__execution.accept_when_empty_position_run__global_position_maybe_empty()
+
     def trigger_global_action_destroyer__for_empty_rule_position_run(self):
         self.trigger_global_action_destroyer__execution.accept_for_empty_rule_position_run()
+
+    def trigger_global_action_destroyer__when_occupied_position_run(self):
+        if not self.join_for_trigger_global_action_destroyer__when_occupied_position_run.arrive():
+            return
+        self.trigger_global_action_destroyer__execution.accept_when_occupied_position_run()

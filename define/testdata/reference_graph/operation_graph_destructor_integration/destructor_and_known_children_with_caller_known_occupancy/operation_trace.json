@@ -85,59 +85,6 @@
     "execution": {
       "caller": {
         "caller": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "action_name": "destroyer"
-      },
-      "action_name": "destruct"
-    },
-    "operation_name": "move",
-    "source": "/marker_a",
-    "target": "holder_a",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "action_name": "destroyer"
-      },
-      "action_name": "destruct"
-    },
-    "operation_name": "move",
-    "source": "holder_a",
-    "target": "/marker_a",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "middle"
-      },
-      "action_name": "destroyer"
-    },
-    "operation_name": "destroy",
-    "target": "run::/marker_a",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": {
           "caller": null,
           "action_name": "test"
         },
@@ -217,6 +164,89 @@
     },
     "operation_name": "destroy",
     "target": "run::/marker_b",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "create",
+    "target": "run::/maybe_empty",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "run::/maybe_empty",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "/marker_a",
+    "target": "holder_a",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "holder_a",
+    "target": "/marker_a",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "run::/marker_a",
     "occurrence": 1
   },
   {

@@ -1,5 +1,6 @@
 from define.compiler import ast
 from define.compiler.validator.reference_graph import (
+    action_contract,
     operation_graph,
     operation_graph_action_resolver,
     operation_graph_model,
@@ -84,6 +85,7 @@ def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     assert caller_input.node is graph.nodes[0]
     assert caller_input.operation_consumers == [create]
     assert caller_input.triggered_input_consumers == []
+    assert caller_input.destructor_trigger_consumers == []
     assert resolved.dependencies_by_operation[
         destroy
     ] == operation_graph_action_resolver.ActionDependencies([create], [])
@@ -98,6 +100,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         _action_reference(worker_action),
         trigger_position,
         (),
+        is_destructor=False,
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -128,5 +131,53 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         caller_input, operation_graph_action_resolver.ResolvedActionParentInput
     )
     assert caller_input.node is action_parent
+    assert resolved_input.caller_input_dependencies == (caller_input,)
     assert caller_input.operation_consumers == [trigger_position_create]
     assert caller_input.triggered_input_consumers == [resolved_input]
+    assert caller_input.destructor_trigger_consumers == []
+
+
+def test_requirement_input_fires_destructor():
+    destructor_action = _action("/destructor")
+    caller_graph = operation_graph.OperationGraph()
+    item = _position("item")
+    caller_graph.record_requirement(
+        item, action_contract.PositionOccupancyState.OCCUPIED
+    )
+    destructor_trigger = caller_graph.record_action_trigger(
+        ast.ActionReference(
+            typed_names=(*item.typed_names, destructor_action),
+            location=_LOCATION,
+        ),
+        item,
+        (),
+        is_destructor=True,
+        acting_on_preceding_child_operations=(),
+        required_preceding_child_operations=(),
+    )
+    destructor_graph = operation_graph.OperationGraph()
+    _ = destructor_graph.record_create(_position("work"))
+    caller_action = _action("/caller")
+    graphs = operation_graph.OperationGraphs()
+    graphs[destructor_action] = destructor_graph
+    graphs[caller_action] = caller_graph
+    resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
+    _ = resolved_actions.resolve(destructor_action)
+    resolved = resolved_actions.resolve(caller_action)
+
+    assert isinstance(
+        destructor_trigger.trigger_operation, operation_graph_model.RequirementNode
+    )
+    (resolved_destructor_trigger,) = resolved.action_triggers
+    (resolved_destructor_input,) = resolved_destructor_trigger.inputs
+    (caller_input,) = resolved.caller_inputs
+    assert isinstance(
+        caller_input, operation_graph_action_resolver.ResolvedRequirementInput
+    )
+    assert caller_input.node is destructor_trigger.trigger_operation
+    assert resolved_destructor_input.caller_input_dependencies == (caller_input,)
+    assert caller_input.triggered_input_consumers == [
+        resolved_destructor_input,
+        resolved_destructor_input,
+    ]
+    assert caller_input.destructor_trigger_consumers == [resolved_destructor_trigger]

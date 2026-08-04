@@ -308,7 +308,7 @@ class ActionTrigger:
     # The action reference this triggering fires, from the caller's perspective.
     callee: ast.ActionReference
     # The operation that triggered the callee.
-    trigger_operation: PositionOperationNode
+    trigger_operation: LastOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
     bindings: dict[tuple[str, ...], RequirementBinding]

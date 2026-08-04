@@ -6,6 +6,11 @@ from define.compiler.validator.reference_graph import (
     operation_graph_model,
 )
 
+# TODO: Make this test generate real operation graphs from
+# actually running the reference graph validator, and ensure
+# it is only asserting against the details of action_plan.
+# All behavioral coverage should be in testdata tests.
+
 
 def _action_definition(path: str) -> ast.ActionDefinition:
     program = test_helpers.parse_and_transform(
@@ -193,6 +198,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
         callee_reference,
         item,
         (),
+        is_destructor=False,
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -237,6 +243,7 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
         callee,
         trigger_position,
         (),
+        is_destructor=False,
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -263,6 +270,48 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
     assert caller_plan.fragments[0].triggered_input_successors == [triggered_input]
     assert caller_plan.fragments[1].triggered_action_successors == [action_trigger]
     assert caller_plan.fragments[1].execution_input_successors == [triggered_input]
+
+
+def test_caller_input_fires_destructor():
+    caller_definition = _DUMMY_ACTION
+    destructor_definition = _action_definition("/destructor")
+    caller_graph = operation_graph.OperationGraph()
+    item = _position("item")
+    caller_graph.record_requirement(
+        item, action_contract.PositionOccupancyState.OCCUPIED
+    )
+    destructor_position = _position_reference(
+        "position<item>::action</destructor>::position<trigger>"
+    )
+    destructor_reference = destructor_position.get_chain_to_last_action()
+    assert destructor_reference is not None
+    destructor_trigger = caller_graph.record_action_trigger(
+        destructor_reference,
+        item,
+        (),
+        is_destructor=True,
+        acting_on_preceding_child_operations=(),
+        required_preceding_child_operations=(),
+    )
+    destructor_graph = operation_graph.OperationGraph()
+    _ = destructor_graph.record_create(_position("work"))
+    graphs = operation_graph.OperationGraphs()
+    graphs[destructor_definition.typed_name] = destructor_graph
+    graphs[caller_definition.typed_name] = caller_graph
+
+    plans = action_plan.ActionPlans(graphs, _ACTION)
+    _ = plans.plan_for(destructor_definition)
+    plan = plans.plan_for(caller_definition)
+
+    (planned_destructor_trigger,) = plan.action_triggers
+    assert planned_destructor_trigger is destructor_trigger
+    (destructor_input,) = plan.triggered_action_inputs
+    (caller_input,) = plan.caller_inputs
+    assert caller_input.destructor_triggers == [planned_destructor_trigger]
+    # The same caller input supplies both the destructor's Action Triggering and
+    # its occupied requirement, so both dependency arrivals must be retained.
+    assert caller_input.triggered_inputs == [destructor_input, destructor_input]
+    assert destructor_input.dependency_count == 2
 
 
 def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():

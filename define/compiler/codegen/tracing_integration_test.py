@@ -20,15 +20,6 @@ _TRACE_TEST_CASE_DIRS = [
     test_file.parent for test_file in sorted(_TESTDATA_ROOT.glob("*/test.dfn"))
 ]
 _UNSUPPORTED_DESTRUCTOR_CASE_REASONS = {
-    "caller_emptied_destructor_position_uses_child_destroy": (
-        "codegen cannot lower destructor triggers fired by RequirementNodes"
-    ),
-    "default_empty_destructor_position_uses_parent_fill": (
-        "codegen cannot lower destructor triggers fired by RequirementNodes"
-    ),
-    "destructor_and_known_children_with_caller_known_occupancy": (
-        "codegen cannot lower destructor triggers fired by RequirementNodes"
-    ),
     "destructor_known_only_two_callers_up": (
         "destructors learned through Destruction Contracts are not recorded"
     ),
@@ -66,9 +57,6 @@ _GENERATED_OPERATION_TRACE_TEST_CASES = [
     for trace_file in sorted(_TESTDATA_ROOT.glob("*/operation_trace.json"))
 ]
 _UNLOWERABLE_DESTRUCTOR_CASES = {
-    "caller_emptied_destructor_position_uses_child_destroy",
-    "default_empty_destructor_position_uses_parent_fill",
-    "destructor_and_known_children_with_caller_known_occupancy",
     "destructor_on_particle_from_callee_guarantee",
     "destructor_with_children_known_only_two_callers_up",
 }

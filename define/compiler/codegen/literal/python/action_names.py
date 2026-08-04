@@ -274,6 +274,8 @@ class ActionNameGenerator:
             safe_name = _IDENTIFIER_SEPARATOR.join(
                 part for part in replaced_name.split(_IDENTIFIER_SEPARATOR) if part
             )
+            # TODO: Actions are always global, so omit the redundant global_
+            # prefix for action names and regenerate the codegen expectations.
             prefix = _GLOBAL_NAME_PREFIX if typed_name_parts.is_global else ""
             parts.append(
                 prefix

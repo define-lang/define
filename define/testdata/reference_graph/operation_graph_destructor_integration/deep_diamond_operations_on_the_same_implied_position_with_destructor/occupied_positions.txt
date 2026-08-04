@@ -1,0 +1,4 @@
+action<local.my_domain_com.my_lib.left_child.LeftChild>::position<trigger_pos>
+action<local.my_domain_com.my_lib.left.Left>::position<trigger_pos>
+action<local.my_domain_com.my_lib.right_child.RightChild>::position<trigger_pos>
+action<local.my_domain_com.my_lib.right.Right>::position<trigger_pos>

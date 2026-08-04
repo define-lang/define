@@ -46,6 +46,7 @@ class CallerInput:
     resolved_input: operation_graph_action_resolver.ResolvedCallerInput
     fragments: list[ActionFragment]
     triggered_inputs: list[TriggeredActionInput]
+    destructor_triggers: list[operation_graph_model.ActionTrigger]
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,14 +161,21 @@ class _FragmentTopologyBuilder:
                 self._local_successors[predecessor].append(operation)
 
         self._must_end_fragment_operations = set(guaranteed_positions_by_operation)
+        # TODO: Build sparse reverse Action Triggering consumer indexes during
+        # action resolution, while keeping ActionTrigger.trigger_operation as the
+        # authoritative graph relationship. Fragment topology and triggering
+        # planning can then consume those indexes without classifying the
+        # trigger operation independently.
         for resolved_action_trigger in resolved_action_triggers:
             for triggered_input in resolved_action_trigger.inputs:
                 self._must_end_fragment_operations.update(
                     triggered_input.caller_dependencies.local_operations
                 )
-            self._must_end_fragment_operations.add(
-                resolved_action_trigger.trigger.trigger_operation
-            )
+            trigger_operation = resolved_action_trigger.trigger.trigger_operation
+            if isinstance(
+                trigger_operation, operation_graph_model.PositionOperationNode
+            ):
+                self._must_end_fragment_operations.add(trigger_operation)
         self._caller_input_consumer_operations = {
             operation
             for caller_input in caller_inputs
@@ -350,15 +358,19 @@ class _ActionPlanBuilder:
                     dependencies,
                     self._operation_graphs,
                 )
+                dependency_count = (
+                    len(dependencies.local_operations)
+                    + len(dependencies.guarantee_dependencies)
+                    + 1
+                )
+                # caller_inputs is empty for the entry point action.
+                if caller_inputs:
+                    dependency_count += len(resolved_input.caller_input_dependencies)
                 triggered_input = TriggeredActionInput(
                     action_trigger=action_trigger,
                     callee_input=resolved_input.callee_input,
                     guarantee_dependencies=planned_dependencies.guarantee_dependencies,
-                    dependency_count=(
-                        len(dependencies.local_operations)
-                        + len(dependencies.guarantee_dependencies)
-                        + 1
-                    ),
+                    dependency_count=dependency_count,
                 )
                 triggered_action_inputs.append(triggered_input)
                 inputs_for_action_trigger.append(triggered_input)
@@ -367,12 +379,13 @@ class _ActionPlanBuilder:
                     fragment_for_operation[operation].triggered_input_successors.append(
                         triggered_input
                     )
-            fragment = fragment_for_operation[action_trigger.trigger_operation]
-            fragment.triggered_action_successors.append(action_trigger)
-            fragment.execution_input_successors.extend(inputs_for_action_trigger)
-        for caller_input in caller_inputs:
-            for consumer in caller_input.triggered_input_consumers:
-                input_by_resolved_input[consumer].dependency_count += 1
+            trigger_operation = action_trigger.trigger_operation
+            if isinstance(
+                trigger_operation, operation_graph_model.PositionOperationNode
+            ):
+                fragment = fragment_for_operation[trigger_operation]
+                fragment.triggered_action_successors.append(action_trigger)
+                fragment.execution_input_successors.extend(inputs_for_action_trigger)
         return _TriggeredActions(
             inputs=triggered_action_inputs,
             input_by_resolved_input=input_by_resolved_input,
@@ -452,11 +465,16 @@ class _ActionPlanBuilder:
                 triggered_actions.input_by_resolved_input[triggered_input]
                 for triggered_input in resolved_caller_input.triggered_input_consumers
             ]
+            destructor_triggers = [
+                resolved_destructor_trigger.trigger
+                for resolved_destructor_trigger in resolved_caller_input.destructor_trigger_consumers
+            ]
             caller_inputs.append(
                 CallerInput(
                     resolved_caller_input,
                     fragments,
                     triggered_inputs,
+                    destructor_triggers,
                 )
             )
         return caller_inputs

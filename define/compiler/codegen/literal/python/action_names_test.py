@@ -239,7 +239,7 @@ def _input_method_names(
         fragments=[],
         execute_fragments=[],
         caller_inputs=[
-            action_plan.CallerInput(resolved_input, [], [])
+            action_plan.CallerInput(resolved_input, [], [], [])
             for resolved_input in resolved_inputs
         ],
         action_triggers=[],

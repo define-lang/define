@@ -434,6 +434,7 @@ class ActionPostorderValidator:
             contract.guarantees,
             destructor.position,
             requirements_in_caller,
+            is_destructor=True,
         )
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
@@ -514,6 +515,7 @@ class ActionPostorderValidator:
             contract.guarantees,
             acting_on_position,
             requirements_in_caller,
+            is_destructor=False,
         )
         self._dead_tracker.mark_alive(action_chain)
         self._action_edges.append(

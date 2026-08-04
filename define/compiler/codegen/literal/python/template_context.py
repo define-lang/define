@@ -173,11 +173,12 @@ class TriggeredActionInputContext:
 
 @dataclass
 class CallerInputContext:
-    """Fragments released by one input from an action's caller."""
+    """Work released by one input from an action's caller."""
 
     input_method_name: str
     fragment_method_names: list[str]
     triggered_input_method_names: list[str]
+    destructor_execution_init_methods: list[str]
 
 
 @dataclass

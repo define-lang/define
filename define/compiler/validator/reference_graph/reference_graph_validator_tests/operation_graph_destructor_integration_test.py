@@ -31,6 +31,25 @@ def test_destructor_independent_chains_and_operation_after_destroy(
     }
 
 
+def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/left::trigger_pos)": [],
+        "test.create(/right::trigger_pos)": [],
+        "left.create(/left_child::trigger_pos)": [],
+        "left_child.create(/marker)": [],
+        "right.create(/right_child::trigger_pos)": [],
+        "right_child.destroy(/marker)": ["left_child.create(/marker)"],
+        # The caller-supplied occupied requirement both orders destruction and
+        # fires the directly known destructor.
+        "destructor.create(_noop)": ["left_child.create(/marker)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+    }
+
+
 def test_destructor_on_child_carried_by_parent_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

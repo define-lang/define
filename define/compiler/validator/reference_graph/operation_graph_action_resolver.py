@@ -72,12 +72,15 @@ def _partition_dependencies(
 
 @dataclass(slots=True, eq=False)
 class ResolvedCallerInput:
-    """A caller input and the operations and triggered inputs that consume it."""
+    """A caller input and the operations, inputs, and destructors that consume it."""
 
     operation_consumers: list[operation_graph_model.PositionOperationNode] = field(
         default_factory=list, init=False
     )
     triggered_input_consumers: list[ResolvedActionTriggerInput] = field(
+        default_factory=list, init=False
+    )
+    destructor_trigger_consumers: list[ResolvedActionTrigger] = field(
         default_factory=list, init=False
     )
 
@@ -109,6 +112,7 @@ class ResolvedActionTriggerInput:
 
     callee_input: ResolvedCallerInput
     caller_dependencies: ActionDependencies
+    caller_input_dependencies: tuple[ResolvedCallerInput, ...]
 
 
 @typing.final
@@ -272,14 +276,27 @@ class _ActionResolver:
             caller_dependencies, caller_input_dependencies = (
                 dependency_resolver.resolve_input(callee_input)
             )
+            caller_inputs = tuple(
+                self._caller_input_for(dependency)
+                for dependency in caller_input_dependencies
+            )
             resolved_input = ResolvedActionTriggerInput(
-                callee_input, caller_dependencies
+                callee_input, caller_dependencies, caller_inputs
             )
             inputs.append(resolved_input)
-            self._record_triggered_input_caller_inputs(
-                caller_input_dependencies, resolved_input
-            )
-        return ResolvedActionTrigger(trigger, inputs)
+            for caller_input in caller_inputs:
+                caller_input.triggered_input_consumers.append(resolved_input)
+        resolved_trigger = ResolvedActionTrigger(trigger, inputs)
+        # This is a destructor triggering on a child of a from_caller particle.
+        if isinstance(trigger.trigger_operation, operation_graph_model.RequirementNode):
+            # There's no guarantee that resolving the destructor's operations resolved
+            # the dependency on its parent, because the destructor might not have acted
+            # on any implied positions. So we have to use _caller_input_for in case
+            # we have to generate the resolved requirement node.
+            caller_input = self._caller_input_for(trigger.trigger_operation)
+            caller_input.destructor_trigger_consumers.append(resolved_trigger)
+            caller_input.triggered_input_consumers.extend(resolved_trigger.inputs)
+        return resolved_trigger
 
     def _record_operation_caller_inputs(
         self,
@@ -288,16 +305,6 @@ class _ActionResolver:
     ):
         for dependency in caller_input_dependencies:
             self._caller_input_for(dependency).operation_consumers.append(operation)
-
-    def _record_triggered_input_caller_inputs(
-        self,
-        caller_input_dependencies: list[_CallerInputDependency],
-        triggered_input: ResolvedActionTriggerInput,
-    ):
-        for dependency in caller_input_dependencies:
-            self._caller_input_for(dependency).triggered_input_consumers.append(
-                triggered_input
-            )
 
     def _caller_input_for(
         self, dependency: _CallerInputDependency

@@ -154,6 +154,7 @@ class OperationGraph:
         acting_on_position: ast.PositionReference,
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
+        is_destructor: bool,
         acting_on_preceding_child_operations: operation_graph_model.PrecedingChildOperations,
         required_preceding_child_operations: Iterable[
             operation_graph_model.PrecedingChildOperations
@@ -170,13 +171,15 @@ class OperationGraph:
         child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        firing_operation = typing.cast(
-            "operation_graph_model.PositionOperationNode",
+        if is_destructor:
             # Need to check the parents because destructors trigger on child
             # positions of the passed-in particle, so it's the last operation
             # on their parent that matters.
-            self.last_operation_on_position_or_parents(acting_on_position_key),
-        )
+            firing_operation = self.last_operation_on_position_or_parents(
+                acting_on_position_key
+            )
+        else:
+            firing_operation = self.last_operation_on_position(acting_on_position_key)
         callee_action_key = callee.canonical_chained_name_tuple
         bindings: dict[tuple[str, ...], operation_graph_model.RequirementBinding] = {}
         # Trigger positions are direct children of the callee chain.

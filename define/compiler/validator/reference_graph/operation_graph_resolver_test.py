@@ -54,6 +54,7 @@ def test_repeated_action_triggers_create_distinct_executions():
         _action_reference(worker_action),
         first_trigger_position,
         (),
+        is_destructor=False,
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
@@ -62,6 +63,7 @@ def test_repeated_action_triggers_create_distinct_executions():
         _action_reference(worker_action),
         second_trigger_position,
         (),
+        is_destructor=False,
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )

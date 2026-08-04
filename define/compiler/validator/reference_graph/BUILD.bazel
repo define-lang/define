@@ -120,6 +120,7 @@ py_test(
     size = "small",
     srcs = ["operation_graph_action_resolver_test.py"],
     deps = [
+        ":action_contract",
         ":operation_graph",
         ":operation_graph_action_resolver",
         ":operation_graph_model",
