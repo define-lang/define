@@ -112,6 +112,22 @@ py_test(
 )
 
 py_test(
+    name = "file_validation_result_test",
+    size = "small",
+    srcs = ["file_validation_result_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:config",
+        "//define/compiler:exceptions",
+        "//define/compiler:parser_exceptions",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "fqun_mismatch_test",
     size = "small",
     srcs = ["fqun_mismatch_test.py"],
@@ -203,24 +219,6 @@ py_test(
 )
 
 py_test(
-    name = "parse_and_validate_file_test",
-    size = "small",
-    srcs = ["parse_and_validate_file_test.py"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler:exceptions",
-        "//define/compiler:parser",
-        "//define/compiler:parser_exceptions",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:stats",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
     name = "path_mismatch_test",
     size = "small",
     srcs = ["path_mismatch_test.py"],
@@ -266,6 +264,19 @@ py_test(
     ],
 )
 
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    deps = [
+        "//define/compiler:parser",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
 py_test(
     name = "trigger_conditions_test",
     size = "small",
@@ -299,6 +310,19 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "validation_timing_stats_test",
+    size = "small",
+    srcs = ["validation_timing_stats_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -341,6 +365,7 @@ pyright_test(
         ":duplicate_position_constraint_test",
         ":error_messages_test",
         ":file_not_found_test",
+        ":file_validation_result_test",
         ":fqun_mismatch_test",
         ":global_name_walking_test",
         ":local_name_conflicts_test",
@@ -348,15 +373,16 @@ pyright_test(
         ":name_format_positions_test",
         ":non_filesystem_walk_test",
         ":parallel_test",
-        ":parse_and_validate_file_test",
         ":path_mismatch_test",
         ":position_constraint_references_test",
         ":program_config_test",
         ":program_validator_tests",
         ":quality_implication_test",
         ":reserved_name_positions_test",
+        ":test_helpers",
         ":trigger_conditions_test",
         ":universe_without_authority_test",
         ":unreferenced_positions_test",
+        ":validation_timing_stats_test",
     ],
 )
