@@ -133,7 +133,7 @@ class TestReferenceGraphSelfCycles:
         a = _make_position("/a")
         graph.add_definition(a)
         detected = graph.try_add_edge(_make_edge(a, "/a"))
-        assert detected == reference_graph.DetectedCycle(path=[_p("/a"), _p("/a")])
+        assert detected == [_p("/a"), _p("/a")]
 
 
 class TestReferenceGraphTwoNodeCycles:
@@ -145,9 +145,7 @@ class TestReferenceGraphTwoNodeCycles:
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/b"))
         detected = graph.try_add_edge(_make_edge(b, "/a"))
-        assert detected == reference_graph.DetectedCycle(
-            path=[_p("/a"), _p("/b"), _p("/a")]
-        )
+        assert detected == ([_p("/a"), _p("/b"), _p("/a")])
 
 
 class TestReferenceGraphThreeNodeCycles:
@@ -160,9 +158,7 @@ class TestReferenceGraphThreeNodeCycles:
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/b"), _make_edge(b, "/c"))
         detected = graph.try_add_edge(_make_edge(c, "/a"))
-        assert detected == reference_graph.DetectedCycle(
-            path=[_p("/a"), _p("/b"), _p("/c"), _p("/a")]
-        )
+        assert detected == ([_p("/a"), _p("/b"), _p("/c"), _p("/a")])
 
 
 class TestReferenceGraphMultipleCycles:
@@ -175,11 +171,11 @@ class TestReferenceGraphMultipleCycles:
         for defn in (a, b, c, d):
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/b"), _make_edge(c, "/d"))
-        assert graph.try_add_edge(_make_edge(b, "/a")) == reference_graph.DetectedCycle(
-            path=[_p("/a"), _p("/b"), _p("/a")]
+        assert graph.try_add_edge(_make_edge(b, "/a")) == (
+            [_p("/a"), _p("/b"), _p("/a")]
         )
-        assert graph.try_add_edge(_make_edge(d, "/c")) == reference_graph.DetectedCycle(
-            path=[_p("/c"), _p("/d"), _p("/c")]
+        assert graph.try_add_edge(_make_edge(d, "/c")) == (
+            [_p("/c"), _p("/d"), _p("/c")]
         )
 
     def test_rejected_edge_not_added(self):
@@ -204,9 +200,7 @@ class TestReferenceGraphIncremental:
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/b"), _make_edge(b, "/c"))
         detected = graph.try_add_edge(_make_edge(c, "/a"))
-        assert detected == reference_graph.DetectedCycle(
-            path=[_p("/a"), _p("/b"), _p("/c"), _p("/a")]
-        )
+        assert detected == ([_p("/a"), _p("/b"), _p("/c"), _p("/a")])
 
     def test_non_cycle_edge_after_rejection(self):
         graph = reference_graph.ReferenceGraph()
@@ -219,6 +213,29 @@ class TestReferenceGraphIncremental:
         graph.try_add_edge(_make_edge(b, "/a"))
         assert graph.try_add_edge(_make_edge(b, "/c")) is None
 
+    def test_cycle_after_a_shared_target_is_pushed_deeper_twice(self):
+        graph = reference_graph.ReferenceGraph()
+        a = _make_position("/a")
+        b = _make_position("/b")
+        c = _make_position("/c")
+        d = _make_position("/d")
+        e = _make_position("/e")
+        f = _make_position("/f")
+        for defn in (a, b, c, d, e, f):
+            graph.add_definition(defn)
+        _add(
+            graph,
+            _make_edge(a, "/b"),
+            _make_edge(b, "/c"),
+            _make_edge(b, "/d"),
+            _make_edge(d, "/c"),
+            _make_edge(a, "/e"),
+            _make_edge(e, "/f"),
+            _make_edge(f, "/b"),
+        )
+        detected = graph.try_add_edge(_make_edge(c, "/b"))
+        assert detected == ([_p("/b"), _p("/c"), _p("/b")])
+
     def test_accept_then_reject_in_sequence(self):
         graph = reference_graph.ReferenceGraph()
         a = _make_position("/a")
@@ -229,9 +246,7 @@ class TestReferenceGraphIncremental:
         _add(graph, _make_edge(a, "/b"))
         assert graph.try_add_edge(_make_edge(b, "/c")) is None
         detected = graph.try_add_edge(_make_edge(c, "/a"))
-        assert detected == reference_graph.DetectedCycle(
-            path=[_p("/a"), _p("/b"), _p("/c"), _p("/a")]
-        )
+        assert detected == ([_p("/a"), _p("/b"), _p("/c"), _p("/a")])
 
 
 class TestDfsPostorder:

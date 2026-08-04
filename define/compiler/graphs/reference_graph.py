@@ -1,18 +1,12 @@
-"""Directed graph of definition references, backed by networkx."""
+"""Directed graph of definition references."""
 
 from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from typing import cast
-
-# TODO: NetworkX seems like a heavy dependency for the basic path queries and
-# DFS traversals used by ReferenceGraph; consider replacing it with a small
-# purpose-built graph representation.
-import networkx as nx
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from define.compiler import ast
 
@@ -35,52 +29,63 @@ class ReferenceEdge:
         return self.enclosing_definition.typed_name.source_typed_name
 
 
-@dataclass(frozen=True)
-class DetectedCycle:
-    """A rejected edge that would have closed a cycle, with the cycle path."""
-
-    path: list[str]
+# The typed names a rejected edge would have formed a cycle through, in the
+# order the references run, beginning and ending at the same name.
+type DetectedCycle = list[str]
 
 
 class ReferenceGraph:
     """Directed graph of how definitions reference each other, with incremental cycle detection.
 
     Maintains a DAG of typed definition keys. When a new edge would close
-    a cycle, it is rejected and the cycle path is returned. Edges that
-    don't close a cycle are added to the graph.
+    a cycle, it is rejected and the shortest cycle path is returned. Edges
+    that don't close a cycle are added to the graph.
 
-    Each node stores its ``QualityDefinition`` as a node attribute.
+    Each node registered by ``add_definition`` also stores its
+    ``QualityDefinition``.
     """
 
     def __init__(self):
         """Initialize an empty reference graph."""
-        self._graph: nx.DiGraph[str] = nx.DiGraph()
+        # Neighbors are dict keys rather than list entries so that repeating the
+        # same reference costs nothing, while iteration still follows the order
+        # in which neighbors were first seen.
+        self._successors: dict[str, dict[str, None]] = {}
+        # A node's depth is kept below the depth of everything it references,
+        # so an edge whose endpoints already satisfy that cannot close a cycle
+        # and is settled without searching the graph. The rest are settled by
+        # walking forward from the target, which is why no reverse adjacency is
+        # kept: a reverse map costs about 74 bytes per edge, some 1.1 GB for
+        # five million definitions averaging three references each.
+        self._depths: dict[str, int] = {}
+        self._definitions: dict[str, ast.QualityDefinition] = {}
 
     def add_definition(self, definition: ast.QualityDefinition):
         """Register a definition as a node in the graph."""
-        self._graph.add_node(
-            definition.typed_name.source_typed_name, definition=definition
-        )
+        node_key = definition.typed_name.source_typed_name
+        self._add_node(node_key)
+        self._definitions[node_key] = definition
 
     def try_add_edge(self, edge: ReferenceEdge) -> DetectedCycle | None:
         """Try to add an edge. Returns the detected cycle if it would close one.
 
-        If the edge doesn't close a cycle, it is added to the graph and
-        None is returned. The source node's definition is stored as a
-        node attribute.
+        If the edge doesn't close a cycle, it is added to the graph.
         """
         source = edge.source_full_typed_name
         target = edge.target_full_typed_name
         if source == target:
-            return DetectedCycle(path=[source, target])
-        # A brand-new target node has no outgoing edges, so it can't
-        # create a path back to source — skip the cycle check.
-        if target not in self._graph:
-            self._graph.add_node(target)
-        elif nx.has_path(self._graph, target, source):
-            cycle_path = nx.shortest_path(self._graph, target, source)  # pyright: ignore[reportUnknownMemberType]
-            return DetectedCycle(path=[*cycle_path, target])
-        _ = self._graph.add_edge(source, target)
+            return [source, target]
+        self._add_node(source)
+        if target not in self._successors:
+            # A brand-new target node has no outgoing edges, so it can't
+            # create a path back to source — skip the cycle check.
+            self._successors[target] = {}
+            self._depths[target] = self._depths[source] + 1
+        elif self._depths[source] >= self._depths[target] and self._deepen(
+            source, target
+        ):
+            return [*self._shortest_path(target, source), target]
+        self._successors[source][target] = None
         return None
 
     def dfs_postorder_from(
@@ -91,14 +96,88 @@ class ReferenceGraph:
         Leaf nodes are yielded first, root last.
         """
         root_key = root.typed_name.source_typed_name
-        for node_key in nx.dfs_postorder_nodes(self._graph, root_key):
-            yield cast(
-                "ast.QualityDefinition", self._graph.nodes[node_key]["definition"]
-            )
+        for node_key in self._dfs_postorder([root_key]):
+            yield self._definitions[node_key]
 
     def dfs_postorder_all(self) -> Iterator[ast.QualityDefinition]:
         """Yield all definitions in DFS post-order, handling disconnected components."""
-        for node_key in nx.dfs_postorder_nodes(self._graph):
-            node_data = self._graph.nodes[node_key]
-            if "definition" in node_data:
-                yield cast("ast.QualityDefinition", node_data["definition"])
+        for node_key in self._dfs_postorder(self._successors):
+            if node_key in self._definitions:
+                yield self._definitions[node_key]
+
+    def _add_node(self, node_key: str):
+        if node_key not in self._successors:
+            self._successors[node_key] = {}
+            self._depths[node_key] = 0
+
+    def _deepen(self, source: str, target: str) -> bool:
+        """Push target below source in the depth order, reporting a cycle.
+
+        Returns True when target already reaches source, in which case every
+        depth this changed is restored before returning.
+        """
+        successors = self._successors
+        depths = self._depths
+        previous_depths: dict[str, int] = {}
+        pending = [(target, depths[source] + 1)]
+        while pending:
+            node_key, new_depth = pending.pop()
+            if new_depth <= depths[node_key]:
+                continue
+            if node_key not in previous_depths:
+                previous_depths[node_key] = depths[node_key]
+            depths[node_key] = new_depth
+            for successor_key in successors[node_key]:
+                if successor_key == source:
+                    for restored_key, previous_depth in previous_depths.items():
+                        depths[restored_key] = previous_depth
+                    return True
+                if depths[successor_key] <= new_depth:
+                    pending.append((successor_key, new_depth + 1))
+        return False
+
+    def _shortest_path(self, from_key: str, to_key: str) -> list[str]:
+        """Return the shortest path between two nodes, which must be connected."""
+        successors = self._successors
+        path_predecessors: dict[str, str | None] = {from_key: None}
+        frontier: list[str] = [from_key]
+        while frontier and to_key not in path_predecessors:
+            current_frontier = frontier
+            frontier = []
+            for node_key in current_frontier:
+                for successor_key in successors[node_key]:
+                    if successor_key not in path_predecessors:
+                        path_predecessors[successor_key] = node_key
+                        frontier.append(successor_key)
+        return _build_path(path_predecessors, to_key)
+
+    def _dfs_postorder(self, start_keys: Iterable[str]) -> Iterator[str]:
+        """Yield every node reachable from start_keys in DFS post-order."""
+        visited: set[str] = set()
+        for start_key in start_keys:
+            if start_key in visited:
+                continue
+            visited.add(start_key)
+            stack = [(start_key, iter(self._successors[start_key]))]
+            while stack:
+                node_key, successor_keys = stack[-1]
+                for successor_key in successor_keys:
+                    if successor_key not in visited:
+                        visited.add(successor_key)
+                        stack.append(
+                            (successor_key, iter(self._successors[successor_key]))
+                        )
+                        break
+                else:
+                    _ = stack.pop()
+                    yield node_key
+
+
+def _build_path(path_predecessors: dict[str, str | None], end_key: str) -> list[str]:
+    path: list[str] = []
+    walk_key: str | None = end_key
+    while walk_key is not None:
+        path.append(walk_key)
+        walk_key = path_predecessors[walk_key]
+    path.reverse()
+    return path

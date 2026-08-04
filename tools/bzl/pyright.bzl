@@ -112,7 +112,6 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
             "//typestubs:typestubs",
         ],
         deps = [":" + name + "_deps"] + [
-            "@pypi//types_networkx",
             "@pypi//types_protobuf",
             "@pypi//types_pyyaml",
         ],

@@ -7,9 +7,6 @@ py_library(
     name = "action_call_graph",
     srcs = ["action_call_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "@pypi//networkx",
-    ],
 )
 
 py_library(
@@ -45,10 +42,7 @@ py_library(
     name = "reference_graph",
     srcs = ["reference_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "@pypi//networkx",
-    ],
+    deps = ["//define/compiler:ast"],
 )
 
 py_test(

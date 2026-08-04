@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import networkx as nx
-
 
 @dataclass(frozen=True)
 class ActionGraphEdge:
@@ -31,20 +29,34 @@ class ActionCallGraph:
     by the ReferenceGraphValidator after each definition is analyzed.
     """
 
-    _graph: nx.MultiDiGraph[str]
-
     def __init__(self):
         """Initialize an empty call graph."""
-        self._graph = nx.MultiDiGraph()
+        # The same trigger edge can be added more than once, so successors are
+        # counted rather than listed.
+        self._successor_counts: dict[str, dict[str, int]] = {}
 
     def add_edge(self, source: str, target: str):
         """Add a directed trigger edge from source to target."""
-        _ = self._graph.add_edge(source, target)
+        successor_counts = self._successor_counts.setdefault(source, {})
+        _ = self._successor_counts.setdefault(target, {})
+        successor_counts[target] = successor_counts.get(target, 0) + 1
 
     def unique_edges(self) -> set[tuple[str, str]]:
         """Return the set of distinct ``(source, target)`` pairs."""
-        return {(source, target) for source, target in self._graph.edges()}
+        unique: set[tuple[str, str]] = set()
+        for source, successor_counts in self._successor_counts.items():
+            for target in successor_counts:
+                unique.add((source, target))
+        return unique
 
     def edges(self) -> list[tuple[str, str]]:
-        """Return every trigger edge as a ``(source, target)`` tuple, in insertion order."""
-        return list(self._graph.edges())
+        """Return every trigger edge as a ``(source, target)`` tuple, grouped by source.
+
+        Sources appear in the order they were first seen, and each source's
+        targets in the order they were first seen for that source.
+        """
+        edges: list[tuple[str, str]] = []
+        for source, successor_counts in self._successor_counts.items():
+            for target, count in successor_counts.items():
+                edges.extend([(source, target)] * count)
+        return edges

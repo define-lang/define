@@ -434,7 +434,7 @@ class ProgramStructuralValidator:
                 source_definition.add_diagnostic(
                     diagnostics.CircularGlobalReferenceDiagnostic(
                         location=ref_edge.global_name_reference.location,
-                        cycle=detected.path,
+                        cycle=detected,
                     )
                 )
                 continue
