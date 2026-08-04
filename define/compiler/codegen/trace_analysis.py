@@ -12,7 +12,6 @@ from define.compiler.validator.reference_graph import (
 from define.runtime import tracing
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
 
     from define.compiler import ast
@@ -80,11 +79,11 @@ def _execution_identity(
     return identity
 
 
-def resolved_dependency_pairs(
+def resolved_operation_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
     entry_action: ast.ActionDefinition,
-) -> Iterator[tuple[tracing.OperationTraceRecord, tracing.OperationTraceRecord]]:
-    """Yield the resolver's dependency edges in operation-trace terms."""
+) -> dict[tracing.OperationTraceRecord, tuple[tracing.OperationTraceRecord, ...]]:
+    """Map each resolved operation's trace record to its direct dependency records."""
     resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
         operation_graphs,
         entry_action.typed_name,
@@ -110,6 +109,9 @@ def resolved_dependency_pairs(
             local_label.target,
             local_label.occurrence,
         )
-    for operation in resolved.operations:
-        for dependency in operation.dependencies:
-            yield records[dependency], records[operation]
+    return {
+        records[operation]: tuple(
+            records[dependency] for dependency in operation.dependencies
+        )
+        for operation in resolved.operations
+    }
