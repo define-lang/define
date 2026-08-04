@@ -802,6 +802,21 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
     }
 
 
+def test_deep_diamond_operations_on_the_same_implied_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/left::trigger_pos)": [],
+        "test.create(/right::trigger_pos)": [],
+        "left.create(/left_child::trigger_pos)": [],
+        "left_child.create(/marker)": [],
+        "right.create(/right_child::trigger_pos)": [],
+        "right_child.destroy(/marker)": ["left_child.create(/marker)"],
+    }
+
+
 def test_triggered_action_input_depends_on_multiple_guarantees(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
