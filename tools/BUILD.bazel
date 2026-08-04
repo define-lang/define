@@ -120,6 +120,22 @@ py_binary(
 )
 
 py_binary(
+    name = "generate_reference_graph_project",
+    srcs = ["generate_reference_graph_project.py"],
+)
+
+py_test(
+    name = "generate_reference_graph_project_test",
+    size = "small",
+    srcs = ["generate_reference_graph_project_test.py"],
+    deps = [
+        ":generate_reference_graph_project",
+        "//define/compiler:driver",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "j2lint_runner",
     srcs = ["j2lint_runner.py"],
     visibility = ["//visibility:public"],
@@ -300,6 +316,8 @@ pyright_test(
         ":generate_operation_graph_source",
         ":generate_operation_graph_source_test",
         ":generate_programming_languages",
+        ":generate_reference_graph_project",
+        ":generate_reference_graph_project_test",
         ":git_commit_via_api",
         ":j2lint_runner",
         ":regenerate_codegen_testdata",
