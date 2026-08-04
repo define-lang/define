@@ -257,5 +257,8 @@ pyright_test(
         "//tools/generators:generate_operation_graph_source_test",
         "//tools/generators:generate_reference_graph_project",
         "//tools/generators:generate_reference_graph_project_test",
+        "//tools/generators:generator_cli",
+        "//tools/generators:generator_io",
+        "//tools/generators:generator_io_test",
     ],
 )

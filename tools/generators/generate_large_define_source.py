@@ -46,12 +46,14 @@ Run via:
 
 from __future__ import annotations
 
-import argparse
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
+
+import click
+
+from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from pathlib import Path
 
 DEFAULT_FQUN = "mv:define-lang.org:large_program:/test"
 DEFAULT_TARGET_LINES = 150_000
@@ -490,12 +492,6 @@ def generate_source_lines(
     return lines
 
 
-def _iter_with_newlines(lines: Iterable[str]) -> Iterable[str]:
-    for line in lines:
-        yield line
-        yield "\n"
-
-
 def write_to_path(
     output: Path,
     target_lines: int,
@@ -506,63 +502,53 @@ def write_to_path(
     lines = generate_source_lines(
         target_lines, fqun=fqun, max_chain_length=max_chain_length
     )
-    with output.open("w", encoding="utf-8") as f:
-        for chunk in _iter_with_newlines(lines):
-            _ = f.write(chunk)
-    return len(lines)
+    return generator_io.write_lines(output, lines)
 
 
-def main() -> None:
-    """Entry point for the CLI."""
-    parser = argparse.ArgumentParser(
-        description="""Generate a large, syntactically-diverse Define source file.
+@click.command()
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
+@click.option(
+    "--lines",
+    "target_lines",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_TARGET_LINES,
+    show_default=True,
+    help="Target number of lines.",
+)
+@click.option(
+    "--fqun",
+    default=DEFAULT_FQUN,
+    show_default=True,
+    help="Fully-qualified universe name for the main action.",
+)
+@click.option(
+    "--max-chain-length",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_MAX_CHAIN_LENGTH,
+    show_default=True,
+    help="Longest chained reference to emit inside the main action.",
+)
+def main(output: Path, target_lines: int, fqun: str, max_chain_length: int):
+    """Generate a large, syntactically-diverse Define source file.
 
-Emits one .dfn holding a single enormous Action Statements Block plus a pool
-of positions and actions. The bulk of compiling it is the bundled lark lexer
-and parser, so this is the parse-bound profiling shape. Longer chained
-references also push work into reference-graph validation.
+    Emits one .dfn holding a single enormous Action Statements Block plus a pool
+    of positions and actions. The bulk of validating it is the bundled lark lexer
+    and parser, so this is the parse-bound profiling shape. Longer chained
+    references also push work into reference-graph validation.
 
-Scale it with --lines. The generated source compiles to zero diagnostics.""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+    Scale it with --lines. The generated source validates to zero diagnostics.
+    """
+    written = generator_cli.invoke(
+        lambda: write_to_path(
+            output,
+            target_lines,
+            fqun=fqun,
+            max_chain_length=max_chain_length,
+        )
     )
-    _ = parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Path to write the generated .dfn file",
-    )
-    _ = parser.add_argument(
-        "--lines",
-        type=int,
-        default=DEFAULT_TARGET_LINES,
-        help=f"Target number of lines (default: {DEFAULT_TARGET_LINES:,})",
-    )
-    _ = parser.add_argument(
-        "--fqun",
-        default=DEFAULT_FQUN,
-        help=f"Fully-qualified universe name for the main action (default: {DEFAULT_FQUN})",
-    )
-    _ = parser.add_argument(
-        "--max-chain-length",
-        type=int,
-        default=DEFAULT_MAX_CHAIN_LENGTH,
-        help=(
-            "Longest chained reference to emit inside the main action"
-            f" (default: {DEFAULT_MAX_CHAIN_LENGTH})"
-        ),
-    )
-    args = parser.parse_args()
-    output_path = cast("Path", args.output)
-    target_lines = cast("int", args.lines)
-    fqun = cast("str", args.fqun)
-    max_chain_length = cast("int", args.max_chain_length)
-    written = write_to_path(
-        output_path,
-        target_lines,
-        fqun=fqun,
-        max_chain_length=max_chain_length,
-    )
-    print(f"Wrote {written:,} lines to {output_path}")
+    generator_cli.report_written("lines", written, output)
 
 
 if __name__ == "__main__":

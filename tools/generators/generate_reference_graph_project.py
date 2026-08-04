@@ -7,11 +7,17 @@ reference resolution and the reference graph rather than the contents of any
 one file.
 """
 
-import argparse
+from __future__ import annotations
+
 import random
-import shutil
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING
+
+import click
+
+from tools.generators import generator_cli
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DEFAULT_UNIVERSE_NAME = "mv:define-lang.org:bench"
 DEFAULT_MODULES = 24000
@@ -125,79 +131,101 @@ def generate_project_files(
     return files
 
 
-def main():
-    """Write a generated project to the requested directory."""
-    parser = argparse.ArgumentParser(
-        description="""Generate a many-file Define project with heavy cross-file referencing.
-
-Writes a project directory rather than one file: each file defines one
-potential position whose Position Constraint Block references positions
-defined in deeper layers, so every reference is a global reference into
-another file. The other profiling sources are each a single file, so this is
-the only shape that exercises per-file parallel validation, cross-file
-reference resolution, and the reference graph. --utility-fraction of
-references aim at a small set of deepest-layer definitions, giving the graph
-the high fan-in that real dependency graphs have.
-
-Scale it with --modules for file count and --layers for reference depth.
---seed makes the shape reproducible. The generated project validates to zero
-diagnostics; its entry point is a position rather than a constructor action,
-so profile it through validate_program rather than a full compile.""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    _ = parser.add_argument(
-        "--output", type=Path, required=True, help="Project root to write"
-    )
-    _ = parser.add_argument(
-        "--modules",
-        type=int,
-        default=DEFAULT_MODULES,
-        help=f"Definitions, one per file (default: {DEFAULT_MODULES})",
-    )
-    _ = parser.add_argument(
-        "--layers",
-        type=int,
-        default=DEFAULT_LAYERS,
-        help=f"Layers of references from entry to leaf (default: {DEFAULT_LAYERS})",
-    )
-    _ = parser.add_argument(
-        "--fan-out",
-        type=int,
-        default=DEFAULT_FAN_OUT,
-        help=f"References each definition makes (default: {DEFAULT_FAN_OUT})",
-    )
-    _ = parser.add_argument(
-        "--utility-fraction",
-        type=float,
-        default=DEFAULT_UTILITY_FRACTION,
-        help=(
-            "Share of references aimed at a small set of deepest-layer"
-            f" definitions (default: {DEFAULT_UTILITY_FRACTION})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--seed",
-        type=int,
-        default=DEFAULT_SEED,
-        help=f"Makes the generated shape reproducible (default: {DEFAULT_SEED})",
-    )
-    args = parser.parse_args()
-
-    output = cast("Path", args.output)
-    files = generate_project_files(
-        modules=cast("int", args.modules),
-        layers=cast("int", args.layers),
-        fan_out=cast("int", args.fan_out),
-        utility_fraction=cast("float", args.utility_fraction),
-        seed=cast("int", args.seed),
-    )
-    if output.exists():
-        shutil.rmtree(output)
+def write_project(output: Path, files: dict[str, str]):
+    """Write a project to a new directory."""
+    output.mkdir(parents=True)
     for relative_path, content in files.items():
         file_path = output / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         _ = file_path.write_text(content, encoding="utf-8")
-    print(f"Wrote {len(files)} files to {output}")
+
+
+@click.command()
+@click.option(
+    "--output",
+    type=generator_cli.OUTPUT_DIRECTORY,
+    required=True,
+    help="New project directory.",
+)
+@click.option(
+    "--modules",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_MODULES,
+    show_default=True,
+    help="Definitions to emit, one per file.",
+)
+@click.option(
+    "--layers",
+    type=click.IntRange(min=2),
+    default=DEFAULT_LAYERS,
+    show_default=True,
+    help="Layers of references from entry to leaf.",
+)
+@click.option(
+    "--fan-out",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_FAN_OUT,
+    show_default=True,
+    help="References each definition makes.",
+)
+@click.option(
+    "--utility-fraction",
+    type=generator_cli.FRACTION,
+    default=DEFAULT_UTILITY_FRACTION,
+    show_default=True,
+    help="Share of references aimed at deepest-layer utility definitions.",
+)
+@click.option(
+    "--seed",
+    type=int,
+    default=DEFAULT_SEED,
+    show_default=True,
+    help="Seed that makes the generated shape reproducible.",
+)
+@click.option(
+    "--universe-name",
+    default=DEFAULT_UNIVERSE_NAME,
+    show_default=True,
+    help="Universe name for generated definitions.",
+)
+def main(
+    output: Path,
+    modules: int,
+    layers: int,
+    fan_out: int,
+    utility_fraction: float,
+    seed: int,
+    universe_name: str,
+):
+    """Generate a many-file Define project with heavy cross-file referencing.
+
+    Writes a project directory rather than one file: each file defines one
+    potential position whose Position Constraint Block references positions
+    defined in deeper layers, so every reference is a global reference into
+    another file. The other profiling sources are each a single file, so this is
+    the only shape that exercises per-file parallel validation, cross-file
+    reference resolution, and the reference graph. --utility-fraction of
+    references aim at a small set of deepest-layer definitions, giving the graph
+    the high fan-in that real dependency graphs have.
+
+    Scale it with --modules for file count and --layers for reference depth.
+    --seed makes the shape reproducible. The generated project validates to zero
+    diagnostics; its entry point is a position rather than a constructor action,
+    so profile it through validate_program rather than a full compile. The
+    destination must not already exist.
+    """
+    files = generator_cli.invoke(
+        lambda: generate_project_files(
+            modules=modules,
+            layers=layers,
+            fan_out=fan_out,
+            utility_fraction=utility_fraction,
+            seed=seed,
+            universe_name=universe_name,
+        )
+    )
+    generator_cli.invoke(lambda: write_project(output, files))
+    generator_cli.report_written("files", len(files), output)
 
 
 if __name__ == "__main__":

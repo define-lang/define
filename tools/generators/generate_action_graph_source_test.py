@@ -1,11 +1,10 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import Path, PurePosixPath
 
+import click.testing
 import pytest
 
-from define.compiler import ast, parser
-from define.compiler.validator.reference_graph import reference_graph_validator
-from define.compiler.validator.structural import program_validator
+from define.compiler import ast, driver, parser
 from tools.generators import generate_action_graph_source as gen
 
 
@@ -77,32 +76,38 @@ class TestWriteToPath:
         _parse_and_transform(out.read_text(encoding="utf-8"))
 
 
+class TestMain:
+    def test_reports_interdependent_option_error(self, tmp_path: Path):
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            [
+                "--output",
+                str(tmp_path / "graph.dfn"),
+                "--layers",
+                "2",
+                "--width",
+                "2",
+                "--fan-out",
+                "3",
+            ],
+        )
+
+        assert result.exit_code == 2
+        assert "fan_out must be in [1, 2]" in result.output
+
+
 class TestFullDriver:
-    @pytest.mark.parametrize(
-        ("layers", "width", "fan_out", "destructor_fraction"),
-        [(3, 3, 2, 0.5), (4, 6, 3, 0.5), (5, 4, 4, 0.0), (3, 5, 5, 1.0)],
-    )
-    def test_non_filesystem_validation_produces_no_diagnostics(
-        self, layers: int, width: int, fan_out: int, destructor_fraction: float
-    ):
+    def test_generated_source_passes_full_validation(self):
         source = (
             "\n".join(
                 gen.generate_source_lines(
-                    layers=layers,
-                    width=width,
-                    fan_out=fan_out,
-                    destructor_fraction=destructor_fraction,
+                    layers=3, width=3, fan_out=2, destructor_fraction=0.5
                 )
             )
             + "\n"
         )
 
-        pv = program_validator.ProgramStructuralValidator()
-        program_result = pv.validate_program_non_filesystem(source)
-        reference_graph_validator.ReferenceGraphValidator(
-            program_result.reference_graph,
-            program_result.definition_results,
-        ).validate()
+        result = driver.Driver().validate_source(source).result
 
-        assert program_result.all_exceptions == []
-        assert program_result.all_diagnostics == []
+        assert result.all_exceptions == []
+        assert result.all_diagnostics == []

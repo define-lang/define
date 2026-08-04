@@ -48,12 +48,14 @@ Run via:
 
 from __future__ import annotations
 
-import argparse
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
+
+import click
+
+from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:operation_graph"
 DEFAULT_REPETITIONS = 700
@@ -450,12 +452,6 @@ def generate_source_lines(
     return lines
 
 
-def _iter_with_newlines(lines: Iterable[str]) -> Iterable[str]:
-    for line in lines:
-        yield line
-        yield "\n"
-
-
 def write_to_path(
     output: Path,
     repetitions: int = DEFAULT_REPETITIONS,
@@ -476,105 +472,98 @@ def write_to_path(
         retriggers=retriggers,
         fqun_prefix=fqun_prefix,
     )
-    with output.open("w", encoding="utf-8") as f:
-        for chunk in _iter_with_newlines(lines):
-            _ = f.write(chunk)
-    return len(lines)
+    return generator_io.write_lines(output, lines)
 
 
-def main() -> None:
-    """Entry point for the CLI."""
-    parser = argparse.ArgumentParser(
-        description="""Generate a Define source file whose bodies stress the operation graph.
+@click.command()
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
+@click.option(
+    "--repetitions",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_REPETITIONS,
+    show_default=True,
+    help="Times the statement families repeat in the main action body.",
+)
+@click.option(
+    "--move-chain-length",
+    type=click.IntRange(min=_MIN_MOVE_CHAIN_LENGTH),
+    default=DEFAULT_MOVE_CHAIN_LENGTH,
+    show_default=True,
+    help="Positions each move-ladder particle passes through.",
+)
+@click.option(
+    "--tree-depth",
+    type=click.IntRange(min=_MIN_TREE_DEPTH),
+    default=DEFAULT_TREE_DEPTH,
+    show_default=True,
+    help="Depth of the position chain moved in one move.",
+)
+@click.option(
+    "--wide-children",
+    type=click.IntRange(min=_MIN_WIDE_CHILDREN),
+    default=DEFAULT_WIDE_CHILDREN,
+    show_default=True,
+    help="Child positions operated on before their parent particle moves.",
+)
+@click.option(
+    "--pods",
+    type=generator_cli.NONNEGATIVE_INTEGER,
+    default=DEFAULT_PODS,
+    show_default=True,
+    help="Worker and sink pods triggered per repetition.",
+)
+@click.option(
+    "--retriggers",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_RETRIGGERS,
+    show_default=True,
+    help="Trigger rounds per pod per repetition.",
+)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
+def main(
+    output: Path,
+    repetitions: int,
+    move_chain_length: int,
+    tree_depth: int,
+    wide_children: int,
+    pods: int,
+    retriggers: int,
+    fqun_prefix: str,
+):
+    """Generate a Define source file whose bodies stress the operation graph.
 
-Emits one .dfn whose action body repeats statement families, each aimed at a
-specific operation dependency rule: a move ladder, a deep position chain moved
-at once and destroyed child by child, a wide particle whose operated-on child
-positions must be filtered into a move's child-operation snapshot, a sibling
-move ladder under one parent particle, and worker pods whose Action Guarantees
-the body consumes. The other profiling sources contain few or no move
-statements, so this is the shape that warms operation-graph construction.
+    Emits one .dfn whose action body repeats statement families, each aimed at a
+    specific operation dependency rule: a move ladder, a deep position chain moved
+    at once and destroyed child by child, a wide particle whose operated-on child
+    positions must be filtered into a move's child-operation snapshot, a sibling
+    move ladder under one parent particle, and worker pods whose Action Guarantees
+    the body consumes. The other profiling sources contain few or no move
+    statements, so this is the shape that warms operation-graph construction.
 
-Scale it with --repetitions for body length; --tree-depth makes the
-ancestor-chain walk quadratically more expensive. The generated source
-compiles to zero diagnostics.""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+    Scale it with --repetitions for body length; --tree-depth makes the
+    ancestor-chain walk quadratically more expensive. The generated source
+    validates to zero diagnostics.
+    """
+    written = generator_cli.invoke(
+        lambda: write_to_path(
+            output,
+            repetitions=repetitions,
+            move_chain_length=move_chain_length,
+            tree_depth=tree_depth,
+            wide_children=wide_children,
+            pods=pods,
+            retriggers=retriggers,
+            fqun_prefix=fqun_prefix,
+        )
     )
-    _ = parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Path to write the generated .dfn file",
-    )
-    _ = parser.add_argument(
-        "--repetitions",
-        type=int,
-        default=DEFAULT_REPETITIONS,
-        help=(
-            "Times the statement families repeat in the main action body"
-            f" (default: {DEFAULT_REPETITIONS})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--move-chain-length",
-        type=int,
-        default=DEFAULT_MOVE_CHAIN_LENGTH,
-        help=(
-            "Positions each move-ladder particle passes through"
-            f" (default: {DEFAULT_MOVE_CHAIN_LENGTH})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--tree-depth",
-        type=int,
-        default=DEFAULT_TREE_DEPTH,
-        help=(
-            "Depth of the position chain moved in one move"
-            f" (default: {DEFAULT_TREE_DEPTH})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--wide-children",
-        type=int,
-        default=DEFAULT_WIDE_CHILDREN,
-        help=(
-            "Child positions operated on before their parent particle moves"
-            f" (default: {DEFAULT_WIDE_CHILDREN})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--pods",
-        type=int,
-        default=DEFAULT_PODS,
-        help=(
-            "Worker and sink pods triggered per repetition"
-            f" (default: {DEFAULT_PODS} of each)"
-        ),
-    )
-    _ = parser.add_argument(
-        "--retriggers",
-        type=int,
-        default=DEFAULT_RETRIGGERS,
-        help=f"Trigger rounds per pod per repetition (default: {DEFAULT_RETRIGGERS})",
-    )
-    _ = parser.add_argument(
-        "--fqun-prefix",
-        default=DEFAULT_FQUN_PREFIX,
-        help=f"Universe prefix for every definition (default: {DEFAULT_FQUN_PREFIX})",
-    )
-    args = parser.parse_args()
-    output_path = cast("Path", args.output)
-    written = write_to_path(
-        output_path,
-        repetitions=cast("int", args.repetitions),
-        move_chain_length=cast("int", args.move_chain_length),
-        tree_depth=cast("int", args.tree_depth),
-        wide_children=cast("int", args.wide_children),
-        pods=cast("int", args.pods),
-        retriggers=cast("int", args.retriggers),
-        fqun_prefix=cast("str", args.fqun_prefix),
-    )
-    print(f"Wrote {written:,} lines to {output_path}")
+    generator_cli.report_written("lines", written, output)
 
 
 if __name__ == "__main__":

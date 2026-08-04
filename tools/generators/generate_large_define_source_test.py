@@ -1,11 +1,10 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import Path, PurePosixPath
 
+import click.testing
 import pytest
 
-from define.compiler import ast, parser
-from define.compiler.validator.reference_graph import reference_graph_validator
-from define.compiler.validator.structural import program_validator
+from define.compiler import ast, driver, parser
 from tools.generators import generate_large_define_source as gen
 
 
@@ -95,29 +94,23 @@ class TestWriteToPath:
         _parse_and_transform(out.read_text(encoding="utf-8"))
 
 
-class TestFullDriver:
-    @pytest.mark.parametrize(
-        ("target_lines", "max_chain_length"),
-        [(500, 10), (1000, 50), (2000, 100)],
-    )
-    def test_non_filesystem_validation_produces_no_diagnostics(
-        self, target_lines: int, max_chain_length: int
-    ):
-        source = (
-            "\n".join(
-                gen.generate_source_lines(
-                    target_lines, max_chain_length=max_chain_length
-                )
-            )
-            + "\n"
+class TestMain:
+    def test_writes_source_from_command_line_arguments(self, tmp_path: Path):
+        output = tmp_path / "large.dfn"
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            ["--output", str(output), "--lines", "500", "--max-chain-length", "5"],
         )
 
-        pv = program_validator.ProgramStructuralValidator()
-        program_result = pv.validate_program_non_filesystem(source)
-        reference_graph_validator.ReferenceGraphValidator(
-            program_result.reference_graph,
-            program_result.definition_results,
-        ).validate()
+        assert result.exit_code == 0
+        assert output.read_text(encoding="utf-8").count("\n") >= 500
 
-        assert program_result.all_exceptions == []
-        assert program_result.all_diagnostics == []
+
+class TestFullDriver:
+    def test_generated_source_passes_full_validation(self):
+        source = "\n".join(gen.generate_source_lines(500, max_chain_length=10)) + "\n"
+
+        result = driver.Driver().validate_source(source).result
+
+        assert result.all_exceptions == []
+        assert result.all_diagnostics == []

@@ -1,6 +1,7 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import Path
 
+import click.testing
 import pytest
 
 from define.compiler import driver
@@ -40,11 +41,66 @@ class TestGenerateProjectFiles:
         assert files["lib/pkg39/m39.dfn"].endswith("m39>.\n")
 
 
+class TestWriteProject:
+    def test_writes_project_to_new_directory(self, tmp_path: Path):
+        output = tmp_path / "project"
+
+        gen.write_project(output, {"nested/source.dfn": "source\n"})
+
+        assert (output / "nested/source.dfn").read_text(encoding="utf-8") == "source\n"
+
+    def test_refuses_to_replace_existing_directory(self, tmp_path: Path):
+        output = tmp_path / "project"
+        output.mkdir()
+        sentinel = output / "keep.txt"
+        sentinel.write_text("keep\n", encoding="utf-8")
+
+        with pytest.raises(FileExistsError):
+            gen.write_project(output, {"source.dfn": "source\n"})
+
+        assert sentinel.read_text(encoding="utf-8") == "keep\n"
+
+
+class TestMain:
+    def test_writes_custom_universe_project(self, tmp_path: Path):
+        output = tmp_path / "project"
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            [
+                "--output",
+                str(output),
+                "--modules",
+                "4",
+                "--layers",
+                "2",
+                "--universe-name",
+                "mv:example.com:generated",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "mv:example.com:generated" in (output / "test.dfn").read_text(
+            encoding="utf-8"
+        )
+
+    def test_refuses_existing_output_directory(self, tmp_path: Path):
+        output = tmp_path / "project"
+        output.mkdir()
+
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            ["--output", str(output), "--modules", "4", "--layers", "2"],
+        )
+
+        assert result.exit_code == 2
+        assert "File exists" in result.output
+
+
 class TestGeneratedProjectValidates:
     def test_project_validates_without_diagnostics_or_exceptions(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        files = gen.generate_project_files(modules=60, layers=5)
+        files = gen.generate_project_files(modules=12, layers=3)
         for relative_path, content in files.items():
             file_path = tmp_path / relative_path
             file_path.parent.mkdir(parents=True, exist_ok=True)

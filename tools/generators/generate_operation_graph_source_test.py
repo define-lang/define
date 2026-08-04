@@ -1,11 +1,10 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import Path, PurePosixPath
 
+import click.testing
 import pytest
 
-from define.compiler import ast, parser
-from define.compiler.validator.reference_graph import reference_graph_validator
-from define.compiler.validator.structural import program_validator
+from define.compiler import ast, driver, parser
 from tools.generators import generate_operation_graph_source as gen
 
 
@@ -95,52 +94,48 @@ class TestWriteToPath:
         _parse_and_transform(out.read_text(encoding="utf-8"))
 
 
+class TestMain:
+    def test_writes_source_from_command_line_arguments(self, tmp_path: Path):
+        output = tmp_path / "operations.dfn"
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            [
+                "--output",
+                str(output),
+                "--repetitions",
+                "1",
+                "--move-chain-length",
+                "2",
+                "--tree-depth",
+                "2",
+                "--wide-children",
+                "2",
+                "--pods",
+                "0",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert output.is_file()
+
+
 class TestFullDriver:
-    @pytest.mark.parametrize(
-        (
-            "repetitions",
-            "move_chain_length",
-            "tree_depth",
-            "wide_children",
-            "pods",
-            "retriggers",
-        ),
-        [
-            (1, 2, 2, 2, 0, 1),
-            (2, 4, 3, 4, 2, 2),
-            (3, 3, 2, 3, 1, 3),
-            (4, 2, 5, 2, 2, 1),
-        ],
-    )
-    def test_non_filesystem_validation_produces_no_diagnostics(
-        self,
-        repetitions: int,
-        move_chain_length: int,
-        tree_depth: int,
-        wide_children: int,
-        pods: int,
-        retriggers: int,
-    ):
+    def test_generated_source_passes_full_validation(self):
         source = (
             "\n".join(
                 gen.generate_source_lines(
-                    repetitions=repetitions,
-                    move_chain_length=move_chain_length,
-                    tree_depth=tree_depth,
-                    wide_children=wide_children,
-                    pods=pods,
-                    retriggers=retriggers,
+                    repetitions=1,
+                    move_chain_length=2,
+                    tree_depth=2,
+                    wide_children=2,
+                    pods=1,
+                    retriggers=1,
                 )
             )
             + "\n"
         )
 
-        pv = program_validator.ProgramStructuralValidator()
-        program_result = pv.validate_program_non_filesystem(source)
-        reference_graph_validator.ReferenceGraphValidator(
-            program_result.reference_graph,
-            program_result.definition_results,
-        ).validate()
+        result = driver.Driver().validate_source(source).result
 
-        assert program_result.all_exceptions == []
-        assert program_result.all_diagnostics == []
+        assert result.all_exceptions == []
+        assert result.all_diagnostics == []

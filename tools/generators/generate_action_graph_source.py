@@ -41,12 +41,14 @@ Run via:
 
 from __future__ import annotations
 
-import argparse
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
+
+import click
+
+from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_graph"
 DEFAULT_LAYERS = 22
@@ -273,12 +275,6 @@ def generate_source_lines(
     return lines
 
 
-def _iter_with_newlines(lines: Iterable[str]) -> Iterable[str]:
-    for line in lines:
-        yield line
-        yield "\n"
-
-
 def write_to_path(
     output: Path,
     layers: int = DEFAULT_LAYERS,
@@ -295,89 +291,82 @@ def write_to_path(
         fqun_prefix=fqun_prefix,
         destructor_fraction=destructor_fraction,
     )
-    with output.open("w", encoding="utf-8") as f:
-        for chunk in _iter_with_newlines(lines):
-            _ = f.write(chunk)
-    return len(lines)
+    return generator_io.write_lines(output, lines)
 
 
-def main() -> None:
-    """Entry point for the CLI."""
-    parser = argparse.ArgumentParser(
-        description="""Generate a Define source file with a dense action call graph.
+@click.command()
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
+@click.option(
+    "--layers",
+    type=click.IntRange(min=_MIN_LAYERS),
+    default=DEFAULT_LAYERS,
+    show_default=True,
+    help="Number of action layers.",
+)
+@click.option(
+    "--width",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_WIDTH,
+    show_default=True,
+    help="Number of actions per layer.",
+)
+@click.option(
+    "--fan-out",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_FAN_OUT,
+    show_default=True,
+    help="Next-layer actions each action references; also every target's fan-in.",
+)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
+@click.option(
+    "--destructor-fraction",
+    type=generator_cli.FRACTION,
+    default=DEFAULT_DESTRUCTOR_FRACTION,
+    show_default=True,
+    help="Fraction of actions whose destroyed src carries a destructor.",
+)
+def main(
+    output: Path,
+    layers: int,
+    width: int,
+    fan_out: int,
+    fqun_prefix: str,
+    destructor_fraction: float,
+):
+    """Generate a Define source file with a dense action call graph.
 
-Emits one .dfn holding a layered directed acyclic graph of potential actions,
-all reachable from the entry-point constructor action /test, so every action
-is validated. Each action references next-layer actions through its `out`
-interface position's constraint, and destroys the particle in its `src`
-interface position, which infers an Action Requirement and records a
-Destruction Contract. This is the validation-bound profiling shape: guarantee
-propagation across triggers, requirement inference, and destruction-contract
-generation.
+    Emits one .dfn holding a layered directed acyclic graph of potential actions,
+    all reachable from the entry-point constructor action /test, so every action
+    is validated. Each action references next-layer actions through its `out`
+    interface position's constraint, and destroys the particle in its `src`
+    interface position, which infers an Action Requirement and records a
+    Destruction Contract. This is the validation-bound profiling shape: guarantee
+    propagation across triggers, requirement inference, and destruction-contract
+    generation.
 
-Scale it with --layers, --width, and --fan-out, which make the graph deeper,
-wider, or denser. Do not scale it by chasing a line count: the cost is in
-cross-action validation rather than in text. The generated source compiles to
-zero diagnostics.""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+    Scale it with --layers, --width, and --fan-out, which make the graph deeper,
+    wider, or denser. Do not scale it by chasing a line count: the cost is in
+    cross-action validation rather than in text. The generated source validates
+    to zero diagnostics.
+    """
+    written = generator_cli.invoke(
+        lambda: write_to_path(
+            output,
+            layers=layers,
+            width=width,
+            fan_out=fan_out,
+            fqun_prefix=fqun_prefix,
+            destructor_fraction=destructor_fraction,
+        )
     )
-    _ = parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Path to write the generated .dfn file",
-    )
-    _ = parser.add_argument(
-        "--layers",
-        type=int,
-        default=DEFAULT_LAYERS,
-        help=f"Number of action layers (default: {DEFAULT_LAYERS})",
-    )
-    _ = parser.add_argument(
-        "--width",
-        type=int,
-        default=DEFAULT_WIDTH,
-        help=f"Number of actions per layer (default: {DEFAULT_WIDTH})",
-    )
-    _ = parser.add_argument(
-        "--fan-out",
-        type=int,
-        default=DEFAULT_FAN_OUT,
-        help=(
-            "Next-layer actions each action references; also the fan-in of"
-            f" every target (default: {DEFAULT_FAN_OUT})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--fqun-prefix",
-        default=DEFAULT_FQUN_PREFIX,
-        help=f"Universe prefix for every definition (default: {DEFAULT_FQUN_PREFIX})",
-    )
-    _ = parser.add_argument(
-        "--destructor-fraction",
-        type=float,
-        default=DEFAULT_DESTRUCTOR_FRACTION,
-        help=(
-            "Fraction of actions whose destroyed src carries a destructor"
-            f" (default: {DEFAULT_DESTRUCTOR_FRACTION})"
-        ),
-    )
-    args = parser.parse_args()
-    output_path = cast("Path", args.output)
-    layers = cast("int", args.layers)
-    width = cast("int", args.width)
-    fan_out = cast("int", args.fan_out)
-    fqun_prefix = cast("str", args.fqun_prefix)
-    destructor_fraction = cast("float", args.destructor_fraction)
-    written = write_to_path(
-        output_path,
-        layers=layers,
-        width=width,
-        fan_out=fan_out,
-        fqun_prefix=fqun_prefix,
-        destructor_fraction=destructor_fraction,
-    )
-    print(f"Wrote {written:,} lines to {output_path}")
+    generator_cli.report_written("lines", written, output)
 
 
 if __name__ == "__main__":

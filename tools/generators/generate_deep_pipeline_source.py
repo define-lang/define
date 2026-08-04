@@ -19,12 +19,14 @@ similar structure with separately specialized actions.
 
 from __future__ import annotations
 
-import argparse
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
+
+import click
+
+from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:deep_pipeline"
 DEFAULT_PIPELINES = 64
@@ -214,12 +216,6 @@ def generate_source_lines(
     return lines
 
 
-def _iter_with_newlines(lines: Iterable[str]) -> Iterable[str]:
-    for line in lines:
-        yield line
-        yield "\n"
-
-
 def write_to_path(
     output: Path,
     pipelines: int = DEFAULT_PIPELINES,
@@ -232,72 +228,60 @@ def write_to_path(
         processing_stages=processing_stages,
         fqun_prefix=fqun_prefix,
     )
-    with output.open("w", encoding="utf-8") as source_file:
-        for chunk in _iter_with_newlines(lines):
-            _ = source_file.write(chunk)
-    return len(lines)
+    return generator_io.write_lines(output, lines)
 
 
-def main() -> None:
-    """Generate a deep processing-pipeline source from command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="""Generate a Define source file with deep processing pipelines.
+@click.command()
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
+@click.option(
+    "--pipelines",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_PIPELINES,
+    show_default=True,
+    help="Independent pipelines to emit.",
+)
+@click.option(
+    "--processing-stages",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=DEFAULT_PROCESSING_STAGES,
+    show_default=True,
+    help="Processing actions chained in each pipeline; cost grows quadratically.",
+)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
+def main(output: Path, pipelines: int, processing_stages: int, fqun_prefix: str):
+    """Generate a Define source file with deep processing pipelines.
 
-Emits one .dfn holding many independent pipelines, each a chain of specialized
-processing actions. The entry-point action prepares the particles every stage
-uses, each processing action triggers the next stage, and the last two actions
-create a particle in a temporary child position of a caller-created work
-particle, then move the work particle and destroy the child particle. This is
-the requirement-propagation profiling shape: it drives Position Requirements up
-through many callers and exercises the Fill Rule's parent-position dependency
-substitution, which the other shapes barely reach.
+    Emits one .dfn holding many independent pipelines, each a chain of specialized
+    processing actions. The entry-point action prepares the particles every stage
+    uses, each processing action triggers the next stage, and the last two actions
+    create a particle in a temporary child position of a caller-created work
+    particle, then move the work particle and destroy the child particle. This is
+    the requirement-propagation profiling shape: it drives Position Requirements up
+    through many callers and exercises the Fill Rule's parent-position dependency
+    substitution, which the other shapes barely reach.
 
-Scale it with --processing-stages, by far the more expensive knob: cost grows
-with the pipeline count times the square of the stage count, because every
-stage propagates requirements through every caller below it. --pipelines scales
-it linearly. Do not scale it by chasing a line count: the deepest shape here is
-also the shortest one. The generated source compiles to zero diagnostics.""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+    Scale it with --processing-stages, by far the more expensive knob: cost grows
+    with the pipeline count times the square of the stage count, because every
+    stage propagates requirements through every caller below it. --pipelines scales
+    it linearly. Do not scale it by chasing a line count: the deepest shape here is
+    also the shortest one. The generated source validates to zero diagnostics.
+    """
+    written = generator_cli.invoke(
+        lambda: write_to_path(
+            output,
+            pipelines=pipelines,
+            processing_stages=processing_stages,
+            fqun_prefix=fqun_prefix,
+        )
     )
-    _ = parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Path to write the generated .dfn file",
-    )
-    _ = parser.add_argument(
-        "--pipelines",
-        type=int,
-        default=DEFAULT_PIPELINES,
-        help=f"Independent pipelines to emit (default: {DEFAULT_PIPELINES})",
-    )
-    _ = parser.add_argument(
-        "--processing-stages",
-        type=int,
-        default=DEFAULT_PROCESSING_STAGES,
-        help=(
-            "Processing actions chained in each pipeline; cost grows with its"
-            f" square (default: {DEFAULT_PROCESSING_STAGES})"
-        ),
-    )
-    _ = parser.add_argument(
-        "--fqun-prefix",
-        default=DEFAULT_FQUN_PREFIX,
-        help=f"Universe prefix for every definition (default: {DEFAULT_FQUN_PREFIX})",
-    )
-    args = parser.parse_args()
-
-    output = cast("Path", args.output)
-    pipelines = cast("int", args.pipelines)
-    processing_stages = cast("int", args.processing_stages)
-    fqun_prefix = cast("str", args.fqun_prefix)
-    written = write_to_path(
-        output,
-        pipelines=pipelines,
-        processing_stages=processing_stages,
-        fqun_prefix=fqun_prefix,
-    )
-    print(f"Wrote {written:,} lines to {output}")
+    generator_cli.report_written("lines", written, output)
 
 
 if __name__ == "__main__":

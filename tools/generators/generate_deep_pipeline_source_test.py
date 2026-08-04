@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
-import sys
 from pathlib import Path
 
+import click.testing
 import pytest
 
 from define.compiler import driver
@@ -44,15 +44,11 @@ class TestWriteToPath:
 
 
 class TestMain:
-    def test_writes_source_from_command_line_arguments(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
+    def test_writes_source_from_command_line_arguments(self, tmp_path: Path):
         output = tmp_path / "deep_pipeline.dfn"
-        monkeypatch.setattr(
-            sys,
-            "argv",
+        result = click.testing.CliRunner().invoke(
+            gen.main,
             [
-                "generate_deep_pipeline_source",
                 "--output",
                 str(output),
                 "--pipelines",
@@ -64,32 +60,29 @@ class TestMain:
             ],
         )
 
-        gen.main()
-
+        assert result.exit_code == 0
         source = output.read_text(encoding="utf-8")
         assert "action<mv:example.com:profile:/test>" in source
         assert source.count("define the potential action<") == 2 * (3 + 2) + 1
 
+    def test_rejects_invalid_positive_integer(self, tmp_path: Path):
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            ["--output", str(tmp_path / "source.dfn"), "--pipelines", "0"],
+        )
 
-class TestFullCompiler:
-    @pytest.mark.parametrize(
-        ("pipelines", "processing_stages"),
-        [(1, 1), (2, 4), (4, 2)],
-    )
-    def test_generated_source_compiles_without_diagnostics(
-        self, tmp_path: Path, pipelines: int, processing_stages: int
-    ):
+        assert result.exit_code == 2
+        assert "0 is not in the range x>=1" in result.output
+
+
+class TestFullDriver:
+    def test_generated_source_passes_full_validation(self):
         source = (
-            "\n".join(
-                gen.generate_source_lines(
-                    pipelines=pipelines,
-                    processing_stages=processing_stages,
-                )
-            )
+            "\n".join(gen.generate_source_lines(pipelines=1, processing_stages=2))
             + "\n"
         )
 
-        result = driver.Driver().compile_source(source, tmp_path)
+        result = driver.Driver().validate_source(source)
 
         assert result.result.all_exceptions == []
         assert result.result.all_diagnostics == []

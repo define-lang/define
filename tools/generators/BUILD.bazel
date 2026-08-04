@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 
@@ -6,6 +7,11 @@ py_binary(
     name = "generate_action_graph_source",
     srcs = ["generate_action_graph_source.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
 )
 
 py_test(
@@ -16,9 +22,9 @@ py_test(
     deps = [
         ":generate_action_graph_source",
         "//define/compiler:ast",
+        "//define/compiler:driver",
         "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
+        "@pypi//click",
         "@pypi//pytest",
     ],
 )
@@ -27,6 +33,11 @@ py_binary(
     name = "generate_deep_pipeline_source",
     srcs = ["generate_deep_pipeline_source.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
 )
 
 py_test(
@@ -37,6 +48,7 @@ py_test(
     deps = [
         ":generate_deep_pipeline_source",
         "//define/compiler:driver",
+        "@pypi//click",
         "@pypi//pytest",
     ],
 )
@@ -45,6 +57,11 @@ py_binary(
     name = "generate_large_define_source",
     srcs = ["generate_large_define_source.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
 )
 
 py_test(
@@ -55,9 +72,9 @@ py_test(
     deps = [
         ":generate_large_define_source",
         "//define/compiler:ast",
+        "//define/compiler:driver",
         "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
+        "@pypi//click",
         "@pypi//pytest",
     ],
 )
@@ -66,6 +83,11 @@ py_binary(
     name = "generate_operation_graph_source",
     srcs = ["generate_operation_graph_source.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
 )
 
 py_test(
@@ -76,9 +98,9 @@ py_test(
     deps = [
         ":generate_operation_graph_source",
         "//define/compiler:ast",
+        "//define/compiler:driver",
         "//define/compiler:parser",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
+        "@pypi//click",
         "@pypi//pytest",
     ],
 )
@@ -87,6 +109,10 @@ py_binary(
     name = "generate_reference_graph_project",
     srcs = ["generate_reference_graph_project.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_cli",
+        "@pypi//click",
+    ],
 )
 
 py_test(
@@ -97,6 +123,31 @@ py_test(
     deps = [
         ":generate_reference_graph_project",
         "//define/compiler:driver",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "generator_cli",
+    srcs = ["generator_cli.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = ["@pypi//click"],
+)
+
+py_library(
+    name = "generator_io",
+    srcs = ["generator_io.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "generator_io_test",
+    size = "small",
+    srcs = ["generator_io_test.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":generator_io",
         "@pypi//pytest",
     ],
 )
