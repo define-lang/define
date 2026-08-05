@@ -66,7 +66,7 @@ def apply_empty_rule_reduction[DependencyNodeT: LastOperationNode](
 ) -> tuple[DependencyNodeT, ...]:
     """Apply the Empty Rule to unordered candidate dependencies."""
     return _apply_empty_rule_reduction_newest_first(
-        sorted(candidates, key=lambda item: item.node_id, reverse=True)
+        sorted(candidates, key=lambda item: item.operation_order, reverse=True)
     )
 
 
@@ -116,7 +116,7 @@ class ParticleChildOperations:
         operation_position_prefixes: set[tuple[str, ...]] = set()
         for child_position, operation in sorted(
             preceding_operations,
-            key=lambda item: item[1].node_id,
+            key=lambda item: item[1].operation_order,
             reverse=True,
         ):
             if (
@@ -222,9 +222,8 @@ class ParticleChildOperations:
 
     def all_precede(self, operation: MoveNode) -> bool:
         """Return whether every child operation precedes ``operation``."""
-        return (
-            not self.operations
-            or self.operations[0].operation.node_id < operation.node_id
+        return not self.operations or (
+            self.operations[0].operation.operation_order < operation.operation_order
         )
 
     def child_position_set(self) -> frozenset[tuple[str, ...]]:
@@ -328,8 +327,11 @@ class ActionTrigger:
 
 
 # A node_id is unique only within one graph, so nodes use identity equality and
-# hashing when they appear in sets and mappings. Every dataclass subclass must
-# repeat eq=False because dataclass decorator options are not inherited.
+# hashing when they appear in sets and mappings. A node_id is normally also the
+# operation's order. Conditional destructions added after validation override
+# that through operation_order, so only operation_order should be used to determine
+# the order of operations. Every dataclass subclass must repeat eq=False because
+# dataclass decorator options are not inherited.
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class OperationNode(abc.ABC):
     """One operation in an action's dependency graph."""
@@ -338,6 +340,11 @@ class OperationNode(abc.ABC):
     # The operations this node directly depends on (the operations that must
     # complete before it).
     depends_on: tuple[OperationNode, ...]
+    operation_order: tuple[int, int, int] = field(init=False, repr=False)
+
+    def __post_init__(self):
+        """Set the operation's order within its action."""
+        object.__setattr__(self, "operation_order", (self.node_id, 1, 0))
 
     @property
     def operated_positions(self) -> tuple[tuple[str, ...], ...]:
@@ -395,6 +402,18 @@ class DestroyNode(PositionOperationNode):
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
 class DestroyIfOccupiedNode(DestroyNode):
     """A destroy of the particle in ``target`` only if the position is occupied."""
+
+    inserted_before: DestroyNode | None = None
+
+    def __post_init__(self):
+        """Set the conditional destruction's order within its action."""
+        OperationNode.__post_init__(self)
+        if self.inserted_before is not None:
+            object.__setattr__(
+                self,
+                "operation_order",
+                (self.inserted_before.node_id, 0, self.node_id),
+            )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)

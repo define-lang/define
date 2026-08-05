@@ -76,6 +76,28 @@ def test_operation_nodes_use_identity_equality():
     assert len({one, equivalent}) == 2
 
 
+def test_inserted_destroy_if_occupied_orders_before_existing_destruction():
+    preceding = operation_graph_model.CreateNode(
+        node_id=1, target=_ref("preceding"), depends_on=()
+    )
+    destruction = operation_graph_model.DestroyNode(
+        node_id=2, target=_ref("particle"), depends_on=(preceding,)
+    )
+    following = operation_graph_model.CreateNode(
+        node_id=3, target=_ref("following"), depends_on=(destruction,)
+    )
+    inserted = operation_graph_model.DestroyIfOccupiedNode(
+        node_id=4,
+        target=_ref("particle", "child"),
+        depends_on=(preceding,),
+        inserted_before=destruction,
+    )
+
+    assert preceding.operation_order < inserted.operation_order
+    assert inserted.operation_order < destruction.operation_order
+    assert destruction.operation_order < following.operation_order
+
+
 def test_last_operation_on_position_raises_for_an_untouched_position():
     graph = operation_graph.OperationGraph()
     box = _ref("box")

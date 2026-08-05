@@ -369,7 +369,7 @@ class _CurrentActionNestedGuarantees:
             for action_chain, guarantees in self._by_action_chain.items()
             for nested_guarantees in guarantees
         ]
-        result.sort(key=lambda item: item[1].trigger.trigger_operation.node_id)
+        result.sort(key=lambda item: item[1].trigger.trigger_operation.operation_order)
         return tuple(result)
 
 

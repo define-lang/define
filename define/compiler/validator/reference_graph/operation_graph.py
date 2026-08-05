@@ -108,7 +108,8 @@ class OperationGraph:
         for length in range(len(key), 0, -1):
             operation = self._last_operation.get(key[:length])
             if operation is not None and (
-                last_operation is None or operation.node_id > last_operation.node_id
+                last_operation is None
+                or last_operation.operation_order < operation.operation_order
             ):
                 last_operation = operation
         if last_operation is None:
@@ -338,7 +339,7 @@ class OperationGraph:
             # Most parent names have no operation; among those that do, a newer
             # operation wins even when it is on a more-distant parent name.
             if existing is not None and (
-                ancestor is None or existing.node_id > ancestor.node_id
+                ancestor is None or ancestor.operation_order < existing.operation_order
             ):
                 ancestor = existing
         return ancestor
