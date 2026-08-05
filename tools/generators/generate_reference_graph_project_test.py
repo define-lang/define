@@ -96,8 +96,8 @@ class TestMain:
         assert "File exists" in result.output
 
 
-class TestGeneratedProjectValidates:
-    def test_project_validates_without_diagnostics_or_exceptions(
+class TestGeneratedProjectCompiles:
+    def test_project_compiles_without_diagnostics_or_exceptions(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         files = gen.generate_project_files(modules=12, layers=3)
@@ -107,7 +107,9 @@ class TestGeneratedProjectValidates:
             file_path.write_text(content, encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        result = driver.Driver().validate_program(Path("test.dfn")).result
+        output_dir = tmp_path / "generated"
+        result = driver.Driver().compile_program(Path("test.dfn"), output_dir).result
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []
+        assert (output_dir / "__main__.py").is_file()

@@ -118,13 +118,20 @@ def generate_project_files(
     # The entry file reaches the first layer, from which the walk reaches the
     # rest; definitions no layer references are never validated.
     entry_constraints = "".join(
-        f"        it has the position<{_definition_path(target)}>.\n"
+        (f"            it has the position<{_definition_path(target)}>.\n")
         for target in range(min(width, modules))
     )
     files["test.dfn"] = (
-        f"define the potential position<{universe_name}:/test> {{\n"
-        "    it may only contain particles where {\n"
+        f"define the potential action<{universe_name}:/test> {{\n"
+        "    define the position<references> {\n"
+        "        it may only contain particles where {\n"
         f"{entry_constraints}"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        create a particle in position<references>.\n"
         "    }\n"
         "}\n"
     )
@@ -209,10 +216,9 @@ def main(
     the high fan-in that real dependency graphs have.
 
     Scale it with --modules for file count and --layers for reference depth.
-    --seed makes the shape reproducible. The generated project validates to zero
-    diagnostics; its entry point is a position rather than a constructor action,
-    so profile it through validate_program rather than a full compile. The
-    destination must not already exist.
+    --seed makes the shape reproducible. The generated project compiles to zero
+    diagnostics through its constructor action entry point. The destination
+    must not already exist.
     """
     files = generator_cli.invoke(
         lambda: generate_project_files(

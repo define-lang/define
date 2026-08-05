@@ -5,30 +5,27 @@ non-filesystem compile path, the same code that ``main compile`` runs when
 source is piped on stdin. Profiling in-process (rather than spawning the CLI)
 keeps cProfile's view free of process-startup and click-dispatch noise.
 
-With ``--project`` it profiles a whole directory of files through
-``validate_program`` instead, for source shapes whose entry point is a position
-rather than a constructor action.
+With ``--project`` it profiles ``driver.compile_program`` over a whole directory
+of files. Both modes include code generation.
 
-Requires the repo root on PYTHONPATH so ``define.compiler`` imports resolve, and
-that ``uv run tools/setup_local_dev.py`` has been run at least once. Invoke as:
+Invoke through its Bazel target so generated compiler dependencies and the
+profiling interpreter are consistent:
 
-    PYTHONPATH=<repo-root> uv run python tools/run_profile.py \
+    bazelisk run //tools:run_profile -- \
         --source <file.dfn> --out <file.prof>
 """
 
 from __future__ import annotations
 
-import argparse
 import contextlib
 import cProfile
 import os
 import pathlib
 import tempfile
-from typing import cast
+
+import click
 
 from define.compiler import driver
-from define.compiler.validator.reference_graph import reference_graph_validator
-from define.compiler.validator.structural import program_validator
 
 
 def _profile_source(
@@ -58,74 +55,120 @@ def _profile_source(
 
 
 def _profile_project(
-    project: pathlib.Path, entry: str
+    project: pathlib.Path,
+    entry: str,
+    output_dir: pathlib.Path | None,
 ) -> tuple[cProfile.Profile, bool]:
-    """Profile every file a project's entry file reaches, code generation aside.
+    """Profile compilation of every file a project's entry file reaches.
 
-    Code generation is skipped because a project's entry point can be a
-    position rather than a constructor action.
-
-    Returns the profiler and whether validation reported errors.
+    Returns the profiler and whether compilation reported errors.
     """
     os.chdir(project)
 
-    profiler = cProfile.Profile()
-    profiler.enable()
-    # Structural validation runs files on a thread pool. cProfile is built on
-    # sys.monitoring, whose profiler tool is process-global, so a single
-    # profiler already sees the worker threads — but two threads interleaving
-    # into its shared call stack would scramble the timings. Pinning the pool to
-    # one worker also keeps these numbers comparable with --source profiles.
-    structural = program_validator.ProgramStructuralValidator().validate_program(
-        path=pathlib.PurePosixPath(entry), max_workers=1
+    out_dir_ctx = (
+        contextlib.nullcontext(output_dir)
+        if output_dir is not None
+        else tempfile.TemporaryDirectory(prefix="cg_profile_")
     )
-    _ = reference_graph_validator.ReferenceGraphValidator(
-        structural.reference_graph, structural.definition_results
-    ).validate()
-    profiler.disable()
-    return profiler, structural.has_errors()
+    with out_dir_ctx as out_dir_name:
+        out_dir = pathlib.Path(out_dir_name)
+        d = driver.Driver()
+        profiler = cProfile.Profile()
+        profiler.enable()
+        result = d.compile_program(pathlib.Path(entry), out_dir)
+        profiler.disable()
+    return profiler, result.result.has_errors()
 
 
-def main() -> None:
-    """Parse arguments, profile the compile, and write the .prof file."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    _ = mode.add_argument(
-        "--source", type=pathlib.Path, help="Single .dfn file to compile."
+_PATH = click.Path(path_type=pathlib.Path)
+
+
+# TODO: Add --max-threads, defaulting to 1, after main.py and Driver expose a
+# compiler-wide thread limit. It should control both structural and reference
+# graph validation, with higher values available for intentionally profiling
+# concurrent compilation.
+@click.command(
+    epilog=(
+        "Examples:\n\n"
+        "  run_profile --source SOURCE --out PROFILE\n\n"
+        "  run_profile --project PROJECT --out PROFILE\n\n"
+        "Both modes compile in process. Generated code goes to a temporary "
+        "directory unless --output-dir is provided. Each run reports whether "
+        "the compilation had errors and writes a cProfile .prof file."
     )
-    _ = mode.add_argument(
-        "--project", type=pathlib.Path, help="Project root directory to validate."
-    )
-    _ = parser.add_argument(
-        "--entry",
-        default="test.dfn",
-        help="Entry file within --project (default: test.dfn).",
-    )
-    _ = parser.add_argument("--out", type=pathlib.Path, required=True)
-    _ = parser.add_argument(
-        "--output-dir",
-        type=pathlib.Path,
-        default=None,
-        help="Codegen output dir for --source (defaults to a throwaway temp dir).",
-    )
-    args = parser.parse_args()
-    source_path = cast("pathlib.Path | None", args.source)
-    entry = cast("str", args.entry)
-    output_dir = cast("pathlib.Path | None", args.output_dir)
+)
+@click.option(
+    "--source",
+    "source_path",
+    type=click.Path(
+        path_type=pathlib.Path,
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    help="Compile one .dfn file through Driver.compile_source.",
+)
+@click.option(
+    "--project",
+    type=click.Path(
+        path_type=pathlib.Path,
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+    ),
+    help="Compile a project directory through Driver.compile_program.",
+)
+@click.option(
+    "--entry",
+    default="test.dfn",
+    show_default=True,
+    help="Entry file within --project. Ignored by --source.",
+)
+@click.option(
+    "--out",
+    "out_path",
+    type=_PATH,
+    required=True,
+    help="Destination cProfile .prof file.",
+)
+@click.option(
+    "--output-dir",
+    type=_PATH,
+    help="Codegen output directory. Defaults to a throwaway directory.",
+)
+def main(
+    source_path: pathlib.Path | None,
+    project: pathlib.Path | None,
+    entry: str,
+    out_path: pathlib.Path,
+    output_dir: pathlib.Path | None,
+):
+    """Profile the complete driver pipeline, including code generation.
+
+    Pass exactly one of --source or --project.
+    """
+    if source_path is not None and project is not None:
+        raise click.UsageError("provide exactly one of --source or --project")
+
+    if output_dir is not None:
+        output_dir = output_dir.absolute()
     # Resolved before --project can change the working directory out from under it.
-    out_path = cast("pathlib.Path", args.out).absolute()
+    out_path = out_path.absolute()
 
     if source_path is not None:
         profiler, has_errors = _profile_source(source_path, output_dir)
+    elif project is not None:
+        profiler, has_errors = _profile_project(project.absolute(), entry, output_dir)
     else:
-        project_path = cast("pathlib.Path", args.project)
-        profiler, has_errors = _profile_project(project_path.absolute(), entry)
+        raise click.UsageError("provide exactly one of --source or --project")
     profiler.dump_stats(str(out_path))
 
     # A clean (0-diagnostic) run means the profile reflects the full pipeline;
     # a failed one may have short-circuited and is not comparable.
-    print(f"has_errors={has_errors}")
-    print(f"profile written to {out_path}")
+    click.echo(f"has_errors={has_errors}")
+    click.echo(f"profile written to {out_path}")
 
 
 if __name__ == "__main__":

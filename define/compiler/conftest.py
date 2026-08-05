@@ -97,7 +97,9 @@ def validate_project(
             PurePosixPath(entry_file),
             max_workers=max_workers,
         )
-        return _run_reference_graph_validation(structural_result)
+        return _run_reference_graph_validation(
+            structural_result, max_workers=max_workers
+        )
 
     return _run
 
@@ -105,7 +107,9 @@ def validate_project(
 class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
     """Validate the convention-derived non-filesystem source."""
 
-    def __call__(self) -> validation_result.ProgramValidationResult:
+    def __call__(
+        self, *, max_workers: int | None = ...
+    ) -> validation_result.ProgramValidationResult:
         """Run structural and reference graph validation."""
         ...
 
@@ -208,15 +212,17 @@ def validate_testdata_non_filesystem_with_reference_graph(
     directory = _testdata_directory(request)
     source = (directory / "source.dfn").read_text(encoding="utf-8")
 
-    def _run() -> validation_result.ProgramValidationResult:
+    def _run(
+        *, max_workers: int | None = None
+    ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         result = program_validator.ProgramStructuralValidator(
             _PARSER
-        ).validate_program_non_filesystem(source)
+        ).validate_program_non_filesystem(source, max_workers=max_workers)
         reference_graph_validator.ReferenceGraphValidator(
             result.reference_graph,
             result.definition_results,
-        ).validate()
+        ).validate(max_workers=max_workers)
         return result
 
     return _run
@@ -224,11 +230,13 @@ def validate_testdata_non_filesystem_with_reference_graph(
 
 def _run_reference_graph_validation(
     structural_result: validation_result.ProgramValidationResult,
+    *,
+    max_workers: int | None = None,
 ) -> FullValidationResult:
     reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
         structural_result.reference_graph,
         structural_result.definition_results,
-    ).validate()
+    ).validate(max_workers=max_workers)
     return FullValidationResult(
         program_result=structural_result,
         reference_graph_result=reference_graph_result,
@@ -263,6 +271,8 @@ def validate_testdata_project_with_reference_graph(
         structural_result = program_validator.ProgramStructuralValidator(
             _PARSER
         ).validate_program(PurePosixPath("test.dfn"), max_workers=max_workers)
-        return _run_reference_graph_validation(structural_result)
+        return _run_reference_graph_validation(
+            structural_result, max_workers=max_workers
+        )
 
     return _run

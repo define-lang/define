@@ -115,6 +115,16 @@ class ReferenceGraph:
             if definition_name in self._definition_by_name:
                 yield self._definition_by_name[definition_name]
 
+    def referenced_definitions(
+        self, definition: ast.QualityDefinition
+    ) -> Iterator[ast.QualityDefinition]:
+        """Yield definitions directly referenced by ``definition``."""
+        definition_name = definition.typed_name.source_typed_name
+        for referenced_name in self._references_by_name[definition_name]:
+            referenced_definition = self._definition_by_name.get(referenced_name)
+            if referenced_definition is not None:
+                yield referenced_definition
+
     def _add_name(self, definition_name: str):
         if definition_name not in self._references_by_name:
             self._references_by_name[definition_name] = {}

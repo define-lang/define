@@ -93,8 +93,19 @@ py_binary(
     srcs = ["run_profile.py"],
     deps = [
         "//define/compiler:driver",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:program_validator",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "run_profile_test",
+    size = "small",
+    srcs = ["run_profile_test.py"],
+    deps = [
+        ":run_profile",
+        "//tools/generators:generate_reference_graph_project",
+        "@pypi//click",
+        "@pypi//pytest",
     ],
 )
 
@@ -243,6 +254,7 @@ pyright_test(
         ":j2lint_runner",
         ":regenerate_codegen_testdata",
         ":run_profile",
+        ":run_profile_test",
         ":setup_local_dev",
         ":sync_agent_permissions",
         ":update_toolchains",

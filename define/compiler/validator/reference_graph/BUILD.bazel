@@ -81,6 +81,7 @@ py_library(
         ":particle_operation",
         ":particle_tracker",
         ":quality_assignment",
+        ":reference_graph_validation_state",
         ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -271,6 +272,28 @@ py_library(
 )
 
 py_library(
+    name = "reference_graph_validation_state",
+    srcs = ["reference_graph_validation_state.py"],
+    deps = [
+        ":action_contract",
+        ":quality_assignment",
+        "//define/compiler:ast",
+    ],
+)
+
+py_test(
+    name = "reference_graph_validation_state_test",
+    size = "small",
+    srcs = ["reference_graph_validation_state_test.py"],
+    deps = [
+        ":action_contract",
+        ":quality_assignment",
+        ":reference_graph_validation_state",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "reference_graph_validator",
     srcs = ["reference_graph_validator.py"],
     visibility = [
@@ -278,15 +301,28 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
-        ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
-        ":quality_assignment",
+        ":reference_graph_validation_state",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_test(
+    name = "reference_graph_validator_test",
+    size = "small",
+    srcs = ["reference_graph_validator_test.py"],
+    deps = [
+        ":definition_postorder_validator",
+        ":reference_graph_validator",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -353,7 +389,10 @@ pyright_test(
         ":quality_assignment",
         ":quality_assignment_test",
         ":reference_graph",
+        ":reference_graph_validation_state",
+        ":reference_graph_validation_state_test",
         ":reference_graph_validator",
+        ":reference_graph_validator_test",
         ":requirement_violation",
         ":test_helpers",
     ],

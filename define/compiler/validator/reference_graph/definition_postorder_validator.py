@@ -15,6 +15,7 @@ from define.compiler.validator.reference_graph import (
     particle_operation,
     particle_tracker,
     quality_assignment,
+    reference_graph_validation_state,
     requirement_violation,
 )
 
@@ -50,12 +51,7 @@ class ActionPostorderValidator:
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
-    _action_contracts: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_contract.ActionContract
-    ]
-    _definition_quality_cache: dict[
-        tuple[str, ...], quality_assignment.QualityAssignments
-    ]
+    _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
@@ -68,18 +64,12 @@ class ActionPostorderValidator:
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, validation_result.DefinitionValidationResult
         ],
-        action_contracts: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_contract.ActionContract
-        ],
-        definition_quality_cache: dict[
-            tuple[str, ...], quality_assignment.QualityAssignments
-        ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the definition to validate and the full results map."""
         self._definition_result = definition_result
         self._definition_results = definition_results
-        self._action_contracts = action_contracts
-        self._definition_quality_cache = definition_quality_cache
+        self._validation_state = validation_state
         self._diagnostics = []
         self._action_edges = []
         self._inferred_requirements = {}
@@ -259,7 +249,7 @@ class ActionPostorderValidator:
             )
             if not definition.is_constructor:
                 continue
-            contract = self._action_contracts[quality]
+            contract = self._validation_state.get_contract(quality)
             # The constructor is a quality of the particle in `position`, so its
             # interface positions hang off position::action</construct> while its
             # implied qualities hang off the position itself.
@@ -413,7 +403,7 @@ class ActionPostorderValidator:
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
         quality = destructor.assignment.quality
-        contract = self._action_contracts.get(quality)
+        contract = self._validation_state.get_contract_or_none(quality)
         if contract is None:
             return
         action_chain = destructor.position.with_action_suffix(quality)
@@ -464,7 +454,7 @@ class ActionPostorderValidator:
             "ast.GlobalTypedNameReference", position.get_last_action()
         )
         # The action's file may have failed to load or parse.
-        contract = self._action_contracts.get(action_ref)
+        contract = self._validation_state.get_contract_or_none(action_ref)
         if contract is None:
             return
         trigger_element = typing.cast(
@@ -848,7 +838,9 @@ class ActionPostorderValidator:
         created_in_this_action: bool,
     ) -> bool:
         """Verify one destructor found in the cascade; return whether it was fully resolved here."""
-        destructor_contract = self._action_contracts.get(destructor_quality)
+        destructor_contract = self._validation_state.get_contract_or_none(
+            destructor_quality
+        )
         if destructor_contract is None:
             return False
         action_chain = particle_position.with_action_suffix(destructor_quality)
@@ -1379,12 +1371,9 @@ class ActionPostorderValidator:
             return quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
         if cache_key is None:
             return self._build_quality_assignments(direct)
-        cached = self._definition_quality_cache.get(cache_key)
-        if cached is not None:
-            return cached
-        result = self._build_quality_assignments(direct)
-        self._definition_quality_cache[cache_key] = result
-        return result
+        return self._validation_state.get_or_build_quality_assignments(
+            cache_key, lambda: self._build_quality_assignments(direct)
+        )
 
     def _build_quality_assignments(
         self, direct: tuple[ast.GlobalTypedNameReference, ...]
