@@ -13,7 +13,6 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
-_MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
 _MARKED = "action<my.domain.com:my_lib:/marked>"
 
 
@@ -183,17 +182,6 @@ def test_destroy_via_chained_interface_position_fires_destructor(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
-
-
-def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
-        (_TEST, _MAKE_THING),
-        (_TEST, _DESTRUCTOR),
-    ]
 
 
 def test_destroy_after_move_into_unconstrained_position_fires_destructor(

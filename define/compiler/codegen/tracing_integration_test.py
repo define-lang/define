@@ -23,9 +23,6 @@ _UNSUPPORTED_DESTRUCTOR_CASE_REASONS = {
     "destructor_known_only_two_callers_up": (
         "destructors learned through Destruction Contracts are not recorded"
     ),
-    "destructor_on_particle_from_callee_guarantee": (
-        "codegen cannot lower destructor triggers fired by GuaranteeNodes"
-    ),
     "destructor_with_children_known_only_two_callers_up": (
         "destructors learned through Destruction Contracts are not recorded"
     ),
@@ -57,7 +54,6 @@ _GENERATED_OPERATION_TRACE_TEST_CASES = [
     for trace_file in sorted(_TESTDATA_ROOT.glob("*/operation_trace.json"))
 ]
 _UNLOWERABLE_DESTRUCTOR_CASES = {
-    "destructor_on_particle_from_callee_guarantee",
     "destructor_with_children_known_only_two_callers_up",
 }
 _CONCURRENT_RUNTIME_TEST_CASES = [

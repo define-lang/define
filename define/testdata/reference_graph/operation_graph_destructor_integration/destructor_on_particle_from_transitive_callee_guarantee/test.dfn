@@ -1,0 +1,16 @@
+# The destructor is triggered by a guarantee from /inner through /middle. Its
+# occupied implied-position requirement is also known through /inner's guarantees.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</middle>::position<run>.
+        destroy the particle in position<gateway>::action</middle>::position<box>::action</inner>::position<result>.
+    }
+}

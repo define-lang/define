@@ -60,6 +60,7 @@ class ActionNames:
     triggered_actions: dict[operation_graph_model.ActionTrigger, TriggeredActionNames]
     # The execution method for each triggered action input.
     triggered_inputs: dict[action_plan.TriggeredActionInput, str]
+    guarantee_destructor_triggers: dict[action_plan.GuaranteeDestructorTrigger, str]
     # The execution method for each action fragment.
     fragments: dict[action_plan.ActionFragment, str]
     # The guarantees task-list member for each guarantee publication.
@@ -98,6 +99,9 @@ class ActionNameGenerator:
         triggered_inputs = self._triggered_input_method_names(
             triggered_action_base_names
         )
+        guarantee_destructor_triggers = self._guarantee_destructor_trigger_names(
+            triggered_action_base_names
+        )
         fragments = self._fragment_method_names()
         guarantee_allocator = naming.NameAllocator()
         guarantee_publications = self._guarantee_publication_names(guarantee_allocator)
@@ -110,6 +114,7 @@ class ActionNameGenerator:
             caller_inputs=caller_inputs,
             triggered_actions=triggered_actions,
             triggered_inputs=triggered_inputs,
+            guarantee_destructor_triggers=guarantee_destructor_triggers,
             fragments=fragments,
             guarantee_publications=guarantee_publications,
             child_guarantees=child_guarantees,
@@ -224,6 +229,17 @@ class ActionNameGenerator:
                 self._guarantee_base_name(publication)
             )
         return publication_names
+
+    def _guarantee_destructor_trigger_names(
+        self,
+        triggered_action_base_names: dict[operation_graph_model.ActionTrigger, str],
+    ) -> dict[action_plan.GuaranteeDestructorTrigger, str]:
+        return {
+            destructor_trigger: self._execution_allocator.allocate(
+                triggered_action_base_names[destructor_trigger.action_trigger]
+            )
+            for destructor_trigger in self._plan.guarantee_destructor_triggers
+        }
 
     def _child_guarantees_names(
         self,

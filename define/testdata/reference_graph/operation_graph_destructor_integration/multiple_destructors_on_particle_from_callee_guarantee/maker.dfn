@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/maker> {
+    define the position<result> {
+        it may only contain particles where {
+            it has the action</destruct_a>.
+            it has the action</destruct_b>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<result>.
+    }
+}

@@ -1,0 +1,18 @@
+# The caller learns the destructor only through /maker's result guarantee, then
+# moves the particle before destroying it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</maker>.
+            }
+        }
+        define the position<held>.
+        create a particle in position<box>.
+        create a particle in position<box>::action</maker>::position<run>.
+        move the particle in position<box>::action</maker>::position<result> to position<held>.
+        destroy the particle in position<held>.
+    }
+}

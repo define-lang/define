@@ -129,6 +129,14 @@ class {{ execution.execution_class_name }}:
         {% endif %}
         )
     {% endfor %}
+    {% for destructor_trigger in execution.guarantee_destructor_triggers %}
+
+    def {{ destructor_trigger.method_name }}(self):
+        self.{{ destructor_trigger.destructor_execution_init_method }}()
+        {% for method_name in destructor_trigger.triggered_input_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+        {% endfor %}
+    {% endfor %}
     {% for triggered_input in execution.triggered_action_inputs %}
 
     def {{ triggered_input.method_name }}(self):

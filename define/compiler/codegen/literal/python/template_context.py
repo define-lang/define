@@ -1,6 +1,7 @@
 """Template context dataclasses for Python literal code generation."""
 
 import enum
+from collections.abc import Sequence
 from dataclasses import InitVar, dataclass, field
 
 from define.compiler import ast
@@ -182,6 +183,15 @@ class CallerInputContext:
 
 
 @dataclass
+class GuaranteeDestructorTriggerContext:
+    """One destructor Action Triggering fired by a guarantee."""
+
+    method_name: str
+    destructor_execution_init_method: str
+    triggered_input_method_names: list[str]
+
+
+@dataclass
 class ActionExecutionContext:
     """Template context for operation-graph execution of one action."""
 
@@ -192,7 +202,8 @@ class ActionExecutionContext:
     caller_inputs: list[CallerInputContext]
     triggered_actions: list[TriggeredActionContext]
     triggered_action_inputs: list[TriggeredActionInputContext]
-    guarantee_registrations: list[GuaranteeRegistrationContext]
+    guarantee_destructor_triggers: list[GuaranteeDestructorTriggerContext]
+    guarantee_registrations: Sequence[GuaranteeRegistrationContext]
     guarantees: GuaranteesContext | None
     trace_operations: bool = False
     needs_action: bool = field(init=False)

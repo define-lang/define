@@ -89,6 +89,15 @@ class GuaranteePublication:
     guaranteed_target: tuple[str, ...] | None
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class GuaranteeDestructorTrigger:
+    """A destructor Action Triggering fired by a guarantee."""
+
+    action_trigger: operation_graph_model.ActionTrigger
+    guarantee_dependency: operation_graph.GuaranteePath
+    triggered_inputs: list[TriggeredActionInput]
+
+
 @dataclass(frozen=True, slots=True)
 class ActionPlan:
     """A split representation of an action at one compilation boundary."""
@@ -98,6 +107,7 @@ class ActionPlan:
     caller_inputs: list[CallerInput]
     action_triggers: list[operation_graph_model.ActionTrigger]
     triggered_action_inputs: list[TriggeredActionInput]
+    guarantee_destructor_triggers: list[GuaranteeDestructorTrigger]
     guarantee_publications: list[GuaranteePublication]
 
 
@@ -135,9 +145,9 @@ class _FragmentTopologyBuilder:
         guaranteed_positions_by_operation: dict[
             operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
         ],
-        resolved_action_triggers: list[
-            operation_graph_action_resolver.ResolvedActionTrigger
-        ],
+        resolved_action_triggers: (
+            operation_graph_action_resolver.ResolvedActionTriggers
+        ),
         caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
     ):
         self._dependencies = dependencies
@@ -161,21 +171,14 @@ class _FragmentTopologyBuilder:
                 self._local_successors[predecessor].append(operation)
 
         self._must_end_fragment_operations = set(guaranteed_positions_by_operation)
-        # TODO: Build sparse reverse Action Triggering consumer indexes during
-        # action resolution, while keeping ActionTrigger.trigger_operation as the
-        # authoritative graph relationship. Fragment topology and triggering
-        # planning can then consume those indexes without classifying the
-        # trigger operation independently.
         for resolved_action_trigger in resolved_action_triggers:
             for triggered_input in resolved_action_trigger.inputs:
                 self._must_end_fragment_operations.update(
                     triggered_input.caller_dependencies.local_operations
                 )
-            trigger_operation = resolved_action_trigger.trigger.trigger_operation
-            if isinstance(
-                trigger_operation, operation_graph_model.PositionOperationNode
-            ):
-                self._must_end_fragment_operations.add(trigger_operation)
+        self._must_end_fragment_operations.update(
+            resolved_action_triggers.position_operations
+        )
         self._caller_input_consumer_operations = {
             operation
             for caller_input in caller_inputs
@@ -334,6 +337,9 @@ class _ActionPlanBuilder:
                 for action_trigger in self._resolved_action.action_triggers
             ],
             triggered_action_inputs=triggered_actions.inputs,
+            guarantee_destructor_triggers=self._plan_guarantee_destructor_triggers(
+                triggered_actions
+            ),
             guarantee_publications=guarantee_publications,
         )
 
@@ -349,9 +355,9 @@ class _ActionPlanBuilder:
             operation_graph_action_resolver.ResolvedActionTriggerInput,
             TriggeredActionInput,
         ] = {}
-        for resolved_action_trigger in self._resolved_action.action_triggers:
+        resolved_action_triggers = self._resolved_action.action_triggers
+        for resolved_action_trigger in resolved_action_triggers:
             action_trigger = resolved_action_trigger.trigger
-            inputs_for_action_trigger: list[TriggeredActionInput] = []
             for resolved_input in resolved_action_trigger.inputs:
                 dependencies = resolved_input.caller_dependencies
                 planned_dependencies = _PlanDependencies.from_action_dependencies(
@@ -373,23 +379,54 @@ class _ActionPlanBuilder:
                     dependency_count=dependency_count,
                 )
                 triggered_action_inputs.append(triggered_input)
-                inputs_for_action_trigger.append(triggered_input)
                 input_by_resolved_input[resolved_input] = triggered_input
                 for operation in planned_dependencies.local_operations:
                     fragment_for_operation[operation].triggered_input_successors.append(
                         triggered_input
                     )
-            trigger_operation = action_trigger.trigger_operation
-            if isinstance(
-                trigger_operation, operation_graph_model.PositionOperationNode
-            ):
-                fragment = fragment_for_operation[trigger_operation]
-                fragment.triggered_action_successors.append(action_trigger)
-                fragment.execution_input_successors.extend(inputs_for_action_trigger)
+        # Connect each Action Triggering to the Particle Operation that triggers it.
+        for (
+            trigger_operation,
+            resolved_triggers,
+        ) in resolved_action_triggers.by_position_operation():
+            fragment = fragment_for_operation[trigger_operation]
+            for resolved_action_trigger in resolved_triggers:
+                fragment.triggered_action_successors.append(
+                    resolved_action_trigger.trigger
+                )
+                fragment.execution_input_successors.extend(
+                    input_by_resolved_input[resolved_input]
+                    for resolved_input in resolved_action_trigger.inputs
+                )
         return _TriggeredActions(
             inputs=triggered_action_inputs,
             input_by_resolved_input=input_by_resolved_input,
         )
+
+    def _plan_guarantee_destructor_triggers(
+        self,
+        triggered_actions: _TriggeredActions,
+    ) -> list[GuaranteeDestructorTrigger]:
+        guarantee_destructor_triggers: list[GuaranteeDestructorTrigger] = []
+        for (
+            trigger_guarantee,
+            resolved_destructor_triggers,
+        ) in self._resolved_action.action_triggers.destructors_by_guarantee():
+            guarantee_dependency = self._operation_graphs.resolve_guarantee(
+                trigger_guarantee
+            )
+            for resolved_destructor_trigger in resolved_destructor_triggers:
+                guarantee_destructor_triggers.append(
+                    GuaranteeDestructorTrigger(
+                        action_trigger=resolved_destructor_trigger.trigger,
+                        guarantee_dependency=guarantee_dependency,
+                        triggered_inputs=[
+                            triggered_actions.input_by_resolved_input[resolved_input]
+                            for resolved_input in resolved_destructor_trigger.inputs
+                        ],
+                    )
+                )
+        return guarantee_destructor_triggers
 
     def _plan_guarantee_publications(
         self,

@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/destructor> {
+    it also assigns the position</marker>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<_noop>.
+        define the position<holder>.
+        create a particle in position<_noop>.
+        destroy the particle in position<_noop>.
+        move the particle in position</marker> to position<holder>.
+        move the particle in position<holder> to position</marker>.
+    }
+}

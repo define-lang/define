@@ -18,7 +18,13 @@ from define.compiler.validator.reference_graph import (
 # graph.
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import (
+        ItemsView,
+        Iterable,
+        Iterator,
+        KeysView,
+        Mapping,
+    )
 
     from define.compiler import ast
 
@@ -205,6 +211,64 @@ class ResolvedActionTrigger:
         )
 
 
+@typing.final
+class ResolvedActionTriggers:
+    """Resolved Action Triggerings and their reverse indexes."""
+
+    def __init__(self):
+        """Initialize an empty collection."""
+        self._triggers: list[ResolvedActionTrigger] = []
+        self._by_position_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            list[ResolvedActionTrigger],
+        ] = {}
+        self._destructors_by_guarantee: dict[
+            operation_graph_model.GuaranteeNode,
+            list[ResolvedActionTrigger],
+        ] = {}
+
+    def __iter__(self) -> Iterator[ResolvedActionTrigger]:
+        """Iterate over every resolved Action Triggering."""
+        return iter(self._triggers)
+
+    def __len__(self) -> int:
+        """Return the number of resolved Action Triggerings."""
+        return len(self._triggers)
+
+    @property
+    def position_operations(
+        self,
+    ) -> KeysView[operation_graph_model.PositionOperationNode]:
+        """Return the Particle Operations that trigger actions."""
+        return self._by_position_operation.keys()
+
+    def by_position_operation(
+        self,
+    ) -> ItemsView[
+        operation_graph_model.PositionOperationNode, list[ResolvedActionTrigger]
+    ]:
+        """Return Particle Operations and the Action Triggerings they cause."""
+        return self._by_position_operation.items()
+
+    def destructors_by_guarantee(
+        self,
+    ) -> ItemsView[operation_graph_model.GuaranteeNode, list[ResolvedActionTrigger]]:
+        """Return guarantees and the destructors they trigger."""
+        return self._destructors_by_guarantee.items()
+
+    def add_operation(
+        self,
+        operation: operation_graph_model.LastOperationNode,
+        trigger: ResolvedActionTrigger,
+    ):
+        """Add an Action Triggering caused by an operation."""
+        self._triggers.append(trigger)
+        if isinstance(operation, operation_graph_model.PositionOperationNode):
+            self._by_position_operation.setdefault(operation, []).append(trigger)
+        elif isinstance(operation, operation_graph_model.GuaranteeNode):
+            self._destructors_by_guarantee.setdefault(operation, []).append(trigger)
+
+
 @dataclass(frozen=True, slots=True)
 class ResolvedAction:
     """The dependency interface of one reusable action."""
@@ -214,7 +278,7 @@ class ResolvedAction:
         operation_graph_model.PositionOperationNode, ActionDependencies
     ]
     caller_inputs: list[ResolvedCallerInput]
-    action_triggers: list[ResolvedActionTrigger]
+    action_triggers: ResolvedActionTriggers
 
 
 @typing.final
@@ -236,7 +300,7 @@ class _ActionResolver:
         self._caller_input_by_node: dict[
             _CallerInputDependencyNode, ResolvedCallerInput
         ] = {}
-        self._action_triggers: list[ResolvedActionTrigger] = []
+        self._action_triggers = ResolvedActionTriggers()
 
     def resolve(self) -> ResolvedAction:
         """Resolve the action's operations and direct Action Triggerings."""
@@ -248,7 +312,7 @@ class _ActionResolver:
             )
 
         for trigger in self._graph.triggers:
-            self._action_triggers.append(self._resolve_action_trigger(trigger))
+            self._resolve_action_trigger(trigger)
 
         return ResolvedAction(
             self._graph,
@@ -266,9 +330,7 @@ class _ActionResolver:
         self._record_operation_caller_inputs(caller_input_dependencies, operation)
         return dependencies
 
-    def _resolve_action_trigger(
-        self, trigger: operation_graph_model.ActionTrigger
-    ) -> ResolvedActionTrigger:
+    def _resolve_action_trigger(self, trigger: operation_graph_model.ActionTrigger):
         callee = self._resolved_callees[trigger.callee_action_name]
         dependency_resolver = _ActionTriggerDependencyResolver(self._graph, trigger)
         inputs: list[ResolvedActionTriggerInput] = []
@@ -287,16 +349,17 @@ class _ActionResolver:
             for caller_input in caller_inputs:
                 caller_input.triggered_input_consumers.append(resolved_input)
         resolved_trigger = ResolvedActionTrigger(trigger, inputs)
+        trigger_operation = trigger.trigger_operation
+        self._action_triggers.add_operation(trigger_operation, resolved_trigger)
         # This is a destructor triggering on a child of a from_caller particle.
-        if isinstance(trigger.trigger_operation, operation_graph_model.RequirementNode):
+        if isinstance(trigger_operation, operation_graph_model.RequirementNode):
             # There's no guarantee that resolving the destructor's operations resolved
             # the dependency on its parent, because the destructor might not have acted
             # on any implied positions. So we have to use _caller_input_for in case
             # we have to generate the resolved requirement node.
-            caller_input = self._caller_input_for(trigger.trigger_operation)
+            caller_input = self._caller_input_for(trigger_operation)
             caller_input.destructor_trigger_consumers.append(resolved_trigger)
             caller_input.triggered_input_consumers.extend(resolved_trigger.inputs)
-        return resolved_trigger
 
     def _record_operation_caller_inputs(
         self,

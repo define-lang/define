@@ -1,6 +1,7 @@
 """Literal Python guarantee generation for action executions."""
 
 import typing
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from define.compiler import ast
@@ -24,7 +25,10 @@ class GeneratedGuarantees:
 
     context: template_context.GuaranteesContext | None
     interface: action_context.GuaranteeInterface | None
-    guarantee_registrations: list[template_context.GuaranteeRegistrationContext]
+    guarantee_registrations: Sequence[template_context.GuaranteeRegistrationContext]
+
+
+_EMPTY_GENERATED_GUARANTEES = GeneratedGuarantees(None, None, ())
 
 
 @typing.final
@@ -53,10 +57,10 @@ class ActionGuaranteesGenerator:
         child_guarantees = self._child_guarantees()
         if not (
             self._plan.guarantee_publications
-            or self._has_guarantee_dependencies()
             or child_guarantees
+            or self._has_guarantee_dependencies()
         ):
-            return GeneratedGuarantees(None, None, [])
+            return _EMPTY_GENERATED_GUARANTEES
 
         class_reference = self._converter.guarantees_class_reference(
             self._definition.typed_name
@@ -73,11 +77,13 @@ class ActionGuaranteesGenerator:
         )
 
     def _has_guarantee_dependencies(self) -> bool:
-        return any(
-            fragment.guarantee_dependencies for fragment in self._plan.fragments
-        ) or any(
-            triggered_input.guarantee_dependencies
-            for triggered_input in self._plan.triggered_action_inputs
+        return (
+            any(fragment.guarantee_dependencies for fragment in self._plan.fragments)
+            or any(
+                triggered_input.guarantee_dependencies
+                for triggered_input in self._plan.triggered_action_inputs
+            )
+            or bool(self._plan.guarantee_destructor_triggers)
         )
 
     def _child_guarantees(
@@ -158,6 +164,19 @@ class ActionGuaranteesGenerator:
                         method_name=self._names.triggered_inputs[triggered_input],
                     )
                 )
+        for destructor_trigger in self._plan.guarantee_destructor_triggers:
+            child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
+                interface, destructor_trigger.guarantee_dependency
+            )
+            registrations.append(
+                template_context.GuaranteeRegistrationContext(
+                    child_guarantees_names=child_guarantees_names,
+                    guarantee_name=guarantee_name,
+                    method_name=self._names.guarantee_destructor_triggers[
+                        destructor_trigger
+                    ],
+                )
+            )
         return registrations
 
     @staticmethod

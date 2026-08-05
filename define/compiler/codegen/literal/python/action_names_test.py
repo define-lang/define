@@ -192,6 +192,7 @@ def _generated_action(
         [],
         [],
         [],
+        [],
         None,
     )
     context = action_context.ActionDefinitionContext(
@@ -244,6 +245,7 @@ def _input_method_names(
         ],
         action_triggers=[],
         triggered_action_inputs=[],
+        guarantee_destructor_triggers=[],
         guarantee_publications=[],
     )
     return _action_names(plan).caller_inputs
@@ -256,6 +258,7 @@ def test_local_position_names():
         caller_inputs=[],
         action_triggers=[],
         triggered_action_inputs=[],
+        guarantee_destructor_triggers=[],
         guarantee_publications=[],
     )
     definition = _action_definition(("first", "second"))
@@ -340,6 +343,7 @@ def test_fragments_skip_a_normalized_source_suffix():
         caller_inputs=[],
         action_triggers=[],
         triggered_action_inputs=[],
+        guarantee_destructor_triggers=[],
         guarantee_publications=[],
     )
 
@@ -363,6 +367,7 @@ def test_fragment_names_preserve_external_universes_and_multiverse():
         caller_inputs=[],
         action_triggers=[],
         triggered_action_inputs=[],
+        guarantee_destructor_triggers=[],
         guarantee_publications=[],
     )
 
@@ -386,6 +391,7 @@ def test_repeated_action_trigger_skips_a_source_suffix(
         caller_inputs=[],
         action_triggers=action_triggers,
         triggered_action_inputs=[],
+        guarantee_destructor_triggers=[],
         guarantee_publications=[],
     )
 

@@ -92,6 +92,9 @@ class ActionExecutionGenerator:
             caller_inputs=self._generate_caller_inputs(names),
             triggered_actions=triggered_actions,
             triggered_action_inputs=self._generate_triggered_inputs(names),
+            guarantee_destructor_triggers=(
+                self._generate_guarantee_destructor_triggers(names)
+            ),
             guarantee_registrations=guarantees.guarantee_registrations,
             guarantees=guarantees.context,
             trace_operations=self._operation_labels is not None,
@@ -228,4 +231,22 @@ class ActionExecutionGenerator:
                 ],
             )
             for caller_input in self._plan.caller_inputs
+        ]
+
+    def _generate_guarantee_destructor_triggers(
+        self,
+        names: action_names.ActionNames,
+    ) -> list[template_context.GuaranteeDestructorTriggerContext]:
+        return [
+            template_context.GuaranteeDestructorTriggerContext(
+                method_name=names.guarantee_destructor_triggers[destructor_trigger],
+                destructor_execution_init_method=names.triggered_actions[
+                    destructor_trigger.action_trigger
+                ].initializer_name,
+                triggered_input_method_names=[
+                    names.triggered_inputs[triggered_input]
+                    for triggered_input in destructor_trigger.triggered_inputs
+                ],
+            )
+            for destructor_trigger in self._plan.guarantee_destructor_triggers
         ]

@@ -120,6 +120,14 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     )
 
     assert resolved_trigger.trigger is trigger
+    assert len(resolved.action_triggers) == 1
+    assert tuple(resolved.action_triggers.position_operations) == (
+        trigger_position_create,
+    )
+    assert list(resolved.action_triggers.by_position_operation()) == [
+        (trigger_position_create, [resolved_trigger])
+    ]
+    assert list(resolved.action_triggers.destructors_by_guarantee()) == []
     (resolved_input,) = resolved_trigger.inputs
     assert resolved_input.callee_input is resolved_callee.caller_inputs[0]
     assert (
@@ -181,3 +189,5 @@ def test_requirement_input_fires_destructor():
         resolved_destructor_input,
     ]
     assert caller_input.destructor_trigger_consumers == [resolved_destructor_trigger]
+    assert tuple(resolved.action_triggers.position_operations) == ()
+    assert list(resolved.action_triggers.destructors_by_guarantee()) == []

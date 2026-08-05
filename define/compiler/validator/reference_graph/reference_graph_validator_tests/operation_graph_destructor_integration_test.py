@@ -10,9 +10,6 @@ _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded in the "
     "operation graph"
 )
-_GUARANTEE_TRIGGER_NOT_RECORDED = (
-    "destructor triggers whose preceding operation is a guarantee are not recorded"
-)
 
 
 def test_destructor_independent_chains_and_operation_after_destroy(
@@ -222,7 +219,33 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_GUARANTEE_TRIGGER_NOT_RECORDED)
+def test_caller_moves_callee_guaranteed_particle_before_destroying(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/maker::run)": ["test.create(box)"],
+        "maker.create(temp)": ["test.create(box)"],
+        "maker.move(temp, result)": [
+            "maker.create(temp)",
+            "test.create(box)",
+        ],
+        "test.move(box::/maker::result, held)": ["maker.move(temp, result)"],
+        # After the move, it is the operation that fires the destructor.
+        "destructor.create(_noop)": ["test.move(box::/maker::result, held)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(held)": ["test.move(box::/maker::result, held)"],
+        "test.destroy(box::/maker::run)": ["test.create(box::/maker::run)"],
+        # Destroying box also waits for the move that emptied its result position.
+        "test.destroy(box)": [
+            "test.move(box::/maker::result, held)",
+            "test.destroy(box::/maker::run)",
+        ],
+    }
+
+
 def test_destructor_on_particle_from_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -232,12 +255,126 @@ def test_destructor_on_particle_from_callee_guarantee(
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(result)": ["test.create(box)"],
+        # The guarantee both fires the destructor and supplies its Action Parent input.
         "destructor.create(_noop)": ["maker.create(result)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
         "test.destroy(box::/maker::result)": ["maker.create(result)"],
         "test.destroy(box::/maker::run)": ["test.create(box::/maker::run)"],
         "test.destroy(box)": [
             "test.destroy(box::/maker::result)",
             "test.destroy(box::/maker::run)",
+        ],
+    }
+
+
+def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/make_thing::run)": ["test.create(box)"],
+        "make_thing.create(temp)": ["test.create(box)"],
+        "make_thing.move(temp, result)": [
+            "make_thing.create(temp)",
+            "test.create(box)",
+        ],
+        # The move propagates the destructor even though result has no such constraint.
+        "destructor.create(_noop)": ["make_thing.move(temp, result)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(box::/make_thing::result)": ["make_thing.move(temp, result)"],
+        "test.destroy(box::/make_thing::run)": ["test.create(box::/make_thing::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/make_thing::result)",
+            "test.destroy(box::/make_thing::run)",
+        ],
+    }
+
+
+def test_destructor_attached_in_callee_on_implied_position_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/maker::run)": ["test.create(box)"],
+        "maker.create(temp)": ["test.create(box)"],
+        "maker.move(temp, /child)": ["maker.create(temp)", "test.create(box)"],
+        # The implied-position guarantee propagates and fires the destructor that
+        # /maker attached to the particle.
+        "destructor.create(_noop)": ["maker.move(temp, /child)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(box::/child)": ["maker.move(temp, /child)"],
+        "test.destroy(box::/maker::run)": ["test.create(box::/maker::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/child)",
+            "test.destroy(box::/maker::run)",
+        ],
+    }
+
+
+def test_destructor_on_particle_from_transitive_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::run)": ["test.create(gateway)"],
+        "middle.create(box)": ["test.create(gateway)"],
+        "middle.create(box::/inner::run)": ["middle.create(box)"],
+        "inner.create(result)": ["middle.create(box)"],
+        "inner.create(result::/marker)": ["inner.create(result)"],
+        # The transitive result guarantee fires the destructor and supplies its
+        # Action Parent input.
+        "destructor.create(_noop)": ["inner.create(result)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        # The child guarantee supplies the destructor's occupied requirement.
+        "destructor.move(/marker, holder)": ["inner.create(result::/marker)"],
+        "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
+        "test.destroy(gateway::/middle::box::/inner::result::/marker)": [
+            "destructor.move(holder, /marker)"
+        ],
+        "test.destroy(gateway::/middle::box::/inner::result)": [
+            "test.destroy(gateway::/middle::box::/inner::result::/marker)"
+        ],
+        "test.destroy(gateway::/middle::run)": ["test.create(gateway::/middle::run)"],
+        "test.destroy(gateway::/middle::box::/inner::run)": [
+            "middle.create(box::/inner::run)"
+        ],
+        "test.destroy(gateway::/middle::box)": [
+            "test.destroy(gateway::/middle::box::/inner::result)",
+            "test.destroy(gateway::/middle::box::/inner::run)",
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/middle::run)",
+            "test.destroy(gateway::/middle::box)",
+        ],
+    }
+
+
+def test_destructor_on_implied_position_from_transitive_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/middle::run)": ["test.create(box)"],
+        "middle.create(/inner::run)": ["test.create(box)"],
+        "inner.create(/child)": ["test.create(box)"],
+        # The transitive implied-position guarantee fires the destructor.
+        "destructor.create(_noop)": ["inner.create(/child)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(box::/child)": ["inner.create(/child)"],
+        "test.destroy(box::/middle::run)": ["test.create(box::/middle::run)"],
+        "test.destroy(box::/inner::run)": ["middle.create(/inner::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/child)",
+            "test.destroy(box::/middle::run)",
+            "test.destroy(box::/inner::run)",
         ],
     }
 
@@ -297,6 +434,29 @@ def test_multiple_destructors_all_fire_on_destroy(
         "destruct_a.destroy(_noop)": ["destruct_a.create(_noop)"],
         "destruct_b.create(_noop)": ["test.create(box)"],
         "destruct_b.destroy(_noop)": ["destruct_b.create(_noop)"],
+    }
+
+
+def test_multiple_destructors_on_particle_from_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/maker::run)": ["test.create(box)"],
+        "maker.create(result)": ["test.create(box)"],
+        # One guarantee independently fires both destructors.
+        "destruct_a.create(_noop)": ["maker.create(result)"],
+        "destruct_a.destroy(_noop)": ["destruct_a.create(_noop)"],
+        "destruct_b.create(_noop)": ["maker.create(result)"],
+        "destruct_b.destroy(_noop)": ["destruct_b.create(_noop)"],
+        "test.destroy(box::/maker::result)": ["maker.create(result)"],
+        "test.destroy(box::/maker::run)": ["test.create(box::/maker::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/maker::result)",
+            "test.destroy(box::/maker::run)",
+        ],
     }
 
 

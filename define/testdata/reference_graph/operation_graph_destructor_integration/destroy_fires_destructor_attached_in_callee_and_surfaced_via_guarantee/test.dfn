@@ -1,8 +1,9 @@
-# make_thing attaches a destructor in a local position then moves the particle into result, whose constraint omits the destructor; the destructor rides the OccupiedByNew guarantee up to /test, which owns the result and fires it on destroy.
+# make_thing attaches a destructor in a local position and moves the particle to
+# result, whose constraints omit the destructor. The result guarantee propagates
+# the destructor to /test, where destroying result triggers it.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {
