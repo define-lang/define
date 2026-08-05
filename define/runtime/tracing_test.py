@@ -31,6 +31,7 @@ def test_completion_hooks_retain_every_operation_in_order():
     scheduler.create_completed(execution, "item", 1)
     scheduler.move_completed(execution, "item", "destination", 1)
     scheduler.destroy_completed(execution, "destination", 1)
+    scheduler.destroy_if_occupied_completed(execution, "conditional", 1)
     scheduler.create_completed(execution, "item", 2)
 
     assert scheduler.records == [
@@ -47,6 +48,13 @@ def test_completion_hooks_retain_every_operation_in_order():
             "destroy",
             None,
             "destination",
+            1,
+        ),
+        tracing.OperationTraceRecord(
+            execution,
+            "destroy_if_occupied",
+            None,
+            "conditional",
             1,
         ),
         tracing.OperationTraceRecord(execution, "create", None, "item", 2),

@@ -115,6 +115,23 @@ class TracingScheduler(literal.Scheduler):
             occurrence,
         )
 
+    @override
+    def destroy_if_occupied_completed(
+        self,
+        execution: object | None,
+        position_name: str,
+        occurrence: int,
+        /,
+    ):
+        """Record a completed conditional Destroy."""
+        self._operation_completed(
+            execution,
+            "destroy_if_occupied",
+            None,
+            position_name,
+            occurrence,
+        )
+
     def _operation_completed(
         self,
         execution: object | None,

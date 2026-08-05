@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    it also assigns the position</target>.
+    define the position<run> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<run> to position</target>.
+        destroy the particle in position</target>.
+    }
+}

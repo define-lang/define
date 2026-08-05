@@ -34,7 +34,12 @@
         {{ position_expression(stmt.position) }}.destroy_particle()
             {% endif %}
             {% if stmt.operation_label is not none %}
+                {% if stmt.destroy_if_occupied %}
+                    {# TODO: Trace this operation only when it actually destroys a particle. #}
+        self.scheduler.destroy_if_occupied_completed(
+                {% else %}
         self.scheduler.destroy_completed(
+                {% endif %}
             self.trace_execution,
             "{{ stmt.operation_label.target }}",
             {{ stmt.operation_label.occurrence }},

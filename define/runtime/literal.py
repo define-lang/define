@@ -166,6 +166,15 @@ class Scheduler:
     ):
         """Observe completion of a Destroy."""
 
+    def destroy_if_occupied_completed(
+        self,
+        _execution: object | None,
+        _position_name: str,
+        _occurrence: int,
+        /,
+    ):
+        """Observe completion of a conditional Destroy."""
+
     def start(self, entry_point: type[EntryPoint]):
         """Execute the Define program startup sequence once."""
         if self._started:

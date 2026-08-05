@@ -176,6 +176,7 @@ class TestScheduler:
         scheduler.create_completed(execution, "item", 1)
         scheduler.move_completed(execution, "item", "destination", 1)
         scheduler.destroy_completed(execution, "destination", 1)
+        scheduler.destroy_if_occupied_completed(execution, "destination", 1)
 
         assert execution is None
 

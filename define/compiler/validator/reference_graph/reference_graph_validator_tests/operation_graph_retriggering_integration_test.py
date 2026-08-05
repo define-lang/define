@@ -26,6 +26,40 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
     }
 
 
+def test_destroying_action_reused_with_known_child_empty_then_occupied(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(first)": [],
+        "test.move(first, /destroyer::run)": ["test.create(first)"],
+        "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
+        "destroyer.destroy_if_occupied(/target::/child)": [
+            "destroyer.move(run, /target)"
+        ],
+        "destroyer.destroy(/target)": [
+            "destroyer.destroy_if_occupied(/target::/child)"
+        ],
+        "test.create(second)": [],
+        "test.create(second::/child)": ["test.create(second)"],
+        "test.move(second, /destroyer::run)": [
+            "test.create(second::/child)",
+            "destroyer.move(run, /target)",
+        ],
+        "destroyer#2.move(run, /target)": [
+            "test.move(second, /destroyer::run)",
+            "destroyer.destroy(/target)",
+        ],
+        "destroyer#2.destroy_if_occupied(/target::/child)": [
+            "destroyer#2.move(run, /target)"
+        ],
+        "destroyer#2.destroy(/target)": [
+            "destroyer#2.destroy_if_occupied(/target::/child)"
+        ],
+    }
+
+
 @pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
 def test_repeated_destroying_action_invocations_include_caller_dependent_children(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
