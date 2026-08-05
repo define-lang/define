@@ -5,6 +5,7 @@ from unittest import mock
 import click.testing
 import pytest
 
+from define.compiler import driver
 from tools import run_profile
 from tools.generators import generate_reference_graph_project
 
@@ -25,13 +26,30 @@ def test_profiles_source_through_driver(tmp_path: Path):
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
     profile_path = tmp_path / "source.prof"
 
-    with mock.patch.object(cProfile, "Profile", autospec=True):
+    original_compile_source = driver.Driver.compile_source
+    with (
+        mock.patch.object(cProfile, "Profile", autospec=True),
+        mock.patch.object(
+            driver.Driver,
+            "compile_source",
+            autospec=True,
+            side_effect=original_compile_source,
+        ) as compile_source,
+    ):
         result = click.testing.CliRunner().invoke(
             run_profile.main,
-            ["--source", str(source_path), "--out", str(profile_path)],
+            [
+                "--source",
+                str(source_path),
+                "--out",
+                str(profile_path),
+                "--max-threads",
+                "3",
+            ],
         )
 
     assert result.exit_code == 0
+    assert compile_source.call_args.kwargs["max_threads"] == 3
     assert result.output == (
         f"has_errors=False\nprofile written to {profile_path.absolute()}\n"
     )

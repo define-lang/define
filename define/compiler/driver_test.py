@@ -2,6 +2,7 @@
 """Tests for driver-only behavior."""
 
 from pathlib import Path, PureWindowsPath
+from unittest import mock
 
 import pytest
 
@@ -12,6 +13,9 @@ from define.compiler import (
     parser,
 )
 from define.compiler.data_structures import define_path
+from define.compiler.validator import validation_result
+from define.compiler.validator.reference_graph import reference_graph_validator
+from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARSER = parser.Parser()
@@ -183,6 +187,50 @@ class TestPathResolution:
 
 
 class TestSourceValidation:
+    def test_max_threads_configures_both_validation_phases(self):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+        structural_validate = (
+            program_validator.ProgramStructuralValidator.validate_program_non_filesystem
+        )
+        reference_graph_validate = (
+            reference_graph_validator.ReferenceGraphValidator.validate
+        )
+
+        def validate_structurally(
+            validator: program_validator.ProgramStructuralValidator,
+            source: str,
+            max_workers: int | None = None,
+        ) -> validation_result.ProgramValidationResult:
+            assert max_workers == 3
+            return structural_validate(validator, source, max_workers=max_workers)
+
+        def validate_reference_graph(
+            validator: reference_graph_validator.ReferenceGraphValidator,
+            max_workers: int | None = None,
+        ) -> reference_graph_validator.ReferenceGraphValidationResult:
+            assert max_workers == 3
+            return reference_graph_validate(validator, max_workers=max_workers)
+
+        with (
+            mock.patch.object(
+                program_validator.ProgramStructuralValidator,
+                "validate_program_non_filesystem",
+                autospec=True,
+                side_effect=validate_structurally,
+            ),
+            mock.patch.object(
+                reference_graph_validator.ReferenceGraphValidator,
+                "validate",
+                autospec=True,
+                side_effect=validate_reference_graph,
+            ),
+        ):
+            driver_result = driver.Driver(_PARSER).validate_source(
+                source, max_threads=3
+            )
+
+        assert_no_errors(driver_result.result)
+
     def test_clean_source_validates_with_no_errors(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver(_PARSER).validate_source(source)

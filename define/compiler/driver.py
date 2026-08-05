@@ -65,19 +65,32 @@ class Driver:
         """
         self._parser_instance: parser.Parser | None = parser_instance
 
-    def validate_program(self, path: Path) -> DriverResult:
+    def validate_program(
+        self, path: Path, *, max_threads: int | None = None
+    ) -> DriverResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         pv = program_validator.ProgramStructuralValidator(self._parser_instance)
-        return self._assemble_result(pv.validate_program(path=resolved_path))
+        return self._assemble_result(
+            pv.validate_program(path=resolved_path, max_workers=max_threads),
+            max_threads=max_threads,
+        )
 
-    def validate_source(self, source: str) -> DriverResult:
+    def validate_source(
+        self, source: str, *, max_threads: int | None = None
+    ) -> DriverResult:
         """Validate source text in non-filesystem mode."""
         pv = program_validator.ProgramStructuralValidator(self._parser_instance)
-        return self._assemble_result(pv.validate_program_non_filesystem(source))
+        return self._assemble_result(
+            pv.validate_program_non_filesystem(source, max_workers=max_threads),
+            max_threads=max_threads,
+        )
 
     def _assemble_result(
-        self, program_result: validation_result.ProgramValidationResult
+        self,
+        program_result: validation_result.ProgramValidationResult,
+        *,
+        max_threads: int | None = None,
     ) -> DriverResult:
         """Run reference-graph validation and wrap the program result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
@@ -85,7 +98,7 @@ class Driver:
         reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
             program_result.reference_graph,
             program_result.definition_results,
-        ).validate()
+        ).validate(max_workers=max_threads)
         # TODO: Retain only the validation data needed after this point so the
         # remaining compiler state can be released before code generation.
         return DriverResult(
@@ -103,10 +116,11 @@ class Driver:
         output_dir: Path,
         *,
         trace_operations: bool = False,
+        max_threads: int | None = None,
     ) -> DriverResult:
         """Validate and then run code generation on a source file."""
         return self._generate_code(
-            self.validate_program(path),
+            self.validate_program(path, max_threads=max_threads),
             output_dir,
             trace_operations=trace_operations,
         )
@@ -117,10 +131,11 @@ class Driver:
         output_dir: Path,
         *,
         trace_operations: bool = False,
+        max_threads: int | None = None,
     ) -> DriverResult:
         """Validate source text in non-filesystem mode and run code generation."""
         return self._generate_code(
-            self.validate_source(source),
+            self.validate_source(source, max_threads=max_threads),
             output_dir,
             trace_operations=trace_operations,
         )
@@ -191,6 +206,7 @@ class Driver:
         stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
         output_dir: Path | None = None,
         source: str | None = None,
+        max_threads: int | None = None,
     ) -> ExitCode:
         """Validate (and optionally compile) a Define source file or source text.
 
@@ -206,6 +222,7 @@ class Driver:
                 Required when mode is COMPILE.
             source: Source text to validate in non-filesystem mode instead of
                 reading from path.
+            max_threads: Maximum threads used by each validation phase.
         """
         if error_stream is None:
             error_stream = sys.stderr
@@ -214,17 +231,21 @@ class Driver:
                 if output_dir is None:
                     raise ValueError("output_dir is required when mode is COMPILE")
                 if source is not None:
-                    driver_result = self.compile_source(source, output_dir)
+                    driver_result = self.compile_source(
+                        source, output_dir, max_threads=max_threads
+                    )
                 else:
                     if path is None:
                         raise ValueError("path is required when source is not given")
-                    driver_result = self.compile_program(path, output_dir)
+                    driver_result = self.compile_program(
+                        path, output_dir, max_threads=max_threads
+                    )
             elif source is not None:
-                driver_result = self.validate_source(source)
+                driver_result = self.validate_source(source, max_threads=max_threads)
             else:
                 if path is None:
                     raise ValueError("path is required when source is not given")
-                driver_result = self.validate_program(path)
+                driver_result = self.validate_program(path, max_threads=max_threads)
         except exceptions.DefineError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR

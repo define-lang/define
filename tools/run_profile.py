@@ -29,7 +29,9 @@ from define.compiler import driver
 
 
 def _profile_source(
-    source_path: pathlib.Path, output_dir: pathlib.Path | None
+    source_path: pathlib.Path,
+    output_dir: pathlib.Path | None,
+    max_threads: int,
 ) -> tuple[cProfile.Profile, bool]:
     """Profile a single-file compile, code generation included.
 
@@ -49,7 +51,7 @@ def _profile_source(
         d = driver.Driver()
         profiler = cProfile.Profile()
         profiler.enable()
-        result = d.compile_source(source, out_dir)
+        result = d.compile_source(source, out_dir, max_threads=max_threads)
         profiler.disable()
     return profiler, result.result.has_errors()
 
@@ -58,6 +60,7 @@ def _profile_project(
     project: pathlib.Path,
     entry: str,
     output_dir: pathlib.Path | None,
+    max_threads: int,
 ) -> tuple[cProfile.Profile, bool]:
     """Profile compilation of every file a project's entry file reaches.
 
@@ -75,7 +78,9 @@ def _profile_project(
         d = driver.Driver()
         profiler = cProfile.Profile()
         profiler.enable()
-        result = d.compile_program(pathlib.Path(entry), out_dir)
+        result = d.compile_program(
+            pathlib.Path(entry), out_dir, max_threads=max_threads
+        )
         profiler.disable()
     return profiler, result.result.has_errors()
 
@@ -83,10 +88,6 @@ def _profile_project(
 _PATH = click.Path(path_type=pathlib.Path)
 
 
-# TODO: Add --max-threads, defaulting to 1, after main.py and Driver expose a
-# compiler-wide thread limit. It should control both structural and reference
-# graph validation, with higher values available for intentionally profiling
-# concurrent compilation.
 @click.command(
     epilog=(
         "Examples:\n\n"
@@ -134,6 +135,13 @@ _PATH = click.Path(path_type=pathlib.Path)
     help="Destination cProfile .prof file.",
 )
 @click.option(
+    "--max-threads",
+    type=click.IntRange(min=1),
+    default=1,
+    show_default=True,
+    help="Maximum threads used by each validation phase.",
+)
+@click.option(
     "--output-dir",
     type=_PATH,
     help="Codegen output directory. Defaults to a throwaway directory.",
@@ -143,6 +151,7 @@ def main(
     project: pathlib.Path | None,
     entry: str,
     out_path: pathlib.Path,
+    max_threads: int,
     output_dir: pathlib.Path | None,
 ):
     """Profile the complete driver pipeline, including code generation.
@@ -158,9 +167,11 @@ def main(
     out_path = out_path.absolute()
 
     if source_path is not None:
-        profiler, has_errors = _profile_source(source_path, output_dir)
+        profiler, has_errors = _profile_source(source_path, output_dir, max_threads)
     elif project is not None:
-        profiler, has_errors = _profile_project(project.absolute(), entry, output_dir)
+        profiler, has_errors = _profile_project(
+            project.absolute(), entry, output_dir, max_threads
+        )
     else:
         raise click.UsageError("provide exactly one of --source or --project")
     profiler.dump_stats(str(out_path))

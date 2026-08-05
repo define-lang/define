@@ -88,6 +88,34 @@ class TestValidateSubcommand:
         call_kwargs = mock_run.call_args
         assert call_kwargs.kwargs["mode"] == driver.DriverMode.VALIDATE
 
+    @patch.object(
+        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
+    )
+    def test_max_threads_defaults_to_executor_default(self, mock_run: MagicMock):
+        result = _runner.invoke(main.main, ["validate", "test.dfn"])
+
+        assert result.exit_code == driver.ExitCode.SUCCESS
+        assert mock_run.call_args.kwargs["max_threads"] is None
+
+    @patch.object(
+        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
+    )
+    def test_max_threads_is_passed_to_driver(self, mock_run: MagicMock):
+        result = _runner.invoke(
+            main.main, ["validate", "test.dfn", "--max-threads", "3"]
+        )
+
+        assert result.exit_code == driver.ExitCode.SUCCESS
+        assert mock_run.call_args.kwargs["max_threads"] == 3
+
+    def test_max_threads_must_be_positive(self):
+        result = _runner.invoke(
+            main.main, ["validate", "test.dfn", "--max-threads", "0"]
+        )
+
+        assert result.exit_code == _USAGE_ERROR
+        assert "0 is not in the range x>=1" in result.output
+
 
 class TestCompileSubcommand:
     def test_no_args_shows_error(self):
@@ -136,3 +164,14 @@ class TestCompileSubcommand:
         _runner.invoke(main.main, ["compile", "test.dfn", "--out", "my/output"])
         call_kwargs = mock_run.call_args
         assert call_kwargs.kwargs["output_dir"] == Path("my/output")
+
+    @patch.object(
+        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
+    )
+    def test_max_threads_is_passed_to_driver(self, mock_run: MagicMock):
+        result = _runner.invoke(
+            main.main, ["compile", "test.dfn", "--max-threads", "4"]
+        )
+
+        assert result.exit_code == driver.ExitCode.SUCCESS
+        assert mock_run.call_args.kwargs["max_threads"] == 4

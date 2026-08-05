@@ -103,6 +103,7 @@ py_test(
     srcs = ["run_profile_test.py"],
     deps = [
         ":run_profile",
+        "//define/compiler:driver",
         "//tools/generators:generate_reference_graph_project",
         "@pypi//click",
         "@pypi//pytest",

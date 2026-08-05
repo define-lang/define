@@ -43,6 +43,15 @@ def _resolve_input_source(file: Path | None) -> str | None:
 def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
     @click.argument("file", type=click.Path(path_type=Path), required=False)
     @click.option(
+        "--max-threads",
+        type=click.IntRange(min=1),
+        default=None,
+        help=(
+            "Maximum threads used by each validation phase. Defaults to a "
+            "heuristic based on available CPU cores."
+        ),
+    )
+    @click.option(
         "--stats",
         type=click.Choice([m.value for m in overall_stats.StatsMode]),
         is_flag=False,
@@ -53,9 +62,13 @@ def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
     @click.pass_context
     @functools.wraps(f)
     def wrapper(
-        ctx: click.Context, file: Path | None, stats: str | None, **kwargs: object
+        ctx: click.Context,
+        file: Path | None,
+        max_threads: int | None,
+        stats: str | None,
+        **kwargs: object,
     ):
-        f(ctx, file, stats, **kwargs)
+        f(ctx, file, max_threads, stats, **kwargs)
 
     return wrapper
 
@@ -71,6 +84,7 @@ def main(ctx: click.Context):
 def _run(
     ctx: click.Context,
     file: Path | None,
+    max_threads: int | None,
     stats: str | None,
     mode: driver.DriverMode,
     output_dir: Path | None = None,
@@ -87,15 +101,21 @@ def _run(
         stats_mode=stats_mode or overall_stats.StatsMode.OVERALL,
         output_dir=output_dir,
         source=source,
+        max_threads=max_threads,
     )
     ctx.exit(code)
 
 
 @main.command()
 @_common_options
-def validate(ctx: click.Context, file: Path | None, stats: str | None):
+def validate(
+    ctx: click.Context,
+    file: Path | None,
+    max_threads: int | None,
+    stats: str | None,
+):
     """Validate a Define source file."""
-    _run(ctx, file, stats, driver.DriverMode.VALIDATE)
+    _run(ctx, file, max_threads, stats, driver.DriverMode.VALIDATE)
 
 
 @main.command("compile")
@@ -107,9 +127,15 @@ def validate(ctx: click.Context, file: Path | None, stats: str | None):
     show_default=True,
     help="Directory to write generated files into.",
 )
-def compile_cmd(ctx: click.Context, file: Path | None, stats: str | None, out: Path):
+def compile_cmd(
+    ctx: click.Context,
+    file: Path | None,
+    max_threads: int | None,
+    stats: str | None,
+    out: Path,
+):
     """Compile a Define source file."""
-    _run(ctx, file, stats, driver.DriverMode.COMPILE, output_dir=out)
+    _run(ctx, file, max_threads, stats, driver.DriverMode.COMPILE, output_dir=out)
 
 
 if __name__ == "__main__":
