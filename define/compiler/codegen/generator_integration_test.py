@@ -8,6 +8,7 @@ generated files, and an occupied_positions.txt runtime expectation.
 
 import difflib
 import glob
+import os
 import tempfile
 from pathlib import Path
 
@@ -18,8 +19,10 @@ from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TESTDATA_ROOT = Path("define/testdata/codegen")
+_TESTDATA_CATEGORY = os.environ["DEFINE_CODEGEN_TESTDATA_CATEGORY"]
 _TEST_CASES = sorted(
-    Path(path).parent for path in glob.glob(str(_TESTDATA_ROOT / "*/*/test.dfn"))
+    Path(path).parent
+    for path in glob.glob(str(_TESTDATA_ROOT / _TESTDATA_CATEGORY / "*/test.dfn"))
 )
 
 

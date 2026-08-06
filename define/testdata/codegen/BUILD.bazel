@@ -1,3 +1,4 @@
+load("//define/compiler/codegen:generator_integration_tests.bzl", "generator_integration_tests")
 load("//tools/bzl:package_checks.bzl", "require_subpackages")
 
 require_subpackages(["**"])
@@ -18,4 +19,12 @@ filegroup(
         "//define/compiler/codegen:__pkg__",
         "//define/testdata:__pkg__",
     ],
+)
+
+generator_integration_tests(
+    name = "generator_integration_tests",
+    test_module = "define/compiler/codegen/generator_integration_test.py",
+    testdata_packages = _CODEGEN_MODULES,
+    visibility = ["//define/compiler/codegen:__pkg__"],
+    deps = ["//define/compiler/codegen:generator_integration_test"],
 )

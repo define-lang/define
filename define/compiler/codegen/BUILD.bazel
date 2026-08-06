@@ -52,11 +52,11 @@ py_library(
     ],
 )
 
-py_test(
+py_library(
     name = "generator_integration_test",
-    size = "small",
+    testonly = True,
     srcs = ["generator_integration_test.py"],
-    data = ["//define/testdata/codegen"],
+    visibility = ["//define/testdata/codegen:__pkg__"],
     deps = [
         ":generated_program_runner",
         ":test_helpers",
@@ -65,6 +65,12 @@ py_test(
         "//define/runtime:literal",  # keep
         "@pypi//pytest",
     ],
+)
+
+# Keep the suite here so agents can discover it and //define/compiler/codegen/... includes it.
+test_suite(
+    name = "generator_integration_tests",
+    tests = ["//define/testdata/codegen:generator_integration_tests"],
 )
 
 py_test(
