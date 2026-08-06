@@ -19,7 +19,13 @@ _TESTDATA_ROOT = Path("define/testdata/tracing/tracing_integration")
 _TRACE_TEST_CASE_DIRS = [
     test_file.parent for test_file in sorted(_TESTDATA_ROOT.glob("*/test.dfn"))
 ]
-_UNSUPPORTED_DESTRUCTOR_CASE_REASONS = {
+_UNSUPPORTED_TRACE_CASE_REASONS = {
+    "caller_contributed_child_destruction_precedes_later_operation": (
+        "caller-contributed child destruction fragments are not implemented"
+    ),
+    "destruction_cascade_includes_disjoint_child_paths_from_two_callers": (
+        "caller-contributed child destruction fragments are not implemented"
+    ),
     "destructor_known_only_two_callers_up": (
         "destructors learned through Destruction Contracts are not recorded"
     ),
@@ -33,9 +39,9 @@ _GENERATED_TRACE_TEST_CASES = [
         id=test_case_dir.name,
         marks=pytest.mark.xfail(
             strict=True,
-            reason=_UNSUPPORTED_DESTRUCTOR_CASE_REASONS[test_case_dir.name],
+            reason=_UNSUPPORTED_TRACE_CASE_REASONS[test_case_dir.name],
         )
-        if test_case_dir.name in _UNSUPPORTED_DESTRUCTOR_CASE_REASONS
+        if test_case_dir.name in _UNSUPPORTED_TRACE_CASE_REASONS
         else (),
     )
     for test_case_dir in _TRACE_TEST_CASE_DIRS
@@ -46,14 +52,16 @@ _GENERATED_OPERATION_TRACE_TEST_CASES = [
         id=trace_file.parent.name,
         marks=pytest.mark.xfail(
             strict=True,
-            reason=_UNSUPPORTED_DESTRUCTOR_CASE_REASONS[trace_file.parent.name],
+            reason=_UNSUPPORTED_TRACE_CASE_REASONS[trace_file.parent.name],
         )
-        if trace_file.parent.name in _UNSUPPORTED_DESTRUCTOR_CASE_REASONS
+        if trace_file.parent.name in _UNSUPPORTED_TRACE_CASE_REASONS
         else (),
     )
     for trace_file in sorted(_TESTDATA_ROOT.glob("*/operation_trace.json"))
 ]
-_UNLOWERABLE_DESTRUCTOR_CASES = {
+_UNLOWERABLE_TRACE_CASES = {
+    "caller_contributed_child_destruction_precedes_later_operation",
+    "destruction_cascade_includes_disjoint_child_paths_from_two_callers",
     "destructor_with_children_known_only_two_callers_up",
 }
 _CONCURRENT_RUNTIME_TEST_CASES = [
@@ -62,9 +70,9 @@ _CONCURRENT_RUNTIME_TEST_CASES = [
         id=test_case_dir.name,
         marks=pytest.mark.xfail(
             strict=True,
-            reason=_UNSUPPORTED_DESTRUCTOR_CASE_REASONS[test_case_dir.name],
+            reason=_UNSUPPORTED_TRACE_CASE_REASONS[test_case_dir.name],
         )
-        if test_case_dir.name in _UNLOWERABLE_DESTRUCTOR_CASES
+        if test_case_dir.name in _UNLOWERABLE_TRACE_CASES
         else (),
     )
     for test_case_dir in _TRACE_TEST_CASE_DIRS

@@ -1,8 +1,14 @@
+import pytest
+
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+_MODULAR_DESTRUCTION_FRAGMENTS_MISSING = (
+    "caller-contributed child destruction fragments are not implemented"
+)
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
@@ -609,4 +615,29 @@ def test_local_cascade_conditionally_destroys_unknown_child(
         "triggered.destroy(local)": [
             "triggered.destroy_if_occupied(local::/b)",
         ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_MODULAR_DESTRUCTION_FRAGMENTS_MISSING)
+def test_caller_contributed_child_destruction_precedes_later_operation(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(child_particle)": [],
+        "test.create(child_particle::/child)": ["test.create(child_particle)"],
+        "test.move(child_particle, source::/run)": [
+            "test.create(source)",
+            "test.create(child_particle::/child)",
+        ],
+        "test.move(source, /destroyer::run)": [
+            "test.move(child_particle, source::/run)"
+        ],
+        "destroyer.destroy(run::/run::/child)": ["test.move(source, /destroyer::run)"],
+        "destroyer.destroy(run::/run)": ["destroyer.destroy(run::/run::/child)"],
+        # The caller-contributed child Destroy must remain before the later parent
+        # Destroy recorded after the contracted particle's destruction cascade.
+        "destroyer.destroy(run)": ["destroyer.destroy(run::/run)"],
     }
