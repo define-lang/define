@@ -1,0 +1,6 @@
+# The reported cycle has two paths that reach the same definition.
+define the potential position<mv:define-lang.org:coverage_cycle:/test> {
+    it may only contain particles where {
+        it has the position</start>.
+    }
+}

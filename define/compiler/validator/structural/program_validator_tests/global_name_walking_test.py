@@ -196,6 +196,30 @@ def test_two_file_cycle_emits_diagnostic(
     )
 
 
+def test_shared_target_depth_increases_through_paths_of_different_lengths(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    assert_no_errors(result)
+
+
+def test_cycle_path_search_skips_a_shared_definition_already_seen(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
+    diags = result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].cycle == [
+        "position<mv:define-lang.org:coverage_cycle:/start>",
+        "position<mv:define-lang.org:coverage_cycle:/left>",
+        "position<mv:define-lang.org:coverage_cycle:/shared>",
+        "position<mv:define-lang.org:coverage_cycle:/end>",
+        "position<mv:define-lang.org:coverage_cycle:/start>",
+    ]
+
+
 def test_unknown_universe_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

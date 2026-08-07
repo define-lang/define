@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:coverage_depth:/root> {
+    it may only contain particles where {
+        it has the position</long>.
+        it has the position</short>.
+    }
+}

@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:coverage_cycle:/start> {
+    it may only contain particles where {
+        it has the position</left>.
+        it has the position</right>.
+    }
+}
