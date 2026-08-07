@@ -93,8 +93,9 @@ def test_format_report_includes_branch_source_and_destination(tmp_path: Path):
     report = analyze_coverage.format_report([branch], [], tmp_path)
 
     assert report == (
-        "example.go:1: if ready {\n"
-        "  -> line 2: run()\n"
+        "example.go:1:\n"
+        "  branch source: if ready {\n"
+        "  uncovered destination: line 2: run()\n"
         "1 uncovered branches reported; 0 exception-only branches omitted."
     )
 
@@ -127,14 +128,52 @@ def test_format_report_describes_implicit_return_and_empty_result(tmp_path: Path
     empty_report = analyze_coverage.format_report([], [branch], tmp_path)
 
     assert report == (
-        f"{source_path}:1: def choose() -> None:\n"
-        "  -> return from function 'choose'\n"
+        f"{source_path}:1:\n"
+        "  branch source: def choose() -> None:\n"
+        "  uncovered destination: return from function 'choose'\n"
         "1 uncovered branches reported; 0 exception-only branches omitted."
     )
     assert empty_report == (
         "No uncovered non-exception branches.\n"
         "0 uncovered branches reported; 1 exception-only branches omitted."
     )
+
+
+@pytest.mark.parametrize(
+    ("source_line", "target_line", "description", "expected_outcome"),
+    [
+        (2, 3, "jump to line 3", "condition is true"),
+        (2, 4, "jump to line 4", "condition is false"),
+        (5, 6, "jump to line 6", "pattern matches"),
+        (5, None, "return from function 'choose'", "pattern does not match"),
+    ],
+)
+def test_format_report_describes_python_branch_outcome(
+    tmp_path: Path,
+    source_line: int,
+    target_line: int | None,
+    description: str,
+    expected_outcome: str,
+):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def choose(value: int) -> int:\n"
+        + "    if value > 0:\n"
+        + "        return 1\n"
+        + "    match value:\n"
+        + "        case 0:\n"
+        + "            return 0\n"
+    )
+    branch = analyze_coverage.UncoveredBranch(
+        source_file=source_path,
+        source_line=source_line,
+        description=description,
+        target_line=target_line,
+    )
+
+    report = analyze_coverage.format_report([branch], [], tmp_path)
+
+    assert f"  uncovered outcome: {expected_outcome}\n" in report
 
 
 def test_parse_rejects_branch_before_source_file(tmp_path: Path):

@@ -89,6 +89,35 @@ class SourceAnalysis:
         """Resolve an LCOV or command-line source path."""
         return self._path(source_file).resolve()
 
+    def branch_outcome(self, branch: UncoveredBranch) -> str | None:
+        """Describe the source-level outcome that leads to an uncovered edge."""
+        if branch.source_file.suffix != ".py":
+            return None
+
+        source_path = self._path(branch.source_file)
+        tree = self._trees_by_path.get(source_path)
+        if tree is None:
+            tree = ast.parse(source_path.read_text(), filename=str(source_path))
+            self._trees_by_path[source_path] = tree
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.If) and node.lineno == branch.source_line:
+                if branch.target_line is not None and _line_is_in_statements(
+                    branch.target_line, node.body
+                ):
+                    return "condition is true"
+                return "condition is false"
+            if isinstance(node, ast.match_case):
+                pattern = node.pattern
+                if pattern.lineno != branch.source_line or node.guard is not None:
+                    continue
+                if branch.target_line is not None and _line_is_in_statements(
+                    branch.target_line, node.body
+                ):
+                    return "pattern matches"
+                return "pattern does not match"
+        return None
+
     def branch_only_raises(self, branch: UncoveredBranch) -> bool:
         """Return whether a branch leads only to a raise statement."""
         if branch.target_line is None or branch.source_file.suffix != ".py":
@@ -163,13 +192,16 @@ def format_report(
     output_lines: list[str] = []
     for branch in actionable:
         origin = source_analysis.line(branch.source_file, branch.source_line)
-        output_lines.append(f"{branch.source_file}:{branch.source_line}: {origin}")
+        output_lines.append(f"{branch.source_file}:{branch.source_line}:")
+        output_lines.append(f"  branch source: {origin}")
+        if outcome := source_analysis.branch_outcome(branch):
+            output_lines.append(f"  uncovered outcome: {outcome}")
         if branch.target_line is None:
             destination = branch.description
         else:
             target = source_analysis.line(branch.source_file, branch.target_line)
             destination = f"line {branch.target_line}: {target}"
-        output_lines.append(f"  -> {destination}")
+        output_lines.append(f"  uncovered destination: {destination}")
 
     if not actionable:
         output_lines.append("No uncovered non-exception branches.")
@@ -178,6 +210,13 @@ def format_report(
         + f"{len(exception_only)} exception-only branches omitted."
     )
     return "\n".join(output_lines)
+
+
+def _line_is_in_statements(line: int, statements: Sequence[ast.stmt]) -> bool:
+    return any(
+        statement.lineno <= line <= cast("int", statement.end_lineno)
+        for statement in statements
+    )
 
 
 def workspace_root() -> Path:
