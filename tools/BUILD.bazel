@@ -11,6 +11,23 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 npm_link_all_packages()
 
 py_binary(
+    name = "analyze_coverage",
+    srcs = ["analyze_coverage.py"],
+    deps = ["@pypi//click"],
+)
+
+py_test(
+    name = "analyze_coverage_test",
+    size = "small",
+    srcs = ["analyze_coverage_test.py"],
+    deps = [
+        ":analyze_coverage",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "analyze_profile",
     srcs = ["analyze_profile.py"],
 )
@@ -245,6 +262,8 @@ pyright_test(
     name = "pyright_test",
     tags = ["include-subpackages"],
     deps = [
+        ":analyze_coverage",
+        ":analyze_coverage_test",
         ":analyze_profile",
         ":check_python_deps",
         ":check_python_deps_test",
