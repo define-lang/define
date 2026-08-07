@@ -23,9 +23,11 @@
       "Shell(xxd *)",
       "Shell(go get *)",
       "Shell(go mod tidy *)",
+      "Shell(git add *)",
       "Shell(git mv *)",
       "Shell(git status *)",
       "Shell(git log *)",
+      "Shell(git worktree add *)",
       "Shell(gh api repos/*/releases *)",
       "Shell(gh api repos/*/contents/*)",
       "Shell(gh issue view *)",
@@ -33,6 +35,7 @@
       "Shell(gh pr list *)",
       "Shell(gh pr view *)",
       "Shell(gh search *)",
+      "Shell(gh run list *)",
       "Shell(gh run view *)",
       "Shell(uv add *)",
       "Shell(uv sync *)",
@@ -54,8 +57,11 @@
       "Shell(uv run tools/check_python_deps.py *)",
       "Shell(uv run tools/sync_agent_permissions.py)",
       "Shell(uv run tools/setup_local_dev.py)",
+      "Shell(uv run tools/run_profile.py *)",
       "Shell(uv run mutmut *)",
-      "Shell(bazelisk *)"
+      "Shell(uv run py-spy *)",
+      "Shell(bazelisk *)",
+      "Shell(bazel *)"
     ],
     "deny": [
       "Shell(pip *)",

@@ -56,6 +56,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["git", "add"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["git", "mv"],
     decision = "allow",
 )
@@ -67,6 +72,11 @@ prefix_rule(
 
 prefix_rule(
     pattern = ["git", "log"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["git", "worktree", "add"],
     decision = "allow",
 )
 
@@ -102,6 +112,11 @@ prefix_rule(
 
 prefix_rule(
     pattern = ["gh", "search"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["gh", "run", "list"],
     decision = "allow",
 )
 
@@ -211,12 +226,27 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["uv", "run", "tools/run_profile.py"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["uv", "run", "mutmut"],
     decision = "allow",
 )
 
 prefix_rule(
+    pattern = ["uv", "run", "py-spy"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["bazelisk"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["bazel"],
     decision = "allow",
 )
 

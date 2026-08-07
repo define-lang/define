@@ -30,6 +30,18 @@ py_test(
 py_binary(
     name = "analyze_profile",
     srcs = ["analyze_profile.py"],
+    deps = ["@pypi//click"],
+)
+
+py_test(
+    name = "analyze_profile_test",
+    size = "small",
+    srcs = ["analyze_profile_test.py"],
+    deps = [
+        ":analyze_profile",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
 )
 
 py_binary(
@@ -108,10 +120,7 @@ prettier_bin.prettier_binary(
 py_binary(
     name = "run_profile",
     srcs = ["run_profile.py"],
-    deps = [
-        "//define/compiler:driver",
-        "@pypi//click",
-    ],
+    deps = ["@pypi//click"],
 )
 
 py_test(
@@ -120,10 +129,7 @@ py_test(
     srcs = ["run_profile_test.py"],
     deps = [
         ":run_profile",
-        "//define/compiler:driver",
-        "//tools/generators:generate_reference_graph_project",
         "@pypi//click",
-        "@pypi//pytest",
     ],
 )
 
@@ -278,6 +284,7 @@ pyright_test(
         ":analyze_coverage",
         ":analyze_coverage_test",
         ":analyze_profile",
+        ":analyze_profile_test",
         ":check_python_deps",
         ":check_python_deps_test",
         ":compile_jinja_templates",

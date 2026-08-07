@@ -194,6 +194,7 @@ dev = [
     "lark",
     "mutmut",
     "pre-commit",
+    "py-spy",
     "pygithub",
     "pytest>=6",
     "pyyaml",
