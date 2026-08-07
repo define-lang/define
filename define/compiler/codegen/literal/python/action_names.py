@@ -87,6 +87,7 @@ class ActionNameGenerator:
         self._current_fqun = definition.typed_name.name_content.fqun.canonical
         self._generated_actions = generated_actions
         self._execution_allocator = naming.NameAllocator(_EXECUTION_RESERVED_NAMES)
+        self._typed_name_identifiers: dict[str, str] = {}
 
     def generate(self) -> ActionNames:
         """Allocate all action member names."""
@@ -274,32 +275,40 @@ class ActionNameGenerator:
 
     def _typed_chain_identifier(self, chain: tuple[str, ...]) -> str:
         """Convert a canonical typed chain to a DLP 27-style Python identifier."""
+        return _TYPED_CHAIN_SEPARATOR.join(
+            self._typed_name_identifier(typed_name) for typed_name in chain
+        )
+
+    def _typed_name_identifier(self, typed_name: str) -> str:
+        identifier = self._typed_name_identifiers.get(typed_name)
+        if identifier is not None:
+            return identifier
+
         # TODO: Carry AST typed-name objects to every caller of this method so
         # codegen can use their NameType and source-form APIs instead of parsing
         # canonical chained-name strings.
-        parts: list[str] = []
-        for typed_name in chain:
-            typed_name_parts = ast.source_form_typed_name_parts(
-                typed_name,
-                self._current_fqun,
-            )
-            replaced_name = "".join(
-                character if character.isalnum() else _IDENTIFIER_SEPARATOR
-                for character in typed_name_parts.source_name
-            )
-            safe_name = _IDENTIFIER_SEPARATOR.join(
-                part for part in replaced_name.split(_IDENTIFIER_SEPARATOR) if part
-            )
-            # TODO: Actions are always global, so omit the redundant global_
-            # prefix for action names and regenerate the codegen expectations.
-            prefix = _GLOBAL_NAME_PREFIX if typed_name_parts.is_global else ""
-            parts.append(
-                prefix
-                + typed_name_parts.name_type.value
-                + _IDENTIFIER_SEPARATOR
-                + safe_name
-            )
-        return _TYPED_CHAIN_SEPARATOR.join(parts)
+        typed_name_parts = ast.source_form_typed_name_parts(
+            typed_name,
+            self._current_fqun,
+        )
+        replaced_name = "".join(
+            character if character.isalnum() else _IDENTIFIER_SEPARATOR
+            for character in typed_name_parts.source_name
+        )
+        safe_name = _IDENTIFIER_SEPARATOR.join(
+            part for part in replaced_name.split(_IDENTIFIER_SEPARATOR) if part
+        )
+        # TODO: Actions are always global, so omit the redundant global_
+        # prefix for action names and regenerate the codegen expectations.
+        prefix = _GLOBAL_NAME_PREFIX if typed_name_parts.is_global else ""
+        identifier = (
+            prefix
+            + typed_name_parts.name_type.value
+            + _IDENTIFIER_SEPARATOR
+            + safe_name
+        )
+        self._typed_name_identifiers[typed_name] = identifier
+        return identifier
 
     def _fragment_method_names(self) -> dict[action_plan.ActionFragment, str]:
         method_names: dict[action_plan.ActionFragment, str] = {}
