@@ -1,0 +1,8 @@
+interface:
+  display_name: "Coverage"
+  short_description: "Run coverage and select gaps to investigate"
+  default_prompt:
+    "Use $coverage to run coverage and let me select gaps to investigate."
+
+policy:
+  allow_implicit_invocation: false
