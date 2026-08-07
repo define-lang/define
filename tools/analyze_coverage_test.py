@@ -59,6 +59,27 @@ def test_analyze_report_omits_jump_into_multiline_raise(tmp_path: Path):
     assert len(exception_only) == 1
 
 
+def test_analyze_report_omits_wildcard_case_that_only_raises(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def choose(value: int) -> int:\n"
+        + "    match value:\n"
+        + "        case 1:\n"
+        + "            return value\n"
+        + "        case _:\n"
+        + '            raise TypeError("unexpected value")\n'
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        "SF:example.py\nBRDA:3,0,jump to line 5,0\nend_of_record\n"
+    )
+
+    actionable, exception_only = analyze_coverage.analyze_report(report_path, tmp_path)
+
+    assert actionable == []
+    assert len(exception_only) == 1
+
+
 def test_format_report_includes_branch_source_and_destination(tmp_path: Path):
     source_path = tmp_path / "example.go"
     _ = source_path.write_text("if ready {\n\trun()\n}\n")
@@ -184,12 +205,50 @@ def test_cli_analyzes_all_files_without_arguments(
     )
 
 
+def test_cli_includes_files_transitively_under_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    package_path = tmp_path / "package"
+    child_path = package_path / "child"
+    child_path.mkdir(parents=True)
+    source = "def choose(value: bool) -> int:\n    if value:\n        return 1\n    return 0\n"
+    _ = (package_path / "direct.py").write_text(source)
+    _ = (child_path / "descendant.py").write_text(source)
+    _ = (tmp_path / "unrelated.py").write_text(source)
+    report_path = tmp_path / "bazel-out/_coverage/_coverage_report.dat"
+    report_path.parent.mkdir(parents=True)
+    _ = report_path.write_text(
+        "SF:package/direct.py\n"
+        + "BRDA:2,0,jump to line 3,0\n"
+        + "end_of_record\n"
+        + "SF:package/child/descendant.py\n"
+        + "BRDA:2,0,jump to line 3,0\n"
+        + "end_of_record\n"
+        + "SF:unrelated.py\n"
+        + "BRDA:2,0,jump to line 3,0\n"
+        + "end_of_record\n"
+    )
+    monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+
+    result = click.testing.CliRunner().invoke(analyze_coverage.main, ["package"])
+
+    assert result.exit_code == 0
+    assert "package/direct.py:2:" in result.output
+    assert "package/child/descendant.py:2:" in result.output
+    assert "unrelated.py" not in result.output
+    assert result.output.endswith(
+        "2 uncovered branches reported; 0 exception-only branches omitted.\n"
+    )
+
+
 def test_cli_help_describes_file_filtering():
     result = click.testing.CliRunner().invoke(analyze_coverage.main, ["--help"])
 
     assert result.exit_code == 0
-    assert "optionally limited to SOURCE_FILES" in result.output
-    assert "relative to the workspace root" in result.output
+    assert "optionally limited to SOURCE_PATHS" in result.output
+    assert "files or directories relative to the workspace root" in result.output
+    assert "Directories include source files at every depth" in result.output
     assert "analyze_coverage define/compiler/driver.py" in result.output
 
 
@@ -202,7 +261,7 @@ def test_cli_rejects_missing_source_file(
     result = click.testing.CliRunner().invoke(analyze_coverage.main, ["missing.py"])
 
     assert result.exit_code == 2
-    assert "source file does not exist: missing.py" in result.output
+    assert "source path does not exist: missing.py" in result.output
 
 
 def test_workspace_root_falls_back_to_runfiles_workspace(

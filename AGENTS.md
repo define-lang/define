@@ -227,8 +227,9 @@ BUILD file generator.
 - After every coverage run, run
   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:analyze_coverage`
   to list all uncovered branches other than branches whose destination only
-  raises a defensive exception. Pass one or more workspace-relative source paths
-  as positional arguments to analyze only those files.
+  raises a defensive exception. Pass one or more workspace-relative files or
+  directories as positional arguments to limit analysis to those files and the
+  files transitively under those directories.
 - After you make any significant change to code, use the coverage command once
   for final repository-wide validation. Coverage already runs the tests, so do
   not also run the full test suite immediately before or after it. Inspect the

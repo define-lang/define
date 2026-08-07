@@ -90,7 +90,7 @@ class SourceAnalysis:
         return self._path(source_file).resolve()
 
     def branch_only_raises(self, branch: UncoveredBranch) -> bool:
-        """Return whether a branch jumps directly to a raise statement."""
+        """Return whether a branch leads only to a raise statement."""
         if branch.target_line is None or branch.source_file.suffix != ".py":
             return False
 
@@ -101,34 +101,51 @@ class SourceAnalysis:
             self._trees_by_path[source_path] = tree
 
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Raise):
-                continue
-            end_line = cast("int", node.end_lineno)
-            if node.lineno <= branch.target_line <= end_line:
-                return True
+            if isinstance(node, ast.Raise):
+                end_line = cast("int", node.end_lineno)
+                if node.lineno <= branch.target_line <= end_line:
+                    return True
+            elif isinstance(node, ast.match_case):
+                pattern = node.pattern
+                if (
+                    isinstance(pattern, ast.MatchAs)
+                    and pattern.pattern is None
+                    and pattern.name is None
+                    and node.guard is None
+                    and len(node.body) == 1
+                    and isinstance(node.body[0], ast.Raise)
+                    and pattern.lineno <= branch.target_line <= pattern.end_lineno
+                ):
+                    return True
         return False
 
 
 def analyze_report(
     report_path: Path,
     source_root: Path,
-    source_files: Sequence[Path] = (),
+    source_paths: Sequence[Path] = (),
 ) -> tuple[list[UncoveredBranch], list[UncoveredBranch]]:
     """Separate actionable uncovered branches from exception-only branches."""
     source_analysis = SourceAnalysis(source_root)
     uncovered = parse_uncovered_branches(report_path)
-    selected_source_paths = {
-        source_analysis.resolve_path(source_file) for source_file in source_files
-    }
+    selected_source_files: set[Path] = set()
+    selected_source_directories: set[Path] = set()
+    for source_path in source_paths:
+        resolved_path = source_analysis.resolve_path(source_path)
+        if resolved_path.is_dir():
+            selected_source_directories.add(resolved_path)
+        else:
+            selected_source_files.add(resolved_path)
     actionable: list[UncoveredBranch] = []
     exception_only: list[UncoveredBranch] = []
     for branch in uncovered:
-        if (
-            selected_source_paths
-            and source_analysis.resolve_path(branch.source_file)
-            not in selected_source_paths
-        ):
-            continue
+        if selected_source_files or selected_source_directories:
+            branch_source_path = source_analysis.resolve_path(branch.source_file)
+            if (
+                branch_source_path not in selected_source_files
+                and selected_source_directories.isdisjoint(branch_source_path.parents)
+            ):
+                continue
         if source_analysis.branch_only_raises(branch):
             exception_only.append(branch)
         else:
@@ -173,29 +190,30 @@ def workspace_root() -> Path:
         "Examples:\n\n"
         "  analyze_coverage\n\n"
         "  analyze_coverage define/compiler/driver.py\n\n"
-        "  analyze_coverage define/compiler/driver.py define/runtime/literal.py"
+        "  analyze_coverage define/compiler define/runtime/literal.py"
     )
 )
 @click.argument(
-    "source_files",
+    "source_paths",
     nargs=-1,
-    type=click.Path(path_type=Path, file_okay=True, dir_okay=False),
+    type=click.Path(path_type=Path, file_okay=True, dir_okay=True),
 )
-def main(source_files: tuple[Path, ...]):
-    """Report uncovered branches, optionally limited to SOURCE_FILES.
+def main(source_paths: tuple[Path, ...]):
+    """Report uncovered branches, optionally limited to SOURCE_PATHS.
 
-    SOURCE_FILES are relative to the workspace root. When none are given, all
-    files in Bazel's combined LCOV report are analyzed. Branches whose
+    SOURCE_PATHS are files or directories relative to the workspace root.
+    Directories include source files at every depth. When no paths are given,
+    all files in Bazel's combined LCOV report are analyzed. Branches whose
     destination only raises a Python exception are omitted.
     """
     if build_working_directory := os.environ.get("BUILD_WORKING_DIRECTORY"):
         os.chdir(build_working_directory)
     source_root = workspace_root()
-    for source_file in source_files:
-        if not (source_root / source_file).is_file():
+    for source_path in source_paths:
+        if not (source_root / source_path).exists():
             raise click.BadParameter(
-                f"source file does not exist: {source_file}",
-                param_hint="SOURCE_FILES",
+                f"source path does not exist: {source_path}",
+                param_hint="SOURCE_PATHS",
             )
     report_path = source_root / _COVERAGE_REPORT
     if not report_path.is_file():
@@ -203,7 +221,7 @@ def main(source_files: tuple[Path, ...]):
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
         )
-    actionable, exception_only = analyze_report(report_path, source_root, source_files)
+    actionable, exception_only = analyze_report(report_path, source_root, source_paths)
     click.echo(format_report(actionable, exception_only, source_root))
 
 
