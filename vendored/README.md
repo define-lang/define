@@ -12,6 +12,13 @@ the commit above to the desired upstream commit, and apply it with
 `git apply --directory=vendored/re2`. Update the commit recorded here in the
 same change and resolve any conflicts with Define's RE2 patches.
 
+Define carries these patches over the upstream baseline:
+
+- [google/re2#603](https://github.com/google/re2/pull/603) declares the Python
+  extension safe for free-threaded Python.
+- `python/_re2.cc` includes pybind11 before standard headers so that Python's
+  feature-test macros are defined before libc headers.
+
 Build the Python target from the independent module directory:
 
 ```shell

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Python.h must precede standard headers because it defines feature-test macros.
+#include "pybind11/pybind11.h"
+
 #include <stddef.h>
 #include <sys/types.h>
 
@@ -15,7 +18,6 @@
 #include "absl/strings/string_view.h"
 #include "pybind11/buffer_info.h"
 #include "pybind11/gil.h"
-#include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"  // IWYU pragma: keep
 #include "re2/filtered_re2.h"
