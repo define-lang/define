@@ -269,17 +269,17 @@ class StrictReparentingTrie[V]:
         """Yield selected descendant values with keys relative to ``key``."""
         if not key:
             raise EmptyKeyError("key must not be empty")
-        stack: list[tuple[TrieKey, TrieKey]] = [(key, ())]
+        prefix_length = len(key)
+        stack = [key]
         while stack:
-            full_node, relative_node = stack.pop()
+            full_node = stack.pop()
             for segment in self._children.get(full_node, ()):
                 full_child = (*full_node, segment)
-                relative_child = (*relative_node, segment)
                 value = self._values[full_child]
                 selected = select(value)
                 if selected is not None:
-                    yield relative_child, selected
-                stack.append((full_child, relative_child))
+                    yield full_child[prefix_length:], selected
+                stack.append(full_child)
 
     def subtree_keys(self, key: TrieKey) -> list[TrieKey]:
         """Return the full key of every descendant of key; key itself is excluded."""
