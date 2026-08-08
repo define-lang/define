@@ -141,7 +141,7 @@ class _PendingGuarantee:
     # All of a triggered contract's guarantees (own and nested) carry it, so a
     # body statement that executes later supersedes them.
     body_operation_number: int
-    # DLP 44: the triggering, in the operation graph, that fired this callee.
+    # DLP 44: the Action Trigger, in the operation graph, that fired this callee.
     # Each contracted position the guarantee touches has its last operation
     # pointed at the operation that fired it, so the caller's later ops on it
     # chain via the Ancestor Rule. Nested children inherit it verbatim (the whole
@@ -1240,7 +1240,7 @@ class ParticleTracker:
         *,
         is_destructor: bool,
     ):
-        """Record an Action Triggering and apply the triggered action's guarantees.
+        """Record an Action Trigger and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.

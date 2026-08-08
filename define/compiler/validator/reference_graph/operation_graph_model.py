@@ -298,13 +298,13 @@ class RequirementBinding:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class ActionTrigger:
-    """One triggering of a callee, and what satisfies each requirement of the callee.
+    """One Action Trigger and what satisfies each requirement of the callee.
 
     Recorded from the caller's side, at the moment it triggers, because only the
     caller knows what it did to the positions the callee names.
     """
 
-    # The action reference this triggering fires, from the caller's perspective.
+    # The action reference this Action Trigger fires, from the caller's perspective.
     callee: ast.ActionReference
     # The operation that triggered the callee.
     trigger_operation: LastOperationNode
@@ -428,9 +428,9 @@ class GuaranteeNode(OperationNode):
     """
 
     depends_on: tuple[LastOperationNode, ...]
-    # The triggering of the action that guarantees the position.
+    # The Action Trigger of the action that guarantees the position.
     trigger: ActionTrigger
-    # Triggerings to follow after ``trigger`` before resolving
+    # Action Triggers to follow after ``trigger`` before resolving
     # ``guaranteed_position`` in the final callee's operation graph.
     nested_triggers: tuple[ActionTrigger, ...]
     # The guaranteed position, by the callee's own key for it.

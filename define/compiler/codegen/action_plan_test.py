@@ -308,7 +308,7 @@ def test_caller_input_fires_destructor():
     (destructor_input,) = plan.triggered_action_inputs
     (caller_input,) = plan.caller_inputs
     assert caller_input.destructor_triggers == [planned_destructor_trigger]
-    # The same caller input supplies both the destructor's Action Triggering and
+    # The same caller input supplies both the destructor's Action Trigger and
     # its occupied requirement, so both dependency arrivals must be retained.
     assert caller_input.triggered_inputs == [destructor_input, destructor_input]
     assert destructor_input.dependency_count == 2

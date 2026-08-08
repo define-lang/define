@@ -35,7 +35,7 @@ def action_graph(
     """Return each action's directly-triggered actions as (source, target) name pairs.
 
     An action that triggers the same action twice yields two edges. Actions appear
-    in reference-graph post-order and their triggerings in the order they perform
+    in reference-graph post-order and their Action Triggers in the order they perform
     them, so the result is deterministic. A reference-graph diamond can still make
     two sibling actions' relative order nondeterministic; assertions spanning such
     actions should compare ``action_graph_set``.

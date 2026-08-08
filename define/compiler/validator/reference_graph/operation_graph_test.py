@@ -7,7 +7,7 @@ behavior of a direct lookup API, and the ordering, path-selection, reduction,
 or scaling behavior of ``ParticleChildOperations`` as a data structure.
 
 Dependency semantics do not belong here. Create, move, destroy, Action
-Triggering, requirement, guarantee, Empty Rule, and destruction-cascade edges
+Action Trigger, requirement, guarantee, Empty Rule, and destruction-cascade edges
 must be tested with valid Define source in an existing operation-graph
 integration test module. Those tests exercise the validator, particle tracker,
 and operation graph together, so they protect the actual propagation path that

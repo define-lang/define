@@ -91,7 +91,7 @@ class GuaranteePublication:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class GuaranteeDestructorTrigger:
-    """A destructor Action Triggering fired by a guarantee."""
+    """A destructor Action Trigger fired by a guarantee."""
 
     action_trigger: operation_graph_model.ActionTrigger
     guarantee_dependency: operation_graph.GuaranteePath
@@ -131,7 +131,7 @@ class _FragmentTopologyBuilder:
     """Partition one action's Particle Operations into code-generation fragments.
 
     A fragment ends where a direct method call would not preserve fan-out, a
-    join, an Action Triggering, guarantee publication, or a dependency supplied
+    join, an Action Trigger, guarantee publication, or a dependency supplied
     by the caller.
     """
 
@@ -278,7 +278,7 @@ class _ActionPlanBuilder:
         )
 
     def build_triggered_action(self) -> ActionPlan:
-        """Build the reusable caller-input plan for triggerings of this action."""
+        """Build the reusable caller-input plan for Action Triggers of this action."""
         return self._build(
             self._resolved_action.dependencies_by_operation,
             self._graph.guaranteed_positions_by_operation,
@@ -384,7 +384,7 @@ class _ActionPlanBuilder:
                     fragment_for_operation[operation].triggered_input_successors.append(
                         triggered_input
                     )
-        # Connect each Action Triggering to the Particle Operation that triggers it.
+        # Connect each Action Trigger to the Particle Operation that triggers it.
         for (
             trigger_operation,
             resolved_triggers,

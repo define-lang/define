@@ -40,7 +40,7 @@ _EXECUTION_RESERVED_NAMES = ("action", "scheduler")
 
 @dataclass(frozen=True, slots=True)
 class TriggeredActionNames:
-    """Names for one Action Triggering in an execution class."""
+    """Names for one Action Trigger in an execution class."""
 
     # The method that initializes the triggered action's execution.
     initializer_name: str
@@ -56,7 +56,7 @@ class ActionNames:
     local_positions: dict[str, str]
     # The execution method for each caller input.
     caller_inputs: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
-    # The initializer method and execution member for each Action Triggering.
+    # The initializer method and execution member for each Action Trigger.
     triggered_actions: dict[operation_graph_model.ActionTrigger, TriggeredActionNames]
     # The execution method for each triggered action input.
     triggered_inputs: dict[action_plan.TriggeredActionInput, str]
@@ -65,7 +65,7 @@ class ActionNames:
     fragments: dict[action_plan.ActionFragment, str]
     # The guarantees task-list member for each guarantee publication.
     guarantee_publications: dict[action_plan.GuaranteePublication, str]
-    # The guarantees member for each Action Triggering whose callee has guarantees.
+    # The guarantees member for each Action Trigger whose callee has guarantees.
     child_guarantees: dict[operation_graph_model.ActionTrigger, str]
 
 

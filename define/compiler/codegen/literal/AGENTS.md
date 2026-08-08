@@ -21,11 +21,11 @@
 ## Semantic Fidelity
 
 - Preserve the operation graph's available parallelism, fan-outs, joins, Action
-  Triggerings, and guarantee publication timing. Do not serialize independent
-  work merely to simplify generated code.
-- Do not treat an Action Triggering as one atomic function call. Caller and
-  callee work becomes available according to its operation-graph dependencies.
-- When a Particle Operation causes an Action Triggering, generated code must
+  Triggers, and guarantee publication timing. Do not serialize independent work
+  merely to simplify generated code.
+- Do not treat an Action Trigger as one atomic function call. Caller and callee
+  work becomes available according to its operation-graph dependencies.
+- When a Particle Operation causes an Action Trigger, generated code must
   immediately resolve and retain that specific Action object. It must not wait
   for the triggered action's other dependencies, because parallel Particle
   Operations may meanwhile move or destroy the particle through which the Action

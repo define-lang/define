@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class TriggeredBy:
-    """The direct Action Triggering that created an action execution."""
+    """The direct Action Trigger that created an action execution."""
 
     caller: ActionExecution
     action_trigger: operation_graph_action_resolver.ResolvedActionTrigger

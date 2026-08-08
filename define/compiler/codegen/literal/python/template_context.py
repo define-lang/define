@@ -116,7 +116,7 @@ class ActionFragmentContext:
 
 @dataclass
 class TriggeredActionContext:
-    """One direct action triggering used by generated dependency wiring."""
+    """One direct Action Trigger used by generated dependency wiring."""
 
     action: PositionExpr | None
     execution_class: naming.ClassReference
@@ -138,7 +138,7 @@ class TriggeredActionContext:
 
 @dataclass
 class ChildGuaranteesContext:
-    """A guarantee bundle for one direct Action Triggering."""
+    """A guarantee bundle for one direct Action Trigger."""
 
     name: str
     class_reference: naming.ClassReference
@@ -184,7 +184,7 @@ class CallerInputContext:
 
 @dataclass
 class GuaranteeDestructorTriggerContext:
-    """One destructor Action Triggering fired by a guarantee."""
+    """One destructor Action Trigger fired by a guarantee."""
 
     method_name: str
     destructor_execution_init_method: str

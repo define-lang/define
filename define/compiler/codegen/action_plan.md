@@ -32,10 +32,10 @@ directly; it does not assign fragment IDs.
 
 There are two action compilation contexts:
 
-| Context          | Treatment of caller dependencies                       |
-| ---------------- | ------------------------------------------------------ |
-| Executed action  | Do not contribute dependency arrivals                  |
-| Triggered action | Remain caller inputs connected through each triggering |
+| Context          | Treatment of caller dependencies                           |
+| ---------------- | ---------------------------------------------------------- |
+| Executed action  | Do not contribute dependency arrivals                      |
+| Triggered action | Remain caller inputs connected through each Action Trigger |
 
 Only the entry action is invoked through `execute()`. It is inherently a
 zero-input dataflow component. For example, the effective DAG for
@@ -58,13 +58,13 @@ Each non-entry action has one reusable triggered plan containing:
 
 - Particle Operation fragments;
 - caller inputs and their consumers;
-- direct Action Triggerings and their triggered inputs;
+- direct Action Triggers and their triggered inputs;
 - destructors fired by guarantees;
 - guarantee publications and dependencies; and
 - dependency counts for fragments and triggered inputs.
 
 Resolution for a caller inspects only the caller's graph, each directly
-triggered callee's resolved caller-input interface, and the triggering's
+triggered callee's resolved caller-input interface, and the Action Trigger's
 requirement bindings. It connects caller dependencies to callee inputs without
 constructing or retaining a resolved operation graph for the whole program.
 
@@ -83,14 +83,15 @@ fragmentation, resolution:
 2. Records each caller input and the Particle Operations that consume it.
 3. Resolves every direct callee input through its `ActionTrigger`, recording its
    dependencies in the caller and the caller inputs that consume it.
-4. Associates each resolved Action Triggering with the Particle Operation,
+4. Associates each resolved Action Trigger with the Particle Operation,
    guarantee, or caller requirement that fires it.
 
-`ResolvedActionTriggers` retains all resolved Action Triggerings and provides
-the reverse indexes required by planning. Particle Operation triggerings are
-indexed by their firing operation. Destructor triggerings fired by guarantees
-are indexed by their `GuaranteeNode`. A destructor on a child of a particle from
-the caller is attached to the corresponding caller input.
+`ResolvedActionTriggers` retains all resolved Action Triggers and provides the
+reverse indexes required by planning. Action Triggers fired by Particle
+Operations are indexed by their firing operation. Destructor Action Triggers
+fired by guarantees are indexed by their `GuaranteeNode`. A destructor on a
+child of a particle from the caller is attached to the corresponding caller
+input.
 
 `ResolvedAction` is independent of whether the action will execute directly or
 be triggered. The planner applies that compilation-context decision after
@@ -99,19 +100,19 @@ resolution.
 Resolution and planning do not repair the graph, infer missing dependencies,
 compute a transitive reduction, or expand the complete program graph.
 
-## Action Triggerings and Guarantees
+## Action Triggers and Guarantees
 
 An `ActionTrigger` describes wiring rather than a synchronous call boundary. Its
-`trigger_operation` records what makes the Action Triggering happen:
+`trigger_operation` records what makes the Action Trigger happen:
 
-- a `PositionOperationNode` for an Action Triggering fired by a Particle
-  Operation in the action body;
+- a `PositionOperationNode` for an Action Trigger fired by a Particle Operation
+  in the action body;
 - a `GuaranteeNode` for a destructor on a particle supplied by a callee
   guarantee; or
 - a `RequirementNode` for a destructor on a child of a particle supplied by the
   caller.
 
-These sources affect where codegen connects the Action Triggering. They do not
+These sources affect where codegen connects the Action Trigger. They do not
 change the triggered action's plan or the meaning of its inputs.
 
 The operation that causes an action's trigger conditions to become true is not
@@ -121,20 +122,21 @@ that satisfy it. Those dependencies become continuations from caller fragments
 or inputs.
 
 - Caller inputs release eligible callee fragments and triggered inputs.
-- Every triggering has separate local positions, joins, and a callee execution.
+- Every Action Trigger has separate local positions, joins, and a callee
+  execution.
 - A callee publishes a guarantee immediately after its final relevant Particle
   Operation.
 - Caller fragments waiting on that guarantee become eligible immediately.
 - Neither action waits for the other action to finish as a whole.
 
-Literal Python represents each triggering with an execution object. Fragments,
-generated caller-input methods, and direct-callee wiring are methods of that
-object; the action quality retains its runtime identity and interface positions.
-A `Scheduler` is passed explicitly into each execution and then into every
-callee execution; it is execution context, not state of the action quality. The
-entry action inherits the runtime's `EntryPoint` action role. Every other
-action, including a destructor, inherits `Action`. Only the entry action defines
-`execute()`.
+Literal Python represents each Action Trigger with an execution object.
+Fragments, generated caller-input methods, and direct-callee wiring are methods
+of that object; the action quality retains its runtime identity and interface
+positions. A `Scheduler` is passed explicitly into each execution and then into
+every callee execution; it is execution context, not state of the action
+quality. The entry action inherits the runtime's `EntryPoint` action role. Every
+other action, including a destructor, inherits `Action`. Only the entry action
+defines `execute()`.
 
 A caller fragment invokes the appropriate execution method after its final
 Particle Operation, submitting all but one ready continuation and directly
@@ -143,15 +145,15 @@ the action. Only the generated caller wiring releases callee fragments, so the
 runtime cannot execute the action a second time or impose a false dependency on
 the trigger position.
 
-For an Action Triggering fired by a Particle Operation, the fragment ending with
+For an Action Trigger fired by a Particle Operation, the fragment ending with
 that operation directly calls a generated initialization method before releasing
 any of its other continuations. That method obtains the action object and
-creates the one callee execution for the triggering. The fragment then supplies
-one dependency arrival to every callee input. Other dependencies may arrive
-before or after that arrival; an input invokes the stored execution only after
-all of its arrivals. Initialization always remains on the fragment's current
-thread, so a parallel branch cannot first move or destroy the particle through
-which the action is referenced.
+creates the one callee execution for the Action Trigger. The fragment then
+supplies one dependency arrival to every callee input. Other dependencies may
+arrive before or after that arrival; an input invokes the stored execution only
+after all of its arrivals. Initialization always remains on the fragment's
+current thread, so a parallel branch cannot first move or destroy the particle
+through which the action is referenced.
 
 This implements DLP 44's rule that actions are not atomic units of execution.
 
@@ -172,7 +174,7 @@ resolver, planner, and code generator retain the operation nodes and
 ActionTrigger objects themselves; no numeric or `id()`-based identity survives
 the lowering. Literal Python lowers the result to generated guarantee classes
 with public task lists named after local guarantee publications and public
-guarantee objects named after direct Action Triggerings. A generated execution
+guarantee objects named after direct Action Triggers. A generated execution
 registers its bound consumer method by following the resolved chain of
 direct-callee attributes and appending it to the final publication's task list.
 Each execution passes one direct-trigger guarantee object to its callee
@@ -183,9 +185,9 @@ The generated guarantee objects belong to action executions, not reusable action
 plans. This is necessary because a caller can receive a contextual guarantee
 through an intermediate action even when that guarantee is absent from the
 intermediate action's own contract. Each generated guarantee class describes
-only its action's local publications and direct Action Triggerings. An
-intermediate execution treats a direct callee's guarantee object as opaque and
-passes it down without flattening descendant guarantees into its own API.
+only its action's local publications and direct Action Triggers. An intermediate
+execution treats a direct callee's guarantee object as opaque and passes it down
+without flattening descendant guarantees into its own API.
 
 Resolution is lazy and path-specific: resolving one consumed guarantee follows
 only that guarantee's callee chain and never visits sibling guarantees. Codegen
@@ -197,7 +199,7 @@ to define an action's execution API.
 When an action creates or moves a particle in one of its positions, the caller
 may know that particle only through the resulting guarantee. If the particle has
 a destructor and the caller destroys it, the validator records an ordinary
-Action Triggering whose `trigger_operation` is that `GuaranteeNode`.
+Action Trigger whose `trigger_operation` is that `GuaranteeNode`.
 
 The resolver first resolves every destructor input exactly like the inputs of
 any other triggered action. The planner then resolves the firing `GuaranteeNode`
@@ -210,16 +212,16 @@ to a `GuaranteePath` and records a `GuaranteeDestructorTrigger` containing:
 Codegen registers one generated callback on the task list at the end of that
 guarantee path. When the publishing Particle Operation releases the task list,
 the callback initializes the destructor execution and supplies the Action
-Triggering arrival to each destructor input. Each input's other dependencies are
+Trigger arrival to each destructor input. Each input's other dependencies are
 registered separately. For example, the same guarantee can both fire the
 destructor and satisfy its Action Parent input, while a child guarantee
 satisfies an occupied requirement.
 
-Every triggered input counts the Action Triggering arrival in addition to its
+Every triggered input counts the Action Trigger arrival in addition to its
 Particle Operation, guarantee, and caller-input dependencies. Its generated join
-therefore invokes the destructor execution only after the triggering has created
-that execution and all normal dependencies have arrived. Releasing the guarantee
-does not synchronously execute the destructor.
+therefore invokes the destructor execution only after the Action Trigger has
+created that execution and all normal dependencies have arrived. Releasing the
+guarantee does not synchronously execute the destructor.
 
 This routing applies only to directly known destructors already recorded in the
 operation graph. The planner does not discover destructors or interpret
@@ -227,14 +229,14 @@ Destruction Contracts.
 
 ### Triggered execution lifetime
 
-The execution for a triggering must obtain its action object when the Action
-Triggering is released. It must not postpone that lookup until a later callee
-input arrival: a parallel Particle Operation may move or destroy the particle in
-the meantime even though the already-triggered action remains valid.
+The execution for an Action Trigger must obtain its action object when the
+Action Trigger is released. It must not postpone that lookup until a later
+callee input arrival: a parallel Particle Operation may move or destroy the
+particle in the meantime even though the already-triggered action remains valid.
 
 A firing fragment initializes the execution before invoking any triggered input.
-A guarantee callback does the same before supplying its triggering arrivals. A
-caller-input method initializes a destructor on a child of a particle from the
+A guarantee callback does the same before supplying its Action Trigger arrivals.
+A caller-input method initializes a destructor on a child of a particle from the
 caller before releasing that destructor's inputs. Every triggered input then
 uses that same stored execution. This preserves the operation graph's
 parallelism while making the Python object lifetime independent of later
@@ -272,12 +274,12 @@ A destructor is a normal triggered action. It uses the same reusable plan,
 fragments, caller inputs, triggered inputs, joins, guarantees, and direct-callee
 wiring as every other non-entry action. It has no runtime `execute()` method.
 
-The operation graph records the destructor's Action Triggering during the
-Destruction Cascade. The planner merely routes that already-recorded triggering
-from its firing Particle Operation, guarantee, or caller requirement. The
-triggering source initializes the destructor execution and supplies one arrival
-to each destructor input; the destructor's fragments become eligible through the
-normal dependency machinery.
+The operation graph records the destructor's Action Trigger during the
+Destruction Cascade. The planner merely routes that already-recorded Action
+Trigger from its firing Particle Operation, guarantee, or caller requirement.
+The Action Trigger source initializes the destructor execution and supplies one
+arrival to each destructor input; the destructor's fragments become eligible
+through the normal dependency machinery.
 
 ## Planner API
 
@@ -286,10 +288,10 @@ definitions to `plan_for()` in direct-callee-first order. `ResolvedActions`
 resolves each action from its graph and its already-resolved direct callees.
 Resolution therefore crosses only one caller/callee relationship and never
 recursively analyzes the reachable program. The planner connects operation
-nodes, caller inputs, triggerings, and fragments by direct object reference. It
-selects the executed form only for the entry action and the triggered form for
-every other action. The code generator supplies the postorder definitions but
-does not resolve dependencies itself.
+nodes, caller inputs, Action Triggers, and fragments by direct object reference.
+It selects the executed form only for the entry action and the triggered form
+for every other action. The code generator supplies the postorder definitions
+but does not resolve dependencies itself.
 
 The planner internally lowers one operation graph after its direct-callee inputs
 have been resolved. Its two compilation contexts are:
@@ -319,9 +321,9 @@ contracts merely to find guarantee boundaries.
 
 The completed `ActionPlan` contains Particle Operations rather than requiring a
 renderer to index back into an operation graph. It also contains directly
-executed fragments, direct Action Triggerings, caller-input and triggered-input
+executed fragments, direct Action Triggers, caller-input and triggered-input
 consumers, dependency counts, guarantee publications, guarantee-fired
 destructors, and the resolved `GuaranteePath`s needed by fragments, triggered
-inputs, and destructor triggerings. A renderer assigns target-language names and
-expressions to this plan; it does not receive operation graphs, resolve
+inputs, and destructor Action Triggers. A renderer assigns target-language names
+and expressions to this plan; it does not receive operation graphs, resolve
 dependencies, discover continuations, or calculate joins.

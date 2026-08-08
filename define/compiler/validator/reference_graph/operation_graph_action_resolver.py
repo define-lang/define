@@ -130,7 +130,7 @@ class _ActionTriggerDependencyResolver:
         caller_graph: operation_graph.OperationGraph,
         trigger: operation_graph_model.ActionTrigger,
     ):
-        """Initialize with one direct caller and Action Triggering."""
+        """Initialize with one direct caller and Action Trigger."""
         self._caller_graph = caller_graph
         self._trigger = trigger
 
@@ -193,7 +193,7 @@ class _ActionTriggerDependencyResolver:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class ResolvedActionTrigger:
-    """The dependency interface of one direct Action Triggering."""
+    """The dependency interface of one direct Action Trigger."""
 
     trigger: operation_graph_model.ActionTrigger
     inputs: list[ResolvedActionTriggerInput]
@@ -201,7 +201,7 @@ class ResolvedActionTrigger:
     def input_for(
         self, callee_input: ResolvedCallerInput
     ) -> ResolvedActionTriggerInput:
-        """Return the resolution of ``callee_input`` through this Action Triggering."""
+        """Return the resolution of ``callee_input`` through this Action Trigger."""
         # This is inefficient but acceptable because this is used only by the
         # test-only resolved-operation-graph renderer.
         return next(
@@ -213,7 +213,7 @@ class ResolvedActionTrigger:
 
 @typing.final
 class ResolvedActionTriggers:
-    """Resolved Action Triggerings and their reverse indexes."""
+    """Resolved Action Triggers and their reverse indexes."""
 
     def __init__(self):
         """Initialize an empty collection."""
@@ -228,11 +228,11 @@ class ResolvedActionTriggers:
         ] = {}
 
     def __iter__(self) -> Iterator[ResolvedActionTrigger]:
-        """Iterate over every resolved Action Triggering."""
+        """Iterate over every resolved Action Trigger."""
         return iter(self._triggers)
 
     def __len__(self) -> int:
-        """Return the number of resolved Action Triggerings."""
+        """Return the number of resolved Action Triggers."""
         return len(self._triggers)
 
     @property
@@ -247,7 +247,7 @@ class ResolvedActionTriggers:
     ) -> ItemsView[
         operation_graph_model.PositionOperationNode, list[ResolvedActionTrigger]
     ]:
-        """Return Particle Operations and the Action Triggerings they cause."""
+        """Return Particle Operations and the Action Triggers they cause."""
         return self._by_position_operation.items()
 
     def destructors_by_guarantee(
@@ -261,7 +261,7 @@ class ResolvedActionTriggers:
         operation: operation_graph_model.LastOperationNode,
         trigger: ResolvedActionTrigger,
     ):
-        """Add an Action Triggering caused by an operation."""
+        """Add an Action Trigger caused by an operation."""
         self._triggers.append(trigger)
         if isinstance(operation, operation_graph_model.PositionOperationNode):
             self._by_position_operation.setdefault(operation, []).append(trigger)
@@ -303,7 +303,7 @@ class _ActionResolver:
         self._action_triggers = ResolvedActionTriggers()
 
     def resolve(self) -> ResolvedAction:
-        """Resolve the action's operations and direct Action Triggerings."""
+        """Resolve the action's operations and direct Action Triggers."""
         for node in self._graph.nodes:
             if not isinstance(node, operation_graph_model.PositionOperationNode):
                 continue
@@ -351,7 +351,7 @@ class _ActionResolver:
         resolved_trigger = ResolvedActionTrigger(trigger, inputs)
         trigger_operation = trigger.trigger_operation
         self._action_triggers.add_operation(trigger_operation, resolved_trigger)
-        # This is a destructor triggering on a child of a from_caller particle.
+        # This is a destructor Action Trigger on a child of a from_caller particle.
         if isinstance(trigger_operation, operation_graph_model.RequirementNode):
             # There's no guarantee that resolving the destructor's operations resolved
             # the dependency on its parent, because the destructor might not have acted

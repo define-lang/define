@@ -19,8 +19,8 @@ if typing.TYPE_CHECKING:
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
-# One triggering of one action, by the operation that fired it and the action it
-# fires. An action names each of its own triggerings, and one operation can fire
+# One Action Trigger, by the operation that fired it and the action it fires. An
+# action names each of its own Action Triggers, and one operation can fire
 # more than one of them.
 type _TriggerKey = tuple[operation_graph_model.LastOperationNode, str]
 
@@ -31,7 +31,7 @@ _DESTROY_IF_OCCUPIED_OPERATION_NAME = "destroy_if_occupied"
 
 
 def _trigger_key(trigger: operation_graph_model.ActionTrigger) -> _TriggerKey:
-    """Return the identity of one Action Triggering performed by an action."""
+    """Return the identity of one Action Trigger performed by an action."""
     return (trigger.trigger_operation, trigger.callee_action_name.full_typed_name)
 
 
@@ -130,7 +130,7 @@ class _InvocationLabels:
         for trigger in graph.triggers:
             action_name = _action_name(trigger.callee_action_name)
             # An action can trigger the same action more than once, which every
-            # triggering after the first says in its name.
+            # Action Trigger after the first says in its name.
             count = times_invoked.get(action_name, 0) + 1
             times_invoked[action_name] = count
             self._names[_trigger_key(trigger)] = (
@@ -147,7 +147,7 @@ class _InvocationLabels:
         return self._names.values()
 
     def callees(self) -> Iterable[ast.GlobalTypedNameReference]:
-        """Return the action every triggering of this action fires."""
+        """Return the action every Action Trigger of this action fires."""
         return self._callees
 
 
@@ -166,23 +166,23 @@ class TriggeredActionExecutionName:
 
 
 class _ActionInvocationLabels:
-    """The name of every triggering in the program, by the action that performs it.
+    """The name of every Action Trigger, by the action that performs it.
 
-    Each action names its own triggerings, knowing nothing of the rest of the
-    program, so a name can fail to stand for one triggering in two ways: two
-    actions that trigger the same callee both name their first triggering of it
+    Each action names its own Action Triggers, knowing nothing of the rest of the
+    program, so a name can fail to stand for one Action Trigger in two ways: two
+    actions that trigger the same callee both name their first Action Trigger of it
     ``worker``, and an action triggered more than once hands out every one of its
     names again in each copy of itself. Either way, the name carries the name of
-    the triggering it was spliced in by: ``first:worker``, ``first#2:worker``.
+    the Action Trigger it was spliced in by: ``first:worker``, ``first#2:worker``.
     """
 
     def __init__(self, graphs: operation_graph.OperationGraphs):
-        """Name every triggering the actions in ``graphs`` perform."""
+        """Name every Action Trigger the actions in ``graphs`` perform."""
         self._labels: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, _InvocationLabels
         ] = typed_name_dict.TypedNameDict()
         # How many actions give out each name, and how many times each action is
-        # triggered. A name stands for one triggering only when one action gives it
+        # triggered. A name stands for one Action Trigger only when one action gives it
         # and that action is itself triggered only once.
         callers_naming: dict[str, int] = {}
         times_invoked: typed_name_dict.TypedNameDict[ast.GlobalTypedName, int] = (
@@ -225,7 +225,7 @@ class OperationGraphLabeler:
 
     Both are decided across the whole program at once: an action's operations are
     labeled with its own name for them wherever it is spliced in, and whether a
-    triggering's name says which triggering spliced it in depends on what the
+    Action Trigger's name says which Action Trigger spliced it in depends on what the
     other actions call theirs. Construction prepares every label across the
     supplied graphs, so callers should construct a labeler only when they will
     use it.

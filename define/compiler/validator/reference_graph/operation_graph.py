@@ -68,7 +68,7 @@ class OperationGraph:
         self._last_operation: dict[
             tuple[str, ...], operation_graph_model.LastOperationNode
         ] = {}
-        # Every triggering this action performs, in the order it performs them.
+        # Every Action Trigger this action performs, in the order it performs them.
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
         self._triggers: list[operation_graph_model.ActionTrigger] = []
@@ -161,7 +161,7 @@ class OperationGraph:
             operation_graph_model.PrecedingChildOperations
         ],
     ) -> operation_graph_model.ActionTrigger:
-        """Record that this action triggers ``callee``, returning that triggering.
+        """Record that this action triggers ``callee``, returning that Action Trigger.
 
         The firing operation is the one that filled ``acting_on_position`` (a trigger position
         for an action, or the action being operated on by a constructor/destructor).
@@ -643,7 +643,7 @@ class OperationGraph:
         # avoidable allocation costs because guarantees account for most nodes
         # in dense action call graphs. A July 2026 experiment shared one
         # dependency list among every GuaranteeNode produced by the same
-        # triggering, eliminating over one million list allocations in the
+        # Action Trigger, eliminating over one million list allocations in the
         # largest profile. It failed to reduce compiler CPU: alternating
         # unprofiled runs averaged 8.013s before and 8.037s after, so the
         # prototype was rejected as a CPU optimization.
@@ -685,7 +685,7 @@ class OperationGraph:
 
 @dataclass(slots=True)
 class GuaranteePath:
-    """Action Triggerings from a guarantee to its publishing Particle Operation."""
+    """Action Triggers from a guarantee to its publishing Particle Operation."""
 
     triggers: list[operation_graph_model.ActionTrigger]
     operation: operation_graph_model.PositionOperationNode
