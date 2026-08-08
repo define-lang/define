@@ -19,6 +19,11 @@
       groupName: "github actions",
     },
     {
+      matchManagers: ["github-actions"],
+      matchFileNames: ["vendored/**"],
+      enabled: false,
+    },
+    {
       matchManagers: ["pre-commit"],
       groupName: "pre-commit hooks",
     },
