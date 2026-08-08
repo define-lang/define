@@ -149,6 +149,9 @@ pytest_add_cli_args = [
 [tool.coverage.run]
 branch = true
 
+[tool.uv.sources]
+google-re2 = { path = "vendored/re2/python", package = false }
+
 [tool.basedpyright]
 # Do not disable any rules here. Fix type errors in source code instead.
 stubPath = "typestubs"
@@ -191,6 +194,8 @@ dev = [
     "define",
     "build",
     "coverage",
+    # Directly declared so uv uses the Bazel-provided virtual package.
+    "google-re2",
     "hypothesis",
     "j2lint",
     "lark",

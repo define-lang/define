@@ -35,6 +35,24 @@ py_test(
     ],
 )
 
+filegroup(
+    name = "uv_metadata",
+    srcs = [
+        "LICENSE",
+        "README",
+        "_re2.cc",
+        "re2.py",
+        ":uv_setup",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "uv_setup",
+    srcs = ["setup.py"],
+    visibility = ["//visibility:public"],
+)
+
 # These are implementation details for `setup.py`, so they can be
 # named however we want. For now, they are named to be consistent
 # with the `--cpu` flag values that they will eventually replace.

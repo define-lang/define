@@ -1,6 +1,6 @@
 # Root package
 
-load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("@npm//:basedpyright/package_json.bzl", basedpyright_bin = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
@@ -10,6 +10,11 @@ exports_files([
     ".claude/settings.json",
     ".cursor/cli.json",
 ])
+
+exports_files(
+    ["uv.lock"],
+    visibility = ["//tools:__pkg__"],
+)
 
 # basedpyright has to go here instead of in tools/, because otherwise
 # it tries to type check its own code, which is slow.
@@ -38,25 +43,7 @@ native_binary(
         "pyproject.toml",
         "uv.lock",
         "@multitool//tools/uv",
-    ],
-    tags = [
-        "local",
-        "requires-network",
-    ],
-)
-
-# --- Lock file freshness ---
-
-native_test(
-    name = "uv_lock_test",
-    size = "small",
-    src = "//tools:uv_lock_test",
-    out = "uv_lock_test_bin",
-    args = ["$(location @multitool//tools/uv)"],
-    data = [
-        "pyproject.toml",
-        "uv.lock",
-        "@multitool//tools/uv",
+        "@re2//python:uv_metadata",
     ],
     tags = [
         "local",

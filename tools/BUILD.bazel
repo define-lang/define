@@ -150,7 +150,10 @@ py_binary(
     name = "setup_local_dev",
     srcs = ["setup_local_dev.py"],
     args = ["$(location @multitool//tools/uv)"],
-    data = ["@multitool//tools/uv"],
+    data = [
+        "@multitool//tools/uv",
+        "@re2//python:re2",
+    ],
 )
 
 py_binary(
@@ -207,11 +210,26 @@ native_binary(
     visibility = ["//:__pkg__"],
 )
 
-native_binary(
+native_test(
     name = "uv_lock_test",
+    size = "small",
     src = "uv_lock_test.sh",
     out = "uv_lock_test_runner",
-    visibility = ["//:__pkg__"],
+    args = [
+        "$(location @multitool//tools/uv)",
+        "$(location @re2//python:uv_setup)",
+    ],
+    data = [
+        "//:pyproject.toml",
+        "//:uv.lock",
+        "@multitool//tools/uv",
+        "@re2//python:uv_metadata",
+        "@re2//python:uv_setup",
+    ],
+    tags = [
+        "local",
+        "requires-network",
+    ],
 )
 
 py_binary(

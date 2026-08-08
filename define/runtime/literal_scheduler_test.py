@@ -280,6 +280,7 @@ class TestScheduler:
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(first)
                 scheduler.submit(submitter)
+                _ = child_finished.wait()
 
         scheduler.start(Entry)
 
@@ -479,9 +480,11 @@ class TestScheduler:
     def test_worker_is_closed_after_failure(self):
         scheduler = literal.Scheduler(max_threads=2)
         execution_threads: list[threading.Thread] = []
+        failure_started = threading.Event()
 
         def fail():
             execution_threads.append(threading.current_thread())
+            failure_started.set()
             raise AssertionError("worker failed")
 
         class Entry(literal.EntryPoint):
@@ -490,6 +493,7 @@ class TestScheduler:
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(fail)
+                _ = failure_started.wait()
 
         with pytest.raises(AssertionError, match="worker failed"):
             scheduler.start(Entry)
@@ -500,15 +504,19 @@ class TestScheduler:
     def test_worker_is_closed_after_success(self):
         scheduler = literal.Scheduler(max_threads=2)
         execution_threads: list[threading.Thread] = []
+        worker_finished = threading.Event()
+
+        def finish():
+            execution_threads.append(threading.current_thread())
+            worker_finished.set()
 
         class Entry(literal.EntryPoint):
             typed_name: ClassVar[str] = "action<entry>"
 
             @override
             def execute(self, scheduler: literal.Scheduler):
-                scheduler.submit(
-                    lambda: execution_threads.append(threading.current_thread())
-                )
+                scheduler.submit(finish)
+                _ = worker_finished.wait()
 
         scheduler.start(Entry)
 

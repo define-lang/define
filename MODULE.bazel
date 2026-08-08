@@ -48,6 +48,15 @@ pypi.project(
     lock = "//:uv.lock",
     pyproject = "//:pyproject.toml",
 )
+
+# The PyPI wheel's abi3 extension segfaults when imported by free-threaded CPython.
+# TODO: Use the PyPI package when protobuf supports free-threaded CPython:
+# https://github.com/protocolbuffers/protobuf/issues/23158
+pypi.override_package(
+    name = "protobuf",
+    lock = "//:uv.lock",
+    target = "@protobuf//:protobuf_python",
+)
 pypi.override_package(
     name = "google-re2",
     lock = "//:uv.lock",

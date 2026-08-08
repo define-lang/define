@@ -136,11 +136,39 @@ def _copy_buf_validate():
             print(dest.relative_to(REPO_ROOT))
 
 
+def _copy_re2():
+    venv_python = (
+        REPO_ROOT
+        / ".venv"
+        / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    )
+    site_packages_result = subprocess.run(
+        [
+            str(venv_python),
+            "-c",
+            "import sysconfig; print(sysconfig.get_path('platlib'))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    site_packages = Path(site_packages_result.stdout.strip())
+    re2_runfiles = RUNFILES_WORKSPACE.parent / "re2+" / "python"
+    re2_source = re2_runfiles / "re2.py"
+    _copy_file(re2_source, site_packages / "re2.py")
+
+    extension_name = "_re2.pyd" if os.name == "nt" else "_re2.so"
+    extension_source = re2_runfiles / extension_name
+    _copy_file(extension_source, site_packages / extension_source.name)
+    print((site_packages / "re2.py").relative_to(REPO_ROOT))
+    print((site_packages / extension_source.name).relative_to(REPO_ROOT))
+
+
 def main():
     """Build Bazel-generated files and copy them into the source tree."""
     sync_venv(sys.argv[1])
     proto_targets = _discover_py_proto_targets()
-    all_targets = LARK_TARGETS + proto_targets
+    all_targets = [*LARK_TARGETS, *proto_targets]
     print(f"Building {len(all_targets)} targets...")
     _build_targets(all_targets)
 
@@ -148,6 +176,7 @@ def main():
     _copy_proto_files(proto_dirs)
     _copy_lark_files()
     _copy_buf_validate()
+    _copy_re2()
     print("Done.")
 
 
