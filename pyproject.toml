@@ -91,6 +91,7 @@ known-first-party = ["define", "defcl", "tools"]
     "A005", # Module intentionally named ast for AST definitions.
 ]
 [tool.ruff]
+extend-exclude = ["vendored"]
 force-exclude = true
 
 [tool.ruff.format]
@@ -153,6 +154,7 @@ branch = true
 stubPath = "typestubs"
 exclude = [
     "experimental",
+    "vendored",
     ".venv",
     "bazel-*",
     "**/*.pytest_main.py",

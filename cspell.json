@@ -15,5 +15,5 @@
     "unassignments"
   ],
   "flagWords": ["fqdn"],
-  "ignorePaths": ["cspell.json"]
+  "ignorePaths": ["cspell.json", "vendored/**"]
 }

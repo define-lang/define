@@ -1,1 +1,2 @@
 CLAUDE.md rules-lint-ignored
+vendored/** linguist-vendored rules-lint-ignored
