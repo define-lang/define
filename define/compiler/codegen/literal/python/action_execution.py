@@ -10,6 +10,7 @@ from define.compiler.codegen.literal.python import (
     action_guarantees,
     action_names,
     action_statements,
+    action_trigger,
     naming,
     template_context,
 )
@@ -27,6 +28,7 @@ class GeneratedExecution:
     context: template_context.ActionExecutionContext
     input_method_names: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
     guarantee_interface: action_context.GuaranteeInterface | None
+    execute_method_names: list[str]
 
 
 @typing.final
@@ -75,41 +77,45 @@ class ActionExecutionGenerator:
             self._generated_actions,
             names,
         ).generate()
-        triggered_actions = self._generate_triggered_actions(
-            names, guarantees.interface, block_generator
-        )
+        generated_action_triggers = action_trigger.ActionTriggerGenerator(
+            self._definition,
+            self._converter,
+            self._generated_actions,
+            self._plan,
+            self._operation_labels,
+            names,
+            guarantees.interface,
+            block_generator,
+        ).generate()
         context = template_context.ActionExecutionContext(
             execution_class_name=self._converter.execution_class_name(
                 self._definition.typed_name.name_content.path.relative_path
             ),
             local_position_statements=local_position_statements,
             fragments=self._generate_fragments(
-                names, guarantees.interface, block_generator
+                names,
+                guarantees.interface,
+                block_generator,
             ),
-            execute_fragment_method_names=[
-                names.fragments[fragment] for fragment in self._plan.execute_fragments
-            ],
             caller_inputs=self._generate_caller_inputs(names),
-            triggered_actions=triggered_actions,
-            triggered_action_inputs=self._generate_triggered_inputs(names),
-            guarantee_destructor_triggers=(
-                self._generate_guarantee_destructor_triggers(names)
-            ),
-            guarantee_registrations=guarantees.guarantee_registrations,
+            action_triggers=generated_action_triggers,
             guarantees=guarantees.context,
             trace_operations=self._operation_labels is not None,
         )
         return GeneratedExecution(
-            context,
-            names.caller_inputs,
-            guarantees.interface,
+            context=context,
+            input_method_names=names.caller_inputs,
+            guarantee_interface=guarantees.interface,
+            execute_method_names=[
+                names.fragments[fragment] for fragment in self._plan.execute_fragments
+            ],
         )
 
     def _generate_fragments(
         self,
         names: action_names.ActionNames,
         guarantee_interface: action_context.GuaranteeInterface | None,
-        block_generator: action_statements.ActionStatementsGenerator,
+        statement_generator: action_statements.ActionStatementsGenerator,
     ) -> list[template_context.ActionFragmentContext]:
         guarantee_names_by_operation = (
             guarantee_interface.guarantee_names_by_operation
@@ -122,7 +128,7 @@ class ActionExecutionGenerator:
                 template_context.ActionFragmentContext(
                     method_name=names.fragments[fragment],
                     statements=[
-                        block_generator.build_operation(operation)
+                        statement_generator.build_operation(operation)
                         for operation in fragment.operations
                     ],
                     successor_fragment_method_names=[
@@ -150,68 +156,6 @@ class ActionExecutionGenerator:
             )
         return fragments
 
-    def _generate_triggered_actions(
-        self,
-        names: action_names.ActionNames,
-        guarantee_interface: action_context.GuaranteeInterface | None,
-        block_generator: action_statements.ActionStatementsGenerator,
-    ) -> list[template_context.TriggeredActionContext]:
-        triggered_actions: list[template_context.TriggeredActionContext] = []
-        for trigger in self._plan.action_triggers:
-            action_trigger_names = names.triggered_actions[trigger]
-            generated_callee = self._generated_actions[trigger.callee_action_name]
-            action = None
-            if generated_callee.context.execution.needs_action:
-                action = block_generator.build_action(trigger.callee)
-            child_guarantees_name = None
-            if guarantee_interface is not None:
-                child_guarantees = guarantee_interface.child_guarantees.get(trigger)
-                if child_guarantees is not None:
-                    child_guarantees_name = child_guarantees.member_name
-            triggered_actions.append(
-                template_context.TriggeredActionContext(
-                    action=action,
-                    execution_class=self._converter.execution_class_reference(
-                        trigger.callee_action_name
-                    ),
-                    init_method_name=action_trigger_names.initializer_name,
-                    execution_name=action_trigger_names.execution_name,
-                    child_guarantees_name=child_guarantees_name,
-                    trace_action_name=(
-                        self._operation_labels.triggered_action_execution_name(
-                            self._definition.typed_name,
-                            trigger,
-                        ).local_name
-                        if self._operation_labels is not None
-                        else None
-                    ),
-                )
-            )
-        return triggered_actions
-
-    def _generate_triggered_inputs(
-        self,
-        names: action_names.ActionNames,
-    ) -> list[template_context.TriggeredActionInputContext]:
-        triggered_action_inputs: list[template_context.TriggeredActionInputContext] = []
-        for triggered_input in self._plan.triggered_action_inputs:
-            trigger = triggered_input.action_trigger
-            triggered_action_inputs.append(
-                template_context.TriggeredActionInputContext(
-                    triggered_action_execution_name=(
-                        names.triggered_actions[
-                            triggered_input.action_trigger
-                        ].execution_name
-                    ),
-                    callee_input_method_name=self._generated_actions[
-                        trigger.callee_action_name
-                    ].input_method_names[triggered_input.callee_input],
-                    method_name=names.triggered_inputs[triggered_input],
-                    dependency_count=triggered_input.dependency_count,
-                )
-            )
-        return triggered_action_inputs
-
     def _generate_caller_inputs(
         self, names: action_names.ActionNames
     ) -> list[template_context.CallerInputContext]:
@@ -231,22 +175,4 @@ class ActionExecutionGenerator:
                 ],
             )
             for caller_input in self._plan.caller_inputs
-        ]
-
-    def _generate_guarantee_destructor_triggers(
-        self,
-        names: action_names.ActionNames,
-    ) -> list[template_context.GuaranteeDestructorTriggerContext]:
-        return [
-            template_context.GuaranteeDestructorTriggerContext(
-                method_name=names.guarantee_destructor_triggers[destructor_trigger],
-                destructor_execution_init_method=names.triggered_actions[
-                    destructor_trigger.action_trigger
-                ].initializer_name,
-                triggered_input_method_names=[
-                    names.triggered_inputs[triggered_input]
-                    for triggered_input in destructor_trigger.triggered_inputs
-                ],
-            )
-            for destructor_trigger in self._plan.guarantee_destructor_triggers
         ]

@@ -33,6 +33,7 @@ class ActionDefinitionContext:
     class_name: str
     module_name: str
     execution: template_context.ActionExecutionContext
+    execute_method_names: list[str]
     role: ActionRole
     interface_positions: list[template_context.InterfacePositionContext]
     implied_qualities: list[naming.ClassReference]
@@ -61,10 +62,10 @@ class ActionDefinitionContext:
                 class_references.extend(position.class_references)
                 if statement.to_position is not None:
                     class_references.extend(statement.to_position.class_references)
-        for triggered_action in self.execution.triggered_actions:
-            if triggered_action.action is not None:
-                class_references.extend(triggered_action.action.class_references)
-            class_references.append(triggered_action.execution_class)
+        for action_trigger in self.execution.action_triggers.action_triggers:
+            if action_trigger.action is not None:
+                class_references.extend(action_trigger.action.class_references)
+            class_references.append(action_trigger.execution_class)
         return sorted(
             {class_reference.module_name for class_reference in class_references}
         )

@@ -1,149 +1,15 @@
 
 
-{% from "action_statements.j2" import action_statements %}
-{% from "position_expression.j2" import position_expression %}
-{% macro invoke_method(method_name, submit) -%}
-    {%- if submit -%}
-self.scheduler.submit(self.{{ method_name }})
-    {%- else -%}
-self.{{ method_name }}()
-    {%- endif -%}
-{%- endmacro %}
+{% from "action_execution_init.j2" import action_execution_init %}
+{% from "action_fragments.j2" import action_fragment_methods %}
+{% from "action_trigger.j2" import action_trigger_methods %}
+{% from "caller_inputs.j2" import caller_input_methods %}
 {% macro action_execution(action_class_name, execution) %}
 
 @final
 class {{ execution.execution_class_name }}:
-    def __init__(
-        self,
-    {% if execution.needs_action %}
-        action: {{ action_class_name }},
-    {% endif %}
-        scheduler: literal.Scheduler,
-    {% if execution.trace_operations %}
-        caller_execution: object | None,
-        action_name: str,
-    {% endif %}
-    {% if execution.needs_guarantees %}
-        guarantees: {{ execution.guarantees.class_name }},
-    {% endif %}
-    ):
-    {% if execution.needs_action %}
-        self.action = action
-    {% endif %}
-        self.scheduler = scheduler
-    {% if execution.trace_operations %}
-        self.trace_execution = scheduler.execution_created(
-            caller_execution,
-            action_name,
-        )
-    {% endif %}
-    {% if execution.needs_guarantees %}
-        self.guarantees = guarantees
-    {% endif %}
-    {% if execution.local_position_statements %}
-{{ action_statements(execution.local_position_statements) -}}
-    {% endif %}
-    {% for registration in execution.guarantee_registrations %}
-        guarantees
-        {%- for child_guarantees_name in registration.child_guarantees_names -%}
-.{{ child_guarantees_name }}
-        {%- endfor -%}
-.{{ registration.guarantee_name }}.append(
-            self.{{ registration.method_name }}
-        )
-    {% endfor %}
-    {% for triggered_action in execution.triggered_actions %}
-        self.{{ triggered_action.execution_name }}: {{ triggered_action.execution_class.module_name }}.{{ triggered_action.execution_class.class_name }}
-    {% endfor %}
-    {% for fragment in execution.fragments %}
-        {% if fragment.dependency_count > 1 %}
-        self.join_for_{{ fragment.method_name }} = literal.Join({{ fragment.dependency_count }})
-        {% endif %}
-    {% endfor %}
-    {% for triggered_input in execution.triggered_action_inputs %}
-        {% if triggered_input.dependency_count > 1 %}
-        self.join_for_{{ triggered_input.method_name }} = literal.Join({{ triggered_input.dependency_count }})
-        {% endif %}
-    {% endfor %}
-    {% for consumers in execution.caller_inputs %}
-
-    def {{ consumers.input_method_name }}(self):
-        {% for destructor_execution_init_method in consumers.destructor_execution_init_methods %}
-        self.{{ destructor_execution_init_method }}()
-        {% endfor %}
-        {% for fragment_method_name in consumers.fragment_method_names %}
-            {% set has_later = not loop.last or consumers.triggered_input_method_names %}
-        {{ invoke_method(fragment_method_name, submit=has_later) }}
-        {% endfor %}
-        {% for method_name in consumers.triggered_input_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
-    {% endfor %}
-    {% for fragment in execution.fragments %}
-
-    def {{ fragment.method_name }}(self):
-        {% if fragment.dependency_count > 1 %}
-        if not self.join_for_{{ fragment.method_name }}.arrive():
-            return
-        {% endif %}
-{{ action_statements(fragment.statements) -}}
-        {% for init_method_name in fragment.triggered_action_successor_init_method_names %}
-        self.{{ init_method_name }}()
-        {% endfor %}
-        {% for successor_method_name in fragment.successor_fragment_method_names %}
-            {% set has_later = not loop.last or fragment.triggered_input_successor_method_names or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names %}
-        {{ invoke_method(successor_method_name, submit=has_later) }}
-        {% endfor %}
-        {% for method_name in fragment.triggered_input_successor_method_names %}
-            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names %}
-        {{ invoke_method(method_name, submit=has_later) }}
-        {% endfor %}
-        {% for publication_name in fragment.guarantee_publication_names %}
-            {% if loop.last and not fragment.execution_input_successor_method_names %}
-        self.scheduler.continue_with(self.guarantees.{{ publication_name }})
-            {% else %}
-        self.scheduler.submit_all(self.guarantees.{{ publication_name }})
-            {% endif %}
-        {% endfor %}
-        {% for method_name in fragment.execution_input_successor_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
-    {% endfor %}
-    {% for triggered_action in execution.triggered_actions %}
-
-    def {{ triggered_action.init_method_name }}(self):
-        {% if triggered_action.execution_needs_action %}
-        action = {{ position_expression(triggered_action.action) }}
-        {% endif %}
-        self.{{ triggered_action.execution_name }} = {{ triggered_action.execution_class.module_name }}.{{ triggered_action.execution_class.class_name }}(
-        {% if triggered_action.execution_needs_action %}
-            action,
-        {% endif %}
-            self.scheduler,
-        {% if execution.trace_operations %}
-            self.trace_execution,
-            "{{ triggered_action.trace_action_name }}",
-        {% endif %}
-        {% if triggered_action.execution_needs_guarantees %}
-            self.guarantees.{{ triggered_action.child_guarantees_name }},
-        {% endif %}
-        )
-    {% endfor %}
-    {% for destructor_trigger in execution.guarantee_destructor_triggers %}
-
-    def {{ destructor_trigger.method_name }}(self):
-        self.{{ destructor_trigger.destructor_execution_init_method }}()
-        {% for method_name in destructor_trigger.triggered_input_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
-    {% endfor %}
-    {% for triggered_input in execution.triggered_action_inputs %}
-
-    def {{ triggered_input.method_name }}(self):
-        {% if triggered_input.dependency_count > 1 %}
-        if not self.join_for_{{ triggered_input.method_name }}.arrive():
-            return
-        {% endif %}
-        self.{{ triggered_input.triggered_action_execution_name }}.{{ triggered_input.callee_input_method_name }}()
-    {% endfor %}
+{{ action_execution_init(action_class_name, execution) -}}
+{{ caller_input_methods(execution.caller_inputs) -}}
+{{ action_fragment_methods(execution.fragments) -}}
+{{ action_trigger_methods(execution.action_triggers) -}}
 {% endmacro %}

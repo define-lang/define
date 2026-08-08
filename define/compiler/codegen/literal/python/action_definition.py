@@ -66,6 +66,7 @@ class ActionDefinitionGenerator:
             class_name=class_name,
             module_name=module_name,
             execution=generated_execution.context,
+            execute_method_names=generated_execution.execute_method_names,
             role=self._role,
             interface_positions=interface_positions,
             implied_qualities=(

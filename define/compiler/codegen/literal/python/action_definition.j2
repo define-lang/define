@@ -62,7 +62,7 @@ class {{ definition.class_name }}({{ action_base_class(definition.role) }}):
             {{ definition.execution.guarantees.class_name }}(),
         {% endif %}
         )
-        {% for fragment_method_name in definition.execution.execute_fragment_method_names %}
+        {% for fragment_method_name in definition.execute_method_names %}
             {% if loop.last %}
         execution.{{ fragment_method_name }}()
             {% else %}

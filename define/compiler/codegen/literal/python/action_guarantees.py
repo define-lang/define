@@ -1,7 +1,6 @@
 """Literal Python guarantee generation for action executions."""
 
 import typing
-from collections.abc import Sequence
 from dataclasses import dataclass
 
 from define.compiler import ast
@@ -21,14 +20,13 @@ from define.compiler.validator.reference_graph import (
 
 @dataclass(frozen=True, slots=True)
 class GeneratedGuarantees:
-    """Generated guarantee context, interface, and consumer registrations."""
+    """Generated guarantee context and caller-facing interface."""
 
     context: template_context.GuaranteesContext | None
     interface: action_context.GuaranteeInterface | None
-    guarantee_registrations: Sequence[template_context.GuaranteeRegistrationContext]
 
 
-_EMPTY_GENERATED_GUARANTEES = GeneratedGuarantees(None, None, ())
+_EMPTY_GENERATED_GUARANTEES = GeneratedGuarantees(None, None)
 
 
 @typing.final
@@ -71,9 +69,12 @@ class ActionGuaranteesGenerator:
             guarantee_names_by_operation=self._guarantee_names_by_operation(),
         )
         return GeneratedGuarantees(
-            self._guarantees_context(class_reference, child_guarantees),
+            self._guarantees_context(
+                class_reference,
+                child_guarantees,
+                self._guarantee_registrations(interface),
+            ),
             interface,
-            self._guarantee_registrations(interface),
         )
 
     def _has_guarantee_dependencies(self) -> bool:
@@ -119,6 +120,7 @@ class ActionGuaranteesGenerator:
         child_guarantees: dict[
             operation_graph_model.ActionTrigger, action_context.ChildGuarantees
         ],
+        registrations: list[template_context.GuaranteeRegistrationContext],
     ) -> template_context.GuaranteesContext:
         return template_context.GuaranteesContext(
             class_name=class_reference.class_name,
@@ -133,6 +135,7 @@ class ActionGuaranteesGenerator:
                 self._names.guarantee_publications[publication]
                 for publication in self._plan.guarantee_publications
             ],
+            registrations=registrations,
         )
 
     def _guarantee_registrations(

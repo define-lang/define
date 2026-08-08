@@ -41,6 +41,7 @@ py_library(
         ":action_guarantees",
         ":action_names",
         ":action_statements",
+        ":action_trigger",
         ":naming",
         ":template_context",
         "//define/compiler:ast",
@@ -115,6 +116,23 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph:operation_graph_labeler",
         "//define/compiler/validator/reference_graph:operation_graph_model",
+    ],
+)
+
+py_library(
+    name = "action_trigger",
+    srcs = ["action_trigger.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":action_context",
+        ":action_names",
+        ":action_statements",
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 
@@ -235,6 +253,7 @@ pyright_test(
         ":action_names",
         ":action_names_test",
         ":action_statements",
+        ":action_trigger",
         ":generator",
         ":naming",
         ":naming_test",

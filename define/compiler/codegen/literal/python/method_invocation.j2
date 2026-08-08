@@ -1,0 +1,7 @@
+{% macro invoke_method(method_name, submit) -%}
+    {%- if submit -%}
+self.scheduler.submit(self.{{ method_name }})
+    {%- else -%}
+self.{{ method_name }}()
+    {%- endif -%}
+{%- endmacro %}

@@ -1,0 +1,41 @@
+{% from "method_invocation.j2" import invoke_method %}
+{% from "position_expression.j2" import position_expression %}
+{% macro action_trigger_methods(action_triggers) %}
+    {% for action_trigger in action_triggers.action_triggers %}
+
+    def {{ action_trigger.init_method_name }}(self):
+        {% if action_trigger.execution_needs_action %}
+        action = {{ position_expression(action_trigger.action) }}
+        {% endif %}
+        self.{{ action_trigger.execution_name }} = {{ action_trigger.execution_class.module_name }}.{{ action_trigger.execution_class.class_name }}(
+        {% if action_trigger.execution_needs_action %}
+            action,
+        {% endif %}
+            self.scheduler,
+        {% if action_trigger.trace_action_name is not none %}
+            self.trace_execution,
+            "{{ action_trigger.trace_action_name }}",
+        {% endif %}
+        {% if action_trigger.execution_needs_guarantees %}
+            self.guarantees.{{ action_trigger.child_guarantees_name }},
+        {% endif %}
+        )
+    {% endfor %}
+    {% for destructor_trigger in action_triggers.guarantee_destructor_triggers %}
+
+    def {{ destructor_trigger.method_name }}(self):
+        self.{{ destructor_trigger.destructor_execution_init_method }}()
+        {% for method_name in destructor_trigger.triggered_input_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+        {% endfor %}
+    {% endfor %}
+    {% for triggered_input in action_triggers.triggered_action_inputs %}
+
+    def {{ triggered_input.method_name }}(self):
+        {% if triggered_input.dependency_count > 1 %}
+        if not self.join_for_{{ triggered_input.method_name }}.arrive():
+            return
+        {% endif %}
+        self.{{ triggered_input.triggered_action_execution_name }}.{{ triggered_input.callee_input_method_name }}()
+    {% endfor %}
+{% endmacro %}

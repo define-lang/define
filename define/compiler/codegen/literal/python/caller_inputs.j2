@@ -1,0 +1,17 @@
+{% from "method_invocation.j2" import invoke_method %}
+{% macro caller_input_methods(caller_inputs) %}
+    {% for consumers in caller_inputs %}
+
+    def {{ consumers.input_method_name }}(self):
+        {% for destructor_execution_init_method in consumers.destructor_execution_init_methods %}
+        self.{{ destructor_execution_init_method }}()
+        {% endfor %}
+        {% for fragment_method_name in consumers.fragment_method_names %}
+            {% set has_later = not loop.last or consumers.triggered_input_method_names %}
+        {{ invoke_method(fragment_method_name, submit=has_later) }}
+        {% endfor %}
+        {% for method_name in consumers.triggered_input_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}

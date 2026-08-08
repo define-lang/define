@@ -1,0 +1,57 @@
+{% from "action_statements.j2" import action_statements %}
+{% macro action_execution_init(action_class_name, execution) %}
+    def __init__(
+        self,
+    {% if execution.needs_action %}
+        action: {{ action_class_name }},
+    {% endif %}
+        scheduler: literal.Scheduler,
+    {% if execution.trace_operations %}
+        caller_execution: object | None,
+        action_name: str,
+    {% endif %}
+    {% if execution.needs_guarantees %}
+        guarantees: {{ execution.guarantees.class_name }},
+    {% endif %}
+    ):
+    {% if execution.needs_action %}
+        self.action = action
+    {% endif %}
+        self.scheduler = scheduler
+    {% if execution.trace_operations %}
+        self.trace_execution = scheduler.execution_created(
+            caller_execution,
+            action_name,
+        )
+    {% endif %}
+    {% if execution.needs_guarantees %}
+        self.guarantees = guarantees
+    {% endif %}
+    {% if execution.local_position_statements %}
+{{ action_statements(execution.local_position_statements) -}}
+    {% endif %}
+    {% if execution.needs_guarantees %}
+        {% for registration in execution.guarantees.registrations %}
+        guarantees
+        {%- for child_guarantees_name in registration.child_guarantees_names -%}
+.{{ child_guarantees_name }}
+        {%- endfor -%}
+.{{ registration.guarantee_name }}.append(
+            self.{{ registration.method_name }}
+        )
+        {% endfor %}
+    {% endif %}
+    {% for action_trigger in execution.action_triggers.action_triggers %}
+        self.{{ action_trigger.execution_name }}: {{ action_trigger.execution_class.module_name }}.{{ action_trigger.execution_class.class_name }}
+    {% endfor %}
+    {% for fragment in execution.fragments %}
+        {% if fragment.dependency_count > 1 %}
+        self.join_for_{{ fragment.method_name }} = literal.Join({{ fragment.dependency_count }})
+        {% endif %}
+    {% endfor %}
+    {% for triggered_input in execution.action_triggers.triggered_action_inputs %}
+        {% if triggered_input.dependency_count > 1 %}
+        self.join_for_{{ triggered_input.method_name }} = literal.Join({{ triggered_input.dependency_count }})
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

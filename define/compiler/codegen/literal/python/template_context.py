@@ -115,7 +115,7 @@ class ActionFragmentContext:
 
 
 @dataclass
-class TriggeredActionContext:
+class ActionTriggerContext:
     """One direct Action Trigger used by generated dependency wiring."""
 
     action: PositionExpr | None
@@ -145,21 +145,22 @@ class ChildGuaranteesContext:
 
 
 @dataclass
-class GuaranteesContext:
-    """Generated guarantees for one action execution."""
-
-    class_name: str
-    child_guarantees: list[ChildGuaranteesContext]
-    publications: list[str]
-
-
-@dataclass
 class GuaranteeRegistrationContext:
     """One generated task registration for a consumed guarantee."""
 
     child_guarantees_names: list[str]
     guarantee_name: str
     method_name: str
+
+
+@dataclass
+class GuaranteesContext:
+    """Generated guarantees for one action execution."""
+
+    class_name: str
+    child_guarantees: list[ChildGuaranteesContext]
+    publications: list[str]
+    registrations: Sequence[GuaranteeRegistrationContext]
 
 
 @dataclass
@@ -192,18 +193,23 @@ class GuaranteeDestructorTriggerContext:
 
 
 @dataclass
+class ActionTriggersContext:
+    """Generated members and methods for direct Action Triggers."""
+
+    action_triggers: list[ActionTriggerContext]
+    triggered_action_inputs: list[TriggeredActionInputContext]
+    guarantee_destructor_triggers: list[GuaranteeDestructorTriggerContext]
+
+
+@dataclass
 class ActionExecutionContext:
     """Template context for operation-graph execution of one action."""
 
     execution_class_name: str
     local_position_statements: list[ActionStatementContext]
     fragments: list[ActionFragmentContext]
-    execute_fragment_method_names: list[str]
     caller_inputs: list[CallerInputContext]
-    triggered_actions: list[TriggeredActionContext]
-    triggered_action_inputs: list[TriggeredActionInputContext]
-    guarantee_destructor_triggers: list[GuaranteeDestructorTriggerContext]
-    guarantee_registrations: Sequence[GuaranteeRegistrationContext]
+    action_triggers: ActionTriggersContext
     guarantees: GuaranteesContext | None
     trace_operations: bool = False
     needs_action: bool = field(init=False)
@@ -227,7 +233,7 @@ class ActionExecutionContext:
         self.needs_action = any(
             triggered_action.action is not None
             and triggered_action.action.local_position_member_name is None
-            for triggered_action in self.triggered_actions
+            for triggered_action in self.action_triggers.action_triggers
         )
 
     @property
