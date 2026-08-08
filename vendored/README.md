@@ -16,6 +16,8 @@ Define carries these patches over the upstream baseline:
 
 - [google/re2#603](https://github.com/google/re2/pull/603) declares the Python
   extension safe for free-threaded Python.
+- [define-lang/define#122](https://github.com/define-lang/define/pull/122)
+  updates RE2's Bazel module dependencies independently of upstream.
 - `python/_re2.cc` includes pybind11 before standard headers so that Python's
   feature-test macros are defined before libc headers.
 
