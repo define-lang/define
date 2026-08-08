@@ -12,6 +12,8 @@
 
 # Bazel
 /bazel-*
+/vendored/re2/MODULE.bazel.lock
+/vendored/re2/bazel-*
 
 # Define compiler output
 define-out/
