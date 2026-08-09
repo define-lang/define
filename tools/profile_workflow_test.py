@@ -27,7 +27,7 @@ def _record_profile(
 ) -> Path:
     profile_path = tmp_path / f"{profile_mode}.json"
     source_path = tmp_path / "source.dfn"
-    _ = generate_large_define_source.write_to_path(source_path, 5_000)
+    _ = generate_large_define_source.write_to_path(source_path, 50_000)
     returncode = 0
     try:
         run_profile.record_profile(
