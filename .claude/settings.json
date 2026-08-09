@@ -57,6 +57,7 @@
       "Bash(uv run tools/sync_agent_permissions.py)",
       "Bash(uv run tools/setup_local_dev.py)",
       "Bash(uv run tools/run_profile.py *)",
+      "Bash(uv run tools/analyze_profile.py *)",
       "Bash(uv run mutmut *)",
       "Bash(uv run py-spy *)",
       "Bash(bazelisk *)",
