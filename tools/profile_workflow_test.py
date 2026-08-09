@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,10 @@ _CHILD_EXIT_ERRORS = {
     "Error: No child processes (os error 10)",
 }
 _CAPTURE_SUMMARY = re.compile(r"Samples: ([1-9][0-9]*) Errors: 0")
+pytestmark = pytest.mark.skipif(
+    sys.platform == "darwin",
+    reason="py-spy requires root on macOS",
+)
 
 
 def _py_spy_executable() -> Path:
