@@ -27,6 +27,7 @@
       "Shell(git mv *)",
       "Shell(git status *)",
       "Shell(git log *)",
+      "Shell(git merge --ff-only *)",
       "Shell(git worktree add *)",
       "Shell(gh api repos/*/releases *)",
       "Shell(gh api repos/*/contents/*)",

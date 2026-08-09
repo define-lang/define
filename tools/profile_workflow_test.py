@@ -6,10 +6,8 @@ from pathlib import Path
 import pytest
 
 from tools import analyze_profile, run_profile
+from tools.generators import generate_large_define_source
 
-_SOURCE_PATH = Path(
-    "define/testdata/codegen/generator/constructor_entry_point_adds_no_diagnostics/source.dfn"
-)
 _CHILD_EXIT_ERRORS = {
     "Error: No child process (os error 10)",
     "Error: No child processes (os error 10)",
@@ -28,13 +26,15 @@ def _record_profile(
     capfd: pytest.CaptureFixture[str],
 ) -> Path:
     profile_path = tmp_path / f"{profile_mode}.json"
+    source_path = tmp_path / "source.dfn"
+    _ = generate_large_define_source.write_to_path(source_path, 5_000)
     returncode = 0
     try:
         run_profile.record_profile(
             (str(_py_spy_executable()),),
             Path("define/compiler/main").resolve(),
             None,
-            _SOURCE_PATH,
+            source_path,
             Path.cwd(),
             profile_path,
             1,

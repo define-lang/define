@@ -104,7 +104,6 @@ py_test(
     srcs = ["profile_workflow_test.py"],
     data = [
         "//define/compiler:main",
-        "//define/testdata/codegen/generator:profile_source",
         "@pypi//py_spy",
     ],
     tags = [
@@ -114,6 +113,7 @@ py_test(
     deps = [
         ":analyze_profile",
         ":run_profile",
+        "//tools/generators:generate_large_define_source",
         "@pypi//pytest",
     ],
 )

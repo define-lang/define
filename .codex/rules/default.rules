@@ -76,6 +76,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["git", "merge", "--ff-only"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["git", "worktree", "add"],
     decision = "allow",
 )

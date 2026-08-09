@@ -26,6 +26,7 @@
       "Bash(git mv *)",
       "Bash(git status *)",
       "Bash(git log *)",
+      "Bash(git merge --ff-only *)",
       "Bash(git worktree add *)",
       "Bash(gh api repos/*/releases *)",
       "Bash(gh api repos/*/contents/*)",

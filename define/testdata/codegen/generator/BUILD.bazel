@@ -7,10 +7,3 @@ filegroup(
         "//define/testdata:__pkg__",
     ],
 )
-
-filegroup(
-    name = "profile_source",
-    testonly = True,
-    srcs = ["constructor_entry_point_adds_no_diagnostics/source.dfn"],
-    visibility = ["//tools:__pkg__"],
-)
