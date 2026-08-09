@@ -54,6 +54,11 @@ def _apply_empty_rule_reduction_newest_first[DependencyNodeT: LastOperationNode]
         # positions here preserves that ordering through chains of moves.
         for position in positions:
             newer_positions.add(position)
+            # A valid wall profile of the August 2026 default operation-graph
+            # full-compiler workload made this generator's allocation and yields
+            # look costly. Replacing set.update(generator) with an explicit depth
+            # loop calling set.add made py-spy attribute 69% less time here, but
+            # alternating benchmarks showed no measurable full-compiler change.
             newer_position_prefixes.update(
                 position[:depth] for depth in range(1, len(position))
             )

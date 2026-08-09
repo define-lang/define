@@ -647,6 +647,14 @@ class OperationGraph:
         # largest profile. It failed to reduce compiler CPU: alternating
         # unprofiled runs averaged 8.013s before and 8.037s after, so the
         # prototype was rejected as a CPU optimization.
+        # Generator setup and tuple conversion for every guarantee's operation
+        # positions looked costly in the default action-graph full-compiler
+        # profile. An August 2026 experiment special-cased a single
+        # operation_positions_in_guarantee: it called ast.chain_in_caller once and
+        # built the one-element tuple directly, bypassing the generator below.
+        # Seven unprofiled default action-graph full-compiler runs showed no
+        # measurable wall-time change, and CPU profiles did not corroborate an
+        # improvement, so it was rejected.
         nodes: dict[tuple[str, ...], operation_graph_model.GuaranteeNode] = {}
         for caller_position, operation_positions_in_guarantee in guaranteed_positions:
             node = operation_graph_model.GuaranteeNode(

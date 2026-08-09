@@ -557,6 +557,11 @@ class _ParticleStateStore:
             # where the compiler may add the action intermediate. A parent name
             # that is anything else is a position the caller never filled.
             if parent_key[-1].startswith(_ACTION_KEY_PREFIX):
+                # Repeated _NodeState construction for action-intermediate trie
+                # keys looked costly in the default action-graph full-compiler
+                # benchmark. An August 2026 experiment replaced every fresh value
+                # here and in _ensure_action_parent with one shared _NodeState;
+                # unprofiled runs showed no measurable wall-time change.
                 self._state[parent_key] = _NodeState()
                 return None
             return parent_key
@@ -607,6 +612,10 @@ class ParticleTracker:
         if len(key) >= 2 and key[-2].startswith(_ACTION_KEY_PREFIX):
             parent_key = key[:-1]
             if parent_key not in self._store.state:
+                # This is the other repeated allocation from the default
+                # action-graph full-compiler experiment documented in
+                # try_add_action_parent: replacing both paths' fresh _NodeState
+                # values with one shared object showed no measurable wall-time change.
                 self._store.state[parent_key] = _NodeState()
 
     def _record_body_write(
@@ -887,6 +896,11 @@ class ParticleTracker:
     ) -> Iterator[
         tuple[tuple[str, ...], operation_graph_model.PrecedingChildOperationNode]
     ]:
+        # Valid wall profiles of the August 2026 focused operation-graph
+        # full-compiler workload with 10,000 children made allocating this lambda
+        # per snapshot and calling it per descendant look costly. Replacing it with
+        # one module-level operator.attrgetter("operation_node") produced no
+        # measurable full-compiler change across four unprofiled runs.
         return self._store.state.selected_subtree_items(
             key, lambda state: state.operation_node
         )
