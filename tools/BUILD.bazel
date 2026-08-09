@@ -27,20 +27,26 @@ py_test(
     ],
 )
 
+# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
 py_binary(
     name = "analyze_profile",
     srcs = ["analyze_profile.py"],
-    deps = ["@pypi//click"],
+    visibility = ["//tools:__subpackages__"],
+    deps = [
+        "//tools/profiler:schema",
+        "@pypi//click",
+    ],
 )
 
+# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
 py_test(
     name = "analyze_profile_test",
     size = "small",
     srcs = ["analyze_profile_test.py"],
     deps = [
         ":analyze_profile",
+        "//tools/profiler:schema",
         "@pypi//click",
-        "@pypi//pytest",
     ],
 )
 
@@ -96,26 +102,6 @@ py_binary(
     srcs = ["j2lint_runner.py"],
     visibility = ["//visibility:public"],
     deps = ["@pypi//j2lint"],
-)
-
-py_test(
-    name = "profile_workflow_test",
-    size = "small",
-    srcs = ["profile_workflow_test.py"],
-    data = [
-        "//define/compiler:main",
-        "@pypi//py_spy",
-    ],
-    tags = [
-        "local",
-        "no-coverage",
-    ],
-    deps = [
-        ":analyze_profile",
-        ":run_profile",
-        "//tools/generators:generate_large_define_source",
-        "@pypi//pytest",
-    ],
 )
 
 py_binary(
@@ -314,10 +300,9 @@ format_test(
 # --- Type-checking ---
 
 # IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
-# package or any of its sub-packages, you must also add it to the deps list below.
+# package, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
-    tags = ["include-subpackages"],
     deps = [
         ":analyze_coverage",
         ":analyze_coverage_test",
@@ -330,7 +315,6 @@ pyright_test(
         ":generate_programming_languages",
         ":git_commit_via_api",
         ":j2lint_runner",
-        ":profile_workflow_test",
         ":regenerate_codegen_testdata",
         ":run_profile",
         ":run_profile_test",
@@ -340,20 +324,5 @@ pyright_test(
         ":sync_agent_permissions",
         ":update_toolchains",
         ":validate_proposals",
-        "//tools/generators:generate_action_graph_source",
-        "//tools/generators:generate_action_graph_source_test",
-        "//tools/generators:generate_deep_pipeline_source",
-        "//tools/generators:generate_deep_pipeline_source_test",
-        "//tools/generators:generate_destruction_fragments_source",
-        "//tools/generators:generate_destruction_fragments_source_test",
-        "//tools/generators:generate_large_define_source",
-        "//tools/generators:generate_large_define_source_test",
-        "//tools/generators:generate_operation_graph_source",
-        "//tools/generators:generate_operation_graph_source_test",
-        "//tools/generators:generate_reference_graph_project",
-        "//tools/generators:generate_reference_graph_project_test",
-        "//tools/generators:generator_cli",
-        "//tools/generators:generator_io",
-        "//tools/generators:generator_io_test",
     ],
 )

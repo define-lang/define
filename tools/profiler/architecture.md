@@ -660,32 +660,38 @@ artifact. Collector code without a working analyzer is not a checkpoint.
 
 Before asking for review at every checkpoint:
 
-1. Exercise the new behavior through the public profiler entry point against a
+1. Add a short adjacent comment containing the requirement ID and name wherever
+   implementation logic or a test implements a numbered requirement. Maintain
+   these traceability comments as later increments replace or extend the code.
+   Tag only code that positively realizes a requirement; absence constraints and
+   checkpoint review rules are verified by review evidence, not asserted on
+   individual implementation branches.
+2. Exercise the new behavior through the public profiler entry point against a
    real process, then analyze the generated artifact through the public
    analyzer.
-2. Use real processes, threads, files, signals, `/proc` observations, compiler
+3. Use real processes, threads, files, signals, `/proc` observations, compiler
    workloads, and command-line entry points in tests. Use a mock only when the
    real boundary cannot practically be exercised, and mock only that boundary.
-3. Run formatting, linting, the relevant tests, and any required dependency
+4. Run formatting, linting, the relevant tests, and any required dependency
    checks.
-4. Run repository-wide coverage:
+5. Run repository-wide coverage:
 
    ```shell
    bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov //...
    ```
 
-5. Analyze the coverage report:
+6. Analyze the coverage report:
 
    ```shell
    bazelisk run --noshow_progress --ui_event_filters=-info //tools:analyze_coverage
    ```
 
-6. Add a realistic test for every reachable uncovered branch. Delete every
+7. Add a realistic test for every reachable uncovered branch. Delete every
    branch that cannot occur in the real workflow, including speculative error
    handling and defensive defaults.
-7. Remove code, flags, formats, adapters, and tests superseded by the increment.
+8. Remove code, flags, formats, adapters, and tests superseded by the increment.
    Do not add a compatibility shim or maintain a parallel legacy path.
-8. Demonstrate the captured profile and analyzer report to the user. The user
+9. Demonstrate the captured profile and analyzer report to the user. The user
    reviews and commits the working increment before implementation continues.
 
 ### Increment 1: One-snapshot wall vertical slice

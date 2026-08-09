@@ -2,11 +2,11 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_binary(
     name = "generate_action_graph_source",
     srcs = ["generate_action_graph_source.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         ":generator_io",
@@ -18,7 +18,6 @@ py_test(
     name = "generate_action_graph_source_test",
     size = "small",
     srcs = ["generate_action_graph_source_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_action_graph_source",
         "//define/compiler:ast",
@@ -32,7 +31,6 @@ py_test(
 py_binary(
     name = "generate_deep_pipeline_source",
     srcs = ["generate_deep_pipeline_source.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         ":generator_io",
@@ -44,7 +42,6 @@ py_test(
     name = "generate_deep_pipeline_source_test",
     size = "small",
     srcs = ["generate_deep_pipeline_source_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_deep_pipeline_source",
         "//define/compiler:driver",
@@ -56,7 +53,6 @@ py_test(
 py_binary(
     name = "generate_destruction_fragments_source",
     srcs = ["generate_destruction_fragments_source.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         ":generator_io",
@@ -68,7 +64,6 @@ py_test(
     name = "generate_destruction_fragments_source_test",
     size = "small",
     srcs = ["generate_destruction_fragments_source_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_destruction_fragments_source",
         "//define/compiler:driver",
@@ -80,7 +75,6 @@ py_test(
 py_binary(
     name = "generate_large_define_source",
     srcs = ["generate_large_define_source.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         ":generator_io",
@@ -92,7 +86,6 @@ py_test(
     name = "generate_large_define_source_test",
     size = "small",
     srcs = ["generate_large_define_source_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_large_define_source",
         "//define/compiler:ast",
@@ -106,7 +99,6 @@ py_test(
 py_binary(
     name = "generate_operation_graph_source",
     srcs = ["generate_operation_graph_source.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         ":generator_io",
@@ -118,7 +110,6 @@ py_test(
     name = "generate_operation_graph_source_test",
     size = "small",
     srcs = ["generate_operation_graph_source_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_operation_graph_source",
         "//define/compiler:ast",
@@ -132,7 +123,6 @@ py_test(
 py_binary(
     name = "generate_reference_graph_project",
     srcs = ["generate_reference_graph_project.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_cli",
         "@pypi//click",
@@ -143,7 +133,6 @@ py_test(
     name = "generate_reference_graph_project_test",
     size = "small",
     srcs = ["generate_reference_graph_project_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generate_reference_graph_project",
         "//define/compiler:driver",
@@ -155,21 +144,18 @@ py_test(
 py_library(
     name = "generator_cli",
     srcs = ["generator_cli.py"],
-    visibility = ["//tools:__pkg__"],
     deps = ["@pypi//click"],
 )
 
 py_library(
     name = "generator_io",
     srcs = ["generator_io.py"],
-    visibility = ["//tools:__pkg__"],
 )
 
 py_test(
     name = "generator_io_test",
     size = "small",
     srcs = ["generator_io_test.py"],
-    visibility = ["//tools:__pkg__"],
     deps = [
         ":generator_io",
         "@pypi//pytest",
@@ -180,4 +166,25 @@ format_test(
     name = "format_test",
     srcs = glob(["*.py"]),
     python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":generate_action_graph_source",
+        ":generate_action_graph_source_test",
+        ":generate_deep_pipeline_source",
+        ":generate_deep_pipeline_source_test",
+        ":generate_destruction_fragments_source",
+        ":generate_destruction_fragments_source_test",
+        ":generate_large_define_source",
+        ":generate_large_define_source_test",
+        ":generate_operation_graph_source",
+        ":generate_operation_graph_source_test",
+        ":generate_reference_graph_project",
+        ":generate_reference_graph_project_test",
+        ":generator_cli",
+        ":generator_io",
+        ":generator_io_test",
+    ],
 )

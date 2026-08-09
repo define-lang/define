@@ -2,414 +2,181 @@ import json
 from pathlib import Path
 
 import click.testing
-import pytest
 
 from tools import analyze_profile
+from tools.profiler import schema
 
 
-def _event(
-    phase: str,
-    timestamp: int,
-    thread: int,
-    name: str,
-    line: int,
-    filename: str = "/repo/compiler.py",
-) -> dict[str, object]:
+def _profile() -> schema.RawProfile:
+    # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
     return {
-        "args": {"filename": filename, "line": line},
-        "cat": "py-spy",
-        "name": name,
-        "ph": phase,
-        "pid": 1,
-        "tid": thread,
-        "ts": timestamp,
+        "schema_version": 1,
+        "complete": True,
+        "success": True,
+        "command": ["/repo/compiler", "compile"],
+        "working_directory": "/repo",
+        "workload_path": "/repo/source.dfn",
+        "workload_sha256": "abc123",
+        "sampling": {
+            "mode": "wall",
+            "schedule": "one-snapshot",
+            "snapshot_delay_seconds": 0.1,
+            "attachment_timeout_seconds": 10.0,
+        },
+        "launcher_executable": {
+            "path": "/usr/bin/bash",
+            "device": 1,
+            "inode": 2,
+        },
+        "python_runtime": {
+            "version": "3.14.4",
+            "minor_version": "3.14",
+            "free_threaded": True,
+            "executable": {
+                "path": "/usr/bin/python3.14t",
+                "device": 1,
+                "inode": 3,
+            },
+        },
+        "lifecycle": {
+            "launched_ns": 1_000_000,
+            "python_observed_ns": 2_000_000,
+            "exited_ns": 5_000_000,
+        },
+        "snapshot": {
+            "host_monotonic_ns": 3_000_000,
+            "target_running_ns": 2_000_000,
+            "pause_started_ns": 3_000_000,
+            "pause_ended_ns": 4_000_000,
+            "pause_duration_ns": 1_000_000,
+            "process_id": 42,
+            "threads": [
+                {
+                    "os_thread_id": 42,
+                    "stopped_state": "T",
+                    "stack": [
+                        {
+                            "filename": "/repo/compiler.py",
+                            "function": "compile_source",
+                            "line": 10,
+                        },
+                        {
+                            "filename": "/repo/worker.py",
+                            "function": "generate_code",
+                            "line": 20,
+                        },
+                    ],
+                },
+                {
+                    "os_thread_id": 43,
+                    "stopped_state": "T",
+                    "stack": [
+                        {
+                            "filename": "/repo/worker.py",
+                            "function": "validate_graph",
+                            "line": 30,
+                        }
+                    ],
+                },
+            ],
+        },
+        "failures": [],
+        "observation_counts": {
+            "attempted": 1,
+            "successful": 1,
+            "discarded": 0,
+            "missed": 0,
+        },
+        "compiler_exit_status": 0,
+        "diagnostics_status": "none",
+        "interruption_signal": None,
     }
 
 
-@pytest.fixture
-def profile_path(tmp_path: Path) -> Path:
-    path = tmp_path / "profile.json"
-    _ = path.write_text(
-        json.dumps(
-            [
-                _event("B", 0, 1, "compile", 1),
-                _event("B", 0, 1, "work", 2),
-                _event("B", 500_000, 2, "worker", 3),
-                _event("B", 500_000, 2, "work", 2),
-                _event("E", 1_000_000, 1, "work", 2),
-                _event("B", 1_000_000, 1, "wait", 4),
-                _event("E", 2_000_000, 1, "wait", 4),
-                _event("B", 2_000_000, 1, "work", 2),
-                _event("E", 2_500_000, 2, "work", 2),
-                _event("E", 2_500_000, 2, "worker", 3),
-                _event("E", 3_000_000, 1, "work", 2),
-                _event("E", 3_000_000, 1, "compile", 1),
-            ]
-        ),
-        encoding="utf-8",
-    )
-    return path
-
-
-@pytest.fixture
-def cpu_profile_path(tmp_path: Path) -> Path:
-    path = tmp_path / "cpu_profile.json"
-    raw_samples = """compile (/repo/compiler.py:1);work (/repo/compiler.py:2) 100
-compile (/repo/compiler.py:1);wait (/repo/compiler.py:4) 100
-compile (/repo/compiler.py:1);work (/repo/compiler.py:2) 100
-worker (/repo/compiler.py:3);work (/repo/compiler.py:9) 200
- 30"""
-    _ = path.write_text(
-        json.dumps(
-            {
-                "wall_time_seconds": 3.0,
-                "raw_samples": raw_samples,
-            }
-        ),
-        encoding="utf-8",
-    )
-    return path
-
-
-def test_loads_timestamped_segments(profile_path: Path):
-    wall_time, thread_count, segments = analyze_profile.load_segments(profile_path)
-
-    assert wall_time == 3.0
-    assert thread_count == 2
-    assert segments == [
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            0.0,
-            1.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 4, "wait"),
-            ),
-            1.0,
-            2.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            2.0,
-            3.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 3, "worker"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            0.5,
-            2.5,
-        ),
-    ]
-
-
-def test_unions_wall_metrics_across_threads(profile_path: Path):
-    _wall_time, _thread_count, segments = analyze_profile.load_segments(profile_path)
-
-    metrics = analyze_profile.wall_metrics(segments)
-
-    assert metrics == {
-        ("/repo/compiler.py", 1, "compile"): (0.0, 3.0, 3.0),
-        ("/repo/compiler.py", 2, "work"): (3.0, 3.0, 3.0),
-        ("/repo/compiler.py", 3, "worker"): (0.0, 2.0, 2.0),
-        ("/repo/compiler.py", 4, "wait"): (1.0, 1.0, 1.0),
-    }
-
-
-def test_unions_disjoint_wall_intervals():
-    function = ("/repo/compiler.py", 1, "compile")
-
-    metrics = analyze_profile.wall_metrics(
-        [((function,), 0.0, 1.0), ((function,), 2.0, 4.0)]
-    )
-
-    assert metrics[function] == (3.0, 3.0, 2.0)
-
-
-def test_wall_segments_normalize_current_lines_for_function_identity(tmp_path: Path):
+# PRF-015: Full stacks. PRF-016: Source identity.
+# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
+def test_reports_complete_snapshot(tmp_path: Path):
     profile_path = tmp_path / "profile.json"
-    _ = profile_path.write_text(
-        json.dumps(
-            [
-                _event("B", 0, 1, "compile", 10),
-                _event("E", 1_000_000, 1, "compile", 10),
-                _event("B", 2_000_000, 1, "compile", 20),
-                _event("E", 3_000_000, 1, "compile", 20),
-            ]
-        ),
-        encoding="utf-8",
-    )
+    _ = profile_path.write_text(json.dumps(_profile()), encoding="utf-8")
 
-    _wall_time, _thread_count, segments = analyze_profile.load_segments(profile_path)
-
-    assert segments == [
-        ((("/repo/compiler.py", 10, "compile"),), 0.0, 1.0),
-        ((("/repo/compiler.py", 10, "compile"),), 2.0, 3.0),
-    ]
-
-
-def test_loads_weighted_cpu_samples_and_omits_missing_python_stack(
-    cpu_profile_path: Path,
-):
-    wall_time, sample_count, omitted_samples, samples = (
-        analyze_profile.load_cpu_samples(cpu_profile_path)
-    )
-
-    assert wall_time == 3.0
-    assert sample_count == 500
-    assert omitted_samples == 30
-    assert samples == [
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            1.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 4, "wait"),
-            ),
-            1.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 1, "compile"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            1.0,
-        ),
-        (
-            (
-                ("/repo/compiler.py", 3, "worker"),
-                ("/repo/compiler.py", 2, "work"),
-            ),
-            2.0,
-        ),
-    ]
-
-
-def test_loads_cpu_frames_for_which_py_spy_omits_line_numbers(tmp_path: Path):
-    profile_path = tmp_path / "cpu_profile.json"
-    _ = profile_path.write_text(
-        json.dumps(
-            {
-                "wall_time_seconds": 1.0,
-                "raw_samples": (
-                    "<module> (/repo/define/compiler/lark/lark_standalone.py);"
-                    "__init__ (__init__) 100"
-                ),
-            }
-        ),
-        encoding="utf-8",
-    )
-
-    wall_time, sample_count, omitted_samples, samples = (
-        analyze_profile.load_cpu_samples(profile_path)
-    )
-
-    assert wall_time == 1.0
-    assert sample_count == 100
-    assert omitted_samples == 0
-    assert samples == [
-        (
-            (
-                (
-                    "/repo/define/compiler/lark/lark_standalone.py",
-                    0,
-                    "<module>",
-                ),
-                ("__init__", 0, "__init__"),
-            ),
-            1.0,
-        )
-    ]
-
-
-def test_sums_weighted_cpu_metrics(cpu_profile_path: Path):
-    _wall_time, _sample_count, _omitted_samples, samples = (
-        analyze_profile.load_cpu_samples(cpu_profile_path)
-    )
-
-    metrics = analyze_profile.cpu_metrics(samples)
-
-    assert metrics == {
-        ("/repo/compiler.py", 1, "compile"): (0.0, 3.0),
-        ("/repo/compiler.py", 2, "work"): (4.0, 4.0),
-        ("/repo/compiler.py", 3, "worker"): (0.0, 2.0),
-        ("/repo/compiler.py", 4, "wait"): (1.0, 1.0),
-    }
-
-
-def test_limits_compiler_view_to_define_compiler_sources():
-    metrics = {
-        ("/runfiles/_main/define/compiler/driver.py", 1, "run"): (1.0, 1.0, 1.0),
-        ("/projects/define/define/compiler/parser.py", 2, "parse"): (2.0, 2.0, 2.0),
-        (
-            "/projects/define/bazel-bin/define/compiler/main.runfiles/site/click.py",
-            3,
-            "invoke",
-        ): (3.0, 3.0, 3.0),
-    }
-
-    assert analyze_profile.compiler_metrics(metrics) == {
-        ("/runfiles/_main/define/compiler/driver.py", 1, "run"): (1.0, 1.0, 1.0),
-    }
-
-
-def test_removes_complete_excluded_subtree():
-    lark = ("/repo/lark_standalone.py", 1, "parse")
-    validate = ("/repo/validator.py", 2, "validate")
-    similarly_named = ("/repo/not_lark_standalone.py", 3, "parse")
-    samples: list[tuple[tuple[tuple[str, int, str], ...], float]] = [
-        ((lark, validate), 1.0),
-        ((validate,), 1.0),
-        ((similarly_named,), 1.0),
-    ]
-
-    assert analyze_profile.without_file(samples, "lark_standalone.py") == [
-        ((validate,), 1.0),
-        ((similarly_named,), 1.0),
-    ]
-
-
-def test_main_makes_wall_report_primary(profile_path: Path):
     result = click.testing.CliRunner().invoke(
-        analyze_profile.main,
-        ["--profile", str(profile_path), "--top", "1"],
+        analyze_profile.main, ["--profile", str(profile_path)]
     )
 
     assert result.exit_code == 0
-    assert "Wall time: 3.000s; sampled threads: 2; functions: 4" in result.output
-    assert "=== PYTHON WALL (top 1 by self) ===" in result.output
-    assert "=== PYTHON WALL (top 1 by longest) ===" in result.output
-    assert "=== PYTHON WALL (top 1 by cumulative) ===" in result.output
-    assert (
-        result.output.index("top 1 by self")
-        < result.output.index("top 1 by longest")
-        < result.output.index("top 1 by cumulative")
-    )
-    assert "repo/compiler.py:2(work)" in result.output
-    assert "Attributed CPU time" not in result.output
+    assert "Profile schema: 1; complete; successful" in result.output
+    assert "Process 42: launcher /usr/bin/bash" in result.output
+    assert "Python runtime: 3.14.4 free-threaded" in result.output
+    assert "Snapshot: 2 Python threads; profiler pause 1.000 ms" in result.output
+    assert "Thread 42 (state T):" in result.output
+    assert "/repo/compiler.py:10 (compile_source)" in result.output
+    assert "Files (2):" in result.output
+    assert "Functions (3):" in result.output
+    assert "Failures" not in result.output
 
 
-def test_main_reports_define_compiler_wall_metrics(tmp_path: Path):
+# PRF-024: Explicit failures. PRF-026: No silent partial success.
+# PRF-020: Machine and human interfaces.
+def test_reports_incomplete_profile_without_snapshot(tmp_path: Path):
+    profile = _profile()
+    profile["complete"] = False
+    profile["success"] = False
+    profile["python_runtime"] = None
+    profile["snapshot"] = None
+    profile["failures"] = [
+        {
+            "host_monotonic_ns": 3_000_000,
+            "kind": "profiler-interrupted",
+            "reason": "SIGINT",
+        }
+    ]
+    profile["observation_counts"] = {
+        "attempted": 0,
+        "successful": 0,
+        "discarded": 0,
+        "missed": 0,
+    }
+    profile["compiler_exit_status"] = -15
+    profile["diagnostics_status"] = "present"
     profile_path = tmp_path / "profile.json"
-    compiler_file = (
-        "/repo/bazel-bin/define/compiler/main.runfiles/_main/define/compiler/driver.py"
-    )
-    _ = profile_path.write_text(
-        json.dumps(
-            [
-                _event("B", 0, 1, "compile", 1, compiler_file),
-                _event("E", 1_000_000, 1, "compile", 1, compiler_file),
-            ]
-        ),
-        encoding="utf-8",
-    )
+    _ = profile_path.write_text(json.dumps(profile), encoding="utf-8")
 
     result = click.testing.CliRunner().invoke(
-        analyze_profile.main,
-        ["--profile", str(profile_path), "--top", "1"],
+        analyze_profile.main, ["--profile", str(profile_path)]
     )
 
     assert result.exit_code == 0
-    assert "=== DEFINE COMPILER WALL (top 1 by self) ===" in result.output
-    assert "=== DEFINE COMPILER WALL (top 1 by longest) ===" in result.output
-    assert "compiler/driver.py:1(compile)" in result.output
+    assert "Profile schema: 1; incomplete; unsuccessful" in result.output
+    assert "Process unknown" in result.output
+    assert "Python runtime: not observed" in result.output
+    assert "Snapshot: unavailable" in result.output
+    assert "Compiler exit status: -15; diagnostics: present" in result.output
+    assert "Failures (1):" in result.output
+    assert "profiler-interrupted: SIGINT" in result.output
 
 
-def test_main_reports_cpu_time(cpu_profile_path: Path):
-    result = click.testing.CliRunner().invoke(
-        analyze_profile.main,
-        [
-            "--profile",
-            str(cpu_profile_path),
-            "--profile-mode",
-            "cpu",
-            "--top",
-            "1",
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (
-        "Attributed CPU time: 5.000s; wall time: 3.000s; active Python samples: 500"
-        in result.output
-    )
-    assert "Omitted samples without a Python stack: 30" in result.output
-    assert "Non-Lark work: 5.000s sampled time (100.0%)" in result.output
-    assert "=== PYTHON (top 1 by self) ===" in result.output
-    assert "=== PYTHON (top 1 by cumulative) ===" in result.output
-    assert "repo/compiler.py:2(work)" in result.output
-    assert "sampled threads" not in result.output
-
-
-def test_main_reports_define_compiler_cpu_without_omission_notice(tmp_path: Path):
-    profile_path = tmp_path / "cpu_profile.json"
-    _ = profile_path.write_text(
-        json.dumps(
-            {
-                "wall_time_seconds": 1.0,
-                "raw_samples": (
-                    "compile (/repo/bazel-bin/define/compiler/main.runfiles/"
-                    "_main/define/compiler/driver.py:1) 100"
-                ),
-            }
-        ),
-        encoding="utf-8",
-    )
+# PRF-020: Machine and human interfaces. PRF-039: Current design only.
+def test_rejects_unknown_schema(tmp_path: Path):
+    profile = _profile()
+    profile["schema_version"] = 2
+    profile_path = tmp_path / "profile.json"
+    _ = profile_path.write_text(json.dumps(profile), encoding="utf-8")
 
     result = click.testing.CliRunner().invoke(
-        analyze_profile.main,
-        ["--profile", str(profile_path), "--profile-mode", "cpu", "--top", "1"],
+        analyze_profile.main, ["--profile", str(profile_path)]
     )
 
-    assert result.exit_code == 0
-    assert "Omitted samples without a Python stack" not in result.output
-    assert "=== DEFINE COMPILER (top 1 by self) ===" in result.output
-    assert "=== DEFINE COMPILER (top 1 by cumulative) ===" in result.output
-    assert "compiler/driver.py:1(compile)" in result.output
+    assert result.exit_code == 1
+    assert "Error: unsupported profiler schema version: 2" in result.output
 
 
-def test_help_explains_report_semantics():
+# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
+def test_help_describes_snapshot_limits():
     result = click.testing.CliRunner().invoke(
         analyze_profile.main, ["--help"], terminal_width=100
     )
 
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
-    assert "Pass the same --profile-mode used when recording the profile." in (
-        help_text
-    )
-    assert "Function wall rows can overlap and must not be added together." in (
-        help_text
-    )
-    assert "CPU time can exceed wall time under parallel execution." in help_text
-    assert "Samples without a Python stack are omitted from CPU totals." in (help_text)
-
-
-def test_handles_empty_trace(tmp_path: Path):
-    profile_path = tmp_path / "empty.json"
-    _ = profile_path.write_text("[]", encoding="utf-8")
-
-    result = click.testing.CliRunner().invoke(
-        analyze_profile.main,
-        ["--profile", str(profile_path), "--top", "1"],
-    )
-
-    assert result.exit_code == 0
-    assert "Wall time: 0.000s; sampled threads: 0; functions: 0" in result.output
-    assert "=== PYTHON WALL (top 1 by self) ===" in result.output
-    assert "=== PYTHON WALL (top 1 by longest) ===" in result.output
-    assert "=== PYTHON WALL (top 1 by cumulative) ===" in result.output
+    assert "Raw JSON profile produced" in help_text
+    assert "does not infer durations, calls, or thread lifetime" in help_text

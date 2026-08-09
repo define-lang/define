@@ -1,0 +1,84 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+# PRF-020: Machine and human interfaces.
+py_binary(
+    name = "__main__",
+    srcs = ["__main__.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":profiler"],
+)
+
+# PRF-024: Explicit failures. PRF-041: Realistic tests.
+py_binary(
+    name = "failure_target",
+    srcs = ["failure_target.py"],
+)
+
+# PRF-001: No call-correlated wall profiling work.
+py_library(
+    name = "profiler",
+    srcs = ["profiler.py"],
+    deps = [
+        ":schema",
+        "@pypi//click",
+    ],
+)
+
+# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
+py_test(
+    name = "profiler_test",
+    size = "small",
+    srcs = ["profiler_test.py"],
+    data = [
+        ":__main__",
+        ":failure_target",
+        ":test_target",
+        "//tools:analyze_profile",
+    ],
+    env = {
+        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
+        "PROFILER_BINARY": "$(rlocationpath :__main__)",
+        "PROFILER_FAILURE_TARGET": "$(rlocationpath :failure_target)",
+        "PROFILER_TEST_TARGET": "$(rlocationpath :test_target)",
+    },
+    deps = [
+        ":profiler",
+        ":schema",
+        "@pypi//click",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+# PRF-010: Raw-data preservation.
+py_library(
+    name = "schema",
+    srcs = ["schema.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+# PRF-013: Wall mode. PRF-041: Realistic tests.
+py_binary(
+    name = "test_target",
+    srcs = ["test_target.py"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":__main__",
+        ":failure_target",
+        ":profiler",
+        ":profiler_test",
+        ":schema",
+        ":test_target",
+    ],
+)
