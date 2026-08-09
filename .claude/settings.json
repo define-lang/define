@@ -36,6 +36,7 @@
       "Bash(gh search *)",
       "Bash(gh run list *)",
       "Bash(gh run view *)",
+      "Bash(gh run watch *)",
       "Bash(uv add *)",
       "Bash(uv sync *)",
       "Bash(uv help *)",

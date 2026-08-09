@@ -126,6 +126,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["gh", "run", "watch"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["uv", "add"],
     decision = "allow",
 )

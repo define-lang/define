@@ -31,7 +31,7 @@ jobs:
 
       - name: Coverage
         run:
-          bazelisk coverage --action_env=PATH --noshow_progress
+          bazelisk coverage --action_env=PATH="$PATH" --noshow_progress
           --combined_report=lcov //...
 
       - name: Upload coverage to Codecov
@@ -63,10 +63,10 @@ jobs:
           repository-cache: true
 
       - name: Test
-        run: bazelisk test --action_env=PATH --noshow_progress //...
+        run: bazelisk test --action_env=PATH="$PATH" --noshow_progress //...
 
       - name: Additional Build
-        run: bazelisk build --action_env=PATH --noshow_progress //...
+        run: bazelisk build --action_env=PATH="$PATH" --noshow_progress //...
 
   lint:
     runs-on: ubuntu-latest
