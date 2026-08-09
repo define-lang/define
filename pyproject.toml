@@ -152,7 +152,7 @@ branch = true
 [tool.uv.sources]
 google-re2 = { path = "vendored/re2/python", package = false }
 # TODO: Remove this override when https://github.com/benfred/py-spy/pull/860 is released.
-py-spy = { git = "https://github.com/honglei/py-spy", rev = "ee757909a5698526a7df04687ecbe6d4daad5f8b" }
+py-spy = { git = "https://github.com/honglei/py-spy", rev = "32080cc0c22bc23938541dfa7dabb6090e40be14" }
 
 [tool.basedpyright]
 # Do not disable any rules here. Fix type errors in source code instead.

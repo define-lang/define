@@ -404,7 +404,7 @@ dev = [
     { name = "maturin" },
     { name = "mutmut" },
     { name = "pre-commit" },
-    { name = "py-spy", git = "https://github.com/honglei/py-spy?rev=ee757909a5698526a7df04687ecbe6d4daad5f8b" },
+    { name = "py-spy", git = "https://github.com/honglei/py-spy?rev=32080cc0c22bc23938541dfa7dabb6090e40be14" },
     { name = "pygithub" },
     { name = "pytest", specifier = ">=6" },
     { name = "pyyaml" },
@@ -879,7 +879,7 @@ wheels = [
 [[package]]
 name = "py-spy"
 version = "0.4.2"
-source = { git = "https://github.com/honglei/py-spy?rev=ee757909a5698526a7df04687ecbe6d4daad5f8b#ee757909a5698526a7df04687ecbe6d4daad5f8b" }
+source = { git = "https://github.com/honglei/py-spy?rev=32080cc0c22bc23938541dfa7dabb6090e40be14#32080cc0c22bc23938541dfa7dabb6090e40be14" }
 
 [[package]]
 name = "pycparser"
