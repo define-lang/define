@@ -31,7 +31,7 @@ def _record_profile(
     returncode = 0
     try:
         run_profile.record_profile(
-            _py_spy_executable(),
+            (str(_py_spy_executable()),),
             Path("define/compiler/main").resolve(),
             None,
             _SOURCE_PATH,
