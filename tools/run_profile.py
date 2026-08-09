@@ -24,7 +24,6 @@ _INHERITED_RUNTIME_VARIABLES = (
     "RUNFILES_MANIFEST_ONLY",
     "VIRTUAL_ENV",
 )
-_CPU_PROFILE_FORMAT = "define-py-spy-cpu-v1"
 
 
 class ProfileMode(enum.StrEnum):
@@ -88,14 +87,16 @@ def _record_profile(
     # TODO: Reconsider native frames after py-spy PR #831 is released; its
     # Python 3.14 frame-owner bug currently corrupts merged stacks.
     with contextlib.ExitStack() as contexts:
-        temp_dir = pathlib.Path(
-            contexts.enter_context(
-                tempfile.TemporaryDirectory(prefix="define_profile_")
-            )
-        )
         py_spy_output = out_path
         if profile_mode is ProfileMode.CPU:
-            py_spy_output = temp_dir / "samples.txt"
+            py_spy_output = (
+                pathlib.Path(
+                    contexts.enter_context(
+                        tempfile.TemporaryDirectory(prefix="define_profile_")
+                    )
+                )
+                / "samples.txt"
+            )
         command.extend(
             [
                 "--output",
@@ -134,7 +135,6 @@ def _record_profile(
         wall_time = time.monotonic() - started
         if profile_mode is ProfileMode.CPU and py_spy_output.exists():
             profile = {
-                "format": _CPU_PROFILE_FORMAT,
                 "wall_time_seconds": wall_time,
                 "raw_samples": py_spy_output.read_text(encoding="utf-8"),
             }

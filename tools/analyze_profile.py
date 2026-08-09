@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections.abc
 import enum
 import json
 import pathlib
@@ -43,12 +42,10 @@ class _ChromeEvent(TypedDict):
 
 
 class _RawCpuProfile(TypedDict):
-    format: str
     wall_time_seconds: float
     raw_samples: str
 
 
-_CPU_PROFILE_FORMAT = "define-py-spy-cpu-v1"
 _PY_SPY_DEFAULT_SAMPLE_RATE_HZ = 100
 
 
@@ -138,20 +135,12 @@ def load_segments(profile_path: pathlib.Path) -> tuple[float, int, list[_Segment
 
 
 def _parse_raw_frame(frame: str) -> _ProfileKey:
-    name, separator, location = frame.rpartition(" (")
-    if not separator or not location.endswith(")"):
-        return "", 0, frame
+    name, _separator, location = frame.rpartition(" (")
     location = location[:-1]
     filename, line_separator, line_text = location.rpartition(":")
     if line_separator and line_text.isdigit():
         return filename, int(line_text), name
     return location, 0, name
-
-
-def _is_no_python_stack(stack: tuple[_ProfileKey, ...]) -> bool:
-    return any(
-        function[2].casefold().strip(" <>[]") == "no python frame" for function in stack
-    )
 
 
 def load_cpu_samples(
@@ -160,25 +149,18 @@ def load_cpu_samples(
     """Load weighted active-thread stacks from a run_profile CPU capture."""
     with profile_path.open(encoding="utf-8") as profile_file:
         profile = cast("_RawCpuProfile", json.load(profile_file))
-    if profile["format"] != _CPU_PROFILE_FORMAT:
-        raise ValueError(f"unsupported CPU profile format: {profile['format']}")
 
     retained_samples = 0
     omitted_samples = 0
     samples: list[_CpuSample] = []
     function_lines: dict[_FunctionIdentity, int] = {}
     for line in profile["raw_samples"].splitlines():
-        folded_stack, separator, count_text = line.rpartition(" ")
-        if not separator:
-            raise ValueError(f"invalid raw CPU sample: {line!r}")
+        folded_stack, _separator, count_text = line.rpartition(" ")
         count = int(count_text)
         if not folded_stack:
             omitted_samples += count
             continue
         stack = tuple(_parse_raw_frame(frame) for frame in folded_stack.split(";"))
-        if _is_no_python_stack(stack):
-            omitted_samples += count
-            continue
         for function in stack:
             _record_function_line(function_lines, function)
         retained_samples += count
@@ -247,38 +229,26 @@ def cpu_metrics(samples: list[_CpuSample]) -> dict[_ProfileKey, _CpuMetrics]:
     return metrics
 
 
-def without_file(
-    samples: collections.abc.Sequence[_CpuSample], excluded_file: str
-) -> list[_CpuSample]:
+def without_file(samples: list[_CpuSample], excluded_file: str) -> list[_CpuSample]:
     """Remove sampled stacks that pass through ``excluded_file``."""
     return [
         sample
         for sample in samples
-        if all(excluded_file not in function[0] for function in sample[0])
+        if all(
+            pathlib.PurePath(function[0]).name != excluded_file
+            for function in sample[0]
+        )
     ]
 
 
-def compiler_metrics(
-    metrics: dict[_ProfileKey, _WallMetrics],
-) -> dict[_ProfileKey, _WallMetrics]:
-    """Limit wall metrics to Define compiler source files."""
+def compiler_metrics[Metrics](
+    metrics: dict[_ProfileKey, Metrics],
+) -> dict[_ProfileKey, Metrics]:
+    """Limit metrics to Define compiler source files."""
     return {
         function: function_metrics
         for function, function_metrics in metrics.items()
         if "/_main/define/compiler/" in function[0]
-        or "/projects/define/define/compiler/" in function[0]
-    }
-
-
-def compiler_cpu_metrics(
-    metrics: dict[_ProfileKey, _CpuMetrics],
-) -> dict[_ProfileKey, _CpuMetrics]:
-    """Limit CPU metrics to Define compiler source files."""
-    return {
-        function: function_metrics
-        for function, function_metrics in metrics.items()
-        if "/_main/define/compiler/" in function[0]
-        or "/projects/define/define/compiler/" in function[0]
     }
 
 
@@ -381,7 +351,7 @@ def emit_cpu_report(profile_path: pathlib.Path, excluded_file: str, top: int) ->
     )
     metrics = cpu_metrics(samples)
     non_lark = cpu_metrics(non_lark_samples)
-    define_compiler = compiler_cpu_metrics(metrics)
+    define_compiler = compiler_metrics(metrics)
     emit_cpu_table(metrics, key="self", n=top, cpu_time=cpu_time, title="PYTHON")
     emit_cpu_table(metrics, key="cumulative", n=top, cpu_time=cpu_time, title="PYTHON")
     emit_cpu_table(

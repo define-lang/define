@@ -58,12 +58,10 @@ def cpu_profile_path(tmp_path: Path) -> Path:
 compile (/repo/compiler.py:1);wait (/repo/compiler.py:4) 100
 compile (/repo/compiler.py:1);work (/repo/compiler.py:2) 100
 worker (/repo/compiler.py:3);work (/repo/compiler.py:9) 200
-[No Python frame] 70
  30"""
     _ = path.write_text(
         json.dumps(
             {
-                "format": "define-py-spy-cpu-v1",
                 "wall_time_seconds": 3.0,
                 "raw_samples": raw_samples,
             }
@@ -119,9 +117,12 @@ def test_unions_wall_metrics_across_threads(profile_path: Path):
 
     metrics = analyze_profile.wall_metrics(segments)
 
-    assert metrics[("/repo/compiler.py", 2, "work")] == (3.0, 3.0, 3.0)
-    assert metrics[("/repo/compiler.py", 4, "wait")] == (1.0, 1.0, 1.0)
-    assert metrics[("/repo/compiler.py", 1, "compile")] == (0.0, 3.0, 3.0)
+    assert metrics == {
+        ("/repo/compiler.py", 1, "compile"): (0.0, 3.0, 3.0),
+        ("/repo/compiler.py", 2, "work"): (3.0, 3.0, 3.0),
+        ("/repo/compiler.py", 3, "worker"): (0.0, 2.0, 2.0),
+        ("/repo/compiler.py", 4, "wait"): (1.0, 1.0, 1.0),
+    }
 
 
 def test_unions_disjoint_wall_intervals():
@@ -165,40 +166,70 @@ def test_loads_weighted_cpu_samples_and_omits_missing_python_stack(
 
     assert wall_time == 3.0
     assert sample_count == 500
-    assert omitted_samples == 100
-    assert samples[0] == (
+    assert omitted_samples == 30
+    assert samples == [
         (
-            ("/repo/compiler.py", 1, "compile"),
-            ("/repo/compiler.py", 2, "work"),
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            1.0,
         ),
-        1.0,
-    )
+        (
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 4, "wait"),
+            ),
+            1.0,
+        ),
+        (
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            1.0,
+        ),
+        (
+            (
+                ("/repo/compiler.py", 3, "worker"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            2.0,
+        ),
+    ]
 
 
-def test_loads_cpu_frames_without_numeric_line_numbers(tmp_path: Path):
+def test_loads_cpu_frames_for_which_py_spy_omits_line_numbers(tmp_path: Path):
     profile_path = tmp_path / "cpu_profile.json"
     _ = profile_path.write_text(
         json.dumps(
             {
-                "format": "define-py-spy-cpu-v1",
                 "wall_time_seconds": 1.0,
                 "raw_samples": (
-                    "native frame;compile (/repo/compiler.py:not-a-line) 100"
+                    "<module> (/repo/define/compiler/lark/lark_standalone.py);"
+                    "__init__ (__init__) 100"
                 ),
             }
         ),
         encoding="utf-8",
     )
 
-    _wall_time, _sample_count, _omitted_samples, samples = (
+    wall_time, sample_count, omitted_samples, samples = (
         analyze_profile.load_cpu_samples(profile_path)
     )
 
+    assert wall_time == 1.0
+    assert sample_count == 100
+    assert omitted_samples == 0
     assert samples == [
         (
             (
-                ("", 0, "native frame"),
-                ("/repo/compiler.py:not-a-line", 0, "compile"),
+                (
+                    "/repo/define/compiler/lark/lark_standalone.py",
+                    0,
+                    "<module>",
+                ),
+                ("__init__", 0, "__init__"),
             ),
             1.0,
         )
@@ -212,9 +243,12 @@ def test_sums_weighted_cpu_metrics(cpu_profile_path: Path):
 
     metrics = analyze_profile.cpu_metrics(samples)
 
-    assert metrics[("/repo/compiler.py", 2, "work")] == (4.0, 4.0)
-    assert metrics[("/repo/compiler.py", 1, "compile")] == (0.0, 3.0)
-    assert metrics[("/repo/compiler.py", 3, "worker")] == (0.0, 2.0)
+    assert metrics == {
+        ("/repo/compiler.py", 1, "compile"): (0.0, 3.0),
+        ("/repo/compiler.py", 2, "work"): (4.0, 4.0),
+        ("/repo/compiler.py", 3, "worker"): (0.0, 2.0),
+        ("/repo/compiler.py", 4, "wait"): (1.0, 1.0),
+    }
 
 
 def test_limits_compiler_view_to_define_compiler_sources():
@@ -230,17 +264,22 @@ def test_limits_compiler_view_to_define_compiler_sources():
 
     assert analyze_profile.compiler_metrics(metrics) == {
         ("/runfiles/_main/define/compiler/driver.py", 1, "run"): (1.0, 1.0, 1.0),
-        ("/projects/define/define/compiler/parser.py", 2, "parse"): (2.0, 2.0, 2.0),
     }
 
 
 def test_removes_complete_excluded_subtree():
     lark = ("/repo/lark_standalone.py", 1, "parse")
     validate = ("/repo/validator.py", 2, "validate")
-    samples = [((lark, validate), 1.0), ((validate,), 1.0)]
+    similarly_named = ("/repo/not_lark_standalone.py", 3, "parse")
+    samples: list[tuple[tuple[tuple[str, int, str], ...], float]] = [
+        ((lark, validate), 1.0),
+        ((validate,), 1.0),
+        ((similarly_named,), 1.0),
+    ]
 
     assert analyze_profile.without_file(samples, "lark_standalone.py") == [
-        ((validate,), 1.0)
+        ((validate,), 1.0),
+        ((similarly_named,), 1.0),
     ]
 
 
@@ -255,11 +294,20 @@ def test_main_makes_wall_report_primary(profile_path: Path):
     assert "=== PYTHON WALL (top 1 by self) ===" in result.output
     assert "=== PYTHON WALL (top 1 by longest) ===" in result.output
     assert "=== PYTHON WALL (top 1 by cumulative) ===" in result.output
+    assert (
+        result.output.index("top 1 by self")
+        < result.output.index("top 1 by longest")
+        < result.output.index("top 1 by cumulative")
+    )
+    assert "repo/compiler.py:2(work)" in result.output
+    assert "Attributed CPU time" not in result.output
 
 
 def test_main_reports_define_compiler_wall_metrics(tmp_path: Path):
     profile_path = tmp_path / "profile.json"
-    compiler_file = "/projects/define/define/compiler/driver.py"
+    compiler_file = (
+        "/repo/bazel-bin/define/compiler/main.runfiles/_main/define/compiler/driver.py"
+    )
     _ = profile_path.write_text(
         json.dumps(
             [
@@ -278,6 +326,7 @@ def test_main_reports_define_compiler_wall_metrics(tmp_path: Path):
     assert result.exit_code == 0
     assert "=== DEFINE COMPILER WALL (top 1 by self) ===" in result.output
     assert "=== DEFINE COMPILER WALL (top 1 by longest) ===" in result.output
+    assert "compiler/driver.py:1(compile)" in result.output
 
 
 def test_main_reports_cpu_time(cpu_profile_path: Path):
@@ -298,9 +347,12 @@ def test_main_reports_cpu_time(cpu_profile_path: Path):
         "Attributed CPU time: 5.000s; wall time: 3.000s; active Python samples: 500"
         in result.output
     )
-    assert "Omitted samples without a Python stack: 100" in result.output
+    assert "Omitted samples without a Python stack: 30" in result.output
     assert "Non-Lark work: 5.000s sampled time (100.0%)" in result.output
     assert "=== PYTHON (top 1 by self) ===" in result.output
+    assert "=== PYTHON (top 1 by cumulative) ===" in result.output
+    assert "repo/compiler.py:2(work)" in result.output
+    assert "sampled threads" not in result.output
 
 
 def test_main_reports_define_compiler_cpu_without_omission_notice(tmp_path: Path):
@@ -308,10 +360,10 @@ def test_main_reports_define_compiler_cpu_without_omission_notice(tmp_path: Path
     _ = profile_path.write_text(
         json.dumps(
             {
-                "format": "define-py-spy-cpu-v1",
                 "wall_time_seconds": 1.0,
                 "raw_samples": (
-                    "compile (/projects/define/define/compiler/driver.py:1) 100"
+                    "compile (/repo/bazel-bin/define/compiler/main.runfiles/"
+                    "_main/define/compiler/driver.py:1) 100"
                 ),
             }
         ),
@@ -327,6 +379,7 @@ def test_main_reports_define_compiler_cpu_without_omission_notice(tmp_path: Path
     assert "Omitted samples without a Python stack" not in result.output
     assert "=== DEFINE COMPILER (top 1 by self) ===" in result.output
     assert "=== DEFINE COMPILER (top 1 by cumulative) ===" in result.output
+    assert "compiler/driver.py:1(compile)" in result.output
 
 
 def test_help_explains_report_semantics():
@@ -357,3 +410,6 @@ def test_handles_empty_trace(tmp_path: Path):
 
     assert result.exit_code == 0
     assert "Wall time: 0.000s; sampled threads: 0; functions: 0" in result.output
+    assert "=== PYTHON WALL (top 1 by self) ===" in result.output
+    assert "=== PYTHON WALL (top 1 by longest) ===" in result.output
+    assert "=== PYTHON WALL (top 1 by cumulative) ===" in result.output

@@ -22,6 +22,27 @@ _CONSTRUCTOR_SOURCE = (
     "    }\n"
     "}\n"
 )
+_RAW_SAMPLES = "Driver.run (/repo/define/compiler/driver.py:234) 1\n"
+_WALL_EVENTS = [
+    {
+        "args": {"filename": "/repo/define/compiler/driver.py", "line": 234},
+        "cat": "py-spy",
+        "name": "Driver.run",
+        "ph": "B",
+        "pid": 1,
+        "tid": 1,
+        "ts": 1_000,
+    },
+    {
+        "args": {"filename": "/repo/define/compiler/driver.py", "line": 234},
+        "cat": "py-spy",
+        "name": "Driver.run",
+        "ph": "E",
+        "pid": 1,
+        "tid": 1,
+        "ts": 11_000,
+    },
+]
 
 
 def _executable_path(executable: str) -> str:
@@ -37,9 +58,9 @@ def _profile_process(
         format_option = command.index("--format")
         profile_format = command[format_option + 1]
         profile_contents = (
-            "[]"
+            json.dumps(_WALL_EVENTS)
             if profile_format == "chrometrace"
-            else "compile (/repo/compiler.py:1) 1\n"
+            else _RAW_SAMPLES
         )
         _ = profile_path.write_text(profile_contents, encoding="utf-8")
     return subprocess.CompletedProcess[str](command, returncode)
@@ -57,6 +78,12 @@ def _failed_profile_process(
     if "py-spy" not in command:
         return subprocess.CompletedProcess[str](command, 0)
     return _profile_process(command, returncode=1)
+
+
+def _failed_profile_process_without_output(
+    command: list[str], **_kwargs: object
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.CompletedProcess[str](command, 1 if "py-spy" in command else 0)
 
 
 def test_rejects_source_and_project_together(tmp_path: Path):
@@ -156,7 +183,10 @@ def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
     ]
     assert build_call.kwargs == {"check": True, "cwd": Path("/repo")}
     command = typing.cast("list[str]", profile_call.args[0])
-    assert command[:16] == [
+    compiler_output_dir = Path(command[16])
+    assert compiler_output_dir.name.startswith("cg_profile_")
+    assert not compiler_output_dir.exists()
+    assert command == [
         "/usr/bin/uv",
         "run",
         "--project",
@@ -173,14 +203,11 @@ def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
         "/repo/bazel-bin/define/compiler/main",
         "compile",
         "--out",
-    ]
-    assert command[17:19] == [
+        str(compiler_output_dir),
         "--max-threads",
         "3",
     ]
-    compiler_output_dir = Path(command[16])
-    assert compiler_output_dir.name.startswith("cg_profile_")
-    assert not compiler_output_dir.exists()
+    assert json.loads(profile_path.read_text(encoding="utf-8")) == _WALL_EVENTS
     assert profile_call.kwargs["check"] is False
     assert profile_call.kwargs["cwd"] == Path("/repo")
     source_stream = typing.cast("io.BufferedReader", profile_call.kwargs["stdin"])
@@ -194,6 +221,8 @@ def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
 def test_uses_project_entry_as_compiler_input(tmp_path: Path):
     project_path = tmp_path / "project"
     project_path.mkdir()
+    entry_path = project_path / "main.dfn"
+    _ = entry_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
     profile_path = tmp_path / "profile.json"
     output_dir = tmp_path / "generated"
 
@@ -232,7 +261,28 @@ def test_uses_project_entry_as_compiler_input(tmp_path: Path):
     expected_workspace = Path(run_profile.__file__).resolve().parent.parent
     assert build_call.kwargs["cwd"] == expected_workspace
     command = typing.cast("list[str]", profile_call.args[0])
-    assert command[-1] == str(project_path / "main.dfn")
+    assert command == [
+        "/usr/bin/uv",
+        "run",
+        "--project",
+        str(expected_workspace),
+        "py-spy",
+        "record",
+        "--format",
+        "chrometrace",
+        "--full-filenames",
+        "--idle",
+        "--output",
+        str(profile_path),
+        "--",
+        str(expected_workspace / "bazel-bin/define/compiler/main"),
+        "compile",
+        "--out",
+        str(output_dir),
+        "--max-threads",
+        "1",
+        str(entry_path),
+    ]
     assert profile_call.kwargs["cwd"] == project_path
     assert profile_call.kwargs["stdin"] is None
 
@@ -277,14 +327,31 @@ def test_cpu_profile_uses_workspace_python_and_all_active_threads(tmp_path: Path
     assert "--python" not in command
     assert "--gil" not in command
     assert "--idle" not in command
-    assert "raw" in command
-    separator = command.index("--")
-    assert command[separator + 1] == str(
-        Path(run_profile.__file__).resolve().parent.parent
-        / "bazel-bin/define/compiler/main"
-    )
-    max_threads_option = command.index("--max-threads")
-    assert command[max_threads_option : max_threads_option + 2] == [
+    workspace = Path(run_profile.__file__).resolve().parent.parent
+    raw_output_path = Path(command[command.index("--output") + 1])
+    assert raw_output_path.name == "samples.txt"
+    assert raw_output_path.parent.name.startswith("define_profile_")
+    assert not raw_output_path.exists()
+    compiler_output_dir = Path(command[command.index("--out") + 1])
+    assert compiler_output_dir.name.startswith("cg_profile_")
+    assert not compiler_output_dir.exists()
+    assert command == [
+        "/usr/bin/uv",
+        "run",
+        "--project",
+        str(workspace),
+        "py-spy",
+        "record",
+        "--format",
+        "raw",
+        "--full-filenames",
+        "--output",
+        str(raw_output_path),
+        "--",
+        str(workspace / "bazel-bin/define/compiler/main"),
+        "compile",
+        "--out",
+        str(compiler_output_dir),
         "--max-threads",
         "4",
     ]
@@ -292,8 +359,10 @@ def test_cpu_profile_uses_workspace_python_and_all_active_threads(tmp_path: Path
         "dict[str, object]",
         json.loads((tmp_path / "profile.json").read_text(encoding="utf-8")),
     )
-    assert profile["format"] == "define-py-spy-cpu-v1"
-    assert profile["raw_samples"] == "compile (/repo/compiler.py:1) 1\n"
+    assert profile.keys() == {"wall_time_seconds", "raw_samples"}
+    assert profile["raw_samples"] == _RAW_SAMPLES
+    assert isinstance(profile["wall_time_seconds"], float)
+    assert profile["wall_time_seconds"] >= 0.0
 
 
 def test_cpu_profile_preserves_raw_samples_when_py_spy_fails(tmp_path: Path):
@@ -329,7 +398,50 @@ def test_cpu_profile_preserves_raw_samples_when_py_spy_fails(tmp_path: Path):
         )
 
     assert result.exit_code == 1
+    assert isinstance(result.exception, subprocess.CalledProcessError)
+    assert result.exception.returncode == 1
     profile = typing.cast(
         "dict[str, object]", json.loads(profile_path.read_text(encoding="utf-8"))
     )
-    assert profile["raw_samples"] == "compile (/repo/compiler.py:1) 1\n"
+    assert profile.keys() == {"wall_time_seconds", "raw_samples"}
+    assert profile["raw_samples"] == _RAW_SAMPLES
+    assert isinstance(profile["wall_time_seconds"], float)
+    assert profile["wall_time_seconds"] >= 0.0
+
+
+def test_cpu_profile_propagates_py_spy_failure_without_profile(tmp_path: Path):
+    source_path = tmp_path / "source.dfn"
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    profile_path = tmp_path / "profile.json"
+
+    with (
+        mock.patch.dict("os.environ", {}, clear=True),
+        mock.patch.object(
+            shutil,
+            "which",
+            autospec=True,
+            side_effect=_executable_path,
+        ),
+        mock.patch.object(
+            subprocess,
+            "run",
+            autospec=True,
+            side_effect=_failed_profile_process_without_output,
+        ),
+    ):
+        result = click.testing.CliRunner().invoke(
+            run_profile.main,
+            [
+                "--source",
+                str(source_path),
+                "--out",
+                str(profile_path),
+                "--profile-mode",
+                "cpu",
+            ],
+        )
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, subprocess.CalledProcessError)
+    assert result.exception.returncode == 1
+    assert not profile_path.exists()
