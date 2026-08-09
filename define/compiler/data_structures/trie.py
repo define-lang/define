@@ -3,9 +3,10 @@
 Keys are sequences of string segments (tuples) that form a prefix hierarchy.
 Every point operation (get/set/contains/delete) is a single tuple hash
 plus one dict probe; there is no walking the segments like a traditional trie
-data structure. A parallel ``children``index records each parent's immediate
-child segments so that subtree moves, subtree deletes, and prefix scans are
-cheap dictionary operations.
+data structure. A parallel ``children`` index records each parent's immediate
+child keys so that subtree moves, subtree deletes, and prefix scans are cheap
+dictionary operations. Retaining the keys already held by the value dictionary
+also avoids rebuilding every absolute key during descendant walks.
 
 The root's children live under the empty-tuple key ``()`` so that
 single-element keys have a parent entry to attach to.
@@ -54,7 +55,7 @@ class StrictReparentingTrie[V]:
         # structure optimizes for making lookups cheap, at the expense of making
         # moves more expensive.
         self._values: dict[TrieKey, V] = {}
-        self._children: dict[TrieKey, set[str]] = {}
+        self._children: dict[TrieKey, set[TrieKey]] = {}
 
     def get(self, key: TrieKey, default: V | None = None) -> V | None:
         """Get value at key, or default if missing."""
@@ -85,9 +86,9 @@ class StrictReparentingTrie[V]:
         parent = key[:-1]
         siblings = self._children.get(parent)
         if siblings is None:
-            self._children[parent] = {key[-1]}
+            self._children[parent] = {key}
         else:
-            siblings.add(key[-1])
+            siblings.add(key)
 
     def _collect_subtree(self, root: TrieKey) -> list[TrieKey]:
         """Return root and all of its descendant keys."""
@@ -95,17 +96,16 @@ class StrictReparentingTrie[V]:
         stack = [root]
         while stack:
             node = stack.pop()
-            for segment in self._children.get(node, ()):
-                child = (*node, segment)
+            for child in self._children.get(node, ()):
                 result.append(child)
                 stack.append(child)
         return result
 
     def _unlink_from_parent(self, key: TrieKey):
-        """Remove key's last segment from its parent's child set."""
+        """Remove key from its parent's child set."""
         parent = key[:-1]
         siblings = self._children[parent]
-        siblings.discard(key[-1])
+        siblings.discard(key)
         if not siblings:
             del self._children[parent]
 
@@ -141,19 +141,25 @@ class StrictReparentingTrie[V]:
             raise TargetExistsError(f"target key already exists: {target}")
 
         source_len = len(source)
-        moved: list[tuple[TrieKey, V, set[str] | None]] = []
-        for old in self._collect_subtree(source):
+        old_keys = self._collect_subtree(source)
+        new_keys = {old: target + old[source_len:] for old in old_keys}
+        moved: list[tuple[TrieKey, V, set[TrieKey] | None]] = []
+        for old in old_keys:
             value = self._values.pop(old)
-            child_segments = self._children.pop(old, None)
-            new = target + old[source_len:]
-            moved.append((new, value, child_segments))
-        for new, value, child_segments in moved:
+            old_children = self._children.pop(old, None)
+            new_children = (
+                {new_keys[child] for child in old_children}
+                if old_children is not None
+                else None
+            )
+            moved.append((new_keys[old], value, new_children))
+        for new, value, new_children in moved:
             self._values[new] = value
-            if child_segments is not None:
-                self._children[new] = child_segments
+            if new_children is not None:
+                self._children[new] = new_children
 
         self._unlink_from_parent(source)
-        self._children.setdefault(target[:-1], set()).add(target[-1])
+        self._children.setdefault(target[:-1], set()).add(target)
 
     def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
         """Detach the subtree at key and return it as a new trie.
@@ -190,14 +196,16 @@ class StrictReparentingTrie[V]:
         result: StrictReparentingTrie[V] = StrictReparentingTrie()
         key_len = len(key)
         root_segment = key[-1]
-        for old in self._collect_subtree(key):
+        old_keys = self._collect_subtree(key)
+        new_keys = {old: (root_segment, *old[key_len:]) for old in old_keys}
+        for old in old_keys:
             value = self._values.pop(old)
-            child_segments = self._children.pop(old, None)
-            new = (root_segment, *old[key_len:])
+            old_children = self._children.pop(old, None)
+            new = new_keys[old]
             result._values[new] = value
-            if child_segments is not None:
-                result._children[new] = child_segments
-        result._children.setdefault((), set()).add(root_segment)
+            if old_children is not None:
+                result._children[new] = {new_keys[child] for child in old_children}
+        result._children.setdefault((), set()).add(new_keys[key])
         self._unlink_from_parent(key)
         return result
 
@@ -221,23 +229,26 @@ class StrictReparentingTrie[V]:
 
         subtree_values = subtree._values
         subtree_children = subtree._children
-        subtree_root = (next(iter(subtree_children[()])),)
+        subtree_root = next(iter(subtree_children[()]))
         del subtree_values[subtree_root]
         self._values[target] = root_value
         if not subtree_values:
-            self._children.setdefault(target[:-1], set()).add(target[-1])
+            self._children.setdefault(target[:-1], set()).add(target)
             return
 
         # Flat dictionary passes avoid the traversal bookkeeping that synthetic
         # benchmarks showed was substantially slower for consumed subtrees.
+        new_keys = {old: target + old[1:] for old in subtree_values}
         for old, value in subtree_values.items():
-            self._values[target + old[1:]] = value
+            self._values[new_keys[old]] = value
 
-        self._children[target] = subtree_children.pop(subtree_root)
+        self._children[target] = {
+            new_keys[child] for child in subtree_children.pop(subtree_root)
+        }
         del subtree_children[()]
-        for old, child_segments in subtree_children.items():
-            self._children[target + old[1:]] = child_segments
-        self._children.setdefault(target[:-1], set()).add(target[-1])
+        for old, old_children in subtree_children.items():
+            self._children[new_keys[old]] = {new_keys[child] for child in old_children}
+        self._children.setdefault(target[:-1], set()).add(target)
 
     def items(self) -> ItemsView[TrieKey, V]:
         """Yield all (key, value) pairs in the trie."""
@@ -256,9 +267,8 @@ class StrictReparentingTrie[V]:
         stack: list[tuple[TrieKey, TrieKey]] = [(key, ())]
         while stack:
             full_node, relative_node = stack.pop()
-            for segment in self._children.get(full_node, ()):
-                full_child = (*full_node, segment)
-                relative_child = (*relative_node, segment)
+            for full_child in self._children.get(full_node, ()):
+                relative_child = (*relative_node, full_child[-1])
                 result.append((relative_child, self._values[full_child]))
                 stack.append((full_child, relative_child))
         return result
@@ -273,8 +283,7 @@ class StrictReparentingTrie[V]:
         stack = [key]
         while stack:
             full_node = stack.pop()
-            for segment in self._children.get(full_node, ()):
-                full_child = (*full_node, segment)
+            for full_child in self._children.get(full_node, ()):
                 value = self._values[full_child]
                 selected = select(value)
                 if selected is not None:
@@ -289,8 +298,7 @@ class StrictReparentingTrie[V]:
         stack = [key]
         while stack:
             node = stack.pop()
-            for segment in self._children.get(node, ()):
-                child = (*node, segment)
+            for child in self._children.get(node, ()):
                 result.append(child)
                 stack.append(child)
         return result
@@ -399,4 +407,4 @@ class LenientReparentingTrie[V](StrictReparentingTrie[V]):
             if ancestor in self._values:
                 break
             self._values[ancestor] = self._default_factory()
-            self._children.setdefault(ancestor[:-1], set()).add(ancestor[-1])
+            self._children.setdefault(ancestor[:-1], set()).add(ancestor)
