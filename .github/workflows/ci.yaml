@@ -30,7 +30,9 @@ jobs:
           repository-cache: true
 
       - name: Build py-spy
-        run: bazelisk build --strategy=PySdistNativeBuild=local @pypi//py_spy
+        run:
+          bazelisk build --action_env=PATH="$PATH"
+          --strategy=PySdistNativeBuild=local @pypi//py_spy
 
       - name: Coverage
         run: bazelisk coverage --noshow_progress --combined_report=lcov //...
@@ -64,7 +66,9 @@ jobs:
           repository-cache: true
 
       - name: Build py-spy
-        run: bazelisk build --strategy=PySdistNativeBuild=local @pypi//py_spy
+        run:
+          bazelisk build --action_env=PATH="$PATH"
+          --strategy=PySdistNativeBuild=local @pypi//py_spy
 
       - name: Test
         run: bazelisk test --noshow_progress //...
