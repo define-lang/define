@@ -98,6 +98,26 @@ py_binary(
     deps = ["@pypi//j2lint"],
 )
 
+py_test(
+    name = "profile_workflow_test",
+    size = "small",
+    srcs = ["profile_workflow_test.py"],
+    data = [
+        "//define/compiler:main",
+        "//define/testdata/codegen/generator:profile_source",
+        "@pypi//py_spy",
+    ],
+    tags = [
+        "local",
+        "no-coverage",
+    ],
+    deps = [
+        ":analyze_profile",
+        ":run_profile",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "regenerate_codegen_testdata",
     srcs = ["regenerate_codegen_testdata.py"],
@@ -310,6 +330,7 @@ pyright_test(
         ":generate_programming_languages",
         ":git_commit_via_api",
         ":j2lint_runner",
+        ":profile_workflow_test",
         ":regenerate_codegen_testdata",
         ":run_profile",
         ":run_profile_test",

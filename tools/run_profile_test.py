@@ -75,7 +75,7 @@ def _successful_profile_process(
 def _failed_profile_process(
     command: list[str], **_kwargs: object
 ) -> subprocess.CompletedProcess[str]:
-    if "py-spy" not in command:
+    if Path(command[0]).name != "py-spy":
         return subprocess.CompletedProcess[str](command, 0)
     return _profile_process(command, returncode=1)
 
@@ -83,7 +83,9 @@ def _failed_profile_process(
 def _failed_profile_process_without_output(
     command: list[str], **_kwargs: object
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.CompletedProcess[str](command, 1 if "py-spy" in command else 0)
+    return subprocess.CompletedProcess[str](
+        command, 1 if Path(command[0]).name == "py-spy" else 0
+    )
 
 
 def test_rejects_source_and_project_together(tmp_path: Path):
@@ -183,15 +185,11 @@ def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
     ]
     assert build_call.kwargs == {"check": True, "cwd": Path("/repo")}
     command = typing.cast("list[str]", profile_call.args[0])
-    compiler_output_dir = Path(command[16])
+    compiler_output_dir = Path(command[command.index("--out") + 1])
     assert compiler_output_dir.name.startswith("cg_profile_")
     assert not compiler_output_dir.exists()
     assert command == [
-        "/usr/bin/uv",
-        "run",
-        "--project",
-        "/repo",
-        "py-spy",
+        "/usr/bin/py-spy",
         "record",
         "--format",
         "chrometrace",
@@ -262,11 +260,7 @@ def test_uses_project_entry_as_compiler_input(tmp_path: Path):
     assert build_call.kwargs["cwd"] == expected_workspace
     command = typing.cast("list[str]", profile_call.args[0])
     assert command == [
-        "/usr/bin/uv",
-        "run",
-        "--project",
-        str(expected_workspace),
-        "py-spy",
+        "/usr/bin/py-spy",
         "record",
         "--format",
         "chrometrace",
@@ -287,7 +281,7 @@ def test_uses_project_entry_as_compiler_input(tmp_path: Path):
     assert profile_call.kwargs["stdin"] is None
 
 
-def test_cpu_profile_uses_workspace_python_and_all_active_threads(tmp_path: Path):
+def test_cpu_profile_records_all_active_threads(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
 
@@ -336,11 +330,7 @@ def test_cpu_profile_uses_workspace_python_and_all_active_threads(tmp_path: Path
     assert compiler_output_dir.name.startswith("cg_profile_")
     assert not compiler_output_dir.exists()
     assert command == [
-        "/usr/bin/uv",
-        "run",
-        "--project",
-        str(workspace),
-        "py-spy",
+        "/usr/bin/py-spy",
         "record",
         "--format",
         "raw",

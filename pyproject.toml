@@ -201,6 +201,9 @@ dev = [
     "hypothesis",
     "j2lint",
     "lark",
+    # TODO: Remove maturin when py-spy PR #860 is released:
+    # https://github.com/benfred/py-spy/pull/860
+    "maturin",
     "mutmut",
     "pre-commit",
     "py-spy",

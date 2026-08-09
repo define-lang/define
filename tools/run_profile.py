@@ -57,8 +57,9 @@ def _build_compiler(workspace: pathlib.Path) -> None:
     )
 
 
-def _record_profile(
-    workspace: pathlib.Path,
+def record_profile(
+    py_spy_path: pathlib.Path,
+    compiler_path: pathlib.Path,
     compiler_input: pathlib.Path | None,
     source_path: pathlib.Path | None,
     compiler_working_directory: pathlib.Path,
@@ -67,16 +68,9 @@ def _record_profile(
     output_dir: pathlib.Path,
     profile_mode: ProfileMode,
 ) -> None:
-    uv_path = shutil.which("uv")
-    if uv_path is None:
-        raise FileNotFoundError("uv is required to run the py-spy dev dependency")
-
+    """Record one compiler invocation under py-spy."""
     command = [
-        uv_path,
-        "run",
-        "--project",
-        str(workspace),
-        "py-spy",
+        str(py_spy_path),
         "record",
         "--format",
         "chrometrace" if profile_mode is ProfileMode.WALL else "raw",
@@ -104,7 +98,7 @@ def _record_profile(
                 "--",
             ]
         )
-        command.append(str(workspace / "bazel-bin/define/compiler/main"))
+        command.append(str(compiler_path))
         command.extend(
             [
                 "compile",
@@ -230,6 +224,9 @@ def main(
         raise click.UsageError("provide exactly one of --source or --project")
 
     workspace = _workspace()
+    py_spy_path = shutil.which("py-spy")
+    if py_spy_path is None:
+        raise FileNotFoundError("py-spy is required to record a profile")
     _build_compiler(workspace)
     out_path = out_path.absolute()
     with contextlib.ExitStack() as contexts:
@@ -250,8 +247,9 @@ def main(
         else:
             output_dir = output_dir.absolute()
         selected_profile_mode = ProfileMode(profile_mode)
-        _record_profile(
-            workspace,
+        record_profile(
+            pathlib.Path(py_spy_path),
+            workspace / "bazel-bin/define/compiler/main",
             compiler_input,
             source_path,
             compiler_working_directory,
