@@ -88,17 +88,17 @@ class PythonLiteralCodeGenerator:
                     ).generate()
                 )
 
-        all_module_names: set[str] = set()
+        package_dirs: set[Path] = set()
 
         for ctx in action_contexts:
-            all_module_names.add(ctx.module_name)
-            self._write_definition_file(_ACTION_TEMPLATE, ctx, output_dir)
+            self._write_definition_file(_ACTION_TEMPLATE, ctx, output_dir, package_dirs)
 
         for ctx in position_contexts:
-            all_module_names.add(ctx.module_name)
-            self._write_definition_file(_POSITION_TEMPLATE, ctx, output_dir)
+            self._write_definition_file(
+                _POSITION_TEMPLATE, ctx, output_dir, package_dirs
+            )
 
-        self._write_init_files(all_module_names, output_dir)
+        self._write_init_files(package_dirs, output_dir)
 
         entry_ctx = action_contexts[-1]
         self._write_entry_point(entry_ctx, output_dir)
@@ -109,6 +109,7 @@ class PythonLiteralCodeGenerator:
         ctx: action_context.ActionDefinitionContext
         | template_context.PositionDefinitionContext,
         output_dir: Path,
+        package_dirs: set[Path],
     ):
         """Render and write a definition file."""
         content = tmpl.render(definition=ctx)
@@ -118,16 +119,19 @@ class PythonLiteralCodeGenerator:
         # source file, or two positions sharing a path) will silently overwrite
         # each other here. The generator needs to either group same-module
         # definitions into a single rendered file or reject the collision.
-        file_path = output_dir / naming.file_path_for_module(ctx.module_name)
+        relative_file_path = naming.file_path_for_module(ctx.module_name)
+        file_path = output_dir / relative_file_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         _ = file_path.write_text(content)
+        package_dir = relative_file_path.parent.parent
+        package_dirs.add(package_dir)
 
-    def _write_init_files(self, module_names: set[str], output_dir: Path):
+    def _write_init_files(self, package_dirs: set[Path], output_dir: Path):
         """Write empty __init__.py files for intermediate packages."""
         needed_dirs: set[Path] = set()
-        for module_name in module_names:
-            file_path = naming.file_path_for_module(module_name)
-            for parent in file_path.parents:
+        for package_dir in package_dirs:
+            needed_dirs.add(package_dir)
+            for parent in package_dir.parents:
                 if parent == Path("."):
                     continue
                 needed_dirs.add(parent)
