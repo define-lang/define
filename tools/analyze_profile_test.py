@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from unittest import mock
 
 import click.testing
 import pytest
@@ -8,66 +7,65 @@ import pytest
 from tools import analyze_profile
 
 
+def _event(
+    phase: str,
+    timestamp: int,
+    thread: int,
+    name: str,
+    line: int,
+    filename: str = "/repo/compiler.py",
+) -> dict[str, object]:
+    return {
+        "args": {"filename": filename, "line": line},
+        "cat": "py-spy",
+        "name": name,
+        "ph": phase,
+        "pid": 1,
+        "tid": thread,
+        "ts": timestamp,
+    }
+
+
 @pytest.fixture
 def profile_path(tmp_path: Path) -> Path:
     path = tmp_path / "profile.json"
     _ = path.write_text(
         json.dumps(
+            [
+                _event("B", 0, 1, "compile", 1),
+                _event("B", 0, 1, "work", 2),
+                _event("B", 500_000, 2, "worker", 3),
+                _event("B", 500_000, 2, "work", 2),
+                _event("E", 1_000_000, 1, "work", 2),
+                _event("B", 1_000_000, 1, "wait", 4),
+                _event("E", 2_000_000, 1, "wait", 4),
+                _event("B", 2_000_000, 1, "work", 2),
+                _event("E", 2_500_000, 2, "work", 2),
+                _event("E", 2_500_000, 2, "worker", 3),
+                _event("E", 3_000_000, 1, "work", 2),
+                _event("E", 3_000_000, 1, "compile", 1),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+@pytest.fixture
+def cpu_profile_path(tmp_path: Path) -> Path:
+    path = tmp_path / "cpu_profile.json"
+    raw_samples = """compile (/repo/compiler.py:1);work (/repo/compiler.py:2) 100
+compile (/repo/compiler.py:1);wait (/repo/compiler.py:4) 100
+compile (/repo/compiler.py:1);work (/repo/compiler.py:2) 100
+worker (/repo/compiler.py:3);work (/repo/compiler.py:9) 200
+[No Python frame] 70
+ 30"""
+    _ = path.write_text(
+        json.dumps(
             {
-                "$schema": "https://www.speedscope.app/file-format-schema.json",
-                "profiles": [
-                    {
-                        "type": "sampled",
-                        "name": "Thread 1",
-                        "unit": "seconds",
-                        "startValue": 0.0,
-                        "endValue": 0.05,
-                        "samples": [
-                            [0, 1, 2, 3, 4],
-                            [0, 1, 2, 5],
-                            [0, 1, 2, 3, 4],
-                            [],
-                            [6],
-                        ],
-                        "weights": [0.01, 0.01, 0.01, 0.01, 0.01],
-                    },
-                    {
-                        "type": "sampled",
-                        "name": "Thread 2",
-                        "unit": "seconds",
-                        "startValue": 0.0,
-                        "endValue": 0.02,
-                        "samples": [[5], []],
-                        "weights": [0.01, 0.01],
-                    },
-                ],
-                "shared": {
-                    "frames": [
-                        {
-                            "name": "invoke",
-                            "file": "/site-packages/click/core.py",
-                            "line": 900,
-                        },
-                        {
-                            "name": "_compile_source",
-                            "file": "/repo/tools/run_profile.py",
-                            "line": 50,
-                        },
-                        {"name": "compile", "file": "/repo/driver.py", "line": 10},
-                        {
-                            "name": "parse",
-                            "file": "/repo/lark_standalone.py",
-                            "line": 20,
-                        },
-                        {"name": "match", "file": "/usr/regex.py", "line": 30},
-                        {"name": "validate", "file": "/repo/validator.py", "line": 40},
-                        {
-                            "name": "_call_with_frames_removed",
-                            "file": "<frozen importlib._bootstrap>",
-                            "line": 491,
-                        },
-                    ]
-                },
+                "format": "define-py-spy-cpu-v1",
+                "wall_time_seconds": 3.0,
+                "raw_samples": raw_samples,
             }
         ),
         encoding="utf-8",
@@ -75,123 +73,287 @@ def profile_path(tmp_path: Path) -> Path:
     return path
 
 
-def test_loads_and_aggregates_complete_speedscope_profile(profile_path: Path):
-    samples = analyze_profile.load_samples(profile_path)
+def test_loads_timestamped_segments(profile_path: Path):
+    wall_time, thread_count, segments = analyze_profile.load_segments(profile_path)
+
+    assert wall_time == 3.0
+    assert thread_count == 2
+    assert segments == [
+        (
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            0.0,
+            1.0,
+        ),
+        (
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 4, "wait"),
+            ),
+            1.0,
+            2.0,
+        ),
+        (
+            (
+                ("/repo/compiler.py", 1, "compile"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            2.0,
+            3.0,
+        ),
+        (
+            (
+                ("/repo/compiler.py", 3, "worker"),
+                ("/repo/compiler.py", 2, "work"),
+            ),
+            0.5,
+            2.5,
+        ),
+    ]
+
+
+def test_unions_wall_metrics_across_threads(profile_path: Path):
+    _wall_time, _thread_count, segments = analyze_profile.load_segments(profile_path)
+
+    metrics = analyze_profile.wall_metrics(segments)
+
+    assert metrics[("/repo/compiler.py", 2, "work")] == (3.0, 3.0, 3.0)
+    assert metrics[("/repo/compiler.py", 4, "wait")] == (1.0, 1.0, 1.0)
+    assert metrics[("/repo/compiler.py", 1, "compile")] == (0.0, 3.0, 3.0)
+
+
+def test_unions_disjoint_wall_intervals():
+    function = ("/repo/compiler.py", 1, "compile")
+
+    metrics = analyze_profile.wall_metrics(
+        [((function,), 0.0, 1.0), ((function,), 2.0, 4.0)]
+    )
+
+    assert metrics[function] == (3.0, 3.0, 2.0)
+
+
+def test_wall_segments_normalize_current_lines_for_function_identity(tmp_path: Path):
+    profile_path = tmp_path / "profile.json"
+    _ = profile_path.write_text(
+        json.dumps(
+            [
+                _event("B", 0, 1, "compile", 10),
+                _event("E", 1_000_000, 1, "compile", 10),
+                _event("B", 2_000_000, 1, "compile", 20),
+                _event("E", 3_000_000, 1, "compile", 20),
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    _wall_time, _thread_count, segments = analyze_profile.load_segments(profile_path)
+
+    assert segments == [
+        ((("/repo/compiler.py", 10, "compile"),), 0.0, 1.0),
+        ((("/repo/compiler.py", 10, "compile"),), 2.0, 3.0),
+    ]
+
+
+def test_loads_weighted_cpu_samples_and_omits_missing_python_stack(
+    cpu_profile_path: Path,
+):
+    wall_time, sample_count, omitted_samples, samples = (
+        analyze_profile.load_cpu_samples(cpu_profile_path)
+    )
+
+    assert wall_time == 3.0
+    assert sample_count == 500
+    assert omitted_samples == 100
+    assert samples[0] == (
+        (
+            ("/repo/compiler.py", 1, "compile"),
+            ("/repo/compiler.py", 2, "work"),
+        ),
+        1.0,
+    )
+
+
+def test_loads_cpu_frames_without_numeric_line_numbers(tmp_path: Path):
+    profile_path = tmp_path / "cpu_profile.json"
+    _ = profile_path.write_text(
+        json.dumps(
+            {
+                "format": "define-py-spy-cpu-v1",
+                "wall_time_seconds": 1.0,
+                "raw_samples": (
+                    "native frame;compile (/repo/compiler.py:not-a-line) 100"
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _wall_time, _sample_count, _omitted_samples, samples = (
+        analyze_profile.load_cpu_samples(profile_path)
+    )
 
     assert samples == [
         (
             (
-                ("/site-packages/click/core.py", 900, "invoke"),
-                ("/repo/tools/run_profile.py", 50, "_compile_source"),
-                ("/repo/driver.py", 10, "compile"),
-                ("/repo/lark_standalone.py", 20, "parse"),
-                ("/usr/regex.py", 30, "match"),
+                ("", 0, "native frame"),
+                ("/repo/compiler.py:not-a-line", 0, "compile"),
             ),
-            0.01,
-        ),
-        (
-            (
-                ("/site-packages/click/core.py", 900, "invoke"),
-                ("/repo/tools/run_profile.py", 50, "_compile_source"),
-                ("/repo/driver.py", 10, "compile"),
-                ("/repo/validator.py", 40, "validate"),
-            ),
-            0.01,
-        ),
-        (
-            (
-                ("/site-packages/click/core.py", 900, "invoke"),
-                ("/repo/tools/run_profile.py", 50, "_compile_source"),
-                ("/repo/driver.py", 10, "compile"),
-                ("/repo/lark_standalone.py", 20, "parse"),
-                ("/usr/regex.py", 30, "match"),
-            ),
-            0.01,
-        ),
-        ((), 0.01),
-        (
-            (("<frozen importlib._bootstrap>", 491, "_call_with_frames_removed"),),
-            0.01,
-        ),
-        ((("/repo/validator.py", 40, "validate"),), 0.01),
-        ((), 0.01),
+            1.0,
+        )
     ]
 
-    assert analyze_profile.aggregate(samples) == {
-        ("/site-packages/click/core.py", 900, "invoke"): (0, 3, 0.0, 0.03),
-        ("/repo/tools/run_profile.py", 50, "_compile_source"): (0, 3, 0.0, 0.03),
-        ("/repo/driver.py", 10, "compile"): (0, 3, 0.0, 0.03),
-        ("/repo/lark_standalone.py", 20, "parse"): (0, 2, 0.0, 0.02),
-        ("/usr/regex.py", 30, "match"): (2, 2, 0.02, 0.02),
-        ("/repo/validator.py", 40, "validate"): (2, 2, 0.02, 0.02),
-        ("<frozen importlib._bootstrap>", 491, "_call_with_frames_removed"): (
-            1,
-            1,
-            0.01,
-            0.01,
-        ),
+
+def test_sums_weighted_cpu_metrics(cpu_profile_path: Path):
+    _wall_time, _sample_count, _omitted_samples, samples = (
+        analyze_profile.load_cpu_samples(cpu_profile_path)
+    )
+
+    metrics = analyze_profile.cpu_metrics(samples)
+
+    assert metrics[("/repo/compiler.py", 2, "work")] == (4.0, 4.0)
+    assert metrics[("/repo/compiler.py", 1, "compile")] == (0.0, 3.0)
+    assert metrics[("/repo/compiler.py", 3, "worker")] == (0.0, 2.0)
+
+
+def test_limits_compiler_view_to_define_compiler_sources():
+    metrics = {
+        ("/runfiles/_main/define/compiler/driver.py", 1, "run"): (1.0, 1.0, 1.0),
+        ("/projects/define/define/compiler/parser.py", 2, "parse"): (2.0, 2.0, 2.0),
+        (
+            "/projects/define/bazel-bin/define/compiler/main.runfiles/site/click.py",
+            3,
+            "invoke",
+        ): (3.0, 3.0, 3.0),
+    }
+
+    assert analyze_profile.compiler_metrics(metrics) == {
+        ("/runfiles/_main/define/compiler/driver.py", 1, "run"): (1.0, 1.0, 1.0),
+        ("/projects/define/define/compiler/parser.py", 2, "parse"): (2.0, 2.0, 2.0),
     }
 
 
-def test_removes_complete_excluded_subtree(profile_path: Path):
-    samples = analyze_profile.load_samples(profile_path)
+def test_removes_complete_excluded_subtree():
+    lark = ("/repo/lark_standalone.py", 1, "parse")
+    validate = ("/repo/validator.py", 2, "validate")
+    samples = [((lark, validate), 1.0), ((validate,), 1.0)]
 
-    non_lark_samples = analyze_profile.without_file(samples, "lark_standalone.py")
-
-    assert non_lark_samples == [
-        (
-            (
-                ("/site-packages/click/core.py", 900, "invoke"),
-                ("/repo/tools/run_profile.py", 50, "_compile_source"),
-                ("/repo/driver.py", 10, "compile"),
-                ("/repo/validator.py", 40, "validate"),
-            ),
-            0.01,
-        ),
-        (
-            (("<frozen importlib._bootstrap>", 491, "_call_with_frames_removed"),),
-            0.01,
-        ),
-        ((("/repo/validator.py", 40, "validate"),), 0.01),
+    assert analyze_profile.without_file(samples, "lark_standalone.py") == [
+        ((validate,), 1.0)
     ]
 
 
-def test_main_reports_samples_without_python_frames(
-    profile_path: Path,
-):
+def test_main_makes_wall_report_primary(profile_path: Path):
     result = click.testing.CliRunner().invoke(
         analyze_profile.main,
         ["--profile", str(profile_path), "--top", "1"],
     )
 
     assert result.exit_code == 0
-    assert "No Python frame: 0.020s sampled time" in result.output
-
-    samples_with_python_frames = [
-        sample for sample in analyze_profile.load_samples(profile_path) if sample[0]
-    ]
-    with mock.patch.object(
-        analyze_profile,
-        "load_samples",
-        autospec=True,
-        return_value=samples_with_python_frames,
-    ):
-        result = click.testing.CliRunner().invoke(
-            analyze_profile.main,
-            ["--profile", str(profile_path), "--top", "1"],
-        )
-
-    assert result.exit_code == 0
-    assert "No Python frame" not in result.output
+    assert "Wall time: 3.000s; sampled threads: 2; functions: 4" in result.output
+    assert "=== PYTHON WALL (top 1 by self) ===" in result.output
+    assert "=== PYTHON WALL (top 1 by longest) ===" in result.output
+    assert "=== PYTHON WALL (top 1 by cumulative) ===" in result.output
 
 
-def test_emit_table_handles_no_sampled_time(capsys: pytest.CaptureFixture[str]):
-    analyze_profile.emit_table(
-        {("/repo/compiler.py", 1, "compile"): (1, 1, 0.0, 0.0)},
-        key="self time",
-        n=1,
-        title="empty",
-        total_time=0.0,
+def test_main_reports_define_compiler_wall_metrics(tmp_path: Path):
+    profile_path = tmp_path / "profile.json"
+    compiler_file = "/projects/define/define/compiler/driver.py"
+    _ = profile_path.write_text(
+        json.dumps(
+            [
+                _event("B", 0, 1, "compile", 1, compiler_file),
+                _event("E", 1_000_000, 1, "compile", 1, compiler_file),
+            ]
+        ),
+        encoding="utf-8",
     )
 
-    assert "  0.0%" in capsys.readouterr().out
+    result = click.testing.CliRunner().invoke(
+        analyze_profile.main,
+        ["--profile", str(profile_path), "--top", "1"],
+    )
+
+    assert result.exit_code == 0
+    assert "=== DEFINE COMPILER WALL (top 1 by self) ===" in result.output
+    assert "=== DEFINE COMPILER WALL (top 1 by longest) ===" in result.output
+
+
+def test_main_reports_cpu_time(cpu_profile_path: Path):
+    result = click.testing.CliRunner().invoke(
+        analyze_profile.main,
+        [
+            "--profile",
+            str(cpu_profile_path),
+            "--profile-mode",
+            "cpu",
+            "--top",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (
+        "Attributed CPU time: 5.000s; wall time: 3.000s; active Python samples: 500"
+        in result.output
+    )
+    assert "Omitted samples without a Python stack: 100" in result.output
+    assert "Non-Lark work: 5.000s sampled time (100.0%)" in result.output
+    assert "=== PYTHON (top 1 by self) ===" in result.output
+
+
+def test_main_reports_define_compiler_cpu_without_omission_notice(tmp_path: Path):
+    profile_path = tmp_path / "cpu_profile.json"
+    _ = profile_path.write_text(
+        json.dumps(
+            {
+                "format": "define-py-spy-cpu-v1",
+                "wall_time_seconds": 1.0,
+                "raw_samples": (
+                    "compile (/projects/define/define/compiler/driver.py:1) 100"
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = click.testing.CliRunner().invoke(
+        analyze_profile.main,
+        ["--profile", str(profile_path), "--profile-mode", "cpu", "--top", "1"],
+    )
+
+    assert result.exit_code == 0
+    assert "Omitted samples without a Python stack" not in result.output
+    assert "=== DEFINE COMPILER (top 1 by self) ===" in result.output
+    assert "=== DEFINE COMPILER (top 1 by cumulative) ===" in result.output
+
+
+def test_help_explains_report_semantics():
+    result = click.testing.CliRunner().invoke(
+        analyze_profile.main, ["--help"], terminal_width=100
+    )
+
+    assert result.exit_code == 0
+    help_text = " ".join(result.output.split())
+    assert "Pass the same --profile-mode used when recording the profile." in (
+        help_text
+    )
+    assert "Function wall rows can overlap and must not be added together." in (
+        help_text
+    )
+    assert "CPU time can exceed wall time under parallel execution." in help_text
+    assert "Samples without a Python stack are omitted from CPU totals." in (help_text)
+
+
+def test_handles_empty_trace(tmp_path: Path):
+    profile_path = tmp_path / "empty.json"
+    _ = profile_path.write_text("[]", encoding="utf-8")
+
+    result = click.testing.CliRunner().invoke(
+        analyze_profile.main,
+        ["--profile", str(profile_path), "--top", "1"],
+    )
+
+    assert result.exit_code == 0
+    assert "Wall time: 0.000s; sampled threads: 0; functions: 0" in result.output

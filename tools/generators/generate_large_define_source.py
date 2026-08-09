@@ -41,7 +41,7 @@ broad slice of the grammar:
   * Standalone comments, trailing comments, and blank lines.
 
 Run via:
-    bazelisk run //tools:generate_large_define_source -- --output /tmp/big.dfn
+    bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:generate_large_define_source -- --output /tmp/big.dfn
 """
 
 from __future__ import annotations

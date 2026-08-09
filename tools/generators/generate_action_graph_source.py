@@ -36,7 +36,7 @@ back-reference to an already-defined name; in non-filesystem mode a
 forward reference to a same-source name raises before any diagnostic.
 
 Run via:
-    bazelisk run //tools:generate_action_graph_source -- --output /tmp/graph.dfn
+    bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:generate_action_graph_source -- --output /tmp/graph.dfn
 """
 
 from __future__ import annotations

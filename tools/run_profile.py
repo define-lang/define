@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import contextlib
+import enum
+import json
 import os
 import pathlib
 import shutil
 import subprocess
 import tempfile
+import time
 import typing
 
 import click
@@ -21,6 +24,14 @@ _INHERITED_RUNTIME_VARIABLES = (
     "RUNFILES_MANIFEST_ONLY",
     "VIRTUAL_ENV",
 )
+_CPU_PROFILE_FORMAT = "define-py-spy-cpu-v1"
+
+
+class ProfileMode(enum.StrEnum):
+    """Measurement emphasized by the profile capture."""
+
+    WALL = "wall"
+    CPU = "cpu"
 
 
 def _workspace() -> pathlib.Path:
@@ -55,6 +66,7 @@ def _record_profile(
     out_path: pathlib.Path,
     max_threads: int,
     output_dir: pathlib.Path,
+    profile_mode: ProfileMode,
 ) -> None:
     uv_path = shutil.which("uv")
     if uv_path is None:
@@ -68,45 +80,82 @@ def _record_profile(
         "py-spy",
         "record",
         "--format",
-        "speedscope",
+        "chrometrace" if profile_mode is ProfileMode.WALL else "raw",
         "--full-filenames",
-        "--output",
-        str(out_path),
-        "--",
-        str(workspace / "bazel-bin/define/compiler/main"),
-        "compile",
-        "--out",
-        str(output_dir),
-        "--max-threads",
-        str(max_threads),
     ]
-    if compiler_input is not None:
-        command.append(str(compiler_input))
-    environment = os.environ.copy()
-    for variable in _INHERITED_RUNTIME_VARIABLES:
-        _ = environment.pop(variable, None)
+    if profile_mode is ProfileMode.WALL:
+        command.append("--idle")
+    # TODO: Reconsider native frames after py-spy PR #831 is released; its
+    # Python 3.14 frame-owner bug currently corrupts merged stacks.
     with contextlib.ExitStack() as contexts:
+        temp_dir = pathlib.Path(
+            contexts.enter_context(
+                tempfile.TemporaryDirectory(prefix="define_profile_")
+            )
+        )
+        py_spy_output = out_path
+        if profile_mode is ProfileMode.CPU:
+            py_spy_output = temp_dir / "samples.txt"
+        command.extend(
+            [
+                "--output",
+                str(py_spy_output),
+                "--",
+            ]
+        )
+        command.append(str(workspace / "bazel-bin/define/compiler/main"))
+        command.extend(
+            [
+                "compile",
+                "--out",
+                str(output_dir),
+                "--max-threads",
+                str(max_threads),
+            ]
+        )
+        if compiler_input is not None:
+            command.append(str(compiler_input))
+        environment = os.environ.copy()
+        for variable in _INHERITED_RUNTIME_VARIABLES:
+            _ = environment.pop(variable, None)
         source_stream = (
             contexts.enter_context(source_path.open("rb"))
             if source_path is not None
             else None
         )
-        _ = subprocess.run(
+        started = time.monotonic()
+        completed = subprocess.run(
             command,
-            check=True,
+            check=False,
             cwd=compiler_working_directory,
             env=environment,
             stdin=source_stream,
         )
+        wall_time = time.monotonic() - started
+        if profile_mode is ProfileMode.CPU and py_spy_output.exists():
+            profile = {
+                "format": _CPU_PROFILE_FORMAT,
+                "wall_time_seconds": wall_time,
+                "raw_samples": py_spy_output.read_text(encoding="utf-8"),
+            }
+            _ = out_path.write_text(json.dumps(profile), encoding="utf-8")
+        completed.check_returncode()
 
 
 @click.command(
     epilog=(
+        "The profile mode must match the mode later passed to analyze_profile. "
+        "Wall mode records idle time and all Python threads for critical-path "
+        "analysis. CPU mode records active work across Python threads.\n\n"
         "Examples:\n\n"
         "  run_profile --source SOURCE --out PROFILE\n\n"
         "  run_profile --project PROJECT --out PROFILE\n\n"
-        "Both modes record a speedscope profile through py-spy. Generated code "
-        "goes to a temporary directory unless --output-dir is provided."
+        "  run_profile --source SOURCE --out CPU_PROFILE --profile-mode cpu\n\n"
+        "  run_profile --source SOURCE --out PARALLEL_PROFILE "
+        "--profile-mode cpu --max-threads 4\n\n"
+        "Wall mode records a Chrome trace. CPU mode records active raw samples "
+        "plus the profiled wall duration. Generated code goes to a temporary "
+        "directory unless --output-dir is provided."
     )
 )
 @click.option(
@@ -143,14 +192,24 @@ def _record_profile(
     "out_path",
     type=_PATH,
     required=True,
-    help="Destination speedscope JSON file.",
+    help="Destination profile: Chrome trace in wall mode, JSON in CPU mode.",
 )
 @click.option(
     "--max-threads",
     type=click.IntRange(min=1),
     default=1,
     show_default=True,
-    help="Maximum threads used by each validation phase.",
+    help=("Maximum threads used by each validation phase."),
+)
+@click.option(
+    "--profile-mode",
+    type=click.Choice([mode.value for mode in ProfileMode]),
+    default=ProfileMode.WALL.value,
+    show_default=True,
+    help=(
+        "Capture wall-time critical-path or CPU-time data. Pass the same mode "
+        "to analyze_profile."
+    ),
 )
 @click.option(
     "--output-dir",
@@ -163,6 +222,7 @@ def main(
     entry: str,
     out_path: pathlib.Path,
     max_threads: int,
+    profile_mode: str,
     output_dir: pathlib.Path | None,
 ):
     """Profile the complete compiler pipeline, including code generation."""
@@ -189,6 +249,7 @@ def main(
             )
         else:
             output_dir = output_dir.absolute()
+        selected_profile_mode = ProfileMode(profile_mode)
         _record_profile(
             workspace,
             compiler_input,
@@ -197,6 +258,7 @@ def main(
             out_path,
             max_threads,
             output_dir,
+            selected_profile_mode,
         )
 
 

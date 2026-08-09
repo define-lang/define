@@ -43,7 +43,7 @@ back-reference; in non-filesystem mode a forward reference to a
 same-source name raises before any diagnostic.
 
 Run via:
-    bazelisk run //tools:generate_operation_graph_source -- --output /tmp/og.dfn
+    bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:generate_operation_graph_source -- --output /tmp/og.dfn
 """
 
 from __future__ import annotations
