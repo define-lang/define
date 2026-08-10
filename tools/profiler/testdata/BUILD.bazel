@@ -5,6 +5,7 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 exports_files(
     [
         "continuous_target.py",
+        "cpu_target.py",
         "failure_target.py",
         "race_target.py",
     ],
@@ -16,6 +17,15 @@ exports_files(
 py_binary(
     name = "continuous_target",
     srcs = ["continuous_target.py"],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+# PRF-014: CPU mode. PRF-029: Call-frequency fixture.
+# PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
+# PRF-034: Parallel-CPU fixture. PRF-035: Short-function fixture.
+py_binary(
+    name = "cpu_target",
+    srcs = ["cpu_target.py"],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
@@ -43,6 +53,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":continuous_target",
+        ":cpu_target",
         ":failure_target",
         ":race_target",
     ],

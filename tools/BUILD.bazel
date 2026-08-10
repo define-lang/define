@@ -42,7 +42,9 @@ py_test(
     srcs = ["analyze_profile_test.py"],
     deps = [
         "//tools/profiler:analyzer",
+        "//tools/profiler:analyzer_model",
         "//tools/profiler:schema",
+        "//tools/profiler:wall_analyzer",
         "@pypi//click",
     ],
 )
@@ -120,14 +122,15 @@ prettier_bin.prettier_binary(
     visibility = ["//:__subpackages__"],
 )
 
-# PRF-012: Orchestration boundary.
+# PRF-012: Orchestration boundary. PRF-014: CPU mode.
 py_library(
     name = "profile_orchestration",
     srcs = ["profile_orchestration.py"],
     deps = ["@pypi//click"],
 )
 
-# PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
+# PRF-012: Orchestration boundary. PRF-014: CPU mode.
+# PRF-020: Machine and human interfaces.
 py_binary(
     name = "run_profile",
     srcs = ["run_profile.py"],
@@ -135,6 +138,8 @@ py_binary(
     deps = [":profile_orchestration"],
 )
 
+# PRF-012: Orchestration boundary. PRF-014: CPU mode.
+# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
 py_test(
     name = "run_profile_test",
     size = "small",

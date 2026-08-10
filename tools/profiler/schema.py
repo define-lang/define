@@ -12,7 +12,9 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+
+CaptureMode = Literal["wall", "cpu"]
 
 
 class ExecutableIdentity(TypedDict):
@@ -49,12 +51,23 @@ class ThreadObservation(TypedDict):
 
     # PRF-006: Complete-process stop. PRF-013: Wall mode.
     os_thread_id: int
+    start_time_ticks: int
     pre_stop_state: str
     wait_channel: str
     voluntary_context_switches: int
     nonvoluntary_context_switches: int
     stopped_state: str
     stack: list[int]
+
+
+class CpuThreadObservation(ThreadObservation):
+    """One stopped OS thread with synchronized scheduler runtime."""
+
+    # PRF-010: Raw-data preservation. PRF-014: CPU mode.
+    scheduler_runtime_ns: int
+
+
+SampledThreadObservation = ThreadObservation | CpuThreadObservation
 
 
 class ObservationBase(TypedDict):
@@ -76,7 +89,7 @@ class SuccessfulObservation(ObservationBase):
 
     # PRF-007: Consistent stack. PRF-015: Full stacks.
     status: Literal["successful"]
-    threads: list[ThreadObservation]
+    threads: list[SampledThreadObservation]
 
 
 class FailedObservation(ObservationBase):
@@ -117,6 +130,7 @@ class ThreadLifecycle(TypedDict):
 
     # PRF-005: Lifecycle-bounded attribution.
     os_thread_id: int
+    start_time_ticks: int
     first_observation_index: int
     first_target_running_ns: int
     last_observation_index: int
@@ -133,15 +147,33 @@ class ObservationCounts(TypedDict):
     missed: int
 
 
-class SamplingConfiguration(TypedDict):
-    """Configuration for randomized continuous wall sampling."""
+class SamplingConfigurationBase(TypedDict):
+    """Configuration shared by randomized continuous sampling modes."""
 
     # PRF-002: Independent sampling schedule.
-    mode: Literal["wall"]
     schedule: Literal["poisson"]
     mean_interval_seconds: float
     random_seed: int
     attachment_timeout_seconds: float
+
+
+class WallSamplingConfiguration(SamplingConfigurationBase):
+    """Configuration for continuous wall sampling."""
+
+    # PRF-013: Wall mode.
+    mode: Literal["wall"]
+
+
+class CpuSamplingConfiguration(SamplingConfigurationBase):
+    """Configuration for external scheduler-runtime CPU sampling."""
+
+    # PRF-014: CPU mode.
+    mode: Literal["cpu"]
+    cpu_backend: Literal["linux-schedstat"]
+    python_stack_trampolines: Literal[False]
+
+
+SamplingConfiguration = WallSamplingConfiguration | CpuSamplingConfiguration
 
 
 class SamplingStatistics(TypedDict):
@@ -234,7 +266,7 @@ ProfileRecord = (
 
 @dataclasses.dataclass(slots=True)
 class RawProfile:
-    """Loaded version 2 continuous wall profile artifact."""
+    """Loaded version 3 continuous wall or CPU profile artifact."""
 
     # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
     schema_version: int
@@ -322,7 +354,7 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
 
 
 def load(profile_path: pathlib.Path) -> RawProfile:
-    """Load a complete or incrementally persisted version 2 profile."""
+    """Load a complete or incrementally persisted version 3 profile."""
     # PRF-027: Incremental persistence. PRF-039: Current design only.
     records = iter(_read_records(profile_path))
     try:

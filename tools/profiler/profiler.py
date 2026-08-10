@@ -23,7 +23,7 @@ from typing import Protocol, cast
 import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
 
-from tools.profiler import schema
+from tools.profiler import cpu_profiler, schema
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -107,10 +107,18 @@ class _InconsistentStackObservationError(Exception):
 @dataclasses.dataclass(frozen=True, slots=True)
 class _ThreadEvidence:
     # PRF-010: Raw-data preservation.
+    start_time_ticks: int
     state: str
     wait_channel: str
     voluntary_context_switches: int
     nonvoluntary_context_switches: int
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class _StoppedThread:
+    # PRF-005: Lifecycle-bounded attribution. PRF-007: Consistent stack.
+    start_time_ticks: int
+    state: str
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -122,10 +130,12 @@ class _CapturedFrame:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _CapturedThread:
+    # PRF-010: Raw-data preservation. PRF-014: CPU mode.
     os_thread_id: int
     evidence: _ThreadEvidence
     stopped_state: str
     stack: list[_CapturedFrame]
+    scheduler_runtime_ns: int | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -189,12 +199,14 @@ class _AttachedRuntime:
 @dataclasses.dataclass(slots=True)
 class _CaptureState:
     # PRF-003: Pause exclusion. PRF-005: Lifecycle-bounded attribution.
-    # PRF-024: Explicit failures. PRF-027: Incremental persistence.
+    # PRF-014: CPU mode. PRF-024: Explicit failures.
+    # PRF-027: Incremental persistence.
     random_generator: random.Random
+    mode: schema.CaptureMode
     counts: schema.ObservationCounts
     observation_times: list[int] = dataclasses.field(default_factory=list)
-    thread_lifecycles: dict[int, schema.ThreadLifecycle] = dataclasses.field(
-        default_factory=dict
+    thread_lifecycles: dict[tuple[int, int], schema.ThreadLifecycle] = (
+        dataclasses.field(default_factory=dict)
     )
     failures: list[schema.FailureRecord] = dataclasses.field(default_factory=list)
     attached_runtime: _AttachedRuntime | None = None
@@ -234,7 +246,7 @@ class _ProfileWriter:
             return ([{"record_type": "observation", "observation": failed}], failed)
 
         frame_records: list[schema.ProfileRecord] = []
-        threads: list[schema.ThreadObservation] = []
+        threads: list[schema.SampledThreadObservation] = []
         for captured_thread in result.threads:
             stack: list[int] = []
             for captured_frame in captured_thread.stack:
@@ -255,21 +267,29 @@ class _ProfileWriter:
                     }
                     frame_records.append({"record_type": "frame", "frame": frame})
                 stack.append(frame_id)
-            threads.append(
-                {
-                    "os_thread_id": captured_thread.os_thread_id,
-                    "pre_stop_state": captured_thread.evidence.state,
-                    "wait_channel": captured_thread.evidence.wait_channel,
-                    "voluntary_context_switches": (
-                        captured_thread.evidence.voluntary_context_switches
-                    ),
-                    "nonvoluntary_context_switches": (
-                        captured_thread.evidence.nonvoluntary_context_switches
-                    ),
-                    "stopped_state": captured_thread.stopped_state,
-                    "stack": stack,
+            thread_observation: schema.ThreadObservation = {
+                "os_thread_id": captured_thread.os_thread_id,
+                "start_time_ticks": captured_thread.evidence.start_time_ticks,
+                "pre_stop_state": captured_thread.evidence.state,
+                "wait_channel": captured_thread.evidence.wait_channel,
+                "voluntary_context_switches": (
+                    captured_thread.evidence.voluntary_context_switches
+                ),
+                "nonvoluntary_context_switches": (
+                    captured_thread.evidence.nonvoluntary_context_switches
+                ),
+                "stopped_state": captured_thread.stopped_state,
+                "stack": stack,
+            }
+            if captured_thread.scheduler_runtime_ns is not None:
+                # PRF-010: Raw-data preservation. PRF-014: CPU mode.
+                cpu_thread_observation: schema.CpuThreadObservation = {
+                    **thread_observation,
+                    "scheduler_runtime_ns": captured_thread.scheduler_runtime_ns,
                 }
-            )
+                threads.append(cpu_thread_observation)
+            else:
+                threads.append(thread_observation)
         successful: schema.SuccessfulObservation = {
             **_observation_timing(result),
             "status": "successful",
@@ -362,6 +382,14 @@ def _status_fields(status: str) -> dict[str, str]:
     }
 
 
+def _thread_start_time_ticks(thread_directory: pathlib.Path) -> int:
+    # PRF-010: Raw-data preservation. A Linux TID can be reused after thread exit.
+    stat = (thread_directory / "stat").read_text(encoding="utf-8")
+    command_end = stat.rindex(")")
+    fields_from_state = stat[command_end + 2 :].split()
+    return int(fields_from_state[19])
+
+
 def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
     # PRF-010: Raw-data preservation.
     evidence: dict[int, _ThreadEvidence] = {}
@@ -370,6 +398,7 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
             (thread_directory / "status").read_text(encoding="utf-8")
         )
         evidence[int(thread_directory.name)] = _ThreadEvidence(
+            start_time_ticks=_thread_start_time_ticks(thread_directory),
             state=fields["State"].split()[0],
             wait_channel=(thread_directory / "wchan")
             .read_text(encoding="utf-8")
@@ -380,21 +409,25 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
     return evidence
 
 
-def _stopped_states(process_id: int) -> dict[int, str]:
-    # PRF-006: Complete-process stop.
-    states: dict[int, str] = {}
+def _stopped_threads(process_id: int) -> dict[int, _StoppedThread]:
+    # PRF-005: Lifecycle-bounded attribution. PRF-006: Complete-process stop.
+    stopped_threads: dict[int, _StoppedThread] = {}
     for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
         fields = _status_fields(
             (thread_directory / "status").read_text(encoding="utf-8")
         )
-        states[int(thread_directory.name)] = fields["State"].split()[0]
-    return states
+        stopped_threads[int(thread_directory.name)] = _StoppedThread(
+            start_time_ticks=_thread_start_time_ticks(thread_directory),
+            state=fields["State"].split()[0],
+        )
+    return stopped_threads
 
 
 def _capture_stopped_threads(
     target: subprocess.Popen[str],
     evidence: dict[int, _ThreadEvidence],
     retained_unwinder: _Unwinder | None,
+    mode: schema.CaptureMode,
 ) -> tuple[list[_CapturedThread], _Unwinder]:
     # PRF-006: Complete-process stop. PRF-007: Consistent stack.
     # PRF-013: Wall mode. PRF-015: Full stacks. PRF-016: Source identity.
@@ -411,9 +444,16 @@ def _capture_stopped_threads(
     waited_process_id, wait_status = os.waitpid(target.pid, os.WUNTRACED)
     if waited_process_id != target.pid or not os.WIFSTOPPED(wait_status):
         raise _TargetStopError("target exited while the profiler was stopping it")
-    stopped_states = _stopped_states(target.pid)
-    if any(state not in {"T", "t"} for state in stopped_states.values()):
+    stopped_threads = _stopped_threads(target.pid)
+    if any(
+        stopped_thread.state not in {"T", "t"}
+        for stopped_thread in stopped_threads.values()
+    ):
         raise _TargetStopError("not every target thread reached a stopped state")
+    # PRF-006: Complete-process stop. PRF-014: CPU mode.
+    scheduler_runtimes = (
+        cpu_profiler.scheduler_runtimes(target.pid) if mode == "cpu" else None
+    )
     observation_unwinder = retained_unwinder or _REMOTE_UNWINDER(
         target.pid,
         all_threads=True,
@@ -428,17 +468,21 @@ def _capture_stopped_threads(
     for remote_thread in remote_threads:
         if (
             remote_thread.thread_id not in evidence
-            or remote_thread.thread_id not in stopped_states
+            or remote_thread.thread_id not in stopped_threads
         ):
             raise _InconsistentStackObservationError(
                 "a Python thread changed identity during the observation"
             )
     captured_threads: list[_CapturedThread] = []
-    for thread_id, stopped_state in stopped_states.items():
+    for thread_id, stopped_thread in stopped_threads.items():
         thread_evidence = evidence.get(thread_id)
         if thread_evidence is None:
             raise _InconsistentStackObservationError(
                 "an OS thread changed identity during the observation"
+            )
+        if thread_evidence.start_time_ticks != stopped_thread.start_time_ticks:
+            raise _InconsistentStackObservationError(
+                "an OS thread identifier was reused during the observation"
             )
         remote_thread = remote_threads_by_id.get(thread_id)
         stack = [
@@ -455,8 +499,13 @@ def _capture_stopped_threads(
             _CapturedThread(
                 os_thread_id=thread_id,
                 evidence=thread_evidence,
-                stopped_state=stopped_state,
+                stopped_state=stopped_thread.state,
                 stack=stack,
+                scheduler_runtime_ns=(
+                    scheduler_runtimes[thread_id]
+                    if scheduler_runtimes is not None
+                    else None
+                ),
             )
         )
     return captured_threads, observation_unwinder
@@ -505,6 +554,7 @@ def _capture_observation(
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
+    mode: schema.CaptureMode,
 ) -> _ObservationCapture:
     # PRF-003: Pause exclusion. PRF-006: Complete-process stop.
     # PRF-007: Consistent stack. PRF-013: Wall mode.
@@ -538,6 +588,7 @@ def _capture_observation(
             target,
             evidence,
             retained_unwinder,
+            mode,
         )
     except _CaptureInterrupted as error:
         interruption = error
@@ -677,16 +728,19 @@ def _terminate_process_group(target: subprocess.Popen[str]) -> int:
 
 
 def _update_thread_lifecycles(
-    lifecycles: dict[int, schema.ThreadLifecycle],
+    lifecycles: dict[tuple[int, int], schema.ThreadLifecycle],
     observation: schema.SuccessfulObservation,
 ) -> None:
     # PRF-005: Lifecycle-bounded attribution.
     for thread in observation["threads"]:
         thread_id = thread["os_thread_id"]
-        lifecycle = lifecycles.get(thread_id)
+        start_time_ticks = thread["start_time_ticks"]
+        identity = (thread_id, start_time_ticks)
+        lifecycle = lifecycles.get(identity)
         if lifecycle is None:
-            lifecycles[thread_id] = {
+            lifecycles[identity] = {
                 "os_thread_id": thread_id,
+                "start_time_ticks": start_time_ticks,
                 "first_observation_index": observation["observation_index"],
                 "first_target_running_ns": observation["target_running_ns"],
                 "last_observation_index": observation["observation_index"],
@@ -816,6 +870,7 @@ def _scheduled_observation(
         scheduled_interval_ns,
         launched_ns,
         state.total_pause_ns,
+        state.mode,
     )
     state.retained_unwinder = captured.unwinder
     return captured.result, False
@@ -1061,7 +1116,10 @@ def _summary_record(
         },
         "thread_lifecycles": sorted(
             state.thread_lifecycles.values(),
-            key=lambda lifecycle: lifecycle["os_thread_id"],
+            key=lambda lifecycle: (
+                lifecycle["os_thread_id"],
+                lifecycle["start_time_ticks"],
+            ),
         ),
         "sampling_statistics": statistics,
         "observation_counts": state.counts,
@@ -1080,21 +1138,29 @@ def capture(
     mean_interval_seconds: float,
     random_seed: int,
     attachment_timeout_seconds: float,
+    mode: schema.CaptureMode,
 ) -> schema.RawProfile:
-    """Launch a target and capture continuous blocking wall observations."""
-    # PRF-011: Complete invocation. PRF-020: Machine and human interfaces.
+    """Launch a target and capture continuous blocking observations."""
+    # PRF-011: Complete invocation. PRF-014: CPU mode.
+    # PRF-020: Machine and human interfaces.
     expected_python = _executable_identity(os.getpid())
-    sampling: schema.SamplingConfiguration = {
-        "mode": "wall",
+    sampling_base: schema.SamplingConfigurationBase = {
         "schedule": "poisson",
         "mean_interval_seconds": mean_interval_seconds,
         "random_seed": random_seed,
         "attachment_timeout_seconds": attachment_timeout_seconds,
     }
+    if mode == "cpu":
+        sampling: schema.SamplingConfiguration = cpu_profiler.sampling_configuration(
+            sampling_base
+        )
+    else:
+        sampling = {**sampling_base, "mode": "wall"}
     # Reproducible statistical schedules do not require cryptographic randomness.
     random_generator = random.Random(random_seed)  # noqa: S311
     state = _CaptureState(
         random_generator=random_generator,
+        mode=mode,
         counts={
             "attempted": 0,
             "successful": 0,
@@ -1136,14 +1202,21 @@ def capture(
     return schema.load(profile_path)
 
 
-# PRF-020: Machine and human interfaces.
+# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
 @click.command(
     context_settings={"ignore_unknown_options": True},
     epilog=(
         "Place -- before the target command. The profiler waits for the shell "
         "launcher to execute the matching Python 3.14t runtime, then takes "
-        "randomized blocking all-thread wall observations until target exit."
+        "randomized blocking all-thread observations until target exit."
     ),
+)
+@click.option(
+    "--mode",
+    type=click.Choice(["wall", "cpu"]),
+    default="wall",
+    show_default=True,
+    help="Capture wall occupancy or external per-thread CPU runtime.",
 )
 @click.option(
     "--profile",
@@ -1194,6 +1267,7 @@ def capture(
 )
 @click.argument("command", nargs=-1, type=click.UNPROCESSED, required=True)
 def main(
+    mode: schema.CaptureMode,
     profile_path: pathlib.Path,
     workload_path: pathlib.Path,
     working_directory: pathlib.Path,
@@ -1201,8 +1275,9 @@ def main(
     attachment_timeout_seconds: float,
     command: tuple[str, ...],
 ):
-    """Capture a continuous blocking wall profile of a Python target."""
-    # PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
+    """Capture a continuous blocking wall or CPU profile of a Python target."""
+    # PRF-002: Independent sampling schedule. PRF-014: CPU mode.
+    # PRF-020: Machine and human interfaces.
     profile = capture(
         command=command,
         profile_path=profile_path.absolute(),
@@ -1211,6 +1286,7 @@ def main(
         mean_interval_seconds=mean_interval_seconds,
         random_seed=random.SystemRandom().randrange(2**63),
         attachment_timeout_seconds=attachment_timeout_seconds,
+        mode=mode,
     )
     if not profile.complete:
         raise click.Abort

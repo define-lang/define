@@ -3,7 +3,17 @@ from pathlib import Path
 
 import click.testing
 
-from tools.profiler import analyzer, schema
+from tools.profiler import analyzer, analyzer_model, schema, wall_analyzer
+
+
+def _analyze_wall(
+    profile: schema.RawProfile,
+    filters: analyzer_model.AnalysisFilters = analyzer_model.DEFAULT_FILTERS,
+) -> wall_analyzer.Analysis:
+    # PRF-013: Wall mode.
+    analysis = analyzer.analyze(profile, filters)
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    return analysis
 
 
 def _controlled_profile() -> schema.RawProfile:
@@ -48,6 +58,7 @@ def _controlled_profile() -> schema.RawProfile:
         "threads": [
             {
                 "os_thread_id": 42,
+                "start_time_ticks": 100,
                 "pre_stop_state": "R",
                 "wait_channel": "0",
                 "voluntary_context_switches": 3,
@@ -57,6 +68,7 @@ def _controlled_profile() -> schema.RawProfile:
             },
             {
                 "os_thread_id": 43,
+                "start_time_ticks": 101,
                 "pre_stop_state": "S",
                 "wait_channel": "futex_wait_queue",
                 "voluntary_context_switches": 5,
@@ -92,6 +104,7 @@ def _controlled_profile() -> schema.RawProfile:
         "threads": [
             {
                 "os_thread_id": 42,
+                "start_time_ticks": 100,
                 "pre_stop_state": "R",
                 "wait_channel": "0",
                 "voluntary_context_switches": 4,
@@ -102,7 +115,7 @@ def _controlled_profile() -> schema.RawProfile:
         ],
     }
     return schema.RawProfile(
-        schema_version=2,
+        schema_version=3,
         complete=True,
         success=True,
         command=["/repo/compiler", "compile"],
@@ -156,6 +169,7 @@ def _controlled_profile() -> schema.RawProfile:
         thread_lifecycles=[
             {
                 "os_thread_id": 42,
+                "start_time_ticks": 100,
                 "first_observation_index": 0,
                 "first_target_running_ns": 20,
                 "last_observation_index": 2,
@@ -163,6 +177,7 @@ def _controlled_profile() -> schema.RawProfile:
             },
             {
                 "os_thread_id": 43,
+                "start_time_ticks": 101,
                 "first_observation_index": 0,
                 "first_target_running_ns": 20,
                 "last_observation_index": 0,
@@ -259,7 +274,7 @@ def _write_records(profile_path: Path, records: list[schema.ProfileRecord]) -> N
 # PRF-004: No stale-stack reuse. PRF-005: Lifecycle-bounded attribution.
 # PRF-015: Full stacks. PRF-019: Concurrency semantics.
 def test_analysis_preserves_failure_gap_and_retired_thread_boundary():
-    analysis = analyzer.analyze(_controlled_profile())
+    analysis = _analyze_wall(_controlled_profile())
 
     assert analysis.wall_window_ns == 100
     assert analysis.attributed_wall_ns == 55
@@ -301,7 +316,7 @@ def test_analysis_reports_observed_time_without_a_python_stack_as_unattributed()
     assert final_observation["status"] == "successful"
     final_observation["threads"][0]["stack"] = []
 
-    analysis = analyzer.analyze(profile)
+    analysis = _analyze_wall(profile)
 
     assert analysis.attributed_wall_ns == 25
     assert analysis.unattributed_wall_ns == 75
@@ -351,7 +366,7 @@ def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: 
     profile_path = tmp_path / "partial.jsonl"
     _write_records(profile_path, _wire_records(profile))
 
-    analysis = analyzer.analyze(profile)
+    analysis = _analyze_wall(profile)
     result = click.testing.CliRunner().invoke(
         analyzer.main,
         ["--profile", str(profile_path)],
@@ -379,7 +394,7 @@ def test_analysis_does_not_attribute_observations_before_python_attachment():
     profile.lifecycle["python_observed_ns"] = None
     profile.lifecycle["python_observed_target_running_ns"] = None
 
-    analysis = analyzer.analyze(profile)
+    analysis = _analyze_wall(profile)
 
     assert analysis.self_rows == []
     assert analysis.cumulative_rows == []
@@ -390,7 +405,7 @@ def test_analysis_does_not_attribute_observations_before_python_attachment():
 
 # PRF-018: Focused analysis.
 def test_analysis_filters_thread_file_function_caller_and_callee():
-    filters = analyzer.AnalysisFilters(
+    filters = analyzer_model.AnalysisFilters(
         thread_ids=frozenset({43}),
         filename="validator.py",
         function="validate",
@@ -399,7 +414,7 @@ def test_analysis_filters_thread_file_function_caller_and_callee():
         compiler_only=True,
     )
 
-    analysis = analyzer.analyze(_controlled_profile(), filters)
+    analysis = _analyze_wall(_controlled_profile(), filters)
 
     assert [row.identity.function for row in analysis.self_function_rows] == [
         "validate_graph"
@@ -426,9 +441,9 @@ def test_compiler_only_uses_the_runfile_relative_source_path():
     assert first_observation["status"] == "successful"
     first_observation["threads"][0]["stack"].insert(0, 4)
 
-    analysis = analyzer.analyze(
+    analysis = _analyze_wall(
         profile,
-        analyzer.AnalysisFilters(compiler_only=True),
+        analyzer_model.AnalysisFilters(compiler_only=True),
     )
 
     assert "invoke" not in [
@@ -438,17 +453,17 @@ def test_compiler_only_uses_the_runfile_relative_source_path():
 
 # PRF-018: Focused analysis.
 def test_analysis_excludes_every_nonmatching_filter_dimension():
-    missing_function = analyzer.analyze(
+    missing_function = _analyze_wall(
         _controlled_profile(),
-        analyzer.AnalysisFilters(function="not_a_function"),
+        analyzer_model.AnalysisFilters(function="not_a_function"),
     )
-    missing_caller = analyzer.analyze(
+    missing_caller = _analyze_wall(
         _controlled_profile(),
-        analyzer.AnalysisFilters(caller="not_a_caller"),
+        analyzer_model.AnalysisFilters(caller="not_a_caller"),
     )
-    missing_callee = analyzer.analyze(
+    missing_callee = _analyze_wall(
         _controlled_profile(),
-        analyzer.AnalysisFilters(callee="not_a_callee"),
+        analyzer_model.AnalysisFilters(callee="not_a_callee"),
     )
 
     assert missing_function.self_rows == []
@@ -478,7 +493,7 @@ def test_load_retains_complete_records_before_truncated_tail(tmp_path: Path):
     assert len(profile.observations) == 3
     assert profile.compiler_exit_status is None
     assert profile.diagnostics_status == "unknown"
-    analysis = analyzer.analyze(profile)
+    analysis = _analyze_wall(profile)
     assert analysis.wall_window_ns == 0
 
 
@@ -500,8 +515,9 @@ def test_rejects_superseded_schema(tmp_path: Path):
     assert "Error: unsupported profiler schema version: 1" in result.output
 
 
-# PRF-018: Focused analysis. PRF-020: Machine and human interfaces.
-def test_help_describes_filters_and_wall_semantics():
+# PRF-014: CPU mode. PRF-018: Focused analysis.
+# PRF-020: Machine and human interfaces.
+def test_help_describes_filters_and_attribution_semantics():
     result = click.testing.CliRunner().invoke(
         analyzer.main,
         ["--help"],
@@ -514,4 +530,6 @@ def test_help_describes_filters_and_wall_semantics():
     assert "--caller" in help_text
     assert "--callee" in help_text
     assert "--compiler-only" in help_text
-    assert "A sample hit is not a function call" in help_text
+    assert "Wall rows report unioned occupancy" in help_text
+    assert "CPU rows report additive external scheduler runtime" in help_text
+    assert "Sample hits and endpoints are observations, not calls" in help_text

@@ -103,7 +103,7 @@ def test_requires_source_or_project():
 
 
 # PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
-def test_help_describes_wall_capture_workflow():
+def test_help_describes_wall_and_cpu_capture_workflow():
     result = click.testing.CliRunner().invoke(
         run_profile.main,
         ["--help"],
@@ -112,7 +112,8 @@ def test_help_describes_wall_capture_workflow():
 
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
-    assert "continuous all-thread wall observations" in help_text
+    assert "continuous all-thread wall or CPU observations" in help_text
+    assert "--mode [wall|cpu]" in help_text
     assert "--source" in help_text
     assert "--project" in help_text
     assert "--entry" in help_text
@@ -178,6 +179,7 @@ def test_builds_compiler_before_preparing_profile(
         record_profile.call_args.args[0],
     )
     assert invocation.profiler_working_directory == tmp_path
+    assert invocation.profiler_arguments == ("--mode", "wall")
     assert invocation.target_command[0] == str(
         tmp_path / "bazel-bin/define/compiler/main"
     )
@@ -224,7 +226,7 @@ def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
     assert not Path(profile.command[3]).exists()
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Profile schema: 2; complete; {capture_status}" in analysis
+    assert f"Profile schema: 3; complete; {capture_status}" in analysis
     assert "Self wall occupancy (union across threads):" in analysis
 
 
@@ -277,5 +279,43 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
     assert output_dir.is_dir()
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Profile schema: 2; complete; {capture_status}" in analysis
+    assert f"Profile schema: 3; complete; {capture_status}" in analysis
     assert "Cumulative wall occupancy (union across threads):" in analysis
+
+
+# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
+# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
+# PRF-026: No silent partial success. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
+def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
+    source_path = tmp_path / "source.dfn"
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    profile_path = tmp_path / "cpu-profile.jsonl"
+
+    result = _capture(
+        [
+            "--mode",
+            "cpu",
+            "--source",
+            str(source_path),
+            "--out",
+            str(profile_path),
+            "--max-threads",
+            "3",
+        ]
+    )
+
+    profile = schema.load(profile_path)
+    assert result.exit_code == (0 if profile.success else 1)
+    assert profile.complete is True
+    assert profile.compiler_exit_status == 0
+    assert profile.diagnostics_status == "none"
+    assert profile.failures == []
+    assert profile.sampling["mode"] == "cpu"
+    assert profile.sampling["cpu_backend"] == "linux-schedstat"
+    analysis = _analyze(profile_path)
+    capture_status = "successful" if profile.success else "unsuccessful"
+    assert f"Profile schema: 3; complete; {capture_status}" in analysis
+    assert "CPU backend: linux-schedstat" in analysis
+    assert "Self CPU attribution:" in analysis
+    assert "Cumulative CPU attribution:" in analysis

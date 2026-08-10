@@ -31,6 +31,7 @@ class ProfileInvocation:
 
     # PRF-012: Orchestration boundary.
     profiler_command: tuple[str, ...]
+    profiler_arguments: tuple[str, ...]
     profiler_working_directory: pathlib.Path
     target_command: tuple[str, ...]
     target_working_directory: pathlib.Path
@@ -80,6 +81,7 @@ def record_profile(invocation: ProfileInvocation):
     # PRF-012: Orchestration boundary.
     command = [
         *invocation.profiler_command,
+        *invocation.profiler_arguments,
         "--profile",
         str(invocation.profile_path),
         "--workload",
@@ -115,8 +117,9 @@ def _profile_invocation(
     out_path: pathlib.Path,
     max_threads: int,
     output_dir: pathlib.Path,
+    profile_mode: str,
 ) -> ProfileInvocation:
-    # PRF-012: Orchestration boundary.
+    # PRF-012: Orchestration boundary. PRF-014: CPU mode.
     if source_path is not None:
         workload_path = source_path.absolute()
         target_stdin_path: pathlib.Path | None = workload_path
@@ -140,6 +143,7 @@ def _profile_invocation(
         target_command.append(str(compiler_input))
     return ProfileInvocation(
         profiler_command=(sys.executable, "-m", "tools.profiler"),
+        profiler_arguments=("--mode", profile_mode),
         profiler_working_directory=workspace,
         target_command=tuple(target_command),
         target_working_directory=target_working_directory,
@@ -156,9 +160,18 @@ def _profile_invocation(
         "Examples:\n\n"
         "  run_profile --source SOURCE --out PROFILE\n\n"
         "  run_profile --project PROJECT --entry main.dfn --out PROFILE\n\n"
-        "The profiler records continuous all-thread wall observations. Generated "
-        "code goes to a temporary directory unless --output-dir is provided."
+        "The profiler records continuous all-thread wall or CPU observations. "
+        "Generated code goes to a temporary directory unless --output-dir is "
+        "provided."
     )
+)
+@click.option(
+    "--mode",
+    "profile_mode",
+    type=click.Choice(["wall", "cpu"]),
+    default="wall",
+    show_default=True,
+    help="Capture wall occupancy or external per-thread CPU runtime.",
 )
 @click.option(
     "--source",
@@ -194,7 +207,7 @@ def _profile_invocation(
     "out_path",
     type=_PATH,
     required=True,
-    help="Destination for the versioned raw wall profile.",
+    help="Destination for the versioned raw profile.",
 )
 @click.option(
     "--max-threads",
@@ -209,6 +222,7 @@ def _profile_invocation(
     help="Code-generation directory. Defaults to a throwaway directory.",
 )
 def main(
+    profile_mode: str,
     source_path: pathlib.Path | None,
     project: pathlib.Path | None,
     entry: str,
@@ -216,7 +230,8 @@ def main(
     max_threads: int,
     output_dir: pathlib.Path | None,
 ):
-    """Capture the complete compiler pipeline with the wall profiler."""
+    """Capture the complete compiler pipeline with the selected profiler mode."""
+    # PRF-012: Orchestration boundary. PRF-014: CPU mode.
     if (source_path is None) == (project is None):
         raise click.UsageError("provide exactly one of --source or --project")
 
@@ -240,5 +255,6 @@ def main(
             out_path=out_path,
             max_threads=max_threads,
             output_dir=output_dir,
+            profile_mode=profile_mode,
         )
         record_profile(invocation)

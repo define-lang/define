@@ -3,7 +3,7 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-# PRF-020: Machine and human interfaces.
+# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
 py_binary(
     name = "__main__",
     srcs = ["__main__.py"],
@@ -11,29 +11,61 @@ py_binary(
     deps = [":profiler"],
 )
 
-# PRF-010: Raw-data preservation. PRF-018: Focused analysis.
+# PRF-010: Raw-data preservation. PRF-014: CPU mode.
+# PRF-018: Focused analysis.
 # PRF-019: Concurrency semantics. PRF-020: Machine and human interfaces.
 py_library(
     name = "analyzer",
     srcs = ["analyzer.py"],
     visibility = ["//tools:__pkg__"],
     deps = [
+        ":analyzer_model",
+        ":cpu_analyzer",
         ":schema",
+        ":wall_analyzer",
         "@pypi//click",
     ],
 )
 
-# PRF-001: No call-correlated wall profiling work.
+# PRF-018: Focused analysis.
+py_library(
+    name = "analyzer_model",
+    srcs = ["analyzer_model.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":schema"],
+)
+
+# PRF-010: Raw-data preservation. PRF-014: CPU mode.
+# PRF-018: Focused analysis. PRF-019: Concurrency semantics.
+py_library(
+    name = "cpu_analyzer",
+    srcs = ["cpu_analyzer.py"],
+    deps = [
+        ":analyzer_model",
+        ":schema",
+    ],
+)
+
+# PRF-010: Raw-data preservation. PRF-014: CPU mode.
+py_library(
+    name = "cpu_profiler",
+    srcs = ["cpu_profiler.py"],
+    deps = [":schema"],
+)
+
+# PRF-001: No call-correlated wall profiling work. PRF-014: CPU mode.
 py_library(
     name = "profiler",
     srcs = ["profiler.py"],
     deps = [
+        ":cpu_profiler",
         ":schema",
         "@pypi//click",
     ],
 )
 
-# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
+# PRF-014: CPU mode. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
 py_test(
     name = "profiler_test",
     size = "small",
@@ -43,6 +75,8 @@ py_test(
         "//tools:analyze_profile",
         "//tools/profiler/testdata:continuous_target",
         "//tools/profiler/testdata:continuous_target.py",
+        "//tools/profiler/testdata:cpu_target",
+        "//tools/profiler/testdata:cpu_target.py",
         "//tools/profiler/testdata:failure_target",
         "//tools/profiler/testdata:failure_target.py",
         "//tools/profiler/testdata:race_target",
@@ -52,6 +86,7 @@ py_test(
         "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
         "PROFILER_BINARY": "$(rlocationpath :__main__)",
         "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
+        "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
         "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
         "PROFILER_RACE_SOURCE": "$(rlocationpath //tools/profiler/testdata:race_target.py)",
     },
@@ -59,8 +94,11 @@ py_test(
     tags = ["local"],
     deps = [
         ":analyzer",
+        ":analyzer_model",
+        ":cpu_analyzer",
         ":profiler",
         ":schema",
+        ":wall_analyzer",
         "@pypi//click",
         "@rules_python//python/runfiles",
     ],
@@ -71,6 +109,18 @@ py_library(
     name = "schema",
     srcs = ["schema.py"],
     visibility = ["//tools:__pkg__"],
+)
+
+# PRF-010: Raw-data preservation. PRF-018: Focused analysis.
+# PRF-019: Concurrency semantics.
+py_library(
+    name = "wall_analyzer",
+    srcs = ["wall_analyzer.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":analyzer_model",
+        ":schema",
+    ],
 )
 
 format_test(
@@ -84,8 +134,12 @@ pyright_test(
     deps = [
         ":__main__",
         ":analyzer",
+        ":analyzer_model",
+        ":cpu_analyzer",
+        ":cpu_profiler",
         ":profiler",
         ":profiler_test",
         ":schema",
+        ":wall_analyzer",
     ],
 )
