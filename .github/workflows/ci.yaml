@@ -17,11 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # TODO: Remove Rust setup when py-spy PR #860 is released:
-      # https://github.com/benfred/py-spy/pull/860
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
         with:
@@ -29,15 +24,8 @@ jobs:
           disk-cache: ${{ github.workflow }}-coverage
           repository-cache: true
 
-      - name: Build py-spy
-        run:
-          bazelisk build --action_env=PATH="$PATH"
-          --strategy=PySdistNativeBuild=local @pypi//py_spy
-
       - name: Coverage
-        run:
-          bazelisk coverage --action_env=PATH="$PATH" --noshow_progress
-          --combined_report=lcov //...
+        run: bazelisk coverage --noshow_progress --combined_report=lcov //...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
@@ -55,11 +43,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # TODO: Remove Rust setup when py-spy PR #860 is released:
-      # https://github.com/benfred/py-spy/pull/860
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
         with:
@@ -67,16 +50,11 @@ jobs:
           disk-cache: ${{ github.workflow }}-${{ matrix.os }}
           repository-cache: true
 
-      - name: Build py-spy
-        run:
-          bazelisk build --action_env=PATH="$PATH"
-          --strategy=PySdistNativeBuild=local @pypi//py_spy
-
       - name: Test
-        run: bazelisk test --action_env=PATH="$PATH" --noshow_progress //...
+        run: bazelisk test --noshow_progress //...
 
       - name: Additional Build
-        run: bazelisk build --action_env=PATH="$PATH" --noshow_progress //...
+        run: bazelisk build --noshow_progress //...
 
   lint:
     runs-on: ubuntu-latest

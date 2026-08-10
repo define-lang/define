@@ -1,6 +1,6 @@
 load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_test")
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
-load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
@@ -120,19 +120,43 @@ prettier_bin.prettier_binary(
     visibility = ["//:__subpackages__"],
 )
 
+# PRF-012: Orchestration boundary.
+py_library(
+    name = "profile_orchestration",
+    srcs = ["profile_orchestration.py"],
+    deps = ["@pypi//click"],
+)
+
+# PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
 py_binary(
     name = "run_profile",
     srcs = ["run_profile.py"],
-    deps = ["@pypi//click"],
+    data = ["//tools/profiler:__main__"],
+    deps = [":profile_orchestration"],
 )
 
 py_test(
     name = "run_profile_test",
     size = "small",
     srcs = ["run_profile_test.py"],
+    data = [
+        "//define/compiler:main",
+        "//tools:analyze_profile",
+        "//tools/profiler:__main__",
+    ],
+    env = {
+        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
+        "COMPILER_BINARY": "$(rlocationpath //define/compiler:main)",
+    },
+    # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
+    tags = ["local"],
     deps = [
-        ":run_profile",
+        ":profile_orchestration",
+        "//tools/profiler:analyzer",
+        "//tools/profiler:schema",
         "@pypi//click",
+        "@pypi//pytest",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -312,6 +336,7 @@ pyright_test(
         ":generate_programming_languages",
         ":git_commit_via_api",
         ":j2lint_runner",
+        ":profile_orchestration",
         ":regenerate_codegen_testdata",
         ":run_profile",
         ":run_profile_test",

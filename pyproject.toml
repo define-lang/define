@@ -151,8 +151,6 @@ branch = true
 
 [tool.uv.sources]
 google-re2 = { path = "vendored/re2/python", package = false }
-# TODO: Remove this override when https://github.com/benfred/py-spy/pull/860 is released.
-py-spy = { git = "https://github.com/honglei/py-spy", rev = "ee757909a5698526a7df04687ecbe6d4daad5f8b" }
 
 [tool.basedpyright]
 # Do not disable any rules here. Fix type errors in source code instead.
@@ -201,12 +199,8 @@ dev = [
     "hypothesis",
     "j2lint",
     "lark",
-    # TODO: Remove maturin when py-spy PR #860 is released:
-    # https://github.com/benfred/py-spy/pull/860
-    "maturin",
     "mutmut",
     "pre-commit",
-    "py-spy",
     "pygithub",
     "pytest>=6",
     "pyyaml",

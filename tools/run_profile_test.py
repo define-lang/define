@@ -1,4 +1,4 @@
-import json
+import os
 import shutil
 import subprocess
 import typing
@@ -6,12 +6,13 @@ from pathlib import Path
 from unittest import mock
 
 import click.testing
+import pytest
+from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
-from tools import run_profile
+from tools import profile_orchestration as run_profile
+from tools.profiler import analyzer, schema
 
-if typing.TYPE_CHECKING:
-    import io
-
+# PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
     "    define the position<created>.\n"
@@ -22,70 +23,54 @@ _CONSTRUCTOR_SOURCE = (
     "    }\n"
     "}\n"
 )
-_RAW_SAMPLES = "Driver.run (/repo/define/compiler/driver.py:234) 1\n"
-_WALL_EVENTS = [
-    {
-        "args": {"filename": "/repo/define/compiler/driver.py", "line": 234},
-        "cat": "py-spy",
-        "name": "Driver.run",
-        "ph": "B",
-        "pid": 1,
-        "tid": 1,
-        "ts": 1_000,
-    },
-    {
-        "args": {"filename": "/repo/define/compiler/driver.py", "line": 234},
-        "cat": "py-spy",
-        "name": "Driver.run",
-        "ph": "E",
-        "pid": 1,
-        "tid": 1,
-        "ts": 11_000,
-    },
-]
 
 
-def _executable_path(executable: str) -> str:
-    return f"/usr/bin/{executable}"
+def _runfile(variable: str) -> Path:
+    # PRF-041: Realistic tests.
+    location = Path(os.environ[variable])
+    if location.exists():
+        return location
+    runfiles_resolver = runfiles.Runfiles.Create()
+    assert runfiles_resolver is not None
+    resolved = runfiles_resolver.Rlocation(str(location))
+    assert resolved is not None
+    return Path(resolved)
 
 
-def _profile_process(
-    command: list[str], *, returncode: int = 0
-) -> subprocess.CompletedProcess[str]:
-    if "--output" in command:
-        output_option = command.index("--output")
-        profile_path = Path(command[output_option + 1])
-        format_option = command.index("--format")
-        profile_format = command[format_option + 1]
-        profile_contents = (
-            json.dumps(_WALL_EVENTS)
-            if profile_format == "chrometrace"
-            else _RAW_SAMPLES
-        )
-        _ = profile_path.write_text(profile_contents, encoding="utf-8")
-    return subprocess.CompletedProcess[str](command, returncode)
+def _capture(arguments: list[str]) -> click.testing.Result:
+    # PRF-012: Orchestration boundary. PRF-041: Realistic tests.
+    compiler_path = _runfile("COMPILER_BINARY")
+    with mock.patch.object(
+        run_profile,
+        "_build_compiler",
+        autospec=True,
+        return_value=compiler_path,
+    ) as build_compiler:
+        result = click.testing.CliRunner().invoke(run_profile.main, arguments)
+    build_compiler.assert_called_once()
+    return result
 
 
-def _successful_profile_process(
-    command: list[str], **_kwargs: object
-) -> subprocess.CompletedProcess[str]:
-    return _profile_process(command)
+def _analyze(profile_path: Path) -> str:
+    # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
+    completed = subprocess.run(
+        [str(_runfile("ANALYZER_BINARY")), "--profile", str(profile_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    in_process = click.testing.CliRunner().invoke(
+        analyzer.main,
+        ["--profile", str(profile_path)],
+    )
+    assert in_process.exit_code == 0
+    assert in_process.output == completed.stdout
+    return in_process.output
 
 
-def _failed_profile_process(
-    command: list[str], **_kwargs: object
-) -> subprocess.CompletedProcess[str]:
-    if "py-spy" not in command:
-        return subprocess.CompletedProcess[str](command, 0)
-    return _profile_process(command, returncode=1)
-
-
-def _failed_profile_process_without_output(
-    command: list[str], **_kwargs: object
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.CompletedProcess[str](command, 1 if "py-spy" in command else 0)
-
-
+# PRF-012: Orchestration boundary.
 def test_rejects_source_and_project_together(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
@@ -98,7 +83,7 @@ def test_rejects_source_and_project_together(tmp_path: Path):
             "--project",
             str(tmp_path),
             "--out",
-            str(tmp_path / "profile.json"),
+            str(tmp_path / "profile.jsonl"),
         ],
     )
 
@@ -106,57 +91,64 @@ def test_rejects_source_and_project_together(tmp_path: Path):
     assert "Error: provide exactly one of --source or --project" in result.output
 
 
+# PRF-012: Orchestration boundary.
 def test_requires_source_or_project():
     result = click.testing.CliRunner().invoke(
-        run_profile.main, ["--out", "profile.json"]
+        run_profile.main,
+        ["--out", "profile.jsonl"],
     )
 
     assert result.exit_code == 2
     assert "Error: provide exactly one of --source or --project" in result.output
 
 
-def test_help_explains_capture_modes():
+# PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
+def test_help_describes_wall_capture_workflow():
     result = click.testing.CliRunner().invoke(
-        run_profile.main, ["--help"], terminal_width=100
+        run_profile.main,
+        ["--help"],
+        terminal_width=100,
     )
 
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
-    assert "The profile mode must match the mode later passed to analyze_profile." in (
-        help_text
-    )
-    assert "Wall mode records idle time and all Python threads" in help_text
-    assert "CPU mode records active work across Python threads" in help_text
-    assert "CPU mode records active raw samples" in help_text
+    assert "continuous all-thread wall observations" in help_text
+    assert "--source" in help_text
+    assert "--project" in help_text
+    assert "--entry" in help_text
+    assert "--max-threads" in help_text
+    assert "--output-dir" in help_text
 
 
-def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
+# PRF-012: Orchestration boundary.
+def test_builds_compiler_before_preparing_profile(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-    profile_path = tmp_path / "profile.json"
+    monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    completed_build = subprocess.CompletedProcess[str]([], 0)
 
+    # Bazel cannot invoke its own persistent server from a running Bazel test.
     with (
-        mock.patch.dict(
-            "os.environ",
-            {
-                "BUILD_WORKSPACE_DIRECTORY": "/repo",
-                "RUNFILES_DIR": "/repo/bazel-bin/tools/run_profile.runfiles",
-                "VIRTUAL_ENV": "/repo/bazel-bin/tools/.run_profile.venv",
-            },
-            clear=False,
-        ),
         mock.patch.object(
             shutil,
             "which",
             autospec=True,
-            side_effect=_executable_path,
+            return_value="/usr/bin/bazelisk",
         ),
         mock.patch.object(
             subprocess,
             "run",
             autospec=True,
-            side_effect=_successful_profile_process,
+            return_value=completed_build,
         ) as subprocess_run,
+        mock.patch.object(
+            run_profile,
+            "record_profile",
+            autospec=True,
+        ) as record_profile,
     ):
         result = click.testing.CliRunner().invoke(
             run_profile.main,
@@ -164,284 +156,126 @@ def test_invokes_py_spy_on_compiler_main(tmp_path: Path):
                 "--source",
                 str(source_path),
                 "--out",
-                str(profile_path),
-                "--max-threads",
-                "3",
+                str(tmp_path / "profile.jsonl"),
             ],
         )
 
     assert result.exit_code == 0
-    assert result.output == ""
-    assert subprocess_run.call_count == 2
-    build_call, profile_call = subprocess_run.call_args_list
-    assert build_call.args[0] == [
-        "/usr/bin/bazelisk",
-        "build",
-        "--noshow_progress",
-        "--ui_event_filters=-info",
-        "//define/compiler:main",
-    ]
-    assert build_call.kwargs == {"check": True, "cwd": Path("/repo")}
-    command = typing.cast("list[str]", profile_call.args[0])
-    compiler_output_dir = Path(command[command.index("--out") + 1])
-    assert compiler_output_dir.name.startswith("cg_profile_")
-    assert not compiler_output_dir.exists()
-    assert command == [
-        "uv",
-        "run",
-        "--project",
-        "/repo",
-        "py-spy",
-        "record",
-        "--format",
-        "chrometrace",
-        "--full-filenames",
-        "--idle",
-        "--output",
-        str(profile_path),
-        "--",
-        "/repo/bazel-bin/define/compiler/main",
+    subprocess_run.assert_called_once_with(
+        [
+            "/usr/bin/bazelisk",
+            "build",
+            "--noshow_progress",
+            "--ui_event_filters=-info",
+            "//define/compiler:main",
+        ],
+        check=True,
+        cwd=tmp_path,
+    )
+    record_profile.assert_called_once()
+    invocation = typing.cast(
+        "run_profile.ProfileInvocation",
+        record_profile.call_args.args[0],
+    )
+    assert invocation.profiler_working_directory == tmp_path
+    assert invocation.target_command[0] == str(
+        tmp_path / "bazel-bin/define/compiler/main"
+    )
+
+
+# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
+# PRF-025: Failure threshold. PRF-026: No silent partial success.
+# PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
+def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
+    source_path = tmp_path / "source.dfn"
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    profile_path = tmp_path / "source-profile.jsonl"
+
+    result = _capture(
+        [
+            "--source",
+            str(source_path),
+            "--out",
+            str(profile_path),
+            "--max-threads",
+            "3",
+        ]
+    )
+
+    profile = schema.load(profile_path)
+    assert result.exit_code == (0 if profile.success else 1)
+    assert profile.complete is True
+    assert profile.compiler_exit_status == 0
+    assert profile.diagnostics_status == "none"
+    assert profile.failures == []
+    assert profile.sampling_statistics is not None
+    assert profile.success is (profile.sampling_statistics["discarded_rate"] <= 0.001)
+    assert profile.workload_path == str(source_path)
+    workspace = Path(run_profile.__file__).resolve().parent.parent
+    assert profile.working_directory == str(workspace)
+    assert profile.command[1:6] == [
         "compile",
         "--out",
-        str(compiler_output_dir),
+        profile.command[3],
         "--max-threads",
         "3",
     ]
-    assert json.loads(profile_path.read_text(encoding="utf-8")) == _WALL_EVENTS
-    assert profile_call.kwargs["check"] is False
-    assert profile_call.kwargs["cwd"] == Path("/repo")
-    source_stream = typing.cast("io.BufferedReader", profile_call.kwargs["stdin"])
-    assert Path(source_stream.name) == source_path
-    assert source_stream.closed
-    environment = typing.cast("dict[str, str]", profile_call.kwargs["env"])
-    assert "RUNFILES_DIR" not in environment
-    assert "VIRTUAL_ENV" not in environment
+    assert not Path(profile.command[3]).exists()
+    analysis = _analyze(profile_path)
+    capture_status = "successful" if profile.success else "unsuccessful"
+    assert f"Profile schema: 2; complete; {capture_status}" in analysis
+    assert "Self wall occupancy (union across threads):" in analysis
 
 
-def test_uses_project_entry_as_compiler_input(tmp_path: Path):
+# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
+# PRF-025: Failure threshold. PRF-026: No silent partial success.
+# PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
+def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: Path):
     project_path = tmp_path / "project"
     project_path.mkdir()
+    config_path = project_path / ".define/project/config.defcl"
+    config_path.parent.mkdir(parents=True)
+    _ = config_path.write_text(
+        'project: { universe_name: "my.domain.com:my_lib" }\n',
+        encoding="utf-8",
+    )
     entry_path = project_path / "main.dfn"
-    _ = entry_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-    profile_path = tmp_path / "profile.json"
+    _ = entry_path.write_text(
+        _CONSTRUCTOR_SOURCE.replace(":/test>", ":/main>"),
+        encoding="utf-8",
+    )
+    profile_path = tmp_path / "project-profile.jsonl"
     output_dir = tmp_path / "generated"
 
-    with (
-        mock.patch.dict("os.environ", {}, clear=True),
-        mock.patch.object(
-            shutil,
-            "which",
-            autospec=True,
-            side_effect=_executable_path,
-        ),
-        mock.patch.object(
-            subprocess,
-            "run",
-            autospec=True,
-            side_effect=_successful_profile_process,
-        ) as subprocess_run,
-    ):
-        result = click.testing.CliRunner().invoke(
-            run_profile.main,
-            [
-                "--project",
-                str(project_path),
-                "--entry",
-                "main.dfn",
-                "--out",
-                str(profile_path),
-                "--output-dir",
-                str(output_dir),
-            ],
-        )
-
-    assert result.exit_code == 0
-    assert subprocess_run.call_count == 2
-    build_call, profile_call = subprocess_run.call_args_list
-    expected_workspace = Path(run_profile.__file__).resolve().parent.parent
-    assert build_call.kwargs["cwd"] == expected_workspace
-    command = typing.cast("list[str]", profile_call.args[0])
-    assert command == [
-        "uv",
-        "run",
-        "--project",
-        str(expected_workspace),
-        "py-spy",
-        "record",
-        "--format",
-        "chrometrace",
-        "--full-filenames",
-        "--idle",
-        "--output",
-        str(profile_path),
-        "--",
-        str(expected_workspace / "bazel-bin/define/compiler/main"),
-        "compile",
-        "--out",
-        str(output_dir),
-        "--max-threads",
-        "1",
-        str(entry_path),
-    ]
-    assert profile_call.kwargs["cwd"] == project_path
-    assert profile_call.kwargs["stdin"] is None
-
-
-def test_cpu_profile_records_all_active_threads(tmp_path: Path):
-    source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-
-    with (
-        mock.patch.dict("os.environ", {}, clear=True),
-        mock.patch.object(
-            shutil,
-            "which",
-            autospec=True,
-            side_effect=_executable_path,
-        ),
-        mock.patch.object(
-            subprocess,
-            "run",
-            autospec=True,
-            side_effect=_successful_profile_process,
-        ) as subprocess_run,
-    ):
-        result = click.testing.CliRunner().invoke(
-            run_profile.main,
-            [
-                "--source",
-                str(source_path),
-                "--out",
-                str(tmp_path / "profile.json"),
-                "--max-threads",
-                "4",
-                "--profile-mode",
-                "cpu",
-            ],
-        )
-
-    assert result.exit_code == 0
-    build_command = typing.cast("list[str]", subprocess_run.call_args_list[0].args[0])
-    assert build_command[-1] == "//define/compiler:main"
-    command = typing.cast("list[str]", subprocess_run.call_args_list[1].args[0])
-    assert "--python" not in command
-    assert "--gil" not in command
-    assert "--idle" not in command
-    workspace = Path(run_profile.__file__).resolve().parent.parent
-    raw_output_path = Path(command[command.index("--output") + 1])
-    assert raw_output_path.name == "samples.txt"
-    assert raw_output_path.parent.name.startswith("define_profile_")
-    assert not raw_output_path.exists()
-    compiler_output_dir = Path(command[command.index("--out") + 1])
-    assert compiler_output_dir.name.startswith("cg_profile_")
-    assert not compiler_output_dir.exists()
-    assert command == [
-        "uv",
-        "run",
-        "--project",
-        str(workspace),
-        "py-spy",
-        "record",
-        "--format",
-        "raw",
-        "--full-filenames",
-        "--output",
-        str(raw_output_path),
-        "--",
-        str(workspace / "bazel-bin/define/compiler/main"),
-        "compile",
-        "--out",
-        str(compiler_output_dir),
-        "--max-threads",
-        "4",
-    ]
-    profile = typing.cast(
-        "dict[str, object]",
-        json.loads((tmp_path / "profile.json").read_text(encoding="utf-8")),
+    result = _capture(
+        [
+            "--project",
+            str(project_path),
+            "--entry",
+            "main.dfn",
+            "--out",
+            str(profile_path),
+            "--output-dir",
+            str(output_dir),
+        ]
     )
-    assert profile.keys() == {"wall_time_seconds", "raw_samples"}
-    assert profile["raw_samples"] == _RAW_SAMPLES
-    assert isinstance(profile["wall_time_seconds"], float)
-    assert profile["wall_time_seconds"] >= 0.0
 
-
-def test_cpu_profile_preserves_raw_samples_when_py_spy_fails(tmp_path: Path):
-    source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-    profile_path = tmp_path / "profile.json"
-
-    with (
-        mock.patch.dict("os.environ", {}, clear=True),
-        mock.patch.object(
-            shutil,
-            "which",
-            autospec=True,
-            side_effect=_executable_path,
-        ),
-        mock.patch.object(
-            subprocess,
-            "run",
-            autospec=True,
-            side_effect=_failed_profile_process,
-        ),
-    ):
-        result = click.testing.CliRunner().invoke(
-            run_profile.main,
-            [
-                "--source",
-                str(source_path),
-                "--out",
-                str(profile_path),
-                "--profile-mode",
-                "cpu",
-            ],
-        )
-
-    assert result.exit_code == 1
-    assert isinstance(result.exception, subprocess.CalledProcessError)
-    assert result.exception.returncode == 1
-    profile = typing.cast(
-        "dict[str, object]", json.loads(profile_path.read_text(encoding="utf-8"))
-    )
-    assert profile.keys() == {"wall_time_seconds", "raw_samples"}
-    assert profile["raw_samples"] == _RAW_SAMPLES
-    assert isinstance(profile["wall_time_seconds"], float)
-    assert profile["wall_time_seconds"] >= 0.0
-
-
-def test_cpu_profile_propagates_py_spy_failure_without_profile(tmp_path: Path):
-    source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-    profile_path = tmp_path / "profile.json"
-
-    with (
-        mock.patch.dict("os.environ", {}, clear=True),
-        mock.patch.object(
-            shutil,
-            "which",
-            autospec=True,
-            side_effect=_executable_path,
-        ),
-        mock.patch.object(
-            subprocess,
-            "run",
-            autospec=True,
-            side_effect=_failed_profile_process_without_output,
-        ),
-    ):
-        result = click.testing.CliRunner().invoke(
-            run_profile.main,
-            [
-                "--source",
-                str(source_path),
-                "--out",
-                str(profile_path),
-                "--profile-mode",
-                "cpu",
-            ],
-        )
-
-    assert result.exit_code == 1
-    assert isinstance(result.exception, subprocess.CalledProcessError)
-    assert result.exception.returncode == 1
-    assert not profile_path.exists()
+    profile = schema.load(profile_path)
+    assert result.exit_code == (0 if profile.success else 1)
+    assert profile.complete is True
+    assert profile.compiler_exit_status == 0
+    assert profile.diagnostics_status == "none"
+    assert profile.failures == []
+    assert profile.sampling_statistics is not None
+    assert profile.success is (profile.sampling_statistics["discarded_rate"] <= 0.001)
+    assert profile.workload_path == str(entry_path)
+    assert profile.working_directory == str(project_path)
+    assert profile.command[-1] == str(entry_path)
+    assert profile.command[profile.command.index("--out") + 1] == str(output_dir)
+    assert output_dir.is_dir()
+    analysis = _analyze(profile_path)
+    capture_status = "successful" if profile.success else "unsuccessful"
+    assert f"Profile schema: 2; complete; {capture_status}" in analysis
+    assert "Cumulative wall occupancy (union across threads):" in analysis

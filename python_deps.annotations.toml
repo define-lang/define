@@ -1,9 +1,0 @@
-version = "0.0.0"
-
-# TODO: Remove this build dependency when py-spy PR #860 is released:
-# https://github.com/benfred/py-spy/pull/860
-[[package]]
-name = "py-spy"
-build-dependencies = [
-    { name = "maturin" },
-]

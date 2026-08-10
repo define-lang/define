@@ -63,6 +63,23 @@ def _observed_process_id(profile_path: Path) -> int | None:
     return int(process_id_match.group(1)) if process_id_match is not None else None
 
 
+def _wait_for_successful_observation_records(
+    profile_path: Path,
+    minimum: int,
+) -> bool:
+    # PRF-027: Incremental persistence. PRF-041: Realistic tests.
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            profile_text = profile_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            profile_text = ""
+        if profile_text.count('"status":"successful"') >= minimum:
+            return True
+        time.sleep(0.001)
+    return False
+
+
 def _capture(
     tmp_path: Path,
     source_variable: str,
@@ -353,7 +370,7 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    time.sleep(0.3)
+    assert _wait_for_successful_observation_records(profile_path, 2)
 
     profile_process.send_signal(signal.SIGTERM)
     stdout, stderr = profile_process.communicate(timeout=10)
@@ -397,10 +414,14 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
 def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
     target = _runfile("PROFILER_CONTINUOUS_SOURCE")
+    signal_sent = threading.Event()
 
     def interrupt_capture() -> None:
-        time.sleep(0.15)
-        os.kill(os.getpid(), signal.SIGINT)
+        # The deployed profiler has no helper thread that can receive this signal.
+        _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
+        if _wait_for_successful_observation_records(profile_path, 2):
+            os.kill(os.getpid(), signal.SIGINT)
+            signal_sent.set()
 
     interrupt_thread = threading.Thread(target=interrupt_capture)
     interrupt_thread.start()
@@ -421,6 +442,7 @@ def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
     )
     interrupt_thread.join()
 
+    assert signal_sent.is_set()
     assert result.exit_code == 1
     assert "Aborted!" in result.output
     profile = schema.load(profile_path)
@@ -438,6 +460,8 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     signal_sent = threading.Event()
 
     def interrupt_stopped_capture() -> None:
+        # The deployed profiler has no helper thread that can receive this signal.
+        _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
             process_id = _observed_process_id(profile_path)

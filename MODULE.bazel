@@ -49,13 +49,6 @@ pypi.project(
     pyproject = "//:pyproject.toml",
 )
 
-# TODO: Remove this build annotation when py-spy PR #860 is released:
-# https://github.com/benfred/py-spy/pull/860
-pypi.unstable_annotate_packages(
-    src = "//:python_deps.annotations.toml",
-    lock = "//:uv.lock",
-)
-
 # The PyPI wheel's abi3 extension segfaults when imported by free-threaded CPython.
 # TODO: Use the PyPI package when protobuf supports free-threaded CPython:
 # https://github.com/protocolbuffers/protobuf/issues/23158
