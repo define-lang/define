@@ -79,16 +79,11 @@ def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     resolved = operation_graph_action_resolver.ResolvedActions(graphs).resolve(action)
 
     (caller_input,) = resolved.caller_inputs
-    assert isinstance(
-        caller_input, operation_graph_action_resolver.ResolvedActionParentInput
-    )
-    assert caller_input.node is graph.nodes[0]
-    assert caller_input.operation_consumers == [create]
-    assert caller_input.triggered_input_consumers == []
-    assert caller_input.destructor_trigger_consumers == []
-    assert resolved.dependencies_by_operation[
+    assert caller_input is graph.nodes[0]
+    assert resolved.operations[create].caller_inputs == [caller_input]
+    assert resolved.operations[
         destroy
-    ] == operation_graph_action_resolver.ActionDependencies([create], [])
+    ].dependencies == operation_graph_action_resolver.ActionDependencies([create], [])
 
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
@@ -121,11 +116,8 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
 
     assert resolved_trigger.trigger is trigger
     assert len(resolved.action_triggers) == 1
-    assert tuple(resolved.action_triggers.position_operations) == (
-        trigger_position_create,
-    )
-    assert list(resolved.action_triggers.by_position_operation()) == [
-        (trigger_position_create, [resolved_trigger])
+    assert resolved.operations[trigger_position_create].action_triggers == [
+        resolved_trigger
     ]
     assert list(resolved.action_triggers.destructors_by_guarantee()) == []
     (resolved_input,) = resolved_trigger.inputs
@@ -135,14 +127,10 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         == operation_graph_action_resolver.ActionDependencies([], [])
     )
     (caller_input,) = resolved.caller_inputs
-    assert isinstance(
-        caller_input, operation_graph_action_resolver.ResolvedActionParentInput
-    )
-    assert caller_input.node is action_parent
-    assert resolved_input.caller_input_dependencies == (caller_input,)
-    assert caller_input.operation_consumers == [trigger_position_create]
-    assert caller_input.triggered_input_consumers == [resolved_input]
-    assert caller_input.destructor_trigger_consumers == []
+    assert caller_input is action_parent
+    assert resolved_input.caller_input_dependencies == [caller_input]
+    assert resolved.operations[trigger_position_create].caller_inputs == [caller_input]
+    assert resolved_trigger.caller_input_dependency is None
 
 
 def test_requirement_input_fires_destructor():
@@ -179,15 +167,10 @@ def test_requirement_input_fires_destructor():
     (resolved_destructor_trigger,) = resolved.action_triggers
     (resolved_destructor_input,) = resolved_destructor_trigger.inputs
     (caller_input,) = resolved.caller_inputs
-    assert isinstance(
-        caller_input, operation_graph_action_resolver.ResolvedRequirementInput
+    assert caller_input is destructor_trigger.trigger_operation
+    assert resolved_destructor_input.caller_input_dependencies == [caller_input]
+    assert resolved_destructor_trigger.caller_input_dependency is caller_input
+    assert all(
+        not operation.action_triggers for operation in resolved.operations.values()
     )
-    assert caller_input.node is destructor_trigger.trigger_operation
-    assert resolved_destructor_input.caller_input_dependencies == (caller_input,)
-    assert caller_input.triggered_input_consumers == [
-        resolved_destructor_input,
-        resolved_destructor_input,
-    ]
-    assert caller_input.destructor_trigger_consumers == [resolved_destructor_trigger]
-    assert tuple(resolved.action_triggers.position_operations) == ()
     assert list(resolved.action_triggers.destructors_by_guarantee()) == []

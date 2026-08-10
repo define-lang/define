@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
         ItemsView,
         Iterable,
         Iterator,
-        KeysView,
         Mapping,
     )
 
@@ -36,7 +35,7 @@ type _CallerInputNode = (
 type _CallerInputDependencyNode = (
     _CallerInputNode | operation_graph_model.CallerEmptyRuleDependenciesNode
 )
-type _CallerInputDependency = (
+type CallerInput = (
     _CallerInputDependencyNode | operation_graph_model.CallerEmptyRuleDependencies
 )
 
@@ -49,13 +48,25 @@ class ActionDependencies:
     guarantee_dependencies: list[operation_graph_model.GuaranteeNode]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class ResolvedActionOperation:
+    """One operation and its relationships within one reusable action."""
+
+    operation: operation_graph_model.PositionOperationNode
+    dependencies: ActionDependencies
+    guaranteed_positions: tuple[tuple[str, ...], ...]
+    caller_inputs: list[CallerInput]
+    triggered_inputs: list[ResolvedActionTriggerInput]
+    action_triggers: list[ResolvedActionTrigger]
+
+
 def _partition_dependencies(
     nodes: Iterable[operation_graph_model.OperationNode],
-) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
+) -> tuple[ActionDependencies, list[CallerInput]]:
     """Separate local Particle Operations and guarantees from caller inputs."""
     local_operations: list[operation_graph_model.PositionOperationNode] = []
     guarantee_dependencies: list[operation_graph_model.GuaranteeNode] = []
-    caller_input_dependencies: list[_CallerInputDependency] = []
+    caller_input_dependencies: list[CallerInput] = []
     for node in nodes:
         match node:
             case operation_graph_model.PositionOperationNode():
@@ -76,49 +87,13 @@ def _partition_dependencies(
     )
 
 
-@dataclass(slots=True, eq=False)
-class ResolvedCallerInput:
-    """A caller input and the operations, inputs, and destructors that consume it."""
-
-    operation_consumers: list[operation_graph_model.PositionOperationNode] = field(
-        default_factory=list, init=False
-    )
-    triggered_input_consumers: list[ResolvedActionTriggerInput] = field(
-        default_factory=list, init=False
-    )
-    destructor_trigger_consumers: list[ResolvedActionTrigger] = field(
-        default_factory=list, init=False
-    )
-
-
-@dataclass(slots=True, eq=False)
-class ResolvedActionParentInput(ResolvedCallerInput):
-    """An Action Parent input."""
-
-    node: operation_graph_model.ActionParentLastOperationNode
-
-
-@dataclass(slots=True, eq=False)
-class ResolvedRequirementInput(ResolvedCallerInput):
-    """A requirement input."""
-
-    node: operation_graph_model.RequirementNode
-
-
-@dataclass(slots=True, eq=False)
-class ResolvedEmptyRuleInput(ResolvedCallerInput):
-    """Empty Rule dependencies supplied by an action's caller."""
-
-    dependencies: operation_graph_model.CallerEmptyRuleDependencies
-
-
 @dataclass(frozen=True, slots=True, eq=False)
 class ResolvedActionTriggerInput:
     """One direct callee input resolved from the caller's perspective."""
 
-    callee_input: ResolvedCallerInput
+    callee_input: CallerInput
     caller_dependencies: ActionDependencies
-    caller_input_dependencies: tuple[ResolvedCallerInput, ...]
+    caller_input_dependencies: list[CallerInput]
 
 
 @typing.final
@@ -135,28 +110,28 @@ class _ActionTriggerDependencyResolver:
         self._trigger = trigger
 
     def resolve_input(
-        self, callee_input: ResolvedCallerInput
-    ) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
+        self, callee_input: CallerInput
+    ) -> tuple[ActionDependencies, list[CallerInput]]:
         """Return action-local dependencies and caller inputs for one callee input."""
-        match callee_input:
-            case ResolvedEmptyRuleInput():
-                return self._resolve_caller_empty_rule_input(callee_input)
-            case ResolvedActionParentInput() | ResolvedRequirementInput():
-                return _partition_dependencies(
-                    (self._caller_dependency_for_input_node(callee_input.node),)
-                )
-            case _:
-                raise TypeError(
-                    f"unknown caller input type: {type(callee_input).__name__}"
-                )
+        if isinstance(callee_input, operation_graph_model.CallerEmptyRuleDependencies):
+            return self._resolve_caller_empty_rule_input(callee_input)
+        if isinstance(
+            callee_input, operation_graph_model.CallerEmptyRuleDependenciesNode
+        ):
+            return self._resolve_caller_empty_rule_input(
+                callee_input.caller_empty_rule_dependencies
+            )
+        return _partition_dependencies(
+            (self._caller_dependency_for_input_node(callee_input),)
+        )
 
     def _resolve_caller_empty_rule_input(
         self,
-        callee_input: ResolvedEmptyRuleInput,
-    ) -> tuple[ActionDependencies, list[_CallerInputDependency]]:
+        callee_input: operation_graph_model.CallerEmptyRuleDependencies,
+    ) -> tuple[ActionDependencies, list[CallerInput]]:
         """Resolve propagated Empty Rule dependencies into the direct caller."""
         substitution = self._caller_graph.substitute_caller_empty_rule_dependencies(
-            callee_input.dependencies, self._trigger.bindings
+            callee_input, self._trigger.bindings
         )
         dependencies, caller_input_dependencies = _partition_dependencies(
             substitution.dependency_nodes
@@ -197,10 +172,9 @@ class ResolvedActionTrigger:
 
     trigger: operation_graph_model.ActionTrigger
     inputs: list[ResolvedActionTriggerInput]
+    caller_input_dependency: CallerInput | None
 
-    def input_for(
-        self, callee_input: ResolvedCallerInput
-    ) -> ResolvedActionTriggerInput:
+    def input_for(self, callee_input: CallerInput) -> ResolvedActionTriggerInput:
         """Return the resolution of ``callee_input`` through this Action Trigger."""
         # This is inefficient but acceptable because this is used only by the
         # test-only resolved-operation-graph renderer.
@@ -211,21 +185,40 @@ class ResolvedActionTrigger:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _ActionTriggerResolution:
+    """Action Triggers and their relationships within one reusable action."""
+
+    action_triggers: list[ResolvedActionTrigger]
+    triggered_inputs_by_operation: dict[
+        operation_graph_model.PositionOperationNode,
+        list[ResolvedActionTriggerInput],
+    ]
+    action_triggers_by_operation: dict[
+        operation_graph_model.PositionOperationNode,
+        list[ResolvedActionTrigger],
+    ]
+    destructor_triggers_by_guarantee: dict[
+        operation_graph_model.GuaranteeNode,
+        list[ResolvedActionTrigger],
+    ]
+
+
 @typing.final
 class ResolvedActionTriggers:
-    """Resolved Action Triggers and their reverse indexes."""
+    """Resolved Action Triggers and their guarantee reverse index."""
 
-    def __init__(self):
-        """Initialize an empty collection."""
-        self._triggers: list[ResolvedActionTrigger] = []
-        self._by_position_operation: dict[
-            operation_graph_model.PositionOperationNode,
-            list[ResolvedActionTrigger],
-        ] = {}
-        self._destructors_by_guarantee: dict[
+    def __init__(
+        self,
+        triggers: list[ResolvedActionTrigger],
+        destructors_by_guarantee: dict[
             operation_graph_model.GuaranteeNode,
             list[ResolvedActionTrigger],
-        ] = {}
+        ],
+    ):
+        """Initialize with all resolved Action Triggers."""
+        self._triggers = triggers
+        self._destructors_by_guarantee = destructors_by_guarantee
 
     def __iter__(self) -> Iterator[ResolvedActionTrigger]:
         """Iterate over every resolved Action Trigger."""
@@ -235,38 +228,11 @@ class ResolvedActionTriggers:
         """Return the number of resolved Action Triggers."""
         return len(self._triggers)
 
-    @property
-    def position_operations(
-        self,
-    ) -> KeysView[operation_graph_model.PositionOperationNode]:
-        """Return the Particle Operations that trigger actions."""
-        return self._by_position_operation.keys()
-
-    def by_position_operation(
-        self,
-    ) -> ItemsView[
-        operation_graph_model.PositionOperationNode, list[ResolvedActionTrigger]
-    ]:
-        """Return Particle Operations and the Action Triggers they cause."""
-        return self._by_position_operation.items()
-
     def destructors_by_guarantee(
         self,
     ) -> ItemsView[operation_graph_model.GuaranteeNode, list[ResolvedActionTrigger]]:
         """Return guarantees and the destructors they trigger."""
         return self._destructors_by_guarantee.items()
-
-    def add_operation(
-        self,
-        operation: operation_graph_model.LastOperationNode,
-        trigger: ResolvedActionTrigger,
-    ):
-        """Add an Action Trigger caused by an operation."""
-        self._triggers.append(trigger)
-        if isinstance(operation, operation_graph_model.PositionOperationNode):
-            self._by_position_operation.setdefault(operation, []).append(trigger)
-        elif isinstance(operation, operation_graph_model.GuaranteeNode):
-            self._destructors_by_guarantee.setdefault(operation, []).append(trigger)
 
 
 @dataclass(frozen=True, slots=True)
@@ -274,11 +240,16 @@ class ResolvedAction:
     """The dependency interface of one reusable action."""
 
     graph: operation_graph.OperationGraph
-    dependencies_by_operation: dict[
-        operation_graph_model.PositionOperationNode, ActionDependencies
+    operations: dict[
+        operation_graph_model.PositionOperationNode, ResolvedActionOperation
     ]
-    caller_inputs: list[ResolvedCallerInput]
+    caller_inputs: list[CallerInput]
     action_triggers: ResolvedActionTriggers
+
+    def guarantee_publication_operations(self) -> Iterator[ResolvedActionOperation]:
+        """Iterate over guarantee-publishing operations in publication order."""
+        for operation in self.graph.guaranteed_positions_by_operation:
+            yield self.operations[operation]
 
 
 @typing.final
@@ -293,44 +264,152 @@ class _ActionResolver:
         """Initialize resolution with one graph and its resolved direct callees."""
         self._graph = graph
         self._resolved_callees = resolved_callees
-        self._dependencies_by_operation: dict[
-            operation_graph_model.PositionOperationNode, ActionDependencies
-        ] = {}
-        self._caller_inputs: list[ResolvedCallerInput] = []
-        self._caller_input_by_node: dict[
-            _CallerInputDependencyNode, ResolvedCallerInput
-        ] = {}
-        self._action_triggers = ResolvedActionTriggers()
 
     def resolve(self) -> ResolvedAction:
         """Resolve the action's operations and direct Action Triggers."""
+        operation_dependencies = self._resolve_operations()
+        action_trigger_resolution = self._resolve_action_triggers()
+        return self._build(operation_dependencies, action_trigger_resolution)
+
+    def _build(
+        self,
+        operation_dependencies: dict[
+            operation_graph_model.PositionOperationNode,
+            tuple[ActionDependencies, list[CallerInput]],
+        ],
+        action_trigger_resolution: _ActionTriggerResolution,
+    ) -> ResolvedAction:
+        operations = self._build_operations(
+            operation_dependencies,
+            action_trigger_resolution,
+        )
+        return ResolvedAction(
+            self._graph,
+            operations,
+            self._build_caller_inputs(
+                operation_dependencies,
+                action_trigger_resolution,
+            ),
+            ResolvedActionTriggers(
+                action_trigger_resolution.action_triggers,
+                action_trigger_resolution.destructor_triggers_by_guarantee,
+            ),
+        )
+
+    @staticmethod
+    def _build_caller_inputs(
+        operation_dependencies: dict[
+            operation_graph_model.PositionOperationNode,
+            tuple[ActionDependencies, list[CallerInput]],
+        ],
+        action_trigger_resolution: _ActionTriggerResolution,
+    ) -> list[CallerInput]:
+        caller_inputs: dict[CallerInput, None] = {}
+        for _, operation_caller_inputs in operation_dependencies.values():
+            for caller_input in operation_caller_inputs:
+                caller_inputs[caller_input] = None
+        for resolved_trigger in action_trigger_resolution.action_triggers:
+            for resolved_input in resolved_trigger.inputs:
+                for caller_input in resolved_input.caller_input_dependencies:
+                    caller_inputs[caller_input] = None
+            if resolved_trigger.caller_input_dependency is not None:
+                caller_inputs[resolved_trigger.caller_input_dependency] = None
+        return list(caller_inputs)
+
+    def _resolve_operations(
+        self,
+    ) -> dict[
+        operation_graph_model.PositionOperationNode,
+        tuple[ActionDependencies, list[CallerInput]],
+    ]:
+        operation_dependencies: dict[
+            operation_graph_model.PositionOperationNode,
+            tuple[ActionDependencies, list[CallerInput]],
+        ] = {}
         for node in self._graph.nodes:
             if not isinstance(node, operation_graph_model.PositionOperationNode):
                 continue
-            self._dependencies_by_operation[node] = (
-                self._resolve_operation_dependencies(node)
-            )
+            operation_dependencies[node] = _partition_dependencies(node.depends_on)
+        return operation_dependencies
 
+    def _resolve_action_triggers(self) -> _ActionTriggerResolution:
+        action_triggers: list[ResolvedActionTrigger] = []
+        triggered_inputs_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            list[ResolvedActionTriggerInput],
+        ] = {}
+        action_triggers_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            list[ResolvedActionTrigger],
+        ] = {}
+        destructor_triggers_by_guarantee: dict[
+            operation_graph_model.GuaranteeNode,
+            list[ResolvedActionTrigger],
+        ] = {}
         for trigger in self._graph.triggers:
-            self._resolve_action_trigger(trigger)
-
-        return ResolvedAction(
-            self._graph,
-            self._dependencies_by_operation,
-            self._caller_inputs,
-            self._action_triggers,
+            resolved_trigger = self._resolve_action_trigger(trigger)
+            action_triggers.append(resolved_trigger)
+            for resolved_input in resolved_trigger.inputs:
+                for operation in resolved_input.caller_dependencies.local_operations:
+                    triggered_inputs_by_operation.setdefault(operation, []).append(
+                        resolved_input
+                    )
+            trigger_operation = trigger.trigger_operation
+            if isinstance(
+                trigger_operation, operation_graph_model.PositionOperationNode
+            ):
+                action_triggers_by_operation.setdefault(trigger_operation, []).append(
+                    resolved_trigger
+                )
+            elif isinstance(trigger_operation, operation_graph_model.GuaranteeNode):
+                destructor_triggers_by_guarantee.setdefault(
+                    trigger_operation, []
+                ).append(resolved_trigger)
+        return _ActionTriggerResolution(
+            action_triggers,
+            triggered_inputs_by_operation,
+            action_triggers_by_operation,
+            destructor_triggers_by_guarantee,
         )
 
-    def _resolve_operation_dependencies(
-        self, operation: operation_graph_model.PositionOperationNode
-    ) -> ActionDependencies:
-        dependencies, caller_input_dependencies = _partition_dependencies(
-            operation.depends_on
-        )
-        self._record_operation_caller_inputs(caller_input_dependencies, operation)
-        return dependencies
+    def _build_operations(
+        self,
+        operation_dependencies: dict[
+            operation_graph_model.PositionOperationNode,
+            tuple[ActionDependencies, list[CallerInput]],
+        ],
+        action_trigger_resolution: _ActionTriggerResolution,
+    ) -> dict[operation_graph_model.PositionOperationNode, ResolvedActionOperation]:
+        operations: dict[
+            operation_graph_model.PositionOperationNode, ResolvedActionOperation
+        ] = {}
+        for operation, (
+            dependencies,
+            caller_inputs,
+        ) in operation_dependencies.items():
+            triggered_inputs = (
+                action_trigger_resolution.triggered_inputs_by_operation.get(operation)
+            )
+            if triggered_inputs is None:
+                triggered_inputs = []
+            action_triggers = (
+                action_trigger_resolution.action_triggers_by_operation.get(operation)
+            )
+            if action_triggers is None:
+                action_triggers = []
+            operations[operation] = ResolvedActionOperation(
+                operation,
+                dependencies,
+                self._graph.guaranteed_positions_by_operation.get(operation, ()),
+                caller_inputs,
+                triggered_inputs,
+                action_triggers,
+            )
+        return operations
 
-    def _resolve_action_trigger(self, trigger: operation_graph_model.ActionTrigger):
+    def _resolve_action_trigger(
+        self, trigger: operation_graph_model.ActionTrigger
+    ) -> ResolvedActionTrigger:
         callee = self._resolved_callees[trigger.callee_action_name]
         dependency_resolver = _ActionTriggerDependencyResolver(self._graph, trigger)
         inputs: list[ResolvedActionTriggerInput] = []
@@ -338,58 +417,23 @@ class _ActionResolver:
             caller_dependencies, caller_input_dependencies = (
                 dependency_resolver.resolve_input(callee_input)
             )
-            caller_inputs = tuple(
-                self._caller_input_for(dependency)
-                for dependency in caller_input_dependencies
-            )
             resolved_input = ResolvedActionTriggerInput(
-                callee_input, caller_dependencies, caller_inputs
+                callee_input,
+                caller_dependencies,
+                caller_input_dependencies,
             )
             inputs.append(resolved_input)
-            for caller_input in caller_inputs:
-                caller_input.triggered_input_consumers.append(resolved_input)
-        resolved_trigger = ResolvedActionTrigger(trigger, inputs)
         trigger_operation = trigger.trigger_operation
-        self._action_triggers.add_operation(trigger_operation, resolved_trigger)
-        # This is a destructor Action Trigger on a child of a from_caller particle.
+        caller_input_dependency = None
         if isinstance(trigger_operation, operation_graph_model.RequirementNode):
-            # There's no guarantee that resolving the destructor's operations resolved
-            # the dependency on its parent, because the destructor might not have acted
-            # on any implied positions. So we have to use _caller_input_for in case
-            # we have to generate the resolved requirement node.
-            caller_input = self._caller_input_for(trigger_operation)
-            caller_input.destructor_trigger_consumers.append(resolved_trigger)
-            caller_input.triggered_input_consumers.extend(resolved_trigger.inputs)
-
-    def _record_operation_caller_inputs(
-        self,
-        caller_input_dependencies: list[_CallerInputDependency],
-        operation: operation_graph_model.PositionOperationNode,
-    ):
-        for dependency in caller_input_dependencies:
-            self._caller_input_for(dependency).operation_consumers.append(operation)
-
-    def _caller_input_for(
-        self, dependency: _CallerInputDependency
-    ) -> ResolvedCallerInput:
-        if isinstance(dependency, operation_graph_model.CallerEmptyRuleDependencies):
-            caller_input = ResolvedEmptyRuleInput(dependency)
-            self._caller_inputs.append(caller_input)
-            return caller_input
-        caller_input = self._caller_input_by_node.get(dependency)
-        if caller_input is None:
-            match dependency:
-                case operation_graph_model.ActionParentLastOperationNode():
-                    caller_input = ResolvedActionParentInput(dependency)
-                case operation_graph_model.RequirementNode():
-                    caller_input = ResolvedRequirementInput(dependency)
-                case operation_graph_model.CallerEmptyRuleDependenciesNode():
-                    caller_input = ResolvedEmptyRuleInput(
-                        dependency.caller_empty_rule_dependencies
-                    )
-            self._caller_input_by_node[dependency] = caller_input
-            self._caller_inputs.append(caller_input)
-        return caller_input
+            # The destructor might not act on an implied position, so resolving its
+            # inputs does not necessarily discover this dependency.
+            caller_input_dependency = trigger_operation
+        return ResolvedActionTrigger(
+            trigger,
+            inputs,
+            caller_input_dependency,
+        )
 
 
 @typing.final

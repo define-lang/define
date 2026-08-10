@@ -129,19 +129,19 @@ class ResolvedOperationGraphBuilder:
 
         action_execution, operation = operation_key
         resolved_action = self._resolved_actions[action_execution.action]
+        resolved_action_operation = resolved_action.operations[operation]
         dependency_keys: dict[_ResolvedOperationKey, None] = {}
         self._add_action_dependencies(
             dependency_keys,
             action_execution,
-            resolved_action.dependencies_by_operation[operation],
+            resolved_action_operation.dependencies,
         )
-        for caller_input in resolved_action.caller_inputs:
-            if operation in caller_input.operation_consumers:
-                self._add_caller_input(
-                    dependency_keys,
-                    action_execution,
-                    caller_input,
-                )
+        for caller_input in resolved_action_operation.caller_inputs:
+            self._add_caller_input(
+                dependency_keys,
+                action_execution,
+                caller_input,
+            )
         resolved = ResolvedOperation(
             action_execution,
             operation,
@@ -168,7 +168,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_action_resolver.ResolvedCallerInput,
+        caller_input: operation_graph_action_resolver.CallerInput,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:

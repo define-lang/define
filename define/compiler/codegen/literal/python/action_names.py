@@ -55,7 +55,7 @@ class ActionNames:
     # The execution member for each local position source name.
     local_positions: dict[str, str]
     # The execution method for each caller input.
-    caller_inputs: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
+    caller_inputs: dict[operation_graph_action_resolver.CallerInput, str]
     # The initializer method and execution member for each Action Trigger.
     triggered_actions: dict[operation_graph_model.ActionTrigger, TriggeredActionNames]
     # The execution method for each triggered action input.
@@ -133,10 +133,8 @@ class ActionNameGenerator:
 
     def _caller_input_method_names(
         self,
-    ) -> dict[operation_graph_action_resolver.ResolvedCallerInput, str]:
-        method_names: dict[
-            operation_graph_action_resolver.ResolvedCallerInput, str
-        ] = {}
+    ) -> dict[operation_graph_action_resolver.CallerInput, str]:
+        method_names: dict[operation_graph_action_resolver.CallerInput, str] = {}
         for caller_input in self._plan.caller_inputs:
             method_names[caller_input.resolved_input] = (
                 self._execution_allocator.allocate(
@@ -147,32 +145,28 @@ class ActionNameGenerator:
 
     def _caller_input_name(
         self,
-        resolved_input: operation_graph_action_resolver.ResolvedCallerInput,
+        resolved_input: operation_graph_action_resolver.CallerInput,
     ) -> str:
         """Return the method name for a caller input."""
         match resolved_input:
-            case operation_graph_action_resolver.ResolvedEmptyRuleInput():
-                dependencies = resolved_input.dependencies
-                identifier = self._typed_chain_identifier(
-                    dependencies.full_emptied_position
-                )
-                return _EMPTY_RULE_CALLER_INPUT_PREFIX + identifier
-            case operation_graph_action_resolver.ResolvedActionParentInput():
+            case operation_graph_model.CallerEmptyRuleDependenciesNode():
+                empty_rule_dependencies = resolved_input.caller_empty_rule_dependencies
+            case operation_graph_model.CallerEmptyRuleDependencies():
+                empty_rule_dependencies = resolved_input
+            case operation_graph_model.ActionParentLastOperationNode():
                 return _ACTION_PARENT_CALLER_INPUT_NAME
-            case operation_graph_action_resolver.ResolvedRequirementInput():
+            case operation_graph_model.RequirementNode():
                 identifier = self._typed_chain_identifier(
-                    resolved_input.node.requirement_position
+                    resolved_input.requirement_position
                 )
                 return (
-                    _REQUIREMENT_CALLER_INPUT_PREFIXES[
-                        resolved_input.node.required_state
-                    ]
+                    _REQUIREMENT_CALLER_INPUT_PREFIXES[resolved_input.required_state]
                     + identifier
                 )
-            case _:
-                raise TypeError(
-                    f"unknown caller input type: {type(resolved_input).__name__}"
-                )
+        identifier = self._typed_chain_identifier(
+            empty_rule_dependencies.full_emptied_position
+        )
+        return _EMPTY_RULE_CALLER_INPUT_PREFIX + identifier
 
     def _triggered_action_base_names(
         self,

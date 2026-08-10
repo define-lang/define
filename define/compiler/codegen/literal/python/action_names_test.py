@@ -142,41 +142,35 @@ def _create_fragment(position_name: str) -> action_plan.ActionFragment:
 def _requirement_input(
     position_name: str,
     required_state: action_contract.PositionOccupancyState,
-) -> operation_graph_action_resolver.ResolvedRequirementInput:
+) -> operation_graph_model.RequirementNode:
     action_parent_input = operation_graph_model.ActionParentLastOperationNode(
         node_id=0, depends_on=()
     )
-    return operation_graph_action_resolver.ResolvedRequirementInput(
-        operation_graph_model.RequirementNode(
-            node_id=1,
-            depends_on=(action_parent_input,),
-            required_state=required_state,
-            requirement_position=(f"position<{position_name}>",),
-        )
+    return operation_graph_model.RequirementNode(
+        node_id=1,
+        depends_on=(action_parent_input,),
+        required_state=required_state,
+        requirement_position=(f"position<{position_name}>",),
     )
 
 
 def _empty_rule_input(
     position_name: str,
-) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
-    return operation_graph_action_resolver.ResolvedEmptyRuleInput(
-        operation_graph_model.CallerParticleEmptyRuleDependencies(
-            requirement_position=(f"position<{position_name}>",),
-            dependency_child_positions=frozenset(),
-            dependency_requirements=(),
-        )
+) -> operation_graph_model.CallerParticleEmptyRuleDependencies:
+    return operation_graph_model.CallerParticleEmptyRuleDependencies(
+        requirement_position=(f"position<{position_name}>",),
+        dependency_child_positions=frozenset(),
+        dependency_requirements=(),
     )
 
 
 def _child_position_input(
     requirement_name: str,
     child_name: str,
-) -> operation_graph_action_resolver.ResolvedEmptyRuleInput:
-    return operation_graph_action_resolver.ResolvedEmptyRuleInput(
-        operation_graph_model.CallerChildPositionEmptyRuleDependencies(
-            requirement_position=(f"position<{requirement_name}>",),
-            emptied_position=(f"position<{child_name}>",),
-        )
+) -> operation_graph_model.CallerChildPositionEmptyRuleDependencies:
+    return operation_graph_model.CallerChildPositionEmptyRuleDependencies(
+        requirement_position=(f"position<{requirement_name}>",),
+        emptied_position=(f"position<{child_name}>",),
     )
 
 
@@ -231,8 +225,8 @@ def _action_names(
 
 
 def _input_method_names(
-    *resolved_inputs: operation_graph_action_resolver.ResolvedCallerInput,
-) -> dict[operation_graph_action_resolver.ResolvedCallerInput, str]:
+    *resolved_inputs: operation_graph_action_resolver.CallerInput,
+) -> dict[operation_graph_action_resolver.CallerInput, str]:
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
@@ -267,8 +261,8 @@ def test_local_position_names():
 
 
 def test_action_parent_input_name():
-    action_parent = operation_graph_action_resolver.ResolvedActionParentInput(
-        operation_graph_model.ActionParentLastOperationNode(node_id=0, depends_on=())
+    action_parent = operation_graph_model.ActionParentLastOperationNode(
+        node_id=0, depends_on=()
     )
 
     assert _input_method_names(action_parent) == {action_parent: "accept_action_parent"}

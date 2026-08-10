@@ -43,7 +43,7 @@ class ActionFragment:
 class CallerInput:
     """One dependency input supplied by an action's caller."""
 
-    resolved_input: operation_graph_action_resolver.ResolvedCallerInput
+    resolved_input: operation_graph_action_resolver.CallerInput
     fragments: list[ActionFragment]
     triggered_inputs: list[TriggeredActionInput]
     destructor_triggers: list[operation_graph_model.ActionTrigger]
@@ -75,7 +75,7 @@ class TriggeredActionInput:
     """One direct callee input connected to dependencies in its caller."""
 
     action_trigger: operation_graph_model.ActionTrigger
-    callee_input: operation_graph_action_resolver.ResolvedCallerInput
+    callee_input: operation_graph_action_resolver.CallerInput
     guarantee_dependencies: list[operation_graph.GuaranteePath]
     dependency_count: int
 
@@ -137,25 +137,17 @@ class _FragmentTopologyBuilder:
 
     def __init__(
         self,
-        graph: operation_graph.OperationGraph,
-        dependencies: dict[
+        operations: dict[
             operation_graph_model.PositionOperationNode,
-            operation_graph_action_resolver.ActionDependencies,
+            operation_graph_action_resolver.ResolvedActionOperation,
         ],
-        guaranteed_positions_by_operation: dict[
-            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
-        ],
-        resolved_action_triggers: (
-            operation_graph_action_resolver.ResolvedActionTriggers
-        ),
-        caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
+        *,
+        publishes_guarantees: bool,
+        uses_caller_inputs: bool,
     ):
-        self._dependencies = dependencies
-        self._operations = [
-            node
-            for node in graph.nodes
-            if isinstance(node, operation_graph_model.PositionOperationNode)
-        ]
+        self._operations = operations
+        self._publishes_guarantees = publishes_guarantees
+        self._uses_caller_inputs = uses_caller_inputs
         self._local_predecessors: dict[
             operation_graph_model.PositionOperationNode,
             list[operation_graph_model.PositionOperationNode],
@@ -163,27 +155,12 @@ class _FragmentTopologyBuilder:
         self._local_successors: dict[
             operation_graph_model.PositionOperationNode,
             list[operation_graph_model.PositionOperationNode],
-        ] = {operation: [] for operation in self._operations}
-        for operation, operation_dependencies in dependencies.items():
-            predecessors = operation_dependencies.local_operations
+        ] = {operation: [] for operation in operations}
+        for operation, resolved_operation in operations.items():
+            predecessors = resolved_operation.dependencies.local_operations
             self._local_predecessors[operation] = predecessors
             for predecessor in predecessors:
                 self._local_successors[predecessor].append(operation)
-
-        self._must_end_fragment_operations = set(guaranteed_positions_by_operation)
-        for resolved_action_trigger in resolved_action_triggers:
-            for triggered_input in resolved_action_trigger.inputs:
-                self._must_end_fragment_operations.update(
-                    triggered_input.caller_dependencies.local_operations
-                )
-        self._must_end_fragment_operations.update(
-            resolved_action_triggers.position_operations
-        )
-        self._caller_input_consumer_operations = {
-            operation
-            for caller_input in caller_inputs
-            for operation in caller_input.operation_consumers
-        }
 
     def build(self) -> _FragmentTopology:
         fragment_operations = self._fragment_operations()
@@ -232,16 +209,24 @@ class _FragmentTopologyBuilder:
         predecessors = self._local_predecessors[operation]
         if len(predecessors) != 1:
             return False
-        operation_dependencies = self._dependencies[operation]
+        resolved_operation = self._operations[operation]
         if (
-            operation in self._caller_input_consumer_operations
-            or operation_dependencies.guarantee_dependencies
-        ):
+            self._uses_caller_inputs and resolved_operation.caller_inputs
+        ) or resolved_operation.dependencies.guarantee_dependencies:
             return False
         predecessor = predecessors[0]
-        return (
-            len(self._local_successors[predecessor]) == 1
-            and predecessor not in self._must_end_fragment_operations
+        return len(
+            self._local_successors[predecessor]
+        ) == 1 and not self._must_end_fragment(predecessor)
+
+    def _must_end_fragment(
+        self, operation: operation_graph_model.PositionOperationNode
+    ) -> bool:
+        resolved_operation = self._operations[operation]
+        return bool(
+            (self._publishes_guarantees and resolved_operation.guaranteed_positions)
+            or resolved_operation.triggered_inputs
+            or resolved_operation.action_triggers
         )
 
 
@@ -252,6 +237,17 @@ class _TriggeredActions:
         operation_graph_action_resolver.ResolvedActionTriggerInput,
         TriggeredActionInput,
     ]
+
+
+@dataclass(slots=True)
+class _CallerInputRelationships:
+    """Code-generation relationships of one caller input."""
+
+    fragments: list[ActionFragment] = field(default_factory=list)
+    triggered_inputs: list[TriggeredActionInput] = field(default_factory=list)
+    destructor_triggers: list[operation_graph_model.ActionTrigger] = field(
+        default_factory=list
+    )
 
 
 @typing.final
@@ -265,59 +261,49 @@ class _ActionPlanBuilder:
     ):
         """Initialize for one action and its validated operation graph."""
         self._resolved_action = resolved_action
-        self._graph = resolved_action.graph
         self._operation_graphs = operation_graphs
 
     def build_executed_action(self) -> ActionPlan:
         """Build a plan started directly through the action's execute method."""
         return self._build(
-            self._resolved_action.dependencies_by_operation,
-            {},
             [],
+            publishes_guarantees=False,
             start_directly=True,
         )
 
     def build_triggered_action(self) -> ActionPlan:
         """Build the reusable caller-input plan for Action Triggers of this action."""
         return self._build(
-            self._resolved_action.dependencies_by_operation,
-            self._graph.guaranteed_positions_by_operation,
             self._resolved_action.caller_inputs,
+            publishes_guarantees=True,
             start_directly=False,
         )
 
     def _build(
         self,
-        dependencies: dict[
-            operation_graph_model.PositionOperationNode,
-            operation_graph_action_resolver.ActionDependencies,
-        ],
-        guaranteed_positions_by_operation: dict[
-            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
-        ],
-        caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
+        caller_inputs: list[operation_graph_action_resolver.CallerInput],
         *,
+        publishes_guarantees: bool,
         start_directly: bool,
     ) -> ActionPlan:
         topology = _FragmentTopologyBuilder(
-            self._graph,
-            dependencies,
-            guaranteed_positions_by_operation,
-            self._resolved_action.action_triggers,
-            caller_inputs,
+            self._resolved_action.operations,
+            publishes_guarantees=publishes_guarantees,
+            uses_caller_inputs=not start_directly,
         ).build()
         triggered_actions = self._plan_triggered_actions(
             topology.fragment_for_operation,
             caller_inputs,
         )
         guarantee_publications = self._plan_guarantee_publications(
-            guaranteed_positions_by_operation,
             topology.fragment_for_operation,
+            publishes_guarantees=publishes_guarantees,
         )
-        self._plan_fragments(
-            dependencies,
-            topology,
+        self._plan_fragments(topology)
+        planned_caller_inputs = self._plan_caller_inputs(
             caller_inputs,
+            topology.fragment_for_operation,
+            triggered_actions,
         )
         execute_fragments: list[ActionFragment] = []
         if start_directly:
@@ -327,11 +313,7 @@ class _ActionPlanBuilder:
         return ActionPlan(
             fragments=topology.fragments,
             execute_fragments=execute_fragments,
-            caller_inputs=self._plan_caller_inputs(
-                caller_inputs,
-                topology.fragment_for_operation,
-                triggered_actions,
-            ),
+            caller_inputs=planned_caller_inputs,
             action_triggers=[
                 action_trigger.trigger
                 for action_trigger in self._resolved_action.action_triggers
@@ -348,7 +330,7 @@ class _ActionPlanBuilder:
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
-        caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
+        caller_inputs: list[operation_graph_action_resolver.CallerInput],
     ) -> _TriggeredActions:
         triggered_action_inputs: list[TriggeredActionInput] = []
         input_by_resolved_input: dict[
@@ -380,17 +362,13 @@ class _ActionPlanBuilder:
                 )
                 triggered_action_inputs.append(triggered_input)
                 input_by_resolved_input[resolved_input] = triggered_input
-                for operation in planned_dependencies.local_operations:
-                    fragment_for_operation[operation].triggered_input_successors.append(
-                        triggered_input
-                    )
-        # Connect each Action Trigger to the Particle Operation that triggers it.
-        for (
-            trigger_operation,
-            resolved_triggers,
-        ) in resolved_action_triggers.by_position_operation():
-            fragment = fragment_for_operation[trigger_operation]
-            for resolved_action_trigger in resolved_triggers:
+        for resolved_operation in self._resolved_action.operations.values():
+            fragment = fragment_for_operation[resolved_operation.operation]
+            for resolved_input in resolved_operation.triggered_inputs:
+                fragment.triggered_input_successors.append(
+                    input_by_resolved_input[resolved_input]
+                )
+            for resolved_action_trigger in resolved_operation.action_triggers:
                 fragment.triggered_action_successors.append(
                     resolved_action_trigger.trigger
                 )
@@ -430,18 +408,20 @@ class _ActionPlanBuilder:
 
     def _plan_guarantee_publications(
         self,
-        guaranteed_positions_by_operation: dict[
-            operation_graph_model.PositionOperationNode, tuple[tuple[str, ...], ...]
-        ],
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
+        *,
+        publishes_guarantees: bool,
     ) -> list[GuaranteePublication]:
+        if not publishes_guarantees:
+            return []
         publications: list[GuaranteePublication] = []
         for (
-            operation,
-            publication_positions,
-        ) in guaranteed_positions_by_operation.items():
+            resolved_operation
+        ) in self._resolved_action.guarantee_publication_operations():
+            publication_positions = resolved_operation.guaranteed_positions
+            operation = resolved_operation.operation
             guaranteed_source = None
             if isinstance(operation, operation_graph_model.MoveNode):
                 source = operation.source.canonical_chained_name_tuple
@@ -457,17 +437,11 @@ class _ActionPlanBuilder:
             fragment_for_operation[operation].guarantee_publications.append(publication)
         return publications
 
-    def _plan_fragments(
-        self,
-        dependencies: dict[
-            operation_graph_model.PositionOperationNode,
-            operation_graph_action_resolver.ActionDependencies,
-        ],
-        topology: _FragmentTopology,
-        caller_inputs: list[operation_graph_action_resolver.ResolvedCallerInput],
-    ):
+    def _plan_fragments(self, topology: _FragmentTopology):
         for fragment in topology.fragments:
-            first_dependencies = dependencies[fragment.operations[0]]
+            first_dependencies = self._resolved_action.operations[
+                fragment.operations[0]
+            ].dependencies
             planned_dependencies = _PlanDependencies.from_action_dependencies(
                 first_dependencies,
                 self._operation_graphs,
@@ -478,40 +452,56 @@ class _ActionPlanBuilder:
             fragment.dependency_count = len(first_dependencies.local_operations) + len(
                 planned_dependencies.guarantee_dependencies
             )
-        for caller_input in caller_inputs:
-            for operation in caller_input.operation_consumers:
-                topology.fragment_for_operation[operation].dependency_count += 1
 
     def _plan_caller_inputs(
         self,
-        resolved_caller_inputs: list[
-            operation_graph_action_resolver.ResolvedCallerInput
-        ],
+        resolved_caller_inputs: list[operation_graph_action_resolver.CallerInput],
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
         triggered_actions: _TriggeredActions,
     ) -> list[CallerInput]:
+        if not resolved_caller_inputs:
+            return []
+        relationships_by_resolved_input = {
+            resolved_input: _CallerInputRelationships()
+            for resolved_input in resolved_caller_inputs
+        }
+        for resolved_operation in self._resolved_action.operations.values():
+            fragment = fragment_for_operation[resolved_operation.operation]
+            for resolved_input in resolved_operation.caller_inputs:
+                relationships = relationships_by_resolved_input[resolved_input]
+                relationships.fragments.append(fragment)
+                fragment.dependency_count += 1
+        for resolved_action_trigger in self._resolved_action.action_triggers:
+            for resolved_trigger_input in resolved_action_trigger.inputs:
+                triggered_input = triggered_actions.input_by_resolved_input[
+                    resolved_trigger_input
+                ]
+                for resolved_input in resolved_trigger_input.caller_input_dependencies:
+                    relationships_by_resolved_input[
+                        resolved_input
+                    ].triggered_inputs.append(triggered_input)
+            caller_input_dependency = resolved_action_trigger.caller_input_dependency
+            if caller_input_dependency is not None:
+                relationships = relationships_by_resolved_input[caller_input_dependency]
+                relationships.destructor_triggers.append(
+                    resolved_action_trigger.trigger
+                )
+                relationships.triggered_inputs.extend(
+                    triggered_actions.input_by_resolved_input[resolved_input]
+                    for resolved_input in resolved_action_trigger.inputs
+                )
+
         caller_inputs: list[CallerInput] = []
-        for resolved_caller_input in resolved_caller_inputs:
-            fragments = [
-                fragment_for_operation[operation]
-                for operation in resolved_caller_input.operation_consumers
-            ]
-            triggered_inputs = [
-                triggered_actions.input_by_resolved_input[triggered_input]
-                for triggered_input in resolved_caller_input.triggered_input_consumers
-            ]
-            destructor_triggers = [
-                resolved_destructor_trigger.trigger
-                for resolved_destructor_trigger in resolved_caller_input.destructor_trigger_consumers
-            ]
+        for resolved_input in resolved_caller_inputs:
+            relationships = relationships_by_resolved_input[resolved_input]
             caller_inputs.append(
                 CallerInput(
-                    resolved_caller_input,
-                    fragments,
-                    triggered_inputs,
-                    destructor_triggers,
+                    resolved_input,
+                    relationships.fragments,
+                    relationships.triggered_inputs,
+                    relationships.destructor_triggers,
                 )
             )
         return caller_inputs

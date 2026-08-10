@@ -95,5 +95,5 @@ class GeneratedAction:
     """Generated context and caller-facing interface of one action."""
 
     context: ActionDefinitionContext
-    input_method_names: dict[operation_graph_action_resolver.ResolvedCallerInput, str]
+    input_method_names: dict[operation_graph_action_resolver.CallerInput, str]
     guarantee_interface: GuaranteeInterface | None

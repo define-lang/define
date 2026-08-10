@@ -236,7 +236,9 @@ class ParticleChildOperations:
         return frozenset(operation.child_position for operation in self.operations)
 
 
-@dataclass(frozen=True, slots=True)
+# Separate propagation paths can require distinct caller inputs with identical
+# dependency data, so these values use identity when codegen keys input methods.
+@dataclass(frozen=True, slots=True, eq=False)
 class CallerEmptyRuleDependencies:
     """Empty Rule dependencies supplied through a position requirement."""
 
@@ -248,7 +250,7 @@ class CallerEmptyRuleDependencies:
         return self.requirement_position
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class CallerParticleEmptyRuleDependencies(CallerEmptyRuleDependencies):
     """Information needed when the required position itself is emptied.
 
@@ -262,7 +264,7 @@ class CallerParticleEmptyRuleDependencies(CallerEmptyRuleDependencies):
     dependency_requirements: tuple[tuple[str, ...], ...]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class CallerChildPositionEmptyRuleDependencies(CallerEmptyRuleDependencies):
     """Information needed when a child position of the required particle is emptied."""
 
