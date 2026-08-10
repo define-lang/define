@@ -11,10 +11,16 @@ py_binary(
     deps = [":profiler"],
 )
 
-# PRF-024: Explicit failures. PRF-041: Realistic tests.
-py_binary(
-    name = "failure_target",
-    srcs = ["failure_target.py"],
+# PRF-010: Raw-data preservation. PRF-018: Focused analysis.
+# PRF-019: Concurrency semantics. PRF-020: Machine and human interfaces.
+py_library(
+    name = "analyzer",
+    srcs = ["analyzer.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":schema",
+        "@pypi//click",
+    ],
 )
 
 # PRF-001: No call-correlated wall profiling work.
@@ -34,17 +40,25 @@ py_test(
     srcs = ["profiler_test.py"],
     data = [
         ":__main__",
-        ":failure_target",
-        ":test_target",
         "//tools:analyze_profile",
+        "//tools/profiler/testdata:continuous_target",
+        "//tools/profiler/testdata:continuous_target.py",
+        "//tools/profiler/testdata:failure_target",
+        "//tools/profiler/testdata:failure_target.py",
+        "//tools/profiler/testdata:race_target",
+        "//tools/profiler/testdata:race_target.py",
     ],
     env = {
         "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
         "PROFILER_BINARY": "$(rlocationpath :__main__)",
-        "PROFILER_FAILURE_TARGET": "$(rlocationpath :failure_target)",
-        "PROFILER_TEST_TARGET": "$(rlocationpath :test_target)",
+        "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
+        "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
+        "PROFILER_RACE_SOURCE": "$(rlocationpath //tools/profiler/testdata:race_target.py)",
     },
+    # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
+    tags = ["local"],
     deps = [
+        ":analyzer",
         ":profiler",
         ":schema",
         "@pypi//click",
@@ -59,12 +73,6 @@ py_library(
     visibility = ["//tools:__pkg__"],
 )
 
-# PRF-013: Wall mode. PRF-041: Realistic tests.
-py_binary(
-    name = "test_target",
-    srcs = ["test_target.py"],
-)
-
 format_test(
     name = "format_test",
     srcs = glob(["*.py"]),
@@ -75,10 +83,9 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":__main__",
-        ":failure_target",
+        ":analyzer",
         ":profiler",
         ":profiler_test",
         ":schema",
-        ":test_target",
     ],
 )

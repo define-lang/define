@@ -32,10 +32,7 @@ py_binary(
     name = "analyze_profile",
     srcs = ["analyze_profile.py"],
     visibility = ["//tools:__subpackages__"],
-    deps = [
-        "//tools/profiler:schema",
-        "@pypi//click",
-    ],
+    deps = ["//tools/profiler:analyzer"],
 )
 
 # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
@@ -44,7 +41,7 @@ py_test(
     size = "small",
     srcs = ["analyze_profile_test.py"],
     deps = [
-        ":analyze_profile",
+        "//tools/profiler:analyzer",
         "//tools/profiler:schema",
         "@pypi//click",
     ],

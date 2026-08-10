@@ -280,9 +280,11 @@ every successful stop, including collector failures and user interruption.
 
 ### Sampling controller
 
-The controller chooses sample intervals independently of compiler state. The
-default schedule will use randomized intervals around a configured mean. This
-avoids repeatedly sampling the same point in periodic work.
+The controller chooses sample intervals independently of compiler state. It uses
+a Poisson schedule whose exponentially distributed intervals have the configured
+mean. This avoids repeatedly sampling the same point in periodic work and gives
+observations the Poisson-arrivals-see-time-averages property when the compiler
+cannot anticipate the sampling schedule.[PASTA][pasta]
 
 For each sample, the controller will:
 
@@ -816,6 +818,7 @@ committing any backend replacement.
 [austin-pr]: https://github.com/P403n1x87/austin/pull/409
 [pep-768]: https://peps.python.org/pep-0768/
 [perf]: https://docs.python.org/3.14/howto/perf_profiling.html
+[pasta]: https://doi.org/10.1287/opre.30.2.223
 [pyinstrument]: https://pyinstrument.readthedocs.io/en/latest/how-it-works.html
 [tachyon]: https://docs.python.org/3.15/library/profiling.sampling.html
 [viztracer]: https://viztracer.readthedocs.io/en/latest/concurrency.html

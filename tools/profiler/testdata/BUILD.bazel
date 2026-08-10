@@ -1,0 +1,49 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+exports_files(
+    [
+        "continuous_target.py",
+        "failure_target.py",
+        "race_target.py",
+    ],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+# PRF-029: Call-frequency fixture. PRF-030: Stack-depth fixture.
+# PRF-031: Retired-thread fixture. PRF-033: Waiting-thread fixture.
+py_binary(
+    name = "continuous_target",
+    srcs = ["continuous_target.py"],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+# PRF-024: Explicit failures. PRF-041: Realistic tests.
+py_binary(
+    name = "failure_target",
+    srcs = ["failure_target.py"],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+# PRF-032: Real read-race fixture.
+py_binary(
+    name = "race_target",
+    srcs = ["race_target.py"],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":continuous_target",
+        ":failure_target",
+        ":race_target",
+    ],
+)
