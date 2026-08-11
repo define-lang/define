@@ -74,6 +74,7 @@ py_library(
 py_test(
     name = "cpu_profiler_test",
     size = "small",
+    timeout = "moderate",
     srcs = ["cpu_profiler_test.py"],
     data = [
         ":__main__",

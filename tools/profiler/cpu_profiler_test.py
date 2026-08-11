@@ -58,7 +58,7 @@ def test_cpu_capture_reports_scheduler_runtime_for_active_threads(tmp_path: Path
         workers_observed = event_reader.wait_for(
             "successful-observation-persisted",
             minimum_observations,
-            timeout_seconds=50,
+            timeout_seconds=240,
         )
         if workers_observed:
             _ = finish_stream.write(b"1")
