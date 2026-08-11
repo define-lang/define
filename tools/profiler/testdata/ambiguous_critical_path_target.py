@@ -1,43 +1,67 @@
-"""Create a completion handoff with two observable producer candidates."""
+"""Event-controlled completion handoff with two producer candidates."""
 
 import os
 import queue
+import sys
 import threading
-import time
-
-_PRE_WORK_NS = 500_000_000
-_CRITICAL_WORK_NS = 800_000_000
-_POST_WORK_NS = 500_000_000
+import typing
 
 
-def _cpu_work(duration_ns: int) -> int:
-    # PRF-048: Critical-path fixture.
-    deadline = time.thread_time_ns() + duration_ns
-    value = 0
-    while time.thread_time_ns() < deadline:
+def _controlled_work(
+    release: threading.Event,
+    status_stream: typing.BinaryIO,
+    phase: bytes,
+    value: int,
+) -> int:
+    _ = status_stream.write(phase)
+    while not release.is_set():
         value += 1
-    return value
+    return value + 1
 
 
-def _off_path_work(finish: threading.Event):
-    # PRF-048: Critical-path fixture.
-    _ = _cpu_work(_PRE_WORK_NS)
+def _release_phases(
+    control_stream: typing.BinaryIO,
+    releases: tuple[threading.Event, ...],
+) -> None:
+    for release in releases:
+        _ = control_stream.read(1)
+        release.set()
+
+
+def _off_path_work(release: threading.Event, finish: threading.Event) -> None:
+    value = 0
+    while not release.is_set():
+        value += 1
     _ = finish.wait()
 
 
-def _critical_work(result_queue: queue.Queue[int]):
-    # PRF-048: Critical-path fixture.
-    result_queue.put(_cpu_work(_CRITICAL_WORK_NS))
+def _critical_work(
+    release: threading.Event,
+    status_stream: typing.BinaryIO,
+    result_queue: queue.Queue[int],
+    finish: threading.Event,
+) -> None:
+    result_queue.put(_controlled_work(release, status_stream, b"2", 0))
+    _ = finish.wait()
 
 
-# PRF-048: Critical-path fixture.
 _finish = threading.Event()
+_releases = tuple(threading.Event() for _ in range(3))
 _result_queue: queue.Queue[int] = queue.Queue()
-_off_path_thread = threading.Thread(target=_off_path_work, args=(_finish,))
-_off_path_thread.start()
-_pre_work = _cpu_work(_PRE_WORK_NS)
-_critical_thread = threading.Thread(target=_critical_work, args=(_result_queue,))
-_critical_thread.start()
-_result = _pre_work + _result_queue.get() + _cpu_work(_POST_WORK_NS)
-_finish.set()
+with (
+    open(sys.argv[1], "wb", buffering=0) as _status_stream,
+    open(sys.argv[2], "rb", buffering=0) as _control_stream,
+):
+    threading.Thread(
+        target=_release_phases,
+        args=(_control_stream, _releases),
+    ).start()
+    threading.Thread(target=_off_path_work, args=(_releases[0], _finish)).start()
+    _result = _controlled_work(_releases[0], _status_stream, b"1", 0)
+    threading.Thread(
+        target=_critical_work,
+        args=(_releases[1], _status_stream, _result_queue, _finish),
+    ).start()
+    _result += _result_queue.get()
+    _result = _controlled_work(_releases[2], _status_stream, b"3", _result)
 os._exit(0 if _result > 0 else 1)

@@ -1,35 +1,30 @@
-"""Concurrent lifecycle and sampling fixture for continuous wall profiling."""
+"""Event-controlled lifecycle fixture for continuous profiling."""
 
 import os
 import sys
 import threading
-import time
 
 
-def _retired_worker() -> None:
+def _retired_worker(start: threading.Event, retire: threading.Event) -> None:
     # PRF-031: Retired-thread fixture.
-    time.sleep(0.25)
-
-
-def _start_retired_worker(start: threading.Event) -> None:
     _ = start.wait()
-    _retired_worker()
+    _ = retire.wait()
 
 
-def _deep_wait_level_two(start: threading.Event, release: threading.Event) -> None:
+def _deep_wait_level_two(start: threading.Event, finish: threading.Event) -> None:
     # PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
     _ = start.wait()
-    _ = release.wait()
+    _ = finish.wait()
 
 
-def _deep_wait_level_one(start: threading.Event, release: threading.Event) -> None:
-    _deep_wait_level_two(start, release)
+def _deep_wait_level_one(start: threading.Event, finish: threading.Event) -> None:
+    _deep_wait_level_two(start, finish)
 
 
-def _shallow_wait(start: threading.Event, release: threading.Event) -> None:
+def _shallow_wait(start: threading.Event, finish: threading.Event) -> None:
     # PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
     _ = start.wait()
-    _ = release.wait()
+    _ = finish.wait()
 
 
 def _short_leaf(value: int) -> int:
@@ -37,52 +32,50 @@ def _short_leaf(value: int) -> int:
     return value + 1
 
 
-def _high_call_frequency(start: threading.Event) -> None:
+def _high_call_frequency(start: threading.Event, finish: threading.Event) -> None:
     _ = start.wait()
-    deadline = time.monotonic() + 2.2
     value = 0
-    while time.monotonic() < deadline:
+    while not finish.is_set():
         value = _short_leaf(value)
 
 
-def _low_call_frequency(start: threading.Event) -> None:
+def _low_call_frequency(start: threading.Event, finish: threading.Event) -> None:
     _ = start.wait()
-    deadline = time.monotonic() + 2.2
     value = 0
-    while time.monotonic() < deadline:
+    while not finish.is_set():
         for number in range(1000):
             value += number
 
 
-def _cpu_warmup(duration_ns: int):
-    # PRF-025: Failure threshold. Target CPU time excludes profiler pauses so
-    # the fixture always yields a stress-sized observation denominator.
-    deadline = time.thread_time_ns() + duration_ns
-    while time.thread_time_ns() < deadline:
-        pass
-
-
-_cpu_warmup(4_000_000_000)
 _start = threading.Event()
-_release = threading.Event()
+_retire = threading.Event()
+_finish = threading.Event()
+_retired_thread = threading.Thread(
+    target=_retired_worker,
+    args=(_start, _retire),
+)
 _threads = [
-    threading.Thread(target=_start_retired_worker, args=(_start,)),
-    threading.Thread(target=_deep_wait_level_one, args=(_start, _release)),
-    threading.Thread(target=_shallow_wait, args=(_start, _release)),
-    threading.Thread(target=_high_call_frequency, args=(_start,)),
-    threading.Thread(target=_low_call_frequency, args=(_start,)),
+    _retired_thread,
+    threading.Thread(target=_deep_wait_level_one, args=(_start, _finish)),
+    threading.Thread(target=_shallow_wait, args=(_start, _finish)),
+    threading.Thread(target=_high_call_frequency, args=(_start, _finish)),
+    threading.Thread(target=_low_call_frequency, args=(_start, _finish)),
 ]
 for _thread in _threads:
     _thread.start()
-if len(sys.argv) > 1:
-    # The public-binary test releases this after observing every waiting worker.
-    with open(sys.argv[1], "rb") as _profiler_gate:
-        _ = _profiler_gate.read(1)
 _start.set()
-time.sleep(0.8)
-_release.set()
-for _thread in _threads:
-    _thread.join()
-time.sleep(0.2)
-# A separate target owns shutdown races so this fixture isolates sampling bias.
+if len(sys.argv) == 3:
+    with (
+        open(sys.argv[1], "wb", buffering=0) as _status_stream,
+        open(sys.argv[2], "rb", buffering=0) as _control_stream,
+    ):
+        _ = _status_stream.write(b"1")
+        _ = _control_stream.read(1)
+        _retire.set()
+        _retired_thread.join()
+        _ = _status_stream.write(b"2")
+        _ = _control_stream.read(1)
+else:
+    # Signal and profiler-error tests terminate this process externally.
+    _ = threading.Event().wait()
 os._exit(0)

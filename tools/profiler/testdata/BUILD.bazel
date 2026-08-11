@@ -7,14 +7,17 @@ exports_files(
         "ambiguous_critical_path_profile.jsonl",
         "ambiguous_critical_path_target.py",
         "compiler_wall_profile.jsonl",
+        "continuous_profile.jsonl",
         "continuous_target.py",
         "cpu_target.py",
+        "critical_path_profile.jsonl",
         "critical_path_target.py",
         "exit_target.py",
         "failure_target.py",
         "initial_wait_critical_path_profile.jsonl",
         "initial_wait_critical_path_target.py",
-        "race_target.py",
+        "interrupt_target.py",
+        "unresolved_critical_path_profile.jsonl",
         "unresolved_critical_path_target.py",
     ],
     visibility = ["//tools/profiler:__pkg__"],
@@ -72,10 +75,10 @@ py_binary(
     visibility = ["//tools/profiler:__pkg__"],
 )
 
-# PRF-032: Real read-race fixture.
+# PRF-023: Guaranteed resume. PRF-041: Realistic tests.
 py_binary(
-    name = "race_target",
-    srcs = ["race_target.py"],
+    name = "interrupt_target",
+    srcs = ["interrupt_target.py"],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
@@ -102,7 +105,7 @@ pyright_test(
         ":exit_target",
         ":failure_target",
         ":initial_wait_critical_path_target",
-        ":race_target",
+        ":interrupt_target",
         ":unresolved_critical_path_target",
     ],
 )

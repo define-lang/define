@@ -75,6 +75,7 @@ py_test(
 py_binary(
     name = "generate_large_define_source",
     srcs = ["generate_large_define_source.py"],
+    visibility = ["//tools:__subpackages__"],
     deps = [
         ":generator_cli",
         ":generator_io",

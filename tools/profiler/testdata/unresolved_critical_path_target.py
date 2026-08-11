@@ -1,36 +1,36 @@
-"""Known completion handoff without a sampled stopped producer."""
+"""Event-controlled handoff whose producer is external to the target."""
 
 import os
-import queue
+import sys
 import threading
-import time
-
-_WORK_NS = 400_000_000
-_PRE_HANDOFF_WORK_NS = 800_000_000
-_POST_HANDOFF_WORK_NS = 800_000_000
+import typing
 
 
-def _cpu_work(duration_ns: int) -> int:
-    # PRF-047: Multi-threaded critical path.
-    deadline = time.thread_time_ns() + duration_ns
-    value = 0
-    while time.thread_time_ns() < deadline:
-        value += 1
-    return value
+def _release_finish(
+    control_stream: typing.BinaryIO,
+    finish: threading.Event,
+) -> None:
+    _ = control_stream.read(1)
+    finish.set()
 
 
-def _publish_then_continue(result_queue: queue.Queue[int]):
-    # PRF-047: Multi-threaded critical path.
-    time.sleep(0.2)
-    result_queue.put(_cpu_work(_WORK_NS))
-    _ = _cpu_work(_POST_HANDOFF_WORK_NS)
+def _wait_for_external_release(control_stream: typing.BinaryIO) -> None:
+    _ = control_stream.read(1)
 
 
-# PRF-047: Multi-threaded critical path.
-_result_queue: queue.Queue[int] = queue.Queue()
-_pre_handoff_result = _cpu_work(_PRE_HANDOFF_WORK_NS)
-_worker = threading.Thread(target=_publish_then_continue, args=(_result_queue,))
-_worker.start()
-_published_result = _result_queue.get()
-_result = _pre_handoff_result + _cpu_work(_WORK_NS) + _published_result
+_finish = threading.Event()
+with (
+    open(sys.argv[1], "wb", buffering=0) as _status_stream,
+    open(sys.argv[2], "rb", buffering=0) as _control_stream,
+):
+    _ = _status_stream.write(b"1")
+    _wait_for_external_release(_control_stream)
+    threading.Thread(
+        target=_release_finish,
+        args=(_control_stream, _finish),
+    ).start()
+    _ = _status_stream.write(b"2")
+    _result = 0
+    while not _finish.is_set():
+        _result += 1
 os._exit(0 if _result > 0 else 1)
