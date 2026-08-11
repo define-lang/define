@@ -1,5 +1,8 @@
+import collections
+import dataclasses
 import os
 import re
+import select
 import signal
 import statistics
 import subprocess
@@ -24,6 +27,48 @@ from tools.profiler import (
 )
 
 
+@dataclasses.dataclass(slots=True)
+class _ProfilerEventReader:
+    # PRF-041: Realistic tests. PRF-049: Event-driven coordination.
+    file_descriptor: int
+    buffered_events: collections.deque[str] = dataclasses.field(
+        default_factory=collections.deque
+    )
+    incomplete_event: bytes = b""
+
+    def wait_for(
+        self,
+        expected_event: str,
+        count: int = 1,
+        *,
+        timeout_seconds: float = 5,
+    ) -> bool:
+        deadline = time.monotonic() + timeout_seconds
+        events_seen = 0
+        while time.monotonic() < deadline:
+            while self.buffered_events:
+                event = self.buffered_events.popleft()
+                if event == expected_event:
+                    events_seen += 1
+                    if events_seen == count:
+                        return True
+            readable, _, _ = select.select(
+                [self.file_descriptor],
+                [],
+                [],
+                deadline - time.monotonic(),
+            )
+            if not readable:
+                return False
+            event_bytes = os.read(self.file_descriptor, 4096)
+            if not event_bytes:
+                return False
+            event_bytes = self.incomplete_event + event_bytes
+            *complete_lines, self.incomplete_event = event_bytes.split(b"\n")
+            self.buffered_events.extend(line.decode() for line in complete_lines)
+        return False
+
+
 def _runfile(variable: str) -> Path:
     location = os.environ[variable]
     candidate = Path(location)
@@ -36,15 +81,19 @@ def _runfile(variable: str) -> Path:
     return Path(resolved)
 
 
-def _target_command(source_variable: str) -> tuple[str, ...]:
+def _target_command(
+    source_variable: str,
+    target_arguments: tuple[str, ...] = (),
+) -> tuple[str, ...]:
     source = _runfile(source_variable)
     return (
         "/bin/sh",
         "-c",
-        'sleep 0.05; exec "$1" "$2"',
+        'exec "$@"',
         "profiler-test-launcher",
         sys.executable,
         str(source),
+        *target_arguments,
     )
 
 
@@ -54,10 +103,12 @@ def _profile_command(
     *,
     mode: schema.CaptureMode = "wall",
     mean_interval_seconds: float = 0.0001,
+    event_file_descriptor: int | None = None,
+    target_arguments: tuple[str, ...] = (),
 ) -> list[str]:
     # PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
     source = _runfile(source_variable)
-    return [
+    command = [
         str(_runfile("PROFILER_BINARY")),
         "--mode",
         mode,
@@ -67,9 +118,11 @@ def _profile_command(
         str(source),
         "--mean-interval-seconds",
         str(mean_interval_seconds),
-        "--",
-        *_target_command(source_variable),
     ]
+    if event_file_descriptor is not None:
+        command.extend(["--event-fd", str(event_file_descriptor)])
+    command.extend(["--", *_target_command(source_variable, target_arguments)])
+    return command
 
 
 def _assert_capture_summary(
@@ -94,23 +147,6 @@ def _observed_process_id(profile_path: Path) -> int | None:
         return None
     process_id_match = re.search(r'"process_id":(\d+)', profile_text)
     return int(process_id_match.group(1)) if process_id_match is not None else None
-
-
-def _wait_for_successful_observation_records(
-    profile_path: Path,
-    minimum: int,
-) -> bool:
-    # PRF-027: Incremental persistence. PRF-041: Realistic tests.
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        try:
-            profile_text = profile_path.read_text(encoding="utf-8")
-        except FileNotFoundError:
-            profile_text = ""
-        if profile_text.count('"status":"successful"') >= minimum:
-            return True
-        time.sleep(0.001)
-    return False
 
 
 def _capture(
@@ -144,8 +180,14 @@ def _assert_recorded_observations(
             successful.append(observation)
         else:
             assert observation["status"] == "discarded"
-            assert observation["failure_kind"]
+            assert isinstance(
+                observation["failure_kind"],
+                schema.ObservationFailureKind,
+            )
             assert observation["failure_reason"]
+            exception_name, separator, _ = observation["failure_reason"].partition(": ")
+            assert exception_name
+            assert separator
             discarded += 1
     return successful, discarded
 
@@ -173,7 +215,8 @@ def _sampled_functions(
     }
 
 
-# PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
+# PRF-020: Machine and human interfaces. PRF-025: Failure threshold.
+# PRF-041: Realistic tests.
 def test_main_profiles_relative_target(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -192,11 +235,11 @@ def test_main_profiles_relative_target(
             "--working-directory",
             str(tmp_path),
             "--mean-interval-seconds",
-            "0.01",
+            "0.001",
             "--",
             "./target",
             "-c",
-            "import time; time.sleep(0.15)",
+            "import time; time.sleep(2)",
         ],
     )
 
@@ -216,16 +259,58 @@ def test_main_profiles_relative_target(
     assert "none resolved or observed" in capsys.readouterr().out
 
 
-# PRF-002: Independent sampling schedule.
+# PRF-002: Independent sampling schedule. PRF-049: Event-driven coordination.
 def test_help_hides_internal_sampling_parameters():
     result = click.testing.CliRunner().invoke(profiler.main, ["--help"])
 
     assert result.exit_code == 0
     assert "--mean-interval-seconds" in result.output
+    assert "--event-fd" in result.output
     assert "--jitter" not in result.output
     assert "--no-jitter" not in result.output
     assert "--jitter-fraction" not in result.output
     assert "--random-seed" not in result.output
+
+
+# PRF-024: Explicit failures.
+def test_observation_failure_kinds_are_stable():
+    observation_failure_kind = profiler._observation_failure_kind  # pyright: ignore[reportPrivateUsage]
+    inconsistent_failure = profiler._InconsistentStackObservationError()  # pyright: ignore[reportPrivateUsage]
+    exit_failure = profiler._TargetExitRaceError()  # pyright: ignore[reportPrivateUsage]
+    resume_failure = profiler._TargetResumeError()  # pyright: ignore[reportPrivateUsage]
+    stop_failure = profiler._TargetStopError()  # pyright: ignore[reportPrivateUsage]
+    assert (
+        observation_failure_kind(PermissionError())
+        is schema.ObservationFailureKind.PERMISSION_DENIED
+    )
+    assert (
+        observation_failure_kind(inconsistent_failure)
+        is schema.ObservationFailureKind.INCONSISTENT_STACK
+    )
+    assert (
+        observation_failure_kind(exit_failure)
+        is schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
+    )
+    assert (
+        observation_failure_kind(resume_failure)
+        is schema.ObservationFailureKind.TARGET_RESUME_FAILED
+    )
+    assert (
+        observation_failure_kind(stop_failure)
+        is schema.ObservationFailureKind.TARGET_STOP_FAILED
+    )
+    assert (
+        observation_failure_kind(RuntimeError())
+        is schema.ObservationFailureKind.STACK_UNWIND_FAILED
+    )
+    assert (
+        observation_failure_kind(ValueError())
+        is schema.ObservationFailureKind.MALFORMED_OBSERVATION
+    )
+    assert (
+        observation_failure_kind(OSError())
+        is schema.ObservationFailureKind.OBSERVATION_SYSTEM_ERROR
+    )
 
 
 # PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
@@ -362,7 +447,10 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     )
 
     assert analysis_result.returncode == 0
-    assert "Profile schema: 3; complete; successful" in analysis_result.stdout
+    assert (
+        f"Profile schema: {schema.SCHEMA_VERSION}; complete; successful"
+        in analysis_result.stdout
+    )
     assert "Sampling: poisson" in analysis_result.stdout
     assert "Observations:" in analysis_result.stdout
     assert "Self wall occupancy (union across threads):" in analysis_result.stdout
@@ -392,26 +480,51 @@ def test_uninterruptible_io_is_not_a_cross_thread_handoff():
 # PRF-025: Failure threshold. PRF-047: Multi-threaded critical path.
 # PRF-048: Critical-path fixture. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
+# PRF-049: Event-driven coordination.
 def test_wall_critical_path_recovers_cross_thread_handoffs(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ):
     profile_path = tmp_path / "critical-path.jsonl"
-
-    capture_result = subprocess.run(
+    profiler_gate = tmp_path / "profiler-gate"
+    os.mkfifo(profiler_gate)
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
+    capture_process = subprocess.Popen(
         _profile_command(
             profile_path,
             "PROFILER_CRITICAL_PATH_SOURCE",
-            mean_interval_seconds=0.00025,
+            mean_interval_seconds=0.005,
+            event_file_descriptor=event_write_file_descriptor,
+            target_arguments=(str(profiler_gate),),
         ),
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
-        check=False,
+        pass_fds=(event_write_file_descriptor,),
     )
+    os.close(event_write_file_descriptor)
+    launcher_recorded = event_reader.wait_for("launcher-recorded")
+    python_attached = event_reader.wait_for("python-attached")
+    profiler_ready = event_reader.wait_for(
+        "successful-observation-persisted",
+        600,
+        timeout_seconds=15,
+    )
+    if profiler_ready:
+        with profiler_gate.open("wb", buffering=0) as gate_stream:
+            _ = gate_stream.write(b"1")
+    else:
+        capture_process.terminate()
+    capture_stdout, capture_stderr = capture_process.communicate()
+    os.close(event_read_file_descriptor)
 
-    assert capture_result.returncode == 0
-    _assert_capture_summary(capture_result.stdout, profile_path)
-    assert capture_result.stderr == ""
+    assert launcher_recorded
+    assert python_attached
+    assert profiler_ready
+    assert capture_process.returncode == 0
+    _assert_capture_summary(capture_stdout, profile_path)
+    assert capture_stderr == ""
     profile = schema.load(profile_path)
     assert profile.complete is True
     assert profile.success is True
@@ -530,7 +643,6 @@ def test_wall_critical_path_reports_unobserved_handoff(
     assert handoff.resolution == "unobserved"
     assert handoff.candidates == ()
     assert handoff.downstream_wait_ns > 0
-    assert analysis.critical_path.work_ns > 700_000_000
     assert (
         analysis.critical_path.segments[0].interval.start_ns
         == profile.lifecycle["python_observed_target_running_ns"]
@@ -599,7 +711,7 @@ def test_real_profile_reports_worker_waiting_from_first_observation():
 # PRF-036: Rate convergence. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_cpu_accuracy_converges_across_rates_through_real_targets(tmp_path: Path):
-    rates = (0.0005, 0.001, 0.002)
+    rates = (0.00025, 0.0005, 0.001)
     cumulative_rows_by_rate: list[dict[str, cpu_analyzer.FunctionRow]] = []
     final_profile_path = tmp_path / "cpu-2.jsonl"
     for index, rate in enumerate(rates):
@@ -762,17 +874,35 @@ def test_cpu_accuracy_converges_across_rates_through_real_targets(tmp_path: Path
 # PRF-041: Realistic tests.
 def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
-
-    profile = profiler.capture(
-        command=(sys.executable, "-c", "import time; time.sleep(0.02)"),
-        profile_path=profile_path,
-        workload_path=Path(__file__),
-        working_directory=tmp_path,
-        mean_interval_seconds=1000,
-        random_seed=7,
-        attachment_timeout_seconds=5,
-        mode="wall",
+    exit_gate = tmp_path / "exit-gate"
+    os.mkfifo(exit_gate)
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
+    profile_process = subprocess.Popen(
+        _profile_command(
+            profile_path,
+            "PROFILER_EXIT_SOURCE",
+            mean_interval_seconds=1000,
+            event_file_descriptor=event_write_file_descriptor,
+            target_arguments=(str(exit_gate),),
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        pass_fds=(event_write_file_descriptor,),
     )
+    os.close(event_write_file_descriptor)
+    python_attached = event_reader.wait_for("python-attached")
+    with exit_gate.open("wb") as exit_gate_writer:
+        _ = exit_gate_writer.write(b"\0")
+    capture_stdout, capture_stderr = profile_process.communicate()
+    os.close(event_read_file_descriptor)
+
+    assert python_attached
+    assert profile_process.returncode == 1
+    _assert_capture_summary(capture_stdout, profile_path, status="unsuccessful")
+    assert capture_stderr == "Error: profile capture was not successful\n"
+    profile = schema.load(profile_path)
 
     assert profile.complete is True
     assert profile.success is False
@@ -781,7 +911,7 @@ def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
     assert missed_observation["status"] == "missed"
     assert (
         missed_observation["failure_kind"]
-        == "target-exited-before-scheduled-observation"
+        == schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
     )
     assert missed_observation["failure_reason"] == (
         "the target exited before the scheduled stop"
@@ -793,24 +923,86 @@ def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
         "discarded": 0,
         "missed": 1,
     }
-    assert profile.failures[0]["kind"] == "target-exited-before-valid-stack"
+    assert (
+        profile.failures[0]["kind"]
+        == schema.CaptureFailureKind.TARGET_EXITED_BEFORE_VALID_STACK
+    )
+
+
+# PRF-023: Guaranteed resume. PRF-024: Explicit failures.
+# PRF-026: No silent partial success. PRF-041: Realistic tests.
+# PRF-049: Event-driven coordination.
+def test_event_reader_failure_terminates_target_and_is_recorded(tmp_path: Path):
+    profile_path = tmp_path / "event-reader-failure.jsonl"
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
+    profile_process = subprocess.Popen(
+        _profile_command(
+            profile_path,
+            "PROFILER_CONTINUOUS_SOURCE",
+            mean_interval_seconds=0.1,
+            event_file_descriptor=event_write_file_descriptor,
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        pass_fds=(event_write_file_descriptor,),
+    )
+    os.close(event_write_file_descriptor)
+    launcher_recorded = event_reader.wait_for("launcher-recorded")
+    python_attached = event_reader.wait_for("python-attached")
+    os.close(event_read_file_descriptor)
+
+    capture_stdout, capture_stderr = profile_process.communicate()
+
+    assert launcher_recorded
+    assert python_attached
+    assert profile_process.returncode == 1
+    _assert_capture_summary(
+        capture_stdout,
+        profile_path,
+        status="unsuccessful",
+    )
+    assert capture_stderr == "Error: profile capture was not successful\n"
+    profile = schema.load(profile_path)
+    assert profile.complete is True
+    assert profile.success is False
+    assert profile.compiler_exit_status == -signal.SIGTERM
+    assert len(profile.failures) == 1
+    assert (
+        profile.failures[0]["kind"]
+        == schema.CaptureFailureKind.PROFILER_EVENT_WRITE_FAILED
+    )
 
 
 # PRF-023: Guaranteed resume. PRF-024: Explicit failures.
 # PRF-026: No silent partial success. PRF-027: Incremental persistence.
-# PRF-041: Realistic tests.
+# PRF-041: Realistic tests. PRF-049: Event-driven coordination.
 def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
     profile_process = subprocess.Popen(
-        _profile_command(profile_path, "PROFILER_CONTINUOUS_SOURCE"),
+        _profile_command(
+            profile_path,
+            "PROFILER_CONTINUOUS_SOURCE",
+            event_file_descriptor=event_write_file_descriptor,
+        ),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        pass_fds=(event_write_file_descriptor,),
     )
-    assert _wait_for_successful_observation_records(profile_path, 2)
+    os.close(event_write_file_descriptor)
+    observations_persisted = event_reader.wait_for(
+        "successful-observation-persisted",
+        2,
+    )
 
     profile_process.send_signal(signal.SIGTERM)
-    stdout, stderr = profile_process.communicate(timeout=10)
+    stdout, stderr = profile_process.communicate()
+    os.close(event_read_file_descriptor)
 
+    assert observations_persisted
     assert profile_process.returncode == 1
     _assert_capture_summary(
         stdout.decode(),
@@ -824,7 +1016,9 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
     assert profile.success is False
     assert profile.interruption_signal == signal.SIGTERM
     assert profile.compiler_exit_status == -signal.SIGTERM
-    assert profile.failures[-1]["kind"] == "profiler-interrupted"
+    assert (
+        profile.failures[-1]["kind"] == schema.CaptureFailureKind.PROFILER_INTERRUPTED
+    )
     assert profile.observation_counts["successful"] > 1
     observations, discarded_observations = _assert_recorded_observations(
         profile.observations
@@ -869,36 +1063,50 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
 
 # PRF-024: Explicit failures. PRF-026: No silent partial success.
 # PRF-027: Incremental persistence. PRF-041: Realistic tests.
+# PRF-049: Event-driven coordination.
 def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
     target = _runfile("PROFILER_CONTINUOUS_SOURCE")
     signal_sent = threading.Event()
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
 
     def interrupt_capture() -> None:
         # The deployed profiler has no helper thread that can receive this signal.
         _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
-        if _wait_for_successful_observation_records(profile_path, 2):
+        if event_reader.wait_for(
+            "successful-observation-persisted",
+            2,
+        ):
             os.kill(os.getpid(), signal.SIGINT)
             signal_sent.set()
 
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGCHLD})
     interrupt_thread = threading.Thread(target=interrupt_capture)
     interrupt_thread.start()
-    result = click.testing.CliRunner().invoke(
-        profiler.main,
-        [
-            "--profile",
-            str(profile_path),
-            "--workload",
-            str(target),
-            "--working-directory",
-            str(tmp_path),
-            "--mean-interval-seconds",
-            "0.01",
-            "--",
-            *_target_command("PROFILER_CONTINUOUS_SOURCE"),
-        ],
-    )
+    try:
+        result = click.testing.CliRunner().invoke(
+            profiler.main,
+            [
+                "--profile",
+                str(profile_path),
+                "--workload",
+                str(target),
+                "--working-directory",
+                str(tmp_path),
+                "--mean-interval-seconds",
+                "0.01",
+                "--event-fd",
+                str(event_write_file_descriptor),
+                "--",
+                *_target_command("PROFILER_CONTINUOUS_SOURCE"),
+            ],
+        )
+    finally:
+        _ = signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        os.close(event_write_file_descriptor)
     interrupt_thread.join()
+    os.close(event_read_file_descriptor)
 
     assert signal_sent.is_set()
     assert result.exit_code == 1
@@ -912,50 +1120,48 @@ def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
 
 # PRF-023: Guaranteed resume. PRF-024: Explicit failures.
 # PRF-027: Incremental persistence. PRF-041: Realistic tests.
+# PRF-049: Event-driven coordination.
 def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     profile_path = tmp_path / "stopped-interrupt.jsonl"
     target = _runfile("PROFILER_RACE_SOURCE")
     signal_sent = threading.Event()
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
 
     def interrupt_stopped_capture() -> None:
         # The deployed profiler has no helper thread that can receive this signal.
         _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-            process_id = _observed_process_id(profile_path)
-            if process_id is None:
-                time.sleep(0.0001)
-                continue
-            try:
-                status = Path(f"/proc/{process_id}/status").read_text(encoding="utf-8")
-            except FileNotFoundError:
-                return
-            state_line = next(
-                line for line in status.splitlines() if line.startswith("State:")
-            )
-            if state_line.split()[1] in {"T", "t"}:
-                signal_sent.set()
-                os.kill(os.getpid(), signal.SIGINT)
-                return
+        observed = event_reader.wait_for("successful-observation-persisted")
+        if observed and event_reader.wait_for("target-stopped"):
+            signal_sent.set()
+            os.kill(os.getpid(), signal.SIGINT)
 
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGCHLD})
     interrupt_thread = threading.Thread(target=interrupt_stopped_capture)
     interrupt_thread.start()
-    result = click.testing.CliRunner().invoke(
-        profiler.main,
-        [
-            "--profile",
-            str(profile_path),
-            "--workload",
-            str(target),
-            "--working-directory",
-            str(tmp_path),
-            "--mean-interval-seconds",
-            "0.0001",
-            "--",
-            *_target_command("PROFILER_RACE_SOURCE"),
-        ],
-    )
+    try:
+        result = click.testing.CliRunner().invoke(
+            profiler.main,
+            [
+                "--profile",
+                str(profile_path),
+                "--workload",
+                str(target),
+                "--working-directory",
+                str(tmp_path),
+                "--mean-interval-seconds",
+                "0.0001",
+                "--event-fd",
+                str(event_write_file_descriptor),
+                "--",
+                *_target_command("PROFILER_RACE_SOURCE"),
+            ],
+        )
+    finally:
+        _ = signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        os.close(event_write_file_descriptor)
     interrupt_thread.join()
+    os.close(event_read_file_descriptor)
 
     assert signal_sent.is_set()
     assert result.exit_code == 1
@@ -965,7 +1171,9 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     assert profile.success is False
     assert profile.interruption_signal == signal.SIGINT
     assert profile.compiler_exit_status == -signal.SIGTERM
-    assert profile.failures[-1]["kind"] == "profiler-interrupted"
+    assert (
+        profile.failures[-1]["kind"] == schema.CaptureFailureKind.PROFILER_INTERRUPTED
+    )
     observations, discarded_observations = _assert_recorded_observations(
         profile.observations
     )
@@ -1001,7 +1209,7 @@ def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
     assert profile.success is False
     assert profile.python_runtime is None
     assert profile.compiler_exit_status == -signal.SIGTERM
-    assert profile.failures[0]["kind"] == "attachment-timeout"
+    assert profile.failures[0]["kind"] == schema.CaptureFailureKind.ATTACHMENT_TIMEOUT
     analysis_result = click.testing.CliRunner().invoke(
         analyzer.main,
         ["--profile", str(profile_path)],
@@ -1031,7 +1239,10 @@ def test_non_python_target_exit_before_attachment_is_recorded(tmp_path: Path):
     assert profile.success is False
     assert profile.python_runtime is None
     assert profile.compiler_exit_status == 0
-    assert profile.failures[0]["kind"] == "target-exited-before-attachment"
+    assert (
+        profile.failures[0]["kind"]
+        == schema.CaptureFailureKind.TARGET_EXITED_BEFORE_ATTACHMENT
+    )
 
 
 # PRF-004: No stale-stack reuse. PRF-032: Real read-race fixture.

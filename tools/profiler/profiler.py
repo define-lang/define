@@ -23,14 +23,20 @@ from typing import Protocol, cast
 import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
 
-from tools.profiler import cpu_profiler, schema
+from tools.profiler import cpu_profiler, process_events, schema
 
 if typing.TYPE_CHECKING:
     import collections.abc
 
 _PATH = click.Path(path_type=pathlib.Path)
-_ATTACHMENT_POLL_SECONDS = 0.005
 _MAX_DISCARDED_RATE = 0.001
+
+type _ProfilerEvent = typing.Literal[
+    "launcher-recorded",
+    "python-attached",
+    "target-stopped",
+    "successful-observation-persisted",
+]
 
 
 # PRF-015: Full stacks. PRF-016: Source identity.
@@ -77,11 +83,18 @@ class _CaptureInterrupted(BaseException):
 
 class _AttachmentError(Exception):
     # PRF-022: Launcher safety. PRF-024: Explicit failures.
-    kind: str
+    kind: schema.CaptureFailureKind
 
-    def __init__(self, kind: str, reason: str):
+    def __init__(self, kind: schema.CaptureFailureKind, reason: str):
         super().__init__(reason)
         self.kind = kind
+
+
+class _ProfilerEventError(Exception):
+    # PRF-024: Explicit failures. PRF-049: Event-driven coordination.
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.pause_duration_ns: int = 0
 
 
 class _TargetStopError(Exception):
@@ -102,6 +115,41 @@ class _TargetResumeError(Exception):
 class _InconsistentStackObservationError(Exception):
     # PRF-007: Consistent stack.
     pass
+
+
+type _ObservationFailure = (
+    OSError
+    | RuntimeError
+    | ValueError
+    | _InconsistentStackObservationError
+    | _TargetExitRaceError
+    | _TargetResumeError
+    | _TargetStopError
+)
+
+
+def _observation_failure_kind(
+    failure: _ObservationFailure,
+) -> schema.ObservationFailureKind:
+    # PRF-024: Explicit failures.
+    match failure:
+        case PermissionError():
+            return schema.ObservationFailureKind.PERMISSION_DENIED
+        case _InconsistentStackObservationError():
+            return schema.ObservationFailureKind.INCONSISTENT_STACK
+        case _TargetExitRaceError():
+            return schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
+        case _TargetResumeError():
+            return schema.ObservationFailureKind.TARGET_RESUME_FAILED
+        case _TargetStopError():
+            return schema.ObservationFailureKind.TARGET_STOP_FAILED
+        case RuntimeError():
+            return schema.ObservationFailureKind.STACK_UNWIND_FAILED
+        case ValueError():
+            return schema.ObservationFailureKind.MALFORMED_OBSERVATION
+        case OSError():
+            return schema.ObservationFailureKind.OBSERVATION_SYSTEM_ERROR
+    typing.assert_never(failure)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -161,7 +209,7 @@ class _SuccessfulObservationResult(_ObservationTiming):
 class _FailedObservationResult(_ObservationTiming):
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     status: typing.Literal["discarded", "missed"]
-    failure_kind: str
+    failure_kind: schema.ObservationFailureKind
     failure_reason: str
 
 
@@ -194,6 +242,7 @@ class _AttachedRuntime:
     runtime: schema.PythonRuntime
     observed_ns: int
     observed_target_running_ns: int
+    attachment_pause_ns: int
 
 
 @dataclasses.dataclass(slots=True)
@@ -212,6 +261,7 @@ class _CaptureState:
     attached_runtime: _AttachedRuntime | None = None
     retained_unwinder: _Unwinder | None = None
     total_pause_ns: int = 0
+    observation_pause_ns: int = 0
     python_stack_observations: int = 0
     observation_index: int = 0
     runtime_recorded: bool = False
@@ -304,6 +354,19 @@ def _interrupt(signal_number: int, _current_frame: object) -> None:
     raise _CaptureInterrupted(signal_number)
 
 
+def _emit_profiler_event(
+    event_file_descriptor: int | None,
+    event: _ProfilerEvent,
+):
+    # PRF-049: Event-driven coordination.
+    if event_file_descriptor is None:
+        return
+    try:
+        _ = os.write(event_file_descriptor, f"{event}\n".encode())
+    except OSError as error:
+        raise _ProfilerEventError(str(error)) from error
+
+
 def _sha256(path: pathlib.Path) -> str:
     # PRF-010: Raw-data preservation.
     digest = hashlib.sha256()
@@ -311,27 +374,6 @@ def _sha256(path: pathlib.Path) -> str:
         while chunk := source_file.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _executable_identity(process_id: int) -> schema.ExecutableIdentity:
-    # PRF-021: Version match.
-    executable_path = pathlib.Path(os.readlink(f"/proc/{process_id}/exe"))
-    executable_stat = executable_path.stat()
-    return {
-        "path": str(executable_path),
-        "device": executable_stat.st_dev,
-        "inode": executable_stat.st_ino,
-    }
-
-
-def _same_executable(
-    first: schema.ExecutableIdentity, second: schema.ExecutableIdentity
-) -> bool:
-    # PRF-021: Version match.
-    return (first["device"], first["inode"]) == (
-        second["device"],
-        second["inode"],
-    )
 
 
 def _python_runtime(
@@ -351,26 +393,29 @@ def _python_runtime(
 
 
 def _wait_for_python_executable(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     expected_python: schema.ExecutableIdentity,
     attachment_timeout_seconds: float,
-) -> schema.ExecutableIdentity:
+) -> tuple[schema.ExecutableIdentity, int]:
     # PRF-021: Version match. PRF-022: Launcher safety.
-    attachment_deadline = time.monotonic() + attachment_timeout_seconds
-    while target.poll() is None:
-        current_executable = _executable_identity(target.pid)
-        if _same_executable(current_executable, expected_python):
-            return current_executable
-        if time.monotonic() >= attachment_deadline:
-            raise _AttachmentError(
-                "attachment-timeout",
-                "the target did not execute the profiler's Python runtime",
-            )
-        time.sleep(_ATTACHMENT_POLL_SECONDS)
-    raise _AttachmentError(
-        "target-exited-before-attachment",
-        "the target exited before its launcher executed the Python runtime",
-    )
+    # PRF-049: Event-driven coordination.
+    try:
+        result = process_events.wait_for_expected_executable(
+            target_process,
+            expected_python,
+            attachment_timeout_seconds,
+        )
+    except process_events.ExecutableWaitTimeoutError as error:
+        raise _AttachmentError(
+            schema.CaptureFailureKind.ATTACHMENT_TIMEOUT,
+            "the target did not execute the profiler's Python runtime",
+        ) from error
+    except process_events.ProcessExitedBeforeExecutableError as error:
+        raise _AttachmentError(
+            schema.CaptureFailureKind.TARGET_EXITED_BEFORE_ATTACHMENT,
+            "the target exited before its launcher executed the Python runtime",
+        ) from error
+    return result.executable, result.pause_ns
 
 
 def _status_fields(status: str) -> dict[str, str]:
@@ -424,13 +469,15 @@ def _stopped_threads(process_id: int) -> dict[int, _StoppedThread]:
 
 
 def _capture_stopped_threads(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     evidence: dict[int, _ThreadEvidence],
     retained_unwinder: _Unwinder | None,
     mode: schema.CaptureMode,
+    event_file_descriptor: int | None,
 ) -> tuple[list[_CapturedThread], _Unwinder]:
     # PRF-006: Complete-process stop. PRF-007: Consistent stack.
     # PRF-013: Wall mode. PRF-015: Full stacks. PRF-016: Source identity.
+    target = target_process.process
     wait_result = os.waitid(
         os.P_PID,
         target.pid,
@@ -508,6 +555,7 @@ def _capture_stopped_threads(
                 ),
             )
         )
+    _emit_profiler_event(event_file_descriptor, "target-stopped")
     return captured_threads, observation_unwinder
 
 
@@ -520,6 +568,7 @@ def _failed_observation_capture(
     total_pause_ns: int,
     pause_started_ns: int,
     pause_ended_ns: int,
+    failure_kind: schema.ObservationFailureKind,
 ) -> _ObservationCapture:
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     # PRF-025: Failure threshold.
@@ -541,35 +590,42 @@ def _failed_observation_capture(
             process_id=target.pid,
             status=status,
             failure_kind=(
-                "target-exited-during-observation"
+                schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
                 if process_exit_confirmed
-                else type(failure).__name__
+                else failure_kind
             ),
-            failure_reason=str(failure),
+            failure_reason=f"{type(failure).__name__}: {failure}",
         ),
         unwinder=None,
     )
 
 
 def _capture_observation(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     retained_unwinder: _Unwinder | None,
     observation_index: int,
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
     mode: schema.CaptureMode,
+    event_file_descriptor: int | None,
 ) -> _ObservationCapture:
     # PRF-003: Pause exclusion. PRF-006: Complete-process stop.
     # PRF-007: Consistent stack. PRF-013: Wall mode.
     # PRF-015: Full stacks. PRF-016: Source identity.
     # PRF-023: Guaranteed resume.
+    target = target_process.process
     try:
         evidence = _thread_evidence(target.pid)
     except _CaptureInterrupted:
         raise
     except (OSError, UnicodeDecodeError, ValueError) as error:
         observation_ns = time.monotonic_ns()
+        failure_kind = (
+            schema.ObservationFailureKind.PERMISSION_DENIED
+            if isinstance(error, PermissionError)
+            else schema.ObservationFailureKind.THREAD_EVIDENCE_READ_FAILED
+        )
         return _failed_observation_capture(
             target,
             error,
@@ -579,23 +635,28 @@ def _capture_observation(
             total_pause_ns,
             observation_ns,
             observation_ns,
+            failure_kind,
         )
 
-    failure: Exception | None = None
+    failure: _ObservationFailure | None = None
     interruption: _CaptureInterrupted | None = None
+    profiler_event_error: _ProfilerEventError | None = None
     captured_threads: list[_CapturedThread] = []
     observation_unwinder: _Unwinder | None = None
     pause_started_ns = time.monotonic_ns()
     try:
         os.kill(target.pid, signal.SIGSTOP)
         captured_threads, observation_unwinder = _capture_stopped_threads(
-            target,
+            target_process,
             evidence,
             retained_unwinder,
             mode,
+            event_file_descriptor,
         )
     except _CaptureInterrupted as error:
         interruption = error
+    except _ProfilerEventError as error:
+        profiler_event_error = error
     except (
         OSError,
         RuntimeError,
@@ -616,6 +677,9 @@ def _capture_observation(
     if interruption is not None:
         interruption.pause_duration_ns += pause_duration_ns
         raise interruption
+    if profiler_event_error is not None:
+        profiler_event_error.pause_duration_ns += pause_duration_ns
+        raise profiler_event_error
     if failure is not None:
         return _failed_observation_capture(
             target,
@@ -626,6 +690,7 @@ def _capture_observation(
             total_pause_ns,
             pause_started_ns,
             pause_ended_ns,
+            _observation_failure_kind(failure),
         )
     return _ObservationCapture(
         result=_SuccessfulObservationResult(
@@ -656,17 +721,6 @@ def _observation_timing(result: _ObservationTiming) -> schema.ObservationBase:
     }
 
 
-def _wait_for_schedule(target: subprocess.Popen[str], interval_seconds: float) -> bool:
-    # PRF-002: Independent sampling schedule.
-    deadline = time.monotonic() + interval_seconds
-    while target.poll() is None:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            return True
-        time.sleep(min(_ATTACHMENT_POLL_SECONDS, remaining))
-    return False
-
-
 def _next_interval_seconds(
     random_generator: random.Random,
     mean_interval_seconds: float,
@@ -694,13 +748,15 @@ def _missed_exit_observation(
         pause_duration_ns=0,
         process_id=target.pid,
         status="missed",
-        failure_kind="target-exited-before-scheduled-observation",
+        failure_kind=(
+            schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
+        ),
         failure_reason="the target exited before the scheduled stop",
     )
 
 
 def _capture_failure(
-    kind: str,
+    kind: schema.CaptureFailureKind,
     reason: str,
     launched_ns: int,
     total_pause_ns: int,
@@ -721,14 +777,18 @@ def _capture_failure(
     }
 
 
-def _terminate_process_group(target: subprocess.Popen[str]) -> int:
+def _terminate_process_group(
+    target_process: process_events.TargetProcess,
+) -> tuple[int, int]:
     # PRF-023: Guaranteed resume. PRF-026: No silent partial success.
+    trace_pause_ns = process_events.release_exec_notifications(target_process)
+    target = target_process.process
     try:
         os.killpg(target.pid, signal.SIGTERM)
         os.kill(target.pid, signal.SIGCONT)
     except ProcessLookupError:
         pass
-    return target.wait()
+    return target.wait(), trace_pause_ns
 
 
 def _update_thread_lifecycles(
@@ -794,8 +854,9 @@ def _launch_target(
     sampling: schema.SamplingConfiguration,
     diagnostics_file: typing.TextIO,
     writer: _ProfileWriter,
-) -> tuple[subprocess.Popen[str], int]:
+) -> tuple[process_events.TargetProcess, int]:
     # PRF-010: Raw-data preservation. PRF-011: Complete invocation.
+    # PRF-022: Launcher safety. PRF-049: Event-driven coordination.
     launched_ns = time.monotonic_ns()
     target = subprocess.Popen(
         command,
@@ -804,6 +865,13 @@ def _launch_target(
         start_new_session=True,
         text=True,
     )
+    try:
+        target_process = process_events.attach_exec_notifications(target)
+    except OSError:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(target.pid, signal.SIGTERM)
+        _ = target.wait()
+        raise
     writer.append_records(
         [
             {
@@ -815,23 +883,23 @@ def _launch_target(
                 "workload_path": str(workload_path),
                 "workload_sha256": _sha256(workload_path),
                 "sampling": sampling,
-                "launcher_executable": _executable_identity(target.pid),
+                "launcher_executable": process_events.executable_identity(target.pid),
                 "launched_ns": launched_ns,
             }
         ]
     )
-    return target, launched_ns
+    return target_process, launched_ns
 
 
 def _attach_runtime(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     expected_python: schema.ExecutableIdentity,
     attachment_timeout_seconds: float,
     launched_ns: int,
 ) -> _AttachedRuntime:
     # PRF-011: Complete invocation. PRF-022: Launcher safety.
-    python_executable = _wait_for_python_executable(
-        target,
+    python_executable, attachment_pause_ns = _wait_for_python_executable(
+        target_process,
         expected_python,
         attachment_timeout_seconds,
     )
@@ -839,15 +907,18 @@ def _attach_runtime(
     return _AttachedRuntime(
         runtime=_python_runtime(python_executable),
         observed_ns=observed_ns,
-        observed_target_running_ns=observed_ns - launched_ns,
+        observed_target_running_ns=observed_ns - launched_ns - attachment_pause_ns,
+        attachment_pause_ns=attachment_pause_ns,
     )
 
 
 def _scheduled_observation(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     state: _CaptureState,
     mean_interval_seconds: float,
     launched_ns: int,
+    timer_file_descriptor: int,
+    event_file_descriptor: int | None,
 ) -> tuple[_ObservationResult, bool]:
     # PRF-002: Independent sampling schedule. PRF-004: No stale-stack reuse.
     interval_seconds = _next_interval_seconds(
@@ -855,7 +926,12 @@ def _scheduled_observation(
         mean_interval_seconds,
     )
     scheduled_interval_ns = round(interval_seconds * 1_000_000_000)
-    target_exited = not _wait_for_schedule(target, interval_seconds)
+    target_exited = not process_events.wait_for_schedule(
+        target_process,
+        timer_file_descriptor,
+        interval_seconds,
+    )
+    target = target_process.process
     if target_exited:
         return (
             _missed_exit_observation(
@@ -868,16 +944,21 @@ def _scheduled_observation(
             True,
         )
     captured = _capture_observation(
-        target,
+        target_process,
         state.retained_unwinder,
         state.observation_index,
         scheduled_interval_ns,
         launched_ns,
         state.total_pause_ns,
         state.mode,
+        event_file_descriptor,
     )
     state.retained_unwinder = captured.unwinder
-    return captured.result, False
+    target_exited = (
+        isinstance(captured.result, _FailedObservationResult)
+        and captured.result.status == "missed"
+    )
+    return captured.result, target_exited
 
 
 def _has_python_stack(observation: schema.Observation) -> bool:
@@ -916,6 +997,7 @@ def _persist_observation(
     state: _CaptureState,
     result: _ObservationResult,
     attached_runtime: _AttachedRuntime,
+    event_file_descriptor: int | None,
 ):
     # PRF-022: Launcher safety. PRF-027: Incremental persistence.
     records, observation = writer.observation_record(result)
@@ -939,28 +1021,44 @@ def _persist_observation(
         observation,
         has_python_stack=has_python_stack,
     )
+    if observation["status"] == "successful":
+        _emit_profiler_event(
+            event_file_descriptor,
+            "successful-observation-persisted",
+        )
 
 
 def _sample_until_exit(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     writer: _ProfileWriter,
     state: _CaptureState,
     attached_runtime: _AttachedRuntime,
     mean_interval_seconds: float,
     launched_ns: int,
+    timer_file_descriptor: int,
+    event_file_descriptor: int | None,
 ):
     # PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
     # PRF-027: Incremental persistence.
-    while target.poll() is None:
+    while True:
         result, target_exited = _scheduled_observation(
-            target,
+            target_process,
             state,
             mean_interval_seconds,
             launched_ns,
+            timer_file_descriptor,
+            event_file_descriptor,
         )
         state.total_pause_ns += result.pause_duration_ns
+        state.observation_pause_ns += result.pause_duration_ns
         with _blocked_interruption_signals():
-            _persist_observation(writer, state, result, attached_runtime)
+            _persist_observation(
+                writer,
+                state,
+                result,
+                attached_runtime,
+                event_file_descriptor,
+            )
         if target_exited:
             return
 
@@ -968,7 +1066,7 @@ def _sample_until_exit(
 def _record_capture_failure(
     writer: _ProfileWriter,
     state: _CaptureState,
-    kind: str,
+    kind: schema.CaptureFailureKind,
     reason: str,
     launched_ns: int,
     *,
@@ -987,70 +1085,86 @@ def _record_capture_failure(
 
 
 def _capture_attached_process(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     writer: _ProfileWriter,
     state: _CaptureState,
     expected_python: schema.ExecutableIdentity,
     attachment_timeout_seconds: float,
     mean_interval_seconds: float,
     launched_ns: int,
+    timer_file_descriptor: int,
+    event_file_descriptor: int | None,
 ) -> int:
     # PRF-011: Complete invocation. PRF-026: No silent partial success.
+    _emit_profiler_event(event_file_descriptor, "launcher-recorded")
     attached_runtime = _attach_runtime(
-        target,
+        target_process,
         expected_python,
         attachment_timeout_seconds,
         launched_ns,
     )
     state.attached_runtime = attached_runtime
+    state.total_pause_ns += attached_runtime.attachment_pause_ns
+    _emit_profiler_event(event_file_descriptor, "python-attached")
     _sample_until_exit(
-        target,
+        target_process,
         writer,
         state,
         attached_runtime,
         mean_interval_seconds,
         launched_ns,
+        timer_file_descriptor,
+        event_file_descriptor,
     )
     if state.python_stack_observations == 0:
         _record_capture_failure(
             writer,
             state,
-            "target-exited-before-valid-stack",
+            schema.CaptureFailureKind.TARGET_EXITED_BEFORE_VALID_STACK,
             "the target exited before a valid Python stack was observed",
             launched_ns,
             python_observed=True,
         )
-    return target.wait()
+    return target_process.process.wait()
 
 
-def _wait_after_attachment_failure(target: subprocess.Popen[str]) -> int:
+def _wait_after_attachment_failure(
+    target_process: process_events.TargetProcess,
+) -> tuple[int, int]:
     # PRF-023: Guaranteed resume. PRF-026: No silent partial success.
+    trace_pause_ns = process_events.release_exec_notifications(target_process)
+    target = target_process.process
     if target.poll() is None:
-        return _terminate_process_group(target)
-    return target.wait()
+        exit_status, termination_pause_ns = _terminate_process_group(target_process)
+        return exit_status, trace_pause_ns + termination_pause_ns
+    return target.wait(), trace_pause_ns
 
 
 def _capture_process(
-    target: subprocess.Popen[str],
+    target_process: process_events.TargetProcess,
     writer: _ProfileWriter,
     state: _CaptureState,
     expected_python: schema.ExecutableIdentity,
     attachment_timeout_seconds: float,
     mean_interval_seconds: float,
     launched_ns: int,
+    timer_file_descriptor: int,
+    event_file_descriptor: int | None,
 ) -> int:
     # PRF-023: Guaranteed resume. PRF-024: Explicit failures.
     # PRF-026: No silent partial success.
     with _interruption_handlers():
         try:
             return _capture_attached_process(
-                target,
+                target_process,
                 writer,
                 state,
                 expected_python,
                 attachment_timeout_seconds,
                 mean_interval_seconds,
                 launched_ns,
+                timer_file_descriptor,
+                event_file_descriptor,
             )
         except _AttachmentError as error:
             _record_capture_failure(
@@ -1061,19 +1175,36 @@ def _capture_process(
                 launched_ns,
                 python_observed=False,
             )
-            return _wait_after_attachment_failure(target)
+            exit_status, trace_pause_ns = _wait_after_attachment_failure(target_process)
+            state.total_pause_ns += trace_pause_ns
+            return exit_status
+        except _ProfilerEventError as error:
+            _record_capture_failure(
+                writer,
+                state,
+                schema.CaptureFailureKind.PROFILER_EVENT_WRITE_FAILED,
+                str(error),
+                launched_ns,
+                python_observed=state.attached_runtime is not None,
+            )
+            exit_status, trace_pause_ns = _terminate_process_group(target_process)
+            state.total_pause_ns += error.pause_duration_ns + trace_pause_ns
+            state.observation_pause_ns += error.pause_duration_ns
+            return exit_status
         except _CaptureInterrupted as interruption:
-            state.total_pause_ns += interruption.pause_duration_ns
+            exit_status, trace_pause_ns = _terminate_process_group(target_process)
+            state.total_pause_ns += interruption.pause_duration_ns + trace_pause_ns
+            state.observation_pause_ns += interruption.pause_duration_ns
             state.interruption_signal = interruption.signal_number
             _record_capture_failure(
                 writer,
                 state,
-                "profiler-interrupted",
+                schema.CaptureFailureKind.PROFILER_INTERRUPTED,
                 signal.Signals(interruption.signal_number).name,
                 launched_ns,
                 python_observed=state.attached_runtime is not None,
             )
-            return _terminate_process_group(target)
+            return exit_status
 
 
 def _summary_record(
@@ -1086,7 +1217,7 @@ def _summary_record(
     exited_ns = time.monotonic_ns()
     statistics = _sampling_statistics(
         state.observation_times,
-        state.total_pause_ns,
+        state.observation_pause_ns,
         state.counts,
     )
     complete = state.interruption_signal is None
@@ -1143,11 +1274,12 @@ def capture(
     random_seed: int,
     attachment_timeout_seconds: float,
     mode: schema.CaptureMode,
+    event_file_descriptor: int | None = None,
 ) -> schema.RawProfile:
     """Launch a target and capture continuous blocking observations."""
     # PRF-011: Complete invocation. PRF-014: CPU mode.
     # PRF-020: Machine and human interfaces.
-    expected_python = _executable_identity(os.getpid())
+    expected_python = process_events.executable_identity(os.getpid())
     sampling_base: schema.SamplingConfigurationBase = {
         "schedule": "poisson",
         "mean_interval_seconds": mean_interval_seconds,
@@ -1173,12 +1305,22 @@ def capture(
         },
     )
 
+    if event_file_descriptor is not None:
+        _ = os.fstat(event_file_descriptor)
+
     with (
+        process_events.blocked_child_signal(),
+        contextlib.ExitStack() as file_descriptors,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,
         profile_path.open("w", encoding="utf-8") as profile_file,
     ):
+        timer_file_descriptor = os.timerfd_create(
+            time.CLOCK_MONOTONIC,
+            flags=os.TFD_CLOEXEC,
+        )
+        _ = file_descriptors.callback(os.close, timer_file_descriptor)
         writer = _ProfileWriter(profile_file)
-        target, launched_ns = _launch_target(
+        target_process, launched_ns = _launch_target(
             command,
             working_directory,
             workload_path,
@@ -1186,14 +1328,20 @@ def capture(
             diagnostics_file,
             writer,
         )
+        _ = file_descriptors.callback(
+            os.close,
+            target_process.process_file_descriptor,
+        )
         compiler_exit_status = _capture_process(
-            target,
+            target_process,
             writer,
             state,
             expected_python,
             attachment_timeout_seconds,
             mean_interval_seconds,
             launched_ns,
+            timer_file_descriptor,
+            event_file_descriptor,
         )
         _ = diagnostics_file.seek(0)
         diagnostics = diagnostics_file.read()
@@ -1269,6 +1417,12 @@ def capture(
     show_default=True,
     help="Maximum time to wait for the launcher to execute matching Python.",
 )
+@click.option(
+    "--event-fd",
+    "event_file_descriptor",
+    type=click.IntRange(min=0),
+    help="Write profiler coordination events as newline-delimited names.",
+)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED, required=True)
 def main(
     mode: schema.CaptureMode,
@@ -1277,11 +1431,13 @@ def main(
     working_directory: pathlib.Path,
     mean_interval_seconds: float,
     attachment_timeout_seconds: float,
+    event_file_descriptor: int | None,
     command: tuple[str, ...],
 ):
     """Capture a continuous blocking wall or CPU profile of a Python target."""
     # PRF-002: Independent sampling schedule. PRF-014: CPU mode.
     # PRF-020: Machine and human interfaces. PRF-025: Failure threshold.
+    # PRF-049: Event-driven coordination.
     profile = capture(
         command=command,
         profile_path=profile_path.absolute(),
@@ -1291,6 +1447,7 @@ def main(
         random_seed=random.SystemRandom().randrange(2**63),
         attachment_timeout_seconds=attachment_timeout_seconds,
         mode=mode,
+        event_file_descriptor=event_file_descriptor,
     )
     counts = profile.observation_counts
     statistics = cast("schema.SamplingStatistics", profile.sampling_statistics)

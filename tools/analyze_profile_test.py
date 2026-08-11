@@ -117,7 +117,7 @@ def _controlled_profile() -> schema.RawProfile:
         "pause_duration_ns": 5,
         "process_id": 42,
         "status": "discarded",
-        "failure_kind": "RuntimeError",
+        "failure_kind": schema.ObservationFailureKind.STACK_UNWIND_FAILED,
         "failure_reason": "remote stack changed",
     }
     final_observation: schema.SuccessfulObservation = {
@@ -144,7 +144,7 @@ def _controlled_profile() -> schema.RawProfile:
         ],
     }
     return schema.RawProfile(
-        schema_version=3,
+        schema_version=schema.SCHEMA_VERSION,
         complete=True,
         success=True,
         command=["/repo/compiler", "compile"],
@@ -300,6 +300,38 @@ def _write_records(profile_path: Path, records: list[schema.ProfileRecord]) -> N
     )
 
 
+# PRF-024: Explicit failures.
+def test_loads_serialized_failure_kinds_as_enums(tmp_path: Path):
+    profile = _controlled_profile()
+    profile.failures = [
+        {
+            "host_monotonic_ns": 200,
+            "target_running_ns": 95,
+            "kind": schema.CaptureFailureKind.PROFILER_INTERRUPTED,
+            "reason": "SIGTERM",
+        }
+    ]
+    profile_path = tmp_path / "profile.jsonl"
+    _write_records(profile_path, _wire_records(profile))
+
+    loaded_profile = schema.load(profile_path)
+
+    failed_observation = loaded_profile.observations[1]
+    assert failed_observation["status"] == "discarded"
+    assert (
+        failed_observation["failure_kind"]
+        is schema.ObservationFailureKind.STACK_UNWIND_FAILED
+    )
+    assert loaded_profile.failures == [
+        {
+            "host_monotonic_ns": 200,
+            "target_running_ns": 95,
+            "kind": schema.CaptureFailureKind.PROFILER_INTERRUPTED,
+            "reason": "SIGTERM",
+        }
+    ]
+
+
 # PRF-004: No stale-stack reuse. PRF-005: Lifecycle-bounded attribution.
 # PRF-015: Full stacks. PRF-019: Concurrency semantics.
 def test_analysis_preserves_failure_gap_and_retired_thread_boundary():
@@ -378,7 +410,7 @@ def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: 
         {
             "host_monotonic_ns": 110,
             "target_running_ns": None,
-            "kind": "attachment-timeout",
+            "kind": schema.CaptureFailureKind.ATTACHMENT_TIMEOUT,
             "reason": "target remained a launcher",
         }
     ]
@@ -526,13 +558,13 @@ def test_load_retains_complete_records_before_truncated_tail(tmp_path: Path):
     assert analysis.wall_window_ns == 0
 
 
-# PRF-020: Machine and human interfaces.
+# PRF-020: Machine and human interfaces. PRF-039: Current design only.
 def test_rejects_superseded_schema(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
     records = _wire_records(_controlled_profile())
     header = records[0]
     assert header["record_type"] == "header"
-    header["schema_version"] = 1
+    header["schema_version"] = 3
     _write_records(profile_path, records)
 
     result = click.testing.CliRunner().invoke(
@@ -541,7 +573,7 @@ def test_rejects_superseded_schema(tmp_path: Path):
     )
 
     assert result.exit_code == 1
-    assert "Error: unsupported profiler schema version: 1" in result.output
+    assert "Error: unsupported profiler schema version: 3" in result.output
 
 
 # PRF-014: CPU mode. PRF-018: Focused analysis.

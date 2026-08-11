@@ -277,6 +277,11 @@ successful.
 
 The profiler owns cleanup and must resume the compiler in a `finally` path after
 every successful stop, including collector failures and user interruption.
+Launcher execution, sampling deadlines, target stops, and target exit are
+observed through Linux process and timer events rather than fixed-duration
+polling. The profiler exposes newline-delimited coordination events through an
+optional caller-provided file descriptor so integration tests and orchestration
+can synchronize with actual profiler state.
 
 ### Sampling controller
 
@@ -361,6 +366,10 @@ The format must contain:
 - thread first-seen and last-seen observations;
 - compiler exit status and diagnostics status; and
 - counts of attempted, successful, discarded, and missed observations.
+
+Under PRF-024, machine-readable observation and capture failure kinds are
+closed, versioned string enums. Exception class names and messages are evidence
+in the human-readable failure reason, not ad hoc failure codes.
 
 The collector must write incrementally so an interrupted or failed compiler can
 still leave diagnosable evidence. A partial file must be explicitly marked
@@ -520,6 +529,11 @@ checkpoint.
 8. **PRF-028: Bounded storage.** The collector interns or otherwise deduplicates
    repeated frame data. Storage growth must be feasible for the largest
    generated workloads.
+9. **PRF-049: Event-driven coordination.** Launcher execution, sampling
+   deadlines, target stops, and target exit use explicit kernel events rather
+   than fixed-duration polling. A caller can observe launcher recording, Python
+   attachment, target stop, and successful-observation-persisted events without
+   guessing a delay.
 
 ### Bias and lifecycle acceptance tests
 

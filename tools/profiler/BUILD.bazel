@@ -70,12 +70,20 @@ py_library(
     deps = [":schema"],
 )
 
+# PRF-022: Launcher safety. PRF-049: Event-driven coordination.
+py_library(
+    name = "process_events",
+    srcs = ["process_events.py"],
+    deps = [":schema"],
+)
+
 # PRF-001: No call-correlated wall profiling work. PRF-014: CPU mode.
 py_library(
     name = "profiler",
     srcs = ["profiler.py"],
     deps = [
         ":cpu_profiler",
+        ":process_events",
         ":schema",
         "@pypi//click",
     ],
@@ -97,6 +105,8 @@ py_test(
         "//tools/profiler/testdata:cpu_target.py",
         "//tools/profiler/testdata:critical_path_target",
         "//tools/profiler/testdata:critical_path_target.py",
+        "//tools/profiler/testdata:exit_target",
+        "//tools/profiler/testdata:exit_target.py",
         "//tools/profiler/testdata:failure_target",
         "//tools/profiler/testdata:failure_target.py",
         "//tools/profiler/testdata:initial_wait_critical_path_profile.jsonl",
@@ -112,13 +122,12 @@ py_test(
         "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
         "PROFILER_CRITICAL_PATH_SOURCE": "$(rlocationpath //tools/profiler/testdata:critical_path_target.py)",
         "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
+        "PROFILER_EXIT_SOURCE": "$(rlocationpath //tools/profiler/testdata:exit_target.py)",
         "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
         "PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:initial_wait_critical_path_profile.jsonl)",
         "PROFILER_RACE_SOURCE": "$(rlocationpath //tools/profiler/testdata:race_target.py)",
         "PROFILER_UNRESOLVED_CRITICAL_PATH_SOURCE": "$(rlocationpath //tools/profiler/testdata:unresolved_critical_path_target.py)",
     },
-    # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
-    tags = ["local"],
     deps = [
         ":analyzer",
         ":analyzer_model",
@@ -190,6 +199,7 @@ pyright_test(
         ":compiler_profile_test",
         ":cpu_analyzer",
         ":cpu_profiler",
+        ":process_events",
         ":profiler",
         ":profiler_test",
         ":schema",

@@ -10,6 +10,7 @@ exports_files(
         "continuous_target.py",
         "cpu_target.py",
         "critical_path_target.py",
+        "exit_target.py",
         "failure_target.py",
         "initial_wait_critical_path_profile.jsonl",
         "initial_wait_critical_path_target.py",
@@ -47,6 +48,13 @@ py_binary(
 py_binary(
     name = "critical_path_target",
     srcs = ["critical_path_target.py"],
+    visibility = ["//tools/profiler:__pkg__"],
+)
+
+# PRF-024: Explicit failures. PRF-049: Event-driven coordination.
+py_binary(
+    name = "exit_target",
+    srcs = ["exit_target.py"],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
@@ -91,6 +99,7 @@ pyright_test(
         ":continuous_target",
         ":cpu_target",
         ":critical_path_target",
+        ":exit_target",
         ":failure_target",
         ":initial_wait_critical_path_target",
         ":race_target",

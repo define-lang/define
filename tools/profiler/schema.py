@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import json
 import typing
 from typing import Literal, TypedDict, cast
@@ -12,9 +13,38 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 CaptureMode = Literal["wall", "cpu"]
+
+
+class ObservationFailureKind(enum.StrEnum):
+    """Stable machine-readable reasons an observation was not retained."""
+
+    # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
+    INCONSISTENT_STACK = "inconsistent-stack"
+    MALFORMED_OBSERVATION = "malformed-observation"
+    OBSERVATION_SYSTEM_ERROR = "observation-system-error"
+    PERMISSION_DENIED = "permission-denied"
+    STACK_UNWIND_FAILED = "stack-unwind-failed"
+    TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION = (
+        "target-exited-before-scheduled-observation"
+    )
+    TARGET_EXITED_DURING_OBSERVATION = "target-exited-during-observation"
+    TARGET_RESUME_FAILED = "target-resume-failed"
+    TARGET_STOP_FAILED = "target-stop-failed"
+    THREAD_EVIDENCE_READ_FAILED = "thread-evidence-read-failed"
+
+
+class CaptureFailureKind(enum.StrEnum):
+    """Stable machine-readable reasons an entire capture failed."""
+
+    # PRF-024: Explicit failures. PRF-026: No silent partial success.
+    ATTACHMENT_TIMEOUT = "attachment-timeout"
+    PROFILER_EVENT_WRITE_FAILED = "profiler-event-write-failed"
+    PROFILER_INTERRUPTED = "profiler-interrupted"
+    TARGET_EXITED_BEFORE_ATTACHMENT = "target-exited-before-attachment"
+    TARGET_EXITED_BEFORE_VALID_STACK = "target-exited-before-valid-stack"
 
 
 class ExecutableIdentity(TypedDict):
@@ -97,7 +127,7 @@ class FailedObservation(ObservationBase):
 
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     status: Literal["discarded", "missed"]
-    failure_kind: str
+    failure_kind: ObservationFailureKind
     failure_reason: str
 
 
@@ -110,7 +140,7 @@ class FailureRecord(TypedDict):
     # PRF-024: Explicit failures.
     host_monotonic_ns: int
     target_running_ns: int | None
-    kind: str
+    kind: CaptureFailureKind
     reason: str
 
 
@@ -266,7 +296,7 @@ ProfileRecord = (
 
 @dataclasses.dataclass(slots=True)
 class RawProfile:
-    """Loaded version 3 continuous wall or CPU profile artifact."""
+    """Loaded version 4 continuous wall or CPU profile artifact."""
 
     # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
     schema_version: int
@@ -354,7 +384,7 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
 
 
 def load(profile_path: pathlib.Path) -> RawProfile:
-    """Load a complete or incrementally persisted version 3 profile."""
+    """Load a complete or incrementally persisted version 4 profile."""
     # PRF-027: Incremental persistence.
     records = iter(_read_records(profile_path))
     try:
@@ -390,9 +420,14 @@ def load(profile_path: pathlib.Path) -> RawProfile:
             observation = cast("ObservationRecord", cast("object", record_data))[
                 "observation"
             ]
+            if observation["status"] != "successful":
+                observation["failure_kind"] = ObservationFailureKind(
+                    observation["failure_kind"]
+                )
             profile.observations.append(observation)
         elif record_type == "failure":
             failure = cast("FailureEventRecord", cast("object", record_data))["failure"]
+            failure["kind"] = CaptureFailureKind(failure["kind"])
             profile.failures.append(failure)
         elif record_type == "summary":
             summary = cast("SummaryRecord", cast("object", record_data))

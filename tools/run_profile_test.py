@@ -256,7 +256,10 @@ def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
     assert not Path(profile.command[3]).exists()
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Profile schema: 3; complete; {capture_status}" in analysis
+    assert (
+        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
+        in analysis
+    )
     assert "Self wall occupancy (union across threads):" in analysis
 
 
@@ -309,7 +312,10 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
     assert output_dir.is_dir()
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Profile schema: 3; complete; {capture_status}" in analysis
+    assert (
+        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
+        in analysis
+    )
     assert "Cumulative wall occupancy (union across threads):" in analysis
 
 
@@ -345,7 +351,10 @@ def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
     assert profile.sampling["cpu_backend"] == "linux-schedstat"
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Profile schema: 3; complete; {capture_status}" in analysis
+    assert (
+        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
+        in analysis
+    )
     assert "CPU backend: linux-schedstat" in analysis
     assert "Self CPU attribution:" in analysis
     assert "Cumulative CPU attribution:" in analysis
