@@ -7,6 +7,7 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_binary(
     name = "__main__",
     srcs = ["__main__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//tools:__pkg__"],
     deps = [":profiler"],
 )
@@ -67,6 +68,7 @@ py_library(
 py_library(
     name = "cpu_profiler",
     srcs = ["cpu_profiler.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":schema"],
 )
 
@@ -101,6 +103,7 @@ py_test(
 py_library(
     name = "process_events",
     srcs = ["process_events.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":schema"],
 )
 
@@ -119,6 +122,7 @@ py_test(
 py_library(
     name = "profiler",
     srcs = ["profiler.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":cpu_profiler",
         ":process_events",
