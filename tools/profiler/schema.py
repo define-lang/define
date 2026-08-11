@@ -355,7 +355,7 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
 
 def load(profile_path: pathlib.Path) -> RawProfile:
     """Load a complete or incrementally persisted version 3 profile."""
-    # PRF-027: Incremental persistence. PRF-039: Current design only.
+    # PRF-027: Incremental persistence.
     records = iter(_read_records(profile_path))
     try:
         first_record = next(records)

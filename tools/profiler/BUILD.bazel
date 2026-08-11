@@ -35,6 +35,23 @@ py_library(
     deps = [":schema"],
 )
 
+# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
+# PRF-047: Multi-threaded critical path.
+py_test(
+    name = "compiler_profile_test",
+    size = "small",
+    srcs = ["compiler_profile_test.py"],
+    data = ["//tools/profiler/testdata:compiler_wall_profile.jsonl"],
+    env = {
+        "PROFILER_COMPILER_WALL_PROFILE": "$(rlocationpath //tools/profiler/testdata:compiler_wall_profile.jsonl)",
+    },
+    deps = [
+        ":analyzer",
+        "@pypi//click",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
 # PRF-018: Focused analysis. PRF-019: Concurrency semantics.
 py_library(
@@ -73,22 +90,32 @@ py_test(
     data = [
         ":__main__",
         "//tools:analyze_profile",
+        "//tools/profiler/testdata:ambiguous_critical_path_profile.jsonl",
         "//tools/profiler/testdata:continuous_target",
         "//tools/profiler/testdata:continuous_target.py",
         "//tools/profiler/testdata:cpu_target",
         "//tools/profiler/testdata:cpu_target.py",
+        "//tools/profiler/testdata:critical_path_target",
+        "//tools/profiler/testdata:critical_path_target.py",
         "//tools/profiler/testdata:failure_target",
         "//tools/profiler/testdata:failure_target.py",
+        "//tools/profiler/testdata:initial_wait_critical_path_profile.jsonl",
         "//tools/profiler/testdata:race_target",
         "//tools/profiler/testdata:race_target.py",
+        "//tools/profiler/testdata:unresolved_critical_path_target",
+        "//tools/profiler/testdata:unresolved_critical_path_target.py",
     ],
     env = {
         "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
         "PROFILER_BINARY": "$(rlocationpath :__main__)",
+        "PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:ambiguous_critical_path_profile.jsonl)",
         "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
+        "PROFILER_CRITICAL_PATH_SOURCE": "$(rlocationpath //tools/profiler/testdata:critical_path_target.py)",
         "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
         "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
+        "PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:initial_wait_critical_path_profile.jsonl)",
         "PROFILER_RACE_SOURCE": "$(rlocationpath //tools/profiler/testdata:race_target.py)",
+        "PROFILER_UNRESOLVED_CRITICAL_PATH_SOURCE": "$(rlocationpath //tools/profiler/testdata:unresolved_critical_path_target.py)",
     },
     # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
     tags = ["local"],
@@ -99,7 +126,10 @@ py_test(
         ":profiler",
         ":schema",
         ":wall_analyzer",
+        ":wall_critical_path",
+        ":wall_model",
         "@pypi//click",
+        "@pypi//pytest",
         "@rules_python//python/runfiles",
     ],
 )
@@ -120,7 +150,29 @@ py_library(
     deps = [
         ":analyzer_model",
         ":schema",
+        ":wall_critical_path",
+        ":wall_model",
     ],
+)
+
+# PRF-047: Multi-threaded critical path.
+py_library(
+    name = "wall_critical_path",
+    srcs = ["wall_critical_path.py"],
+    deps = [
+        ":analyzer_model",
+        ":schema",
+        ":wall_model",
+    ],
+)
+
+# PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
+# PRF-005: Lifecycle-bounded attribution.
+# PRF-047: Multi-threaded critical path.
+py_library(
+    name = "wall_model",
+    srcs = ["wall_model.py"],
+    deps = [":schema"],
 )
 
 format_test(
@@ -135,11 +187,14 @@ pyright_test(
         ":__main__",
         ":analyzer",
         ":analyzer_model",
+        ":compiler_profile_test",
         ":cpu_analyzer",
         ":cpu_profiler",
         ":profiler",
         ":profiler_test",
         ":schema",
         ":wall_analyzer",
+        ":wall_critical_path",
+        ":wall_model",
     ],
 )

@@ -540,7 +540,11 @@ def _failed_observation_capture(
             pause_duration_ns=pause_ended_ns - pause_started_ns,
             process_id=target.pid,
             status=status,
-            failure_kind=type(failure).__name__,
+            failure_kind=(
+                "target-exited-during-observation"
+                if process_exit_confirmed
+                else type(failure).__name__
+            ),
             failure_reason=str(failure),
         ),
         unwinder=None,
@@ -1277,7 +1281,7 @@ def main(
 ):
     """Capture a continuous blocking wall or CPU profile of a Python target."""
     # PRF-002: Independent sampling schedule. PRF-014: CPU mode.
-    # PRF-020: Machine and human interfaces.
+    # PRF-020: Machine and human interfaces. PRF-025: Failure threshold.
     profile = capture(
         command=command,
         profile_path=profile_path.absolute(),
@@ -1287,6 +1291,22 @@ def main(
         random_seed=random.SystemRandom().randrange(2**63),
         attachment_timeout_seconds=attachment_timeout_seconds,
         mode=mode,
+    )
+    counts = profile.observation_counts
+    statistics = cast("schema.SamplingStatistics", profile.sampling_statistics)
+    discarded_rate = statistics["discarded_rate"]
+    status = "successful" if profile.success else "unsuccessful"
+    completeness = "complete" if profile.complete else "incomplete"
+    click.echo(f"Profile: {profile_path.absolute()}")
+    click.echo(
+        f"Capture: {completeness}; {status}; "
+        + f"compiler exit {profile.compiler_exit_status}; "
+        + f"diagnostics {profile.diagnostics_status}"
+    )
+    click.echo(
+        f"Observations: {counts['successful']} successful, "
+        + f"{counts['discarded']} discarded, {counts['missed']} missed; "
+        + f"discarded rate {discarded_rate:.3%}"
     )
     if not profile.complete:
         raise click.Abort

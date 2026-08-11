@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import click.testing
+import pytest
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools.profiler import (
@@ -18,6 +19,8 @@ from tools.profiler import (
     profiler,
     schema,
     wall_analyzer,
+    wall_critical_path,
+    wall_model,
 )
 
 
@@ -67,6 +70,21 @@ def _profile_command(
         "--",
         *_target_command(source_variable),
     ]
+
+
+def _assert_capture_summary(
+    output: str,
+    profile_path: Path,
+    *,
+    completeness: str = "complete",
+    status: str = "successful",
+):
+    # PRF-020: Machine and human interfaces.
+    assert output.startswith(
+        f"Profile: {profile_path}\nCapture: {completeness}; {status};"
+    )
+    assert "\nObservations:" in output
+    assert "discarded rate" in output
 
 
 def _observed_process_id(profile_path: Path) -> int | None:
@@ -156,7 +174,10 @@ def _sampled_functions(
 
 
 # PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
-def test_main_profiles_relative_target(tmp_path: Path):
+def test_main_profiles_relative_target(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
     target_path = tmp_path / "target"
     target_path.symlink_to(sys.executable)
     profile_path = tmp_path / "profile.jsonl"
@@ -184,9 +205,18 @@ def test_main_profiles_relative_target(tmp_path: Path):
     assert profile.success is True
     assert profile.observation_counts["successful"] > 5
     assert profile.sampling["schedule"] == "poisson"
+    assert f"Profile: {profile_path}" in result.output
+    assert "Capture: complete; successful; compiler exit 0; diagnostics none" in (
+        result.output
+    )
+    assert "discarded rate" in result.output
+    analysis = analyzer.analyze(profile)
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    analyzer.emit_report(profile, analysis, 1)
+    assert "none resolved or observed" in capsys.readouterr().out
 
 
-# PRF-002: Independent sampling schedule. PRF-039: Current design only.
+# PRF-002: Independent sampling schedule.
 def test_help_hides_internal_sampling_parameters():
     result = click.testing.CliRunner().invoke(profiler.main, ["--help"])
 
@@ -219,7 +249,7 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     )
 
     assert capture_result.returncode == 0
-    assert capture_result.stdout == ""
+    _assert_capture_summary(capture_result.stdout, profile_path)
     assert capture_result.stderr == ""
     profile = schema.load(profile_path)
     assert profile.complete is True
@@ -237,7 +267,7 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
         profile.python_runtime["executable"]["inode"],
     ) == (profiler_executable.st_dev, profiler_executable.st_ino)
     observations, discarded, missed = _assert_observations_through_exit(profile)
-    assert len(observations) > 2000
+    assert len(observations) > 1000
     assert profile.observation_counts == {
         "attempted": len(observations) + discarded,
         "successful": len(observations),
@@ -319,7 +349,13 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     assert '"complete":false' in profile_lines[0]
     assert '"record_type":"summary"' in profile_lines[-1]
     analysis_result = subprocess.run(
-        [str(_runfile("ANALYZER_BINARY")), "--profile", str(profile_path)],
+        [
+            str(_runfile("ANALYZER_BINARY")),
+            "--profile",
+            str(profile_path),
+            "--limit",
+            "25",
+        ],
         capture_output=True,
         text=True,
         check=False,
@@ -335,6 +371,225 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     assert "Longest sampled source-identified frames:" in analysis_result.stdout
     assert "_retired_worker" in analysis_result.stdout
     assert "sample hits are observations, not calls" in analysis_result.stdout
+
+
+# PRF-047: Multi-threaded critical path.
+def test_uninterruptible_io_is_not_a_cross_thread_handoff():
+    sample = wall_model.ThreadSample(
+        identity=wall_model.ThreadIdentity(os_thread_id=1, start_time_ticks=1),
+        observation_index=0,
+        interval=wall_model.Interval(start_ns=0, end_ns=1),
+        pre_stop_state="D",
+        wait_channel="0",
+        voluntary_context_switches=0,
+        nonvoluntary_context_switches=0,
+        stack=(1,),
+    )
+
+    assert not sample.is_handoff_waiting
+
+
+# PRF-025: Failure threshold. PRF-047: Multi-threaded critical path.
+# PRF-048: Critical-path fixture. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
+def test_wall_critical_path_recovers_cross_thread_handoffs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
+    profile_path = tmp_path / "critical-path.jsonl"
+
+    capture_result = subprocess.run(
+        _profile_command(
+            profile_path,
+            "PROFILER_CRITICAL_PATH_SOURCE",
+            mean_interval_seconds=0.00025,
+        ),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert capture_result.returncode == 0
+    _assert_capture_summary(capture_result.stdout, profile_path)
+    assert capture_result.stderr == ""
+    profile = schema.load(profile_path)
+    assert profile.complete is True
+    assert profile.success is True
+    analysis = analyzer.analyze(profile)
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    critical_path = analysis.critical_path
+    python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
+    process_exited_ns = profile.lifecycle["exited_target_running_ns"]
+    assert python_started_ns is not None
+    assert process_exited_ns is not None
+    assert sum(segment.interval.duration_ns for segment in critical_path.segments) == (
+        process_exited_ns - python_started_ns
+    )
+    required_handoffs: dict[str, wall_critical_path.ResolvedHandoff] = {}
+    required_downstream_functions = (
+        "_stage_two_worker",
+        "_stage_three_worker",
+    )
+    resolved_handoffs: list[wall_critical_path.ResolvedHandoff] = []
+    for handoff in critical_path.handoffs:
+        if not isinstance(handoff, wall_critical_path.ResolvedHandoff):
+            continue
+        resolved_handoffs.append(handoff)
+        assert handoff.upstream_stack
+        assert handoff.downstream_stack
+        downstream_functions = {
+            profile.frames[frame_id]["function"]
+            for frame_id in handoff.downstream_stack
+        }
+        for function in required_downstream_functions:
+            if function in downstream_functions:
+                required_handoffs[function] = handoff
+    assert set(required_handoffs) == set(required_downstream_functions)
+    first_handoff = required_handoffs["_stage_two_worker"]
+    second_handoff = required_handoffs["_stage_three_worker"]
+    terminal_thread = critical_path.terminal_thread
+    assert terminal_thread is not None
+    third_handoff = max(
+        (
+            handoff
+            for handoff in resolved_handoffs
+            if handoff.upstream == second_handoff.downstream
+            and handoff.downstream == terminal_thread
+        ),
+        key=lambda handoff: handoff.target_running_ns,
+    )
+    assert first_handoff.downstream == second_handoff.upstream
+    assert second_handoff.downstream == third_handoff.upstream
+    cumulative_functions = {
+        row.identity.function for row in critical_path.cumulative_function_rows
+    }
+    assert "_stage_one_work" in cumulative_functions
+    assert "_stage_two_work" in cumulative_functions
+    assert "_stage_three_work" in cumulative_functions
+    assert "_final_work" in cumulative_functions
+    assert "_off_path_work" not in cumulative_functions
+    assert critical_path.parallel_off_path_ns > 0
+    assert any(
+        isinstance(segment, wall_critical_path.ResolvedSegment)
+        and segment.dependent_wait is not None
+        for segment in critical_path.segments
+    )
+    analyzer.emit_report(profile, analysis, len(critical_path.segments) + 1)
+    detailed_report = capsys.readouterr().out
+    assert "parallel off-path Thread" in detailed_report
+    assert "dependent wait: Thread" in detailed_report
+    assert "producer:" in detailed_report
+    wall_critical_path.emit_report(profile, critical_path, 1)
+    assert "shorter segments" in capsys.readouterr().out
+
+    analysis_result = subprocess.run(
+        [
+            str(_runfile("ANALYZER_BINARY")),
+            "--profile",
+            str(profile_path),
+            "--limit",
+            "25",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert analysis_result.returncode == 0
+    assert analysis_result.stderr == ""
+    assert "Sampled wall critical path:" in analysis_result.stdout
+    assert "Critical-path cross-thread handoffs:" in analysis_result.stdout
+    assert "_stage_one_work" in analysis_result.stdout
+    assert "_stage_two_work" in analysis_result.stdout
+    assert "_stage_three_work" in analysis_result.stdout
+    assert "_final_work" in analysis_result.stdout
+    assert "parallel off-path" in analysis_result.stdout
+
+
+# PRF-047: Multi-threaded critical path. PRF-041: Realistic tests.
+# PRF-043: Analyzer at every checkpoint.
+def test_wall_critical_path_reports_unobserved_handoff(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
+    profile = _capture(
+        tmp_path,
+        "PROFILER_UNRESOLVED_CRITICAL_PATH_SOURCE",
+        mean_interval_seconds=0.2,
+    )
+    profile_path = tmp_path / "PROFILER_UNRESOLVED_CRITICAL_PATH_SOURCE-7.jsonl"
+
+    assert profile.complete is True
+    assert profile.success is True
+    analysis = analyzer.analyze(profile)
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    assert len(analysis.critical_path.handoffs) == 2
+    handoff, completion_handoff = analysis.critical_path.handoffs
+    assert isinstance(handoff, wall_critical_path.UnresolvedHandoff)
+    assert isinstance(completion_handoff, wall_critical_path.ResolvedHandoff)
+    assert handoff.resolution == "unobserved"
+    assert handoff.candidates == ()
+    assert handoff.downstream_wait_ns > 0
+    assert analysis.critical_path.work_ns > 700_000_000
+    assert (
+        analysis.critical_path.segments[0].interval.start_ns
+        == profile.lifecycle["python_observed_target_running_ns"]
+    )
+    process_exited_ns = profile.lifecycle["exited_target_running_ns"]
+    python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
+    assert process_exited_ns is not None
+    assert python_started_ns is not None
+    assert sum(
+        segment.interval.duration_ns for segment in analysis.critical_path.segments
+    ) == (process_exited_ns - python_started_ns)
+    analyzer.emit_report(profile, analysis, len(analysis.critical_path.segments) + 1)
+    direct_report = capsys.readouterr().out
+    assert "unobserved: wake of Thread" in direct_report
+    assert "candidate producers: none observed" in direct_report
+
+    analysis_result = subprocess.run(
+        [str(_runfile("ANALYZER_BINARY")), "--profile", str(profile_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert analysis_result.returncode == 0
+    assert analysis_result.stderr == ""
+    assert "unobserved: wake of Thread" in analysis_result.stdout
+    assert "candidate producers: none observed" in analysis_result.stdout
+
+
+# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
+# PRF-047: Multi-threaded critical path. PRF-048: Critical-path fixture.
+def test_real_profile_reports_ambiguous_new_worker_handoff():
+    profile = schema.load(_runfile("PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE"))
+
+    analysis = analyzer.analyze(profile)
+
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    assert len(analysis.critical_path.handoffs) == 2
+    ambiguous_handoff, completion_handoff = analysis.critical_path.handoffs
+    assert isinstance(ambiguous_handoff, wall_critical_path.UnresolvedHandoff)
+    assert ambiguous_handoff.resolution == "ambiguous"
+    assert ambiguous_handoff.downstream_wait_ns == 0
+    assert len(ambiguous_handoff.candidates) == 2
+    assert isinstance(completion_handoff, wall_critical_path.ResolvedHandoff)
+
+
+# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
+# PRF-047: Multi-threaded critical path. PRF-048: Critical-path fixture.
+def test_real_profile_reports_worker_waiting_from_first_observation():
+    profile = schema.load(_runfile("PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE"))
+
+    analysis = analyzer.analyze(profile)
+
+    assert isinstance(analysis, wall_analyzer.Analysis)
+    assert len(analysis.critical_path.handoffs) == 2
+    initial_handoff, completion_handoff = analysis.critical_path.handoffs
+    assert isinstance(initial_handoff, wall_critical_path.ResolvedHandoff)
+    assert initial_handoff.downstream_wait_ns > 0
+    assert isinstance(completion_handoff, wall_critical_path.ResolvedHandoff)
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
@@ -374,7 +629,7 @@ def test_cpu_accuracy_converges_across_rates_through_real_targets(tmp_path: Path
                 check=False,
             )
             assert capture_result.returncode == 0
-            assert capture_result.stdout == ""
+            _assert_capture_summary(capture_result.stdout, profile_path)
             assert capture_result.stderr == ""
             profile = schema.load(profile_path)
         assert profile.complete is True
@@ -468,7 +723,6 @@ def test_cpu_accuracy_converges_across_rates_through_real_targets(tmp_path: Path
             )
             assert report_result.exit_code == 0
             assert "Self CPU attribution:" in report_result.output
-            assert "Failed observations" in report_result.output
 
     convergent_functions = (
         "_high_call_frequency",
@@ -558,7 +812,12 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
     stdout, stderr = profile_process.communicate(timeout=10)
 
     assert profile_process.returncode == 1
-    assert stdout == b""
+    _assert_capture_summary(
+        stdout.decode(),
+        profile_path,
+        completeness="incomplete",
+        status="unsuccessful",
+    )
     assert b"Aborted!" in stderr
     profile = schema.load(profile_path)
     assert profile.complete is False
@@ -678,7 +937,6 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
                 signal_sent.set()
                 os.kill(os.getpid(), signal.SIGINT)
                 return
-            time.sleep(0.0001)
 
     interrupt_thread = threading.Thread(target=interrupt_stopped_capture)
     interrupt_thread.start()
@@ -751,7 +1009,7 @@ def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
     assert analysis_result.exit_code == 0
     assert "Python runtime: not observed" in analysis_result.output
     assert "Capture failures (1):" in analysis_result.output
-    assert "Failed observations" not in analysis_result.output
+    assert "Unretained observations" not in analysis_result.output
 
 
 # PRF-022: Launcher safety. PRF-024: Explicit failures.

@@ -1,4 +1,5 @@
 LICENSE
 pnpm-lock.yaml
 /tmp/
+tools/profiler/testdata/*.jsonl
 vendored/

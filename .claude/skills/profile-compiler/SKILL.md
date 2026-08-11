@@ -29,7 +29,8 @@ bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:<gene
 ```
 
 Replace `<generator>` with a name from the table. Read that generator's `--help`
-for its output requirements and available options.
+for its output requirements and available options. Relative output paths resolve
+from the Bazel workspace.
 
 For a general profile, run every generator at its default. For focused work,
 inspect the relevant generator's `--help` and choose options that exercise the
@@ -43,34 +44,57 @@ environment:
 bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev
 ```
 
-Use the repository's `run_profile` tool to capture profiles and its
-`analyze_profile` tool to analyze them. Read both tools' complete `--help`
-output before using them and follow their current interfaces. Do not infer their
-behavior from this skill. If you are Codex, always run `tools/run_profile.py`
-outside the sandbox by requesting escalated execution. Keep disposable artifacts
-under `tmp/profile/`.
+Read both public tools' complete help before using them:
 
-Py-spy may report `Error: No child process (os error 10)` after successfully
-writing a profile because of its upstream child-exit race. Treat that profile as
-usable only when the write summary reports a positive sample count and
-`Errors: 0`, the compiler emitted no diagnostics or failure output, and
-`analyze_profile` reads the profile successfully. Treat every other profiling
-error as a failed capture.
+```text
+uv run -m tools.run_profile --help
+uv run -m tools.analyze_profile --help
+```
 
-Make wall-time critical-path analysis the primary result and CPU-time analysis
-the secondary result. For each workload, report:
+Run local entry points with `uv run -m`; invoking the `.py` paths directly does
+not put the workspace root on Python's import path. If you are Codex, run each
+`run_profile` invocation outside the sandbox. Keep artifacts under
+`tmp/profile/`.
 
-- the longest pole and the functions that account for wall time;
-- the principal CPU hotspots, overall and within Define compiler code;
-- time attributable to imports/startup, parse including lexing, AST transform,
-  reference-graph validation, requirement inference and destruction contracts,
-  guarantee propagation, operation-graph construction, and code generation;
-- current source entry points for the important phases and functions;
+Capture requested workloads in wall mode through `run_profile`:
+
+```text
+uv run -m tools.run_profile --source <source> --out <wall-profile>
+```
+
+Do not capture a CPU profile unless the user explicitly asks for one. When they
+do, use `--mode cpu` with the same source or project workflow.
+
+For `generate_reference_graph_project`, use `--project <directory>`. Analyze
+each exact artifact through the public analyzer:
+
+```text
+uv run -m tools.analyze_profile --profile <profile>
+```
+
+Use `--compiler-only` and the other analyzer filters for focused follow-up when
+the complete report does not expose the needed compiler rows. Filters preserve
+global lifecycle and critical-path context while narrowing attribution rows.
+
+Treat a nonzero capture exit, compiler diagnostics, an incomplete artifact, a
+discard rate above the profiler threshold, or an analyzer failure as a failed
+run. Do not interpret a partial profile as successful.
+
+Use the sampled wall critical path as the profiling result. For each workload,
+report:
+
+- the sampled completion-critical path and the dominant functions that explain
+  it. Include waits, handoffs, ambiguity, off-path concurrency, and unioned
+  occupancy only when materially relevant;
 - contrasts with the other workloads and a ranked list of observations.
 
-Use the analyzer's metric definitions and caveats as the authority when
-interpreting results. Do not assume that function rows are additive, that CPU
-time equals wall time, or that a sample hit represents a call.
+When the user requests CPU profiling, additionally report the principal CPU
+hotspots overall and within Define compiler code.
+
+Use the analyzer's metric definitions and caveats as the authority. A critical
+path is not the busiest thread, summed thread time, or unioned wall occupancy.
+Do not assume function rows are additive, CPU time equals wall time, or a sample
+hit or CPU endpoint represents a call.
 
 For follow-up questions, reuse retained profile artifacts when they contain the
 needed evidence. Drill into caller and callee relationships using the available

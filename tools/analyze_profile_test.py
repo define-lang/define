@@ -2,8 +2,37 @@ import json
 from pathlib import Path
 
 import click.testing
+import pytest
 
 from tools.profiler import analyzer, analyzer_model, schema, wall_analyzer
+
+
+# PRF-016: Source identity. PRF-020: Machine and human interfaces.
+@pytest.mark.parametrize(
+    ("filename", "display"),
+    [
+        (
+            "/workspace/runfiles/_main/define/compiler/driver.py",
+            "define/compiler/driver.py",
+        ),
+        ("/venv/site-packages/click/core.py", "site-packages/click/core.py"),
+        ("/runtime/lib/python3.14/pathlib.py", "lib/python3.14/pathlib.py"),
+        ("<string>", "<string>"),
+    ],
+)
+def test_displays_source_identity_without_environment_prefix(
+    filename: str,
+    display: str,
+):
+    assert analyzer_model.display_filename(filename) == display
+
+
+# PRF-016: Source identity. PRF-020: Machine and human interfaces.
+def test_displays_only_the_filename_within_an_ordered_stack():
+    assert (
+        analyzer_model.display_stack_filename("/repo/define/compiler/driver.py")
+        == "driver.py"
+    )
 
 
 def _analyze_wall(
@@ -384,7 +413,7 @@ def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: 
     assert "Threads observed: 0" in result.output
     assert "Capture failures (1):" in result.output
     assert "attachment-timeout: target remained a launcher" in result.output
-    assert "Failed observations" not in result.output
+    assert "Unretained observations" not in result.output
 
 
 # PRF-011: Complete invocation. PRF-022: Launcher safety.
@@ -497,7 +526,7 @@ def test_load_retains_complete_records_before_truncated_tail(tmp_path: Path):
     assert analysis.wall_window_ns == 0
 
 
-# PRF-020: Machine and human interfaces. PRF-039: Current design only.
+# PRF-020: Machine and human interfaces.
 def test_rejects_superseded_schema(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
     records = _wire_records(_controlled_profile())
@@ -517,6 +546,7 @@ def test_rejects_superseded_schema(tmp_path: Path):
 
 # PRF-014: CPU mode. PRF-018: Focused analysis.
 # PRF-020: Machine and human interfaces.
+# PRF-047: Multi-threaded critical path.
 def test_help_describes_filters_and_attribution_semantics():
     result = click.testing.CliRunner().invoke(
         analyzer.main,
@@ -530,6 +560,9 @@ def test_help_describes_filters_and_attribution_semantics():
     assert "--caller" in help_text
     assert "--callee" in help_text
     assert "--compiler-only" in help_text
-    assert "Wall rows report unioned occupancy" in help_text
+    assert "Wall work is sampled running time" in help_text
+    assert "uncertain is time whose producer or stack was not resolved" in help_text
+    assert "Occupancy unions sampled intervals and rows overlap" in help_text
     assert "CPU rows report additive external scheduler runtime" in help_text
+    assert "Filters affect attribution rows" in help_text
     assert "Sample hits and endpoints are observations, not calls" in help_text

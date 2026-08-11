@@ -216,9 +216,12 @@ def main(
     the high fan-in that real dependency graphs have.
 
     Scale it with --modules for file count and --layers for reference depth.
-    --seed makes the shape reproducible. The generated project compiles to zero
-    diagnostics through its constructor action entry point. The destination
-    must not already exist.
+    --seed makes the shape reproducible. Compile the generated project with
+    test.dfn as its entry file. It compiles to zero diagnostics through its
+    constructor action entry point. At the defaults this writes 80,002 files
+    and requires hundreds of MiB, so choose a fresh destination with sufficient
+    space. The destination must not already exist; remove it after retaining any
+    profiles that need it.
     """
     files = generator_cli.invoke(
         lambda: generate_project_files(

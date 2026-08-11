@@ -460,7 +460,7 @@ def _duration(duration_ns: int) -> str:
 
 
 def _function_text(identity: analyzer_model.FunctionIdentity) -> str:
-    return f"{identity.filename} ({identity.function})"
+    return f"{analyzer_model.display_filename(identity.filename)} ({identity.function})"
 
 
 def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int):
@@ -560,9 +560,9 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int):
         if observation["status"] != "successful"
     ]
     if failed_observations:
-        print(f"\nFailed observations ({len(failed_observations)}):")
+        print(f"\nUnretained observations ({len(failed_observations)}):")
         for observation in failed_observations:
             print(
-                f"  {observation['observation_index']}: "
+                f"  {observation['observation_index']} {observation['status']}: "
                 + f"{observation['failure_kind']}: {observation['failure_reason']}"
             )

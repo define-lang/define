@@ -122,6 +122,36 @@ def test_help_describes_wall_and_cpu_capture_workflow():
 
 
 # PRF-012: Orchestration boundary.
+def test_changes_to_build_workspace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    invocation_directory = tmp_path / "runfiles"
+    invocation_directory.mkdir()
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    monkeypatch.chdir(invocation_directory)
+    monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(workspace))
+
+    run_profile.chdir_to_build_workspace()
+
+    assert Path.cwd() == workspace
+
+
+# PRF-012: Orchestration boundary.
+def test_keeps_working_directory_outside_bazel(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("BUILD_WORKSPACE_DIRECTORY", raising=False)
+
+    run_profile.chdir_to_build_workspace()
+
+    assert Path.cwd() == tmp_path
+
+
+# PRF-012: Orchestration boundary.
 def test_builds_compiler_before_preparing_profile(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -27,6 +27,25 @@ class AnalysisFilters:
 DEFAULT_FILTERS = AnalysisFilters()
 
 
+def display_filename(filename: str) -> str:
+    """Render a source identity without runfiles and toolchain prefixes."""
+    # PRF-016: Source identity. PRF-020: Machine and human interfaces.
+    for marker, prefix in (
+        ("/_main/", ""),
+        ("/site-packages/", "site-packages/"),
+        ("/lib/python", "lib/python"),
+    ):
+        if marker in filename:
+            return prefix + filename.rsplit(marker, maxsplit=1)[1]
+    return filename
+
+
+def display_stack_filename(filename: str) -> str:
+    """Render a compact filename within an already ordered stack."""
+    # PRF-016: Source identity. PRF-020: Machine and human interfaces.
+    return pathlib.PurePath(display_filename(filename)).name
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class FunctionIdentity:
     """Stable function identity independent of the sampled source line."""

@@ -41,6 +41,13 @@ class ProfileInvocation:
     environment: dict[str, str]
 
 
+def chdir_to_build_workspace():
+    """Resolve CLI paths from the workspace when invoked through Bazel."""
+    # PRF-012: Orchestration boundary.
+    if workspace := os.environ.get("BUILD_WORKSPACE_DIRECTORY"):
+        os.chdir(workspace)
+
+
 def _workspace() -> pathlib.Path:
     # PRF-012: Orchestration boundary.
     workspace = os.environ.get("BUILD_WORKSPACE_DIRECTORY")

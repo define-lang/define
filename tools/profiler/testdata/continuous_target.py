@@ -42,8 +42,15 @@ def _low_call_frequency(deadline: float) -> None:
             value += number
 
 
-# PRF-025: Failure threshold. The warmup yields a stress-sized denominator.
-time.sleep(2.5)
+def _cpu_warmup(duration_ns: int):
+    # PRF-025: Failure threshold. Target CPU time excludes profiler pauses so
+    # the fixture always yields a stress-sized observation denominator.
+    deadline = time.thread_time_ns() + duration_ns
+    while time.thread_time_ns() < deadline:
+        pass
+
+
+_cpu_warmup(4_000_000_000)
 _release = threading.Event()
 _deadline = time.monotonic() + 2.2
 _threads = [

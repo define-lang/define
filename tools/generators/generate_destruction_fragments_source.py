@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:destruction_fragments"
-DEFAULT_CALLERS = 24
+# PRF-025: Failure threshold. Enough independent validation chains keep one
+# discarded observation below the 0.1% limit on the default stress workload.
+DEFAULT_CALLERS = 48
 DEFAULT_CALL_DEPTH = 40
 DEFAULT_PASS_THROUGH_ACTIONS = 1
 DEFAULT_LOCAL_CHILDREN = 3

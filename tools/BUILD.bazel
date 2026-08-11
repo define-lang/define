@@ -46,6 +46,7 @@ py_test(
         "//tools/profiler:schema",
         "//tools/profiler:wall_analyzer",
         "@pypi//click",
+        "@pypi//pytest",
     ],
 )
 

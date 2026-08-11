@@ -5,23 +5,13 @@ from __future__ import annotations
 import dataclasses
 import itertools
 
-from tools.profiler import analyzer_model, schema
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class _Interval:
-    start_ns: int
-    end_ns: int
-
-    @property
-    def duration_ns(self) -> int:
-        return self.end_ns - self.start_ns
+from tools.profiler import analyzer_model, schema, wall_critical_path, wall_model
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _WeightedStack:
     thread_id: int
-    interval: _Interval
+    interval: wall_model.Interval
     stack: tuple[int, ...]
 
 
@@ -91,64 +81,34 @@ class Analysis:
     stack_path_rows: list[StackPathRow]
     relationship_rows: list[RelationshipRow]
     thread_rows: list[ThreadRow]
+    critical_path: wall_critical_path.Analysis
     wall_window_ns: int
     attributed_wall_ns: int
     unattributed_wall_ns: int
 
 
 def _observation_intervals(profile: schema.RawProfile) -> list[_WeightedStack]:
-    # PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
-    # PRF-005: Lifecycle-bounded attribution.
-    observations = profile.observations
-    if not observations:
-        return []
-    python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
-    if python_started_ns is None:
-        return []
-    process_exited_ns = profile.lifecycle["exited_target_running_ns"]
-    weighted_stacks: list[_WeightedStack] = []
-    for index, observation in enumerate(observations):
-        if observation["status"] != "successful":
-            continue
-        observation_time = observation["target_running_ns"]
-        if index == 0:
-            left_ns = max(
-                python_started_ns,
-                observation_time - observation["scheduled_interval_ns"] // 2,
-            )
-        else:
-            left_ns = (
-                observations[index - 1]["target_running_ns"] + observation_time
-            ) // 2
-        if index + 1 == len(observations):
-            right_ns = observation_time + observation["scheduled_interval_ns"] // 2
-            if process_exited_ns is not None:
-                right_ns = min(right_ns, process_exited_ns)
-        else:
-            right_ns = (
-                observation_time + observations[index + 1]["target_running_ns"]
-            ) // 2
-        interval = _Interval(left_ns, right_ns)
-        for thread in observation["threads"]:
-            weighted_stacks.append(
-                _WeightedStack(
-                    thread_id=thread["os_thread_id"],
-                    interval=interval,
-                    stack=tuple(thread["stack"]),
-                )
-            )
-    return weighted_stacks
+    return [
+        _WeightedStack(
+            thread_id=sample.identity.os_thread_id,
+            interval=sample.interval,
+            stack=sample.stack,
+        )
+        for sample in wall_model.observation_intervals(profile)
+    ]
 
 
-def _merge_intervals(intervals: list[_Interval]) -> list[_Interval]:
+def _merge_intervals(
+    intervals: list[wall_model.Interval],
+) -> list[wall_model.Interval]:
     if not intervals:
         return []
     ordered = sorted(intervals, key=lambda interval: interval.start_ns)
-    merged: list[_Interval] = [ordered[0]]
+    merged: list[wall_model.Interval] = [ordered[0]]
     for interval in ordered[1:]:
         previous = merged[-1]
         if interval.start_ns <= previous.end_ns:
-            merged[-1] = _Interval(
+            merged[-1] = wall_model.Interval(
                 previous.start_ns,
                 max(previous.end_ns, interval.end_ns),
             )
@@ -157,13 +117,15 @@ def _merge_intervals(intervals: list[_Interval]) -> list[_Interval]:
     return merged
 
 
-def _union_duration(intervals: list[_Interval]) -> int:
+def _union_duration(intervals: list[wall_model.Interval]) -> int:
     # PRF-019: Concurrency semantics.
     return sum(interval.duration_ns for interval in _merge_intervals(intervals))
 
 
-def _longest_thread_span(entries: list[tuple[int, _Interval]]) -> int:
-    intervals_by_thread: dict[int, list[_Interval]] = {}
+def _longest_thread_span(
+    entries: list[tuple[int, wall_model.Interval]],
+) -> int:
+    intervals_by_thread: dict[int, list[wall_model.Interval]] = {}
     for thread_id, interval in entries:
         intervals_by_thread.setdefault(thread_id, []).append(interval)
     return max(
@@ -177,7 +139,7 @@ def _longest_thread_span(entries: list[tuple[int, _Interval]]) -> int:
 
 
 def _frame_rows(
-    entries_by_frame: dict[int, list[tuple[int, _Interval]]],
+    entries_by_frame: dict[int, list[tuple[int, wall_model.Interval]]],
     hits_by_frame: dict[int, int],
     frames: dict[int, schema.Frame],
     filters: analyzer_model.AnalysisFilters,
@@ -211,7 +173,7 @@ def _frame_rows(
 def _function_rows(
     entries_by_function: dict[
         analyzer_model.FunctionIdentity,
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ],
     hits_by_function: dict[analyzer_model.FunctionIdentity, int],
     filters: analyzer_model.AnalysisFilters,
@@ -243,7 +205,7 @@ def _function_rows(
 def _stack_path_rows(
     entries_by_path: dict[
         tuple[analyzer_model.FunctionIdentity, ...],
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ],
     hits_by_path: dict[tuple[analyzer_model.FunctionIdentity, ...], int],
     filters: analyzer_model.AnalysisFilters,
@@ -289,23 +251,23 @@ def analyze(
         if not filters.thread_ids or weighted_stack.thread_id in filters.thread_ids
     ]
     frames = profile.frames
-    self_entries: dict[int, list[tuple[int, _Interval]]] = {}
-    cumulative_entries: dict[int, list[tuple[int, _Interval]]] = {}
+    self_entries: dict[int, list[tuple[int, wall_model.Interval]]] = {}
+    cumulative_entries: dict[int, list[tuple[int, wall_model.Interval]]] = {}
     self_function_entries: dict[
         analyzer_model.FunctionIdentity,
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ] = {}
     cumulative_function_entries: dict[
         analyzer_model.FunctionIdentity,
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ] = {}
     stack_path_entries: dict[
         tuple[analyzer_model.FunctionIdentity, ...],
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ] = {}
     relationship_entries: dict[
         tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity],
-        list[tuple[int, _Interval]],
+        list[tuple[int, wall_model.Interval]],
     ] = {}
     self_hits: dict[int, int] = {}
     cumulative_hits: dict[int, int] = {}
@@ -315,8 +277,8 @@ def analyze(
     relationship_hits: dict[
         tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity], int
     ] = {}
-    thread_intervals: dict[int, list[_Interval]] = {}
-    attributed_thread_intervals: dict[int, list[_Interval]] = {}
+    thread_intervals: dict[int, list[wall_model.Interval]] = {}
+    attributed_thread_intervals: dict[int, list[wall_model.Interval]] = {}
     thread_hits: dict[int, int] = {}
     for weighted_stack in weighted_stacks:
         thread_intervals.setdefault(weighted_stack.thread_id, []).append(
@@ -455,6 +417,7 @@ def analyze(
         ),
         relationship_rows=relationship_rows,
         thread_rows=thread_rows,
+        critical_path=wall_critical_path.analyze(profile, filters),
         wall_window_ns=wall_window_ns,
         attributed_wall_ns=attributed_wall_ns,
         unattributed_wall_ns=max(0, wall_window_ns - attributed_wall_ns),
@@ -467,11 +430,21 @@ def _duration(duration_ns: int) -> str:
 
 def _frame_text(frame: schema.Frame) -> str:
     # PRF-016: Source identity.
-    return f"{frame['filename']}:{frame['line']} ({frame['function']})"
+    return (
+        f"{analyzer_model.display_filename(frame['filename'])}:{frame['line']} "
+        + f"({frame['function']})"
+    )
 
 
 def _function_text(identity: analyzer_model.FunctionIdentity) -> str:
-    return f"{identity.filename} ({identity.function})"
+    return f"{analyzer_model.display_filename(identity.filename)} ({identity.function})"
+
+
+def _stack_function_text(identity: analyzer_model.FunctionIdentity) -> str:
+    return (
+        f"{analyzer_model.display_stack_filename(identity.filename)} "
+        + f"({identity.function})"
+    )
 
 
 def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> None:
@@ -533,6 +506,8 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         + "and lifecycle boundaries remain unattributed gaps."
     )
 
+    wall_critical_path.emit_report(profile, analysis.critical_path, limit)
+
     print("\nSelf wall occupancy (union across threads):")
     for row in analysis.self_function_rows[:limit]:
         print(
@@ -551,7 +526,9 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         )
     print("\nLongest sampled stack paths:")
     for row in analysis.stack_path_rows[:limit]:
-        path = " -> ".join(_function_text(identity) for identity in row.stack_path)
+        path = " -> ".join(
+            _stack_function_text(identity) for identity in row.stack_path
+        )
         print(
             f"  span {_duration(row.longest_span_ns)}; "
             + f"{_duration(row.wall_occupancy_ns)} wall; "
@@ -599,9 +576,9 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         if observation["status"] != "successful"
     ]
     if failed_observations:
-        print(f"\nFailed observations ({len(failed_observations)}):")
+        print(f"\nUnretained observations ({len(failed_observations)}):")
         for observation in failed_observations:
             print(
-                f"  {observation['observation_index']}: "
+                f"  {observation['observation_index']} {observation['status']}: "
                 + f"{observation['failure_kind']}: {observation['failure_reason']}"
             )

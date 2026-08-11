@@ -105,6 +105,26 @@ class TestMain:
         assert result.exit_code == 0
         assert output.read_text(encoding="utf-8").count("\n") >= 500
 
+    def test_relative_output_uses_build_workspace(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        invocation_directory = tmp_path / "runfiles"
+        invocation_directory.mkdir()
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        monkeypatch.chdir(invocation_directory)
+        monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(workspace))
+
+        result = click.testing.CliRunner().invoke(
+            gen.main,
+            ["--output", "large.dfn", "--lines", "500"],
+        )
+
+        assert result.exit_code == 0
+        assert (workspace / "large.dfn").is_file()
+
 
 class TestFullDriver:
     def test_generated_source_passes_full_validation(self):

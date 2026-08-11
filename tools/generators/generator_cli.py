@@ -1,5 +1,6 @@
 """Click conventions shared by generator commands."""
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -14,6 +15,10 @@ FRACTION = click.FloatRange(min=0, max=1)
 
 def invoke[T](generator: Callable[[], T]) -> T:
     """Invoke a generator, presenting invalid parameters as CLI usage errors."""
+    # Bazel runs binaries from their runfiles tree, but CLI paths should remain
+    # relative to the workspace from which the user invoked Bazel.
+    if workspace := os.environ.get("BUILD_WORKSPACE_DIRECTORY"):
+        os.chdir(workspace)
     try:
         return generator()
     except (FileExistsError, ValueError) as error:

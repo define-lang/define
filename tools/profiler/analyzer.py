@@ -48,10 +48,16 @@ def emit_report(
 
 
 # PRF-014: CPU mode. PRF-020: Machine and human interfaces.
+# PRF-047: Multi-threaded critical path.
 @click.command(
     epilog=(
-        "Wall rows report unioned occupancy. CPU rows report additive external "
-        "scheduler runtime. Sample hits and endpoints are observations, not calls."
+        "Wall work is sampled running time on the completion-critical chain; "
+        "wait is blocking on that chain; uncertain is time whose producer or "
+        "stack was not resolved. Occupancy unions sampled intervals and rows "
+        "overlap; span is the longest continuous sampled interval. CPU rows "
+        "report additive external scheduler runtime. Filters affect attribution "
+        "rows while lifecycle totals and critical-path context remain global. "
+        "Sample hits and endpoints are observations, not calls."
     )
 )
 @click.option(
@@ -67,22 +73,41 @@ def emit_report(
     required=True,
     help="Raw JSON-record profile produced by //tools/profiler:__main__.",
 )
-@click.option("--thread", "thread_ids", type=int, multiple=True)
-@click.option("--file", "filename", help="Show frames whose filename contains TEXT.")
-@click.option("--function", help="Show frames whose function name contains TEXT.")
-@click.option("--caller", help="Show relationships whose caller contains TEXT.")
-@click.option("--callee", help="Show relationships whose callee contains TEXT.")
+@click.option(
+    "--thread",
+    "thread_ids",
+    type=int,
+    multiple=True,
+    help="Filter attribution rows to an OS thread ID; repeat as needed.",
+)
+@click.option(
+    "--file",
+    "filename",
+    help="Filter attribution rows to filenames containing TEXT.",
+)
+@click.option(
+    "--function",
+    help="Filter attribution rows to function names containing TEXT.",
+)
+@click.option(
+    "--caller",
+    help="Filter relationship rows to callers containing TEXT.",
+)
+@click.option(
+    "--callee",
+    help="Filter relationship rows to callees containing TEXT.",
+)
 @click.option(
     "--compiler-only",
     is_flag=True,
-    help="Show only frames under define/compiler.",
+    help="Filter attribution rows to frames under define/compiler.",
 )
 @click.option(
     "--limit",
     type=click.IntRange(min=1),
-    default=25,
+    default=5,
     show_default=True,
-    help="Maximum rows in each attribution table.",
+    help="Maximum rows, handoffs, and critical-path excerpts per section.",
 )
 def main(
     profile_path: pathlib.Path,
