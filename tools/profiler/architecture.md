@@ -295,16 +295,19 @@ For each sample, the controller will:
 
 1. Record the start of the profiler-induced pause.
 2. Stop the complete compiler thread group and confirm it is stopped.
-3. Capture all live Python stacks from `RemoteUnwinder`.
-4. Read external per-thread timing and lifecycle information needed by the
-   selected mode.
+3. Read only the raw thread identity, timing, and stack data that requires a
+   stopped target.
+4. Resume the complete thread group.
 5. Record the end of the profiler-induced pause.
-6. Resume the complete thread group.
-7. Persist the sample or persist a failure record.
+6. Validate and normalize the copied snapshot after the target resumes.
+7. Persist the sample or persist a failure record on an ordered background
+   worker.
 
-The raw sample's attribution weight excludes steps 2 through 6. A deeper stack,
+The raw sample's attribution weight excludes steps 2 through 5. A deeper stack,
 larger live-thread set, slower filesystem, or slower serializer must not add
-attributed time to the sampled function.
+attributed time to the sampled function. The next sampling deadline is armed
+before the completed snapshot enters the background pipeline, so post-resume
+processing does not add another full sampling interval.
 
 ### Wall attribution
 
@@ -534,6 +537,16 @@ checkpoint.
    than fixed-duration polling. A caller can observe launcher recording, Python
    attachment, target stop, and successful-observation-persisted events without
    guessing a delay.
+10. **PRF-050: Minimal stopped section.** While the target is stopped, the
+    sampler performs only kernel stop confirmation and raw reads whose
+    consistency requires the stop. Validation, frame conversion, allocation of
+    profile-domain objects, serialization, and persistence happen after resume.
+11. **PRF-051: Schedule-isolated persistence.** An ordered background worker
+    validates, normalizes, interns, serializes, and persists copied
+    observations. The sampler arms the next deadline before handing off the
+    previous snapshot. An unbounded in-memory queue makes observation handoff
+    independent of worker progress, and worker failure propagates through an
+    explicit event without polling.
 
 ### Bias and lifecycle acceptance tests
 

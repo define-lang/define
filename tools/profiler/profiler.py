@@ -10,12 +10,14 @@ import json
 import os
 import pathlib
 import platform
+import queue
 import random
 import signal
 import subprocess
 import sys
 import sysconfig
 import tempfile
+import threading
 import time
 import typing
 from typing import Protocol, cast
@@ -37,6 +39,13 @@ type _ProfilerEvent = typing.Literal[
     "target-stopped",
     "successful-observation-persisted",
 ]
+
+_PROFILER_EVENT_BYTES: dict[_ProfilerEvent, bytes] = {
+    "launcher-recorded": b"launcher-recorded\n",
+    "python-attached": b"python-attached\n",
+    "target-stopped": b"target-stopped\n",
+    "successful-observation-persisted": b"successful-observation-persisted\n",
+}
 
 
 # PRF-015: Full stacks. PRF-016: Source identity.
@@ -95,6 +104,15 @@ class _ProfilerEventError(Exception):
     def __init__(self, reason: str):
         super().__init__(reason)
         self.pause_duration_ns: int = 0
+
+
+class _ObservationProcessorError(Exception):
+    # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
+    kind: schema.CaptureFailureKind
+
+    def __init__(self, kind: schema.CaptureFailureKind, reason: str):
+        super().__init__(reason)
+        self.kind = kind
 
 
 class _TargetStopError(Exception):
@@ -167,6 +185,7 @@ class _StoppedThread:
     # PRF-005: Lifecycle-bounded attribution. PRF-007: Consistent stack.
     start_time_ticks: int
     state: str
+    scheduler_runtime_ns: int | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -206,6 +225,14 @@ class _SuccessfulObservationResult(_ObservationTiming):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class _RawObservation(_ObservationTiming):
+    # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
+    evidence: dict[int, _ThreadEvidence]
+    stopped_threads: dict[int, _StoppedThread]
+    remote_threads: list[_RemoteThread]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class _FailedObservationResult(_ObservationTiming):
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     status: typing.Literal["discarded", "missed"]
@@ -214,6 +241,7 @@ class _FailedObservationResult(_ObservationTiming):
 
 
 _ObservationResult = _SuccessfulObservationResult | _FailedObservationResult
+_ObservationWork = _RawObservation | _FailedObservationResult
 
 
 @contextlib.contextmanager
@@ -232,7 +260,7 @@ def _blocked_interruption_signals() -> collections.abc.Generator[None, None, Non
 @dataclasses.dataclass(frozen=True, slots=True)
 class _ObservationCapture:
     # PRF-022: Launcher safety.
-    result: _ObservationResult
+    result: _ObservationWork
     unwinder: _Unwinder | None
 
 
@@ -362,7 +390,7 @@ def _emit_profiler_event(
     if event_file_descriptor is None:
         return
     try:
-        _ = os.write(event_file_descriptor, f"{event}\n".encode())
+        _ = os.write(event_file_descriptor, _PROFILER_EVENT_BYTES[event])
     except OSError as error:
         raise _ProfilerEventError(str(error)) from error
 
@@ -427,12 +455,12 @@ def _status_fields(status: str) -> dict[str, str]:
     }
 
 
-def _thread_start_time_ticks(thread_directory: pathlib.Path) -> int:
+def _thread_stat(thread_directory: pathlib.Path) -> tuple[str, int]:
     # PRF-010: Raw-data preservation. A Linux TID can be reused after thread exit.
     stat = (thread_directory / "stat").read_text(encoding="utf-8")
     command_end = stat.rindex(")")
     fields_from_state = stat[command_end + 2 :].split()
-    return int(fields_from_state[19])
+    return fields_from_state[0], int(fields_from_state[19])
 
 
 def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
@@ -442,8 +470,9 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
         fields = _status_fields(
             (thread_directory / "status").read_text(encoding="utf-8")
         )
+        _, start_time_ticks = _thread_stat(thread_directory)
         evidence[int(thread_directory.name)] = _ThreadEvidence(
-            start_time_ticks=_thread_start_time_ticks(thread_directory),
+            start_time_ticks=start_time_ticks,
             state=fields["State"].split()[0],
             wait_channel=(thread_directory / "wchan")
             .read_text(encoding="utf-8")
@@ -454,53 +483,55 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
     return evidence
 
 
-def _stopped_threads(process_id: int) -> dict[int, _StoppedThread]:
+def _stopped_threads(
+    process_id: int,
+    mode: schema.CaptureMode,
+) -> dict[int, _StoppedThread]:
     # PRF-005: Lifecycle-bounded attribution. PRF-006: Complete-process stop.
+    # PRF-014: CPU mode. PRF-050: Minimal stopped section.
     stopped_threads: dict[int, _StoppedThread] = {}
     for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
-        fields = _status_fields(
-            (thread_directory / "status").read_text(encoding="utf-8")
-        )
+        state, start_time_ticks = _thread_stat(thread_directory)
         stopped_threads[int(thread_directory.name)] = _StoppedThread(
-            start_time_ticks=_thread_start_time_ticks(thread_directory),
-            state=fields["State"].split()[0],
+            start_time_ticks=start_time_ticks,
+            state=state,
+            scheduler_runtime_ns=(
+                cpu_profiler.scheduler_runtime(thread_directory)
+                if mode == "cpu"
+                else None
+            ),
         )
     return stopped_threads
 
 
 def _capture_stopped_threads(
     target_process: process_events.TargetProcess,
-    evidence: dict[int, _ThreadEvidence],
     retained_unwinder: _Unwinder | None,
     mode: schema.CaptureMode,
     event_file_descriptor: int | None,
-) -> tuple[list[_CapturedThread], _Unwinder]:
+) -> tuple[dict[int, _StoppedThread], list[_RemoteThread], _Unwinder]:
     # PRF-006: Complete-process stop. PRF-007: Consistent stack.
     # PRF-013: Wall mode. PRF-015: Full stacks. PRF-016: Source identity.
+    # PRF-050: Minimal stopped section.
     target = target_process.process
-    wait_result = os.waitid(
-        os.P_PID,
-        target.pid,
-        os.WSTOPPED | os.WEXITED | os.WNOWAIT,
-    )
-    if wait_result is None or wait_result.si_code != os.CLD_STOPPED:
+    waited_process_id, wait_status = os.waitpid(target.pid, os.WUNTRACED)
+    if os.WIFEXITED(wait_status) or os.WIFSIGNALED(wait_status):
+        target.returncode = os.waitstatus_to_exitcode(wait_status)
         raise _TargetExitRaceError(
             "target exited while the profiler was stopping it with status "
-            + str(target.wait())
+            + str(target.returncode)
         )
-    waited_process_id, wait_status = os.waitpid(target.pid, os.WUNTRACED)
     if waited_process_id != target.pid or not os.WIFSTOPPED(wait_status):
         raise _TargetStopError("target exited while the profiler was stopping it")
-    stopped_threads = _stopped_threads(target.pid)
+    _emit_profiler_event(event_file_descriptor, "target-stopped")
+    stopped_threads = _stopped_threads(target.pid, mode)
     if any(
         stopped_thread.state not in {"T", "t"}
         for stopped_thread in stopped_threads.values()
     ):
+        # PRF-006: Complete-process stop. PRF-050: Minimal stopped section.
+        # Unwinding before every thread has stopped can produce a torn snapshot.
         raise _TargetStopError("not every target thread reached a stopped state")
-    # PRF-006: Complete-process stop. PRF-014: CPU mode.
-    scheduler_runtimes = (
-        cpu_profiler.scheduler_runtimes(target.pid) if mode == "cpu" else None
-    )
     observation_unwinder = retained_unwinder or _REMOTE_UNWINDER(
         target.pid,
         all_threads=True,
@@ -509,6 +540,15 @@ def _capture_stopped_threads(
         "list[_RemoteThread]",
         observation_unwinder.get_stack_trace(),
     )
+    return stopped_threads, remote_threads, observation_unwinder
+
+
+def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResult:
+    # PRF-004: No stale-stack reuse. PRF-007: Consistent stack.
+    # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
+    stopped_threads = raw_observation.stopped_threads
+    evidence = raw_observation.evidence
+    remote_threads = raw_observation.remote_threads
     remote_threads_by_id = {
         remote_thread.thread_id: remote_thread for remote_thread in remote_threads
     }
@@ -517,19 +557,28 @@ def _capture_stopped_threads(
             remote_thread.thread_id not in evidence
             or remote_thread.thread_id not in stopped_threads
         ):
-            raise _InconsistentStackObservationError(
-                "a Python thread changed identity during the observation"
+            return _failed_observation_from_raw(
+                raw_observation,
+                _InconsistentStackObservationError(
+                    "a Python thread changed identity during the observation"
+                ),
             )
     captured_threads: list[_CapturedThread] = []
     for thread_id, stopped_thread in stopped_threads.items():
         thread_evidence = evidence.get(thread_id)
         if thread_evidence is None:
-            raise _InconsistentStackObservationError(
-                "an OS thread changed identity during the observation"
+            return _failed_observation_from_raw(
+                raw_observation,
+                _InconsistentStackObservationError(
+                    "an OS thread changed identity during the observation"
+                ),
             )
         if thread_evidence.start_time_ticks != stopped_thread.start_time_ticks:
-            raise _InconsistentStackObservationError(
-                "an OS thread identifier was reused during the observation"
+            return _failed_observation_from_raw(
+                raw_observation,
+                _InconsistentStackObservationError(
+                    "an OS thread identifier was reused during the observation"
+                ),
             )
         remote_thread = remote_threads_by_id.get(thread_id)
         stack = [
@@ -548,15 +597,20 @@ def _capture_stopped_threads(
                 evidence=thread_evidence,
                 stopped_state=stopped_thread.state,
                 stack=stack,
-                scheduler_runtime_ns=(
-                    scheduler_runtimes[thread_id]
-                    if scheduler_runtimes is not None
-                    else None
-                ),
+                scheduler_runtime_ns=stopped_thread.scheduler_runtime_ns,
             )
         )
-    _emit_profiler_event(event_file_descriptor, "target-stopped")
-    return captured_threads, observation_unwinder
+    return _SuccessfulObservationResult(
+        observation_index=raw_observation.observation_index,
+        scheduled_interval_ns=raw_observation.scheduled_interval_ns,
+        host_monotonic_ns=raw_observation.host_monotonic_ns,
+        target_running_ns=raw_observation.target_running_ns,
+        pause_started_ns=raw_observation.pause_started_ns,
+        pause_ended_ns=raw_observation.pause_ended_ns,
+        pause_duration_ns=raw_observation.pause_duration_ns,
+        process_id=raw_observation.process_id,
+        threads=captured_threads,
+    )
 
 
 def _failed_observation_capture(
@@ -597,6 +651,27 @@ def _failed_observation_capture(
             failure_reason=f"{type(failure).__name__}: {failure}",
         ),
         unwinder=None,
+    )
+
+
+def _failed_observation_from_raw(
+    raw_observation: _RawObservation,
+    failure: _InconsistentStackObservationError,
+) -> _FailedObservationResult:
+    # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
+    # PRF-050: Minimal stopped section.
+    return _FailedObservationResult(
+        observation_index=raw_observation.observation_index,
+        scheduled_interval_ns=raw_observation.scheduled_interval_ns,
+        host_monotonic_ns=raw_observation.host_monotonic_ns,
+        target_running_ns=raw_observation.target_running_ns,
+        pause_started_ns=raw_observation.pause_started_ns,
+        pause_ended_ns=raw_observation.pause_ended_ns,
+        pause_duration_ns=raw_observation.pause_duration_ns,
+        process_id=raw_observation.process_id,
+        status="discarded",
+        failure_kind=_observation_failure_kind(failure),
+        failure_reason=f"{type(failure).__name__}: {failure}",
     )
 
 
@@ -641,17 +716,19 @@ def _capture_observation(
     failure: _ObservationFailure | None = None
     interruption: _CaptureInterrupted | None = None
     profiler_event_error: _ProfilerEventError | None = None
-    captured_threads: list[_CapturedThread] = []
+    stopped_threads: dict[int, _StoppedThread] = {}
+    remote_threads: list[_RemoteThread] = []
     observation_unwinder: _Unwinder | None = None
     pause_started_ns = time.monotonic_ns()
     try:
         os.kill(target.pid, signal.SIGSTOP)
-        captured_threads, observation_unwinder = _capture_stopped_threads(
-            target_process,
-            evidence,
-            retained_unwinder,
-            mode,
-            event_file_descriptor,
+        stopped_threads, remote_threads, observation_unwinder = (
+            _capture_stopped_threads(
+                target_process,
+                retained_unwinder,
+                mode,
+                event_file_descriptor,
+            )
         )
     except _CaptureInterrupted as error:
         interruption = error
@@ -662,7 +739,6 @@ def _capture_observation(
         RuntimeError,
         UnicodeDecodeError,
         ValueError,
-        _InconsistentStackObservationError,
         _TargetExitRaceError,
         _TargetStopError,
     ) as error:
@@ -693,7 +769,7 @@ def _capture_observation(
             _observation_failure_kind(failure),
         )
     return _ObservationCapture(
-        result=_SuccessfulObservationResult(
+        result=_RawObservation(
             observation_index=observation_index,
             scheduled_interval_ns=scheduled_interval_ns,
             host_monotonic_ns=pause_started_ns,
@@ -702,7 +778,9 @@ def _capture_observation(
             pause_ended_ns=pause_ended_ns,
             pause_duration_ns=pause_duration_ns,
             process_id=target.pid,
-            threads=captured_threads,
+            evidence=evidence,
+            stopped_threads=stopped_threads,
+            remote_threads=remote_threads,
         ),
         unwinder=observation_unwinder,
     )
@@ -915,24 +993,23 @@ def _attach_runtime(
 def _scheduled_observation(
     target_process: process_events.TargetProcess,
     state: _CaptureState,
-    mean_interval_seconds: float,
+    processor: _ObservationProcessor,
+    scheduled_interval_ns: int,
     launched_ns: int,
     timer_file_descriptor: int,
     event_file_descriptor: int | None,
-) -> tuple[_ObservationResult, bool]:
+) -> tuple[_ObservationWork, bool]:
     # PRF-002: Independent sampling schedule. PRF-004: No stale-stack reuse.
-    interval_seconds = _next_interval_seconds(
-        state.random_generator,
-        mean_interval_seconds,
-    )
-    scheduled_interval_ns = round(interval_seconds * 1_000_000_000)
-    target_exited = not process_events.wait_for_schedule(
+    # PRF-051: Schedule-isolated persistence.
+    schedule_event = process_events.wait_for_schedule(
         target_process,
         timer_file_descriptor,
-        interval_seconds,
+        processor.failure_file_descriptor,
     )
     target = target_process.process
-    if target_exited:
+    if schedule_event is process_events.ScheduleEvent.PROCESSOR_FAILED:
+        processor.raise_failure()
+    if schedule_event is process_events.ScheduleEvent.TARGET_EXITED:
         return (
             _missed_exit_observation(
                 target,
@@ -976,8 +1053,6 @@ def _update_observation_state(
 ):
     # PRF-004: No stale-stack reuse. PRF-005: Lifecycle-bounded attribution.
     # PRF-024: Explicit failures.
-    state.observation_times.append(observation["target_running_ns"])
-    state.observation_index += 1
     if observation["status"] == "successful":
         state.counts["attempted"] += 1
         state.counts["successful"] += 1
@@ -995,11 +1070,13 @@ def _update_observation_state(
 def _persist_observation(
     writer: _ProfileWriter,
     state: _CaptureState,
-    result: _ObservationResult,
+    work: _ObservationWork,
     attached_runtime: _AttachedRuntime,
     event_file_descriptor: int | None,
 ):
     # PRF-022: Launcher safety. PRF-027: Incremental persistence.
+    # PRF-050: Minimal stopped section. PRF-051: Schedule-isolated persistence.
+    result = _normalize_observation(work) if isinstance(work, _RawObservation) else work
     records, observation = writer.observation_record(result)
     has_python_stack = _has_python_stack(observation)
     if has_python_stack and not state.runtime_recorded:
@@ -1028,6 +1105,111 @@ def _persist_observation(
         )
 
 
+@typing.final
+class _ObservationProcessor:
+    def __init__(
+        self,
+        writer: _ProfileWriter,
+        state: _CaptureState,
+        attached_runtime: _AttachedRuntime,
+        event_file_descriptor: int | None,
+    ):
+        # PRF-027: Incremental persistence.
+        # PRF-051: Schedule-isolated persistence.
+        self._writer = writer
+        self._state = state
+        self._attached_runtime = attached_runtime
+        self._event_file_descriptor = event_file_descriptor
+        self._work: queue.SimpleQueue[_ObservationWork | None] = queue.SimpleQueue()
+        self._failure: _ProfilerEventError | _ObservationProcessorError | None = None
+        self._failure_recorded = threading.Event()
+        self.failure_file_descriptor = os.eventfd(
+            0,
+            os.EFD_CLOEXEC | os.EFD_NONBLOCK,
+        )
+        self._thread = threading.Thread(
+            target=self._run,
+            name="profiler-observation-processor",
+        )
+        self._thread.start()
+
+    def __enter__(self) -> typing.Self:
+        return self
+
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        _exception: BaseException | None,
+        _traceback: object,
+    ) -> typing.Literal[False]:
+        self._work.put(None)
+        self._thread.join()
+        try:
+            if exception_type is None:
+                self.raise_if_failed()
+        finally:
+            os.close(self.failure_file_descriptor)
+        return False
+
+    def submit(self, work: _ObservationWork):
+        # PRF-051: Schedule-isolated persistence.
+        self._work.put(work)
+
+    def raise_if_failed(self):
+        # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
+        if not self._failure_recorded.is_set():
+            return
+        self.raise_failure()
+
+    def raise_failure(self) -> typing.Never:
+        # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
+        failure = cast(
+            "_ProfilerEventError | _ObservationProcessorError",
+            self._failure,
+        )
+        raise failure
+
+    def _record_failure(
+        self,
+        failure: _ProfilerEventError | _ObservationProcessorError,
+    ):
+        # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
+        self._failure = failure
+        self._failure_recorded.set()
+        os.eventfd_write(self.failure_file_descriptor, 1)
+
+    def _run(self):
+        # PRF-027: Incremental persistence.
+        # PRF-051: Schedule-isolated persistence.
+        while (work := self._work.get()) is not None:
+            if self._failure_recorded.is_set():
+                continue
+            try:
+                _persist_observation(
+                    self._writer,
+                    self._state,
+                    work,
+                    self._attached_runtime,
+                    self._event_file_descriptor,
+                )
+            except _ProfilerEventError as error:
+                self._record_failure(error)
+            except OSError as error:
+                self._record_failure(
+                    _ObservationProcessorError(
+                        schema.CaptureFailureKind.PROFILE_WRITE_FAILED,
+                        f"{type(error).__name__}: {error}",
+                    )
+                )
+            except (TypeError, ValueError) as error:
+                self._record_failure(
+                    _ObservationProcessorError(
+                        schema.CaptureFailureKind.OBSERVATION_SERIALIZATION_FAILED,
+                        f"{type(error).__name__}: {error}",
+                    )
+                )
+
+
 def _sample_until_exit(
     target_process: process_events.TargetProcess,
     writer: _ProfileWriter,
@@ -1039,28 +1221,43 @@ def _sample_until_exit(
     event_file_descriptor: int | None,
 ):
     # PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
-    # PRF-027: Incremental persistence.
-    while True:
-        result, target_exited = _scheduled_observation(
-            target_process,
-            state,
+    # PRF-027: Incremental persistence. PRF-051: Schedule-isolated persistence.
+    with _ObservationProcessor(
+        writer,
+        state,
+        attached_runtime,
+        event_file_descriptor,
+    ) as processor:
+        interval_seconds = _next_interval_seconds(
+            state.random_generator,
             mean_interval_seconds,
-            launched_ns,
-            timer_file_descriptor,
-            event_file_descriptor,
         )
-        state.total_pause_ns += result.pause_duration_ns
-        state.observation_pause_ns += result.pause_duration_ns
-        with _blocked_interruption_signals():
-            _persist_observation(
-                writer,
+        scheduled_interval_ns = round(interval_seconds * 1_000_000_000)
+        process_events.arm_schedule(timer_file_descriptor, interval_seconds)
+        while True:
+            result, target_exited = _scheduled_observation(
+                target_process,
                 state,
-                result,
-                attached_runtime,
+                processor,
+                scheduled_interval_ns,
+                launched_ns,
+                timer_file_descriptor,
                 event_file_descriptor,
             )
-        if target_exited:
-            return
+            if not target_exited:
+                interval_seconds = _next_interval_seconds(
+                    state.random_generator,
+                    mean_interval_seconds,
+                )
+                scheduled_interval_ns = round(interval_seconds * 1_000_000_000)
+                process_events.arm_schedule(timer_file_descriptor, interval_seconds)
+            state.total_pause_ns += result.pause_duration_ns
+            state.observation_pause_ns += result.pause_duration_ns
+            state.observation_times.append(result.target_running_ns)
+            state.observation_index += 1
+            processor.submit(result)
+            if target_exited:
+                return
 
 
 def _record_capture_failure(
@@ -1152,7 +1349,7 @@ def _capture_process(
     event_file_descriptor: int | None,
 ) -> int:
     # PRF-023: Guaranteed resume. PRF-024: Explicit failures.
-    # PRF-026: No silent partial success.
+    # PRF-026: No silent partial success. PRF-051: Schedule-isolated persistence.
     with _interruption_handlers():
         try:
             return _capture_attached_process(
@@ -1190,6 +1387,18 @@ def _capture_process(
             exit_status, trace_pause_ns = _terminate_process_group(target_process)
             state.total_pause_ns += error.pause_duration_ns + trace_pause_ns
             state.observation_pause_ns += error.pause_duration_ns
+            return exit_status
+        except _ObservationProcessorError as error:
+            exit_status, trace_pause_ns = _terminate_process_group(target_process)
+            state.total_pause_ns += trace_pause_ns
+            _record_capture_failure(
+                writer,
+                state,
+                error.kind,
+                str(error),
+                launched_ns,
+                python_observed=state.attached_runtime is not None,
+            )
             return exit_status
         except _CaptureInterrupted as interruption:
             exit_status, trace_pause_ns = _terminate_process_group(target_process)

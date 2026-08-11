@@ -70,11 +70,48 @@ py_library(
     deps = [":schema"],
 )
 
+# PRF-010: Raw-data preservation. PRF-014: CPU mode.
+py_test(
+    name = "cpu_profiler_test",
+    size = "small",
+    srcs = ["cpu_profiler_test.py"],
+    data = [
+        ":__main__",
+        "//tools:analyze_profile",
+        "//tools/profiler/testdata:cpu_target",
+        "//tools/profiler/testdata:cpu_target.py",
+    ],
+    env = {
+        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
+        "PROFILER_BINARY": "$(rlocationpath :__main__)",
+        "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
+    },
+    deps = [
+        ":analyzer",
+        ":analyzer_model",
+        ":cpu_analyzer",
+        ":cpu_profiler",
+        ":schema",
+        ":test_helpers",
+    ],
+)
+
 # PRF-022: Launcher safety. PRF-049: Event-driven coordination.
 py_library(
     name = "process_events",
     srcs = ["process_events.py"],
     deps = [":schema"],
+)
+
+# PRF-022: Launcher safety. PRF-049: Event-driven coordination.
+py_test(
+    name = "process_events_test",
+    size = "small",
+    srcs = ["process_events_test.py"],
+    deps = [
+        ":process_events",
+        "@pypi//pytest",
+    ],
 )
 
 # PRF-001: No call-correlated wall profiling work. PRF-014: CPU mode.
@@ -102,8 +139,6 @@ py_test(
         "//tools/profiler/testdata:continuous_profile.jsonl",
         "//tools/profiler/testdata:continuous_target",
         "//tools/profiler/testdata:continuous_target.py",
-        "//tools/profiler/testdata:cpu_target",
-        "//tools/profiler/testdata:cpu_target.py",
         "//tools/profiler/testdata:critical_path_profile.jsonl",
         "//tools/profiler/testdata:exit_target",
         "//tools/profiler/testdata:exit_target.py",
@@ -121,7 +156,6 @@ py_test(
         "PROFILER_CONTINUOUS_PROFILE": "$(rlocationpath //tools/profiler/testdata:continuous_profile.jsonl)",
         "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
         "PROFILER_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:critical_path_profile.jsonl)",
-        "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
         "PROFILER_EXIT_SOURCE": "$(rlocationpath //tools/profiler/testdata:exit_target.py)",
         "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
         "PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:initial_wait_critical_path_profile.jsonl)",
@@ -130,16 +164,45 @@ py_test(
     },
     deps = [
         ":analyzer",
-        ":analyzer_model",
-        ":cpu_analyzer",
         ":profiler",
         ":schema",
+        ":test_helpers",
         ":wall_analyzer",
         ":wall_critical_path",
         ":wall_model",
         "@pypi//click",
         "@pypi//pytest",
+    ],
+)
+
+# PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
+# PRF-024: Explicit failures. PRF-041: Realistic tests.
+# PRF-049: Event-driven coordination.
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    deps = [
+        ":schema",
         "@rules_python//python/runfiles",
+    ],
+)
+
+# PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
+# PRF-010: Raw-data preservation. PRF-011: Complete invocation.
+# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
+# PRF-023: Guaranteed resume. PRF-024: Explicit failures.
+# PRF-026: No silent partial success. PRF-049: Event-driven coordination.
+py_test(
+    name = "profiler_unit_test",
+    size = "small",
+    srcs = ["profiler_unit_test.py"],
+    deps = [
+        ":process_events",
+        ":profiler",
+        ":schema",
+        "@pypi//click",
+        "@pypi//pytest",
     ],
 )
 
@@ -197,6 +260,18 @@ py_library(
     ],
 )
 
+# PRF-047: Multi-threaded critical path.
+py_test(
+    name = "wall_critical_path_test",
+    size = "small",
+    srcs = ["wall_critical_path_test.py"],
+    deps = [
+        ":schema",
+        ":wall_critical_path",
+        ":wall_model",
+    ],
+)
+
 # PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
 # PRF-005: Lifecycle-bounded attribution.
 # PRF-047: Multi-threaded critical path.
@@ -221,13 +296,18 @@ pyright_test(
         ":compiler_profile_test",
         ":cpu_analyzer",
         ":cpu_profiler",
+        ":cpu_profiler_test",
         ":process_events",
+        ":process_events_test",
         ":profiler",
         ":profiler_test",
+        ":profiler_unit_test",
         ":regenerate_test_profiles",
         ":schema",
+        ":test_helpers",
         ":wall_analyzer",
         ":wall_critical_path",
+        ":wall_critical_path_test",
         ":wall_model",
     ],
 )

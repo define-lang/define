@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import pathlib
 import typing
 
 if typing.TYPE_CHECKING:
+    import pathlib
+
     from tools.profiler import schema
 
 
@@ -22,11 +23,9 @@ def sampling_configuration(
     }
 
 
-def scheduler_runtimes(process_id: int) -> dict[int, int]:
-    """Read cumulative scheduler runtime for each live target thread."""
+def scheduler_runtime(thread_directory: pathlib.Path) -> int:
+    """Read one thread's cumulative scheduler runtime."""
     # PRF-010: Raw-data preservation. PRF-014: CPU mode.
-    runtimes: dict[int, int] = {}
-    for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
-        schedstat = (thread_directory / "schedstat").read_text(encoding="utf-8")
-        runtimes[int(thread_directory.name)] = int(schedstat.split()[0])
-    return runtimes
+    # PRF-050: Minimal stopped section.
+    schedstat = (thread_directory / "schedstat").read_text(encoding="utf-8")
+    return int(schedstat.split()[0])

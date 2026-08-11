@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 CaptureMode = Literal["wall", "cpu"]
 
@@ -41,6 +41,8 @@ class CaptureFailureKind(enum.StrEnum):
 
     # PRF-024: Explicit failures. PRF-026: No silent partial success.
     ATTACHMENT_TIMEOUT = "attachment-timeout"
+    OBSERVATION_SERIALIZATION_FAILED = "observation-serialization-failed"
+    PROFILE_WRITE_FAILED = "profile-write-failed"
     PROFILER_EVENT_WRITE_FAILED = "profiler-event-write-failed"
     PROFILER_INTERRUPTED = "profiler-interrupted"
     TARGET_EXITED_BEFORE_ATTACHMENT = "target-exited-before-attachment"

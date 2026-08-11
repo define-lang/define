@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import dataclasses
+import enum
 import os
 import select
 import signal
@@ -47,6 +48,16 @@ class ExecutableWaitTimeoutError(ExecutableWaitError):
 
 class ProcessExitedBeforeExecutableError(ExecutableWaitError):
     """The target exited before reaching the expected executable."""
+
+
+class ScheduleEvent(enum.Enum):
+    """Kernel event that ended a sampling wait."""
+
+    # PRF-049: Event-driven coordination.
+    # PRF-051: Schedule-isolated persistence.
+    DEADLINE = enum.auto()
+    PROCESSOR_FAILED = enum.auto()
+    TARGET_EXITED = enum.auto()
 
 
 @dataclasses.dataclass(slots=True)
@@ -256,21 +267,34 @@ def release_exec_notifications(target_process: TargetProcess) -> int:
     return time.monotonic_ns() - pause_started_ns
 
 
-def wait_for_schedule(
-    target_process: TargetProcess,
-    timer_file_descriptor: int,
-    interval_seconds: float,
-) -> bool:
-    """Return true at the sampling deadline or false when the target exits."""
+def arm_schedule(timer_file_descriptor: int, interval_seconds: float):
+    """Arm the next sampling deadline."""
     # PRF-002: Independent sampling schedule.
     # PRF-049: Event-driven coordination.
     _ = os.timerfd_settime(timer_file_descriptor, initial=interval_seconds)
+
+
+def wait_for_schedule(
+    target_process: TargetProcess,
+    timer_file_descriptor: int,
+    processor_failure_file_descriptor: int,
+) -> ScheduleEvent:
+    """Wait for a sampling deadline, target exit, or processor failure."""
+    # PRF-002: Independent sampling schedule.
+    # PRF-049: Event-driven coordination.
+    # PRF-051: Schedule-isolated persistence.
     readable, _, _ = select.select(
-        [target_process.process_file_descriptor, timer_file_descriptor],
+        [
+            target_process.process_file_descriptor,
+            timer_file_descriptor,
+            processor_failure_file_descriptor,
+        ],
         [],
         [],
     )
+    if processor_failure_file_descriptor in readable:
+        return ScheduleEvent.PROCESSOR_FAILED
     if target_process.process_file_descriptor in readable:
-        return False
+        return ScheduleEvent.TARGET_EXITED
     _ = os.read(timer_file_descriptor, 8)
-    return True
+    return ScheduleEvent.DEADLINE
