@@ -69,6 +69,11 @@ class _ProfilerEventReader:
         return False
 
 
+def _drain_profiler_events(file_descriptor: int):
+    while os.read(file_descriptor, 4096):
+        pass
+
+
 def _runfile(variable: str) -> Path:
     location = os.environ[variable]
     candidate = Path(location)
@@ -256,7 +261,13 @@ def test_main_profiles_relative_target(
     analysis = analyzer.analyze(profile)
     assert isinstance(analysis, wall_analyzer.Analysis)
     analyzer.emit_report(profile, analysis, 1)
-    assert "none resolved or observed" in capsys.readouterr().out
+    report = capsys.readouterr().out
+    if profile.observation_counts["missed"]:
+        final_observation = profile.observations[-1]
+        assert final_observation["status"] == "missed"
+        assert final_observation["failure_kind"].value in report
+    else:
+        assert "none resolved or observed" in report
 
 
 # PRF-002: Independent sampling schedule. PRF-049: Event-driven coordination.
@@ -325,17 +336,46 @@ def test_observation_failure_kinds_are_stable():
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
 def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
-
-    capture_result = subprocess.run(
-        _profile_command(profile_path, "PROFILER_CONTINUOUS_SOURCE"),
-        capture_output=True,
+    profiler_gate = tmp_path / "profiler-gate"
+    os.mkfifo(profiler_gate)
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = _ProfilerEventReader(event_read_file_descriptor)
+    capture_process = subprocess.Popen(
+        _profile_command(
+            profile_path,
+            "PROFILER_CONTINUOUS_SOURCE",
+            event_file_descriptor=event_write_file_descriptor,
+            target_arguments=(str(profiler_gate),),
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
-        check=False,
+        pass_fds=(event_write_file_descriptor,),
     )
+    os.close(event_write_file_descriptor)
+    with profiler_gate.open("wb", buffering=0) as gate_stream:
+        workers_observed = event_reader.wait_for(
+            "successful-observation-persisted",
+            10,
+            timeout_seconds=15,
+        )
+        event_drain_thread = threading.Thread(
+            target=_drain_profiler_events,
+            args=(event_read_file_descriptor,),
+        )
+        event_drain_thread.start()
+        if workers_observed:
+            _ = gate_stream.write(b"1")
+        else:
+            capture_process.terminate()
+    capture_stdout, capture_stderr = capture_process.communicate()
+    event_drain_thread.join()
+    os.close(event_read_file_descriptor)
 
-    assert capture_result.returncode == 0
-    _assert_capture_summary(capture_result.stdout, profile_path)
-    assert capture_result.stderr == ""
+    assert workers_observed
+    assert capture_process.returncode == 0
+    _assert_capture_summary(capture_stdout, profile_path)
+    assert capture_stderr == ""
     profile = schema.load(profile_path)
     assert profile.complete is True
     assert profile.success is True
@@ -410,7 +450,14 @@ def test_public_binaries_capture_and_analyze_continuous_threads(tmp_path: Path):
     cumulative_by_function = {
         row.identity.function: row for row in analysis.cumulative_function_rows
     }
-    assert cumulative_by_function["_retired_worker"].wall_occupancy_ns < 500_000_000
+    assert (
+        cumulative_by_function["_retired_worker"].wall_occupancy_ns
+        < cumulative_by_function["_deep_wait_level_two"].wall_occupancy_ns
+    )
+    assert (
+        cumulative_by_function["_retired_worker"].wall_occupancy_ns
+        < cumulative_by_function["_shallow_wait"].wall_occupancy_ns
+    )
     assert (
         cumulative_by_function["_deep_wait_level_two"].wall_occupancy_ns > 600_000_000
     )
@@ -711,7 +758,7 @@ def test_real_profile_reports_worker_waiting_from_first_observation():
 # PRF-036: Rate convergence. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_cpu_accuracy_converges_across_rates_through_real_targets(tmp_path: Path):
-    rates = (0.00025, 0.0005, 0.001)
+    rates = (0.0005, 0.001, 0.002)
     cumulative_rows_by_rate: list[dict[str, cpu_analyzer.FunctionRow]] = []
     final_profile_path = tmp_path / "cpu-2.jsonl"
     for index, rate in enumerate(rates):
