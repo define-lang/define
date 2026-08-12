@@ -241,6 +241,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["uv", "run", "-m", "tools.run_profile"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["uv", "run", "tools/analyze_profile.py"],
     decision = "allow",
 )

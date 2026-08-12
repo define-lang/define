@@ -60,6 +60,7 @@
       "Shell(uv run tools/sync_agent_permissions.py)",
       "Shell(uv run tools/setup_local_dev.py)",
       "Shell(uv run tools/run_profile.py *)",
+      "Shell(uv run -m tools.run_profile *)",
       "Shell(uv run tools/analyze_profile.py *)",
       "Shell(uv run mutmut *)",
       "Shell(uv run py-spy *)",
