@@ -45,6 +45,8 @@ _PROFILER_EVENT_BYTES: dict[_ProfilerEvent, bytes] = {
     "successful-observation-persisted": b"successful-observation-persisted\n",
 }
 
+_STOPPED_THREAD_STATES = (ord("T"), ord("t"))
+
 
 # PRF-001: No call-correlated wall profiling work.
 class _Unwinder(Protocol):
@@ -170,11 +172,12 @@ class _ThreadEvidence:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _StoppedThread:
+class _RawStoppedThread:
     # PRF-005: Lifecycle-bounded attribution. PRF-007: Consistent stack.
-    start_time_ticks: int
-    state: str
-    scheduler_runtime_ns: int | None
+    # PRF-050: Minimal stopped section.
+    os_thread_id: str
+    stat: bytes
+    schedstat: bytes | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -198,7 +201,7 @@ class _RawObservation:
     # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
     timing: schema.ObservationBase
     evidence: dict[int, _ThreadEvidence]
-    stopped_threads: dict[int, _StoppedThread]
+    stopped_threads: list[_RawStoppedThread]
     remote_threads: list[remote_frame_names.RemoteThread]
     frame_names: remote_frame_names.CapturedFrameNames
 
@@ -388,12 +391,23 @@ def _wait_for_python_executable(
     return result.executable, result.pause_ns
 
 
+def _decode_thread_stat(stat: bytes) -> tuple[str, int]:
+    # PRF-010: Raw-data preservation. A Linux TID can be reused after thread exit.
+    command_end = stat.rindex(b")")
+    fields_from_state = stat[command_end + 2 :].split(maxsplit=20)
+    return fields_from_state[0].decode("ascii"), int(fields_from_state[19])
+
+
 def _thread_stat(thread_directory: pathlib.Path) -> tuple[str, int]:
     # PRF-010: Raw-data preservation. A Linux TID can be reused after thread exit.
-    stat = (thread_directory / "stat").read_text(encoding="utf-8")
-    command_end = stat.rindex(")")
-    fields_from_state = stat[command_end + 2 :].split()
-    return fields_from_state[0], int(fields_from_state[19])
+    return _decode_thread_stat((thread_directory / "stat").read_bytes())
+
+
+def _thread_reached_stopped_state(stat: bytes) -> bool:
+    # PRF-006: Complete-process stop. PRF-050: Minimal stopped section.
+    state_offset = stat.rindex(b")") + 2
+    state = stat[state_offset]
+    return state in _STOPPED_THREAD_STATES
 
 
 def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
@@ -408,23 +422,28 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
     return evidence
 
 
-def _stopped_threads(
+def _capture_raw_stopped_threads(
     process_id: int,
     mode: schema.CaptureMode,
-) -> dict[int, _StoppedThread]:
+) -> list[_RawStoppedThread]:
     # PRF-005: Lifecycle-bounded attribution. PRF-006: Complete-process stop.
     # PRF-014: CPU mode. PRF-050: Minimal stopped section.
-    stopped_threads: dict[int, _StoppedThread] = {}
+    stopped_threads: list[_RawStoppedThread] = []
     for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
-        state, start_time_ticks = _thread_stat(thread_directory)
-        stopped_threads[int(thread_directory.name)] = _StoppedThread(
-            start_time_ticks=start_time_ticks,
-            state=state,
-            scheduler_runtime_ns=(
-                cpu_profiler.scheduler_runtime(thread_directory)
-                if mode == "cpu"
-                else None
-            ),
+        stat = (thread_directory / "stat").read_bytes()
+        if not _thread_reached_stopped_state(stat):
+            # Unwinding before every thread has stopped can produce a torn snapshot.
+            raise _TargetStopError("not every target thread reached a stopped state")
+        stopped_threads.append(
+            _RawStoppedThread(
+                os_thread_id=thread_directory.name,
+                stat=stat,
+                schedstat=(
+                    cpu_profiler.capture_scheduler_runtime(thread_directory)
+                    if mode == "cpu"
+                    else None
+                ),
+            )
         )
     return stopped_threads
 
@@ -435,7 +454,7 @@ def _capture_stopped_threads(
     mode: schema.CaptureMode,
     event_file_descriptor: int | None,
 ) -> tuple[
-    dict[int, _StoppedThread],
+    list[_RawStoppedThread],
     list[remote_frame_names.RemoteThread],
     remote_frame_names.CapturedFrameNames,
 ]:
@@ -453,14 +472,7 @@ def _capture_stopped_threads(
     if waited_process_id != target.pid or not os.WIFSTOPPED(wait_status):
         raise _TargetStopError("target exited while the profiler was stopping it")
     _emit_profiler_event(event_file_descriptor, "target-stopped")
-    stopped_threads = _stopped_threads(target.pid, mode)
-    if any(
-        stopped_thread.state not in {"T", "t"}
-        for stopped_thread in stopped_threads.values()
-    ):
-        # PRF-006: Complete-process stop. PRF-050: Minimal stopped section.
-        # Unwinding before every thread has stopped can produce a torn snapshot.
-        raise _TargetStopError("not every target thread reached a stopped state")
+    stopped_threads = _capture_raw_stopped_threads(target.pid, mode)
     captured_stack_trace = observation_unwinder.get_stack_trace()
     return (
         stopped_threads,
@@ -472,9 +484,15 @@ def _capture_stopped_threads(
 def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResult:
     # PRF-004: No stale-stack reuse. PRF-007: Consistent stack.
     # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
-    stopped_threads = raw_observation.stopped_threads
     evidence = raw_observation.evidence
     remote_threads = raw_observation.remote_threads
+    try:
+        stopped_threads = {
+            int(stopped_thread.os_thread_id): stopped_thread
+            for stopped_thread in raw_observation.stopped_threads
+        }
+    except ValueError as error:
+        return _failed_observation_from_raw(raw_observation, error)
     remote_threads_by_id: dict[int, remote_frame_names.RemoteThread] = {}
     for remote_thread in remote_threads:
         if (
@@ -504,7 +522,16 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                     "an OS thread changed identity during the observation"
                 ),
             )
-        if thread_evidence.start_time_ticks != stopped_thread.start_time_ticks:
+        try:
+            _, stopped_start_time_ticks = _decode_thread_stat(stopped_thread.stat)
+            scheduler_runtime_ns = (
+                cpu_profiler.decode_scheduler_runtime(stopped_thread.schedstat)
+                if stopped_thread.schedstat is not None
+                else None
+            )
+        except (UnicodeDecodeError, ValueError) as error:
+            return _failed_observation_from_raw(raw_observation, error)
+        if thread_evidence.start_time_ticks != stopped_start_time_ticks:
             return _failed_observation_from_raw(
                 raw_observation,
                 _InconsistentStackObservationError(
@@ -531,7 +558,7 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                 os_thread_id=thread_id,
                 evidence=thread_evidence,
                 stack=stack,
-                scheduler_runtime_ns=stopped_thread.scheduler_runtime_ns,
+                scheduler_runtime_ns=scheduler_runtime_ns,
             )
         )
     return _SuccessfulObservationResult(
@@ -650,7 +677,7 @@ def _capture_observation(
     failure: _ObservationFailure | None = None
     interruption: _CaptureInterrupted | None = None
     profiler_event_error: _ProfilerEventError | None = None
-    stopped_threads: dict[int, _StoppedThread] = {}
+    stopped_threads: list[_RawStoppedThread] = []
     remote_threads: list[remote_frame_names.RemoteThread] = []
     frame_names: remote_frame_names.CapturedFrameNames = []
     pause_started_ns = time.monotonic_ns()
@@ -1308,6 +1335,7 @@ def capture(
 
     if event_file_descriptor is not None:
         _ = os.fstat(event_file_descriptor)
+        os.set_blocking(event_file_descriptor, False)
 
     with (
         process_events.blocked_child_signal(),

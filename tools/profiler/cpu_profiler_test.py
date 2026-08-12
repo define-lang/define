@@ -13,7 +13,7 @@ from tools.profiler import (
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
-def test_scheduler_runtime_reads_the_thread_schedstat(tmp_path: Path):
+def test_scheduler_runtime_capture_defers_decoding(tmp_path: Path):
     thread_directory = tmp_path / "11"
     thread_directory.mkdir()
     _ = (thread_directory / "schedstat").write_text(
@@ -21,9 +21,10 @@ def test_scheduler_runtime_reads_the_thread_schedstat(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runtime = cpu_profiler.scheduler_runtime(thread_directory)
+    schedstat = cpu_profiler.capture_scheduler_runtime(thread_directory)
 
-    assert runtime == 101
+    assert schedstat == b"101 202 3\n"
+    assert cpu_profiler.decode_scheduler_runtime(schedstat) == 101
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.

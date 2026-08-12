@@ -79,6 +79,25 @@ def _observation_timing() -> schema.ObservationBase:
     }
 
 
+def _raw_stopped_thread(
+    os_thread_id: int,
+    start_time_ticks: int,
+    *,
+    state: str = "t",
+    schedstat: bytes | None = None,
+) -> profiler._RawStoppedThread:  # pyright: ignore[reportPrivateUsage]
+    fields_before_start_time = " ".join(["0"] * 18)
+    stat = (
+        f"{os_thread_id} (python worker) {state} "
+        f"{fields_before_start_time} {start_time_ticks} 0\n"
+    ).encode("ascii")
+    return profiler._RawStoppedThread(  # pyright: ignore[reportPrivateUsage]
+        os_thread_id=str(os_thread_id),
+        stat=stat,
+        schedstat=schedstat,
+    )
+
+
 def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
     observations: list[schema.Observation] = []
     frames: dict[int, schema.Frame] = {}
@@ -522,7 +541,7 @@ def test_normalization_applies_copied_dataclass_type_name():
     raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
         timing=_observation_timing(),
         evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
-        stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+        stopped_threads=[_raw_stopped_thread(17, 101)],
         remote_threads=typing.cast(
             "list[remote_frame_names.RemoteThread]",
             [remote_thread],
@@ -543,7 +562,7 @@ def test_normalization_retains_os_thread_without_python_stack():
     raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
         timing=_observation_timing(),
         evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
-        stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+        stopped_threads=[_raw_stopped_thread(17, 101)],
         remote_threads=[],
         frame_names=[],
     )
@@ -555,6 +574,24 @@ def test_normalization_retains_os_thread_without_python_stack():
         profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
     )
     assert result.threads[0].stack == []
+
+
+def test_normalization_decodes_copied_scheduler_runtime():
+    raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
+        timing=_observation_timing(),
+        evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
+        stopped_threads=[_raw_stopped_thread(17, 101, schedstat=b"1234 50 7\n")],
+        remote_threads=[],
+        frame_names=[],
+    )
+
+    result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
+
+    assert isinstance(
+        result,
+        profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
+    )
+    assert result.threads[0].scheduler_runtime_ns == 1234
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
@@ -724,6 +761,59 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
 
 
 # PRF-050: Minimal stopped section.
+@pytest.mark.parametrize("state", ["T", "t"])
+def test_stopped_state_check_accepts_stopped_states(state: str):
+    stat = _raw_stopped_thread(17, 101, state=state).stat
+
+    reached_stopped_state = profiler._thread_reached_stopped_state(  # pyright: ignore[reportPrivateUsage]
+        stat
+    )
+
+    assert reached_stopped_state is True
+
+
+def test_stopped_state_check_rejects_running_state():
+    stat = _raw_stopped_thread(17, 101, state="R").stat
+
+    reached_stopped_state = profiler._thread_reached_stopped_state(  # pyright: ignore[reportPrivateUsage]
+        stat
+    )
+
+    assert reached_stopped_state is False
+
+
+# PRF-050: Minimal stopped section.
+def test_stopped_capture_copies_raw_stat_without_decoding(
+    tmp_path: Path,
+):
+    thread_directory = tmp_path / "17"
+    thread_directory.mkdir()
+    raw_thread = _raw_stopped_thread(17, 101)
+    _ = (thread_directory / "stat").write_bytes(raw_thread.stat)
+
+    with (
+        mock.patch.object(
+            Path,
+            "iterdir",
+            autospec=True,
+            return_value=iter([thread_directory]),
+        ),
+        mock.patch.object(
+            profiler,
+            "_decode_thread_stat",
+            autospec=True,
+            side_effect=AssertionError("decoded during stopped capture"),
+        ),
+    ):
+        stopped_threads = profiler._capture_raw_stopped_threads(  # pyright: ignore[reportPrivateUsage]
+            71,
+            "wall",
+        )
+
+    assert stopped_threads == [raw_thread]
+
+
+# PRF-050: Minimal stopped section.
 def test_observation_prepares_unwinder_before_stopping_target():
     timeline: list[str] = []
     raw_unwinder = typing.cast(
@@ -769,13 +859,13 @@ def test_observation_prepares_unwinder_before_stopping_target():
         _mode: schema.CaptureMode,
         _event_file_descriptor: int | None,
     ) -> tuple[
-        dict[int, profiler._StoppedThread],  # pyright: ignore[reportPrivateUsage]
+        list[profiler._RawStoppedThread],  # pyright: ignore[reportPrivateUsage]
         list[remote_frame_names.RemoteThread],
         remote_frame_names.CapturedFrameNames,
     ]:
         assert unwinder is qualified_unwinder
         timeline.append("capture-stopped")
-        return {}, [], []
+        return [], [], []
 
     with (
         mock.patch.object(
@@ -891,19 +981,19 @@ def _missed_observation(
     [
         (
             {11: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
-            {11: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+            [_raw_stopped_thread(11, 101)],
             [12],
             "a Python thread changed identity during the observation",
         ),
         (
             {},
-            {11: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+            [_raw_stopped_thread(11, 101)],
             [],
             "an OS thread changed identity during the observation",
         ),
         (
             {11: profiler._ThreadEvidence(102, "R")},  # pyright: ignore[reportPrivateUsage]
-            {11: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+            [_raw_stopped_thread(11, 101)],
             [],
             "an OS thread identifier was reused during the observation",
         ),
@@ -911,7 +1001,7 @@ def _missed_observation(
 )
 def test_normalization_discards_thread_identity_changes(
     evidence: dict[int, profiler._ThreadEvidence],  # pyright: ignore[reportPrivateUsage]
-    stopped_threads: dict[int, profiler._StoppedThread],  # pyright: ignore[reportPrivateUsage]
+    stopped_threads: list[profiler._RawStoppedThread],  # pyright: ignore[reportPrivateUsage]
     remote_thread_ids: list[int],
     expected_reason: str,
 ):

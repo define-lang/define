@@ -22,9 +22,14 @@ def sampling_configuration(
     }
 
 
-def scheduler_runtime(thread_directory: pathlib.Path) -> int:
-    """Read one thread's cumulative scheduler runtime."""
+def capture_scheduler_runtime(thread_directory: pathlib.Path) -> bytes:
+    """Copy one thread's cumulative scheduler-runtime record."""
     # PRF-010: Raw-data preservation. PRF-014: CPU mode.
     # PRF-050: Minimal stopped section.
-    schedstat = (thread_directory / "schedstat").read_text(encoding="utf-8")
-    return int(schedstat.split()[0])
+    return (thread_directory / "schedstat").read_bytes()
+
+
+def decode_scheduler_runtime(schedstat: bytes) -> int:
+    """Decode a copied scheduler-runtime record."""
+    # PRF-014: CPU mode. PRF-050: Minimal stopped section.
+    return int(schedstat.split(maxsplit=1)[0])

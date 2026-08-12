@@ -1062,6 +1062,7 @@ def test_non_python_target_exit_before_attachment_is_recorded(tmp_path: Path):
             mode="wall",
             event_file_descriptor=event_write_file_descriptor,
         )
+        assert os.get_blocking(event_write_file_descriptor) is False
     finally:
         os.close(event_write_file_descriptor)
     release_thread.join()

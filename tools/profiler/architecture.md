@@ -546,8 +546,10 @@ checkpoint.
    guessing a delay.
 10. **PRF-050: Minimal stopped section.** While the target is stopped, the
     sampler performs only kernel stop confirmation and raw reads whose
-    consistency requires the stop. Validation, frame conversion, allocation of
-    profile-domain objects, serialization, and persistence happen after resume.
+    consistency requires the stop, plus the optional nonblocking
+    `target-stopped` coordination notification required by PRF-049. Validation,
+    frame conversion, allocation of profile-domain objects, serialization, and
+    persistence happen after resume.
 11. **PRF-051: Schedule-isolated persistence.** An ordered background worker
     validates, normalizes, interns, serializes, and persists copied
     observations. The sampler arms the next deadline before handing off the
