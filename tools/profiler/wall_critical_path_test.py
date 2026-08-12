@@ -1,3 +1,4 @@
+import dataclasses
 import types
 import typing
 
@@ -13,15 +14,35 @@ def _sample(
     stack: tuple[int, ...],
 ) -> wall_model.ThreadSample:
     return wall_model.ThreadSample(
+        observation=wall_model.ObservationSample(
+            observation_index=observation_index,
+            interval=wall_model.Interval(start_ns, end_ns),
+        ),
         identity=identity,
-        observation_index=observation_index,
-        interval=wall_model.Interval(start_ns, end_ns),
         pre_stop_state=state,
-        wait_channel="futex_wait_queue_me" if state == "S" else "0",
-        voluntary_context_switches=observation_index,
-        nonvoluntary_context_switches=0,
         stack=stack,
     )
+
+
+def _samples(
+    *observations: dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
+) -> wall_model.Samples:
+    by_identity: dict[wall_model.ThreadIdentity, list[wall_model.ThreadSample]] = {}
+    observation_samples: list[wall_model.ObservationSample] = []
+    for observation in observations:
+        first_sample = next(iter(observation.values()), None)
+        if first_sample is None:
+            continue
+        observation_sample = wall_model.ObservationSample(
+            first_sample.observation_index,
+            first_sample.interval,
+        )
+        for identity, sample in observation.items():
+            sample = dataclasses.replace(sample, observation=observation_sample)
+            observation_sample.threads[identity] = sample
+            by_identity.setdefault(identity, []).append(sample)
+        observation_samples.append(observation_sample)
+    return wall_model.Samples(observation_samples, by_identity)
 
 
 def _profile_with_observation_times(*target_running_times: int) -> schema.RawProfile:
@@ -38,21 +59,22 @@ def _profile_with_observation_times(*target_running_times: int) -> schema.RawPro
 # PRF-047: Multi-threaded critical path.
 def test_wait_start_reaches_the_first_observation():
     downstream = wall_model.ThreadIdentity(11, 101)
-    first_wait = _sample(downstream, 0, 5, 15, "S", (1,))
-    second_wait = _sample(downstream, 1, 15, 25, "S", (1,))
-    wait_start = wall_critical_path._wait_start  # pyright: ignore[reportPrivateUsage]
+    producer = wall_model.ThreadIdentity(12, 102)
+    first_wait = _sample(downstream, 0, 0, 10, "S", (1,))
+    second_wait = _sample(downstream, 1, 10, 20, "S", (1,))
+    producer_work = _sample(producer, 1, 10, 20, "R", (2,))
+    downstream_work = _sample(downstream, 2, 20, 30, "R", (1,))
 
-    result = wait_start(
-        downstream,
-        1,
-        {
-            0: {downstream: first_wait},
-            1: {downstream: second_wait},
-        },
-        _profile_with_observation_times(10, 20),
+    transitions = wall_critical_path._transitions(  # pyright: ignore[reportPrivateUsage]
+        _profile_with_observation_times(5, 15, 25),
+        _samples(
+            {downstream: first_wait},
+            {downstream: second_wait, producer: producer_work},
+            {downstream: downstream_work},
+        ),
     )
 
-    assert result == (0, 5)
+    assert transitions[downstream][0].downstream_wait_ns == 20
 
 
 # PRF-047: Multi-threaded critical path.
@@ -68,19 +90,30 @@ def test_departed_candidate_uses_its_latest_working_sample():
         0,
         1,
         {downstream: _sample(downstream, 2, 20, 30, "R", (3,))},
-        {
-            0: {
-                downstream: _sample(downstream, 0, 0, 10, "S", (3,)),
-                producer: first_producer_sample,
-            },
-            1: {
-                downstream: _sample(downstream, 1, 10, 20, "S", (3,)),
-                producer: latest_producer_sample,
-            },
-        },
+        {producer: [first_producer_sample, latest_producer_sample]},
     )
 
     assert candidates == [latest_producer_sample]
+
+
+def test_departed_candidates_exclude_work_before_wait_and_after_transition():
+    downstream = wall_model.ThreadIdentity(11, 101)
+    earlier_producer = wall_model.ThreadIdentity(12, 102)
+    later_producer = wall_model.ThreadIdentity(13, 103)
+    departed_candidates = wall_critical_path._departed_working_candidates  # pyright: ignore[reportPrivateUsage]
+
+    candidates = departed_candidates(
+        downstream,
+        1,
+        1,
+        {downstream: _sample(downstream, 2, 20, 30, "R", (3,))},
+        {
+            earlier_producer: [_sample(earlier_producer, 0, 0, 10, "R", (1,))],
+            later_producer: [_sample(later_producer, 2, 20, 30, "R", (2,))],
+        },
+    )
+
+    assert candidates == []
 
 
 # PRF-047: Multi-threaded critical path.
@@ -94,25 +127,22 @@ def test_new_worker_uses_the_prior_stack_bearing_candidate():
 
     transitions = transitions_for(
         _profile_with_observation_times(5, 15),
-        {
-            0: {producer: producer_before},
-            1: {
+        _samples(
+            {producer: producer_before},
+            {
                 producer: producer_after,
                 downstream: downstream_after,
             },
-        },
+        ),
     )
 
     assert len(transitions) == 1
-    transition = transitions[0]
+    transition = transitions[downstream][0]
     assert transition.target_running_ns == 10
-    assert transition.earlier_observation_index == 0
-    assert transition.downstream == downstream
-    assert transition.downstream_stack == (2,)
+    assert transition.downstream_sample == downstream_after
     assert transition.downstream_wait_ns == 0
     assert transition.downstream_first_observed is True
-    assert transition.candidates == (producer,)
-    assert transition.candidate_stacks == ((1,),)
+    assert transition.candidates == (producer_before,)
 
 
 # PRF-047: Multi-threaded critical path.
@@ -125,20 +155,15 @@ def test_new_waiting_worker_uses_the_prior_stack_bearing_candidate():
 
     transitions = transitions_for(
         _profile_with_observation_times(5, 15),
-        {
-            0: {producer: producer_before},
-            1: {downstream: downstream_after},
-        },
+        _samples({producer: producer_before}, {downstream: downstream_after}),
     )
 
     assert len(transitions) == 1
-    transition = transitions[0]
+    transition = transitions[downstream][0]
     assert transition.target_running_ns == 10
-    assert transition.downstream == downstream
-    assert transition.downstream_stack == (2,)
+    assert transition.downstream_sample == downstream_after
     assert transition.downstream_wait_ns == 0
-    assert transition.candidates == (producer,)
-    assert transition.candidate_stacks == ((1,),)
+    assert transition.candidates == (producer_before,)
 
 
 # PRF-047: Multi-threaded critical path.
@@ -146,20 +171,17 @@ def test_latest_transition_can_include_an_exact_phase_boundary():
     downstream = wall_model.ThreadIdentity(12, 102)
     transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
     latest_transition = wall_critical_path._latest_transition  # pyright: ignore[reportPrivateUsage]
+    downstream_sample = _sample(downstream, 1, 10, 20, "R", (2,))
     transition = transition_type(
         target_running_ns=10,
-        earlier_observation_index=0,
-        downstream=downstream,
-        downstream_stack=(2,),
+        downstream_sample=downstream_sample,
         downstream_wait_ns=0,
-        downstream_first_observed=True,
-        candidates=(wall_model.ThreadIdentity(11, 101),),
-        candidate_stacks=((1,),),
+        candidates=(_sample(wall_model.ThreadIdentity(11, 101), 0, 0, 10, "R", (1,)),),
     )
 
     assert (
         latest_transition(
-            [transition],
+            {downstream: [transition]},
             downstream,
             10,
             include_boundary=False,
@@ -168,7 +190,7 @@ def test_latest_transition_can_include_an_exact_phase_boundary():
     )
     assert (
         latest_transition(
-            [transition],
+            {downstream: [transition]},
             downstream,
             10,
             include_boundary=True,
@@ -183,6 +205,9 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
     worker = wall_model.ThreadIdentity(12, 102)
     other_worker = wall_model.ThreadIdentity(13, 103)
     second_other_worker = wall_model.ThreadIdentity(14, 104)
+    worker_sample = _sample(worker, 1, 10, 20, "R", (2,))
+    other_worker_sample = _sample(other_worker, 0, 0, 10, "R", (3,))
+    second_other_worker_sample = _sample(second_other_worker, 0, 0, 10, "R", (4,))
     terminal_sample = _sample(main_thread, 1, 20, 30, "R", (1,))
     transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
     phases_and_handoffs = wall_critical_path._phases_and_handoffs  # pyright: ignore[reportPrivateUsage]
@@ -191,43 +216,37 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
         typing.cast(
             "object",
             types.SimpleNamespace(
+                process_id=main_thread.os_thread_id,
                 lifecycle={
                     "python_observed_target_running_ns": 0,
                     "exited_target_running_ns": 30,
                 },
-                observations=[
-                    {"process_id": main_thread.os_thread_id},
-                    {"process_id": main_thread.os_thread_id},
-                ],
+                observations=[{}, {}],
             ),
         ),
     )
 
     skeleton = phases_and_handoffs(
         profile,
-        [terminal_sample],
-        [
-            transition_type(
-                target_running_ns=10,
-                earlier_observation_index=0,
-                downstream=worker,
-                downstream_stack=(2,),
-                downstream_wait_ns=0,
-                downstream_first_observed=True,
-                candidates=(other_worker, second_other_worker),
-                candidate_stacks=((3,), (4,)),
-            ),
-            transition_type(
-                target_running_ns=20,
-                earlier_observation_index=0,
-                downstream=main_thread,
-                downstream_stack=(1,),
-                downstream_wait_ns=5,
-                downstream_first_observed=False,
-                candidates=(worker,),
-                candidate_stacks=((2,),),
-            ),
-        ],
+        _samples({}, {main_thread: terminal_sample}),
+        {
+            worker: [
+                transition_type(
+                    target_running_ns=10,
+                    downstream_sample=worker_sample,
+                    downstream_wait_ns=0,
+                    candidates=(other_worker_sample, second_other_worker_sample),
+                )
+            ],
+            main_thread: [
+                transition_type(
+                    target_running_ns=20,
+                    downstream_sample=terminal_sample,
+                    downstream_wait_ns=5,
+                    candidates=(worker_sample,),
+                )
+            ],
+        },
     )
 
     assert skeleton.uncertain_segments == [
@@ -251,8 +270,7 @@ def test_phase_without_an_overlapping_sample_is_uncertain():
             actor=actor,
             waiter=None,
         ),
-        {actor: [boundary_sample]},
-        {0: {actor: boundary_sample}},
+        _samples({actor: boundary_sample}),
     )
 
     assert segments == [

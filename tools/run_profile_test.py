@@ -242,7 +242,7 @@ def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
     assert profile.diagnostics_status == "none"
     assert profile.failures == []
     assert profile.sampling_statistics is not None
-    assert profile.success is (profile.sampling_statistics["discarded_rate"] <= 0.001)
+    assert profile.success is (profile.discarded_rate <= 0.001)
     assert profile.workload_path == str(source_path)
     workspace = Path(run_profile.__file__).resolve().parent.parent
     assert profile.working_directory == str(workspace)
@@ -304,7 +304,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
     assert profile.diagnostics_status == "none"
     assert profile.failures == []
     assert profile.sampling_statistics is not None
-    assert profile.success is (profile.sampling_statistics["discarded_rate"] <= 0.001)
+    assert profile.success is (profile.discarded_rate <= 0.001)
     assert profile.workload_path == str(entry_path)
     assert profile.working_directory == str(project_path)
     assert profile.command[-1] == str(entry_path)

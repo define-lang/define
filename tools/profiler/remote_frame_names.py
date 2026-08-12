@@ -9,6 +9,9 @@ import pathlib
 import typing
 from typing import Protocol, cast
 
+if typing.TYPE_CHECKING:
+    import collections.abc
+
 _DATACLASS_CONSTRUCTOR = "__create_fn__.<locals>.__init__"
 _DEBUG_OFFSETS_SIZE = 448
 _POINTER_SIZE = 8
@@ -115,12 +118,8 @@ class QualifiedRemoteUnwinder:
         captured_names: CapturedFrameNames = []
         with _remote_memory(self._process_id) as memory:
             thread_frames = self._thread_frames(memory, matching_frames)
-            for remote_thread_object in remote_threads:
-                remote_thread = _remote_thread(remote_thread_object)
-                matching_indexes = matching_frames.get(remote_thread.thread_id)
-                if matching_indexes is None:
-                    continue
-                frame_address = thread_frames.get(remote_thread.thread_id)
+            for thread_id, matching_indexes in matching_frames.items():
+                frame_address = thread_frames.get(thread_id)
                 frame_index = 0
                 for matching_index in matching_indexes:
                     while frame_index < matching_index:
@@ -142,7 +141,7 @@ class QualifiedRemoteUnwinder:
                         )
                     captured_names.append(
                         (
-                            remote_thread.thread_id,
+                            thread_id,
                             matching_index,
                             self._dataclass_type_name(memory, frame_address),
                         )
@@ -176,6 +175,8 @@ class QualifiedRemoteUnwinder:
                         thread_address + offsets.thread_current_frame,
                     )
                     frames[native_thread_id] = current_frame or None
+                    if len(frames) == len(matching_frames):
+                        return frames
                 thread_address = _read_pointer(
                     memory,
                     thread_address + offsets.thread_next,
@@ -313,8 +314,7 @@ def _runtime_address(process_id: int) -> int:
 def _executable_mappings(
     process_id: int,
     executable_inode: int,
-) -> list[tuple[int, int, int]]:
-    mappings: list[tuple[int, int, int]] = []
+) -> collections.abc.Iterator[tuple[int, int, int]]:
     maps_path = pathlib.Path(f"/proc/{process_id}/maps")
     for line in maps_path.read_text(encoding="utf-8").splitlines():
         fields = line.split(maxsplit=5)
@@ -324,11 +324,8 @@ def _executable_mappings(
         if int(inode) != executable_inode:
             continue
         start_text, end_text = address_range.split("-", maxsplit=1)
-        mappings.append(
-            (
-                int(start_text, 16),
-                int(end_text, 16),
-                int(mapped_offset, 16),
-            )
+        yield (
+            int(start_text, 16),
+            int(end_text, 16),
+            int(mapped_offset, 16),
         )
-    return mappings

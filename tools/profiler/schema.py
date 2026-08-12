@@ -13,7 +13,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
+MAX_DISCARDED_RATE = 0.001
 
 CaptureMode = Literal["wall", "cpu"]
 
@@ -63,7 +64,6 @@ class PythonRuntime(TypedDict):
 
     # PRF-021: Version match.
     version: str
-    minor_version: str
     free_threaded: bool
     executable: ExecutableIdentity
 
@@ -72,7 +72,6 @@ class Frame(TypedDict):
     """One interned Python frame."""
 
     # PRF-015: Full stacks. PRF-016: Source identity.
-    frame_id: int
     filename: str
     function: str
     line: int
@@ -85,10 +84,6 @@ class ThreadObservation(TypedDict):
     os_thread_id: int
     start_time_ticks: int
     pre_stop_state: str
-    wait_channel: str
-    voluntary_context_switches: int
-    nonvoluntary_context_switches: int
-    stopped_state: str
     stack: list[int]
 
 
@@ -106,14 +101,10 @@ class ObservationBase(TypedDict):
     """Timing shared by successful and failed observation points."""
 
     # PRF-003: Pause exclusion. PRF-010: Raw-data preservation.
-    observation_index: int
     scheduled_interval_ns: int
-    host_monotonic_ns: int
     target_running_ns: int
     pause_started_ns: int
     pause_ended_ns: int
-    pause_duration_ns: int
-    process_id: int
 
 
 class SuccessfulObservation(ObservationBase):
@@ -157,23 +148,10 @@ class Lifecycle(TypedDict):
     exited_target_running_ns: int | None
 
 
-class ThreadLifecycle(TypedDict):
-    """First and final valid observations of one OS thread."""
-
-    # PRF-005: Lifecycle-bounded attribution.
-    os_thread_id: int
-    start_time_ticks: int
-    first_observation_index: int
-    first_target_running_ns: int
-    last_observation_index: int
-    last_target_running_ns: int
-
-
 class ObservationCounts(TypedDict):
     """Counts of attempted and retained process observations."""
 
     # PRF-024: Explicit failures. PRF-026: No silent partial success.
-    attempted: int
     successful: int
     discarded: int
     missed: int
@@ -202,7 +180,6 @@ class CpuSamplingConfiguration(SamplingConfigurationBase):
     # PRF-014: CPU mode.
     mode: Literal["cpu"]
     cpu_backend: Literal["linux-schedstat"]
-    python_stack_trampolines: Literal[False]
 
 
 SamplingConfiguration = WallSamplingConfiguration | CpuSamplingConfiguration
@@ -212,12 +189,10 @@ class SamplingStatistics(TypedDict):
     """Observed interval and profiler-pause statistics."""
 
     # PRF-003: Pause exclusion. PRF-025: Failure threshold.
-    interval_count: int
     minimum_interval_ns: int | None
     mean_interval_ns: int | None
     maximum_interval_ns: int | None
     total_pause_ns: int
-    discarded_rate: float
 
 
 class HeaderRecord(TypedDict):
@@ -226,7 +201,7 @@ class HeaderRecord(TypedDict):
     # PRF-027: Incremental persistence.
     record_type: Literal["header"]
     schema_version: int
-    complete: Literal[False]
+    process_id: int
     command: list[str]
     working_directory: str
     workload_path: str
@@ -251,6 +226,7 @@ class FrameRecord(TypedDict):
 
     # PRF-028: Bounded storage.
     record_type: Literal["frame"]
+    frame_id: int
     frame: Frame
 
 
@@ -275,12 +251,8 @@ class SummaryRecord(TypedDict):
 
     # PRF-026: No silent partial success. PRF-027: Incremental persistence.
     record_type: Literal["summary"]
-    complete: bool
-    success: bool
-    lifecycle: Lifecycle
-    thread_lifecycles: list[ThreadLifecycle]
-    sampling_statistics: SamplingStatistics
-    observation_counts: ObservationCounts
+    exited_ns: int
+    exited_target_running_ns: int
     compiler_exit_status: int
     diagnostics_status: Literal["none", "present"]
     interruption_signal: int | None
@@ -298,29 +270,58 @@ ProfileRecord = (
 
 @dataclasses.dataclass(slots=True)
 class RawProfile:
-    """Loaded version 4 continuous wall or CPU profile artifact."""
+    """Loaded continuous wall or CPU profile artifact."""
 
     # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
     schema_version: int
-    complete: bool
-    success: bool
+    process_id: int
     command: list[str]
     working_directory: str
     workload_path: str
     workload_sha256: str
     sampling: SamplingConfiguration
-    sampling_statistics: SamplingStatistics | None
+    sampling_statistics: SamplingStatistics
     launcher_executable: ExecutableIdentity
     python_runtime: PythonRuntime | None
     lifecycle: Lifecycle
     frames: dict[int, Frame]
     observations: list[Observation]
     failures: list[FailureRecord]
-    thread_lifecycles: list[ThreadLifecycle]
     observation_counts: ObservationCounts
     compiler_exit_status: int | None
     diagnostics_status: Literal["none", "present", "unknown"]
     interruption_signal: int | None
+
+    @property
+    def complete(self) -> bool:
+        """Whether capture ended under profiler control without interruption."""
+        return (
+            self.compiler_exit_status is not None and self.interruption_signal is None
+        )
+
+    @property
+    def discarded_rate(self) -> float:
+        """Fraction of attempted observations that were discarded."""
+        attempted = (
+            self.observation_counts["successful"] + self.observation_counts["discarded"]
+        )
+        return self.observation_counts["discarded"] / attempted if attempted else 0.0
+
+    @property
+    def success(self) -> bool:
+        """Whether the captured artifact satisfies the profiler contract."""
+        return (
+            self.complete
+            and any(
+                observation["status"] == "successful"
+                and any(thread["stack"] for thread in observation["threads"])
+                for observation in self.observations
+            )
+            and self.discarded_rate <= MAX_DISCARDED_RATE
+            and self.compiler_exit_status == 0
+            and self.diagnostics_status == "none"
+            and not self.failures
+        )
 
 
 def _read_records(
@@ -352,14 +353,18 @@ def _read_records(
 def _initial_profile(header: HeaderRecord) -> RawProfile:
     return RawProfile(
         schema_version=header["schema_version"],
-        complete=False,
-        success=False,
+        process_id=header["process_id"],
         command=header["command"],
         working_directory=header["working_directory"],
         workload_path=header["workload_path"],
         workload_sha256=header["workload_sha256"],
         sampling=header["sampling"],
-        sampling_statistics=None,
+        sampling_statistics={
+            "minimum_interval_ns": None,
+            "mean_interval_ns": None,
+            "maximum_interval_ns": None,
+            "total_pause_ns": 0,
+        },
         launcher_executable=header["launcher_executable"],
         python_runtime=None,
         lifecycle={
@@ -372,9 +377,7 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
         frames={},
         observations=[],
         failures=[],
-        thread_lifecycles=[],
         observation_counts={
-            "attempted": 0,
             "successful": 0,
             "discarded": 0,
             "missed": 0,
@@ -385,8 +388,58 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
     )
 
 
+def _derive_observation_data(profile: RawProfile) -> None:
+    counts: ObservationCounts = {
+        "successful": 0,
+        "discarded": 0,
+        "missed": 0,
+    }
+    previous_observation_time: int | None = None
+    interval_count = 0
+    interval_total_ns = 0
+    minimum_interval_ns: int | None = None
+    maximum_interval_ns: int | None = None
+    total_pause_ns = 0
+    for observation in profile.observations:
+        observation_time = observation["target_running_ns"]
+        if previous_observation_time is not None:
+            interval_ns = observation_time - previous_observation_time
+            interval_count += 1
+            interval_total_ns += interval_ns
+            minimum_interval_ns = (
+                interval_ns
+                if minimum_interval_ns is None
+                else min(minimum_interval_ns, interval_ns)
+            )
+            maximum_interval_ns = (
+                interval_ns
+                if maximum_interval_ns is None
+                else max(maximum_interval_ns, interval_ns)
+            )
+        previous_observation_time = observation_time
+        total_pause_ns += (
+            observation["pause_ended_ns"] - observation["pause_started_ns"]
+        )
+        if observation["status"] == "successful":
+            counts["successful"] += 1
+        elif observation["status"] == "discarded":
+            counts["discarded"] += 1
+        else:
+            counts["missed"] += 1
+
+    profile.observation_counts = counts
+    profile.sampling_statistics = {
+        "minimum_interval_ns": minimum_interval_ns,
+        "mean_interval_ns": (
+            interval_total_ns // interval_count if interval_count else None
+        ),
+        "maximum_interval_ns": maximum_interval_ns,
+        "total_pause_ns": total_pause_ns,
+    }
+
+
 def load(profile_path: pathlib.Path) -> RawProfile:
-    """Load a complete or incrementally persisted version 4 profile."""
+    """Load a complete or incrementally persisted profile."""
     # PRF-027: Incremental persistence.
     records = iter(_read_records(profile_path))
     try:
@@ -416,8 +469,8 @@ def load(profile_path: pathlib.Path) -> RawProfile:
                 "python_observed_target_running_ns"
             ]
         elif record_type == "frame":
-            frame = cast("FrameRecord", cast("object", record_data))["frame"]
-            profile.frames[frame["frame_id"]] = frame
+            frame_record = cast("FrameRecord", cast("object", record_data))
+            profile.frames[frame_record["frame_id"]] = frame_record["frame"]
         elif record_type == "observation":
             observation = cast("ObservationRecord", cast("object", record_data))[
                 "observation"
@@ -433,16 +486,15 @@ def load(profile_path: pathlib.Path) -> RawProfile:
             profile.failures.append(failure)
         elif record_type == "summary":
             summary = cast("SummaryRecord", cast("object", record_data))
-            profile.complete = summary["complete"]
-            profile.success = summary["success"]
-            profile.lifecycle = summary["lifecycle"]
-            profile.thread_lifecycles = summary["thread_lifecycles"]
-            profile.sampling_statistics = summary["sampling_statistics"]
-            profile.observation_counts = summary["observation_counts"]
+            profile.lifecycle["exited_ns"] = summary["exited_ns"]
+            profile.lifecycle["exited_target_running_ns"] = summary[
+                "exited_target_running_ns"
+            ]
             profile.compiler_exit_status = summary["compiler_exit_status"]
             profile.diagnostics_status = summary["diagnostics_status"]
             profile.interruption_signal = summary["interruption_signal"]
             summary_seen = True
         else:
             raise ValueError(f"unknown profile record type: {record_type!r}")
+    _derive_observation_data(profile)
     return profile

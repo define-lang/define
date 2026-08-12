@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
+import collections
 import dataclasses
 import itertools
+import typing
 
 from tools.profiler import analyzer_model, schema, wall_critical_path, wall_model
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class _WeightedStack:
-    thread_id: int
-    interval: wall_model.Interval
-    stack: tuple[int, ...]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -21,7 +16,6 @@ class FrameRow:
 
     frame: schema.Frame
     wall_occupancy_ns: int
-    thread_time_ns: int
     longest_span_ns: int
     sample_hits: int
 
@@ -43,7 +37,6 @@ class StackPathRow:
 
     stack_path: tuple[analyzer_model.FunctionIdentity, ...]
     wall_occupancy_ns: int
-    thread_time_ns: int
     longest_span_ns: int
     sample_hits: int
 
@@ -55,7 +48,6 @@ class RelationshipRow:
     caller: analyzer_model.FunctionIdentity
     callee: analyzer_model.FunctionIdentity
     wall_occupancy_ns: int
-    thread_time_ns: int
     sample_hits: int
 
 
@@ -74,7 +66,6 @@ class Analysis:
     """Derived wall attribution from raw independent observations."""
 
     # PRF-010: Raw-data preservation. PRF-018: Focused analysis.
-    self_rows: list[FrameRow]
     cumulative_rows: list[FrameRow]
     self_function_rows: list[FunctionRow]
     cumulative_function_rows: list[FunctionRow]
@@ -84,79 +75,93 @@ class Analysis:
     critical_path: wall_critical_path.Analysis
     wall_window_ns: int
     attributed_wall_ns: int
-    unattributed_wall_ns: int
+
+    @property
+    def unattributed_wall_ns(self) -> int:
+        """Wall time not covered by a stack-bearing sample."""
+        return max(0, self.wall_window_ns - self.attributed_wall_ns)
 
 
-def _observation_intervals(profile: schema.RawProfile) -> list[_WeightedStack]:
-    return [
-        _WeightedStack(
-            thread_id=sample.identity.os_thread_id,
-            interval=sample.interval,
-            stack=sample.stack,
-        )
-        for sample in wall_model.observation_intervals(profile)
-    ]
+@dataclasses.dataclass(slots=True)
+class _SpanMetrics:
+    wall_occupancy_ns: int = 0
+    sample_hits: int = 0
+    longest_span_ns: int = 0
+    _wall_end_ns: int | None = None
+    _thread_spans: dict[int, tuple[int, int]] = dataclasses.field(default_factory=dict)
 
+    def add(self, thread_id: int, interval: wall_model.Interval) -> None:
+        self.sample_hits += 1
+        added_ns, self._wall_end_ns = _wall_union_update(self._wall_end_ns, interval)
+        self.wall_occupancy_ns += added_ns
 
-def _merge_intervals(
-    intervals: list[wall_model.Interval],
-) -> list[wall_model.Interval]:
-    if not intervals:
-        return []
-    ordered = sorted(intervals, key=lambda interval: interval.start_ns)
-    merged: list[wall_model.Interval] = [ordered[0]]
-    for interval in ordered[1:]:
-        previous = merged[-1]
-        if interval.start_ns <= previous.end_ns:
-            merged[-1] = wall_model.Interval(
-                previous.start_ns,
-                max(previous.end_ns, interval.end_ns),
-            )
+        previous = self._thread_spans.get(thread_id)
+        if previous is None or interval.start_ns > previous[0]:
+            span_ns = interval.duration_ns
         else:
-            merged.append(interval)
-    return merged
+            span_ns = previous[1] + max(0, interval.end_ns - previous[0])
+        self._thread_spans[thread_id] = (
+            max(interval.end_ns, previous[0])
+            if previous is not None
+            else interval.end_ns,
+            span_ns,
+        )
+        self.longest_span_ns = max(self.longest_span_ns, span_ns)
 
 
-def _union_duration(intervals: list[wall_model.Interval]) -> int:
-    # PRF-019: Concurrency semantics.
-    return sum(interval.duration_ns for interval in _merge_intervals(intervals))
+@dataclasses.dataclass(slots=True)
+class _IntervalMetrics(_SpanMetrics):
+    thread_time_ns: int = 0
+
+    @typing.override
+    def add(self, thread_id: int, interval: wall_model.Interval) -> None:
+        super().add(thread_id, interval)
+        self.thread_time_ns += interval.duration_ns
 
 
-def _longest_thread_span(
-    entries: list[tuple[int, wall_model.Interval]],
-) -> int:
-    intervals_by_thread: dict[int, list[wall_model.Interval]] = {}
-    for thread_id, interval in entries:
-        intervals_by_thread.setdefault(thread_id, []).append(interval)
-    return max(
-        (
-            interval.duration_ns
-            for intervals in intervals_by_thread.values()
-            for interval in _merge_intervals(intervals)
-        ),
-        default=0,
-    )
+@dataclasses.dataclass(slots=True)
+class _OccupancyMetrics:
+    wall_occupancy_ns: int = 0
+    sample_hits: int = 0
+    _wall_end_ns: int | None = None
+
+    def add(self, interval: wall_model.Interval) -> None:
+        self.sample_hits += 1
+        added_ns, self._wall_end_ns = _wall_union_update(self._wall_end_ns, interval)
+        self.wall_occupancy_ns += added_ns
+
+
+@dataclasses.dataclass(slots=True)
+class _ThreadMetrics:
+    occupancy: _OccupancyMetrics = dataclasses.field(default_factory=_OccupancyMetrics)
+    attributed: _OccupancyMetrics = dataclasses.field(default_factory=_OccupancyMetrics)
+
+
+def _wall_union_update(
+    prior_end_ns: int | None,
+    interval: wall_model.Interval,
+) -> tuple[int, int]:
+    if prior_end_ns is None or interval.start_ns > prior_end_ns:
+        return interval.duration_ns, interval.end_ns
+    return max(0, interval.end_ns - prior_end_ns), max(prior_end_ns, interval.end_ns)
 
 
 def _frame_rows(
-    entries_by_frame: dict[int, list[tuple[int, wall_model.Interval]]],
-    hits_by_frame: dict[int, int],
+    metrics_by_frame: dict[int, _SpanMetrics],
     frames: dict[int, schema.Frame],
     filters: analyzer_model.AnalysisFilters,
 ) -> list[FrameRow]:
     rows: list[FrameRow] = []
-    for frame_id, entries in entries_by_frame.items():
+    for frame_id, metrics in metrics_by_frame.items():
         frame = frames[frame_id]
         if not analyzer_model.matches_frame(frame, filters):
             continue
-        intervals = [interval for _, interval in entries]
         rows.append(
             FrameRow(
                 frame=frame,
-                wall_occupancy_ns=_union_duration(intervals),
-                thread_time_ns=sum(interval.duration_ns for interval in intervals),
-                longest_span_ns=_longest_thread_span(entries),
-                sample_hits=hits_by_frame[frame_id],
+                wall_occupancy_ns=metrics.wall_occupancy_ns,
+                longest_span_ns=metrics.longest_span_ns,
+                sample_hits=metrics.sample_hits,
             )
         )
     return sorted(
@@ -171,25 +176,20 @@ def _frame_rows(
 
 
 def _function_rows(
-    entries_by_function: dict[
-        analyzer_model.FunctionIdentity,
-        list[tuple[int, wall_model.Interval]],
-    ],
-    hits_by_function: dict[analyzer_model.FunctionIdentity, int],
+    metrics_by_function: dict[analyzer_model.FunctionIdentity, _IntervalMetrics],
     filters: analyzer_model.AnalysisFilters,
 ) -> list[FunctionRow]:
     rows: list[FunctionRow] = []
-    for identity, entries in entries_by_function.items():
+    for identity, metrics in metrics_by_function.items():
         if not analyzer_model.matches_function(identity, filters):
             continue
-        intervals = [interval for _, interval in entries]
         rows.append(
             FunctionRow(
                 identity=identity,
-                wall_occupancy_ns=_union_duration(intervals),
-                thread_time_ns=sum(interval.duration_ns for interval in intervals),
-                longest_span_ns=_longest_thread_span(entries),
-                sample_hits=hits_by_function[identity],
+                wall_occupancy_ns=metrics.wall_occupancy_ns,
+                thread_time_ns=metrics.thread_time_ns,
+                longest_span_ns=metrics.longest_span_ns,
+                sample_hits=metrics.sample_hits,
             )
         )
     return sorted(
@@ -203,29 +203,23 @@ def _function_rows(
 
 
 def _stack_path_rows(
-    entries_by_path: dict[
-        tuple[analyzer_model.FunctionIdentity, ...],
-        list[tuple[int, wall_model.Interval]],
-    ],
-    hits_by_path: dict[tuple[analyzer_model.FunctionIdentity, ...], int],
+    metrics_by_path: dict[tuple[analyzer_model.FunctionIdentity, ...], _SpanMetrics],
     filters: analyzer_model.AnalysisFilters,
 ) -> list[StackPathRow]:
     # PRF-015: Full stacks.
     rows: list[StackPathRow] = []
-    for stack_path, entries in entries_by_path.items():
+    for stack_path, metrics in metrics_by_path.items():
         if not any(
             analyzer_model.matches_function(identity, filters)
             for identity in stack_path
         ):
             continue
-        intervals = [interval for _, interval in entries]
         rows.append(
             StackPathRow(
                 stack_path=stack_path,
-                wall_occupancy_ns=_union_duration(intervals),
-                thread_time_ns=sum(interval.duration_ns for interval in intervals),
-                longest_span_ns=_longest_thread_span(entries),
-                sample_hits=hits_by_path[stack_path],
+                wall_occupancy_ns=metrics.wall_occupancy_ns,
+                longest_span_ns=metrics.longest_span_ns,
+                sample_hits=metrics.sample_hits,
             )
         )
     return sorted(
@@ -245,95 +239,55 @@ def analyze(
 ) -> Analysis:
     """Derive wall self, cumulative, relationship, and thread attribution."""
     # PRF-018: Focused analysis. PRF-019: Concurrency semantics.
-    weighted_stacks = [
-        weighted_stack
-        for weighted_stack in _observation_intervals(profile)
-        if not filters.thread_ids or weighted_stack.thread_id in filters.thread_ids
-    ]
+    samples = wall_model.observation_intervals(profile)
     frames = profile.frames
-    self_entries: dict[int, list[tuple[int, wall_model.Interval]]] = {}
-    cumulative_entries: dict[int, list[tuple[int, wall_model.Interval]]] = {}
-    self_function_entries: dict[
-        analyzer_model.FunctionIdentity,
-        list[tuple[int, wall_model.Interval]],
-    ] = {}
-    cumulative_function_entries: dict[
-        analyzer_model.FunctionIdentity,
-        list[tuple[int, wall_model.Interval]],
-    ] = {}
-    stack_path_entries: dict[
-        tuple[analyzer_model.FunctionIdentity, ...],
-        list[tuple[int, wall_model.Interval]],
-    ] = {}
-    relationship_entries: dict[
+    functions = {
+        frame_id: analyzer_model.function_identity(frame)
+        for frame_id, frame in frames.items()
+    }
+    cumulative_metrics: dict[int, _SpanMetrics] = collections.defaultdict(_SpanMetrics)
+    self_function_metrics: dict[analyzer_model.FunctionIdentity, _IntervalMetrics] = (
+        collections.defaultdict(_IntervalMetrics)
+    )
+    cumulative_function_metrics: dict[
+        analyzer_model.FunctionIdentity, _IntervalMetrics
+    ] = collections.defaultdict(_IntervalMetrics)
+    stack_path_metrics: dict[
+        tuple[analyzer_model.FunctionIdentity, ...], _SpanMetrics
+    ] = collections.defaultdict(_SpanMetrics)
+    relationship_metrics: dict[
         tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity],
-        list[tuple[int, wall_model.Interval]],
-    ] = {}
-    self_hits: dict[int, int] = {}
-    cumulative_hits: dict[int, int] = {}
-    self_function_hits: dict[analyzer_model.FunctionIdentity, int] = {}
-    cumulative_function_hits: dict[analyzer_model.FunctionIdentity, int] = {}
-    stack_path_hits: dict[tuple[analyzer_model.FunctionIdentity, ...], int] = {}
-    relationship_hits: dict[
-        tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity], int
-    ] = {}
-    thread_intervals: dict[int, list[wall_model.Interval]] = {}
-    attributed_thread_intervals: dict[int, list[wall_model.Interval]] = {}
-    thread_hits: dict[int, int] = {}
-    for weighted_stack in weighted_stacks:
-        thread_intervals.setdefault(weighted_stack.thread_id, []).append(
-            weighted_stack.interval
-        )
-        thread_hits[weighted_stack.thread_id] = (
-            thread_hits.get(weighted_stack.thread_id, 0) + 1
-        )
-        if not weighted_stack.stack:
+        _OccupancyMetrics,
+    ] = collections.defaultdict(_OccupancyMetrics)
+    thread_metrics: dict[int, _ThreadMetrics] = {}
+    attributed_metrics = _OccupancyMetrics()
+    for sample in samples:
+        thread_id = sample.identity.os_thread_id
+        if filters.thread_ids and thread_id not in filters.thread_ids:
             continue
-        attributed_thread_intervals.setdefault(weighted_stack.thread_id, []).append(
-            weighted_stack.interval
-        )
-        leaf = weighted_stack.stack[-1]
-        self_entries.setdefault(leaf, []).append(
-            (weighted_stack.thread_id, weighted_stack.interval)
-        )
-        self_hits[leaf] = self_hits.get(leaf, 0) + 1
-        leaf_function = analyzer_model.function_identity(frames[leaf])
-        self_function_entries.setdefault(leaf_function, []).append(
-            (weighted_stack.thread_id, weighted_stack.interval)
-        )
-        self_function_hits[leaf_function] = self_function_hits.get(leaf_function, 0) + 1
-        for frame_id in set(weighted_stack.stack):
-            cumulative_entries.setdefault(frame_id, []).append(
-                (weighted_stack.thread_id, weighted_stack.interval)
-            )
-            cumulative_hits[frame_id] = cumulative_hits.get(frame_id, 0) + 1
-        function_identities = {
-            analyzer_model.function_identity(frames[frame_id])
-            for frame_id in weighted_stack.stack
-        }
-        for identity in function_identities:
-            cumulative_function_entries.setdefault(identity, []).append(
-                (weighted_stack.thread_id, weighted_stack.interval)
-            )
-            cumulative_function_hits[identity] = (
-                cumulative_function_hits.get(identity, 0) + 1
-            )
-        stack_path = tuple(
-            analyzer_model.function_identity(frames[frame_id])
-            for frame_id in weighted_stack.stack
-        )
-        stack_path_entries.setdefault(stack_path, []).append(
-            (weighted_stack.thread_id, weighted_stack.interval)
-        )
-        stack_path_hits[stack_path] = stack_path_hits.get(stack_path, 0) + 1
+        metrics = thread_metrics.get(thread_id)
+        if metrics is None:
+            metrics = _ThreadMetrics()
+            thread_metrics[thread_id] = metrics
+        metrics.occupancy.add(sample.interval)
+        if not sample.stack:
+            continue
+        metrics.attributed.add(sample.interval)
+        attributed_metrics.add(sample.interval)
+        leaf = sample.stack[-1]
+        leaf_function = functions[leaf]
+        self_function_metrics[leaf_function].add(thread_id, sample.interval)
+        for frame_id in set(sample.stack):
+            cumulative_metrics[frame_id].add(thread_id, sample.interval)
+        stack_path = tuple(functions[frame_id] for frame_id in sample.stack)
+        for identity in set(stack_path):
+            cumulative_function_metrics[identity].add(thread_id, sample.interval)
+        stack_path_metrics[stack_path].add(thread_id, sample.interval)
         for relationship in set(itertools.pairwise(stack_path)):
-            relationship_entries.setdefault(relationship, []).append(
-                (weighted_stack.thread_id, weighted_stack.interval)
-            )
-            relationship_hits[relationship] = relationship_hits.get(relationship, 0) + 1
+            relationship_metrics[relationship].add(sample.interval)
 
     relationship_rows: list[RelationshipRow] = []
-    for relationship, entries in relationship_entries.items():
+    for relationship, metrics in relationship_metrics.items():
         caller, callee = relationship
         if filters.caller is not None and filters.caller not in caller.function:
             continue
@@ -346,14 +300,12 @@ def analyze(
             filters,
         ):
             continue
-        intervals = [interval for _, interval in entries]
         relationship_rows.append(
             RelationshipRow(
                 caller=caller,
                 callee=callee,
-                wall_occupancy_ns=_union_duration(intervals),
-                thread_time_ns=sum(interval.duration_ns for interval in intervals),
-                sample_hits=relationship_hits[relationship],
+                wall_occupancy_ns=metrics.wall_occupancy_ns,
+                sample_hits=metrics.sample_hits,
             )
         )
     relationship_rows.sort(
@@ -368,13 +320,11 @@ def analyze(
         (
             ThreadRow(
                 os_thread_id=thread_id,
-                occupancy_ns=_union_duration(intervals),
-                attributed_occupancy_ns=_union_duration(
-                    attributed_thread_intervals.get(thread_id, [])
-                ),
-                sample_hits=thread_hits[thread_id],
+                occupancy_ns=metrics.occupancy.wall_occupancy_ns,
+                attributed_occupancy_ns=metrics.attributed.wall_occupancy_ns,
+                sample_hits=metrics.occupancy.sample_hits,
             )
-            for thread_id, intervals in thread_intervals.items()
+            for thread_id, metrics in thread_metrics.items()
         ),
         key=lambda row: (-row.occupancy_ns, row.os_thread_id),
     )
@@ -385,42 +335,35 @@ def analyze(
         if python_started_ns is not None and process_exited_ns is not None
         else 0
     )
-    attributed_wall_ns = _union_duration(
-        [
-            weighted_stack.interval
-            for weighted_stack in weighted_stacks
-            if weighted_stack.stack
-        ]
-    )
+    attributed_wall_ns = attributed_metrics.wall_occupancy_ns
     return Analysis(
-        self_rows=_frame_rows(self_entries, self_hits, frames, filters),
         cumulative_rows=_frame_rows(
-            cumulative_entries,
-            cumulative_hits,
+            cumulative_metrics,
             frames,
             filters,
         ),
         self_function_rows=_function_rows(
-            self_function_entries,
-            self_function_hits,
+            self_function_metrics,
             filters,
         ),
         cumulative_function_rows=_function_rows(
-            cumulative_function_entries,
-            cumulative_function_hits,
+            cumulative_function_metrics,
             filters,
         ),
         stack_path_rows=_stack_path_rows(
-            stack_path_entries,
-            stack_path_hits,
+            stack_path_metrics,
             filters,
         ),
         relationship_rows=relationship_rows,
         thread_rows=thread_rows,
-        critical_path=wall_critical_path.analyze(profile, filters),
+        critical_path=wall_critical_path.analyze(
+            profile,
+            filters,
+            samples,
+            functions,
+        ),
         wall_window_ns=wall_window_ns,
         attributed_wall_ns=attributed_wall_ns,
-        unattributed_wall_ns=max(0, wall_window_ns - attributed_wall_ns),
     )
 
 
@@ -466,31 +409,31 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
             + runtime["executable"]["path"]
         )
     counts = profile.observation_counts
+    attempted = counts["successful"] + counts["discarded"]
     print(
         "Observations: "
         + f"{counts['successful']} successful, {counts['discarded']} discarded, "
-        + f"{counts['missed']} missed, {counts['attempted']} attempted"
+        + f"{counts['missed']} missed, {attempted} attempted"
     )
     statistics = profile.sampling_statistics
-    if statistics is not None:
-        minimum_interval = statistics["minimum_interval_ns"]
-        mean_interval = statistics["mean_interval_ns"]
-        maximum_interval = statistics["maximum_interval_ns"]
-        print(
-            f"Sampling: {profile.sampling['schedule']}; "
-            + (
-                "observed interval min/mean/max "
-                + f"{_duration(minimum_interval)}/"
-                + f"{_duration(mean_interval)}/"
-                + f"{_duration(maximum_interval)}; "
-                if minimum_interval is not None
-                and mean_interval is not None
-                and maximum_interval is not None
-                else "no observed intervals; "
-            )
-            + f"discarded rate {statistics['discarded_rate']:.3%}; "
-            + f"profiler pause {_duration(statistics['total_pause_ns'])}"
+    minimum_interval = statistics["minimum_interval_ns"]
+    mean_interval = statistics["mean_interval_ns"]
+    maximum_interval = statistics["maximum_interval_ns"]
+    print(
+        f"Sampling: {profile.sampling['schedule']}; "
+        + (
+            "observed interval min/mean/max "
+            + f"{_duration(minimum_interval)}/"
+            + f"{_duration(mean_interval)}/"
+            + f"{_duration(maximum_interval)}; "
+            if minimum_interval is not None
+            and mean_interval is not None
+            and maximum_interval is not None
+            else "no observed intervals; "
         )
+        + f"discarded rate {profile.discarded_rate:.3%}; "
+        + f"profiler pause {_duration(statistics['total_pause_ns'])}"
+    )
     print(f"Threads observed: {len(analysis.thread_rows)}")
     print(
         f"Wall window: {_duration(analysis.wall_window_ns)}; "
@@ -571,14 +514,14 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         for failure in profile.failures:
             print(f"  {failure['kind']}: {failure['reason']}")
     failed_observations = [
-        observation
-        for observation in profile.observations
+        (index, observation)
+        for index, observation in enumerate(profile.observations)
         if observation["status"] != "successful"
     ]
     if failed_observations:
         print(f"\nUnretained observations ({len(failed_observations)}):")
-        for observation in failed_observations:
+        for index, observation in failed_observations:
             print(
-                f"  {observation['observation_index']} {observation['status']}: "
+                f"  {index} {observation['status']}: "
                 + f"{observation['failure_kind']}: {observation['failure_reason']}"
             )

@@ -52,7 +52,7 @@ Constructor = dataclasses.make_dataclass(
     [(f"field_{index}", int) for index in range(100)],
 )
 arguments = tuple(range(100))
-end = time.monotonic() + 0.2
+end = time.monotonic() + 0.6
 while time.monotonic() < end:
     Constructor(*arguments)
 """
@@ -243,7 +243,6 @@ def test_discarded_observation_does_not_retain_threads():
             profiler._InconsistentStackObservationError(  # pyright: ignore[reportPrivateUsage]
                 "thread identity changed"
             ),
-            observation_index=3,
             scheduled_interval_ns=10,
             launched_ns=20,
             total_pause_ns=0,
@@ -255,12 +254,9 @@ def test_discarded_observation_does_not_retain_threads():
         target.terminate()
         _ = target.wait()
 
-    assert isinstance(
-        capture.result,
-        profiler._FailedObservationResult,  # pyright: ignore[reportPrivateUsage]
-    )
-    assert capture.result.status == "discarded"
-    assert not hasattr(capture.result, "threads")
+    assert isinstance(capture.result, dict)
+    assert capture.result["status"] == "discarded"
+    assert "threads" not in capture.result
 
 
 # PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
@@ -344,23 +340,17 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     )
     assert len(observations) >= 10
     assert profile.observation_counts == {
-        "attempted": len(observations) + discarded,
         "successful": len(observations),
         "discarded": discarded,
         "missed": missed,
     }
-    assert profile.sampling_statistics is not None
-    assert profile.sampling_statistics["discarded_rate"] <= 0.001
+    assert profile.discarded_rate <= 0.001
     assert profile.sampling_statistics["total_pause_ns"] == sum(
-        observation["pause_duration_ns"] for observation in profile.observations
+        observation["pause_ended_ns"] - observation["pause_started_ns"]
+        for observation in profile.observations
     )
     assert (
         len({observation["scheduled_interval_ns"] for observation in observations}) > 1
-    )
-    assert all(
-        thread["stopped_state"] in {"T", "t"}
-        for observation in observations
-        for thread in observation["threads"]
     )
     assert all(
         "scheduler_runtime_ns" not in thread
@@ -387,7 +377,7 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     assert isinstance(analysis, wall_analyzer.Analysis)
 
     profile_lines = profile_path.read_text(encoding="utf-8").splitlines()
-    assert '"complete":false' in profile_lines[0]
+    assert f'"process_id":{profile.process_id}' in profile_lines[0]
     assert '"record_type":"summary"' in profile_lines[-1]
     analysis_result = subprocess.run(
         [
@@ -419,7 +409,7 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
 # PRF-029: Call-frequency fixture. PRF-030: Stack-depth fixture.
 # PRF-031: Retired-thread fixture. PRF-033: Waiting-thread fixture.
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
-def test_continuous_profile_reports_thread_lifecycles():
+def test_continuous_profile_bounds_retired_thread_attribution():
     profile = schema.load(test_helpers.runfile("PROFILER_CONTINUOUS_PROFILE"))
     observations, _, _ = test_helpers.assert_observations_through_exit(profile)
     sampled_functions = _sampled_functions(profile, observations)
@@ -449,13 +439,12 @@ def test_continuous_profile_reports_thread_lifecycles():
 # PRF-047: Multi-threaded critical path.
 def test_uninterruptible_io_is_not_a_cross_thread_handoff():
     sample = wall_model.ThreadSample(
+        observation=wall_model.ObservationSample(
+            observation_index=0,
+            interval=wall_model.Interval(start_ns=0, end_ns=1),
+        ),
         identity=wall_model.ThreadIdentity(os_thread_id=1, start_time_ticks=1),
-        observation_index=0,
-        interval=wall_model.Interval(start_ns=0, end_ns=1),
         pre_stop_state="D",
-        wait_channel="0",
-        voluntary_context_switches=0,
-        nonvoluntary_context_switches=0,
         stack=(1,),
     )
 
@@ -639,7 +628,7 @@ def test_real_profile_reports_ambiguous_new_worker_handoff():
         analysis.critical_path.handoffs[-1],
         wall_critical_path.ResolvedHandoff,
     )
-    process_id = profile.observations[0]["process_id"]
+    process_id = profile.process_id
     first_resolved_segment = next(
         segment
         for segment in analysis.critical_path.segments
@@ -713,9 +702,10 @@ def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
     assert missed_observation["failure_reason"] == (
         "the target exited before the scheduled stop"
     )
-    assert missed_observation["pause_duration_ns"] == 0
+    assert (
+        missed_observation["pause_ended_ns"] == missed_observation["pause_started_ns"]
+    )
     assert profile.observation_counts == {
-        "attempted": 0,
         "successful": 0,
         "discarded": 0,
         "missed": 1,
@@ -821,13 +811,11 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
         profile.observations
     )
     assert profile.observation_counts == {
-        "attempted": len(observations) + discarded_observations,
         "successful": len(observations),
         "discarded": discarded_observations,
         "missed": 0,
     }
-    first_observation = observations[0]
-    assert not Path(f"/proc/{first_observation['process_id']}").exists()
+    assert not Path(f"/proc/{profile.process_id}").exists()
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
@@ -998,7 +986,6 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
         profile.observations
     )
     assert profile.observation_counts == {
-        "attempted": len(observations) + discarded_observations,
         "successful": len(observations),
         "discarded": discarded_observations,
         "missed": 0,

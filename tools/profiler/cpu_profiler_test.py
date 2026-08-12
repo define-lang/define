@@ -76,7 +76,7 @@ def test_cpu_capture_reports_scheduler_runtime_for_active_threads(tmp_path: Path
     assert profile.success is True
     assert profile.sampling["mode"] == "cpu"
     assert profile.sampling["cpu_backend"] == "linux-schedstat"
-    assert profile.sampling["python_stack_trampolines"] is False
+    assert profile.sampling["cpu_backend"] == "linux-schedstat"
     successful, _, _ = test_helpers.assert_observations_through_exit(profile)
     assert len(successful) >= minimum_observations
     assert all(
@@ -126,7 +126,7 @@ def test_cpu_capture_reports_scheduler_runtime_for_active_threads(tmp_path: Path
         analyzer_model.AnalysisFilters(function="not_a_function"),
     )
     assert isinstance(missing_function, cpu_analyzer.Analysis)
-    assert missing_function.self_rows == []
+    assert missing_function.self_function_rows == []
     assert missing_function.self_function_rows == []
     assert missing_function.relationship_rows == []
     missing_file = analyzer.analyze(
@@ -134,7 +134,7 @@ def test_cpu_capture_reports_scheduler_runtime_for_active_threads(tmp_path: Path
         analyzer_model.AnalysisFilters(filename="not_a_file"),
     )
     assert isinstance(missing_file, cpu_analyzer.Analysis)
-    assert missing_file.self_rows == []
+    assert missing_file.self_function_rows == []
     assert missing_file.self_function_rows == []
     missing_caller = analyzer.analyze(
         profile,
@@ -163,7 +163,6 @@ def test_cpu_capture_reports_scheduler_runtime_for_active_threads(tmp_path: Path
     assert analysis_result.returncode == 0
     assert analysis_result.stderr == ""
     assert "CPU backend: linux-schedstat" in analysis_result.stdout
-    assert "Python stack trampolines: disabled" in analysis_result.stdout
     assert "Self CPU attribution:" in analysis_result.stdout
     assert "Cumulative CPU attribution:" in analysis_result.stdout
     assert "approximate 95% Poisson confidence bounds" in analysis_result.stdout

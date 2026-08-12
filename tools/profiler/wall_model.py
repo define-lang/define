@@ -6,6 +6,8 @@ import dataclasses
 import typing
 
 if typing.TYPE_CHECKING:
+    import collections.abc
+
     from tools.profiler import schema
 
 
@@ -32,20 +34,38 @@ class ThreadIdentity:
     start_time_ticks: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(slots=True)
+class ObservationSample:
+    """One successful observation and all of its sampled threads."""
+
+    observation_index: int
+    interval: Interval
+    threads: dict[ThreadIdentity, ThreadSample] = dataclasses.field(
+        default_factory=dict,
+        compare=False,
+    )
+
+
+@dataclasses.dataclass(slots=True)
 class ThreadSample:
     """One thread's state and stack over a sampled wall interval."""
 
     # PRF-005: Lifecycle-bounded attribution.
     # PRF-047: Multi-threaded critical path.
+    observation: ObservationSample
     identity: ThreadIdentity
-    observation_index: int
-    interval: Interval
     pre_stop_state: str
-    wait_channel: str
-    voluntary_context_switches: int
-    nonvoluntary_context_switches: int
     stack: tuple[int, ...]
+
+    @property
+    def observation_index(self) -> int:
+        """Index of the raw observation containing this thread sample."""
+        return self.observation.observation_index
+
+    @property
+    def interval(self) -> Interval:
+        """Wall interval represented by this thread sample."""
+        return self.observation.interval
 
     @property
     def is_handoff_waiting(self) -> bool:
@@ -56,18 +76,33 @@ class ThreadSample:
         return self.pre_stop_state == "S" and bool(self.stack)
 
 
-def observation_intervals(profile: schema.RawProfile) -> list[ThreadSample]:
-    """Calculate lifecycle-bounded target-running intervals for wall samples."""
+@dataclasses.dataclass(slots=True)
+class Samples:
+    """Canonical wall samples indexed for the analyzers' access patterns."""
+
+    observations: list[ObservationSample]
+    by_identity: dict[ThreadIdentity, list[ThreadSample]]
+
+    def __iter__(self) -> collections.abc.Iterator[ThreadSample]:
+        """Iterate over every sampled thread in observation order."""
+        for observation in self.observations:
+            yield from observation.threads.values()
+
+
+def observation_intervals(profile: schema.RawProfile) -> Samples:
+    """Calculate and index lifecycle-bounded target-running wall samples."""
     # PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
     # PRF-005: Lifecycle-bounded attribution.
     observations = profile.observations
+    sampled_observations: list[ObservationSample] = []
+    by_identity: dict[ThreadIdentity, list[ThreadSample]] = {}
     if not observations:
-        return []
+        return Samples(sampled_observations, by_identity)
     python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
     if python_started_ns is None:
-        return []
+        return Samples(sampled_observations, by_identity)
     process_exited_ns = profile.lifecycle["exited_target_running_ns"]
-    samples: list[ThreadSample] = []
+    identities: dict[tuple[int, int], ThreadIdentity] = {}
     for index, observation in enumerate(observations):
         if observation["status"] != "successful":
             continue
@@ -90,22 +125,20 @@ def observation_intervals(profile: schema.RawProfile) -> list[ThreadSample]:
                 observation_time + observations[index + 1]["target_running_ns"]
             ) // 2
         interval = Interval(left_ns, right_ns)
+        observation_sample = ObservationSample(index, interval)
+        sampled_observations.append(observation_sample)
         for thread in observation["threads"]:
-            samples.append(
-                ThreadSample(
-                    identity=ThreadIdentity(
-                        os_thread_id=thread["os_thread_id"],
-                        start_time_ticks=thread["start_time_ticks"],
-                    ),
-                    observation_index=index,
-                    interval=interval,
-                    pre_stop_state=thread["pre_stop_state"],
-                    wait_channel=thread["wait_channel"],
-                    voluntary_context_switches=thread["voluntary_context_switches"],
-                    nonvoluntary_context_switches=thread[
-                        "nonvoluntary_context_switches"
-                    ],
-                    stack=tuple(thread["stack"]),
-                )
+            identity_key = (thread["os_thread_id"], thread["start_time_ticks"])
+            identity = identities.get(identity_key)
+            if identity is None:
+                identity = ThreadIdentity(*identity_key)
+                identities[identity_key] = identity
+            sample = ThreadSample(
+                observation=observation_sample,
+                identity=identity,
+                pre_stop_state=thread["pre_stop_state"],
+                stack=tuple(thread["stack"]),
             )
-    return samples
+            observation_sample.threads[identity] = sample
+            by_identity.setdefault(identity, []).append(sample)
+    return Samples(sampled_observations, by_identity)

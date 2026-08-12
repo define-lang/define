@@ -19,7 +19,6 @@ def sampling_configuration(
         **base,
         "mode": "cpu",
         "cpu_backend": "linux-schedstat",
-        "python_stack_trampolines": False,
     }
 
 

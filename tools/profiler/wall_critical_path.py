@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import dataclasses
 import itertools
 import typing
@@ -92,23 +93,56 @@ class Analysis:
     self_function_rows: list[FunctionRow]
     cumulative_function_rows: list[FunctionRow]
     terminal_thread: wall_model.ThreadIdentity | None
-    work_ns: int
-    wait_ns: int
-    uncertain_ns: int
-    parallel_off_path_ns: int
+
+    @property
+    def work_ns(self) -> int:
+        """Resolved working time on the sampled critical path."""
+        return sum(
+            segment.interval.duration_ns
+            for segment in self.segments
+            if isinstance(segment, ResolvedSegment) and segment.kind == "work"
+        )
+
+    @property
+    def wait_ns(self) -> int:
+        """Resolved waiting time on the sampled critical path."""
+        return sum(
+            segment.interval.duration_ns
+            for segment in self.segments
+            if isinstance(segment, ResolvedSegment) and segment.kind == "wait"
+        )
+
+    @property
+    def uncertain_ns(self) -> int:
+        """Time the sampled critical path could not resolve."""
+        return sum(
+            segment.interval.duration_ns
+            for segment in self.segments
+            if isinstance(segment, UncertainSegment)
+        )
+
+    @property
+    def parallel_off_path_ns(self) -> int:
+        """Critical time with concurrently working off-path threads."""
+        return sum(
+            segment.interval.duration_ns
+            for segment in self.segments
+            if isinstance(segment, ResolvedSegment)
+            and segment.parallel_off_path_threads
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _Transition:
     # PRF-047: Multi-threaded critical path.
     target_running_ns: int
-    earlier_observation_index: int
-    downstream: wall_model.ThreadIdentity
-    downstream_stack: tuple[int, ...]
+    downstream_sample: wall_model.ThreadSample
     downstream_wait_ns: int
-    downstream_first_observed: bool
-    candidates: tuple[wall_model.ThreadIdentity, ...]
-    candidate_stacks: tuple[tuple[int, ...], ...]
+    candidates: tuple[wall_model.ThreadSample, ...]
+
+    @property
+    def downstream_first_observed(self) -> bool:
+        return self.downstream_sample.interval.start_ns >= self.target_running_ns
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -125,8 +159,10 @@ class _PathSkeleton:
     phases: list[_Phase]
     uncertain_segments: list[UncertainSegment]
     handoffs: list[CriticalPathHandoff]
-    terminal_thread: wall_model.ThreadIdentity | None
-    trailing_uncertainty: UncertainSegment | None
+
+    @property
+    def terminal_thread(self) -> wall_model.ThreadIdentity | None:
+        return self.phases[-1].actor if self.phases else None
 
 
 def _is_working(sample: wall_model.ThreadSample) -> bool:
@@ -139,83 +175,73 @@ def _is_waiting(sample: wall_model.ThreadSample) -> bool:
     return sample.pre_stop_state != "R" and bool(sample.stack)
 
 
-def _samples_by_observation(
-    samples: list[wall_model.ThreadSample],
-) -> dict[int, dict[wall_model.ThreadIdentity, wall_model.ThreadSample]]:
-    # PRF-047: Multi-threaded critical path.
-    by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ] = {}
-    for sample in samples:
-        by_observation.setdefault(sample.observation_index, {})[sample.identity] = (
-            sample
-        )
-    return by_observation
-
-
-def _wait_start(
-    downstream: wall_model.ThreadIdentity,
-    earlier_observation_index: int,
-    samples_by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ],
-    profile: schema.RawProfile,
-) -> tuple[int, int]:
-    # PRF-047: Multi-threaded critical path.
-    wait_start_ns = profile.observations[earlier_observation_index]["target_running_ns"]
-    observation_index = earlier_observation_index
-    while observation_samples := samples_by_observation.get(observation_index):
-        sample = observation_samples.get(downstream)
-        if sample is None or not sample.is_handoff_waiting:
-            break
-        wait_start_ns = sample.interval.start_ns
-        observation_index -= 1
-    return observation_index + 1, wait_start_ns
-
-
 def _departed_working_candidates(
     downstream: wall_model.ThreadIdentity,
     wait_start_index: int,
     earlier_index: int,
     later_samples: dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    samples_by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ],
+    working_samples: dict[wall_model.ThreadIdentity, list[wall_model.ThreadSample]],
 ) -> list[wall_model.ThreadSample]:
     # PRF-047: Multi-threaded critical path.
     # A worker that ran during the downstream wait and disappeared before the
     # wake is observable completion evidence even when its exit fell between
     # two samples.
-    latest_working: dict[wall_model.ThreadIdentity, wall_model.ThreadSample] = {}
-    for observation_index in range(wait_start_index, earlier_index + 1):
-        for identity, sample in samples_by_observation[observation_index].items():
-            if (
-                identity != downstream
-                and identity not in later_samples
-                and _is_working(sample)
-            ):
-                latest_working[identity] = sample
-    return list(latest_working.values())
+    latest_working: list[wall_model.ThreadSample] = []
+    for identity, identity_samples in working_samples.items():
+        if identity == downstream or identity in later_samples:
+            continue
+        insertion_index = bisect.bisect_right(
+            identity_samples,
+            earlier_index,
+            key=lambda sample: sample.observation_index,
+        )
+        if insertion_index == 0:
+            continue
+        sample = identity_samples[insertion_index - 1]
+        if sample.observation_index >= wait_start_index:
+            latest_working.append(sample)
+    return latest_working
 
 
 def _transitions(
     profile: schema.RawProfile,
-    samples_by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ],
-) -> list[_Transition]:
+    samples: wall_model.Samples,
+) -> dict[wall_model.ThreadIdentity, list[_Transition]]:
     # PRF-047: Multi-threaded critical path.
-    transitions: list[_Transition] = []
-    successful_indices = sorted(samples_by_observation)
-    for earlier_index, later_index in itertools.pairwise(successful_indices):
+    transitions: dict[wall_model.ThreadIdentity, list[_Transition]] = {}
+    wait_runs: dict[wall_model.ThreadIdentity, tuple[int, int, int]] = {}
+    working_samples: dict[wall_model.ThreadIdentity, list[wall_model.ThreadSample]] = {}
+    for identity, identity_samples in samples.by_identity.items():
+        working = [sample for sample in identity_samples if _is_working(sample)]
+        if working:
+            working_samples[identity] = working
+    successful_observations = (
+        (observation.observation_index, observation.threads)
+        for observation in samples.observations
+    )
+    for (
+        earlier_index,
+        earlier_samples,
+    ), (later_index, later_samples) in itertools.pairwise(successful_observations):
+        for identity, sample in earlier_samples.items():
+            if not sample.is_handoff_waiting:
+                _ = wait_runs.pop(identity, None)
+                continue
+            previous_run = wait_runs.get(identity)
+            if previous_run is None or previous_run[0] != earlier_index - 1:
+                wait_runs[identity] = (
+                    earlier_index,
+                    earlier_index,
+                    sample.interval.start_ns,
+                )
+            else:
+                wait_runs[identity] = (
+                    earlier_index,
+                    previous_run[1],
+                    previous_run[2],
+                )
         earlier_observation = profile.observations[earlier_index]
         later_observation = profile.observations[later_index]
-        earlier_samples = samples_by_observation[earlier_index]
-        later_samples = samples_by_observation[later_index]
         stopped_working: list[wall_model.ThreadSample] = []
         for identity, earlier_sample in earlier_samples.items():
             if not _is_working(earlier_sample):
@@ -238,12 +264,7 @@ def _transitions(
             wait_start_index = earlier_index
             wait_start_ns = target_running_ns
             if earlier_sample is not None:
-                wait_start_index, wait_start_ns = _wait_start(
-                    downstream,
-                    earlier_index,
-                    samples_by_observation,
-                    profile,
-                )
+                _, wait_start_index, wait_start_ns = wait_runs[downstream]
             candidates = [
                 candidate
                 for candidate in stopped_working
@@ -255,7 +276,7 @@ def _transitions(
                     wait_start_index,
                     earlier_index,
                     later_samples,
-                    samples_by_observation,
+                    working_samples,
                 )
             if earlier_sample is not None and not candidates:
                 # A producer can notify a waiter and continue running; the sole
@@ -279,24 +300,16 @@ def _transitions(
                     candidate.identity.start_time_ticks,
                 )
             )
-            transitions.append(
+            transitions.setdefault(downstream, []).append(
                 _Transition(
                     target_running_ns=target_running_ns,
-                    earlier_observation_index=earlier_index,
-                    downstream=downstream,
-                    downstream_stack=(
-                        earlier_sample.stack
-                        if earlier_sample is not None
-                        else later_sample.stack
-                    ),
+                    downstream_sample=earlier_sample or later_sample,
                     downstream_wait_ns=(
                         target_running_ns - wait_start_ns
                         if earlier_sample is not None
                         else 0
                     ),
-                    downstream_first_observed=earlier_sample is None,
-                    candidates=tuple(candidate.identity for candidate in candidates),
-                    candidate_stacks=tuple(candidate.stack for candidate in candidates),
+                    candidates=tuple(candidates),
                 )
             )
     return transitions
@@ -304,58 +317,48 @@ def _transitions(
 
 def _terminal_sample(
     profile: schema.RawProfile,
-    samples: list[wall_model.ThreadSample],
+    samples: wall_model.Samples,
 ) -> wall_model.ThreadSample | None:
     # PRF-047: Multi-threaded critical path.
     # Linux process IDs identify the main thread in the target thread group.
-    for sample in reversed(samples):
-        observation = profile.observations[sample.observation_index]
-        if sample.identity.os_thread_id == observation["process_id"] and sample.stack:
-            return sample
+    for observation in reversed(samples.observations):
+        for sample in observation.threads.values():
+            if sample.identity.os_thread_id == profile.process_id and sample.stack:
+                return sample
     return None
 
 
 def _latest_transition(
-    transitions: list[_Transition],
+    transitions: dict[wall_model.ThreadIdentity, list[_Transition]],
     downstream: wall_model.ThreadIdentity,
     before_ns: int,
     *,
     include_boundary: bool,
 ) -> _Transition | None:
     # PRF-047: Multi-threaded critical path.
-    matching = [
-        transition
-        for transition in transitions
-        if transition.downstream == downstream
-        and (
-            transition.target_running_ns < before_ns
-            or (include_boundary and transition.target_running_ns == before_ns)
-        )
-    ]
-    return max(
-        matching, key=lambda transition: transition.target_running_ns, default=None
-    )
+    for transition in reversed(transitions.get(downstream, [])):
+        if transition.target_running_ns < before_ns or (
+            include_boundary and transition.target_running_ns == before_ns
+        ):
+            return transition
+    return None
 
 
 def _phases_and_handoffs(
     profile: schema.RawProfile,
-    samples: list[wall_model.ThreadSample],
-    transitions: list[_Transition],
+    samples: wall_model.Samples,
+    transitions: dict[wall_model.ThreadIdentity, list[_Transition]],
 ) -> _PathSkeleton:
     # PRF-047: Multi-threaded critical path.
     terminal_sample = _terminal_sample(profile, samples)
     if terminal_sample is None:
-        return _PathSkeleton([], [], [], None, None)
+        return _PathSkeleton([], [], [])
     python_started_ns = typing.cast(
         "int", profile.lifecycle["python_observed_target_running_ns"]
     )
     phases: list[_Phase] = []
     uncertain_segments: list[UncertainSegment] = []
     handoffs: list[CriticalPathHandoff] = []
-    first_observed_ns_by_identity: dict[wall_model.ThreadIdentity, int] = {}
-    for sample in samples:
-        if sample.identity not in first_observed_ns_by_identity:
-            first_observed_ns_by_identity[sample.identity] = sample.interval.start_ns
     phase_end_ns = terminal_sample.interval.end_ns
     actor = terminal_sample.identity
     waiter: wall_model.ThreadIdentity | None = None
@@ -393,27 +396,26 @@ def _phases_and_handoffs(
                 UnresolvedHandoff(
                     target_running_ns=transition.target_running_ns,
                     resolution=resolution,
-                    downstream=transition.downstream,
-                    downstream_stack=transition.downstream_stack,
+                    downstream=actor,
+                    downstream_stack=transition.downstream_sample.stack,
                     downstream_wait_ns=transition.downstream_wait_ns,
-                    candidates=transition.candidates,
+                    candidates=tuple(
+                        candidate.identity for candidate in transition.candidates
+                    ),
                 )
             )
             if transition.downstream_first_observed:
                 main_thread_candidates = [
                     candidate
                     for candidate in transition.candidates
-                    if candidate.os_thread_id
-                    == profile.observations[transition.earlier_observation_index][
-                        "process_id"
-                    ]
+                    if candidate.identity.os_thread_id == profile.process_id
                 ]
                 if len(main_thread_candidates) == 1:
-                    main_thread = main_thread_candidates[0]
+                    main_thread = main_thread_candidates[0].identity
                     competing_candidate_first_observed_ns = min(
-                        first_observed_ns_by_identity[candidate]
+                        samples.by_identity[candidate.identity][0].interval.start_ns
                         for candidate in transition.candidates
-                        if candidate != main_thread
+                        if candidate.identity != main_thread
                     )
                     ambiguity_start_ns = max(
                         python_started_ns,
@@ -451,39 +453,38 @@ def _phases_and_handoffs(
             phase_end_ns = wait_start_ns
             include_boundary = True
             continue
-        upstream = transition.candidates[0]
+        upstream_sample = transition.candidates[0]
         handoffs.append(
             ResolvedHandoff(
                 target_running_ns=transition.target_running_ns,
-                upstream=upstream,
-                downstream=transition.downstream,
-                upstream_stack=transition.candidate_stacks[0],
-                downstream_stack=transition.downstream_stack,
+                upstream=upstream_sample.identity,
+                downstream=actor,
+                upstream_stack=upstream_sample.stack,
+                downstream_stack=transition.downstream_sample.stack,
                 downstream_wait_ns=transition.downstream_wait_ns,
             )
         )
         phase_end_ns = transition.target_running_ns
         waiter = actor
-        actor = upstream
+        actor = upstream_sample.identity
     phases.reverse()
     handoffs.reverse()
     process_exited_ns = profile.lifecycle["exited_target_running_ns"]
-    trailing_uncertainty = (
-        _uncertain_segment(
-            terminal_sample.interval.end_ns,
-            process_exited_ns,
-            "process completion followed the last main-thread sample",
-        )
-        if process_exited_ns is not None
+    if (
+        process_exited_ns is not None
         and process_exited_ns > terminal_sample.interval.end_ns
-        else None
-    )
+    ):
+        uncertain_segments.append(
+            _uncertain_segment(
+                terminal_sample.interval.end_ns,
+                process_exited_ns,
+                "process completion followed the last main-thread sample",
+            )
+        )
     return _PathSkeleton(
         phases,
         uncertain_segments,
         handoffs,
-        terminal_sample.identity,
-        trailing_uncertainty,
     )
 
 
@@ -499,13 +500,9 @@ def _resolved_segment(
     sample: wall_model.ThreadSample,
     interval: wall_model.Interval,
     phase: _Phase,
-    samples_by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ],
 ) -> ResolvedSegment:
     # PRF-047: Multi-threaded critical path.
-    observation_samples = samples_by_observation[sample.observation_index]
+    observation_samples = sample.observation.threads
     dependent_wait = None
     if phase.waiter is not None:
         waiter_sample = observation_samples.get(phase.waiter)
@@ -542,19 +539,12 @@ def _resolved_segment(
 
 def _phase_segments(
     phase: _Phase,
-    samples_by_identity: dict[
-        wall_model.ThreadIdentity,
-        list[wall_model.ThreadSample],
-    ],
-    samples_by_observation: dict[
-        int,
-        dict[wall_model.ThreadIdentity, wall_model.ThreadSample],
-    ],
+    samples: wall_model.Samples,
 ) -> list[CriticalPathSegment]:
     # PRF-047: Multi-threaded critical path.
     segments: list[CriticalPathSegment] = []
     cursor_ns = phase.interval.start_ns
-    for sample in samples_by_identity[phase.actor]:
+    for sample in samples.by_identity[phase.actor]:
         start_ns = max(cursor_ns, sample.interval.start_ns, phase.interval.start_ns)
         end_ns = min(sample.interval.end_ns, phase.interval.end_ns)
         if end_ns <= start_ns:
@@ -574,7 +564,6 @@ def _phase_segments(
                     sample,
                     interval,
                     phase,
-                    samples_by_observation,
                 )
             )
         else:
@@ -629,7 +618,7 @@ def _merge_segments(segments: list[CriticalPathSegment]) -> list[CriticalPathSeg
 
 def _function_rows(
     segments: list[CriticalPathSegment],
-    frames: dict[int, schema.Frame],
+    functions: dict[int, analyzer_model.FunctionIdentity],
     filters: analyzer_model.AnalysisFilters,
     *,
     cumulative: bool,
@@ -646,7 +635,7 @@ def _function_rows(
             continue
         frame_ids = set(segment.stack) if cumulative else {segment.stack[-1]}
         for frame_id in frame_ids:
-            identity = analyzer_model.function_identity(frames[frame_id])
+            identity = functions[frame_id]
             if not analyzer_model.matches_function(identity, filters):
                 continue
             duration = durations.setdefault(identity, [0, 0])
@@ -667,75 +656,42 @@ def _function_rows(
 def analyze(
     profile: schema.RawProfile,
     filters: analyzer_model.AnalysisFilters,
+    samples: wall_model.Samples,
+    functions: dict[int, analyzer_model.FunctionIdentity],
 ) -> Analysis:
     """Recover the completion-critical sampled wall chain conservatively."""
     # PRF-047: Multi-threaded critical path.
-    samples = wall_model.observation_intervals(profile)
-    samples_by_observation = _samples_by_observation(samples)
-    samples_by_identity: dict[
-        wall_model.ThreadIdentity,
-        list[wall_model.ThreadSample],
-    ] = {}
-    for sample in samples:
-        samples_by_identity.setdefault(sample.identity, []).append(sample)
     skeleton = _phases_and_handoffs(
         profile,
         samples,
-        _transitions(profile, samples_by_observation),
+        _transitions(profile, samples),
     )
     segments: list[CriticalPathSegment] = list(skeleton.uncertain_segments)
     for phase in skeleton.phases:
         segments.extend(
             _phase_segments(
                 phase,
-                samples_by_identity,
-                samples_by_observation,
+                samples,
             )
         )
-    if skeleton.trailing_uncertainty is not None:
-        segments.append(skeleton.trailing_uncertainty)
     segments.sort(key=lambda segment: segment.interval.start_ns)
     segments = _merge_segments(segments)
-    work_ns = sum(
-        segment.interval.duration_ns
-        for segment in segments
-        if isinstance(segment, ResolvedSegment) and segment.kind == "work"
-    )
-    wait_ns = sum(
-        segment.interval.duration_ns
-        for segment in segments
-        if isinstance(segment, ResolvedSegment) and segment.kind == "wait"
-    )
-    uncertain_ns = sum(
-        segment.interval.duration_ns
-        for segment in segments
-        if isinstance(segment, UncertainSegment)
-    )
-    parallel_off_path_ns = sum(
-        segment.interval.duration_ns
-        for segment in segments
-        if isinstance(segment, ResolvedSegment) and segment.parallel_off_path_threads
-    )
     return Analysis(
         segments=segments,
         handoffs=skeleton.handoffs,
         self_function_rows=_function_rows(
             segments,
-            profile.frames,
+            functions,
             filters,
             cumulative=False,
         ),
         cumulative_function_rows=_function_rows(
             segments,
-            profile.frames,
+            functions,
             filters,
             cumulative=True,
         ),
         terminal_thread=skeleton.terminal_thread,
-        work_ns=work_ns,
-        wait_ns=wait_ns,
-        uncertain_ns=uncertain_ns,
-        parallel_off_path_ns=parallel_off_path_ns,
     )
 
 

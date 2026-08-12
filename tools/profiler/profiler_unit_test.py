@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import os
 import random
@@ -44,28 +45,19 @@ def _target_process() -> process_events.TargetProcess:
 
 def _capture_state(
     *,
-    python_stack_observations: int = 0,
+    python_stack_observed: bool = False,
 ) -> profiler._CaptureState:  # pyright: ignore[reportPrivateUsage]
     return profiler._CaptureState(  # pyright: ignore[reportPrivateUsage]
         random_generator=random.Random(1),  # noqa: S311
         mode="wall",
-        counts={
-            "attempted": 0,
-            "successful": 0,
-            "discarded": 0,
-            "missed": 0,
-        },
-        python_stack_observations=python_stack_observations,
+        python_stack_observed=python_stack_observed,
     )
 
 
-def _attached_runtime(
-    attachment_pause_ns: int = 0,
-) -> profiler._AttachedRuntime:  # pyright: ignore[reportPrivateUsage]
+def _attached_runtime() -> profiler._AttachedRuntime:  # pyright: ignore[reportPrivateUsage]
     return profiler._AttachedRuntime(  # pyright: ignore[reportPrivateUsage]
         runtime={
             "version": "3.14.0",
-            "minor_version": "3.14",
             "free_threaded": True,
             "executable": {
                 "path": "/python",
@@ -75,15 +67,43 @@ def _attached_runtime(
         },
         observed_ns=20,
         observed_target_running_ns=10,
-        attachment_pause_ns=attachment_pause_ns,
     )
 
 
+def _observation_timing() -> schema.ObservationBase:
+    return {
+        "scheduled_interval_ns": 10,
+        "target_running_ns": 15,
+        "pause_started_ns": 20,
+        "pause_ended_ns": 25,
+    }
+
+
 def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
+    observations: list[schema.Observation] = []
+    frames: dict[int, schema.Frame] = {}
+    if success:
+        frames[0] = {"filename": "source.py", "function": "work", "line": 1}
+        observations.append(
+            {
+                "scheduled_interval_ns": 10,
+                "target_running_ns": 1,
+                "pause_started_ns": 1,
+                "pause_ended_ns": 1,
+                "status": "successful",
+                "threads": [
+                    {
+                        "os_thread_id": 71,
+                        "start_time_ticks": 1,
+                        "pre_stop_state": "R",
+                        "stack": [0],
+                    }
+                ],
+            }
+        )
     return schema.RawProfile(
         schema_version=schema.SCHEMA_VERSION,
-        complete=complete,
-        success=success,
+        process_id=71,
         command=["target"],
         working_directory="/work",
         workload_path="/work/source.py",
@@ -96,12 +116,10 @@ def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
             "mode": "wall",
         },
         sampling_statistics={
-            "interval_count": 0,
             "minimum_interval_ns": None,
             "mean_interval_ns": None,
             "maximum_interval_ns": None,
             "total_pause_ns": 0,
-            "discarded_rate": 0.0,
         },
         launcher_executable={"path": "/bin/sh", "device": 1, "inode": 1},
         python_runtime=None,
@@ -112,19 +130,17 @@ def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
             "exited_ns": 1,
             "exited_target_running_ns": 1,
         },
-        frames={},
-        observations=[],
+        frames=frames,
+        observations=observations,
         failures=[],
-        thread_lifecycles=[],
         observation_counts={
-            "attempted": 0,
-            "successful": 0,
+            "successful": len(observations),
             "discarded": 0,
             "missed": 0,
         },
-        compiler_exit_status=0,
+        compiler_exit_status=0 if success else (-signal.SIGTERM if not complete else 1),
         diagnostics_status="none",
-        interruption_signal=None,
+        interruption_signal=None if complete else signal.SIGTERM,
     )
 
 
@@ -305,6 +321,143 @@ def test_remote_unwinder_reads_matching_interpreter_thread_frame():
     assert frames == {17: 4_000}
 
 
+def test_remote_unwinder_reads_each_matching_interpreter_thread_frame():
+    resolver = _qualified_remote_unwinder()
+    resolver._runtime_address = 1_000  # pyright: ignore[reportPrivateUsage]
+    resolver._debug_offsets = remote_frame_names._DebugOffsets(  # pyright: ignore[reportPrivateUsage]
+        runtime_interpreters_head=0,
+        interpreter_next=8,
+        interpreter_threads_head=16,
+        thread_next=24,
+        thread_current_frame=32,
+        thread_native_id=40,
+        frame_previous=48,
+        frame_localsplus=56,
+        pyobject_type=64,
+        type_name=72,
+    )
+    memory = typing.cast(
+        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
+        io.BytesIO(),
+    )
+    pointers = {
+        1_000: 2_000,
+        2_016: 3_000,
+        3_040: 17,
+        3_032: 4_000,
+        3_024: 3_100,
+        3_140: 19,
+        3_124: 3_200,
+        3_240: 18,
+        3_232: 4_100,
+    }
+
+    def read_pointer(_memory: object, address: int) -> int:
+        return pointers[address]
+
+    with mock.patch.object(
+        remote_frame_names,
+        "_read_pointer",
+        autospec=True,
+        side_effect=read_pointer,
+    ):
+        frames = resolver._thread_frames(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            {17: [0], 18: [0]},
+        )
+
+    assert frames == {17: 4_000, 18: 4_100}
+
+
+def test_remote_unwinder_finishes_search_when_matching_thread_is_absent():
+    resolver = _qualified_remote_unwinder()
+    resolver._runtime_address = 1_000  # pyright: ignore[reportPrivateUsage]
+    resolver._debug_offsets = remote_frame_names._DebugOffsets(  # pyright: ignore[reportPrivateUsage]
+        runtime_interpreters_head=0,
+        interpreter_next=8,
+        interpreter_threads_head=16,
+        thread_next=24,
+        thread_current_frame=32,
+        thread_native_id=40,
+        frame_previous=48,
+        frame_localsplus=56,
+        pyobject_type=64,
+        type_name=72,
+    )
+    memory = typing.cast(
+        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
+        io.BytesIO(),
+    )
+    pointers = {
+        1_000: 2_000,
+        2_016: 3_000,
+        3_040: 18,
+        3_024: 0,
+        2_008: 0,
+    }
+
+    def read_pointer(_memory: object, address: int) -> int:
+        return pointers[address]
+
+    with mock.patch.object(
+        remote_frame_names,
+        "_read_pointer",
+        autospec=True,
+        side_effect=read_pointer,
+    ):
+        frames = resolver._thread_frames(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            {17: [0]},
+        )
+
+    assert frames == {}
+
+
+def test_remote_unwinder_streams_only_matching_executable_mappings():
+    maps = """\
+1000-2000 r-xp 00000000 00:00 41 /other
+3000-4000 r-xp 00001000 00:00 42 /python
+"""
+    with mock.patch.object(Path, "read_text", autospec=True, return_value=maps):
+        mappings = list(
+            remote_frame_names._executable_mappings(  # pyright: ignore[reportPrivateUsage]
+                71,
+                42,
+            )
+        )
+
+    assert mappings == [(0x3000, 0x4000, 0x1000)]
+
+
+def test_remote_runtime_address_requires_a_local_runtime_mapping():
+    def address_of(_value: object) -> int:
+        return 123
+
+    def in_dll(_python_api: object, _name: str) -> object:
+        return object()
+
+    with (
+        mock.patch.object(
+            remote_frame_names,
+            "ctypes",
+            new=types.SimpleNamespace(
+                addressof=address_of,
+                c_char=types.SimpleNamespace(in_dll=in_dll),
+                pythonapi=object(),
+            ),
+        ),
+        mock.patch.object(Path, "stat", autospec=True),
+        mock.patch.object(
+            remote_frame_names,
+            "_executable_mappings",
+            autospec=True,
+            return_value=iter(()),
+        ),
+        pytest.raises(ValueError, match="profiler's Python runtime was not mapped"),
+    ):
+        _ = remote_frame_names._runtime_address(71)  # pyright: ignore[reportPrivateUsage]
+
+
 def test_remote_unwinder_caches_dataclass_type_name():
     resolver = _qualified_remote_unwinder()
     memory = typing.cast(
@@ -367,18 +520,11 @@ def test_normalization_applies_copied_dataclass_type_name():
     )
     remote_thread = types.SimpleNamespace(thread_id=17, frame_info=[remote_frame])
     raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
-        observation_index=0,
-        scheduled_interval_ns=10,
-        host_monotonic_ns=20,
-        target_running_ns=15,
-        pause_started_ns=20,
-        pause_ended_ns=25,
-        pause_duration_ns=5,
-        process_id=71,
-        evidence={17: profiler._ThreadEvidence(101, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+        timing=_observation_timing(),
+        evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
         stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
         remote_threads=typing.cast(
-            "list[profiler._RemoteThread]",  # pyright: ignore[reportPrivateUsage]
+            "list[remote_frame_names.RemoteThread]",
             [remote_thread],
         ),
         frame_names=[(17, 0, b"Sampled\0" + bytes(504))],
@@ -390,20 +536,13 @@ def test_normalization_applies_copied_dataclass_type_name():
         result,
         profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
     )
-    assert result.threads[0].stack[0].function == "Sampled.__init__"
+    assert result.threads[0].stack[0]["function"] == "Sampled.__init__"
 
 
 def test_normalization_retains_os_thread_without_python_stack():
     raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
-        observation_index=0,
-        scheduled_interval_ns=10,
-        host_monotonic_ns=20,
-        target_running_ns=15,
-        pause_started_ns=20,
-        pause_ended_ns=25,
-        pause_duration_ns=5,
-        process_id=71,
-        evidence={17: profiler._ThreadEvidence(101, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+        timing=_observation_timing(),
+        evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
         stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
         remote_threads=[],
         frame_names=[],
@@ -424,56 +563,37 @@ def test_cpu_observation_record_preserves_scheduler_runtime():
     evidence = profiler._ThreadEvidence(  # pyright: ignore[reportPrivateUsage]
         start_time_ticks=101,
         state="R",
-        wait_channel="0",
-        voluntary_context_switches=2,
-        nonvoluntary_context_switches=3,
     )
     captured_thread = profiler._CapturedThread(  # pyright: ignore[reportPrivateUsage]
         os_thread_id=11,
         evidence=evidence,
-        stopped_state="t",
         stack=[
-            profiler._CapturedFrame(  # pyright: ignore[reportPrivateUsage]
-                filename="source.py",
-                function="work",
-                line=7,
-            )
+            {
+                "filename": "source.py",
+                "function": "work",
+                "line": 7,
+            }
         ],
         scheduler_runtime_ns=1234,
     )
     result = profiler._SuccessfulObservationResult(  # pyright: ignore[reportPrivateUsage]
-        observation_index=0,
-        scheduled_interval_ns=10,
-        host_monotonic_ns=20,
-        target_running_ns=15,
-        pause_started_ns=20,
-        pause_ended_ns=25,
-        pause_duration_ns=5,
-        process_id=9,
+        timing=_observation_timing(),
         threads=[captured_thread],
     )
 
     records, observation = writer.observation_record(result)
 
     expected_observation: schema.SuccessfulObservation = {
-        "observation_index": 0,
         "scheduled_interval_ns": 10,
-        "host_monotonic_ns": 20,
         "target_running_ns": 15,
         "pause_started_ns": 20,
         "pause_ended_ns": 25,
-        "pause_duration_ns": 5,
-        "process_id": 9,
         "status": "successful",
         "threads": [
             {
                 "os_thread_id": 11,
                 "start_time_ticks": 101,
                 "pre_stop_state": "R",
-                "wait_channel": "0",
-                "voluntary_context_switches": 2,
-                "nonvoluntary_context_switches": 3,
-                "stopped_state": "t",
                 "stack": [0],
                 "scheduler_runtime_ns": 1234,
             }
@@ -483,8 +603,8 @@ def test_cpu_observation_record_preserves_scheduler_runtime():
     assert records == [
         {
             "record_type": "frame",
+            "frame_id": 0,
             "frame": {
-                "frame_id": 0,
                 "filename": "source.py",
                 "function": "work",
                 "line": 7,
@@ -492,6 +612,32 @@ def test_cpu_observation_record_preserves_scheduler_runtime():
         },
         {"record_type": "observation", "observation": expected_observation},
     ]
+
+
+def test_observation_record_reuses_frame_definition():
+    writer = profiler._ProfileWriter(io.StringIO())  # pyright: ignore[reportPrivateUsage]
+    frame: schema.Frame = {
+        "filename": "source.py",
+        "function": "work",
+        "line": 7,
+    }
+    result = profiler._SuccessfulObservationResult(  # pyright: ignore[reportPrivateUsage]
+        timing=_observation_timing(),
+        threads=[
+            profiler._CapturedThread(  # pyright: ignore[reportPrivateUsage]
+                os_thread_id=11,
+                evidence=profiler._ThreadEvidence(101, "R"),  # pyright: ignore[reportPrivateUsage]
+                stack=[frame, frame],
+                scheduler_runtime_ns=None,
+            )
+        ],
+    )
+
+    records, observation = writer.observation_record(result)
+
+    assert len(records) == 2
+    assert observation["status"] == "successful"
+    assert observation["threads"][0]["stack"] == [0, 0]
 
 
 # PRF-002: Independent sampling schedule. PRF-004: No stale-stack reuse.
@@ -524,24 +670,17 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
         )
 
     assert target_exited is True
-    assert isinstance(
-        result,
-        profiler._FailedObservationResult,  # pyright: ignore[reportPrivateUsage]
-    )
-    assert result.observation_index == 0
-    assert result.scheduled_interval_ns == 250_000_000
-    assert result.host_monotonic_ns >= 100
-    assert result.target_running_ns == result.host_monotonic_ns - 100
-    assert result.pause_started_ns == result.host_monotonic_ns
-    assert result.pause_ended_ns == result.host_monotonic_ns
-    assert result.pause_duration_ns == 0
-    assert result.process_id == 71
-    assert result.status == "missed"
+    assert isinstance(result, dict)
+    assert result["scheduled_interval_ns"] == 250_000_000
+    assert result["pause_started_ns"] >= 100
+    assert result["target_running_ns"] == result["pause_started_ns"] - 100
+    assert result["pause_ended_ns"] == result["pause_started_ns"]
+    assert result["status"] == "missed"
     assert (
-        result.failure_kind
+        result["failure_kind"]
         is schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
     )
-    assert result.failure_reason == "the target exited before the scheduled stop"
+    assert result["failure_reason"] == "the target exited before the scheduled stop"
     sample_state = _capture_state()
     sample_until_exit = profiler._sample_until_exit  # pyright: ignore[reportPrivateUsage]
     profile_path = tmp_path / "observations.jsonl"
@@ -580,15 +719,6 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
             )
 
     assert sample_state.total_pause_ns == 0
-    assert sample_state.observation_pause_ns == 0
-    assert sample_state.observation_times == [result.target_running_ns]
-    assert sample_state.observation_index == 1
-    assert sample_state.counts == {
-        "attempted": 0,
-        "successful": 0,
-        "discarded": 0,
-        "missed": 1,
-    }
     arm_schedule.assert_called_once_with(32, 0.25)
     assert profile_path.read_text(encoding="utf-8")
 
@@ -640,7 +770,7 @@ def test_observation_prepares_unwinder_before_stopping_target():
         _event_file_descriptor: int | None,
     ) -> tuple[
         dict[int, profiler._StoppedThread],  # pyright: ignore[reportPrivateUsage]
-        list[profiler._RemoteThread],  # pyright: ignore[reportPrivateUsage]
+        list[remote_frame_names.RemoteThread],
         remote_frame_names.CapturedFrameNames,
     ]:
         assert unwinder is qualified_unwinder
@@ -682,7 +812,6 @@ def test_observation_prepares_unwinder_before_stopping_target():
         captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
             _target_process(),
             None,
-            observation_index=0,
             scheduled_interval_ns=10,
             launched_ns=0,
             total_pause_ns=0,
@@ -701,54 +830,57 @@ def test_observation_prepares_unwinder_before_stopping_target():
     ]
 
 
+def test_observation_records_stopped_capture_failure():
+    retained_unwinder = typing.cast(
+        "profiler._Unwinder",  # pyright: ignore[reportPrivateUsage]
+        typing.cast("object", types.SimpleNamespace()),
+    )
+    with (
+        mock.patch.object(
+            profiler,
+            "_thread_evidence",
+            autospec=True,
+            return_value={},
+        ),
+        mock.patch.object(os, "kill", autospec=True),
+        mock.patch.object(
+            profiler,
+            "_capture_stopped_threads",
+            autospec=True,
+            side_effect=RuntimeError("unwind failed"),
+        ),
+    ):
+        captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
+            _target_process(),
+            retained_unwinder,
+            scheduled_interval_ns=10,
+            launched_ns=0,
+            total_pause_ns=0,
+            mode="wall",
+            event_file_descriptor=None,
+        )
+
+    assert isinstance(captured.result, dict)
+    assert (
+        captured.result["failure_kind"]
+        is schema.ObservationFailureKind.STACK_UNWIND_FAILED
+    )
+    assert captured.unwinder is None
+
+
 def _missed_observation(
-    observation_index: int,
-) -> profiler._FailedObservationResult:  # pyright: ignore[reportPrivateUsage]
-    return profiler._FailedObservationResult(  # pyright: ignore[reportPrivateUsage]
-        observation_index=observation_index,
-        scheduled_interval_ns=10,
-        host_monotonic_ns=20 + observation_index,
-        target_running_ns=15 + observation_index,
-        pause_started_ns=20 + observation_index,
-        pause_ended_ns=20 + observation_index,
-        pause_duration_ns=0,
-        process_id=71,
-        status="missed",
-        failure_kind=(
+    sequence_number: int,
+) -> schema.FailedObservation:
+    return {
+        "scheduled_interval_ns": 10,
+        "target_running_ns": 15 + sequence_number,
+        "pause_started_ns": 20 + sequence_number,
+        "pause_ended_ns": 20 + sequence_number,
+        "status": "missed",
+        "failure_kind": (
             schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
         ),
-        failure_reason="target exited",
-    )
-
-
-# PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
-def test_discarded_observation_updates_attempted_and_discarded_counts():
-    state = _capture_state()
-    observation: schema.FailedObservation = {
-        "observation_index": 0,
-        "scheduled_interval_ns": 10,
-        "host_monotonic_ns": 20,
-        "target_running_ns": 15,
-        "pause_started_ns": 20,
-        "pause_ended_ns": 25,
-        "pause_duration_ns": 5,
-        "process_id": 71,
-        "status": "discarded",
-        "failure_kind": schema.ObservationFailureKind.INCONSISTENT_STACK,
-        "failure_reason": "thread identity changed",
-    }
-
-    profiler._update_observation_state(  # pyright: ignore[reportPrivateUsage]
-        state,
-        observation,
-        has_python_stack=False,
-    )
-
-    assert state.counts == {
-        "attempted": 1,
-        "successful": 0,
-        "discarded": 1,
-        "missed": 0,
+        "failure_reason": "target exited",
     }
 
 
@@ -758,7 +890,7 @@ def test_discarded_observation_updates_attempted_and_discarded_counts():
     ("evidence", "stopped_threads", "remote_thread_ids", "expected_reason"),
     [
         (
-            {11: profiler._ThreadEvidence(101, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+            {11: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
             {11: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
             [12],
             "a Python thread changed identity during the observation",
@@ -770,7 +902,7 @@ def test_discarded_observation_updates_attempted_and_discarded_counts():
             "an OS thread changed identity during the observation",
         ),
         (
-            {11: profiler._ThreadEvidence(102, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+            {11: profiler._ThreadEvidence(102, "R")},  # pyright: ignore[reportPrivateUsage]
             {11: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
             [],
             "an OS thread identifier was reused during the observation",
@@ -785,7 +917,7 @@ def test_normalization_discards_thread_identity_changes(
 ):
     remote_threads = [
         typing.cast(
-            "profiler._RemoteThread",  # pyright: ignore[reportPrivateUsage]
+            "remote_frame_names.RemoteThread",
             typing.cast(
                 "object",
                 types.SimpleNamespace(thread_id=thread_id, frames=[]),
@@ -794,14 +926,7 @@ def test_normalization_discards_thread_identity_changes(
         for thread_id in remote_thread_ids
     ]
     raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
-        observation_index=0,
-        scheduled_interval_ns=10,
-        host_monotonic_ns=20,
-        target_running_ns=15,
-        pause_started_ns=20,
-        pause_ended_ns=25,
-        pause_duration_ns=5,
-        process_id=71,
+        timing=_observation_timing(),
         evidence=evidence,
         stopped_threads=stopped_threads,
         remote_threads=remote_threads,
@@ -810,12 +935,9 @@ def test_normalization_discards_thread_identity_changes(
 
     result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
 
-    assert isinstance(
-        result,
-        profiler._FailedObservationResult,  # pyright: ignore[reportPrivateUsage]
-    )
-    assert result.failure_kind is schema.ObservationFailureKind.INCONSISTENT_STACK
-    assert result.failure_reason == (
+    assert isinstance(result, dict)
+    assert result["failure_kind"] is schema.ObservationFailureKind.INCONSISTENT_STACK
+    assert result["failure_reason"] == (
         f"_InconsistentStackObservationError: {expected_reason}"
     )
 
@@ -863,7 +985,7 @@ def test_scheduled_observation_raises_processor_failure():
 def test_observation_processor_handoff_does_not_wait_for_processing():
     first_processing_started = threading.Event()
     release_first_observation = threading.Event()
-    processed_indices: list[int] = []
+    processed_times: list[int] = []
 
     def persist_observation(
         _writer: object,
@@ -872,8 +994,13 @@ def test_observation_processor_handoff_does_not_wait_for_processing():
         _attached_runtime: object,
         _event_file_descriptor: object,
     ):
-        processed_indices.append(work.observation_index)
-        if work.observation_index == 0:
+        target_running_ns = (
+            work.timing["target_running_ns"]
+            if isinstance(work, profiler._RawObservation)  # pyright: ignore[reportPrivateUsage]
+            else work["target_running_ns"]
+        )
+        processed_times.append(target_running_ns)
+        if target_running_ns == 15:
             first_processing_started.set()
             assert release_first_observation.wait(5)
 
@@ -896,7 +1023,7 @@ def test_observation_processor_handoff_does_not_wait_for_processing():
         processor.submit(_missed_observation(1))
         release_first_observation.set()
 
-    assert processed_indices == [0, 1]
+    assert processed_times == [15, 16]
 
 
 # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
@@ -950,7 +1077,7 @@ def test_observation_processor_failure_signals_event(
 def test_observation_processor_discards_queued_work_after_failure():
     first_processing_started = threading.Event()
     release_first_observation = threading.Event()
-    processed_indices: list[int] = []
+    processed_times: list[int] = []
 
     def persist_observation(
         _writer: object,
@@ -959,7 +1086,11 @@ def test_observation_processor_discards_queued_work_after_failure():
         _attached_runtime: object,
         _event_file_descriptor: object,
     ):
-        processed_indices.append(work.observation_index)
+        processed_times.append(
+            work.timing["target_running_ns"]
+            if isinstance(work, profiler._RawObservation)  # pyright: ignore[reportPrivateUsage]
+            else work["target_running_ns"]
+        )
         first_processing_started.set()
         assert release_first_observation.wait(5)
         raise OSError("write failed")
@@ -989,7 +1120,7 @@ def test_observation_processor_discards_queued_work_after_failure():
     ):
         process_work()
 
-    assert processed_indices == [0]
+    assert processed_times == [15]
 
 
 # PRF-002: Independent sampling schedule.
@@ -1056,18 +1187,21 @@ def test_next_deadline_is_armed_before_observation_handoff():
 
 # PRF-011: Complete invocation. PRF-026: No silent partial success.
 @pytest.mark.parametrize(
-    ("python_stack_observations", "records_failure"),
-    [(0, True), (1, False)],
+    ("python_stack_observed", "records_failure"),
+    [(False, True), (True, False)],
 )
 def test_attached_capture_requires_a_python_stack(
-    python_stack_observations: int,
     *,
+    python_stack_observed: bool,
     records_failure: bool,
 ):
     target_process = _target_process()
     writer = profiler._ProfileWriter(io.StringIO())  # pyright: ignore[reportPrivateUsage]
-    state = _capture_state(python_stack_observations=python_stack_observations)
-    attached_runtime = _attached_runtime(attachment_pause_ns=7)
+    state = _capture_state(python_stack_observed=python_stack_observed)
+    attached_runtime = dataclasses.replace(
+        _attached_runtime(),
+        observed_target_running_ns=8,
+    )
     expected_python: schema.ExecutableIdentity = {
         "path": "/python",
         "device": 1,
@@ -1111,7 +1245,7 @@ def test_attached_capture_requires_a_python_stack(
         )
 
     assert exit_status == 4
-    assert state.attached_runtime == attached_runtime
+    assert state.python_attached is True
     assert state.total_pause_ns == 7
     assert emit_event.mock_calls == [
         mock.call(33, "launcher-recorded"),

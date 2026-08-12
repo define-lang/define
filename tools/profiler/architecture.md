@@ -363,27 +363,27 @@ The format must contain:
 - target Python version, free-threaded status, and executable identity;
 - workload path and a content digest;
 - sampling-mode and schedule configuration;
-- configured and observed interval statistics;
-- host monotonic timestamps and target-running logical timestamps;
-- profiler pause duration for every observation;
+- lifecycle host timestamps and target-running logical timestamps;
+- profiler pause start and end timestamps for every observation;
 - process and OS thread identifiers;
-- per-thread execution states and observable wait, wake, and handoff evidence
-  needed to relate work across threads;
+- per-thread pre-stop execution state and thread-lifetime identity;
 - complete ordered Python stacks with filename, function name, and line number;
 - per-thread cumulative CPU runtime when collected;
-- CPU backend identity and perf configuration when applicable;
+- CPU backend identity when applicable;
 - explicit failed-observation records and reasons;
-- thread first-seen and last-seen observations;
-- compiler exit status and diagnostics status; and
-- counts of attempted, successful, discarded, and missed observations.
+- compiler exit status and diagnostics status.
+
+Observed interval statistics, pause durations, thread first- and last-seen
+observations, handoff evidence, observation counts, completeness, and success
+are derived from these records rather than repeated in the wire format.
 
 Under PRF-024, machine-readable observation and capture failure kinds are
 closed, versioned string enums. Exception class names and messages are evidence
 in the human-readable failure reason, not ad hoc failure codes.
 
 The collector must write incrementally so an interrupted or failed compiler can
-still leave diagnosable evidence. A partial file must be explicitly marked
-incomplete.
+still leave diagnosable evidence. The absence of a final summary record marks a
+partial file incomplete.
 
 ### Analyzer
 

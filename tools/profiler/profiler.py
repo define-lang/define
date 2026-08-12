@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import hashlib
-import itertools
 import json
 import os
 import pathlib
@@ -31,7 +30,6 @@ if typing.TYPE_CHECKING:
     import collections.abc
 
 _PATH = click.Path(path_type=pathlib.Path)
-_MAX_DISCARDED_RATE = 0.001
 
 type _ProfilerEvent = typing.Literal[
     "launcher-recorded",
@@ -48,19 +46,6 @@ _PROFILER_EVENT_BYTES: dict[_ProfilerEvent, bytes] = {
 }
 
 
-# PRF-015: Full stacks. PRF-016: Source identity.
-class _RemoteFrame(Protocol):
-    filename: str
-    funcname: str
-    lineno: int
-
-
-# PRF-013: Wall mode. PRF-015: Full stacks.
-class _RemoteThread(Protocol):
-    thread_id: int
-    frame_info: list[_RemoteFrame]
-
-
 # PRF-001: No call-correlated wall profiling work.
 class _Unwinder(Protocol):
     def get_stack_trace(self) -> remote_frame_names.CapturedStackTrace: ...
@@ -68,7 +53,12 @@ class _Unwinder(Protocol):
 
 # PRF-001: No call-correlated wall profiling work.
 class _UnwinderConstructor(Protocol):
-    def __call__(self, process_id: int, *, all_threads: bool) -> _Unwinder: ...
+    def __call__(
+        self,
+        process_id: int,
+        *,
+        all_threads: bool,
+    ) -> remote_frame_names.RemoteUnwinder: ...
 
 
 # PRF-001: No call-correlated wall profiling work.
@@ -90,13 +80,18 @@ class _CaptureInterrupted(BaseException):
         self.pause_duration_ns = 0
 
 
-class _AttachmentError(Exception):
-    # PRF-022: Launcher safety. PRF-024: Explicit failures.
+class _CaptureFailureError(Exception):
+    # PRF-024: Explicit failures.
     kind: schema.CaptureFailureKind
 
     def __init__(self, kind: schema.CaptureFailureKind, reason: str):
         super().__init__(reason)
         self.kind = kind
+
+
+class _AttachmentError(_CaptureFailureError):
+    # PRF-022: Launcher safety.
+    pass
 
 
 class _ProfilerEventError(Exception):
@@ -106,13 +101,9 @@ class _ProfilerEventError(Exception):
         self.pause_duration_ns: int = 0
 
 
-class _ObservationProcessorError(Exception):
+class _ObservationProcessorError(_CaptureFailureError):
     # PRF-024: Explicit failures. PRF-051: Schedule-isolated persistence.
-    kind: schema.CaptureFailureKind
-
-    def __init__(self, kind: schema.CaptureFailureKind, reason: str):
-        super().__init__(reason)
-        self.kind = kind
+    pass
 
 
 class _TargetStopError(Exception):
@@ -176,9 +167,6 @@ class _ThreadEvidence:
     # PRF-010: Raw-data preservation.
     start_time_ticks: int
     state: str
-    wait_channel: str
-    voluntary_context_switches: int
-    nonvoluntary_context_switches: int
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -190,60 +178,37 @@ class _StoppedThread:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _CapturedFrame:
-    filename: str
-    function: str
-    line: int
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
 class _CapturedThread:
     # PRF-010: Raw-data preservation. PRF-014: CPU mode.
     os_thread_id: int
     evidence: _ThreadEvidence
-    stopped_state: str
-    stack: list[_CapturedFrame]
+    stack: list[schema.Frame]
     scheduler_runtime_ns: int | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _ObservationTiming:
-    # PRF-003: Pause exclusion.
-    observation_index: int
-    scheduled_interval_ns: int
-    host_monotonic_ns: int
-    target_running_ns: int
-    pause_started_ns: int
-    pause_ended_ns: int
-    pause_duration_ns: int
-    process_id: int
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class _SuccessfulObservationResult(_ObservationTiming):
+class _SuccessfulObservationResult:
     # PRF-007: Consistent stack.
+    timing: schema.ObservationBase
     threads: list[_CapturedThread]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _RawObservation(_ObservationTiming):
+class _RawObservation:
     # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
+    timing: schema.ObservationBase
     evidence: dict[int, _ThreadEvidence]
     stopped_threads: dict[int, _StoppedThread]
-    remote_threads: list[_RemoteThread]
+    remote_threads: list[remote_frame_names.RemoteThread]
     frame_names: remote_frame_names.CapturedFrameNames
 
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class _FailedObservationResult(_ObservationTiming):
-    # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
-    status: typing.Literal["discarded", "missed"]
-    failure_kind: schema.ObservationFailureKind
-    failure_reason: str
+    @property
+    def pause_duration_ns(self) -> int:
+        return self.timing["pause_ended_ns"] - self.timing["pause_started_ns"]
 
 
-_ObservationResult = _SuccessfulObservationResult | _FailedObservationResult
-_ObservationWork = _RawObservation | _FailedObservationResult
+_ObservationResult = _SuccessfulObservationResult | schema.FailedObservation
+_ObservationWork = _RawObservation | schema.FailedObservation
 
 
 @contextlib.contextmanager
@@ -272,7 +237,6 @@ class _AttachedRuntime:
     runtime: schema.PythonRuntime
     observed_ns: int
     observed_target_running_ns: int
-    attachment_pause_ns: int
 
 
 @dataclasses.dataclass(slots=True)
@@ -282,19 +246,10 @@ class _CaptureState:
     # PRF-027: Incremental persistence.
     random_generator: random.Random
     mode: schema.CaptureMode
-    counts: schema.ObservationCounts
-    observation_times: list[int] = dataclasses.field(default_factory=list)
-    thread_lifecycles: dict[tuple[int, int], schema.ThreadLifecycle] = (
-        dataclasses.field(default_factory=dict)
-    )
-    failures: list[schema.FailureRecord] = dataclasses.field(default_factory=list)
-    attached_runtime: _AttachedRuntime | None = None
+    python_attached: bool = False
     retained_unwinder: _Unwinder | None = None
     total_pause_ns: int = 0
-    observation_pause_ns: int = 0
-    python_stack_observations: int = 0
-    observation_index: int = 0
-    runtime_recorded: bool = False
+    python_stack_observed: bool = False
     interruption_signal: int | None = None
 
 
@@ -316,14 +271,8 @@ class _ProfileWriter:
     def observation_record(
         self, result: _ObservationResult
     ) -> tuple[list[schema.ProfileRecord], schema.Observation]:
-        if isinstance(result, _FailedObservationResult):
-            failed: schema.FailedObservation = {
-                **_observation_timing(result),
-                "status": result.status,
-                "failure_kind": result.failure_kind,
-                "failure_reason": result.failure_reason,
-            }
-            return ([{"record_type": "observation", "observation": failed}], failed)
+        if isinstance(result, dict):
+            return ([{"record_type": "observation", "observation": result}], result)
 
         frame_records: list[schema.ProfileRecord] = []
         threads: list[schema.SampledThreadObservation] = []
@@ -331,34 +280,26 @@ class _ProfileWriter:
             stack: list[int] = []
             for captured_frame in captured_thread.stack:
                 key = (
-                    captured_frame.filename,
-                    captured_frame.function,
-                    captured_frame.line,
+                    captured_frame["filename"],
+                    captured_frame["function"],
+                    captured_frame["line"],
                 )
                 frame_id = self.frame_ids.get(key)
                 if frame_id is None:
                     frame_id = len(self.frame_ids)
                     self.frame_ids[key] = frame_id
-                    frame: schema.Frame = {
-                        "frame_id": frame_id,
-                        "filename": captured_frame.filename,
-                        "function": captured_frame.function,
-                        "line": captured_frame.line,
-                    }
-                    frame_records.append({"record_type": "frame", "frame": frame})
+                    frame_records.append(
+                        {
+                            "record_type": "frame",
+                            "frame_id": frame_id,
+                            "frame": captured_frame,
+                        }
+                    )
                 stack.append(frame_id)
             thread_observation: schema.ThreadObservation = {
                 "os_thread_id": captured_thread.os_thread_id,
                 "start_time_ticks": captured_thread.evidence.start_time_ticks,
                 "pre_stop_state": captured_thread.evidence.state,
-                "wait_channel": captured_thread.evidence.wait_channel,
-                "voluntary_context_switches": (
-                    captured_thread.evidence.voluntary_context_switches
-                ),
-                "nonvoluntary_context_switches": (
-                    captured_thread.evidence.nonvoluntary_context_switches
-                ),
-                "stopped_state": captured_thread.stopped_state,
                 "stack": stack,
             }
             if captured_thread.scheduler_runtime_ns is not None:
@@ -371,7 +312,7 @@ class _ProfileWriter:
             else:
                 threads.append(thread_observation)
         successful: schema.SuccessfulObservation = {
-            **_observation_timing(result),
+            **result.timing,
             "status": "successful",
             "threads": threads,
         }
@@ -412,7 +353,6 @@ def _python_runtime(
     # PRF-021: Version match. Exact identity makes local metadata target metadata.
     return {
         "version": platform.python_version(),
-        "minor_version": f"{sys.version_info.major}.{sys.version_info.minor}",
         "free_threaded": cast(
             "int | None",
             sysconfig.get_config_var("Py_GIL_DISABLED"),
@@ -448,15 +388,6 @@ def _wait_for_python_executable(
     return result.executable, result.pause_ns
 
 
-def _status_fields(status: str) -> dict[str, str]:
-    return {
-        name: value.strip()
-        for line in status.splitlines()
-        if ":" in line
-        for name, value in [line.split(":", 1)]
-    }
-
-
 def _thread_stat(thread_directory: pathlib.Path) -> tuple[str, int]:
     # PRF-010: Raw-data preservation. A Linux TID can be reused after thread exit.
     stat = (thread_directory / "stat").read_text(encoding="utf-8")
@@ -469,18 +400,10 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
     # PRF-010: Raw-data preservation.
     evidence: dict[int, _ThreadEvidence] = {}
     for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
-        fields = _status_fields(
-            (thread_directory / "status").read_text(encoding="utf-8")
-        )
-        _, start_time_ticks = _thread_stat(thread_directory)
+        state, start_time_ticks = _thread_stat(thread_directory)
         evidence[int(thread_directory.name)] = _ThreadEvidence(
             start_time_ticks=start_time_ticks,
-            state=fields["State"].split()[0],
-            wait_channel=(thread_directory / "wchan")
-            .read_text(encoding="utf-8")
-            .strip(),
-            voluntary_context_switches=int(fields["voluntary_ctxt_switches"]),
-            nonvoluntary_context_switches=int(fields["nonvoluntary_ctxt_switches"]),
+            state=state,
         )
     return evidence
 
@@ -513,7 +436,7 @@ def _capture_stopped_threads(
     event_file_descriptor: int | None,
 ) -> tuple[
     dict[int, _StoppedThread],
-    list[_RemoteThread],
+    list[remote_frame_names.RemoteThread],
     remote_frame_names.CapturedFrameNames,
 ]:
     # PRF-006: Complete-process stop. PRF-007: Consistent stack.
@@ -541,7 +464,7 @@ def _capture_stopped_threads(
     captured_stack_trace = observation_unwinder.get_stack_trace()
     return (
         stopped_threads,
-        cast("list[_RemoteThread]", captured_stack_trace.threads),
+        captured_stack_trace.threads,
         captured_stack_trace.frame_names,
     )
 
@@ -552,9 +475,7 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
     stopped_threads = raw_observation.stopped_threads
     evidence = raw_observation.evidence
     remote_threads = raw_observation.remote_threads
-    remote_threads_by_id = {
-        remote_thread.thread_id: remote_thread for remote_thread in remote_threads
-    }
+    remote_threads_by_id: dict[int, remote_frame_names.RemoteThread] = {}
     for remote_thread in remote_threads:
         if (
             remote_thread.thread_id not in evidence
@@ -566,6 +487,7 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                     "a Python thread changed identity during the observation"
                 ),
             )
+        remote_threads_by_id[remote_thread.thread_id] = remote_thread
     try:
         decoded_frame_names = remote_frame_names.decode_frame_names(
             raw_observation.frame_names
@@ -590,38 +512,30 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                 ),
             )
         remote_thread = remote_threads_by_id.get(thread_id)
-        stack: list[_CapturedFrame] = []
+        stack: list[schema.Frame] = []
         if remote_thread is not None:
             for frame_index in range(len(remote_thread.frame_info) - 1, -1, -1):
                 frame = remote_thread.frame_info[frame_index]
                 stack.append(
-                    _CapturedFrame(
-                        filename=frame.filename,
-                        function=decoded_frame_names.get(
+                    {
+                        "filename": frame.filename,
+                        "function": decoded_frame_names.get(
                             (thread_id, frame_index),
                             frame.funcname,
                         ),
-                        line=frame.lineno,
-                    )
+                        "line": frame.lineno,
+                    }
                 )
         captured_threads.append(
             _CapturedThread(
                 os_thread_id=thread_id,
                 evidence=thread_evidence,
-                stopped_state=stopped_thread.state,
                 stack=stack,
                 scheduler_runtime_ns=stopped_thread.scheduler_runtime_ns,
             )
         )
     return _SuccessfulObservationResult(
-        observation_index=raw_observation.observation_index,
-        scheduled_interval_ns=raw_observation.scheduled_interval_ns,
-        host_monotonic_ns=raw_observation.host_monotonic_ns,
-        target_running_ns=raw_observation.target_running_ns,
-        pause_started_ns=raw_observation.pause_started_ns,
-        pause_ended_ns=raw_observation.pause_ended_ns,
-        pause_duration_ns=raw_observation.pause_duration_ns,
-        process_id=raw_observation.process_id,
+        timing=raw_observation.timing,
         threads=captured_threads,
     )
 
@@ -629,7 +543,6 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
 def _failed_observation_capture(
     target: subprocess.Popen[str],
     failure: Exception,
-    observation_index: int,
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
@@ -646,23 +559,19 @@ def _failed_observation_capture(
         "missed" if process_exit_confirmed else "discarded"
     )
     return _ObservationCapture(
-        result=_FailedObservationResult(
-            observation_index=observation_index,
-            scheduled_interval_ns=scheduled_interval_ns,
-            host_monotonic_ns=pause_started_ns,
-            target_running_ns=pause_started_ns - launched_ns - total_pause_ns,
-            pause_started_ns=pause_started_ns,
-            pause_ended_ns=pause_ended_ns,
-            pause_duration_ns=pause_ended_ns - pause_started_ns,
-            process_id=target.pid,
-            status=status,
-            failure_kind=(
+        result={
+            "scheduled_interval_ns": scheduled_interval_ns,
+            "target_running_ns": pause_started_ns - launched_ns - total_pause_ns,
+            "pause_started_ns": pause_started_ns,
+            "pause_ended_ns": pause_ended_ns,
+            "status": status,
+            "failure_kind": (
                 schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
                 if process_exit_confirmed
                 else failure_kind
             ),
-            failure_reason=f"{type(failure).__name__}: {failure}",
-        ),
+            "failure_reason": f"{type(failure).__name__}: {failure}",
+        },
         unwinder=None,
     )
 
@@ -670,28 +579,20 @@ def _failed_observation_capture(
 def _failed_observation_from_raw(
     raw_observation: _RawObservation,
     failure: ValueError | _InconsistentStackObservationError,
-) -> _FailedObservationResult:
+) -> schema.FailedObservation:
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     # PRF-050: Minimal stopped section.
-    return _FailedObservationResult(
-        observation_index=raw_observation.observation_index,
-        scheduled_interval_ns=raw_observation.scheduled_interval_ns,
-        host_monotonic_ns=raw_observation.host_monotonic_ns,
-        target_running_ns=raw_observation.target_running_ns,
-        pause_started_ns=raw_observation.pause_started_ns,
-        pause_ended_ns=raw_observation.pause_ended_ns,
-        pause_duration_ns=raw_observation.pause_duration_ns,
-        process_id=raw_observation.process_id,
-        status="discarded",
-        failure_kind=_observation_failure_kind(failure),
-        failure_reason=f"{type(failure).__name__}: {failure}",
-    )
+    return {
+        **raw_observation.timing,
+        "status": "discarded",
+        "failure_kind": _observation_failure_kind(failure),
+        "failure_reason": f"{type(failure).__name__}: {failure}",
+    }
 
 
 def _capture_observation(
     target_process: process_events.TargetProcess,
     retained_unwinder: _Unwinder | None,
-    observation_index: int,
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
@@ -717,7 +618,6 @@ def _capture_observation(
         return _failed_observation_capture(
             target,
             error,
-            observation_index,
             scheduled_interval_ns,
             launched_ns,
             total_pause_ns,
@@ -739,7 +639,6 @@ def _capture_observation(
         return _failed_observation_capture(
             target,
             error,
-            observation_index,
             scheduled_interval_ns,
             launched_ns,
             total_pause_ns,
@@ -752,7 +651,7 @@ def _capture_observation(
     interruption: _CaptureInterrupted | None = None
     profiler_event_error: _ProfilerEventError | None = None
     stopped_threads: dict[int, _StoppedThread] = {}
-    remote_threads: list[_RemoteThread] = []
+    remote_threads: list[remote_frame_names.RemoteThread] = []
     frame_names: remote_frame_names.CapturedFrameNames = []
     pause_started_ns = time.monotonic_ns()
     try:
@@ -794,7 +693,6 @@ def _capture_observation(
         return _failed_observation_capture(
             target,
             failure,
-            observation_index,
             scheduled_interval_ns,
             launched_ns,
             total_pause_ns,
@@ -804,14 +702,12 @@ def _capture_observation(
         )
     return _ObservationCapture(
         result=_RawObservation(
-            observation_index=observation_index,
-            scheduled_interval_ns=scheduled_interval_ns,
-            host_monotonic_ns=pause_started_ns,
-            target_running_ns=pause_started_ns - launched_ns - total_pause_ns,
-            pause_started_ns=pause_started_ns,
-            pause_ended_ns=pause_ended_ns,
-            pause_duration_ns=pause_duration_ns,
-            process_id=target.pid,
+            timing={
+                "scheduled_interval_ns": scheduled_interval_ns,
+                "target_running_ns": pause_started_ns - launched_ns - total_pause_ns,
+                "pause_started_ns": pause_started_ns,
+                "pause_ended_ns": pause_ended_ns,
+            },
             evidence=evidence,
             stopped_threads=stopped_threads,
             remote_threads=remote_threads,
@@ -819,19 +715,6 @@ def _capture_observation(
         ),
         unwinder=observation_unwinder,
     )
-
-
-def _observation_timing(result: _ObservationTiming) -> schema.ObservationBase:
-    return {
-        "observation_index": result.observation_index,
-        "scheduled_interval_ns": result.scheduled_interval_ns,
-        "host_monotonic_ns": result.host_monotonic_ns,
-        "target_running_ns": result.target_running_ns,
-        "pause_started_ns": result.pause_started_ns,
-        "pause_ended_ns": result.pause_ended_ns,
-        "pause_duration_ns": result.pause_duration_ns,
-        "process_id": result.process_id,
-    }
 
 
 def _next_interval_seconds(
@@ -843,29 +726,23 @@ def _next_interval_seconds(
 
 
 def _missed_exit_observation(
-    target: subprocess.Popen[str],
-    observation_index: int,
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
-) -> _FailedObservationResult:
+) -> schema.FailedObservation:
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     host_monotonic_ns = time.monotonic_ns()
-    return _FailedObservationResult(
-        observation_index=observation_index,
-        scheduled_interval_ns=scheduled_interval_ns,
-        host_monotonic_ns=host_monotonic_ns,
-        target_running_ns=host_monotonic_ns - launched_ns - total_pause_ns,
-        pause_started_ns=host_monotonic_ns,
-        pause_ended_ns=host_monotonic_ns,
-        pause_duration_ns=0,
-        process_id=target.pid,
-        status="missed",
-        failure_kind=(
+    return {
+        "scheduled_interval_ns": scheduled_interval_ns,
+        "target_running_ns": host_monotonic_ns - launched_ns - total_pause_ns,
+        "pause_started_ns": host_monotonic_ns,
+        "pause_ended_ns": host_monotonic_ns,
+        "status": "missed",
+        "failure_kind": (
             schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
         ),
-        failure_reason="the target exited before the scheduled stop",
-    )
+        "failure_reason": "the target exited before the scheduled stop",
+    }
 
 
 def _capture_failure(
@@ -902,50 +779,6 @@ def _terminate_process_group(
     except ProcessLookupError:
         pass
     return target.wait(), trace_pause_ns
-
-
-def _update_thread_lifecycles(
-    lifecycles: dict[tuple[int, int], schema.ThreadLifecycle],
-    observation: schema.SuccessfulObservation,
-) -> None:
-    # PRF-005: Lifecycle-bounded attribution.
-    for thread in observation["threads"]:
-        thread_id = thread["os_thread_id"]
-        start_time_ticks = thread["start_time_ticks"]
-        identity = (thread_id, start_time_ticks)
-        lifecycle = lifecycles.get(identity)
-        if lifecycle is None:
-            lifecycles[identity] = {
-                "os_thread_id": thread_id,
-                "start_time_ticks": start_time_ticks,
-                "first_observation_index": observation["observation_index"],
-                "first_target_running_ns": observation["target_running_ns"],
-                "last_observation_index": observation["observation_index"],
-                "last_target_running_ns": observation["target_running_ns"],
-            }
-        else:
-            lifecycle["last_observation_index"] = observation["observation_index"]
-            lifecycle["last_target_running_ns"] = observation["target_running_ns"]
-
-
-def _sampling_statistics(
-    observation_times: list[int],
-    total_pause_ns: int,
-    counts: schema.ObservationCounts,
-) -> schema.SamplingStatistics:
-    # PRF-003: Pause exclusion. PRF-025: Failure threshold.
-    intervals = [
-        later - earlier for earlier, later in itertools.pairwise(observation_times)
-    ]
-    attempted = counts["attempted"]
-    return {
-        "interval_count": len(intervals),
-        "minimum_interval_ns": min(intervals) if intervals else None,
-        "mean_interval_ns": sum(intervals) // len(intervals) if intervals else None,
-        "maximum_interval_ns": max(intervals) if intervals else None,
-        "total_pause_ns": total_pause_ns,
-        "discarded_rate": counts["discarded"] / attempted if attempted else 0.0,
-    }
 
 
 @contextlib.contextmanager
@@ -990,7 +823,7 @@ def _launch_target(
             {
                 "record_type": "header",
                 "schema_version": schema.SCHEMA_VERSION,
-                "complete": False,
+                "process_id": target.pid,
                 "command": list(command),
                 "working_directory": str(working_directory),
                 "workload_path": str(workload_path),
@@ -1021,7 +854,6 @@ def _attach_runtime(
         runtime=_python_runtime(python_executable),
         observed_ns=observed_ns,
         observed_target_running_ns=observed_ns - launched_ns - attachment_pause_ns,
-        attachment_pause_ns=attachment_pause_ns,
     )
 
 
@@ -1041,14 +873,11 @@ def _scheduled_observation(
         timer_file_descriptor,
         processor.failure_file_descriptor,
     )
-    target = target_process.process
     if schedule_event is process_events.ScheduleEvent.PROCESSOR_FAILED:
         processor.raise_failure()
     if schedule_event is process_events.ScheduleEvent.TARGET_EXITED:
         return (
             _missed_exit_observation(
-                target,
-                state.observation_index,
                 scheduled_interval_ns,
                 launched_ns,
                 state.total_pause_ns,
@@ -1058,7 +887,6 @@ def _scheduled_observation(
     captured = _capture_observation(
         target_process,
         state.retained_unwinder,
-        state.observation_index,
         scheduled_interval_ns,
         launched_ns,
         state.total_pause_ns,
@@ -1067,8 +895,7 @@ def _scheduled_observation(
     )
     state.retained_unwinder = captured.unwinder
     target_exited = (
-        isinstance(captured.result, _FailedObservationResult)
-        and captured.result.status == "missed"
+        isinstance(captured.result, dict) and captured.result["status"] == "missed"
     )
     return captured.result, target_exited
 
@@ -1078,28 +905,6 @@ def _has_python_stack(observation: schema.Observation) -> bool:
     if observation["status"] != "successful":
         return False
     return any(thread["stack"] for thread in observation["threads"])
-
-
-def _update_observation_state(
-    state: _CaptureState,
-    observation: schema.Observation,
-    *,
-    has_python_stack: bool,
-):
-    # PRF-004: No stale-stack reuse. PRF-005: Lifecycle-bounded attribution.
-    # PRF-024: Explicit failures.
-    if observation["status"] == "successful":
-        state.counts["attempted"] += 1
-        state.counts["successful"] += 1
-        if has_python_stack:
-            state.python_stack_observations += 1
-        _update_thread_lifecycles(state.thread_lifecycles, observation)
-        return
-    if observation["status"] == "discarded":
-        state.counts["attempted"] += 1
-        state.counts["discarded"] += 1
-        return
-    state.counts["missed"] += 1
 
 
 def _persist_observation(
@@ -1114,7 +919,7 @@ def _persist_observation(
     result = _normalize_observation(work) if isinstance(work, _RawObservation) else work
     records, observation = writer.observation_record(result)
     has_python_stack = _has_python_stack(observation)
-    if has_python_stack and not state.runtime_recorded:
+    if has_python_stack and not state.python_stack_observed:
         records.insert(
             0,
             {
@@ -1126,13 +931,8 @@ def _persist_observation(
                 ),
             },
         )
-        state.runtime_recorded = True
     writer.append_records(records)
-    _update_observation_state(
-        state,
-        observation,
-        has_python_stack=has_python_stack,
-    )
+    state.python_stack_observed |= has_python_stack
     if observation["status"] == "successful":
         _emit_profiler_event(
             event_file_descriptor,
@@ -1286,10 +1086,11 @@ def _sample_until_exit(
                 )
                 scheduled_interval_ns = round(interval_seconds * 1_000_000_000)
                 process_events.arm_schedule(timer_file_descriptor, interval_seconds)
-            state.total_pause_ns += result.pause_duration_ns
-            state.observation_pause_ns += result.pause_duration_ns
-            state.observation_times.append(result.target_running_ns)
-            state.observation_index += 1
+            state.total_pause_ns += (
+                result.pause_duration_ns
+                if isinstance(result, _RawObservation)
+                else result["pause_ended_ns"] - result["pause_started_ns"]
+            )
             processor.submit(result)
             if target_exited:
                 return
@@ -1312,7 +1113,6 @@ def _record_capture_failure(
         state.total_pause_ns,
         python_observed=python_observed,
     )
-    state.failures.append(failure)
     writer.append_records([{"record_type": "failure", "failure": failure}])
 
 
@@ -1335,8 +1135,12 @@ def _capture_attached_process(
         attachment_timeout_seconds,
         launched_ns,
     )
-    state.attached_runtime = attached_runtime
-    state.total_pause_ns += attached_runtime.attachment_pause_ns
+    state.python_attached = True
+    state.total_pause_ns += (
+        attached_runtime.observed_ns
+        - launched_ns
+        - attached_runtime.observed_target_running_ns
+    )
     _emit_profiler_event(event_file_descriptor, "python-attached")
     _sample_until_exit(
         target_process,
@@ -1348,7 +1152,7 @@ def _capture_attached_process(
         timer_file_descriptor,
         event_file_descriptor,
     )
-    if state.python_stack_observations == 0:
+    if not state.python_stack_observed:
         _record_capture_failure(
             writer,
             state,
@@ -1417,11 +1221,10 @@ def _capture_process(
                 schema.CaptureFailureKind.PROFILER_EVENT_WRITE_FAILED,
                 str(error),
                 launched_ns,
-                python_observed=state.attached_runtime is not None,
+                python_observed=state.python_attached,
             )
             exit_status, trace_pause_ns = _terminate_process_group(target_process)
             state.total_pause_ns += error.pause_duration_ns + trace_pause_ns
-            state.observation_pause_ns += error.pause_duration_ns
             return exit_status
         except _ObservationProcessorError as error:
             exit_status, trace_pause_ns = _terminate_process_group(target_process)
@@ -1432,13 +1235,12 @@ def _capture_process(
                 error.kind,
                 str(error),
                 launched_ns,
-                python_observed=state.attached_runtime is not None,
+                python_observed=True,
             )
             return exit_status
         except _CaptureInterrupted as interruption:
             exit_status, trace_pause_ns = _terminate_process_group(target_process)
             state.total_pause_ns += interruption.pause_duration_ns + trace_pause_ns
-            state.observation_pause_ns += interruption.pause_duration_ns
             state.interruption_signal = interruption.signal_number
             _record_capture_failure(
                 writer,
@@ -1446,7 +1248,7 @@ def _capture_process(
                 schema.CaptureFailureKind.PROFILER_INTERRUPTED,
                 signal.Signals(interruption.signal_number).name,
                 launched_ns,
-                python_observed=state.attached_runtime is not None,
+                python_observed=state.python_attached,
             )
             return exit_status
 
@@ -1459,49 +1261,10 @@ def _summary_record(
 ) -> schema.SummaryRecord:
     # PRF-025: Failure threshold. PRF-026: No silent partial success.
     exited_ns = time.monotonic_ns()
-    statistics = _sampling_statistics(
-        state.observation_times,
-        state.observation_pause_ns,
-        state.counts,
-    )
-    complete = state.interruption_signal is None
-    success = (
-        complete
-        and state.python_stack_observations > 0
-        and statistics["discarded_rate"] <= _MAX_DISCARDED_RATE
-        and compiler_exit_status == 0
-        and not diagnostics
-        and not state.failures
-    )
-    attached_runtime = state.attached_runtime
     return {
         "record_type": "summary",
-        "complete": complete,
-        "success": success,
-        "lifecycle": {
-            "launched_ns": launched_ns,
-            "python_observed_ns": (
-                attached_runtime.observed_ns if attached_runtime is not None else None
-            ),
-            "python_observed_target_running_ns": (
-                attached_runtime.observed_target_running_ns
-                if attached_runtime is not None
-                else None
-            ),
-            "exited_ns": exited_ns,
-            "exited_target_running_ns": (
-                exited_ns - launched_ns - state.total_pause_ns
-            ),
-        },
-        "thread_lifecycles": sorted(
-            state.thread_lifecycles.values(),
-            key=lambda lifecycle: (
-                lifecycle["os_thread_id"],
-                lifecycle["start_time_ticks"],
-            ),
-        ),
-        "sampling_statistics": statistics,
-        "observation_counts": state.counts,
+        "exited_ns": exited_ns,
+        "exited_target_running_ns": exited_ns - launched_ns - state.total_pause_ns,
         "compiler_exit_status": compiler_exit_status,
         "diagnostics_status": "present" if diagnostics else "none",
         "interruption_signal": state.interruption_signal,
@@ -1541,12 +1304,6 @@ def capture(
     state = _CaptureState(
         random_generator=random_generator,
         mode=mode,
-        counts={
-            "attempted": 0,
-            "successful": 0,
-            "discarded": 0,
-            "missed": 0,
-        },
     )
 
     if event_file_descriptor is not None:
@@ -1694,8 +1451,7 @@ def main(
         event_file_descriptor=event_file_descriptor,
     )
     counts = profile.observation_counts
-    statistics = cast("schema.SamplingStatistics", profile.sampling_statistics)
-    discarded_rate = statistics["discarded_rate"]
+    attempted = counts["successful"] + counts["discarded"]
     status = "successful" if profile.success else "unsuccessful"
     completeness = "complete" if profile.complete else "incomplete"
     click.echo(f"Profile: {profile_path.absolute()}")
@@ -1707,7 +1463,7 @@ def main(
     click.echo(
         f"Observations: {counts['successful']} successful, "
         + f"{counts['discarded']} discarded, {counts['missed']} missed; "
-        + f"discarded rate {discarded_rate:.3%}"
+        + f"{attempted} attempted; discarded rate {profile.discarded_rate:.3%}"
     )
     if not profile.complete:
         raise click.Abort

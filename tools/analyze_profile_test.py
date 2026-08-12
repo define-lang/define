@@ -50,103 +50,74 @@ def _controlled_profile() -> schema.RawProfile:
     # Exact attribution boundaries and invalid capture states require fixed values.
     frames: dict[int, schema.Frame] = {
         0: {
-            "frame_id": 0,
             "filename": "/repo/define/compiler/driver.py",
             "function": "compile_source",
             "line": 10,
         },
         1: {
-            "frame_id": 1,
             "filename": "/repo/define/compiler/codegen.py",
             "function": "generate_code",
             "line": 20,
         },
         2: {
-            "frame_id": 2,
             "filename": "/repo/define/compiler/validator.py",
             "function": "validate_graph",
             "line": 30,
         },
         3: {
-            "frame_id": 3,
             "filename": "/repo/define/compiler/codegen.py",
             "function": "generate_code",
             "line": 21,
         },
     }
     first_observation: schema.SuccessfulObservation = {
-        "observation_index": 0,
         "scheduled_interval_ns": 20,
-        "host_monotonic_ns": 120,
         "target_running_ns": 20,
         "pause_started_ns": 120,
         "pause_ended_ns": 125,
-        "pause_duration_ns": 5,
-        "process_id": 42,
         "status": "successful",
         "threads": [
             {
                 "os_thread_id": 42,
                 "start_time_ticks": 100,
                 "pre_stop_state": "R",
-                "wait_channel": "0",
-                "voluntary_context_switches": 3,
-                "nonvoluntary_context_switches": 1,
-                "stopped_state": "T",
                 "stack": [0, 3],
             },
             {
                 "os_thread_id": 43,
                 "start_time_ticks": 101,
                 "pre_stop_state": "S",
-                "wait_channel": "futex_wait_queue",
-                "voluntary_context_switches": 5,
-                "nonvoluntary_context_switches": 0,
-                "stopped_state": "T",
                 "stack": [0, 2],
             },
         ],
     }
     failed_observation: schema.FailedObservation = {
-        "observation_index": 1,
         "scheduled_interval_ns": 30,
-        "host_monotonic_ns": 155,
         "target_running_ns": 50,
         "pause_started_ns": 155,
         "pause_ended_ns": 160,
-        "pause_duration_ns": 5,
-        "process_id": 42,
         "status": "discarded",
         "failure_kind": schema.ObservationFailureKind.STACK_UNWIND_FAILED,
         "failure_reason": "remote stack changed",
     }
     final_observation: schema.SuccessfulObservation = {
-        "observation_index": 2,
         "scheduled_interval_ns": 30,
-        "host_monotonic_ns": 190,
         "target_running_ns": 80,
         "pause_started_ns": 190,
         "pause_ended_ns": 195,
-        "pause_duration_ns": 5,
-        "process_id": 42,
         "status": "successful",
         "threads": [
             {
                 "os_thread_id": 42,
                 "start_time_ticks": 100,
                 "pre_stop_state": "R",
-                "wait_channel": "0",
-                "voluntary_context_switches": 4,
-                "nonvoluntary_context_switches": 1,
-                "stopped_state": "T",
                 "stack": [0, 1],
             }
         ],
     }
     return schema.RawProfile(
         schema_version=schema.SCHEMA_VERSION,
-        complete=True,
-        success=True,
+        process_id=42,
         command=["/repo/compiler", "compile"],
         working_directory="/repo",
         workload_path="/repo/source.dfn",
@@ -159,12 +130,10 @@ def _controlled_profile() -> schema.RawProfile:
             "attachment_timeout_seconds": 10.0,
         },
         sampling_statistics={
-            "interval_count": 2,
             "minimum_interval_ns": 30,
             "mean_interval_ns": 30,
             "maximum_interval_ns": 30,
             "total_pause_ns": 15,
-            "discarded_rate": 1 / 3,
         },
         launcher_executable={
             "path": "/usr/bin/bash",
@@ -173,7 +142,6 @@ def _controlled_profile() -> schema.RawProfile:
         },
         python_runtime={
             "version": "3.14.4",
-            "minor_version": "3.14",
             "free_threaded": True,
             "executable": {
                 "path": "/usr/bin/python3.14t",
@@ -195,26 +163,7 @@ def _controlled_profile() -> schema.RawProfile:
             final_observation,
         ],
         failures=[],
-        thread_lifecycles=[
-            {
-                "os_thread_id": 42,
-                "start_time_ticks": 100,
-                "first_observation_index": 0,
-                "first_target_running_ns": 20,
-                "last_observation_index": 2,
-                "last_target_running_ns": 80,
-            },
-            {
-                "os_thread_id": 43,
-                "start_time_ticks": 101,
-                "first_observation_index": 0,
-                "first_target_running_ns": 20,
-                "last_observation_index": 0,
-                "last_target_running_ns": 20,
-            },
-        ],
         observation_counts={
-            "attempted": 3,
             "successful": 2,
             "discarded": 1,
             "missed": 0,
@@ -231,7 +180,7 @@ def _wire_records(profile: schema.RawProfile) -> list[schema.ProfileRecord]:
         {
             "record_type": "header",
             "schema_version": profile.schema_version,
-            "complete": False,
+            "process_id": profile.process_id,
             "command": profile.command,
             "working_directory": profile.working_directory,
             "workload_path": profile.workload_path,
@@ -262,7 +211,8 @@ def _wire_records(profile: schema.RawProfile) -> list[schema.ProfileRecord]:
             }
         )
     records.extend(
-        {"record_type": "frame", "frame": frame} for frame in profile.frames.values()
+        {"record_type": "frame", "frame_id": frame_id, "frame": frame}
+        for frame_id, frame in profile.frames.items()
     )
     records.extend(
         {"record_type": "observation", "observation": observation}
@@ -271,18 +221,19 @@ def _wire_records(profile: schema.RawProfile) -> list[schema.ProfileRecord]:
     records.extend(
         {"record_type": "failure", "failure": failure} for failure in profile.failures
     )
-    statistics = profile.sampling_statistics
     compiler_exit_status = profile.compiler_exit_status
-    if statistics is not None and compiler_exit_status is not None:
+    exited_ns = profile.lifecycle["exited_ns"]
+    exited_target_running_ns = profile.lifecycle["exited_target_running_ns"]
+    if (
+        compiler_exit_status is not None
+        and exited_ns is not None
+        and exited_target_running_ns is not None
+    ):
         records.append(
             {
                 "record_type": "summary",
-                "complete": profile.complete,
-                "success": profile.success,
-                "lifecycle": profile.lifecycle,
-                "thread_lifecycles": profile.thread_lifecycles,
-                "sampling_statistics": statistics,
-                "observation_counts": profile.observation_counts,
+                "exited_ns": exited_ns,
+                "exited_target_running_ns": exited_target_running_ns,
                 "compiler_exit_status": compiler_exit_status,
                 "diagnostics_status": (
                     "present" if profile.diagnostics_status == "present" else "none"
@@ -398,8 +349,6 @@ def test_analysis_reports_observed_time_without_a_python_stack_as_unattributed()
 # PRF-027: Incremental persistence.
 def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: Path):
     profile = _controlled_profile()
-    profile.success = False
-    profile.complete = False
     profile.python_runtime = None
     profile.lifecycle["python_observed_ns"] = None
     profile.lifecycle["python_observed_target_running_ns"] = None
@@ -414,10 +363,7 @@ def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: 
             "reason": "target remained a launcher",
         }
     ]
-    profile.sampling_statistics = None
-    profile.thread_lifecycles = []
     profile.observation_counts = {
-        "attempted": 0,
         "successful": 0,
         "discarded": 0,
         "missed": 0,
@@ -433,7 +379,7 @@ def test_analysis_and_report_handle_partial_capture_before_attachment(tmp_path: 
         ["--profile", str(profile_path)],
     )
 
-    assert analysis.self_rows == []
+    assert analysis.self_function_rows == []
     assert analysis.cumulative_rows == []
     assert analysis.relationship_rows == []
     assert analysis.thread_rows == []
@@ -457,7 +403,7 @@ def test_analysis_does_not_attribute_observations_before_python_attachment():
 
     analysis = _analyze_wall(profile)
 
-    assert analysis.self_rows == []
+    assert analysis.self_function_rows == []
     assert analysis.cumulative_rows == []
     assert analysis.relationship_rows == []
     assert analysis.thread_rows == []
@@ -490,7 +436,6 @@ def test_analysis_filters_thread_file_function_caller_and_callee():
 def test_compiler_only_uses_the_runfile_relative_source_path():
     profile = _controlled_profile()
     profile.frames[4] = {
-        "frame_id": 4,
         "filename": (
             "/repo/define/bazel-bin/define/compiler/main.runfiles/"
             ".main.venv/lib/python/site-packages/click/core.py"
@@ -527,7 +472,6 @@ def test_analysis_excludes_every_nonmatching_filter_dimension():
         analyzer_model.AnalysisFilters(callee="not_a_callee"),
     )
 
-    assert missing_function.self_rows == []
     assert missing_function.cumulative_rows == []
     assert missing_function.self_function_rows == []
     assert missing_function.cumulative_function_rows == []
