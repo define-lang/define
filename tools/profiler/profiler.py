@@ -63,7 +63,7 @@ class _RemoteThread(Protocol):
 
 # PRF-001: No call-correlated wall profiling work.
 class _Unwinder(Protocol):
-    def get_stack_trace(self) -> object: ...
+    def get_stack_trace(self) -> remote_frame_names.CapturedStackTrace: ...
 
 
 # PRF-001: No call-correlated wall profiling work.
@@ -138,6 +138,7 @@ class _InconsistentStackObservationError(Exception):
 type _ObservationFailure = (
     OSError
     | RuntimeError
+    | TypeError
     | ValueError
     | _InconsistentStackObservationError
     | _TargetExitRaceError
@@ -163,7 +164,7 @@ def _observation_failure_kind(
             return schema.ObservationFailureKind.TARGET_STOP_FAILED
         case RuntimeError():
             return schema.ObservationFailureKind.STACK_UNWIND_FAILED
-        case ValueError():
+        case TypeError() | ValueError():
             return schema.ObservationFailureKind.MALFORMED_OBSERVATION
         case OSError():
             return schema.ObservationFailureKind.OBSERVATION_SYSTEM_ERROR
@@ -230,6 +231,7 @@ class _RawObservation(_ObservationTiming):
     evidence: dict[int, _ThreadEvidence]
     stopped_threads: dict[int, _StoppedThread]
     remote_threads: list[_RemoteThread]
+    frame_names: remote_frame_names.CapturedFrameNames
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -506,10 +508,14 @@ def _stopped_threads(
 
 def _capture_stopped_threads(
     target_process: process_events.TargetProcess,
-    retained_unwinder: _Unwinder | None,
+    observation_unwinder: _Unwinder,
     mode: schema.CaptureMode,
     event_file_descriptor: int | None,
-) -> tuple[dict[int, _StoppedThread], list[_RemoteThread], _Unwinder]:
+) -> tuple[
+    dict[int, _StoppedThread],
+    list[_RemoteThread],
+    remote_frame_names.CapturedFrameNames,
+]:
     # PRF-006: Complete-process stop. PRF-007: Consistent stack.
     # PRF-013: Wall mode. PRF-015: Full stacks. PRF-016: Source identity.
     # PRF-050: Minimal stopped section.
@@ -532,18 +538,12 @@ def _capture_stopped_threads(
         # PRF-006: Complete-process stop. PRF-050: Minimal stopped section.
         # Unwinding before every thread has stopped can produce a torn snapshot.
         raise _TargetStopError("not every target thread reached a stopped state")
-    observation_unwinder = (
-        retained_unwinder
-        or remote_frame_names.QualifiedRemoteUnwinder(
-            target.pid,
-            _REMOTE_UNWINDER(target.pid, all_threads=True),
-        )
+    captured_stack_trace = observation_unwinder.get_stack_trace()
+    return (
+        stopped_threads,
+        cast("list[_RemoteThread]", captured_stack_trace.threads),
+        captured_stack_trace.frame_names,
     )
-    remote_threads = cast(
-        "list[_RemoteThread]",
-        observation_unwinder.get_stack_trace(),
-    )
-    return stopped_threads, remote_threads, observation_unwinder
 
 
 def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResult:
@@ -566,6 +566,12 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                     "a Python thread changed identity during the observation"
                 ),
             )
+    try:
+        decoded_frame_names = remote_frame_names.decode_frame_names(
+            raw_observation.frame_names
+        )
+    except (UnicodeDecodeError, ValueError) as error:
+        return _failed_observation_from_raw(raw_observation, error)
     captured_threads: list[_CapturedThread] = []
     for thread_id, stopped_thread in stopped_threads.items():
         thread_evidence = evidence.get(thread_id)
@@ -584,16 +590,20 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                 ),
             )
         remote_thread = remote_threads_by_id.get(thread_id)
-        stack = [
-            _CapturedFrame(
-                filename=frame.filename,
-                function=frame.funcname,
-                line=frame.lineno,
-            )
-            for frame in (
-                reversed(remote_thread.frame_info) if remote_thread is not None else ()
-            )
-        ]
+        stack: list[_CapturedFrame] = []
+        if remote_thread is not None:
+            for frame_index in range(len(remote_thread.frame_info) - 1, -1, -1):
+                frame = remote_thread.frame_info[frame_index]
+                stack.append(
+                    _CapturedFrame(
+                        filename=frame.filename,
+                        function=decoded_frame_names.get(
+                            (thread_id, frame_index),
+                            frame.funcname,
+                        ),
+                        line=frame.lineno,
+                    )
+                )
         captured_threads.append(
             _CapturedThread(
                 os_thread_id=thread_id,
@@ -659,7 +669,7 @@ def _failed_observation_capture(
 
 def _failed_observation_from_raw(
     raw_observation: _RawObservation,
-    failure: _InconsistentStackObservationError,
+    failure: ValueError | _InconsistentStackObservationError,
 ) -> _FailedObservationResult:
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     # PRF-050: Minimal stopped section.
@@ -694,6 +704,28 @@ def _capture_observation(
     # PRF-023: Guaranteed resume.
     target = target_process.process
     try:
+        observation_unwinder = retained_unwinder or (
+            remote_frame_names.QualifiedRemoteUnwinder(
+                target.pid,
+                _REMOTE_UNWINDER(target.pid, all_threads=True),
+            )
+        )
+    except _CaptureInterrupted:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        observation_ns = time.monotonic_ns()
+        return _failed_observation_capture(
+            target,
+            error,
+            observation_index,
+            scheduled_interval_ns,
+            launched_ns,
+            total_pause_ns,
+            observation_ns,
+            observation_ns,
+            _observation_failure_kind(error),
+        )
+    try:
         evidence = _thread_evidence(target.pid)
     except _CaptureInterrupted:
         raise
@@ -721,17 +753,15 @@ def _capture_observation(
     profiler_event_error: _ProfilerEventError | None = None
     stopped_threads: dict[int, _StoppedThread] = {}
     remote_threads: list[_RemoteThread] = []
-    observation_unwinder: _Unwinder | None = None
+    frame_names: remote_frame_names.CapturedFrameNames = []
     pause_started_ns = time.monotonic_ns()
     try:
         os.kill(target.pid, signal.SIGSTOP)
-        stopped_threads, remote_threads, observation_unwinder = (
-            _capture_stopped_threads(
-                target_process,
-                retained_unwinder,
-                mode,
-                event_file_descriptor,
-            )
+        stopped_threads, remote_threads, frame_names = _capture_stopped_threads(
+            target_process,
+            observation_unwinder,
+            mode,
+            event_file_descriptor,
         )
     except _CaptureInterrupted as error:
         interruption = error
@@ -740,6 +770,7 @@ def _capture_observation(
     except (
         OSError,
         RuntimeError,
+        TypeError,
         UnicodeDecodeError,
         ValueError,
         _TargetExitRaceError,
@@ -784,6 +815,7 @@ def _capture_observation(
             evidence=evidence,
             stopped_threads=stopped_threads,
             remote_threads=remote_threads,
+            frame_names=frame_names,
         ),
         unwinder=observation_unwinder,
     )

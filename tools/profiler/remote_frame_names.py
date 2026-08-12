@@ -41,17 +41,15 @@ class _Readable(Protocol):
     def fileno(self) -> int: ...
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _ResolvedFrame:
-    filename: str
-    funcname: str
-    lineno: int
+type CapturedFrameNames = list[tuple[int, int, bytes]]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _ResolvedThread:
-    thread_id: int
-    frame_info: list[_ResolvedFrame]
+class CapturedStackTrace:
+    """Hold copied remote stacks and undecoded invocation-specific names."""
+
+    threads: list[RemoteThread]
+    frame_names: CapturedFrameNames
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -70,109 +68,129 @@ class _DebugOffsets:
 
 @typing.final
 class QualifiedRemoteUnwinder:
-    """Add runtime class names to generated dataclass constructor frames."""
+    """Capture runtime class names for generated dataclass constructor frames."""
 
     def __init__(self, process_id: int, unwinder: RemoteUnwinder):
         """Prepare to resolve frames in the unwinder's remote process."""
         self._process_id: int = process_id
         self._unwinder: RemoteUnwinder = unwinder
         self._runtime_address: int = _runtime_address(process_id)
-        self._type_names: dict[int, str] = {}
+        self._type_names: dict[int, bytes] = {}
         with _remote_memory(process_id) as memory:
             self._debug_offsets: _DebugOffsets = _read_debug_offsets(
                 memory,
                 self._runtime_address,
             )
 
-    def get_stack_trace(self) -> object:
-        """Read stack traces and qualify generated dataclass constructors."""
+    def get_stack_trace(self) -> CapturedStackTrace:
+        """Read stacks and copy undecoded dataclass names from the stopped target."""
         remote_threads = self._unwinder.get_stack_trace()
         if not isinstance(remote_threads, list):
             raise TypeError("the remote unwinder did not return a thread list")
-        return self._resolve_threads(cast("list[object]", remote_threads))
+        thread_objects = cast("list[object]", remote_threads)
+        return CapturedStackTrace(
+            threads=cast("list[RemoteThread]", remote_threads),
+            frame_names=self._capture_frame_names(thread_objects),
+        )
 
-    def _resolve_threads(self, remote_threads: list[object]) -> list[_ResolvedThread]:
-        thread_frames = self._thread_frames()
-        resolved_threads: list[_ResolvedThread] = []
+    def _capture_frame_names(
+        self,
+        remote_threads: list[object],
+    ) -> CapturedFrameNames:
+        matching_frames: dict[int, list[int]] = {}
+        for remote_thread_object in remote_threads:
+            remote_thread = _remote_thread(remote_thread_object)
+            frame_indexes: list[int] = []
+            for frame_index, remote_frame in enumerate(remote_thread.frame_info):
+                if (
+                    remote_frame.filename == "<string>"
+                    and remote_frame.funcname == _DATACLASS_CONSTRUCTOR
+                ):
+                    frame_indexes.append(frame_index)
+            if frame_indexes:
+                matching_frames[remote_thread.thread_id] = frame_indexes
+        if not matching_frames:
+            return []
+
+        captured_names: CapturedFrameNames = []
         with _remote_memory(self._process_id) as memory:
+            thread_frames = self._thread_frames(memory, matching_frames)
             for remote_thread_object in remote_threads:
                 remote_thread = _remote_thread(remote_thread_object)
+                matching_indexes = matching_frames.get(remote_thread.thread_id)
+                if matching_indexes is None:
+                    continue
                 frame_address = thread_frames.get(remote_thread.thread_id)
-                resolved_frames: list[_ResolvedFrame] = []
-                for remote_frame in remote_thread.frame_info:
-                    function = remote_frame.funcname
+                frame_index = 0
+                for matching_index in matching_indexes:
+                    while frame_index < matching_index:
+                        if frame_address is None:
+                            raise ValueError(
+                                "the remote frame chain ended before the unwound stack"
+                            )
+                        frame_address = (
+                            _read_pointer(
+                                memory,
+                                frame_address + self._debug_offsets.frame_previous,
+                            )
+                            or None
+                        )
+                        frame_index += 1
                     if frame_address is None:
                         raise ValueError(
                             "the remote frame chain ended before the unwound stack"
                         )
-                    if (
-                        remote_frame.filename == "<string>"
-                        and function == _DATACLASS_CONSTRUCTOR
-                    ):
-                        function = self._dataclass_constructor_name(
-                            memory,
-                            frame_address,
-                        )
-                    resolved_frames.append(
-                        _ResolvedFrame(
-                            filename=remote_frame.filename,
-                            funcname=function,
-                            lineno=remote_frame.lineno,
+                    captured_names.append(
+                        (
+                            remote_thread.thread_id,
+                            matching_index,
+                            self._dataclass_type_name(memory, frame_address),
                         )
                     )
-                    frame_address = (
-                        _read_pointer(
-                            memory,
-                            frame_address + self._debug_offsets.frame_previous,
-                        )
-                        or None
-                    )
-                resolved_threads.append(
-                    _ResolvedThread(
-                        thread_id=remote_thread.thread_id,
-                        frame_info=resolved_frames,
-                    )
-                )
-        return resolved_threads
+        return captured_names
 
-    def _thread_frames(self) -> dict[int, int | None]:
+    def _thread_frames(
+        self,
+        memory: _Readable,
+        matching_frames: dict[int, list[int]],
+    ) -> dict[int, int | None]:
         offsets = self._debug_offsets
         frames: dict[int, int | None] = {}
-        with _remote_memory(self._process_id) as memory:
-            interpreter_address = _read_pointer(
+        interpreter_address = _read_pointer(
+            memory,
+            self._runtime_address + offsets.runtime_interpreters_head,
+        )
+        while interpreter_address:
+            thread_address = _read_pointer(
                 memory,
-                self._runtime_address + offsets.runtime_interpreters_head,
+                interpreter_address + offsets.interpreter_threads_head,
             )
-            while interpreter_address:
-                thread_address = _read_pointer(
+            while thread_address:
+                native_thread_id = _read_pointer(
                     memory,
-                    interpreter_address + offsets.interpreter_threads_head,
+                    thread_address + offsets.thread_native_id,
                 )
-                while thread_address:
-                    native_thread_id = _read_pointer(
-                        memory,
-                        thread_address + offsets.thread_native_id,
-                    )
+                if native_thread_id in matching_frames:
                     current_frame = _read_pointer(
                         memory,
                         thread_address + offsets.thread_current_frame,
                     )
                     frames[native_thread_id] = current_frame or None
-                    thread_address = _read_pointer(
-                        memory,
-                        thread_address + offsets.thread_next,
-                    )
-                interpreter_address = _read_pointer(
+                thread_address = _read_pointer(
                     memory,
-                    interpreter_address + offsets.interpreter_next,
+                    thread_address + offsets.thread_next,
                 )
+            interpreter_address = _read_pointer(
+                memory,
+                interpreter_address + offsets.interpreter_next,
+            )
         return frames
 
-    def _dataclass_constructor_name(
+    def _dataclass_type_name(
         self,
         memory: _Readable,
         frame_address: int,
-    ) -> str:
+    ) -> bytes:
         offsets = self._debug_offsets
         instance_reference = _read_pointer(
             memory,
@@ -189,9 +207,22 @@ class QualifiedRemoteUnwinder:
                 memory,
                 type_address + offsets.type_name,
             )
-            type_name = _read_c_string(memory, type_name_address)
+            type_name = _read_exact(memory, type_name_address, 512)
             self._type_names[type_address] = type_name
-        return f"{type_name}.__init__"
+        return type_name
+
+
+def decode_frame_names(frame_names: CapturedFrameNames) -> dict[tuple[int, int], str]:
+    """Decode copied names after the target has resumed."""
+    decoded_type_names: dict[bytes, str] = {}
+    decoded_frame_names: dict[tuple[int, int], str] = {}
+    for thread_id, frame_index, raw_type_name in frame_names:
+        type_name = decoded_type_names.get(raw_type_name)
+        if type_name is None:
+            type_name = _decode_c_string(raw_type_name)
+            decoded_type_names[raw_type_name] = type_name
+        decoded_frame_names[(thread_id, frame_index)] = f"{type_name}.__init__"
+    return decoded_frame_names
 
 
 def _remote_thread(remote_thread: object) -> RemoteThread:
@@ -221,8 +252,7 @@ def _read_pointer(memory: _Readable, address: int) -> int:
     return int.from_bytes(_read_exact(memory, address, _POINTER_SIZE), "little")
 
 
-def _read_c_string(memory: _Readable, address: int) -> str:
-    value = _read_exact(memory, address, 512)
+def _decode_c_string(value: bytes) -> str:
     terminator = value.find(b"\0")
     if terminator < 0:
         raise ValueError("a remote type name exceeded 511 bytes")

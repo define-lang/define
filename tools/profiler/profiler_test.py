@@ -221,6 +221,10 @@ def test_observation_failure_kinds_are_stable():
         is schema.ObservationFailureKind.MALFORMED_OBSERVATION
     )
     assert (
+        observation_failure_kind(TypeError())
+        is schema.ObservationFailureKind.MALFORMED_OBSERVATION
+    )
+    assert (
         observation_failure_kind(OSError())
         is schema.ObservationFailureKind.OBSERVATION_SYSTEM_ERROR
     )

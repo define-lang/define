@@ -1,6 +1,8 @@
 import io
+import os
 import random
 import select
+import signal
 import subprocess
 import threading
 import types
@@ -147,7 +149,7 @@ def _qualified_remote_unwinder() -> remote_frame_names.QualifiedRemoteUnwinder:
     return resolver
 
 
-def test_remote_unwinder_qualifies_generated_dataclass_constructor():
+def test_remote_unwinder_copies_generated_dataclass_type_name():
     resolver = _qualified_remote_unwinder()
     remote_frame = types.SimpleNamespace(
         filename="<string>",
@@ -165,9 +167,54 @@ def test_remote_unwinder_qualifies_generated_dataclass_constructor():
         ),
         mock.patch.object(
             resolver,
-            "_dataclass_constructor_name",
+            "_dataclass_type_name",
             autospec=True,
-            return_value="Sampled.__init__",
+            return_value=b"Sampled\0" + bytes(504),
+        ),
+        mock.patch.object(
+            remote_frame_names,
+            "_remote_memory",
+            autospec=True,
+            return_value=io.BytesIO(),
+        ),
+    ):
+        frame_names = resolver._capture_frame_names(  # pyright: ignore[reportPrivateUsage]
+            [remote_thread]
+        )
+
+    assert frame_names == [(17, 0, b"Sampled\0" + bytes(504))]
+
+
+def test_remote_unwinder_copies_multiple_names_from_matching_thread():
+    resolver = _qualified_remote_unwinder()
+    ordinary_frame = types.SimpleNamespace(
+        filename="compiler.py",
+        funcname="compile",
+        lineno=3,
+    )
+    generated_frame = types.SimpleNamespace(
+        filename="<string>",
+        funcname="__create_fn__.<locals>.__init__",
+        lineno=4,
+    )
+    matching_thread = types.SimpleNamespace(
+        thread_id=17,
+        frame_info=[ordinary_frame, generated_frame, ordinary_frame, generated_frame],
+    )
+    ordinary_thread = types.SimpleNamespace(thread_id=18, frame_info=[ordinary_frame])
+
+    with (
+        mock.patch.object(
+            resolver,
+            "_thread_frames",
+            autospec=True,
+            return_value={17: 100},
+        ),
+        mock.patch.object(
+            resolver,
+            "_dataclass_type_name",
+            autospec=True,
+            side_effect=[b"First\0", b"Second\0"],
         ),
         mock.patch.object(
             remote_frame_names,
@@ -179,25 +226,83 @@ def test_remote_unwinder_qualifies_generated_dataclass_constructor():
             remote_frame_names,
             "_read_pointer",
             autospec=True,
-            return_value=0,
+            side_effect=[200, 300, 400],
         ),
     ):
-        threads = resolver._resolve_threads(  # pyright: ignore[reportPrivateUsage]
+        frame_names = resolver._capture_frame_names(  # pyright: ignore[reportPrivateUsage]
+            [matching_thread, ordinary_thread]
+        )
+
+    assert frame_names == [(17, 1, b"First\0"), (17, 3, b"Second\0")]
+
+
+def test_remote_unwinder_skips_remote_reads_without_generated_constructor():
+    resolver = _qualified_remote_unwinder()
+    remote_frame = types.SimpleNamespace(
+        filename="compiler.py",
+        funcname="compile",
+        lineno=4,
+    )
+    remote_thread = types.SimpleNamespace(thread_id=17, frame_info=[remote_frame])
+
+    with mock.patch.object(
+        remote_frame_names,
+        "_remote_memory",
+        autospec=True,
+    ) as remote_memory:
+        frame_names = resolver._capture_frame_names(  # pyright: ignore[reportPrivateUsage]
             [remote_thread]
         )
 
-    assert threads == [
-        remote_frame_names._ResolvedThread(  # pyright: ignore[reportPrivateUsage]
-            thread_id=17,
-            frame_info=[
-                remote_frame_names._ResolvedFrame(  # pyright: ignore[reportPrivateUsage]
-                    filename="<string>",
-                    funcname="Sampled.__init__",
-                    lineno=4,
-                )
-            ],
+    assert frame_names == []
+    remote_memory.assert_not_called()
+
+
+def test_remote_unwinder_reads_matching_interpreter_thread_frame():
+    resolver = _qualified_remote_unwinder()
+    resolver._runtime_address = 1_000  # pyright: ignore[reportPrivateUsage]
+    resolver._debug_offsets = remote_frame_names._DebugOffsets(  # pyright: ignore[reportPrivateUsage]
+        runtime_interpreters_head=0,
+        interpreter_next=8,
+        interpreter_threads_head=16,
+        thread_next=24,
+        thread_current_frame=32,
+        thread_native_id=40,
+        frame_previous=48,
+        frame_localsplus=56,
+        pyobject_type=64,
+        type_name=72,
+    )
+    memory = typing.cast(
+        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
+        io.BytesIO(),
+    )
+    pointers = {
+        1_000: 2_000,
+        2_016: 3_000,
+        3_040: 17,
+        3_032: 4_000,
+        3_024: 3_100,
+        3_140: 18,
+        3_124: 0,
+        2_008: 0,
+    }
+
+    def read_pointer(_memory: object, address: int) -> int:
+        return pointers[address]
+
+    with mock.patch.object(
+        remote_frame_names,
+        "_read_pointer",
+        autospec=True,
+        side_effect=read_pointer,
+    ):
+        frames = resolver._thread_frames(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            {17: [0]},
         )
-    ]
+
+    assert frames == {17: 4_000}
 
 
 def test_remote_unwinder_caches_dataclass_type_name():
@@ -216,42 +321,101 @@ def test_remote_unwinder_caches_dataclass_type_name():
         ),
         mock.patch.object(
             remote_frame_names,
-            "_read_c_string",
+            "_read_exact",
             autospec=True,
-            return_value="Sampled",
-        ) as read_c_string,
+            return_value=b"Sampled\0" + bytes(504),
+        ) as read_exact,
     ):
-        first_name = resolver._dataclass_constructor_name(  # pyright: ignore[reportPrivateUsage]
+        first_name = resolver._dataclass_type_name(  # pyright: ignore[reportPrivateUsage]
             memory,
             100,
         )
-        second_name = resolver._dataclass_constructor_name(  # pyright: ignore[reportPrivateUsage]
+        second_name = resolver._dataclass_type_name(  # pyright: ignore[reportPrivateUsage]
             memory,
             100,
         )
 
-    assert first_name == "Sampled.__init__"
-    assert second_name == "Sampled.__init__"
-    read_c_string.assert_called_once_with(memory, 300)
+    assert first_name == b"Sampled\0" + bytes(504)
+    assert second_name == b"Sampled\0" + bytes(504)
+    read_exact.assert_called_once_with(memory, 300, 512)
 
 
-def test_remote_unwinder_reads_null_terminated_type_name():
-    memory = typing.cast(
-        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
-        io.BytesIO(),
-    )
+def test_remote_unwinder_decodes_copied_type_name():
+    raw_type_name = b"Sampled\0" + bytes(504)
     with mock.patch.object(
         remote_frame_names,
-        "_read_exact",
+        "_decode_c_string",
         autospec=True,
-        return_value=b"Sampled\0" + bytes(504),
-    ):
-        type_name = remote_frame_names._read_c_string(  # pyright: ignore[reportPrivateUsage]
-            memory,
-            300,
+        return_value="Sampled",
+    ) as decode_c_string:
+        frame_names = remote_frame_names.decode_frame_names(
+            [(17, 0, raw_type_name), (18, 2, raw_type_name)]
         )
 
-    assert type_name == "Sampled"
+    assert frame_names == {
+        (17, 0): "Sampled.__init__",
+        (18, 2): "Sampled.__init__",
+    }
+    decode_c_string.assert_called_once_with(raw_type_name)
+
+
+def test_normalization_applies_copied_dataclass_type_name():
+    remote_frame = types.SimpleNamespace(
+        filename="<string>",
+        funcname="__create_fn__.<locals>.__init__",
+        lineno=4,
+    )
+    remote_thread = types.SimpleNamespace(thread_id=17, frame_info=[remote_frame])
+    raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
+        observation_index=0,
+        scheduled_interval_ns=10,
+        host_monotonic_ns=20,
+        target_running_ns=15,
+        pause_started_ns=20,
+        pause_ended_ns=25,
+        pause_duration_ns=5,
+        process_id=71,
+        evidence={17: profiler._ThreadEvidence(101, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+        stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+        remote_threads=typing.cast(
+            "list[profiler._RemoteThread]",  # pyright: ignore[reportPrivateUsage]
+            [remote_thread],
+        ),
+        frame_names=[(17, 0, b"Sampled\0" + bytes(504))],
+    )
+
+    result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
+
+    assert isinstance(
+        result,
+        profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
+    )
+    assert result.threads[0].stack[0].function == "Sampled.__init__"
+
+
+def test_normalization_retains_os_thread_without_python_stack():
+    raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
+        observation_index=0,
+        scheduled_interval_ns=10,
+        host_monotonic_ns=20,
+        target_running_ns=15,
+        pause_started_ns=20,
+        pause_ended_ns=25,
+        pause_duration_ns=5,
+        process_id=71,
+        evidence={17: profiler._ThreadEvidence(101, "R", "0", 0, 0)},  # pyright: ignore[reportPrivateUsage]
+        stopped_threads={17: profiler._StoppedThread(101, "t", None)},  # pyright: ignore[reportPrivateUsage]
+        remote_threads=[],
+        frame_names=[],
+    )
+
+    result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
+
+    assert isinstance(
+        result,
+        profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
+    )
+    assert result.threads[0].stack == []
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
@@ -378,7 +542,6 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
         is schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION
     )
     assert result.failure_reason == "the target exited before the scheduled stop"
-
     sample_state = _capture_state()
     sample_until_exit = profiler._sample_until_exit  # pyright: ignore[reportPrivateUsage]
     profile_path = tmp_path / "observations.jsonl"
@@ -428,6 +591,114 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
     }
     arm_schedule.assert_called_once_with(32, 0.25)
     assert profile_path.read_text(encoding="utf-8")
+
+
+# PRF-050: Minimal stopped section.
+def test_observation_prepares_unwinder_before_stopping_target():
+    timeline: list[str] = []
+    raw_unwinder = typing.cast(
+        "profiler._Unwinder",  # pyright: ignore[reportPrivateUsage]
+        typing.cast("object", types.SimpleNamespace()),
+    )
+    qualified_unwinder = typing.cast(
+        "profiler._Unwinder",  # pyright: ignore[reportPrivateUsage]
+        typing.cast("object", types.SimpleNamespace()),
+    )
+
+    def construct_unwinder(
+        _process_id: int,
+        *,
+        all_threads: bool,
+    ) -> profiler._Unwinder:  # pyright: ignore[reportPrivateUsage]
+        assert all_threads is True
+        timeline.append("construct-unwinder")
+        return raw_unwinder
+
+    def qualify_unwinder(
+        _process_id: int,
+        unwinder: object,
+    ) -> profiler._Unwinder:  # pyright: ignore[reportPrivateUsage]
+        assert unwinder is raw_unwinder
+        timeline.append("qualify-unwinder")
+        return qualified_unwinder
+
+    def read_evidence(
+        _process_id: int,
+    ) -> dict[int, profiler._ThreadEvidence]:  # pyright: ignore[reportPrivateUsage]
+        timeline.append("read-evidence")
+        return {}
+
+    def signal_target(_process_id: int, signal_number: int):
+        timeline.append(
+            "stop-target" if signal_number == signal.SIGSTOP else "resume-target"
+        )
+
+    def capture_stopped_threads(
+        _target_process: process_events.TargetProcess,
+        unwinder: profiler._Unwinder,  # pyright: ignore[reportPrivateUsage]
+        _mode: schema.CaptureMode,
+        _event_file_descriptor: int | None,
+    ) -> tuple[
+        dict[int, profiler._StoppedThread],  # pyright: ignore[reportPrivateUsage]
+        list[profiler._RemoteThread],  # pyright: ignore[reportPrivateUsage]
+        remote_frame_names.CapturedFrameNames,
+    ]:
+        assert unwinder is qualified_unwinder
+        timeline.append("capture-stopped")
+        return {}, [], []
+
+    with (
+        mock.patch.object(
+            profiler,
+            "_REMOTE_UNWINDER",
+            autospec=True,
+            side_effect=construct_unwinder,
+        ),
+        mock.patch.object(
+            remote_frame_names,
+            "QualifiedRemoteUnwinder",
+            autospec=True,
+            side_effect=qualify_unwinder,
+        ),
+        mock.patch.object(
+            profiler,
+            "_thread_evidence",
+            autospec=True,
+            side_effect=read_evidence,
+        ),
+        mock.patch.object(
+            os,
+            "kill",
+            autospec=True,
+            side_effect=signal_target,
+        ),
+        mock.patch.object(
+            profiler,
+            "_capture_stopped_threads",
+            autospec=True,
+            side_effect=capture_stopped_threads,
+        ),
+    ):
+        captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
+            _target_process(),
+            None,
+            observation_index=0,
+            scheduled_interval_ns=10,
+            launched_ns=0,
+            total_pause_ns=0,
+            mode="wall",
+            event_file_descriptor=None,
+        )
+
+    assert captured.unwinder is qualified_unwinder
+    assert timeline == [
+        "construct-unwinder",
+        "qualify-unwinder",
+        "read-evidence",
+        "stop-target",
+        "capture-stopped",
+        "resume-target",
+    ]
 
 
 def _missed_observation(
@@ -534,6 +805,7 @@ def test_normalization_discards_thread_identity_changes(
         evidence=evidence,
         stopped_threads=stopped_threads,
         remote_threads=remote_threads,
+        frame_names=[],
     )
 
     result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
