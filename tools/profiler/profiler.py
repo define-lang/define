@@ -25,7 +25,7 @@ from typing import Protocol, cast
 import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
 
-from tools.profiler import cpu_profiler, process_events, schema
+from tools.profiler import cpu_profiler, process_events, remote_frame_names, schema
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -532,9 +532,12 @@ def _capture_stopped_threads(
         # PRF-006: Complete-process stop. PRF-050: Minimal stopped section.
         # Unwinding before every thread has stopped can produce a torn snapshot.
         raise _TargetStopError("not every target thread reached a stopped state")
-    observation_unwinder = retained_unwinder or _REMOTE_UNWINDER(
-        target.pid,
-        all_threads=True,
+    observation_unwinder = (
+        retained_unwinder
+        or remote_frame_names.QualifiedRemoteUnwinder(
+            target.pid,
+            _REMOTE_UNWINDER(target.pid, all_threads=True),
+        )
     )
     remote_threads = cast(
         "list[_RemoteThread]",

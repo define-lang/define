@@ -16,6 +16,12 @@ the complete compiler process, capture every live Python thread, collect the
 corresponding external timing data, and resume the process. Profiling work must
 not run on every Python call, return, line, or opcode.
 
+While the process is already stopped, the profiler may enrich a generated
+dataclass constructor frame with the constructed object's type name through
+CPython's remote debug-offset table. This work is part of the same randomized
+snapshot and does not execute code in the compiler or create an additional
+observation point.
+
 Wall attribution is the primary result. CPU attribution is secondary. The raw
 profile will consist of independent timestamped samples, not synthesized open
 and close events. The analyzer will derive self attribution, cumulative

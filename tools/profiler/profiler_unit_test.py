@@ -11,7 +11,7 @@ from unittest import mock
 import click.testing
 import pytest
 
-from tools.profiler import process_events, profiler, schema
+from tools.profiler import process_events, profiler, remote_frame_names, schema
 
 
 class _Process:
@@ -124,6 +124,134 @@ def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
         diagnostics_status="none",
         interruption_signal=None,
     )
+
+
+def _qualified_remote_unwinder() -> remote_frame_names.QualifiedRemoteUnwinder:
+    resolver = remote_frame_names.QualifiedRemoteUnwinder.__new__(
+        remote_frame_names.QualifiedRemoteUnwinder
+    )
+    resolver._process_id = 71  # pyright: ignore[reportPrivateUsage]
+    resolver._debug_offsets = remote_frame_names._DebugOffsets(  # pyright: ignore[reportPrivateUsage]
+        runtime_interpreters_head=0,
+        interpreter_next=0,
+        interpreter_threads_head=0,
+        thread_next=0,
+        thread_current_frame=0,
+        thread_native_id=0,
+        frame_previous=8,
+        frame_localsplus=16,
+        pyobject_type=24,
+        type_name=32,
+    )
+    resolver._type_names = {}  # pyright: ignore[reportPrivateUsage]
+    return resolver
+
+
+def test_remote_unwinder_qualifies_generated_dataclass_constructor():
+    resolver = _qualified_remote_unwinder()
+    remote_frame = types.SimpleNamespace(
+        filename="<string>",
+        funcname="__create_fn__.<locals>.__init__",
+        lineno=4,
+    )
+    remote_thread = types.SimpleNamespace(thread_id=17, frame_info=[remote_frame])
+
+    with (
+        mock.patch.object(
+            resolver,
+            "_thread_frames",
+            autospec=True,
+            return_value={17: 100},
+        ),
+        mock.patch.object(
+            resolver,
+            "_dataclass_constructor_name",
+            autospec=True,
+            return_value="Sampled.__init__",
+        ),
+        mock.patch.object(
+            remote_frame_names,
+            "_remote_memory",
+            autospec=True,
+            return_value=io.BytesIO(),
+        ),
+        mock.patch.object(
+            remote_frame_names,
+            "_read_pointer",
+            autospec=True,
+            return_value=0,
+        ),
+    ):
+        threads = resolver._resolve_threads(  # pyright: ignore[reportPrivateUsage]
+            [remote_thread]
+        )
+
+    assert threads == [
+        remote_frame_names._ResolvedThread(  # pyright: ignore[reportPrivateUsage]
+            thread_id=17,
+            frame_info=[
+                remote_frame_names._ResolvedFrame(  # pyright: ignore[reportPrivateUsage]
+                    filename="<string>",
+                    funcname="Sampled.__init__",
+                    lineno=4,
+                )
+            ],
+        )
+    ]
+
+
+def test_remote_unwinder_caches_dataclass_type_name():
+    resolver = _qualified_remote_unwinder()
+    memory = typing.cast(
+        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
+        io.BytesIO(),
+    )
+
+    with (
+        mock.patch.object(
+            remote_frame_names,
+            "_read_pointer",
+            autospec=True,
+            side_effect=[101, 200, 300, 101, 200],
+        ),
+        mock.patch.object(
+            remote_frame_names,
+            "_read_c_string",
+            autospec=True,
+            return_value="Sampled",
+        ) as read_c_string,
+    ):
+        first_name = resolver._dataclass_constructor_name(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            100,
+        )
+        second_name = resolver._dataclass_constructor_name(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            100,
+        )
+
+    assert first_name == "Sampled.__init__"
+    assert second_name == "Sampled.__init__"
+    read_c_string.assert_called_once_with(memory, 300)
+
+
+def test_remote_unwinder_reads_null_terminated_type_name():
+    memory = typing.cast(
+        "remote_frame_names._Readable",  # pyright: ignore[reportPrivateUsage]
+        io.BytesIO(),
+    )
+    with mock.patch.object(
+        remote_frame_names,
+        "_read_exact",
+        autospec=True,
+        return_value=b"Sampled\0" + bytes(504),
+    ):
+        type_name = remote_frame_names._read_c_string(  # pyright: ignore[reportPrivateUsage]
+            memory,
+            300,
+        )
+
+    assert type_name == "Sampled"
 
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.

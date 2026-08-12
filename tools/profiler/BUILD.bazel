@@ -126,6 +126,7 @@ py_library(
     deps = [
         ":cpu_profiler",
         ":process_events",
+        ":remote_frame_names",
         ":schema",
         "@pypi//click",
     ],
@@ -205,6 +206,7 @@ py_test(
     deps = [
         ":process_events",
         ":profiler",
+        ":remote_frame_names",
         ":schema",
         "@pypi//click",
         "@pypi//pytest",
@@ -231,6 +233,13 @@ py_binary(
         "//tools/generators:generate_large_define_source",
         "@rules_python//python/runfiles",
     ],
+)
+
+# PRF-016: Source identity.
+py_library(
+    name = "remote_frame_names",
+    srcs = ["remote_frame_names.py"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # PRF-010: Raw-data preservation.
@@ -308,6 +317,7 @@ pyright_test(
         ":profiler_test",
         ":profiler_unit_test",
         ":regenerate_test_profiles",
+        ":remote_frame_names",
         ":schema",
         ":test_helpers",
         ":wall_analyzer",

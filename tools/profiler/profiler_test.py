@@ -41,6 +41,56 @@ def _sampled_functions(
     }
 
 
+def test_generated_dataclass_constructor_uses_class_name(tmp_path: Path):
+    profile_path = tmp_path / "dataclass-profile.jsonl"
+    target_source = """\
+import dataclasses
+import time
+
+Constructor = dataclasses.make_dataclass(
+    "Sampled",
+    [(f"field_{index}", int) for index in range(100)],
+)
+arguments = tuple(range(100))
+end = time.monotonic() + 0.2
+while time.monotonic() < end:
+    Constructor(*arguments)
+"""
+
+    result = subprocess.run(
+        [
+            str(test_helpers.runfile("PROFILER_BINARY")),
+            "--profile",
+            str(profile_path),
+            "--workload",
+            str(Path(__file__)),
+            "--working-directory",
+            str(tmp_path),
+            "--mean-interval-seconds",
+            "0.0005",
+            "--",
+            sys.executable,
+            "-c",
+            target_source,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    profile = schema.load(profile_path)
+    observations = [
+        observation
+        for observation in profile.observations
+        if observation["status"] == "successful"
+    ]
+    functions = _sampled_functions(profile, observations)
+    assert "Sampled.__init__" in functions
+    assert "__create_fn__.<locals>.__init__" not in functions
+
+
 # PRF-020: Machine and human interfaces. PRF-025: Failure threshold.
 # PRF-041: Realistic tests.
 def test_main_profiles_relative_target(
