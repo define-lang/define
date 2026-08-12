@@ -1,7 +1,7 @@
 # Compiler Profiler Architecture Decision and Requirements
 
 - Status: Accepted for implementation
-- Date: 2026-08-09
+- Date: 2026-08-12
 - Scope: `tools/profiler/`, `tools/run_profile.py`, `tools/analyze_profile.py`,
   and the `profile-compiler` skill
 
@@ -24,10 +24,11 @@ randomized snapshot and do not execute code in the compiler or create an
 additional observation point.
 
 Wall attribution is the primary result. CPU attribution is secondary. The raw
-profile will consist of independent timestamped samples, not synthesized open
-and close events. The analyzer will derive self attribution, cumulative
-attribution, caller and callee relationships, and sampled continuous spans from
-those samples.
+wall profile consists of independent timestamped samples, not synthesized open
+and close events. The analyzer derives self attribution, cumulative attribution,
+caller and callee relationships, and sampled continuous spans from those
+samples. CPU capture retains perf's native data instead of defining another
+sample format.
 
 Cross-thread causality uses a complementary, non-weight-bearing event stream. On
 Linux, the profiler attaches perf scheduler tracepoints to the target and its
@@ -59,12 +60,14 @@ analyzer will calculate ordinary self and cumulative attribution from those
 stacks. Compiler phases can be understood from their functions, callers,
 callees, filenames, and source entry points.
 
-The first CPU implementation will evaluate external per-thread scheduler runtime
-paired with sampled Python stacks. If that mechanism cannot pass the CPU
-accuracy requirements, CPU capture will use Linux perf with CPython's Python
-frame support. For CPU profiling, accurate attribution takes precedence over the
-smaller call-correlated cost introduced by CPython's perf stack trampolines. The
-wall profiler must remain free of call-correlated target-side work.
+CPU capture uses Linux perf's `cpu-clock` sampling with DWARF call graphs and
+CPython's JIT perf support. The profiler enables `PYTHON_PERF_JIT_SUPPORT`, runs
+the complete compiler command under perf, and immediately runs
+`perf inject --jit` while CPython's JIT dump is still available. The resulting
+native `perf.data` remains directly usable by standard perf commands. Accurate
+on-CPU attribution takes precedence over the smaller call-correlated cost
+introduced by CPython's perf stack trampolines. The wall profiler remains free
+of call-correlated target-side work.
 
 When Define moves to Python 3.15t, evaluate replacing the custom collector with
 the standard-library `profiling.sampling` profiler, also known as Tachyon. It
@@ -209,18 +212,28 @@ call frequency. See [Pyinstrument's description of its mechanism][pyinstrument].
 ### Linux perf with CPython frame trampolines
 
 Linux perf recorded the compiler without lost kernel samples, and direct use of
-the generated Python environment with `-X perf` exposed Python frame names.
-CPython's perf support makes Python frames visible through stack trampolines
-interposed on Python calls. That cost is much smaller than `cProfile`, but it is
-still correlated with call frequency.
+the generated Python environment with `-X perf_jit` exposed durable Python frame
+names after `perf inject --jit`. CPython's perf support makes Python frames
+visible through stack trampolines interposed on Python calls. That cost is much
+smaller than `cProfile`, but it is still correlated with call frequency.
 
-Perf is accepted as the CPU fallback because an inaccurate CPU profile is worse
-than the smaller, measurable trampoline bias. If external scheduler-runtime
-correlation cannot pass the CPU accuracy fixtures, the profiler entry point will
-run perf against the generated Python environment with `-X perf`, and the
-analyzer will derive Python self and cumulative CPU attribution from its sampled
-call chains. Perf will not replace the blocking wall sampler. See the [CPython
-perf documentation][perf].
+Perf is the selected CPU backend because it samples threads only while they are
+actually on a CPU. It therefore does not assign a blocked interval to whichever
+Python stack happened to appear at an observation boundary. The analyzer derives
+Python self, cumulative, caller, and callee attribution from the sampled call
+chains and uses each perf period as its statistical weight. Perf does not
+replace the blocking wall sampler. See the [CPython perf documentation][perf].
+
+### Scheduler-runtime deltas paired with stack endpoints
+
+The earlier CPU design paired `/proc/<pid>/task/<tid>/schedstat` deltas with two
+externally sampled Python stacks and divided each delta between those endpoints.
+It was rejected. The CPU may have been consumed anywhere between the endpoints,
+so a stack observed while a worker was blocked could receive substantial CPU
+time. In the compiler workload this made `concurrent.futures.thread._worker`
+appear to be a major CPU hotspot even though much of the observation evidence
+showed it waiting for work. No scheduler-runtime capture fields, endpoint
+attribution, compatibility schema, or analyzer path are retained.
 
 ### Austin
 
@@ -340,34 +353,29 @@ exit.
 
 ### CPU attribution
 
-CPU mode must remain statistical. The initial implementation will pair each
-thread's sampled Python stack with cumulative kernel scheduler runtime from
-`/proc/<pid>/task/<tid>/schedstat`. CPU deltas between samples provide the
-weight available for attribution to the endpoint stacks.
+CPU mode is statistical and uses Linux perf exclusively. `perf record` samples
+the `cpu-clock` event for the complete compiler process and inherited threads at
+a recorded frequency. DWARF call graphs retain native and Python frames; CPython
+JIT symbols provide Python filename and function identity. Perf's native data
+retains each sample's period, process and OS thread identifiers, timestamp, and
+complete leaf-first call chain.
 
-Because a thread can change stacks between endpoints, this is an estimate. The
-collector will use short randomized intervals, retain both endpoint stacks, and
-record enough raw data to change the attribution policy without recapturing the
-profile. Intervals with missing endpoints or retired short-lived threads must be
-reported, not silently assigned to another stack.
+The innermost resolved Python frame receives self attribution. Every resolved
+Python frame receives cumulative attribution, and adjacent resolved Python
+frames provide caller and callee relationships. Samples without a Python frame
+remain in total sampled CPU and are reported as unattributed. A waiting thread
+receives no samples merely for being blocked, and short-lived Python work can be
+sampled directly rather than inferred from two surrounding observations.
 
-The CPU design is accepted only after passing the transition, short-function,
-waiting-thread, and call-frequency bias tests below. If it cannot pass them, the
-CPU backend will invoke Linux perf with CPython Python-frame support. Perf's
-sampled Python call chains must give the analyzer the same self, cumulative,
-caller, and callee information as the external-counter design. The selected CPU
-backend and whether CPython stack trampolines were enabled must be recorded in
-the profile and displayed in the report.
-
-CPU backend selection must not weaken wall profiling. Wall capture continues to
-use blocking external snapshots even if CPU capture uses perf.
+Perf CPU capture does not weaken wall profiling. Wall capture continues to use
+blocking external snapshots and does not enable CPython perf stack trampolines.
 
 ### Raw profile format
 
 The raw format is the source of truth. Human-readable tables and visualizations
 are derived products.
 
-The format must contain:
+The wall format must contain:
 
 - a schema version;
 - the exact command and working directory;
@@ -379,11 +387,18 @@ The format must contain:
 - process and OS thread identifiers;
 - per-thread pre-stop execution state and thread-lifetime identity;
 - complete ordered Python stacks with filename, function name, and line number;
-- per-thread cumulative CPU runtime when collected;
 - timestamped scheduler wake events, their backend, and lost-event count;
-- CPU backend identity when applicable;
 - explicit failed-observation records and reasons;
 - compiler exit status and diagnostics status.
+
+CPU samples and call chains remain in perf's native `perf.data` format. Define
+does not duplicate them in a custom schema. A small JSON sidecar contains only
+facts perf does not know: the exact command, working directory, workload path
+and digest, capture bounds, and compiler exit status. Target and `perf inject`
+diagnostics are retained as raw sidecars rather than incorporated into a CPU
+wire format. Event and frequency come from perf's native event attributes. JIT
+ELF objects hit by the profile are retained in perf's own build-ID cache layout
+beside the data; the analyzer supplies that cache to `perf script`.
 
 Observed interval statistics, pause durations, thread first- and last-seen
 observations, handoff evidence, observation counts, completeness, and success
@@ -393,9 +408,11 @@ Under PRF-024, machine-readable observation and capture failure kinds are
 closed, versioned string enums. Exception class names and messages are evidence
 in the human-readable failure reason, not ad hoc failure codes.
 
-The collector must write incrementally so an interrupted or failed compiler can
-still leave diagnosable evidence. The absence of a final summary record marks a
-partial file incomplete.
+The wall collector writes incrementally so an interrupted or failed compiler can
+still leave diagnosable evidence. A perf CPU capture injects CPython's JIT dump
+into native `perf.data` immediately after the compiler exits. A wall profile
+without a final summary is incomplete; CPU analysis requires both the complete
+native data and its Define metadata sidecar.
 
 ### Analyzer
 
@@ -424,10 +441,11 @@ thread time, and unioned function occupancy. A transition that the recorded
 evidence cannot resolve must appear as an uncertain gap rather than as an
 invented dependency.
 
-CPU reports will provide self and cumulative attributed CPU estimates. CPU time
-can exceed wall time when several workers execute concurrently. Reports must
-show how much CPU runtime could not be attributed because of missing or
-ambiguous samples.
+CPU reports provide self and cumulative attributed CPU estimates, caller and
+callee relationships, and per-thread sampled CPU. CPU time can exceed wall time
+when several workers execute concurrently. Reports show how much sampled CPU had
+no resolved Python frame. Every function percentage uses all sampled CPU as its
+denominator, including filtered functions, Lark, and native-only samples.
 
 Every report will include sample counts, sampling intervals, discarded-sample
 rate, profiler-pause totals, thread counts, and confidence or resolution
@@ -468,8 +486,8 @@ checkpoint.
 1. **PRF-001: No call-correlated wall profiling work.** The wall profiler must
    not install call, return, line, instruction, or opcode hooks. It must not use
    a mechanism whose target-side cost is proportional to Python call count. CPU
-   profiling may use CPython perf stack trampolines only after the external CPU
-   design fails its accuracy requirements.
+   profiling uses CPython perf stack trampolines and must disclose their
+   measured call-frequency bias.
 2. **PRF-002: Independent sampling schedule.** Sample timing must be chosen
    without inspecting the current function. The default schedule must include
    jitter.
@@ -507,15 +525,16 @@ checkpoint.
    points. It must not contain profiler implementation logic.
 3. **PRF-013: Wall mode.** Wall mode captures active and waiting Python stacks
    across all compiler threads.
-4. **PRF-014: CPU mode.** CPU mode first attempts externally measured per-thread
-   CPU attribution. If that design fails the CPU accuracy fixtures, it uses
-   Linux perf with CPython Python-frame support. Reports identify the selected
-   backend, show self and cumulative CPU attribution, and report unattributed
-   runtime when applicable.
+4. **PRF-014: CPU mode.** CPU mode uses Linux perf `cpu-clock` samples with
+   CPython Python-frame support. Reports identify perf and its configuration,
+   show self, cumulative, caller, callee, and per-thread CPU attribution, and
+   report sampled CPU without a resolved Python frame.
 5. **PRF-015: Full stacks.** Every retained thread sample contains the complete
    available Python caller-to-leaf stack.
-6. **PRF-016: Source identity.** Frames include full filename, function name,
-   and current source line.
+6. **PRF-016: Source identity.** Wall frames include full filename, function
+   name, and current source line. CPU Python frames include the filename and
+   function identity exposed by CPython's perf JIT data; native frames retain
+   their symbol, instruction pointer, and shared-object identity.
 7. **PRF-017: No compiler instrumentation.** Profiling requires no compiler
    phase markers, decorators, context managers, callbacks, or other source
    instrumentation. Self and cumulative attribution come from sampled stacks.
@@ -546,8 +565,10 @@ checkpoint.
 6. **PRF-026: No silent partial success.** A capture with compiler diagnostics,
    a nonzero compiler exit, an incomplete raw profile, or a failure rate above
    the threshold is not a successful profile.
-7. **PRF-027: Incremental persistence.** A crash or interruption preserves all
-   complete preceding records and clearly marks the profile incomplete.
+7. **PRF-027: Incremental persistence.** A wall-capture crash or interruption
+   preserves all complete preceding records and clearly marks the profile
+   incomplete. CPU capture converts perf's native artifact immediately after
+   target completion.
 8. **PRF-028: Bounded storage.** The collector interns or otherwise deduplicates
    repeated frame data. Storage growth must be feasible for the largest
    generated workloads.
@@ -599,13 +620,14 @@ checkpoint.
 6. **PRF-034: Parallel-CPU fixture.** Two CPU-bound workers produce CPU
    attribution that can approach twice wall time without collapsing both workers
    into one timeline.
-7. **PRF-035: Short-function fixture.** Repeated short-lived leaf functions are
-   not systematically reassigned to a long-lived caller by the CPU endpoint
-   policy. If the configured interval cannot resolve them, the report exposes
-   that resolution limit.
+7. **PRF-035: Short-function fixture.** Repeated short-lived leaf functions
+   receive direct perf samples consistent with their CPU share. If the
+   configured frequency cannot resolve them, the report exposes that resolution
+   limit.
 8. **PRF-036: Rate convergence.** Attribution distributions from at least three
-   meaningfully different mean sampling rates converge within their statistical
-   confidence bounds on deterministic fixtures.
+   meaningfully different wall mean intervals or perf sampling frequencies
+   converge within their statistical confidence bounds on deterministic
+   fixtures.
 9. **PRF-037: Repeated compiler captures.** Five captures of one retained
    generated source preserve the same major-function self and cumulative
    ranking. Any change beyond statistical confidence must be explained by
@@ -680,8 +702,9 @@ checkpoint.
 
 ### Benefits
 
-- Wall profiling cost is independent of Python call frequency. The preferred CPU
-  backend has the same property.
+- Wall profiling cost is independent of Python call frequency. CPU profiling
+  samples actual on-CPU work and separately measures the smaller
+  call-frequency-correlated trampoline bias.
 - Worker lifecycle is explicit in each sample rather than inferred from open
   trace events.
 - The profiler can favor attribution correctness over elapsed-runtime fidelity.
@@ -698,9 +721,9 @@ checkpoint.
   material profile-shape changes.
 - Statistical sampling cannot provide exact call counts or exact function
   boundaries shorter than the sampling interval.
-- CPU attribution from scheduler-runtime deltas needs stronger validation than
-  wall attribution. If it cannot meet the accuracy requirements, maintaining a
-  separate perf CPU backend adds implementation and analysis complexity.
+- Perf requires Linux perf-event access and a CPython build with perf JIT
+  support. `perf inject --jit` must run while CPython's JIT dump remains
+  available.
 - The initial implementation is Linux-specific because it depends on process
   signals, `/proc`, and Linux thread identifiers.
 - Direct scheduler wake evidence requires permission to read scheduler
@@ -821,21 +844,16 @@ protocol, then the user reviews and commits.
 
 ### Increment 4: Accurate CPU vertical slice
 
-1. Evaluate per-thread scheduler-runtime deltas paired with externally captured
-   stacks using the real CPU accuracy workloads and the public analyzer.
-2. If the external design passes every accuracy requirement, make it the CPU
-   implementation. If it does not, delete the attempted production code and make
-   the profiler entry point run the generated Python environment under Linux
-   perf with `-X perf`.
-3. Do not retain both implementations as a runtime fallback. The checkpoint has
-   one CPU capture design that passed the requirements and no rejected or
-   unreachable alternative.
-4. Extend the analyzer to consume the selected CPU artifact and calculate Python
-   self, cumulative, caller, and callee attribution.
-5. Exercise short leaf work, high call frequency, blocking waits, parallel CPU
+1. Run the complete generated Python environment under Linux perf with CPython
+   perf JIT support and retain weighted call chains in native `perf.data`.
+2. Retain no scheduler-runtime endpoint collector, schema, analyzer, fixture, or
+   runtime fallback.
+3. Extend the analyzer to consume native perf data and calculate Python self,
+   cumulative, caller, and callee attribution.
+4. Exercise short leaf work, high call frequency, blocking waits, parallel CPU
    work, concurrency, multiple randomized rates, and repeated captures using
    real target processes.
-6. Capture and analyze a CPU profile of one generated compiler source through
+5. Capture and analyze a CPU profile of one generated compiler source through
    the public workflow.
 
 **Checkpoint 4:** Review the selected backend's accuracy evidence and a useful

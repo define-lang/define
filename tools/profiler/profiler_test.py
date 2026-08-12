@@ -163,9 +163,8 @@ def test_main_profiles_relative_target(
         profile_stdout
     )
     assert "discarded rate" in profile_stdout
-    analysis = analyzer.analyze(profile)
-    assert isinstance(analysis, wall_analyzer.Analysis)
-    analyzer.emit_report(profile, analysis, 1)
+    analysis = wall_analyzer.analyze(profile)
+    wall_analyzer.emit_report(profile, analysis, 1)
     report = capsys.readouterr().out
     if profile.observation_counts["missed"]:
         final_observation = profile.observations[-1]
@@ -355,11 +354,6 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     assert (
         len({observation["scheduled_interval_ns"] for observation in observations}) > 1
     )
-    assert all(
-        "scheduler_runtime_ns" not in thread
-        for observation in observations
-        for thread in observation["threads"]
-    )
     assert any(
         thread["stack"]
         for observation in observations
@@ -376,9 +370,6 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
         for observation in observations
         for thread in observation["threads"]
     )
-    analysis = analyzer.analyze(profile)
-    assert isinstance(analysis, wall_analyzer.Analysis)
-
     profile_lines = profile_path.read_text(encoding="utf-8").splitlines()
     assert f'"process_id":{profile.process_id}' in profile_lines[0]
     assert '"record_type":"summary"' in profile_lines[-1]
@@ -425,8 +416,7 @@ def test_continuous_profile_bounds_retired_thread_attribution():
         "_low_call_frequency",
     } <= sampled_functions
 
-    analysis = analyzer.analyze(profile)
-    assert isinstance(analysis, wall_analyzer.Analysis)
+    analysis = wall_analyzer.analyze(profile)
     cumulative_by_function = {
         row.identity.function: row for row in analysis.cumulative_function_rows
     }
@@ -464,8 +454,7 @@ def test_wall_critical_path_recovers_cross_thread_handoffs(
     profile = schema.load(profile_path)
     assert profile.complete is True
     assert profile.success is True
-    analysis = analyzer.analyze(profile)
-    assert isinstance(analysis, wall_analyzer.Analysis)
+    analysis = wall_analyzer.analyze(profile)
     critical_path = analysis.critical_path
     python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
     process_exited_ns = profile.lifecycle["exited_target_running_ns"]
@@ -523,7 +512,7 @@ def test_wall_critical_path_recovers_cross_thread_handoffs(
         and segment.dependent_wait is not None
         for segment in critical_path.segments
     )
-    analyzer.emit_report(profile, analysis, len(critical_path.segments) + 1)
+    wall_analyzer.emit_report(profile, analysis, len(critical_path.segments) + 1)
     detailed_report = capsys.readouterr().out
     assert "parallel off-path Thread" in detailed_report
     assert "dependent wait: Thread" in detailed_report
@@ -565,8 +554,7 @@ def test_wall_critical_path_reports_unobserved_handoff(
 
     assert profile.complete is True
     assert profile.success is True
-    analysis = analyzer.analyze(profile)
-    assert isinstance(analysis, wall_analyzer.Analysis)
+    analysis = wall_analyzer.analyze(profile)
     assert len(analysis.critical_path.handoffs) == 1
     handoff = analysis.critical_path.handoffs[0]
     assert isinstance(handoff, wall_critical_path.UnresolvedHandoff)
@@ -585,7 +573,9 @@ def test_wall_critical_path_reports_unobserved_handoff(
     assert sum(
         segment.interval.duration_ns for segment in analysis.critical_path.segments
     ) == (process_exited_ns - python_started_ns)
-    analyzer.emit_report(profile, analysis, len(analysis.critical_path.segments) + 1)
+    wall_analyzer.emit_report(
+        profile, analysis, len(analysis.critical_path.segments) + 1
+    )
     direct_report = capsys.readouterr().out
     assert "unobserved: wake of Thread" in direct_report
     assert "candidate producers: none observed" in direct_report
@@ -614,9 +604,8 @@ def test_real_profile_reports_ambiguous_new_worker_handoff():
         test_helpers.runfile("PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE")
     )
 
-    analysis = analyzer.analyze(profile)
+    analysis = wall_analyzer.analyze(profile)
 
-    assert isinstance(analysis, wall_analyzer.Analysis)
     ambiguous_handoffs = [
         handoff
         for handoff in analysis.critical_path.handoffs
@@ -648,9 +637,8 @@ def test_real_profile_reports_worker_waiting_from_first_observation():
         test_helpers.runfile("PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE")
     )
 
-    analysis = analyzer.analyze(profile)
+    analysis = wall_analyzer.analyze(profile)
 
-    assert isinstance(analysis, wall_analyzer.Analysis)
     assert len(analysis.critical_path.handoffs) == 2
     initial_handoff, completion_handoff = analysis.critical_path.handoffs
     assert isinstance(initial_handoff, wall_critical_path.ResolvedHandoff)
@@ -822,7 +810,7 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
     assert not Path(f"/proc/{profile.process_id}").exists()
 
 
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
+# PRF-010: Raw-data preservation.
 # PRF-024: Explicit failures. PRF-026: No silent partial success.
 # PRF-041: Realistic tests.
 def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
@@ -835,7 +823,6 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
         test_helpers.profile_command(
             profile_path,
             "PROFILER_FAILURE_SOURCE",
-            mode="cpu",
             mean_interval_seconds=0.001,
             event_file_descriptor=event_write_file_descriptor,
             target_arguments=(str(exit_gate),),
@@ -999,7 +986,7 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     assert not Path(f"/proc/{process_id}").exists()
 
 
-# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
+# PRF-020: Machine and human interfaces.
 # PRF-022: Launcher safety. PRF-024: Explicit failures.
 # PRF-026: No silent partial success. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
@@ -1016,7 +1003,6 @@ def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
         mean_interval_seconds=0.01,
         random_seed=17,
         attachment_timeout_seconds=0.05,
-        mode="cpu",
     )
 
     assert profile.success is False
@@ -1063,7 +1049,6 @@ def test_non_python_target_exit_before_attachment_is_recorded(tmp_path: Path):
             mean_interval_seconds=0.01,
             random_seed=19,
             attachment_timeout_seconds=1.0,
-            mode="wall",
             event_file_descriptor=event_write_file_descriptor,
         )
         assert os.get_blocking(event_write_file_descriptor) is False

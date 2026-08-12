@@ -1,50 +1,12 @@
-"""Public dispatch for wall and CPU profile analysis."""
+"""Public dispatch for wall and perf CPU profile analysis."""
 
 from __future__ import annotations
 
 import pathlib
-from typing import cast
 
 import click
 
-from tools.profiler import (
-    analyzer_model,
-    cpu_analyzer,
-    schema,
-    wall_analyzer,
-)
-
-
-def analyze(
-    profile: schema.RawProfile,
-    filters: analyzer_model.AnalysisFilters = analyzer_model.DEFAULT_FILTERS,
-) -> wall_analyzer.Analysis | cpu_analyzer.Analysis:
-    """Derive attribution using the capture mode recorded in the profile."""
-    # PRF-013: Wall mode. PRF-014: CPU mode.
-    if profile.sampling["mode"] == "cpu":
-        return cpu_analyzer.analyze(profile, filters)
-    return wall_analyzer.analyze(profile, filters)
-
-
-def emit_report(
-    profile: schema.RawProfile,
-    analysis: wall_analyzer.Analysis | cpu_analyzer.Analysis,
-    limit: int,
-):
-    """Emit the report matching the profile's recorded capture mode."""
-    # PRF-014: CPU mode. PRF-020: Machine and human interfaces.
-    if profile.sampling["mode"] == "cpu":
-        cpu_analyzer.emit_report(
-            profile,
-            cast("cpu_analyzer.Analysis", analysis),
-            limit,
-        )
-        return
-    wall_analyzer.emit_report(
-        profile,
-        cast("wall_analyzer.Analysis", analysis),
-        limit,
-    )
+from tools.profiler import analyzer_model, perf_analyzer, schema, wall_analyzer
 
 
 # PRF-014: CPU mode. PRF-020: Machine and human interfaces.
@@ -55,9 +17,9 @@ def emit_report(
         "wait is blocking on that chain; uncertain is time whose producer or "
         "stack was not resolved. Occupancy unions sampled intervals and rows "
         "overlap; span is the longest continuous sampled interval. CPU rows "
-        "report additive external scheduler runtime. Filters affect attribution "
+        "report weighted Linux perf samples. Filters affect attribution "
         "rows while lifecycle totals and critical-path context remain global. "
-        "Sample hits and endpoints are observations, not calls."
+        "Sample hits are observations, not calls."
     )
 )
 @click.option(
@@ -71,7 +33,7 @@ def emit_report(
         readable=True,
     ),
     required=True,
-    help="Raw JSON-record profile produced by //tools/profiler:__main__.",
+    help="Raw wall JSON records or native perf data from //tools/profiler:__main__.",
 )
 @click.option(
     "--thread",
@@ -122,10 +84,6 @@ def main(
 ):
     """Analyze one continuous raw wall or CPU profile."""
     # PRF-018: Focused analysis. PRF-043: Analyzer at every checkpoint.
-    try:
-        profile = schema.load(profile_path)
-    except ValueError as error:
-        raise click.ClickException(str(error)) from error
     filters = analyzer_model.AnalysisFilters(
         thread_ids=frozenset(thread_ids),
         filename=filename,
@@ -134,5 +92,14 @@ def main(
         callee=callee,
         compiler_only=compiler_only,
     )
-    report = analyze(profile, filters)
-    emit_report(profile, report, limit)
+    try:
+        if perf_analyzer.is_perf_data(profile_path):
+            perf_profile = perf_analyzer.load(profile_path)
+            perf_report = perf_analyzer.analyze(perf_profile, filters)
+            perf_analyzer.emit_report(perf_profile, perf_report, limit)
+            return
+        profile = schema.load(profile_path)
+    except (ValueError, perf_analyzer.PerfAnalysisError) as error:
+        raise click.ClickException(str(error)) from error
+    report = wall_analyzer.analyze(profile, filters)
+    wall_analyzer.emit_report(profile, report, limit)

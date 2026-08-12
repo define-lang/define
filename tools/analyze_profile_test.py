@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 import click.testing
 import pytest
@@ -40,9 +41,7 @@ def _analyze_wall(
     filters: analyzer_model.AnalysisFilters = analyzer_model.DEFAULT_FILTERS,
 ) -> wall_analyzer.Analysis:
     # PRF-013: Wall mode.
-    analysis = analyzer.analyze(profile, filters)
-    assert isinstance(analysis, wall_analyzer.Analysis)
-    return analysis
+    return wall_analyzer.analyze(profile, filters)
 
 
 def _controlled_profile() -> schema.RawProfile:
@@ -596,6 +595,25 @@ def test_rejects_superseded_schema(tmp_path: Path):
     assert "Error: unsupported profiler schema version: 3" in result.output
 
 
+def test_rejects_superseded_cpu_format(tmp_path: Path):
+    profile_path = tmp_path / "profile.jsonl"
+    records = _wire_records(_controlled_profile())
+    header = cast("schema.HeaderRecord", records[0])
+    header["sampling"] = cast(
+        "schema.WallSamplingConfiguration",
+        cast("object", {**header["sampling"], "mode": "cpu"}),
+    )
+    _write_records(profile_path, records)
+
+    result = click.testing.CliRunner().invoke(
+        analyzer.main,
+        ["--profile", str(profile_path)],
+    )
+
+    assert result.exit_code == 1
+    assert "Error: unsupported wall profile mode: cpu" in result.output
+
+
 # PRF-014: CPU mode. PRF-018: Focused analysis.
 # PRF-020: Machine and human interfaces.
 # PRF-047: Multi-threaded critical path.
@@ -615,6 +633,6 @@ def test_help_describes_filters_and_attribution_semantics():
     assert "Wall work is sampled running time" in help_text
     assert "uncertain is time whose producer or stack was not resolved" in help_text
     assert "Occupancy unions sampled intervals and rows overlap" in help_text
-    assert "CPU rows report additive external scheduler runtime" in help_text
+    assert "CPU rows report weighted Linux perf samples" in help_text
     assert "Filters affect attribution rows" in help_text
-    assert "Sample hits and endpoints are observations, not calls" in help_text
+    assert "Sample hits are observations, not calls" in help_text

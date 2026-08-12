@@ -25,7 +25,7 @@ import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
 
 from tools.profiler import (
-    cpu_profiler,
+    perf_profiler,
     process_events,
     remote_frame_names,
     scheduler_events,
@@ -183,16 +183,14 @@ class _RawStoppedThread:
     # PRF-050: Minimal stopped section.
     os_thread_id: str
     stat: bytes
-    schedstat: bytes | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _CapturedThread:
-    # PRF-010: Raw-data preservation. PRF-014: CPU mode.
+    # PRF-010: Raw-data preservation.
     os_thread_id: int
     evidence: _ThreadEvidence
     stack: list[schema.Frame]
-    scheduler_runtime_ns: int | None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -251,10 +249,9 @@ class _AttachedRuntime:
 @dataclasses.dataclass(slots=True)
 class _CaptureState:
     # PRF-003: Pause exclusion. PRF-005: Lifecycle-bounded attribution.
-    # PRF-014: CPU mode. PRF-024: Explicit failures.
+    # PRF-024: Explicit failures.
     # PRF-027: Incremental persistence.
     random_generator: random.Random
-    mode: schema.CaptureMode
     python_attached: bool = False
     retained_unwinder: _Unwinder | None = None
     total_pause_ns: int = 0
@@ -284,7 +281,7 @@ class _ProfileWriter:
             return ([{"record_type": "observation", "observation": result}], result)
 
         frame_records: list[schema.ProfileRecord] = []
-        threads: list[schema.SampledThreadObservation] = []
+        threads: list[schema.ThreadObservation] = []
         for captured_thread in result.threads:
             stack: list[int] = []
             for captured_frame in captured_thread.stack:
@@ -311,15 +308,7 @@ class _ProfileWriter:
                 "pre_stop_state": captured_thread.evidence.state,
                 "stack": stack,
             }
-            if captured_thread.scheduler_runtime_ns is not None:
-                # PRF-010: Raw-data preservation. PRF-014: CPU mode.
-                cpu_thread_observation: schema.CpuThreadObservation = {
-                    **thread_observation,
-                    "scheduler_runtime_ns": captured_thread.scheduler_runtime_ns,
-                }
-                threads.append(cpu_thread_observation)
-            else:
-                threads.append(thread_observation)
+            threads.append(thread_observation)
         successful: schema.SuccessfulObservation = {
             **result.timing,
             "status": "successful",
@@ -430,10 +419,9 @@ def _thread_evidence(process_id: int) -> dict[int, _ThreadEvidence]:
 
 def _capture_raw_stopped_threads(
     process_id: int,
-    mode: schema.CaptureMode,
 ) -> list[_RawStoppedThread]:
     # PRF-005: Lifecycle-bounded attribution. PRF-006: Complete-process stop.
-    # PRF-014: CPU mode. PRF-050: Minimal stopped section.
+    # PRF-050: Minimal stopped section.
     stopped_threads: list[_RawStoppedThread] = []
     for thread_directory in pathlib.Path(f"/proc/{process_id}/task").iterdir():
         stat = (thread_directory / "stat").read_bytes()
@@ -444,11 +432,6 @@ def _capture_raw_stopped_threads(
             _RawStoppedThread(
                 os_thread_id=thread_directory.name,
                 stat=stat,
-                schedstat=(
-                    cpu_profiler.capture_scheduler_runtime(thread_directory)
-                    if mode == "cpu"
-                    else None
-                ),
             )
         )
     return stopped_threads
@@ -457,7 +440,6 @@ def _capture_raw_stopped_threads(
 def _capture_stopped_threads(
     target_process: process_events.TargetProcess,
     observation_unwinder: _Unwinder,
-    mode: schema.CaptureMode,
     event_file_descriptor: int | None,
 ) -> tuple[
     list[_RawStoppedThread],
@@ -478,7 +460,7 @@ def _capture_stopped_threads(
     if waited_process_id != target.pid or not os.WIFSTOPPED(wait_status):
         raise _TargetStopError("target exited while the profiler was stopping it")
     _emit_profiler_event(event_file_descriptor, "target-stopped")
-    stopped_threads = _capture_raw_stopped_threads(target.pid, mode)
+    stopped_threads = _capture_raw_stopped_threads(target.pid)
     captured_stack_trace = observation_unwinder.get_stack_trace()
     return (
         stopped_threads,
@@ -530,11 +512,6 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
             )
         try:
             _, stopped_start_time_ticks = _decode_thread_stat(stopped_thread.stat)
-            scheduler_runtime_ns = (
-                cpu_profiler.decode_scheduler_runtime(stopped_thread.schedstat)
-                if stopped_thread.schedstat is not None
-                else None
-            )
         except (UnicodeDecodeError, ValueError) as error:
             return _failed_observation_from_raw(raw_observation, error)
         if thread_evidence.start_time_ticks != stopped_start_time_ticks:
@@ -564,7 +541,6 @@ def _normalize_observation(raw_observation: _RawObservation) -> _ObservationResu
                 os_thread_id=thread_id,
                 evidence=thread_evidence,
                 stack=stack,
-                scheduler_runtime_ns=scheduler_runtime_ns,
             )
         )
     return _SuccessfulObservationResult(
@@ -629,7 +605,6 @@ def _capture_observation(
     scheduled_interval_ns: int,
     launched_ns: int,
     total_pause_ns: int,
-    mode: schema.CaptureMode,
     event_file_descriptor: int | None,
 ) -> _ObservationCapture:
     # PRF-003: Pause exclusion. PRF-006: Complete-process stop.
@@ -692,7 +667,6 @@ def _capture_observation(
         stopped_threads, remote_threads, frame_names = _capture_stopped_threads(
             target_process,
             observation_unwinder,
-            mode,
             event_file_descriptor,
         )
     except _CaptureInterrupted as error:
@@ -830,7 +804,7 @@ def _launch_target(
     command: tuple[str, ...],
     working_directory: pathlib.Path,
     workload_path: pathlib.Path,
-    sampling: schema.SamplingConfiguration,
+    sampling: schema.WallSamplingConfiguration,
     diagnostics_file: typing.TextIO,
     writer: _ProfileWriter,
 ) -> tuple[process_events.TargetProcess, int]:
@@ -923,7 +897,6 @@ def _scheduled_observation(
         scheduled_interval_ns,
         launched_ns,
         state.total_pause_ns,
-        state.mode,
         event_file_descriptor,
     )
     state.retained_unwinder = captured.unwinder
@@ -1329,30 +1302,23 @@ def capture(
     mean_interval_seconds: float,
     random_seed: int,
     attachment_timeout_seconds: float,
-    mode: schema.CaptureMode,
     event_file_descriptor: int | None = None,
 ) -> schema.RawProfile:
     """Launch a target and capture continuous blocking observations."""
-    # PRF-011: Complete invocation. PRF-014: CPU mode.
+    # PRF-011: Complete invocation.
     # PRF-020: Machine and human interfaces.
     expected_python = process_events.executable_identity(os.getpid())
-    sampling_base: schema.SamplingConfigurationBase = {
+    sampling: schema.WallSamplingConfiguration = {
         "schedule": "poisson",
         "mean_interval_seconds": mean_interval_seconds,
         "random_seed": random_seed,
         "attachment_timeout_seconds": attachment_timeout_seconds,
+        "mode": "wall",
     }
-    if mode == "cpu":
-        sampling: schema.SamplingConfiguration = cpu_profiler.sampling_configuration(
-            sampling_base
-        )
-    else:
-        sampling = {**sampling_base, "mode": "wall"}
     # Reproducible statistical schedules do not require cryptographic randomness.
     random_generator = random.Random(random_seed)  # noqa: S311
     state = _CaptureState(
         random_generator=random_generator,
-        mode=mode,
     )
 
     if event_file_descriptor is not None:
@@ -1387,7 +1353,7 @@ def capture(
         with scheduler_events.start(
             target_process.process.pid,
             pathlib.Path(temporary_directory_name),
-            enabled=mode == "wall",
+            enabled=True,
         ) as scheduler_event_collector:
             compiler_exit_status = _capture_process(
                 target_process,
@@ -1419,9 +1385,9 @@ def capture(
 @click.command(
     context_settings={"ignore_unknown_options": True},
     epilog=(
-        "Place -- before the target command. The profiler waits for the shell "
-        "launcher to execute the matching Python 3.14t runtime, then takes "
-        "randomized blocking all-thread observations until target exit."
+        "Place -- before the target command. Wall mode takes randomized "
+        "blocking all-thread observations. CPU mode runs the complete command "
+        "under Linux perf with CPython frame trampolines."
     ),
 )
 @click.option(
@@ -1429,14 +1395,14 @@ def capture(
     type=click.Choice(["wall", "cpu"]),
     default="wall",
     show_default=True,
-    help="Capture wall occupancy or external per-thread CPU runtime.",
+    help="Capture wall occupancy or sampled on-CPU time with Linux perf.",
 )
 @click.option(
     "--profile",
     "profile_path",
     type=_PATH,
     required=True,
-    help="Destination for the versioned raw JSON-record profile.",
+    help="Destination for raw wall JSON records or native perf CPU data.",
 )
 @click.option(
     "--workload",
@@ -1479,6 +1445,13 @@ def capture(
     help="Maximum time to wait for the launcher to execute matching Python.",
 )
 @click.option(
+    "--frequency-hz",
+    type=click.IntRange(min=1),
+    default=997,
+    show_default=True,
+    help="CPU sampling frequency used by perf in CPU mode.",
+)
+@click.option(
     "--event-fd",
     "event_file_descriptor",
     type=click.IntRange(min=0),
@@ -1486,12 +1459,13 @@ def capture(
 )
 @click.argument("command", nargs=-1, type=click.UNPROCESSED, required=True)
 def main(
-    mode: schema.CaptureMode,
+    mode: typing.Literal["wall", "cpu"],
     profile_path: pathlib.Path,
     workload_path: pathlib.Path,
     working_directory: pathlib.Path,
     mean_interval_seconds: float,
     attachment_timeout_seconds: float,
+    frequency_hz: int,
     event_file_descriptor: int | None,
     command: tuple[str, ...],
 ):
@@ -1499,22 +1473,55 @@ def main(
     # PRF-002: Independent sampling schedule. PRF-014: CPU mode.
     # PRF-020: Machine and human interfaces. PRF-025: Failure threshold.
     # PRF-049: Event-driven coordination.
+    absolute_profile_path = profile_path.absolute()
+    if mode == "cpu":
+        if event_file_descriptor is not None:
+            raise click.UsageError("--event-fd is supported only in wall mode")
+        try:
+            metadata = perf_profiler.capture(
+                command=command,
+                profile_path=absolute_profile_path,
+                workload_path=workload_path.absolute(),
+                working_directory=working_directory.absolute(),
+                frequency_hz=frequency_hz,
+            )
+        except (
+            OSError,
+            subprocess.SubprocessError,
+        ) as error:
+            raise click.ClickException(str(error)) from error
+        successful = metadata[
+            "compiler_exit_status"
+        ] == 0 and not perf_profiler.diagnostics_path(absolute_profile_path).read_text(
+            encoding="utf-8"
+        )
+        click.echo(f"Profile: {absolute_profile_path}")
+        click.echo(
+            "Capture: complete; "
+            + f"{'successful' if successful else 'unsuccessful'}; "
+            + "compiler exit "
+            + str(metadata["compiler_exit_status"])
+        )
+        click.echo(f"CPU sampling frequency: {frequency_hz} Hz")
+        if not successful:
+            raise click.ClickException("profile capture was not successful")
+        return
+
     profile = capture(
         command=command,
-        profile_path=profile_path.absolute(),
+        profile_path=absolute_profile_path,
         workload_path=workload_path.absolute(),
         working_directory=working_directory.absolute(),
         mean_interval_seconds=mean_interval_seconds,
         random_seed=random.SystemRandom().randrange(2**63),
         attachment_timeout_seconds=attachment_timeout_seconds,
-        mode=mode,
         event_file_descriptor=event_file_descriptor,
     )
     counts = profile.observation_counts
     attempted = counts["successful"] + counts["discarded"]
     status = "successful" if profile.success else "unsuccessful"
     completeness = "complete" if profile.complete else "incomplete"
-    click.echo(f"Profile: {profile_path.absolute()}")
+    click.echo(f"Profile: {absolute_profile_path}")
     click.echo(
         f"Capture: {completeness}; {status}; "
         + f"compiler exit {profile.compiler_exit_status}; "

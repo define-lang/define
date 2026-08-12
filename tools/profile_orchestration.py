@@ -167,7 +167,7 @@ def _profile_invocation(
         "Examples:\n\n"
         "  run_profile --source SOURCE --out PROFILE\n\n"
         "  run_profile --project PROJECT --entry main.dfn --out PROFILE\n\n"
-        "The profiler records continuous all-thread wall or CPU observations. "
+        "The profiler records all-thread wall observations or Linux perf CPU samples. "
         "Generated code goes to a temporary directory unless --output-dir is "
         "provided."
     )
@@ -178,7 +178,7 @@ def _profile_invocation(
     type=click.Choice(["wall", "cpu"]),
     default="wall",
     show_default=True,
-    help="Capture wall occupancy or external per-thread CPU runtime.",
+    help="Capture wall occupancy or sampled on-CPU time with Linux perf.",
 )
 @click.option(
     "--source",
@@ -214,7 +214,7 @@ def _profile_invocation(
     "out_path",
     type=_PATH,
     required=True,
-    help="Destination for the versioned raw profile.",
+    help="Destination for wall JSON records or native perf CPU data.",
 )
 @click.option(
     "--max-threads",

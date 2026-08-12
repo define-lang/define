@@ -256,11 +256,6 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["uv", "run", "py-spy"],
-    decision = "allow",
-)
-
-prefix_rule(
     pattern = ["bazelisk"],
     decision = "allow",
 )

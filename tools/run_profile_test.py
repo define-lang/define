@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -10,7 +11,7 @@ import pytest
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools import profile_orchestration as run_profile
-from tools.profiler import analyzer, schema
+from tools.profiler import analyzer, perf_analyzer, schema
 
 # PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (
@@ -112,7 +113,7 @@ def test_help_describes_wall_and_cpu_capture_workflow():
 
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
-    assert "continuous all-thread wall or CPU observations" in help_text
+    assert "wall observations or Linux perf CPU samples" in help_text
     assert "--mode [wall|cpu]" in help_text
     assert "--source" in help_text
     assert "--project" in help_text
@@ -326,7 +327,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
 def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
-    profile_path = tmp_path / "cpu-profile.jsonl"
+    profile_path = tmp_path / "perf.data"
 
     result = _capture(
         [
@@ -341,20 +342,23 @@ def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
         ]
     )
 
-    profile = schema.load(profile_path)
+    profile = perf_analyzer.load(profile_path)
     assert result.exit_code == (0 if profile.success else 1)
-    assert profile.complete is True
-    assert profile.compiler_exit_status == 0
-    assert profile.diagnostics_status == "none"
-    assert profile.failures == []
-    assert profile.sampling["mode"] == "cpu"
-    assert profile.sampling["cpu_backend"] == "linux-schedstat"
+    assert profile.metadata["compiler_exit_status"] == 0
+    assert profile.diagnostics == ""
+    assert profile.event == "cpu-clock"
+    assert profile_path.read_bytes().startswith(b"PERFILE2")
+    assert (
+        json.loads(
+            profile_path.with_name(profile_path.name + ".json").read_text(
+                encoding="utf-8"
+            )
+        )
+        == profile.metadata
+    )
     analysis = _analyze(profile_path)
     capture_status = "successful" if profile.success else "unsuccessful"
-    assert (
-        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
-        in analysis
-    )
-    assert "CPU backend: linux-schedstat" in analysis
+    assert f"Native perf profile: complete; {capture_status}" in analysis
+    assert "CPU backend: linux-perf" in analysis
     assert "Self CPU attribution:" in analysis
     assert "Cumulative CPU attribution:" in analysis

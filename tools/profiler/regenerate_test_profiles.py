@@ -13,7 +13,7 @@ from pathlib import Path
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools.generators import generate_large_define_source
-from tools.profiler import analyzer, schema, wall_analyzer, wall_critical_path
+from tools.profiler import schema, wall_analyzer, wall_critical_path
 
 _OBSERVATIONS_PER_PHASE = 20
 _MAX_CAPTURE_ATTEMPTS = 10
@@ -159,10 +159,7 @@ def _capture_phased_profile(
 
 
 def _analysis(profile: schema.RawProfile) -> wall_analyzer.Analysis:
-    analysis = analyzer.analyze(profile)
-    if not isinstance(analysis, wall_analyzer.Analysis):
-        raise TypeError("wall fixture produced a CPU analysis")
-    return analysis
+    return wall_analyzer.analyze(profile)
 
 
 def _critical_path_is_resolved(profile: schema.RawProfile) -> bool:
@@ -299,7 +296,7 @@ def _regenerate_compiler_profile(
                 continue
             report_stream = io.StringIO()
             with contextlib.redirect_stdout(report_stream):
-                analyzer.emit_report(profile, _analysis(profile), 1000)
+                wall_analyzer.emit_report(profile, _analysis(profile), 1000)
             if "critical thread had no Python stack" in report_stream.getvalue():
                 print(f"Regenerated {profile_path.relative_to(workspace)}")
                 return

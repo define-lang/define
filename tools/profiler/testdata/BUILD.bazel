@@ -9,7 +9,6 @@ exports_files(
         "compiler_wall_profile.jsonl",
         "continuous_profile.jsonl",
         "continuous_target.py",
-        "cpu_target.py",
         "critical_path_profile.jsonl",
         "critical_path_target.py",
         "exit_target.py",
@@ -35,15 +34,6 @@ py_binary(
 py_binary(
     name = "continuous_target",
     srcs = ["continuous_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-014: CPU mode. PRF-029: Call-frequency fixture.
-# PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
-# PRF-034: Parallel-CPU fixture. PRF-035: Short-function fixture.
-py_binary(
-    name = "cpu_target",
-    srcs = ["cpu_target.py"],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
@@ -100,7 +90,6 @@ pyright_test(
     deps = [
         ":ambiguous_critical_path_target",
         ":continuous_target",
-        ":cpu_target",
         ":critical_path_target",
         ":exit_target",
         ":failure_target",

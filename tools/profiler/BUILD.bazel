@@ -21,7 +21,7 @@ py_library(
     visibility = ["//tools:__pkg__"],
     deps = [
         ":analyzer_model",
-        ":cpu_analyzer",
+        ":perf_analyzer",
         ":schema",
         ":wall_analyzer",
         "@pypi//click",
@@ -56,46 +56,36 @@ py_test(
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
 # PRF-018: Focused analysis. PRF-019: Concurrency semantics.
 py_library(
-    name = "cpu_analyzer",
-    srcs = ["cpu_analyzer.py"],
+    name = "perf_analyzer",
+    srcs = ["perf_analyzer.py"],
+    visibility = ["//tools:__pkg__"],
     deps = [
         ":analyzer_model",
-        ":schema",
+        ":perf_profiler",
     ],
 )
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
 py_library(
-    name = "cpu_profiler",
-    srcs = ["cpu_profiler.py"],
+    name = "perf_profiler",
+    srcs = ["perf_profiler.py"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [":schema"],
 )
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
 py_test(
-    name = "cpu_profiler_test",
+    name = "perf_profiler_test",
     size = "small",
     timeout = "moderate",
-    srcs = ["cpu_profiler_test.py"],
-    data = [
-        ":__main__",
-        "//tools:analyze_profile",
-        "//tools/profiler/testdata:cpu_target",
-        "//tools/profiler/testdata:cpu_target.py",
-    ],
-    env = {
-        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
-        "PROFILER_BINARY": "$(rlocationpath :__main__)",
-        "PROFILER_CPU_SOURCE": "$(rlocationpath //tools/profiler/testdata:cpu_target.py)",
-    },
+    srcs = ["perf_profiler_test.py"],
     deps = [
         ":analyzer",
         ":analyzer_model",
-        ":cpu_analyzer",
-        ":cpu_profiler",
-        ":schema",
-        ":test_helpers",
+        ":perf_analyzer",
+        ":perf_profiler",
+        ":profiler",
+        "@pypi//click",
+        "@pypi//pytest",
     ],
 )
 
@@ -124,7 +114,7 @@ py_library(
     srcs = ["profiler.py"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":cpu_profiler",
+        ":perf_profiler",
         ":process_events",
         ":remote_frame_names",
         ":scheduler_events",
@@ -227,7 +217,6 @@ py_binary(
         "//tools/profiler/testdata:unresolved_critical_path_target.py",
     ],
     deps = [
-        ":analyzer",
         ":schema",
         ":wall_analyzer",
         ":wall_critical_path",
@@ -329,9 +318,9 @@ pyright_test(
         ":analyzer",
         ":analyzer_model",
         ":compiler_profile_test",
-        ":cpu_analyzer",
-        ":cpu_profiler",
-        ":cpu_profiler_test",
+        ":perf_analyzer",
+        ":perf_profiler",
+        ":perf_profiler_test",
         ":process_events",
         ":process_events_test",
         ":profiler",

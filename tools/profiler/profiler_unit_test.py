@@ -49,7 +49,6 @@ def _capture_state(
 ) -> profiler._CaptureState:  # pyright: ignore[reportPrivateUsage]
     return profiler._CaptureState(  # pyright: ignore[reportPrivateUsage]
         random_generator=random.Random(1),  # noqa: S311
-        mode="wall",
         python_stack_observed=python_stack_observed,
     )
 
@@ -84,7 +83,6 @@ def _raw_stopped_thread(
     start_time_ticks: int,
     *,
     state: str = "t",
-    schedstat: bytes | None = None,
 ) -> profiler._RawStoppedThread:  # pyright: ignore[reportPrivateUsage]
     fields_before_start_time = " ".join(["0"] * 18)
     stat = (
@@ -94,7 +92,6 @@ def _raw_stopped_thread(
     return profiler._RawStoppedThread(  # pyright: ignore[reportPrivateUsage]
         os_thread_id=str(os_thread_id),
         stat=stat,
-        schedstat=schedstat,
     )
 
 
@@ -578,81 +575,6 @@ def test_normalization_retains_os_thread_without_python_stack():
     assert result.threads[0].stack == []
 
 
-def test_normalization_decodes_copied_scheduler_runtime():
-    raw_observation = profiler._RawObservation(  # pyright: ignore[reportPrivateUsage]
-        timing=_observation_timing(),
-        evidence={17: profiler._ThreadEvidence(101, "R")},  # pyright: ignore[reportPrivateUsage]
-        stopped_threads=[_raw_stopped_thread(17, 101, schedstat=b"1234 50 7\n")],
-        remote_threads=[],
-        frame_names=[],
-    )
-
-    result = profiler._normalize_observation(raw_observation)  # pyright: ignore[reportPrivateUsage]
-
-    assert isinstance(
-        result,
-        profiler._SuccessfulObservationResult,  # pyright: ignore[reportPrivateUsage]
-    )
-    assert result.threads[0].scheduler_runtime_ns == 1234
-
-
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
-def test_cpu_observation_record_preserves_scheduler_runtime():
-    writer = profiler._ProfileWriter(io.StringIO())  # pyright: ignore[reportPrivateUsage]
-    evidence = profiler._ThreadEvidence(  # pyright: ignore[reportPrivateUsage]
-        start_time_ticks=101,
-        state="R",
-    )
-    captured_thread = profiler._CapturedThread(  # pyright: ignore[reportPrivateUsage]
-        os_thread_id=11,
-        evidence=evidence,
-        stack=[
-            {
-                "filename": "source.py",
-                "function": "work",
-                "line": 7,
-            }
-        ],
-        scheduler_runtime_ns=1234,
-    )
-    result = profiler._SuccessfulObservationResult(  # pyright: ignore[reportPrivateUsage]
-        timing=_observation_timing(),
-        threads=[captured_thread],
-    )
-
-    records, observation = writer.observation_record(result)
-
-    expected_observation: schema.SuccessfulObservation = {
-        "scheduled_interval_ns": 10,
-        "target_running_ns": 15,
-        "pause_started_ns": 20,
-        "pause_ended_ns": 25,
-        "status": "successful",
-        "threads": [
-            {
-                "os_thread_id": 11,
-                "start_time_ticks": 101,
-                "pre_stop_state": "R",
-                "stack": [0],
-                "scheduler_runtime_ns": 1234,
-            }
-        ],
-    }
-    assert observation == expected_observation
-    assert records == [
-        {
-            "record_type": "frame",
-            "frame_id": 0,
-            "frame": {
-                "filename": "source.py",
-                "function": "work",
-                "line": 7,
-            },
-        },
-        {"record_type": "observation", "observation": expected_observation},
-    ]
-
-
 def test_observation_record_reuses_frame_definition():
     writer = profiler._ProfileWriter(io.StringIO())  # pyright: ignore[reportPrivateUsage]
     frame: schema.Frame = {
@@ -667,7 +589,6 @@ def test_observation_record_reuses_frame_definition():
                 os_thread_id=11,
                 evidence=profiler._ThreadEvidence(101, "R"),  # pyright: ignore[reportPrivateUsage]
                 stack=[frame, frame],
-                scheduler_runtime_ns=None,
             )
         ],
     )
@@ -809,7 +730,6 @@ def test_stopped_capture_copies_raw_stat_without_decoding(
     ):
         stopped_threads = profiler._capture_raw_stopped_threads(  # pyright: ignore[reportPrivateUsage]
             71,
-            "wall",
         )
 
     assert stopped_threads == [raw_thread]
@@ -858,7 +778,6 @@ def test_observation_prepares_unwinder_before_stopping_target():
     def capture_stopped_threads(
         _target_process: process_events.TargetProcess,
         unwinder: profiler._Unwinder,  # pyright: ignore[reportPrivateUsage]
-        _mode: schema.CaptureMode,
         _event_file_descriptor: int | None,
     ) -> tuple[
         list[profiler._RawStoppedThread],  # pyright: ignore[reportPrivateUsage]
@@ -907,7 +826,6 @@ def test_observation_prepares_unwinder_before_stopping_target():
             scheduled_interval_ns=10,
             launched_ns=0,
             total_pause_ns=0,
-            mode="wall",
             event_file_descriptor=None,
         )
 
@@ -948,7 +866,6 @@ def test_observation_records_stopped_capture_failure():
             scheduled_interval_ns=10,
             launched_ns=0,
             total_pause_ns=0,
-            mode="wall",
             event_file_descriptor=None,
         )
 

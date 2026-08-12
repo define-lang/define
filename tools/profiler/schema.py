@@ -16,8 +16,6 @@ if typing.TYPE_CHECKING:
 SCHEMA_VERSION = 7
 MAX_DISCARDED_RATE = 0.001
 
-CaptureMode = Literal["wall", "cpu"]
-
 
 class ObservationFailureKind(enum.StrEnum):
     """Stable machine-readable reasons an observation was not retained."""
@@ -87,16 +85,6 @@ class ThreadObservation(TypedDict):
     stack: list[int]
 
 
-class CpuThreadObservation(ThreadObservation):
-    """One stopped OS thread with synchronized scheduler runtime."""
-
-    # PRF-010: Raw-data preservation. PRF-014: CPU mode.
-    scheduler_runtime_ns: int
-
-
-SampledThreadObservation = ThreadObservation | CpuThreadObservation
-
-
 class ObservationBase(TypedDict):
     """Timing shared by successful and failed observation points."""
 
@@ -112,7 +100,7 @@ class SuccessfulObservation(ObservationBase):
 
     # PRF-007: Consistent stack. PRF-015: Full stacks.
     status: Literal["successful"]
-    threads: list[SampledThreadObservation]
+    threads: list[ThreadObservation]
 
 
 class FailedObservation(ObservationBase):
@@ -157,32 +145,15 @@ class ObservationCounts(TypedDict):
     missed: int
 
 
-class SamplingConfigurationBase(TypedDict):
-    """Configuration shared by randomized continuous sampling modes."""
+class WallSamplingConfiguration(TypedDict):
+    """Configuration for continuous wall sampling."""
 
-    # PRF-002: Independent sampling schedule.
+    # PRF-002: Independent sampling schedule. PRF-013: Wall mode.
     schedule: Literal["poisson"]
     mean_interval_seconds: float
     random_seed: int
     attachment_timeout_seconds: float
-
-
-class WallSamplingConfiguration(SamplingConfigurationBase):
-    """Configuration for continuous wall sampling."""
-
-    # PRF-013: Wall mode.
     mode: Literal["wall"]
-
-
-class CpuSamplingConfiguration(SamplingConfigurationBase):
-    """Configuration for external scheduler-runtime CPU sampling."""
-
-    # PRF-014: CPU mode.
-    mode: Literal["cpu"]
-    cpu_backend: Literal["linux-schedstat"]
-
-
-SamplingConfiguration = WallSamplingConfiguration | CpuSamplingConfiguration
 
 
 class SamplingStatistics(TypedDict):
@@ -227,7 +198,7 @@ class HeaderRecord(TypedDict):
     working_directory: str
     workload_path: str
     workload_sha256: str
-    sampling: SamplingConfiguration
+    sampling: WallSamplingConfiguration
     launcher_executable: ExecutableIdentity
     launched_ns: int
 
@@ -309,7 +280,7 @@ ProfileRecord = (
 
 @dataclasses.dataclass(slots=True)
 class RawProfile:
-    """Loaded continuous wall or CPU profile artifact."""
+    """Loaded continuous wall profile artifact."""
 
     # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
     schema_version: int
@@ -318,7 +289,7 @@ class RawProfile:
     working_directory: str
     workload_path: str
     workload_sha256: str
-    sampling: SamplingConfiguration
+    sampling: WallSamplingConfiguration
     sampling_statistics: SamplingStatistics
     launcher_executable: ExecutableIdentity
     python_runtime: PythonRuntime | None
@@ -496,6 +467,8 @@ def load(profile_path: pathlib.Path) -> RawProfile:
         raise ValueError(
             f"unsupported profiler schema version: {header['schema_version']}"
         )
+    if header["sampling"]["mode"] != "wall":
+        raise ValueError(f"unsupported wall profile mode: {header['sampling']['mode']}")
     profile = _initial_profile(header)
     summary_seen = False
     for record_data in records:

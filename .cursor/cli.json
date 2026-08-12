@@ -63,7 +63,6 @@
       "Shell(uv run -m tools.run_profile *)",
       "Shell(uv run tools/analyze_profile.py *)",
       "Shell(uv run mutmut *)",
-      "Shell(uv run py-spy *)",
       "Shell(bazelisk *)",
       "Shell(bazel *)"
     ],

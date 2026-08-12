@@ -145,6 +145,7 @@ py_binary(
 py_test(
     name = "run_profile_test",
     size = "small",
+    timeout = "moderate",
     srcs = ["run_profile_test.py"],
     data = [
         "//define/compiler:main",
@@ -160,6 +161,7 @@ py_test(
     deps = [
         ":profile_orchestration",
         "//tools/profiler:analyzer",
+        "//tools/profiler:perf_analyzer",
         "//tools/profiler:schema",
         "@pypi//click",
         "@pypi//pytest",

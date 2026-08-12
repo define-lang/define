@@ -63,7 +63,10 @@ uv run -m tools.run_profile --source <source> --out <wall-profile>
 ```
 
 Do not capture a CPU profile unless the user explicitly asks for one. When they
-do, use `--mode cpu` with the same source or project workflow.
+do, use `--mode cpu` with the same source or project workflow. CPU mode requires
+Linux perf access and a CPython build with perf JIT support; it retains native
+injected `perf.data`, perf's build-ID cache for JIT symbols, and a small Define
+metadata sidecar. Use a `.data` output name for CPU captures.
 
 For `generate_reference_graph_project`, use `--project <directory>`. Analyze
 each exact artifact through the public analyzer:
@@ -94,7 +97,8 @@ hotspots overall and within Define compiler code.
 Use the analyzer's metric definitions and caveats as the authority. A critical
 path is not the busiest thread, summed thread time, or unioned wall occupancy.
 Do not assume function rows are additive, CPU time equals wall time, or a sample
-hit or CPU endpoint represents a call.
+hit represents a call. CPU percentages use all sampled CPU as their denominator,
+including filtered functions, Lark, and samples without a Python frame.
 
 For follow-up questions, reuse retained profile artifacts when they contain the
 needed evidence. Drill into caller and callee relationships using the available

@@ -109,7 +109,6 @@ def profile_command(
     profile_path: Path,
     source_variable: str,
     *,
-    mode: schema.CaptureMode = "wall",
     mean_interval_seconds: float = 0.0001,
     event_file_descriptor: int | None = None,
     launcher_gate: Path | None = None,
@@ -120,8 +119,6 @@ def profile_command(
     source = runfile(source_variable)
     command = [
         str(runfile("PROFILER_BINARY")),
-        "--mode",
-        mode,
         "--profile",
         str(profile_path),
         "--workload",
