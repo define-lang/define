@@ -106,6 +106,7 @@ class _Transition:
     downstream: wall_model.ThreadIdentity
     downstream_stack: tuple[int, ...]
     downstream_wait_ns: int
+    downstream_first_observed: bool
     candidates: tuple[wall_model.ThreadIdentity, ...]
     candidate_stacks: tuple[tuple[int, ...], ...]
 
@@ -227,9 +228,11 @@ def _transitions(
             + later_observation["target_running_ns"]
         ) // 2
         for downstream, later_sample in later_samples.items():
-            if not _is_working(later_sample):
-                continue
             earlier_sample = earlier_samples.get(downstream)
+            if not _is_working(later_sample) and not (
+                earlier_sample is None and later_sample.stack
+            ):
+                continue
             if earlier_sample is not None and not earlier_sample.is_handoff_waiting:
                 continue
             wait_start_index = earlier_index
@@ -291,6 +294,7 @@ def _transitions(
                         if earlier_sample is not None
                         else 0
                     ),
+                    downstream_first_observed=earlier_sample is None,
                     candidates=tuple(candidate.identity for candidate in candidates),
                     candidate_stacks=tuple(candidate.stack for candidate in candidates),
                 )
@@ -315,13 +319,18 @@ def _latest_transition(
     transitions: list[_Transition],
     downstream: wall_model.ThreadIdentity,
     before_ns: int,
+    *,
+    include_boundary: bool,
 ) -> _Transition | None:
     # PRF-047: Multi-threaded critical path.
     matching = [
         transition
         for transition in transitions
         if transition.downstream == downstream
-        and transition.target_running_ns < before_ns
+        and (
+            transition.target_running_ns < before_ns
+            or (include_boundary and transition.target_running_ns == before_ns)
+        )
     ]
     return max(
         matching, key=lambda transition: transition.target_running_ns, default=None
@@ -343,11 +352,22 @@ def _phases_and_handoffs(
     phases: list[_Phase] = []
     uncertain_segments: list[UncertainSegment] = []
     handoffs: list[CriticalPathHandoff] = []
+    first_observed_ns_by_identity: dict[wall_model.ThreadIdentity, int] = {}
+    for sample in samples:
+        if sample.identity not in first_observed_ns_by_identity:
+            first_observed_ns_by_identity[sample.identity] = sample.interval.start_ns
     phase_end_ns = terminal_sample.interval.end_ns
     actor = terminal_sample.identity
     waiter: wall_model.ThreadIdentity | None = None
+    include_boundary = False
     while True:
-        transition = _latest_transition(transitions, actor, phase_end_ns)
+        transition = _latest_transition(
+            transitions,
+            actor,
+            phase_end_ns,
+            include_boundary=include_boundary,
+        )
+        include_boundary = False
         if transition is None:
             phases.append(
                 _Phase(
@@ -379,7 +399,36 @@ def _phases_and_handoffs(
                     candidates=transition.candidates,
                 )
             )
-            if not transition.downstream_wait_ns:
+            if transition.downstream_first_observed:
+                main_thread_candidates = [
+                    candidate
+                    for candidate in transition.candidates
+                    if candidate.os_thread_id
+                    == profile.observations[transition.earlier_observation_index][
+                        "process_id"
+                    ]
+                ]
+                if len(main_thread_candidates) == 1:
+                    main_thread = main_thread_candidates[0]
+                    competing_candidate_first_observed_ns = min(
+                        first_observed_ns_by_identity[candidate]
+                        for candidate in transition.candidates
+                        if candidate != main_thread
+                    )
+                    ambiguity_start_ns = max(
+                        python_started_ns,
+                        competing_candidate_first_observed_ns,
+                    )
+                    uncertain_segments.append(
+                        _uncertain_segment(
+                            ambiguity_start_ns,
+                            transition.target_running_ns,
+                            "producer at ambiguous worker start was not resolved",
+                        )
+                    )
+                    phase_end_ns = ambiguity_start_ns
+                    actor = main_thread
+                    continue
                 uncertain_segments.append(
                     _uncertain_segment(
                         python_started_ns,
@@ -389,14 +438,18 @@ def _phases_and_handoffs(
                 )
                 break
             wait_start_ns = transition.target_running_ns - transition.downstream_wait_ns
-            uncertain_segments.append(
-                _uncertain_segment(
-                    wait_start_ns,
-                    transition.target_running_ns,
-                    f"producer for {resolution} handoff was not resolved",
+            phases.append(
+                _Phase(
+                    interval=wall_model.Interval(
+                        wait_start_ns,
+                        transition.target_running_ns,
+                    ),
+                    actor=actor,
+                    waiter=None,
                 )
             )
             phase_end_ns = wait_start_ns
+            include_boundary = True
             continue
         upstream = transition.candidates[0]
         handoffs.append(

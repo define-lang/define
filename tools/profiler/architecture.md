@@ -634,7 +634,10 @@ checkpoint.
    cumulative attribution for the path, distinguish parallel off-path work, and
    report ambiguous or unobserved transitions explicitly. It must not substitute
    the busiest thread, total CPU time, or unioned wall occupancy for the
-   critical path.
+   critical path. An unresolved producer does not make an observed downstream
+   wait uncertain. When the main thread is a producer candidate at a worker's
+   first observation, keep the handoff ambiguous but preserve the earlier
+   main-thread path before any competing producer candidate was observed.
 2. **PRF-048: Critical-path fixture.** A real multithreaded target uses normal
    synchronization and work queues to create a known completion-critical chain
    with at least two cross-thread handoffs, blocking waits, and concurrent

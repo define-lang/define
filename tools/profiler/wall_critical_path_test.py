@@ -110,8 +110,132 @@ def test_new_worker_uses_the_prior_stack_bearing_candidate():
     assert transition.downstream == downstream
     assert transition.downstream_stack == (2,)
     assert transition.downstream_wait_ns == 0
+    assert transition.downstream_first_observed is True
     assert transition.candidates == (producer,)
     assert transition.candidate_stacks == ((1,),)
+
+
+# PRF-047: Multi-threaded critical path.
+def test_new_waiting_worker_uses_the_prior_stack_bearing_candidate():
+    producer = wall_model.ThreadIdentity(11, 101)
+    downstream = wall_model.ThreadIdentity(12, 102)
+    producer_before = _sample(producer, 0, 0, 10, "R", (1,))
+    downstream_after = _sample(downstream, 1, 10, 20, "S", (2,))
+    transitions_for = wall_critical_path._transitions  # pyright: ignore[reportPrivateUsage]
+
+    transitions = transitions_for(
+        _profile_with_observation_times(5, 15),
+        {
+            0: {producer: producer_before},
+            1: {downstream: downstream_after},
+        },
+    )
+
+    assert len(transitions) == 1
+    transition = transitions[0]
+    assert transition.target_running_ns == 10
+    assert transition.downstream == downstream
+    assert transition.downstream_stack == (2,)
+    assert transition.downstream_wait_ns == 0
+    assert transition.candidates == (producer,)
+    assert transition.candidate_stacks == ((1,),)
+
+
+# PRF-047: Multi-threaded critical path.
+def test_latest_transition_can_include_an_exact_phase_boundary():
+    downstream = wall_model.ThreadIdentity(12, 102)
+    transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
+    latest_transition = wall_critical_path._latest_transition  # pyright: ignore[reportPrivateUsage]
+    transition = transition_type(
+        target_running_ns=10,
+        earlier_observation_index=0,
+        downstream=downstream,
+        downstream_stack=(2,),
+        downstream_wait_ns=0,
+        downstream_first_observed=True,
+        candidates=(wall_model.ThreadIdentity(11, 101),),
+        candidate_stacks=((1,),),
+    )
+
+    assert (
+        latest_transition(
+            [transition],
+            downstream,
+            10,
+            include_boundary=False,
+        )
+        is None
+    )
+    assert (
+        latest_transition(
+            [transition],
+            downstream,
+            10,
+            include_boundary=True,
+        )
+        is transition
+    )
+
+
+# PRF-047: Multi-threaded critical path.
+def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
+    main_thread = wall_model.ThreadIdentity(11, 101)
+    worker = wall_model.ThreadIdentity(12, 102)
+    other_worker = wall_model.ThreadIdentity(13, 103)
+    second_other_worker = wall_model.ThreadIdentity(14, 104)
+    terminal_sample = _sample(main_thread, 1, 20, 30, "R", (1,))
+    transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
+    phases_and_handoffs = wall_critical_path._phases_and_handoffs  # pyright: ignore[reportPrivateUsage]
+    profile = typing.cast(
+        "schema.RawProfile",
+        typing.cast(
+            "object",
+            types.SimpleNamespace(
+                lifecycle={
+                    "python_observed_target_running_ns": 0,
+                    "exited_target_running_ns": 30,
+                },
+                observations=[
+                    {"process_id": main_thread.os_thread_id},
+                    {"process_id": main_thread.os_thread_id},
+                ],
+            ),
+        ),
+    )
+
+    skeleton = phases_and_handoffs(
+        profile,
+        [terminal_sample],
+        [
+            transition_type(
+                target_running_ns=10,
+                earlier_observation_index=0,
+                downstream=worker,
+                downstream_stack=(2,),
+                downstream_wait_ns=0,
+                downstream_first_observed=True,
+                candidates=(other_worker, second_other_worker),
+                candidate_stacks=((3,), (4,)),
+            ),
+            transition_type(
+                target_running_ns=20,
+                earlier_observation_index=0,
+                downstream=main_thread,
+                downstream_stack=(1,),
+                downstream_wait_ns=5,
+                downstream_first_observed=False,
+                candidates=(worker,),
+                candidate_stacks=((2,),),
+            ),
+        ],
+    )
+
+    assert skeleton.uncertain_segments == [
+        wall_critical_path.UncertainSegment(
+            interval=wall_model.Interval(0, 10),
+            reason="critical path before ambiguous handoff was not resolved",
+        )
+    ]
 
 
 # PRF-047: Multi-threaded critical path.

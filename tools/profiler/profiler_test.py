@@ -526,6 +526,7 @@ def test_wall_critical_path_reports_unobserved_handoff(
     assert handoff.resolution == "unobserved"
     assert handoff.candidates == ()
     assert handoff.downstream_wait_ns > 0
+    assert analysis.critical_path.wait_ns == handoff.downstream_wait_ns
     assert (
         analysis.critical_path.segments[0].interval.start_ns
         == profile.lifecycle["python_observed_target_running_ns"]
@@ -569,13 +570,28 @@ def test_real_profile_reports_ambiguous_new_worker_handoff():
     analysis = analyzer.analyze(profile)
 
     assert isinstance(analysis, wall_analyzer.Analysis)
-    assert len(analysis.critical_path.handoffs) == 2
-    ambiguous_handoff, completion_handoff = analysis.critical_path.handoffs
+    ambiguous_handoffs = [
+        handoff
+        for handoff in analysis.critical_path.handoffs
+        if isinstance(handoff, wall_critical_path.UnresolvedHandoff)
+    ]
+    assert len(ambiguous_handoffs) == 1
+    ambiguous_handoff = ambiguous_handoffs[0]
     assert isinstance(ambiguous_handoff, wall_critical_path.UnresolvedHandoff)
     assert ambiguous_handoff.resolution == "ambiguous"
     assert ambiguous_handoff.downstream_wait_ns == 0
     assert len(ambiguous_handoff.candidates) == 2
-    assert isinstance(completion_handoff, wall_critical_path.ResolvedHandoff)
+    assert isinstance(
+        analysis.critical_path.handoffs[-1],
+        wall_critical_path.ResolvedHandoff,
+    )
+    process_id = profile.observations[0]["process_id"]
+    first_resolved_segment = next(
+        segment
+        for segment in analysis.critical_path.segments
+        if isinstance(segment, wall_critical_path.ResolvedSegment)
+    )
+    assert first_resolved_segment.identity.os_thread_id == process_id
 
 
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
