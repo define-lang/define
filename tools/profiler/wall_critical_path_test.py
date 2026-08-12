@@ -166,6 +166,66 @@ def test_new_waiting_worker_uses_the_prior_stack_bearing_candidate():
     assert transition.candidates == (producer_before,)
 
 
+# PRF-052: Independent causal evidence.
+def test_scheduler_wake_resolves_an_ambiguous_sampled_transition():
+    producer = wall_model.ThreadIdentity(11, 101)
+    competing_worker = wall_model.ThreadIdentity(12, 102)
+    downstream = wall_model.ThreadIdentity(13, 103)
+    producer_before = _sample(producer, 0, 0, 10, "R", (1,))
+    competing_before = _sample(competing_worker, 0, 0, 10, "R", (2,))
+    downstream_after = _sample(downstream, 1, 10, 20, "R", (3,))
+    samples = _samples(
+        {
+            producer: producer_before,
+            competing_worker: competing_before,
+        },
+        {downstream: downstream_after},
+    )
+    samples.scheduler_wakes.append(
+        wall_model.SchedulerWake(
+            kind="wakeup-new",
+            target_running_ns=8,
+            upstream_os_thread_id=producer.os_thread_id,
+            downstream_os_thread_id=downstream.os_thread_id,
+        )
+    )
+
+    transitions = wall_critical_path._transitions(  # pyright: ignore[reportPrivateUsage]
+        _profile_with_observation_times(5, 15),
+        samples,
+    )
+
+    transition = transitions[downstream][0]
+    assert transition.target_running_ns == 8
+    assert transition.candidates == (producer_before,)
+    assert transition.evidence == "scheduler-wake"
+
+
+# PRF-052: Independent causal evidence.
+def test_scheduler_wake_at_interval_start_belongs_to_the_prior_transition():
+    downstream = wall_model.ThreadIdentity(13, 103)
+    scheduler_wake_candidate = wall_critical_path._scheduler_wake_candidate  # pyright: ignore[reportPrivateUsage]
+
+    wake, candidate = scheduler_wake_candidate(
+        {
+            downstream.os_thread_id: [
+                wall_model.SchedulerWake(
+                    kind="waking",
+                    target_running_ns=5,
+                    upstream_os_thread_id=11,
+                    downstream_os_thread_id=downstream.os_thread_id,
+                )
+            ]
+        },
+        {},
+        downstream,
+        wall_model.Interval(5, 10),
+    )
+
+    assert wake is None
+    assert candidate is None
+
+
 # PRF-047: Multi-threaded critical path.
 def test_latest_transition_can_include_an_exact_phase_boundary():
     downstream = wall_model.ThreadIdentity(12, 102)
@@ -177,6 +237,7 @@ def test_latest_transition_can_include_an_exact_phase_boundary():
         downstream_sample=downstream_sample,
         downstream_wait_ns=0,
         candidates=(_sample(wall_model.ThreadIdentity(11, 101), 0, 0, 10, "R", (1,)),),
+        evidence="sampled-transition",
     )
 
     assert (
@@ -236,6 +297,7 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
                     downstream_sample=worker_sample,
                     downstream_wait_ns=0,
                     candidates=(other_worker_sample, second_other_worker_sample),
+                    evidence="sampled-transition",
                 )
             ],
             main_thread: [
@@ -244,6 +306,7 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
                     downstream_sample=terminal_sample,
                     downstream_wait_ns=5,
                     candidates=(worker_sample,),
+                    evidence="sampled-transition",
                 )
             ],
         },

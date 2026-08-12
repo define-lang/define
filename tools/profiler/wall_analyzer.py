@@ -434,6 +434,20 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         + f"discarded rate {profile.discarded_rate:.3%}; "
         + f"profiler pause {_duration(statistics['total_pause_ns'])}"
     )
+    causality = profile.causality
+    if causality is None:
+        print("Causality: sampled-transition inference; no scheduler event stream")
+    elif causality["status"] == "recorded":
+        print(
+            "Causality: linux-perf-sched-waking; "
+            + f"{causality['event_count']} wake events; "
+            + f"{causality['lost_event_count']} lost"
+        )
+    else:
+        print(
+            "Causality: sampled-transition inference; scheduler events "
+            + f"{causality['status']}: {causality['reason']}"
+        )
     print(f"Threads observed: {len(analysis.thread_rows)}")
     print(
         f"Wall window: {_duration(analysis.wall_window_ns)}; "

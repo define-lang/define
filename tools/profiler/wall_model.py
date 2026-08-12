@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import dataclasses
 import typing
 
@@ -76,12 +77,24 @@ class ThreadSample:
         return self.pre_stop_state == "S" and bool(self.stack)
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class SchedulerWake:
+    """A scheduler wake translated to the target-running clock."""
+
+    # PRF-052: Independent causal evidence.
+    kind: typing.Literal["waking", "wakeup-new"]
+    target_running_ns: int
+    upstream_os_thread_id: int
+    downstream_os_thread_id: int
+
+
 @dataclasses.dataclass(slots=True)
 class Samples:
     """Canonical wall samples indexed for the analyzers' access patterns."""
 
     observations: list[ObservationSample]
     by_identity: dict[ThreadIdentity, list[ThreadSample]]
+    scheduler_wakes: list[SchedulerWake] = dataclasses.field(default_factory=list)
 
     def __iter__(self) -> collections.abc.Iterator[ThreadSample]:
         """Iterate over every sampled thread in observation order."""
@@ -141,4 +154,45 @@ def observation_intervals(profile: schema.RawProfile) -> Samples:
             )
             observation_sample.threads[identity] = sample
             by_identity.setdefault(identity, []).append(sample)
-    return Samples(sampled_observations, by_identity)
+    scheduler_wakes: list[SchedulerWake] = []
+    python_observed_ns = typing.cast("int", profile.lifecycle["python_observed_ns"])
+    pause_starts = [observation["pause_started_ns"] for observation in observations]
+    pause_ends = [observation["pause_ended_ns"] for observation in observations]
+    cumulative_pause_ns = [0]
+    for observation in observations:
+        cumulative_pause_ns.append(
+            cumulative_pause_ns[-1]
+            + observation["pause_ended_ns"]
+            - observation["pause_started_ns"]
+        )
+    for event in sorted(
+        profile.scheduler_wake_events,
+        key=lambda event: event["host_monotonic_ns"],
+    ):
+        host_monotonic_ns = event["host_monotonic_ns"]
+        if host_monotonic_ns < python_observed_ns:
+            continue
+        ended_pause_count = bisect.bisect_right(pause_ends, host_monotonic_ns)
+        if (
+            ended_pause_count < len(pause_starts)
+            and pause_starts[ended_pause_count]
+            <= host_monotonic_ns
+            < pause_ends[ended_pause_count]
+        ):
+            continue
+        pause_ns = cumulative_pause_ns[ended_pause_count]
+        scheduler_wakes.append(
+            SchedulerWake(
+                kind=event["kind"],
+                target_running_ns=(
+                    python_started_ns
+                    + host_monotonic_ns
+                    - python_observed_ns
+                    - pause_ns
+                ),
+                upstream_os_thread_id=event["upstream_os_thread_id"],
+                downstream_os_thread_id=event["downstream_os_thread_id"],
+            )
+        )
+    scheduler_wakes.sort(key=lambda event: event.target_running_ns)
+    return Samples(sampled_observations, by_identity, scheduler_wakes)

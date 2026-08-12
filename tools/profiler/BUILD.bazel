@@ -127,6 +127,7 @@ py_library(
         ":cpu_profiler",
         ":process_events",
         ":remote_frame_names",
+        ":scheduler_events",
         ":schema",
         "@pypi//click",
     ],
@@ -249,6 +250,25 @@ py_library(
     visibility = ["//tools:__pkg__"],
 )
 
+# PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
+py_library(
+    name = "scheduler_events",
+    srcs = ["scheduler_events.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [":schema"],
+)
+
+# PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
+py_test(
+    name = "scheduler_events_test",
+    size = "small",
+    srcs = ["scheduler_events_test.py"],
+    deps = [
+        ":scheduler_events",
+        "@pypi//pytest",
+    ],
+)
+
 # PRF-010: Raw-data preservation. PRF-018: Focused analysis.
 # PRF-019: Concurrency semantics.
 py_library(
@@ -292,6 +312,7 @@ py_test(
 py_library(
     name = "wall_model",
     srcs = ["wall_model.py"],
+    visibility = ["//tools:__pkg__"],
     deps = [":schema"],
 )
 
@@ -318,6 +339,8 @@ pyright_test(
         ":profiler_unit_test",
         ":regenerate_test_profiles",
         ":remote_frame_names",
+        ":scheduler_events",
+        ":scheduler_events_test",
         ":schema",
         ":test_helpers",
         ":wall_analyzer",

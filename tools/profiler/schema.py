@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 MAX_DISCARDED_RATE = 0.001
 
 CaptureMode = Literal["wall", "cpu"]
@@ -195,6 +195,27 @@ class SamplingStatistics(TypedDict):
     total_pause_ns: int
 
 
+class SchedulerWakeEvent(TypedDict):
+    """A non-weight-bearing kernel scheduler wake transition."""
+
+    # PRF-052: Independent causal evidence.
+    kind: Literal["waking", "wakeup-new"]
+    host_monotonic_ns: int
+    upstream_os_thread_id: int
+    downstream_os_thread_id: int
+
+
+class CausalitySummary(TypedDict):
+    """Completeness of the independent causal event stream."""
+
+    # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
+    backend: Literal["linux-perf-sched-waking"]
+    status: Literal["recorded", "unavailable", "failed"]
+    event_count: int
+    lost_event_count: int
+    reason: str | None
+
+
 class HeaderRecord(TypedDict):
     """First record in every raw profile."""
 
@@ -238,6 +259,22 @@ class ObservationRecord(TypedDict):
     observation: Observation
 
 
+class SchedulerWakeRecord(TypedDict):
+    """One incrementally persisted scheduler wake transition."""
+
+    # PRF-052: Independent causal evidence.
+    record_type: Literal["scheduler-wake"]
+    event: SchedulerWakeEvent
+
+
+class CausalitySummaryRecord(TypedDict):
+    """Final status of scheduler causal-event collection."""
+
+    # PRF-053: Causal diagnostics.
+    record_type: Literal["causality-summary"]
+    causality: CausalitySummary
+
+
 class FailureEventRecord(TypedDict):
     """One incrementally persisted capture-level failure."""
 
@@ -263,6 +300,8 @@ ProfileRecord = (
     | RuntimeRecord
     | FrameRecord
     | ObservationRecord
+    | SchedulerWakeRecord
+    | CausalitySummaryRecord
     | FailureEventRecord
     | SummaryRecord
 )
@@ -286,6 +325,8 @@ class RawProfile:
     lifecycle: Lifecycle
     frames: dict[int, Frame]
     observations: list[Observation]
+    scheduler_wake_events: list[SchedulerWakeEvent]
+    causality: CausalitySummary | None
     failures: list[FailureRecord]
     observation_counts: ObservationCounts
     compiler_exit_status: int | None
@@ -376,6 +417,8 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
         },
         frames={},
         observations=[],
+        scheduler_wake_events=[],
+        causality=None,
         failures=[],
         observation_counts={
             "successful": 0,
@@ -480,6 +523,14 @@ def load(profile_path: pathlib.Path) -> RawProfile:
                     observation["failure_kind"]
                 )
             profile.observations.append(observation)
+        elif record_type == "scheduler-wake":
+            wake_record = cast("SchedulerWakeRecord", cast("object", record_data))
+            profile.scheduler_wake_events.append(wake_record["event"])
+        elif record_type == "causality-summary":
+            causality_record = cast(
+                "CausalitySummaryRecord", cast("object", record_data)
+            )
+            profile.causality = causality_record["causality"]
         elif record_type == "failure":
             failure = cast("FailureEventRecord", cast("object", record_data))["failure"]
             failure["kind"] = CaptureFailureKind(failure["kind"])

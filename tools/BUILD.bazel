@@ -45,6 +45,7 @@ py_test(
         "//tools/profiler:analyzer_model",
         "//tools/profiler:schema",
         "//tools/profiler:wall_analyzer",
+        "//tools/profiler:wall_model",
         "@pypi//click",
         "@pypi//pytest",
     ],

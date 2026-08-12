@@ -29,6 +29,17 @@ and close events. The analyzer will derive self attribution, cumulative
 attribution, caller and callee relationships, and sampled continuous spans from
 those samples.
 
+Cross-thread causality uses a complementary, non-weight-bearing event stream. On
+Linux, the profiler attaches perf scheduler tracepoints to the target and its
+future threads and records `sched_waking` and `sched_wakeup_new`. These events
+name both the waking and woken operating-system threads. They never contribute
+duration, sample hits, or statistical weight; randomized stack observations
+remain the only source of wall attribution. The analyzer translates event
+timestamps onto the target-running clock, excludes profiler pauses, and prefers
+direct wake evidence over sampled-state transition inference. When tracepoint
+access is unavailable or events are lost, the report exposes that limitation and
+labels sampled-transition inference separately.
+
 `run_profile` is an orchestration tool, not part of the profiler implementation.
 Its job is to build the compiler, prepare the requested source or project
 invocation, run a selected profiling tool, and propagate success or failure. It
@@ -369,6 +380,7 @@ The format must contain:
 - per-thread pre-stop execution state and thread-lifetime identity;
 - complete ordered Python stacks with filename, function name, and line number;
 - per-thread cumulative CPU runtime when collected;
+- timestamped scheduler wake events, their backend, and lost-event count;
 - CPU backend identity when applicable;
 - explicit failed-observation records and reasons;
 - compiler exit status and diagnostics status.
@@ -556,6 +568,15 @@ checkpoint.
     previous snapshot. An unbounded in-memory queue makes observation handoff
     independent of worker progress, and worker failure propagates through an
     explicit event without polling.
+12. **PRF-052: Independent causal evidence.** Cross-thread wake transitions are
+    collected externally through Linux `sched_waking` and `sched_wakeup_new`
+    tracepoints. They carry no duration, sample count, or attribution weight.
+    Direct wake evidence takes precedence over candidates inferred from sampled
+    thread-state changes.
+13. **PRF-053: Causal diagnostics.** The raw profile and report identify the
+    causal-event backend, availability, event count, and lost-event count. A
+    missing or incomplete causal stream never becomes invented direct evidence;
+    the analyzer labels sampled-transition inference separately.
 
 ### Bias and lifecycle acceptance tests
 
@@ -682,6 +703,9 @@ checkpoint.
   separate perf CPU backend adds implementation and analysis complexity.
 - The initial implementation is Linux-specific because it depends on process
   signals, `/proc`, and Linux thread identifiers.
+- Direct scheduler wake evidence requires permission to read scheduler
+  tracepoint metadata and open tracepoint perf events. Restricted hosts retain
+  stack attribution and explicitly report sampled-transition inference.
 
 ## Non-goals
 

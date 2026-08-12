@@ -24,7 +24,13 @@ from typing import Protocol, cast
 import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
 
-from tools.profiler import cpu_profiler, process_events, remote_frame_names, schema
+from tools.profiler import (
+    cpu_profiler,
+    process_events,
+    remote_frame_names,
+    scheduler_events,
+    schema,
+)
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -1298,6 +1304,22 @@ def _summary_record(
     }
 
 
+def _causality_records(
+    result: scheduler_events.CaptureResult,
+) -> list[schema.ProfileRecord]:
+    # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
+    records: list[schema.ProfileRecord] = [
+        {"record_type": "scheduler-wake", "event": event} for event in result.events
+    ]
+    records.append(
+        {
+            "record_type": "causality-summary",
+            "causality": result.summary,
+        }
+    )
+    return records
+
+
 def capture(
     *,
     command: tuple[str, ...],
@@ -1340,6 +1362,7 @@ def capture(
     with (
         process_events.blocked_child_signal(),
         contextlib.ExitStack() as file_descriptors,
+        tempfile.TemporaryDirectory() as temporary_directory_name,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,
         profile_path.open("w", encoding="utf-8") as profile_file,
     ):
@@ -1361,21 +1384,30 @@ def capture(
             os.close,
             target_process.process_file_descriptor,
         )
-        compiler_exit_status = _capture_process(
-            target_process,
-            writer,
-            state,
-            expected_python,
-            attachment_timeout_seconds,
-            mean_interval_seconds,
-            launched_ns,
-            timer_file_descriptor,
-            event_file_descriptor,
-        )
+        with scheduler_events.start(
+            target_process.process.pid,
+            pathlib.Path(temporary_directory_name),
+            enabled=mode == "wall",
+        ) as scheduler_event_collector:
+            compiler_exit_status = _capture_process(
+                target_process,
+                writer,
+                state,
+                expected_python,
+                attachment_timeout_seconds,
+                mean_interval_seconds,
+                launched_ns,
+                timer_file_descriptor,
+                event_file_descriptor,
+            )
+            causality_result = scheduler_event_collector.finish()
         _ = diagnostics_file.seek(0)
         diagnostics = diagnostics_file.read()
         writer.append_records(
-            [_summary_record(state, launched_ns, compiler_exit_status, diagnostics)]
+            [
+                *_causality_records(causality_result),
+                _summary_record(state, launched_ns, compiler_exit_status, diagnostics),
+            ]
         )
 
     if diagnostics:

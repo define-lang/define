@@ -151,6 +151,8 @@ def _raw_profile(*, complete: bool, success: bool) -> schema.RawProfile:
         },
         frames=frames,
         observations=observations,
+        scheduler_wake_events=[],
+        causality=None,
         failures=[],
         observation_counts={
             "successful": len(observations),

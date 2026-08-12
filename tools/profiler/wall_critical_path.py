@@ -55,6 +55,7 @@ class ResolvedHandoff:
     upstream_stack: tuple[int, ...]
     downstream_stack: tuple[int, ...]
     downstream_wait_ns: int
+    evidence: typing.Literal["scheduler-wake", "sampled-transition"]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -68,6 +69,7 @@ class UnresolvedHandoff:
     downstream_stack: tuple[int, ...]
     downstream_wait_ns: int
     candidates: tuple[wall_model.ThreadIdentity, ...]
+    evidence: typing.Literal["scheduler-wake", "sampled-transition"]
 
 
 CriticalPathHandoff = ResolvedHandoff | UnresolvedHandoff
@@ -139,6 +141,7 @@ class _Transition:
     downstream_sample: wall_model.ThreadSample
     downstream_wait_ns: int
     candidates: tuple[wall_model.ThreadSample, ...]
+    evidence: typing.Literal["scheduler-wake", "sampled-transition"]
 
     @property
     def downstream_first_observed(self) -> bool:
@@ -203,6 +206,33 @@ def _departed_working_candidates(
     return latest_working
 
 
+def _scheduler_wake_candidate(
+    scheduler_wakes_by_downstream: dict[int, list[wall_model.SchedulerWake]],
+    samples_by_thread_id: dict[int, list[wall_model.ThreadSample]],
+    downstream: wall_model.ThreadIdentity,
+    interval: wall_model.Interval,
+) -> tuple[wall_model.SchedulerWake | None, wall_model.ThreadSample | None]:
+    # PRF-052: Independent causal evidence.
+    scheduler_wakes = scheduler_wakes_by_downstream.get(downstream.os_thread_id, [])
+    insertion_index = bisect.bisect_right(
+        scheduler_wakes,
+        interval.end_ns,
+        key=lambda wake: wake.target_running_ns,
+    )
+    if insertion_index == 0:
+        return None, None
+    wake = scheduler_wakes[insertion_index - 1]
+    if wake.target_running_ns <= interval.start_ns:
+        return None, None
+    upstream_samples = samples_by_thread_id.get(wake.upstream_os_thread_id, [])
+    matching_samples = [
+        sample
+        for sample in upstream_samples
+        if sample.interval.start_ns <= wake.target_running_ns <= sample.interval.end_ns
+    ]
+    return wake, matching_samples[-1] if matching_samples else None
+
+
 def _transitions(
     profile: schema.RawProfile,
     samples: wall_model.Samples,
@@ -211,7 +241,16 @@ def _transitions(
     transitions: dict[wall_model.ThreadIdentity, list[_Transition]] = {}
     wait_runs: dict[wall_model.ThreadIdentity, tuple[int, int, int]] = {}
     working_samples: dict[wall_model.ThreadIdentity, list[wall_model.ThreadSample]] = {}
+    samples_by_thread_id: dict[int, list[wall_model.ThreadSample]] = {}
+    scheduler_wakes_by_downstream: dict[int, list[wall_model.SchedulerWake]] = {}
+    for scheduler_wake in samples.scheduler_wakes:
+        scheduler_wakes_by_downstream.setdefault(
+            scheduler_wake.downstream_os_thread_id, []
+        ).append(scheduler_wake)
     for identity, identity_samples in samples.by_identity.items():
+        samples_by_thread_id.setdefault(identity.os_thread_id, []).extend(
+            identity_samples
+        )
         working = [sample for sample in identity_samples if _is_working(sample)]
         if working:
             working_samples[identity] = working
@@ -249,7 +288,7 @@ def _transitions(
             later_sample = later_samples.get(identity)
             if later_sample is None or not _is_working(later_sample):
                 stopped_working.append(earlier_sample)
-        target_running_ns = (
+        inferred_target_running_ns = (
             earlier_observation["target_running_ns"]
             + later_observation["target_running_ns"]
         ) // 2
@@ -262,38 +301,58 @@ def _transitions(
             if earlier_sample is not None and not earlier_sample.is_handoff_waiting:
                 continue
             wait_start_index = earlier_index
-            wait_start_ns = target_running_ns
+            wait_start_ns = inferred_target_running_ns
             if earlier_sample is not None:
                 _, wait_start_index, wait_start_ns = wait_runs[downstream]
-            candidates = [
-                candidate
-                for candidate in stopped_working
-                if candidate.identity != downstream
-            ]
-            if earlier_sample is not None and not candidates:
-                candidates = _departed_working_candidates(
-                    downstream,
-                    wait_start_index,
-                    earlier_index,
-                    later_samples,
-                    working_samples,
+            scheduler_wake, scheduler_candidate = _scheduler_wake_candidate(
+                scheduler_wakes_by_downstream,
+                samples_by_thread_id,
+                downstream,
+                wall_model.Interval(
+                    earlier_observation["target_running_ns"],
+                    later_observation["target_running_ns"],
+                ),
+            )
+            if scheduler_wake is not None:
+                target_running_ns = scheduler_wake.target_running_ns
+                candidates = (
+                    [scheduler_candidate] if scheduler_candidate is not None else []
                 )
-            if earlier_sample is not None and not candidates:
-                # A producer can notify a waiter and continue running; the sole
-                # working peer after the wake is then the only observed source.
+                evidence: typing.Literal["scheduler-wake", "sampled-transition"] = (
+                    "scheduler-wake"
+                )
+            else:
+                target_running_ns = inferred_target_running_ns
+                evidence = "sampled-transition"
                 candidates = [
                     candidate
-                    for identity, candidate in later_samples.items()
-                    if identity != downstream and _is_working(candidate)
+                    for candidate in stopped_working
+                    if candidate.identity != downstream
                 ]
-            if earlier_sample is None and not candidates:
-                # A newly observed worker has one observable producer when
-                # exactly one stack-bearing thread predates it.
-                candidates = [
-                    candidate
-                    for candidate in earlier_samples.values()
-                    if candidate.stack
-                ]
+                if earlier_sample is not None and not candidates:
+                    candidates = _departed_working_candidates(
+                        downstream,
+                        wait_start_index,
+                        earlier_index,
+                        later_samples,
+                        working_samples,
+                    )
+                if earlier_sample is not None and not candidates:
+                    # A producer can notify a waiter and continue running; the sole
+                    # working peer after the wake is then the only observed source.
+                    candidates = [
+                        candidate
+                        for identity, candidate in later_samples.items()
+                        if identity != downstream and _is_working(candidate)
+                    ]
+                if earlier_sample is None and not candidates:
+                    # A newly observed worker has one observable producer when
+                    # exactly one stack-bearing thread predates it.
+                    candidates = [
+                        candidate
+                        for candidate in earlier_samples.values()
+                        if candidate.stack
+                    ]
             candidates.sort(
                 key=lambda candidate: (
                     candidate.identity.os_thread_id,
@@ -310,6 +369,7 @@ def _transitions(
                         else 0
                     ),
                     candidates=tuple(candidates),
+                    evidence=evidence,
                 )
             )
     return transitions
@@ -402,6 +462,7 @@ def _phases_and_handoffs(
                     candidates=tuple(
                         candidate.identity for candidate in transition.candidates
                     ),
+                    evidence=transition.evidence,
                 )
             )
             if transition.downstream_first_observed:
@@ -462,6 +523,7 @@ def _phases_and_handoffs(
                 upstream_stack=upstream_sample.stack,
                 downstream_stack=transition.downstream_sample.stack,
                 downstream_wait_ns=transition.downstream_wait_ns,
+                evidence=transition.evidence,
             )
         )
         phase_end_ns = transition.target_running_ns
@@ -760,7 +822,8 @@ def _emit_handoff(
         )
         print(
             f"  {_identity_text(handoff.upstream)} -> "
-            + f"{_identity_text(handoff.downstream)}; {downstream_status}"
+            + f"{_identity_text(handoff.downstream)}; {downstream_status}; "
+            + f"evidence {handoff.evidence}"
         )
         print("    producer: " + _stack_text(handoff.upstream_stack, frames))
         downstream_label = "waiter" if handoff.downstream_wait_ns else "receiver"
@@ -781,7 +844,7 @@ def _emit_handoff(
     print(
         f"  {handoff.resolution}: wake of {_identity_text(handoff.downstream)}"
         + downstream_status
-        + f"; candidate producers: {candidates}"
+        + f"; candidate producers: {candidates}; evidence {handoff.evidence}"
     )
     print("    receiver: " + _stack_text(handoff.downstream_stack, frames))
 

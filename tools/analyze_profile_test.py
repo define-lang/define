@@ -4,7 +4,7 @@ from pathlib import Path
 import click.testing
 import pytest
 
-from tools.profiler import analyzer, analyzer_model, schema, wall_analyzer
+from tools.profiler import analyzer, analyzer_model, schema, wall_analyzer, wall_model
 
 
 # PRF-016: Source identity. PRF-020: Machine and human interfaces.
@@ -162,6 +162,8 @@ def _controlled_profile() -> schema.RawProfile:
             failed_observation,
             final_observation,
         ],
+        scheduler_wake_events=[],
+        causality=None,
         failures=[],
         observation_counts={
             "successful": 2,
@@ -219,6 +221,14 @@ def _wire_records(profile: schema.RawProfile) -> list[schema.ProfileRecord]:
         for observation in profile.observations
     )
     records.extend(
+        {"record_type": "scheduler-wake", "event": event}
+        for event in profile.scheduler_wake_events
+    )
+    if profile.causality is not None:
+        records.append(
+            {"record_type": "causality-summary", "causality": profile.causality}
+        )
+    records.extend(
         {"record_type": "failure", "failure": failure} for failure in profile.failures
     )
     compiler_exit_status = profile.compiler_exit_status
@@ -254,6 +264,21 @@ def _write_records(profile_path: Path, records: list[schema.ProfileRecord]) -> N
 # PRF-024: Explicit failures.
 def test_loads_serialized_failure_kinds_as_enums(tmp_path: Path):
     profile = _controlled_profile()
+    profile.scheduler_wake_events = [
+        {
+            "kind": "waking",
+            "host_monotonic_ns": 170,
+            "upstream_os_thread_id": 42,
+            "downstream_os_thread_id": 43,
+        }
+    ]
+    profile.causality = {
+        "backend": "linux-perf-sched-waking",
+        "status": "recorded",
+        "event_count": 1,
+        "lost_event_count": 0,
+        "reason": None,
+    }
     profile.failures = [
         {
             "host_monotonic_ns": 200,
@@ -281,6 +306,57 @@ def test_loads_serialized_failure_kinds_as_enums(tmp_path: Path):
             "reason": "SIGTERM",
         }
     ]
+    assert loaded_profile.scheduler_wake_events == profile.scheduler_wake_events
+    assert loaded_profile.causality == profile.causality
+
+
+# PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
+def test_scheduler_wakes_use_target_running_time_and_exclude_pauses(
+    capsys: pytest.CaptureFixture[str],
+):
+    profile = _controlled_profile()
+    profile.causality = {
+        "backend": "linux-perf-sched-waking",
+        "status": "recorded",
+        "event_count": 3,
+        "lost_event_count": 0,
+        "reason": None,
+    }
+    profile.scheduler_wake_events = [
+        {
+            "kind": "waking",
+            "host_monotonic_ns": 90,
+            "upstream_os_thread_id": 42,
+            "downstream_os_thread_id": 43,
+        },
+        {
+            "kind": "waking",
+            "host_monotonic_ns": 157,
+            "upstream_os_thread_id": 42,
+            "downstream_os_thread_id": 43,
+        },
+        {
+            "kind": "waking",
+            "host_monotonic_ns": 170,
+            "upstream_os_thread_id": 42,
+            "downstream_os_thread_id": 43,
+        },
+    ]
+
+    samples = wall_model.observation_intervals(profile)
+
+    assert samples.scheduler_wakes == [
+        wall_model.SchedulerWake(
+            kind="waking",
+            target_running_ns=60,
+            upstream_os_thread_id=42,
+            downstream_os_thread_id=43,
+        )
+    ]
+    wall_analyzer.emit_report(profile, _analyze_wall(profile), 1)
+    assert "Causality: linux-perf-sched-waking; 3 wake events; 0 lost" in (
+        capsys.readouterr().out
+    )
 
 
 # PRF-004: No stale-stack reuse. PRF-005: Lifecycle-bounded attribution.

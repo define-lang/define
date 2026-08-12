@@ -155,6 +155,9 @@ def test_main_profiles_relative_target(
     assert profile.success is True
     assert profile.observation_counts["successful"] > 1_000
     assert profile.sampling["schedule"] == "poisson"
+    assert profile.causality is not None
+    assert profile.causality["backend"] == "linux-perf-sched-waking"
+    assert profile.causality["event_count"] == len(profile.scheduler_wake_events)
     assert f"Profile: {profile_path}" in profile_stdout
     assert "Capture: complete; successful; compiler exit 0; diagnostics none" in (
         profile_stdout
@@ -399,6 +402,7 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     )
     assert "Sampling: poisson" in analysis_result.stdout
     assert "Observations:" in analysis_result.stdout
+    assert "Causality:" in analysis_result.stdout
     assert "Self wall occupancy (union across threads):" in analysis_result.stdout
     assert "Cumulative wall occupancy (union across threads):" in analysis_result.stdout
     assert "Longest sampled stack paths:" in analysis_result.stdout
