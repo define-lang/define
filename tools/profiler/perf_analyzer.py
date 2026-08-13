@@ -24,6 +24,7 @@ _EVENT_PATTERN = re.compile(
     r"^(?P<event>[^:]+)(?::[a-z]+)?: type: .*"
     + r"\{ sample_period, sample_freq \}: (?P<frequency_hz>\d+),.*\bfreq: 1,.*"
 )
+_THREAD_ID_PATTERN = re.compile(r"^\s*(?P<tid>\d+)\s*$")
 
 
 class PerfAnalysisError(Exception):
@@ -174,8 +175,10 @@ def _parse_script_lines(
         )
 
 
-def _decode(profile_path: pathlib.Path) -> tuple[list[Sample], list[str]]:
-    completed = subprocess.run(
+def _run_perf_script(
+    profile_path: pathlib.Path, *arguments: str
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         (
             _perf_executable(),
             "--buildid-dir",
@@ -183,19 +186,48 @@ def _decode(profile_path: pathlib.Path) -> tuple[list[Sample], list[str]]:
             "script",
             "-i",
             os.fspath(profile_path),
-            "-F",
-            "comm,pid,tid,event,period,ip,sym,dso",
-            "--no-inline",
+            *arguments,
         ),
         check=False,
         capture_output=True,
         text=True,
     )
+
+
+def _sampled_thread_ids(profile_path: pathlib.Path) -> list[int]:
+    completed = _run_perf_script(profile_path, "-F", "tid", "-G")
     if completed.returncode != 0:
         raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
-    return list(_parse_script_lines(completed.stdout.splitlines())), [
-        line for line in completed.stderr.splitlines() if line
-    ]
+    thread_ids: set[int] = set()
+    for line in completed.stdout.splitlines():
+        match = _THREAD_ID_PATTERN.fullmatch(line)
+        if match is None:
+            raise PerfAnalysisError(f"malformed perf thread ID: {line.rstrip()}")
+        thread_ids.add(int(match.group("tid")))
+    return sorted(thread_ids)
+
+
+def _decode(profile_path: pathlib.Path) -> tuple[list[Sample], list[str]]:
+    samples: list[Sample] = []
+    warnings: dict[str, None] = {}
+    # Some perf versions reuse CPython JIT mappings incorrectly across threads in a
+    # single script pass, so isolate each thread's symbolization.
+    for thread_id in _sampled_thread_ids(profile_path):
+        completed = _run_perf_script(
+            profile_path,
+            "--tid",
+            str(thread_id),
+            "-F",
+            "comm,pid,tid,event,period,ip,sym,dso",
+            "--no-inline",
+        )
+        if completed.returncode != 0:
+            raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
+        samples.extend(_parse_script_lines(completed.stdout.splitlines()))
+        for line in completed.stderr.splitlines():
+            if line:
+                warnings[line] = None
+    return samples, list(warnings)
 
 
 def _configuration(profile_path: pathlib.Path) -> tuple[str, int]:

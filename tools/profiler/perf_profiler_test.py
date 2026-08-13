@@ -171,6 +171,46 @@ def test_reports_perf_script_failure(tmp_path: Path):
         )
 
 
+def test_decodes_each_thread_separately(tmp_path: Path):
+    discovered_threads = mock.Mock(returncode=0, stdout="102\n103\n", stderr="")
+    first_thread = mock.Mock(
+        returncode=0,
+        stdout=(
+            "python 101/102 1003009 cpu-clock:u:\n"
+            "  7f02 py::first:/workspace/example.py (/tmp/jitted-101-1.so)\n"
+        ),
+        stderr="shared warning\n",
+    )
+    second_thread = mock.Mock(
+        returncode=0,
+        stdout=(
+            "python 101/103 1003009 cpu-clock:u:\n"
+            "  7f03 py::second:/workspace/example.py (/tmp/jitted-101-2.so)\n"
+        ),
+        stderr="\nshared warning\n",
+    )
+    with mock.patch.object(
+        subprocess,
+        "run",
+        autospec=True,
+        side_effect=[discovered_threads, first_thread, second_thread],
+    ) as run:
+        samples, warnings = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
+            tmp_path / "perf.data"
+        )
+
+    assert [sample.os_thread_id for sample in samples] == [102, 103]
+    assert [sample.python_stack_leaf_first[0].function for sample in samples] == [
+        "first",
+        "second",
+    ]
+    assert warnings == ["shared warning"]
+    assert [call.args[0][6:8] for call in run.call_args_list[1:]] == [
+        ("--tid", "102"),
+        ("--tid", "103"),
+    ]
+
+
 def test_cpu_percentages_include_native_and_filtered_python_samples():
     profile = _profile(
         [
@@ -328,7 +368,10 @@ def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
         command=(
             sys.executable,
             "-c",
-            "sum(value * value for value in range(8_000_000))",
+            "from concurrent.futures import ThreadPoolExecutor; "
+            + "executor = ThreadPoolExecutor(max_workers=2); "
+            + "list(executor.map(lambda _: sum(value * value for value in "
+            + "range(8_000_000)), range(2)))",
         ),
         profile_path=profile_path,
         workload_path=workload_path,
@@ -351,10 +394,7 @@ def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
     analysis = perf_analyzer.analyze(profile)
     assert analysis.sampled_cpu_ns > 0
     assert analysis.python_attributed_cpu_ns > 0
-    assert any(
-        row.identity.function == "<genexpr>"
-        for row in analysis.cumulative_function_rows
-    )
+    assert sum(row.python_attributed_cpu_ns > 0 for row in analysis.thread_rows) >= 2
 
 
 def test_preserves_target_diagnostics_for_unsuccessful_perf_capture(tmp_path: Path):
