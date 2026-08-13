@@ -28,6 +28,8 @@ class CodeGenerator:
         """
         # TODO: Diagnose entry-point requirements that cannot be satisfied
         # because no caller triggers the entry point.
+        # TODO: Parallelize code generation across definitions in the same way
+        # that reference graph validation parallelizes definition traversal.
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(
             graph,
