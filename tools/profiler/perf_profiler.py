@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import pathlib
+import shlex
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,8 @@ import typing
 
 _BAZEL_PYTHON_ENTRYPOINT_MARKER = "__PEX_PY_BINARY_ENTRYPOINT__"
 _BAZEL_PYTHON_EXEC = 'exec "python3" '
+# CPython and perf require this fixed exchange path rather than TMPDIR.
+_PERF_MAP_DIRECTORY = pathlib.Path("/tmp")  # noqa: S108
 
 
 class Metadata(typing.TypedDict):
@@ -27,6 +30,7 @@ class Metadata(typing.TypedDict):
     started_ns: int
     ended_ns: int
     compiler_exit_status: int
+    target_pid: int
 
 
 def metadata_path(profile_path: pathlib.Path) -> pathlib.Path:
@@ -37,6 +41,16 @@ def metadata_path(profile_path: pathlib.Path) -> pathlib.Path:
 def buildid_path(profile_path: pathlib.Path) -> pathlib.Path:
     """Return the native perf build-ID cache retained with a data file."""
     return profile_path.with_name(profile_path.name + ".buildid")
+
+
+def python_map_path(profile_path: pathlib.Path) -> pathlib.Path:
+    """Return the retained CPython perf symbol map for a data file."""
+    return profile_path.with_name(profile_path.name + ".map")
+
+
+def runtime_python_map_path(target_pid: int) -> pathlib.Path:
+    """Return the path from which perf resolves one process's Python symbols."""
+    return _PERF_MAP_DIRECTORY / f"perf-{target_pid}.map"
 
 
 def diagnostics_path(profile_path: pathlib.Path) -> pathlib.Path:
@@ -76,7 +90,7 @@ def _profiled_command(
         return command
     profiled_launcher = launcher.replace(
         _BAZEL_PYTHON_EXEC,
-        _BAZEL_PYTHON_EXEC + "-X perf_jit ",
+        _BAZEL_PYTHON_EXEC + "-X perf ",
         1,
     )
     profiled_launcher_path = temporary_directory / "python-launcher"
@@ -88,6 +102,67 @@ def _profiled_command(
     return (os.fspath(profiled_launcher_path), *command[1:])
 
 
+def _target_command(
+    command: tuple[str, ...], temporary_directory: pathlib.Path
+) -> tuple[tuple[str, ...], pathlib.Path]:
+    target_pid_path = temporary_directory / "target.pid"
+    target_launcher_path = temporary_directory / "target-launcher"
+    # The launcher owns this PID, so any preexisting map is necessarily stale.
+    _ = target_launcher_path.write_text(
+        "#!/bin/sh\n"
+        + "printf '%s\\n' \"$$\" > "
+        + shlex.quote(os.fspath(target_pid_path))
+        + '\nrm -f "/tmp/perf-$$.map"\nexec "$@"\n',
+        encoding="utf-8",
+    )
+    target_launcher_path.chmod(0o700)
+    return (os.fspath(target_launcher_path), *command), target_pid_path
+
+
+def _native_objects(
+    buildid_output: str, runtime_map_path: pathlib.Path
+) -> tuple[bool, list[str]]:
+    recorded_python_map = False
+    native_objects: list[str] = []
+    for line in buildid_output.splitlines():
+        fields = line.split(maxsplit=1)
+        if fields == [os.fspath(runtime_map_path)]:
+            recorded_python_map = True
+            continue
+        if len(fields) != 2:
+            continue
+        object_path = pathlib.Path(fields[1])
+        if object_path.is_file():
+            native_objects.append(fields[1])
+    return recorded_python_map, native_objects
+
+
+def _retain_native_objects(
+    perf_executable: str,
+    profile_path: pathlib.Path,
+    native_objects: list[str],
+):
+    retained_buildid_path = buildid_path(profile_path)
+    if retained_buildid_path.exists():
+        shutil.rmtree(retained_buildid_path)
+    retained_buildid_path.mkdir()
+    if not native_objects:
+        return
+    _ = subprocess.run(
+        (
+            perf_executable,
+            "--buildid-dir",
+            os.fspath(retained_buildid_path),
+            "buildid-cache",
+            "--add",
+            ",".join(native_objects),
+        ),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def capture(
     *,
     command: tuple[str, ...],
@@ -96,22 +171,24 @@ def capture(
     working_directory: pathlib.Path,
     frequency_hz: int,
 ) -> Metadata:
-    """Run the complete target and retain perf's injected native data file."""
+    """Run the complete target and retain perf data with its Python symbol map."""
     started_ns = time.monotonic_ns()
     perf_executable = _perf_executable()
     with (
         tempfile.TemporaryDirectory(prefix="define-perf-") as temporary_directory,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,
-        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as inject_file,
     ):
         temporary_directory_path = pathlib.Path(temporary_directory)
         recorded_data_path = temporary_directory_path / "perf.data"
         environment = os.environ.copy()
-        environment["PYTHON_PERF_JIT_SUPPORT"] = "1"
+        environment["PYTHONPERFSUPPORT"] = "1"
         profiled_command = _profiled_command(
             command,
             temporary_directory_path,
             environment,
+        )
+        target_command, target_pid_path = _target_command(
+            profiled_command, temporary_directory_path
         )
         completed = subprocess.run(
             (
@@ -124,13 +201,11 @@ def capture(
                 str(frequency_hz),
                 "-g",
                 "--call-graph",
-                "dwarf",
-                "-k",
-                "1",
+                "fp",
                 "-o",
                 os.fspath(recorded_data_path),
                 "--",
-                *profiled_command,
+                *target_command,
             ),
             cwd=working_directory,
             env=environment,
@@ -139,21 +214,16 @@ def capture(
             text=True,
         )
         target_ended_ns = time.monotonic_ns()
-        _ = subprocess.run(
-            (
-                perf_executable,
-                "inject",
-                "-i",
-                os.fspath(recorded_data_path),
-                "--jit",
-                "--output",
-                os.fspath(profile_path),
-            ),
-            cwd=temporary_directory_path,
-            check=True,
-            stderr=inject_file,
-            text=True,
-        )
+        target_pid = int(target_pid_path.read_text(encoding="utf-8"))
+        runtime_map_path = runtime_python_map_path(target_pid)
+        if not runtime_map_path.is_file() or runtime_map_path.stat().st_size == 0:
+            raise RuntimeError(
+                "CPython did not create its perf symbol map; "
+                + "the target must support -X perf"
+            )
+        _ = shutil.copy2(runtime_map_path, python_map_path(profile_path))
+        runtime_map_path.unlink()
+        _ = shutil.move(recorded_data_path, profile_path)
         buildids = subprocess.run(
             (
                 perf_executable,
@@ -166,36 +236,17 @@ def capture(
             capture_output=True,
             text=True,
         )
-        jitted_objects: list[str] = []
-        for line in buildids.stdout.splitlines():
-            fields = line.split(maxsplit=1)
-            if len(fields) != 2:
-                continue
-            object_path = pathlib.Path(fields[1])
-            if object_path.name.startswith("jitted-") and object_path.suffix == ".so":
-                jitted_objects.append(fields[1])
-        _ = subprocess.run(
-            (
-                perf_executable,
-                "--buildid-dir",
-                os.fspath(buildid_path(profile_path)),
-                "buildid-cache",
-                "--add",
-                ",".join(jitted_objects),
-            ),
-            check=True,
-            capture_output=True,
-            text=True,
+        recorded_python_map, native_objects = _native_objects(
+            buildids.stdout, runtime_map_path
         )
+        if not recorded_python_map:
+            raise RuntimeError("perf data does not reference the target's Python map")
+        _retain_native_objects(perf_executable, profile_path, native_objects)
         _ = diagnostics_file.seek(0)
         diagnostics = diagnostics_file.read()
-        _ = inject_file.seek(0)
-        inject_diagnostics = inject_file.read() + buildids.stderr
 
     _ = diagnostics_path(profile_path).write_text(diagnostics, encoding="utf-8")
-    _ = profile_path.with_name(profile_path.name + ".inject.stderr").write_text(
-        inject_diagnostics, encoding="utf-8"
-    )
+    profile_path.with_name(profile_path.name + ".inject.stderr").unlink(missing_ok=True)
     metadata: Metadata = {
         "command": list(command),
         "working_directory": os.fspath(working_directory),
@@ -204,6 +255,7 @@ def capture(
         "started_ns": started_ns,
         "ended_ns": target_ended_ns,
         "compiler_exit_status": completed.returncode,
+        "target_pid": target_pid,
     }
     _ = metadata_path(profile_path).write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n",

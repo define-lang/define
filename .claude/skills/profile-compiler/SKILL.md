@@ -64,9 +64,10 @@ uv run -m tools.run_profile --source <source> --out <wall-profile>
 
 Do not capture a CPU profile unless the user explicitly asks for one. When they
 do, use `--mode cpu` with the same source or project workflow. CPU mode requires
-Linux perf access and a CPython build with perf JIT support; it retains native
-injected `perf.data`, perf's build-ID cache for JIT symbols, and a small Define
-metadata sidecar. Use a `.data` output name for CPU captures.
+Linux perf access and a CPython build with perf trampoline and frame-pointer
+support; it retains native `perf.data`, CPython's perf symbol map, perf's
+build-ID cache, and a small Define metadata sidecar. Use a `.data` output name
+for CPU captures.
 
 For `generate_reference_graph_project`, use `--project <directory>`. Analyze
 each exact artifact through the public analyzer:

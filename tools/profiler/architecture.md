@@ -60,14 +60,12 @@ analyzer will calculate ordinary self and cumulative attribution from those
 stacks. Compiler phases can be understood from their functions, callers,
 callees, filenames, and source entry points.
 
-CPU capture uses Linux perf's `cpu-clock` sampling with DWARF call graphs and
-CPython's JIT perf support. The profiler enables `PYTHON_PERF_JIT_SUPPORT`, runs
-the complete compiler command under perf, and immediately runs
-`perf inject --jit` while CPython's JIT dump is still available. The resulting
-native `perf.data` remains directly usable by standard perf commands. Accurate
-on-CPU attribution takes precedence over the smaller call-correlated cost
-introduced by CPython's perf stack trampolines. The wall profiler remains free
-of call-correlated target-side work.
+CPU capture uses Linux perf's `cpu-clock` sampling with frame-pointer call
+graphs and CPython's perf-map support. The profiler enables `PYTHONPERFSUPPORT`,
+runs the complete compiler command under perf, and retains the PID-named symbol
+map with native `perf.data`. Accurate on-CPU attribution takes precedence over
+the smaller call-correlated cost introduced by CPython's perf stack trampolines.
+The wall profiler remains free of call-correlated target-side work.
 
 When Define moves to Python 3.15t, evaluate replacing the custom collector with
 the standard-library `profiling.sampling` profiler, also known as Tachyon. It
@@ -212,10 +210,12 @@ call frequency. See [Pyinstrument's description of its mechanism][pyinstrument].
 ### Linux perf with CPython frame trampolines
 
 Linux perf recorded the compiler without lost kernel samples, and direct use of
-the generated Python environment with `-X perf_jit` exposed durable Python frame
-names after `perf inject --jit`. CPython's perf support makes Python frames
-visible through stack trampolines interposed on Python calls. That cost is much
-smaller than `cProfile`, but it is still correlated with call frequency.
+the generated Python environment with `-X perf` exposed Python frame names
+through a perf symbol map. The generated Python has frame pointers, so perf can
+unwind the mixed native and Python stack without generated DWARF data. CPython's
+perf support makes Python frames visible through stack trampolines interposed on
+Python calls. That cost is much smaller than `cProfile`, but it is still
+correlated with call frequency.
 
 Perf is the selected CPU backend because it samples threads only while they are
 actually on a CPU. It therefore does not assign a blocked interval to whichever
@@ -355,17 +355,21 @@ exit.
 
 CPU mode is statistical and uses Linux perf exclusively. `perf record` samples
 the `cpu-clock` event for the complete compiler process and inherited threads at
-a recorded frequency. DWARF call graphs retain native and Python frames; CPython
-JIT symbols provide Python filename and function identity. Perf's native data
-retains each sample's period, process and OS thread identifiers, timestamp, and
-complete leaf-first call chain.
+a recorded frequency. Frame-pointer call graphs retain native and Python frames;
+CPython perf-map symbols provide Python filename and function identity. Perf's
+native data retains each sample's period, process and OS thread identifiers,
+timestamp, and complete leaf-first call chain.
 
 The innermost resolved Python frame receives self attribution. Every resolved
 Python frame receives cumulative attribution, and adjacent resolved Python
 frames provide caller and callee relationships. Samples without a Python frame
 remain in total sampled CPU and are reported as unattributed. A waiting thread
 receives no samples merely for being blocked, and short-lived Python work can be
-sampled directly rather than inferred from two surrounding observations.
+sampled directly rather than inferred from two surrounding observations. An
+unresolved frame from the CPython symbol map can conceal a Python callee and
+make all three attribution forms incorrect. The analyzer therefore rejects the
+profile if any sampled CPython trampoline remains unresolved rather than
+assigning its period to the nearest resolved Python frame.
 
 Perf CPU capture does not weaken wall profiling. Wall capture continues to use
 blocking external snapshots and does not enable CPython perf stack trampolines.
@@ -394,11 +398,14 @@ The wall format must contain:
 CPU samples and call chains remain in perf's native `perf.data` format. Define
 does not duplicate them in a custom schema. A small JSON sidecar contains only
 facts perf does not know: the exact command, working directory, workload path
-and digest, capture bounds, and compiler exit status. Target and `perf inject`
-diagnostics are retained as raw sidecars rather than incorporated into a CPU
-wire format. Event and frequency come from perf's native event attributes. JIT
-ELF objects hit by the profile are retained in perf's own build-ID cache layout
-beside the data; the analyzer supplies that cache to `perf script`.
+and digest, capture bounds, compiler exit status, and target process ID. The
+CPython symbol map and target diagnostics are retained as raw sidecars rather
+than incorporated into a CPU wire format. Event and frequency come from perf's
+native event attributes. Native objects with build IDs are retained in perf's
+own build-ID cache layout beside the data. The analyzer supplies that cache and
+materializes the retained PID-named map exclusively while `perf script` runs. It
+refuses to overwrite an existing map or analyze while that PID is live, and
+verifies that the map was not replaced or changed during symbolization.
 
 Observed interval statistics, pause durations, thread first- and last-seen
 observations, handoff evidence, observation counts, completeness, and success
@@ -409,10 +416,10 @@ closed, versioned string enums. Exception class names and messages are evidence
 in the human-readable failure reason, not ad hoc failure codes.
 
 The wall collector writes incrementally so an interrupted or failed compiler can
-still leave diagnosable evidence. A perf CPU capture injects CPython's JIT dump
-into native `perf.data` immediately after the compiler exits. A wall profile
-without a final summary is incomplete; CPU analysis requires both the complete
-native data and its Define metadata sidecar.
+still leave diagnosable evidence. A perf CPU capture retains CPython's symbol
+map immediately after the compiler exits. A wall profile without a final summary
+is incomplete; CPU analysis requires the complete native data, Define metadata,
+and retained symbol map.
 
 ### Analyzer
 
@@ -533,7 +540,7 @@ checkpoint.
    available Python caller-to-leaf stack.
 6. **PRF-016: Source identity.** Wall frames include full filename, function
    name, and current source line. CPU Python frames include the filename and
-   function identity exposed by CPython's perf JIT data; native frames retain
+   function identity exposed by CPython's perf-map data; native frames retain
    their symbol, instruction pointer, and shared-object identity.
 7. **PRF-017: No compiler instrumentation.** Profiling requires no compiler
    phase markers, decorators, context managers, callbacks, or other source
@@ -567,8 +574,9 @@ checkpoint.
    the threshold is not a successful profile.
 7. **PRF-027: Incremental persistence.** A wall-capture crash or interruption
    preserves all complete preceding records and clearly marks the profile
-   incomplete. CPU capture converts perf's native artifact immediately after
-   target completion.
+   incomplete. CPU capture retains perf's native artifact and CPython symbol map
+   immediately after target completion. CPU analysis fails if any CPython
+   trampoline in a sample is unresolved.
 8. **PRF-028: Bounded storage.** The collector interns or otherwise deduplicates
    repeated frame data. Storage growth must be feasible for the largest
    generated workloads.
@@ -721,9 +729,9 @@ checkpoint.
   material profile-shape changes.
 - Statistical sampling cannot provide exact call counts or exact function
   boundaries shorter than the sampling interval.
-- Perf requires Linux perf-event access and a CPython build with perf JIT
-  support. `perf inject --jit` must run while CPython's JIT dump remains
-  available.
+- Perf requires Linux perf-event access and a CPython build with perf trampoline
+  support and frame pointers. The PID-named perf map must be retained when the
+  target exits.
 - The initial implementation is Linux-specific because it depends on process
   signals, `/proc`, and Linux thread identifiers.
 - Direct scheduler wake evidence requires permission to read scheduler
@@ -845,7 +853,7 @@ protocol, then the user reviews and commits.
 ### Increment 4: Accurate CPU vertical slice
 
 1. Run the complete generated Python environment under Linux perf with CPython
-   perf JIT support and retain weighted call chains in native `perf.data`.
+   perf-map support and retain weighted call chains in native `perf.data`.
 2. Retain no scheduler-runtime endpoint collector, schema, analyzer, fixture, or
    runtime fallback.
 3. Extend the analyzer to consume native perf data and calculate Python self,

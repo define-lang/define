@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
+import fcntl
 import itertools
 import json
 import math
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -16,15 +19,14 @@ from tools.profiler import analyzer_model, perf_profiler
 
 if typing.TYPE_CHECKING:
     import collections.abc
-    import pathlib
 
 _HEADER_PATTERN = re.compile(r"^.*?\s+\d+/(?P<tid>\d+)\s+(?P<period>\d+)\s+\S+:\s*$")
-_FRAME_PATTERN = re.compile(r"^\s+\S+\s+(?P<symbol>.*?)\s+\(.*\)\s*$")
+_FRAME_PATTERN = re.compile(r"^\s+\S+\s+(?P<symbol>.*?)\s+\((?P<dso>.*)\)\s*$")
 _EVENT_PATTERN = re.compile(
     r"^(?P<event>[^:]+)(?::[a-z]+)?: type: .*"
     + r"\{ sample_period, sample_freq \}: (?P<frequency_hz>\d+),.*\bfreq: 1,.*"
 )
-_THREAD_ID_PATTERN = re.compile(r"^\s*(?P<tid>\d+)\s*$")
+_PYTHON_MAP_PATTERN = re.compile(r"^/tmp/perf-\d+\.map$")
 
 
 class PerfAnalysisError(Exception):
@@ -45,6 +47,7 @@ class Sample:
     os_thread_id: int
     period_ns: int
     python_stack_leaf_first: tuple[analyzer_model.FunctionIdentity, ...]
+    unresolved_python_frame_count: int = 0
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -146,6 +149,7 @@ def _parse_script_lines(
     os_thread_id: int | None = None
     period_ns = 0
     python_frames: list[analyzer_model.FunctionIdentity] = []
+    unresolved_python_frame_count = 0
     for line in lines:
         if not line.strip():
             continue
@@ -156,22 +160,30 @@ def _parse_script_lines(
                     os_thread_id=os_thread_id,
                     period_ns=period_ns,
                     python_stack_leaf_first=tuple(python_frames),
+                    unresolved_python_frame_count=unresolved_python_frame_count,
                 )
             os_thread_id = int(header_match.group("tid"))
             period_ns = int(header_match.group("period"))
             python_frames = []
+            unresolved_python_frame_count = 0
             continue
         frame_match = _FRAME_PATTERN.match(line)
         if os_thread_id is None or frame_match is None:
             raise PerfAnalysisError(f"malformed perf script line: {line.rstrip()}")
-        python_identity = _python_identity(frame_match.group("symbol"))
+        symbol = frame_match.group("symbol")
+        python_identity = _python_identity(symbol)
         if python_identity is not None:
             python_frames.append(python_identity)
+        elif symbol == "[unknown]" and _PYTHON_MAP_PATTERN.fullmatch(
+            frame_match.group("dso")
+        ):
+            unresolved_python_frame_count += 1
     if os_thread_id is not None:
         yield Sample(
             os_thread_id=os_thread_id,
             period_ns=period_ns,
             python_stack_leaf_first=tuple(python_frames),
+            unresolved_python_frame_count=unresolved_python_frame_count,
         )
 
 
@@ -194,40 +206,70 @@ def _run_perf_script(
     )
 
 
-def _sampled_thread_ids(profile_path: pathlib.Path) -> list[int]:
-    completed = _run_perf_script(profile_path, "-F", "tid", "-G")
-    if completed.returncode != 0:
-        raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
-    thread_ids: set[int] = set()
-    for line in completed.stdout.splitlines():
-        match = _THREAD_ID_PATTERN.fullmatch(line)
-        if match is None:
-            raise PerfAnalysisError(f"malformed perf thread ID: {line.rstrip()}")
-        thread_ids.add(int(match.group("tid")))
-    return sorted(thread_ids)
+@contextlib.contextmanager
+def _materialized_python_map(
+    profile_path: pathlib.Path, target_pid: int
+) -> collections.abc.Generator[None]:
+    retained_map_path = perf_profiler.python_map_path(profile_path)
+    if not retained_map_path.is_file() or retained_map_path.stat().st_size == 0:
+        raise PerfAnalysisError("the retained CPython perf symbol map is missing")
+    retained_map = retained_map_path.read_bytes()
+    runtime_map_path = perf_profiler.runtime_python_map_path(target_pid)
+    target_process_path = pathlib.Path("/proc") / str(target_pid)
+    lock_path = runtime_map_path.with_name(runtime_map_path.name + ".define-lock")
+    with lock_path.open("a+b") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        if target_process_path.exists():
+            raise PerfAnalysisError(
+                f"cannot safely restore symbols: process {target_pid} is live"
+            )
+        try:
+            with runtime_map_path.open("xb") as runtime_map_file:
+                _ = runtime_map_file.write(retained_map)
+        except FileExistsError as error:
+            raise PerfAnalysisError(
+                f"cannot safely restore symbols: {runtime_map_path} already exists"
+            ) from error
+        runtime_map_inode = runtime_map_path.stat().st_ino
+        if target_process_path.exists():
+            runtime_map_path.unlink()
+            raise PerfAnalysisError(
+                f"cannot safely restore symbols: process {target_pid} was reused"
+            )
+        try:
+            yield
+        finally:
+            current_inode = (
+                runtime_map_path.stat().st_ino if runtime_map_path.exists() else None
+            )
+            map_changed = (
+                current_inode != runtime_map_inode
+                or runtime_map_path.read_bytes() != retained_map
+                or target_process_path.exists()
+            )
+            if current_inode == runtime_map_inode:
+                runtime_map_path.unlink()
+            if map_changed:
+                raise PerfAnalysisError(
+                    "the restored CPython symbol map changed during perf analysis"
+                )
 
 
-def _decode(profile_path: pathlib.Path) -> tuple[list[Sample], list[str]]:
-    samples: list[Sample] = []
-    warnings: dict[str, None] = {}
-    # Some perf versions reuse CPython JIT mappings incorrectly across threads in a
-    # single script pass, so isolate each thread's symbolization.
-    for thread_id in _sampled_thread_ids(profile_path):
+def _decode(
+    profile_path: pathlib.Path, target_pid: int
+) -> tuple[list[Sample], list[str]]:
+    with _materialized_python_map(profile_path, target_pid):
         completed = _run_perf_script(
             profile_path,
-            "--tid",
-            str(thread_id),
             "-F",
             "comm,pid,tid,event,period,ip,sym,dso",
             "--no-inline",
         )
-        if completed.returncode != 0:
-            raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
-        samples.extend(_parse_script_lines(completed.stdout.splitlines()))
-        for line in completed.stderr.splitlines():
-            if line:
-                warnings[line] = None
-    return samples, list(warnings)
+    if completed.returncode != 0:
+        raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
+    return list(_parse_script_lines(completed.stdout.splitlines())), [
+        line for line in completed.stderr.splitlines() if line
+    ]
 
 
 def _configuration(profile_path: pathlib.Path) -> tuple[str, int]:
@@ -252,12 +294,24 @@ def load(profile_path: pathlib.Path) -> Profile:
         ),
     )
     event, frequency_hz = _configuration(profile_path)
-    samples, warnings = _decode(profile_path)
+    samples, warnings = _decode(profile_path, metadata["target_pid"])
     if not samples:
         raise PerfAnalysisError("perf recorded no CPU samples")
     if not any(sample.python_stack_leaf_first for sample in samples):
         raise PerfAnalysisError(
             "perf recorded no Python frames; the target must use CPython perf support"
+        )
+    unresolved_samples = [
+        sample for sample in samples if sample.unresolved_python_frame_count
+    ]
+    if unresolved_samples:
+        sampled_cpu_ns = sum(sample.period_ns for sample in samples)
+        unresolved_cpu_ns = sum(sample.period_ns for sample in unresolved_samples)
+        raise PerfAnalysisError(
+            "perf left CPython frames unresolved in "
+            + f"{len(unresolved_samples)} of {len(samples)} samples "
+            + f"({100 * unresolved_cpu_ns / sampled_cpu_ns:.4f}% of sampled CPU); "
+            + "refusing potentially incorrect Python attribution"
         )
     return Profile(
         metadata=metadata,
@@ -453,7 +507,7 @@ def emit_report(profile: Profile, analysis: Analysis, limit: int):
     )
     print(
         f"CPU backend: linux-perf; {profile.event} at {profile.frequency_hz} Hz; "
-        + "DWARF call graph"
+        + "frame-pointer call graph; CPython perf-map symbols"
     )
     print(
         f"Wall window: {_duration(analysis.wall_window_ns)}; "
@@ -472,6 +526,7 @@ def emit_report(profile: Profile, analysis: Analysis, limit: int):
     )
     print(
         "Resolution: percentages use all sampled CPU as the denominator; "
+        + "all sampled CPython trampoline frames resolved; "
         + "sample hits are observations, not calls."
     )
 
