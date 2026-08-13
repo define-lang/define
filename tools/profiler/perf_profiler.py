@@ -214,6 +214,16 @@ def capture(
             text=True,
         )
         target_ended_ns = time.monotonic_ns()
+        _ = diagnostics_file.seek(0)
+        diagnostics = diagnostics_file.read()
+        if not target_pid_path.is_file():
+            diagnostic = diagnostics.strip()
+            if diagnostic:
+                raise RuntimeError("perf could not launch the target:\n" + diagnostic)
+            raise RuntimeError(
+                "perf record exited with status "
+                + f"{completed.returncode} before launching the target"
+            )
         target_pid = int(target_pid_path.read_text(encoding="utf-8"))
         runtime_map_path = runtime_python_map_path(target_pid)
         if not runtime_map_path.is_file() or runtime_map_path.stat().st_size == 0:
@@ -242,8 +252,6 @@ def capture(
         if not recorded_python_map:
             raise RuntimeError("perf data does not reference the target's Python map")
         _retain_native_objects(perf_executable, profile_path, native_objects)
-        _ = diagnostics_file.seek(0)
-        diagnostics = diagnostics_file.read()
 
     _ = diagnostics_path(profile_path).write_text(diagnostics, encoding="utf-8")
     profile_path.with_name(profile_path.name + ".inject.stderr").unlink(missing_ok=True)

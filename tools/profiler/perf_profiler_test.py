@@ -2,8 +2,10 @@ import contextlib
 import dataclasses
 import io
 import json
+import shutil
 import subprocess
 import sys
+import typing
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +17,7 @@ from tools.profiler import (
     analyzer_model,
     perf_analyzer,
     perf_profiler,
+    perf_test_support,
     profiler,
 )
 
@@ -172,6 +175,79 @@ def test_replaces_stale_buildid_cache_when_there_are_no_native_objects(
 
     assert list(retained_buildid_path.iterdir()) == []
     run.assert_not_called()
+
+
+def test_skips_real_perf_tests_when_perf_is_not_installed(tmp_path: Path):
+    with (
+        mock.patch.object(
+            shutil,
+            "which",
+            autospec=True,
+            return_value=None,
+        ),
+        pytest.raises(pytest.skip.Exception, match="Linux perf is not installed"),
+    ):
+        perf_test_support.require_perf_recording(tmp_path)
+
+
+def test_skips_real_perf_tests_when_perf_cannot_record(tmp_path: Path):
+    failed = subprocess.CompletedProcess(
+        ("perf", "record"),
+        255,
+        stdout="",
+        stderr="perf access is denied\n",
+    )
+    with (
+        mock.patch.object(
+            shutil,
+            "which",
+            autospec=True,
+            return_value="/usr/bin/perf",
+        ),
+        mock.patch.object(
+            subprocess,
+            "run",
+            autospec=True,
+            return_value=failed,
+        ) as run,
+        pytest.raises(
+            pytest.skip.Exception,
+            match=r"Linux perf recording is unavailable.*perf access is denied",
+        ),
+    ):
+        perf_test_support.require_perf_recording(tmp_path)
+
+    run.assert_called_once()
+
+
+def test_skips_real_perf_tests_when_perf_fails_without_a_diagnostic(
+    tmp_path: Path,
+):
+    failed = subprocess.CompletedProcess(
+        ("perf", "record"),
+        255,
+        stdout="",
+        stderr="",
+    )
+    with (
+        mock.patch.object(
+            shutil,
+            "which",
+            autospec=True,
+            return_value="/usr/bin/perf",
+        ),
+        mock.patch.object(
+            subprocess,
+            "run",
+            autospec=True,
+            return_value=failed,
+        ),
+        pytest.raises(
+            pytest.skip.Exception,
+            match=r"Linux perf recording is unavailable \(status 255\)$",
+        ),
+    ):
+        perf_test_support.require_perf_recording(tmp_path)
 
 
 def test_rejects_malformed_perf_script_evidence():
@@ -485,7 +561,47 @@ def test_cpu_command_rejects_wall_coordination_descriptor(tmp_path: Path):
     assert "--event-fd is supported only in wall mode" in result.output
 
 
+def test_reports_perf_failure_before_target_launch(tmp_path: Path):
+    workload_path = tmp_path / "workload.define"
+    _ = workload_path.write_text("workload", encoding="utf-8")
+
+    def fail_record(
+        *arguments: object, **keyword_arguments: object
+    ) -> subprocess.CompletedProcess[str]:
+        diagnostics_file = typing.cast("typing.TextIO", keyword_arguments["stderr"])
+        _ = diagnostics_file.write("perf is unavailable for this kernel\n")
+        command = typing.cast("tuple[str, ...]", arguments[0])
+        return subprocess.CompletedProcess(command, 255)
+
+    with (
+        mock.patch.object(
+            perf_profiler,
+            "_perf_executable",
+            autospec=True,
+            return_value="perf",
+        ),
+        mock.patch.object(
+            subprocess,
+            "run",
+            autospec=True,
+            side_effect=fail_record,
+        ),
+        pytest.raises(
+            RuntimeError,
+            match="perf could not launch the target:\nperf is unavailable for this kernel",
+        ),
+    ):
+        _ = perf_profiler.capture(
+            command=(sys.executable, "-c", "pass"),
+            profile_path=tmp_path / "perf.data",
+            workload_path=workload_path,
+            working_directory=tmp_path,
+            frequency_hz=997,
+        )
+
+
 def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
+    perf_test_support.require_perf_recording(tmp_path)
     workload_path = tmp_path / "workload.define"
     _ = workload_path.write_text("workload", encoding="utf-8")
     profile_path = tmp_path / "perf.data"
@@ -532,6 +648,7 @@ def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
 
 
 def test_preserves_target_diagnostics_for_unsuccessful_perf_capture(tmp_path: Path):
+    perf_test_support.require_perf_recording(tmp_path)
     workload_path = tmp_path / "workload.define"
     _ = workload_path.write_text("workload", encoding="utf-8")
     profile_path = tmp_path / "perf.data"

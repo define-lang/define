@@ -11,7 +11,7 @@ import pytest
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools import profile_orchestration as run_profile
-from tools.profiler import analyzer, perf_analyzer, schema
+from tools.profiler import analyzer, perf_analyzer, perf_test_support, schema
 
 # PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (
@@ -325,6 +325,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
 # PRF-026: No silent partial success. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
+    perf_test_support.require_perf_recording(tmp_path)
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
     profile_path = tmp_path / "perf.data"

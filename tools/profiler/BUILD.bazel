@@ -83,10 +83,19 @@ py_test(
         ":analyzer_model",
         ":perf_analyzer",
         ":perf_profiler",
+        ":perf_test_support",
         ":profiler",
         "@pypi//click",
         "@pypi//pytest",
     ],
+)
+
+py_library(
+    name = "perf_test_support",
+    testonly = True,
+    srcs = ["perf_test_support.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = ["@pypi//pytest"],
 )
 
 # PRF-022: Launcher safety. PRF-049: Event-driven coordination.
@@ -321,6 +330,7 @@ pyright_test(
         ":perf_analyzer",
         ":perf_profiler",
         ":perf_profiler_test",
+        ":perf_test_support",
         ":process_events",
         ":process_events_test",
         ":profiler",

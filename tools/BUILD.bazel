@@ -162,6 +162,7 @@ py_test(
         ":profile_orchestration",
         "//tools/profiler:analyzer",
         "//tools/profiler:perf_analyzer",
+        "//tools/profiler:perf_test_support",
         "//tools/profiler:schema",
         "@pypi//click",
         "@pypi//pytest",
