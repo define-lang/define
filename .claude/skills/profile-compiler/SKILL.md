@@ -93,7 +93,13 @@ report:
 - contrasts with the other workloads and a ranked list of observations.
 
 When the user requests CPU profiling, additionally report the principal CPU
-hotspots overall and within Define compiler code.
+hotspots overall and within Define compiler code. For every profiled generator,
+always include a section titled `The dominant cumulative chain is:`. Show the
+most important adjacent caller-to-callee path as an indented function-name tree.
+Every row must include cumulative CPU time and its percentage of all sampled CPU
+for that generator. Follow the chain far enough to identify the functions that
+actually consume the delegated work, rather than stopping at orchestration
+functions.
 
 Use the analyzer's metric definitions and caveats as the authority. A critical
 path is not the busiest thread, summed thread time, or unioned wall occupancy.
