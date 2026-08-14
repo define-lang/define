@@ -49,7 +49,6 @@
         )
         {% endfor %}
     {% endif %}
-    {# TODO: Declare fields initialized by later execution methods at class scope so __init__ contains only initialization work. #}
     {% for action_execution in execution.action_executions %}
         self.{{ action_execution.execution_name }}: {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}
         {% for connection in action_execution.created_destruction_connections %}
