@@ -10,10 +10,8 @@ from define.compiler.validator.reference_graph import (
 _ENTRY_POINT_ACTION_PATH = "/test"
 
 
-# TODO: Add operation-graph integration-test infrastructure that computes the
-# exact transitively minimal scheduling table and asserts that the table written
-# in each test is that table. These graphs are small, so require perfect
-# minimality rather than using a heuristic.
+# TODO: After fixing the existing non-minimal Operation Graphs, switch the
+# integration tests to an assert_operation_dependencies helper.
 def operation_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> dict[str, list[str]]:
@@ -26,11 +24,67 @@ def operation_dependencies(
             labels = operation_graph_labeler.OperationGraphLabeler(
                 operation_graphs
             ).resolved_operation_labels(resolved)
-            return {
+            dependencies = {
                 label: [labels[dependency] for dependency in operation.dependencies]
                 for operation, label in labels.items()
             }
+            assert_transitively_minimal_dependencies(dependencies)
+            return dependencies
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
+
+
+def assert_transitively_minimal_dependencies(
+    dependencies: dict[str, list[str]],
+):
+    """Assert that no direct dependency is reachable through another path."""
+    if dependencies != _transitively_minimal_dependencies(dependencies):
+        raise AssertionError
+
+
+def _transitively_minimal_dependencies(
+    dependencies: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    # An Operation Graph is a DAG. For every direct edge from an operation to a
+    # dependency, remove the edge and search the entire remaining graph from the
+    # operation. Keep the edge removed exactly when the dependency is still
+    # reachable, so each removal preserves the graph's transitive closure. An edge
+    # that was necessary when examined cannot become redundant after later removals,
+    # because removing edges cannot create a new path. After every edge has been
+    # examined, no remaining edge can be removed without changing reachability: the
+    # result is therefore the DAG's unique transitive reduction. This costs
+    # O(E * (V + E)), which is suitable for these small test graphs but not for
+    # production Operation Graphs at compiler scale.
+    minimal_dependencies = {
+        operation: list(direct_dependencies)
+        for operation, direct_dependencies in dependencies.items()
+    }
+    for operation, direct_dependencies in minimal_dependencies.items():
+        dependency_index = 0
+        while dependency_index < len(direct_dependencies):
+            dependency = direct_dependencies.pop(dependency_index)
+            if _has_dependency_path(operation, dependency, minimal_dependencies):
+                continue
+            direct_dependencies.insert(dependency_index, dependency)
+            dependency_index += 1
+    return minimal_dependencies
+
+
+def _has_dependency_path(
+    operation: str,
+    dependency: str,
+    dependencies: dict[str, list[str]],
+) -> bool:
+    visited = {operation}
+    work = [operation]
+    while work:
+        current = work.pop()
+        for direct_dependency in dependencies[current]:
+            if direct_dependency == dependency:
+                return True
+            if direct_dependency not in visited:
+                visited.add(direct_dependency)
+                work.append(direct_dependency)
+    return False
 
 
 def action_graph(

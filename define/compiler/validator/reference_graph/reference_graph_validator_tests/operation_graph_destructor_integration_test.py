@@ -10,6 +10,10 @@ _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded in the "
     "operation graph"
 )
+_TRANSITIVELY_REDUNDANT_DEPENDENCY = (
+    "Operation Graph contains a direct dependency already reachable through another "
+    "dependency path"
+)
 
 
 def test_destructor_independent_chains_and_operation_after_destroy(
@@ -287,6 +291,7 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_caller_moves_callee_guaranteed_particle_before_destroying(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -335,6 +340,7 @@ def test_destructor_on_particle_from_callee_guarantee(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -360,6 +366,7 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_destructor_attached_in_callee_on_implied_position_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
