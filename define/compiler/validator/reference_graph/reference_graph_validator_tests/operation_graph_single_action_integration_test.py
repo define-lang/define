@@ -1,8 +1,15 @@
+import pytest
+
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+_DISJOINT_MOVE_CHAIN_RETAINS_REACHABLE_FILL_DEPENDENCY = (
+    "The Move Rule retains a Fill dependency already reachable through Moves on "
+    "disjoint positions"
+)
 
 
 def test_single_create(
@@ -35,6 +42,25 @@ def test_three_operation_chain(
         "test.create(item)": [],
         "test.move(item, dest)": ["test.create(item)"],
         "test.destroy(dest)": ["test.move(item, dest)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DISJOINT_MOVE_CHAIN_RETAINS_REACHABLE_FILL_DEPENDENCY,
+)
+def test_move_chain_returning_to_first_position_has_minimal_dependencies(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(a)": [],
+        "test.move(a, b)": ["test.create(a)"],
+        "test.move(b, c)": ["test.move(a, b)"],
+        "test.move(c, d)": ["test.move(b, c)"],
+        "test.move(d, a)": ["test.move(c, d)"],
+        "test.destroy(a)": ["test.move(d, a)"],
     }
 
 

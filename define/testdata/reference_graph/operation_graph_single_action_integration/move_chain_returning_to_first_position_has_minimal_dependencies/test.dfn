@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<a>.
+        define the position<b>.
+        define the position<c>.
+        define the position<d>.
+        create a particle in position<a>.
+        move the particle in position<a> to position<b>.
+        move the particle in position<b> to position<c>.
+        move the particle in position<c> to position<d>.
+        move the particle in position<d> to position<a>.
+    }
+}
