@@ -7,7 +7,7 @@ behavior of a direct lookup API, and the ordering, path-selection, reduction,
 or scaling behavior of ``ParticleChildOperations`` as a data structure.
 
 Dependency semantics do not belong here. Create, move, destroy, Action
-Action Trigger, requirement, guarantee, Empty Rule, and destruction-cascade edges
+Action Execution, requirement, guarantee, Empty Rule, and destruction-cascade edges
 must be tested with valid Define source in an existing operation-graph
 integration test module. Those tests exercise the validator, particle tracker,
 and operation graph together, so they protect the actual propagation path that
@@ -92,7 +92,7 @@ def _destruction_contribution(
     node_id: int,
 ) -> operation_graph_model.DestructionContributionNode:
     trigger_operation = _operation_node(0)
-    trigger = operation_graph_model.ActionTrigger(
+    execution = operation_graph_model.ActionExecution(
         ast.ActionReference(typed_names=(action,), location=_LOC),
         trigger_operation,
         {},
@@ -101,7 +101,7 @@ def _destruction_contribution(
     return operation_graph_model.DestructionContributionNode(
         node_id=node_id,
         depends_on=(),
-        trigger=trigger,
+        execution=execution,
         destruction_fact=destruction_fact,
         callee_destroy_position=destruction_position,
     )

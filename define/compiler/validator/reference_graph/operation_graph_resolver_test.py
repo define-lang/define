@@ -43,14 +43,14 @@ def _position(name: str) -> ast.PositionReference:
     )
 
 
-def test_repeated_action_triggers_create_distinct_executions():
+def test_repeated_action_executions_create_distinct_executions():
     entry_action = _action("/test")
     worker_action = _action("/worker")
     entry_graph = operation_graph.OperationGraph(entry_action)
     first_trigger_position = _position("first")
     second_trigger_position = _position("second")
     _ = entry_graph.record_create(first_trigger_position)
-    first_trigger = entry_graph.record_action_trigger(
+    first_execution = entry_graph.record_action_execution(
         _action_reference(worker_action),
         first_trigger_position,
         (),
@@ -59,7 +59,7 @@ def test_repeated_action_triggers_create_distinct_executions():
         required_preceding_child_operations=(),
     )
     _ = entry_graph.record_create(second_trigger_position)
-    second_trigger = entry_graph.record_action_trigger(
+    second_execution = entry_graph.record_action_execution(
         _action_reference(worker_action),
         second_trigger_position,
         (),
@@ -96,6 +96,6 @@ def test_repeated_action_triggers_create_distinct_executions():
     assert second_triggered_by is not None
     assert first_triggered_by.caller is resolved.entry_action_execution
     assert second_triggered_by.caller is resolved.entry_action_execution
-    assert first_triggered_by.action_trigger.trigger is first_trigger
-    assert second_triggered_by.action_trigger.trigger is second_trigger
+    assert first_triggered_by.direct_execution.execution is first_execution
+    assert second_triggered_by.direct_execution.execution is second_execution
     assert first_worker_node.operation.target == worker_operation

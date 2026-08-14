@@ -1,4 +1,4 @@
-# Only the first Action Trigger passes a caller-supplied particle to /destroyer.
+# Only the first Action Execution passes a caller-supplied particle to /destroyer.
 # The second invocation must not receive the first invocation's destruction connection.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</middle>.

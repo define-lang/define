@@ -89,18 +89,18 @@ class ActionGuaranteesGenerator:
 
     def _child_guarantees(
         self,
-    ) -> dict[operation_graph_model.ActionTrigger, action_context.ChildGuarantees]:
+    ) -> dict[operation_graph_model.ActionExecution, action_context.ChildGuarantees]:
         child_guarantees: dict[
-            operation_graph_model.ActionTrigger, action_context.ChildGuarantees
+            operation_graph_model.ActionExecution, action_context.ChildGuarantees
         ] = {}
-        for planned_trigger in self._plan.action_triggers:
-            action_trigger = planned_trigger.action_trigger
+        for planned_execution in self._plan.action_executions:
+            action_execution = planned_execution.execution
             callee_interface = self._generated_actions[
-                action_trigger.callee_action_name
+                action_execution.callee_action_name
             ].guarantee_interface
             if callee_interface is not None:
-                child_guarantees[action_trigger] = action_context.ChildGuarantees(
-                    self._names.triggered_actions[action_trigger].canonical_name,
+                child_guarantees[action_execution] = action_context.ChildGuarantees(
+                    self._names.triggered_actions[action_execution].canonical_name,
                     callee_interface,
                 )
         return child_guarantees
@@ -119,7 +119,7 @@ class ActionGuaranteesGenerator:
         self,
         class_reference: naming.ClassReference,
         child_guarantees: dict[
-            operation_graph_model.ActionTrigger, action_context.ChildGuarantees
+            operation_graph_model.ActionExecution, action_context.ChildGuarantees
         ],
         registrations: list[template_context.GuaranteeRegistrationContext],
     ) -> template_context.GuaranteesContext:
@@ -169,17 +169,17 @@ class ActionGuaranteesGenerator:
                     )
                 )
         for (
-            action_trigger
+            action_execution
         ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
             child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
-                interface, action_trigger.guarantee_dependency
+                interface, action_execution.guarantee_dependency
             )
             registrations.append(
                 template_context.GuaranteeRegistrationContext(
                     child_guarantees_names=child_guarantees_names,
                     guarantee_name=guarantee_name,
                     method_name=self._names.triggered_actions[
-                        action_trigger.action_trigger
+                        action_execution.execution
                     ].canonical_name,
                 )
             )
@@ -192,8 +192,8 @@ class ActionGuaranteesGenerator:
     ) -> tuple[list[str], str]:
         current_interface = interface
         child_guarantees_names: list[str] = []
-        for trigger in guarantee_path.triggers:
-            child_guarantees = current_interface.child_guarantees[trigger]
+        for execution in guarantee_path.executions:
+            child_guarantees = current_interface.child_guarantees[execution]
             child_guarantees_names.append(child_guarantees.member_name)
             current_interface = child_guarantees.callee_interface
         return (

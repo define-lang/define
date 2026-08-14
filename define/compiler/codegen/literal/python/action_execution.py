@@ -10,9 +10,9 @@ from define.compiler.codegen.literal.python import (
     action_guarantees,
     action_names,
     action_statements,
-    action_trigger,
     naming,
     template_context,
+    triggered_action_execution,
 )
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
@@ -85,16 +85,18 @@ class ActionExecutionGenerator:
             self._generated_actions,
             names,
         ).generate()
-        action_trigger_contexts = action_trigger.ActionTriggerGenerator(
-            self._definition,
-            self._converter,
-            self._generated_actions,
-            self._plan,
-            self._operation_labels,
-            names,
-            guarantees.interface,
-            statement_generator,
-        ).generate()
+        action_execution_contexts = (
+            triggered_action_execution.TriggeredActionExecutionGenerator(
+                self._definition,
+                self._converter,
+                self._generated_actions,
+                self._plan,
+                self._operation_labels,
+                names,
+                guarantees.interface,
+                statement_generator,
+            ).generate()
+        )
         triggered_action_input_contexts = self._generate_triggered_action_inputs(
             names,
             statement_generator,
@@ -113,7 +115,7 @@ class ActionExecutionGenerator:
                 statement_generator,
             ),
             caller_inputs=self._generate_caller_inputs(names),
-            action_triggers=action_trigger_contexts,
+            action_executions=action_execution_contexts,
             triggers_for_destroyed_callee_guarantee_particles=(
                 triggers_for_destroyed_callee_guarantee_particle_contexts
             ),
@@ -192,8 +194,8 @@ class ActionExecutionGenerator:
                         for triggered_input in fragment.triggered_input_successors
                     ],
                     triggered_action_successor_init_method_names=[
-                        names.triggered_actions[action_trigger].initializer_name
-                        for action_trigger in fragment.triggered_action_successors
+                        names.triggered_actions[action_execution].initializer_name
+                        for action_execution in fragment.action_execution_successors
                     ],
                     execution_input_successor_method_names=[
                         names.triggered_inputs[triggered_input]
@@ -225,8 +227,8 @@ class ActionExecutionGenerator:
                     for triggered_input in caller_input.triggered_inputs
                 ],
                 destructor_execution_init_methods=[
-                    names.triggered_actions[destructor_trigger].initializer_name
-                    for destructor_trigger in caller_input.destructor_triggers
+                    names.triggered_actions[destructor_execution].initializer_name
+                    for destructor_execution in caller_input.destructor_executions
                 ],
             )
             for caller_input in self._plan.caller_inputs
@@ -239,14 +241,14 @@ class ActionExecutionGenerator:
     ) -> list[template_context.TriggeredActionInputContext]:
         triggered_action_inputs: list[template_context.TriggeredActionInputContext] = []
         for triggered_input in self._plan.triggered_action_inputs:
-            trigger = triggered_input.action_trigger
+            execution = triggered_input.execution
             triggered_action_inputs.append(
                 template_context.TriggeredActionInputContext(
                     triggered_action_execution_name=(
-                        names.triggered_actions[trigger].execution_name
+                        names.triggered_actions[execution].execution_name
                     ),
                     callee_input_method_name=self._generated_actions[
-                        trigger.callee_action_name
+                        execution.callee_action_name
                     ].input_method_names[triggered_input.callee_input],
                     method_name=names.triggered_inputs[triggered_input],
                     dependency_count=triggered_input.dependency_count,
@@ -274,7 +276,7 @@ class ActionExecutionGenerator:
             trigger_for_destroyed_callee_guarantee_particle
         ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
             triggered_action_names = names.triggered_actions[
-                trigger_for_destroyed_callee_guarantee_particle.action_trigger
+                trigger_for_destroyed_callee_guarantee_particle.execution
             ]
             triggered_input_method_names: list[str] = []
             for (

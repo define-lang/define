@@ -143,8 +143,8 @@ class DestructionPositionContext:
 
 
 @dataclass
-class ActionTriggerContext:
-    """One direct Action Trigger used by generated dependency wiring."""
+class TriggeredActionExecutionContext:
+    """One direct Action Execution used by generated dependency wiring."""
 
     action: PositionExpr | None
     execution_class: naming.ClassReference
@@ -169,7 +169,7 @@ class ActionTriggerContext:
 
 @dataclass
 class ChildGuaranteesContext:
-    """A guarantee bundle for one direct Action Trigger."""
+    """A guarantee bundle for one direct Action Execution."""
 
     name: str
     class_reference: naming.ClassReference
@@ -217,7 +217,7 @@ class CallerInputContext:
 
 @dataclass
 class TriggerForDestroyedCalleeGuaranteeParticleContext:
-    """One Action Trigger for a destroyed callee-guaranteed particle."""
+    """One Action Execution for a destroyed callee-guaranteed particle."""
 
     method_name: str
     action_execution_init_method_name: str
@@ -232,7 +232,7 @@ class ActionExecutionContext:
     local_position_statements: list[ActionStatementContext]
     fragments: list[ActionFragmentContext]
     caller_inputs: list[CallerInputContext]
-    action_triggers: list[ActionTriggerContext]
+    action_executions: list[TriggeredActionExecutionContext]
     triggers_for_destroyed_callee_guarantee_particles: list[
         TriggerForDestroyedCalleeGuaranteeParticleContext
     ]
@@ -261,7 +261,7 @@ class ActionExecutionContext:
         self.needs_action = any(
             triggered_action.action is not None
             and triggered_action.action.local_position_member_name is None
-            for triggered_action in self.action_triggers
+            for triggered_action in self.action_executions
         )
 
     @property
@@ -270,8 +270,8 @@ class ActionExecutionContext:
         if not self.trace_operations:
             return False
         return any(
-            action_trigger.created_destruction_connections
-            for action_trigger in self.action_triggers
+            action_execution.created_destruction_connections
+            for action_execution in self.action_executions
         )
 
     @property

@@ -692,7 +692,7 @@ def test_destructor_cascade_through_action_format(
 # These cover the new error stacks where the destroying action could NOT see a
 # caller-attached destructor and recorded a Destruction Contract that the
 # triggering action verifies. The chain identifies the constraint that assigned
-# the destructor before showing the action trigger and destruction cascade.
+# the destructor before showing the Action Execution and destruction cascade.
 
 
 def test_destruction_contract_requires_occupied_format(

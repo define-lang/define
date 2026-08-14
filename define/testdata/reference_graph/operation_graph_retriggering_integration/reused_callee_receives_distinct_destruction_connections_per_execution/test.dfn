@@ -1,4 +1,4 @@
-# The same callee receives a different destruction connection for each Action Trigger.
+# The same callee receives a different destruction connection for each Action Execution.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {

@@ -1,6 +1,6 @@
 {% from "action_execution_init.j2" import action_execution_init %}
 {% from "action_fragments.j2" import action_fragment_methods %}
-{% from "action_trigger.j2" import action_trigger_methods %}
+{% from "triggered_action_execution.j2" import triggered_action_execution_methods %}
 {% from "caller_inputs.j2" import caller_input_methods %}
 {% from "action_triggered_action_input.j2" import triggered_action_input_methods %}
 {% from "trigger_for_destroyed_callee_guarantee_particle.j2" import trigger_methods_for_destroyed_callee_guarantee_particles %}
@@ -11,7 +11,7 @@ class {{ execution.execution_class_name }}:
 {{ action_execution_init(action_class_name, execution) -}}
 {{ caller_input_methods(execution.caller_inputs) -}}
 {{ action_fragment_methods(execution.fragments) -}}
-{{ action_trigger_methods(execution.action_triggers, execution.trace_operations) -}}
+{{ triggered_action_execution_methods(execution.action_executions, execution.trace_operations) -}}
 {{ trigger_methods_for_destroyed_callee_guarantee_particles(execution.triggers_for_destroyed_callee_guarantee_particles) -}}
 {{ triggered_action_input_methods(execution.triggered_action_inputs) -}}
 {% endmacro %}

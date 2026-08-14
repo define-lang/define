@@ -50,13 +50,13 @@
         {% endfor %}
     {% endif %}
     {# TODO: Declare fields initialized by later execution methods at class scope so __init__ contains only initialization work. #}
-    {% for action_trigger in execution.action_triggers %}
-        self.{{ action_trigger.execution_name }}: {{ action_trigger.execution_class.module_name }}.{{ action_trigger.execution_class.class_name }}
-        {% for connection in action_trigger.created_destruction_connections %}
+    {% for action_execution in execution.action_executions %}
+        self.{{ action_execution.execution_name }}: {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}
+        {% for connection in action_execution.created_destruction_connections %}
         self.{{ connection.member_name }}: {{ destruction_connection_class }}
         {% endfor %}
-        {% if action_trigger.created_destruction_connections %}
-        self.{{ action_trigger.destruction_connections_member_name }}: literal.DestructionConnections
+        {% if action_execution.created_destruction_connections %}
+        self.{{ action_execution.destruction_connections_member_name }}: literal.DestructionConnections
         {% endif %}
     {% endfor %}
     {% for triggered_input in execution.triggered_action_inputs %}

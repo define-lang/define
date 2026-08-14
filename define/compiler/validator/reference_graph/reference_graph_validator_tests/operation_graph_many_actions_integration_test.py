@@ -43,7 +43,7 @@ def test_two_child_actions_trigger_in_parallel(
     }
 
 
-def test_action_trigger_and_empty_rule_use_the_same_position(
+def test_action_execution_and_empty_rule_use_the_same_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

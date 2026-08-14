@@ -21,11 +21,11 @@
 ## Semantic Fidelity
 
 - Preserve the operation graph's available parallelism, fan-outs, joins, Action
-  Triggers, and guarantee publication timing. Do not serialize independent work
-  merely to simplify generated code.
-- Do not treat an Action Trigger as one atomic function call. Caller and callee
-  work becomes available according to its operation-graph dependencies.
-- When a Particle Operation causes an Action Trigger, generated code must
+  Executions, and guarantee publication timing. Do not serialize independent
+  work merely to simplify generated code.
+- Do not treat an Action Execution as one atomic function call. Caller and
+  callee work becomes available according to its operation-graph dependencies.
+- When a Particle Operation causes an Action Execution, generated code must
   immediately resolve and retain that specific Action object. It must not wait
   for the triggered action's other dependencies, because parallel Particle
   Operations may meanwhile move or destroy the particle through which the Action
@@ -37,8 +37,8 @@
 
 - Generated names must be deterministic, source-readable, and unambiguous. You
   can use DLP 27 short names as appropriate.
-- Retain operation nodes, `ActionTrigger` objects, fragments, and other semantic
-  objects by direct reference during lowering.
+- Retain operation nodes, `ActionExecution` objects, fragments, and other
+  semantic objects by direct reference during lowering.
 - Do not invent identity with `id()`, enumeration indexes, node IDs, fragment
   IDs, or an object's index in another sequence.
 - Represent generated position and action references with Python class objects,

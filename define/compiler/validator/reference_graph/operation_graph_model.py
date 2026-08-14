@@ -300,17 +300,15 @@ class RequirementBinding:
     child_operations: ParticleChildOperations
 
 
-# TODO: Rename ActionTrigger to ActionExecution and rename the concept it
-# represents everywhere in the codebase.
 @dataclass(frozen=True, slots=True, eq=False)
-class ActionTrigger:
-    """One Action Trigger and what satisfies each requirement of the callee.
+class ActionExecution:
+    """One Action Execution and what satisfies each requirement of the callee.
 
     Recorded from the caller's side, at the moment it triggers, because only the
     caller knows what it did to the positions the callee names.
     """
 
-    # The action reference this Action Trigger fires, from the caller's perspective.
+    # The action reference run by this Action Execution, from the caller's perspective.
     callee: ast.ActionReference
     # The operation that triggered the callee.
     trigger_operation: LastOperationNode
@@ -333,7 +331,7 @@ class ActionTrigger:
 
     @property
     def caller_input_dependency(self) -> RequirementNode | None:
-        """Return the caller input that fires a destructor Action Trigger."""
+        """Return the caller input that triggers a destructor Action Execution."""
         if isinstance(self.trigger_operation, RequirementNode):
             return self.trigger_operation
         return None
@@ -557,7 +555,7 @@ class DestructionFactDestroyNode(DestroyNode):
 class DestructionFragmentDestroyNode(DestructionFactDestroyNode):
     """An ordinary Destroy contributed by a direct caller."""
 
-    direct_callee_trigger: ActionTrigger
+    direct_callee_execution: ActionExecution
     target_in_destroying_action: ast.PositionReference
 
 
@@ -573,7 +571,7 @@ class DestructionOperation:
 class DestructionDependency:
     """A callee Destroy preceded by caller-contributed Destroys."""
 
-    trigger: ActionTrigger
+    execution: ActionExecution
     callee_destroy: DestructionOperation
 
 
@@ -594,7 +592,7 @@ class DestructionContribution:
 class DestructionContributionNode(OperationNode):
     """Connects preceding caller operations to the first Destroy in one contribution."""
 
-    trigger: ActionTrigger
+    execution: ActionExecution
     destruction_fact: DestructionFact
     callee_destroy_position: tuple[str, ...]
 
@@ -629,7 +627,7 @@ class ContributedDestruction:
 
 @dataclass(frozen=True, slots=True)
 class ContributedDestructionFragment:
-    """Ordinary Destroy operations contributed around one direct Action Trigger."""
+    """Ordinary Destroy operations contributed around one direct Action Execution."""
 
     contribution_dependencies: tuple[OperationNode, ...]
     operations: tuple[DestructionFragmentDestroyNode, ...]
@@ -643,7 +641,7 @@ class OperationGraphDestruction:
     operations_by_position: dict[tuple[str, ...], DestructionFactDestroyNode] = field(
         init=False, default_factory=dict
     )
-    direct_callee_trigger: ActionTrigger | None = field(init=False, default=None)
+    direct_callee_execution: ActionExecution | None = field(init=False, default=None)
     is_propagated_to_caller: bool = field(init=False, default=False)
 
 
@@ -652,18 +650,18 @@ class GuaranteeNode(OperationNode):
     """A position a triggered action guarantees, which the callee itself operates on.
 
     This stands in for an operation whose details live in the callee's own graph.
-    ``depends_on`` holds the operation that fired the trigger; codegen resolves
+    ``depends_on`` holds the operation that triggered the Action Execution; codegen resolves
     this node to the callee's last operation on ``guaranteed_position`` when it
-    splices ``action`` in at that trigger. Caller operations that read the
+    includes ``action`` for that execution. Caller operations that read the
     position depend on this node with ordinary edges.
     """
 
     depends_on: tuple[LastOperationNode, ...]
-    # The Action Trigger of the action that guarantees the position.
-    trigger: ActionTrigger
-    # Action Triggers to follow after ``trigger`` before resolving
+    # The Action Execution of the action that guarantees the position.
+    execution: ActionExecution
+    # Action Executions to follow after ``execution`` before resolving
     # ``guaranteed_position`` in the final callee's operation graph.
-    nested_triggers: tuple[ActionTrigger, ...]
+    nested_executions: tuple[ActionExecution, ...]
     # The guaranteed position, by the callee's own key for it.
     guaranteed_position: tuple[str, ...]
     # Every caller position operated on by the guaranteed Particle Operation.
@@ -682,7 +680,7 @@ class RequirementNode(OperationNode):
 
     This stands in for the caller operation that satisfies an inferred requirement.
     The renderer/codegen resolves it to the caller op that most recently operated
-    on ``requirement_position`` before the trigger. A position can be empty
+    on ``requirement_position`` before the Action Execution. A position can be empty
     without any operation emptying it, so an empty requirement can have no such
     caller op at all, which is why the required state is recorded here.
 

@@ -39,16 +39,16 @@ def action_graph(
     """Return each action's directly-triggered actions as (source, target) name pairs.
 
     An action that triggers the same action twice yields two edges. Actions appear
-    in reference-graph post-order and their Action Triggers in the order they perform
+    in reference-graph post-order and their Action Executions in the order they perform
     them, so the result is deterministic. A reference-graph diamond can still make
     two sibling actions' relative order nondeterministic; assertions spanning such
     actions should compare ``action_graph_set``.
     """
     edges: list[tuple[str, str]] = []
     for action, graph in operation_graphs.items():
-        for trigger in graph.triggers:
+        for execution in graph.executions:
             edges.append(
-                (action.source_typed_name, trigger.callee_action_name.full_typed_name)
+                (action.source_typed_name, execution.callee_action_name.full_typed_name)
             )
     return edges
 

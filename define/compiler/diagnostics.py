@@ -764,7 +764,7 @@ class IncorrectIndentationDiagnostic(Diagnostic):
 class InferredRequirementViolationDiagnostic(Diagnostic):
     """Diagnostic for when an automatically inferred occupancy requirement is violated.
 
-    The same shape serves every case (action trigger, destructor, Destruction
+    The same shape serves every case (Action Execution, destructor, Destruction
     Contract): a uniform top sentence naming the runner whose run the requirement
     gates, followed by the causal stack.
     """

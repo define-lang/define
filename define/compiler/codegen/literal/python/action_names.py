@@ -43,7 +43,7 @@ _TYPED_CHAIN_SEPARATOR = "__"
 
 @dataclass(frozen=True, slots=True)
 class TriggeredActionNames:
-    """Names for one Action Trigger in an execution class."""
+    """Names for one Action Execution in an execution class."""
 
     canonical_name: str
     # The method that initializes the triggered action's execution.
@@ -65,15 +65,15 @@ class ActionNames:
     # The execution method for each caller input.
     caller_inputs: dict[operation_graph_action_resolver.CallerInput, str]
     # The canonical name, initializer method, and execution member for each
-    # Action Trigger.
-    triggered_actions: dict[operation_graph_model.ActionTrigger, TriggeredActionNames]
+    # Action Execution.
+    triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
     # The execution method for each triggered action input.
     triggered_inputs: dict[action_plan.TriggeredActionInput, str]
     # The execution method for each action fragment.
     fragments: dict[action_plan.ActionFragment, str]
     continue_destroy_methods: dict[action_plan.ActionFragment, str]
     destruction_connections: dict[action_plan.DestructionConnection, str]
-    triggered_destruction_connections: dict[operation_graph_model.ActionTrigger, str]
+    triggered_destruction_connections: dict[operation_graph_model.ActionExecution, str]
     destruction_positions: dict[
         operation_graph_model.DestructionFragmentDestroyNode, str
     ]
@@ -179,16 +179,16 @@ class ActionNameGenerator:
 
     def _triggered_action_names(
         self,
-    ) -> dict[operation_graph_model.ActionTrigger, TriggeredActionNames]:
+    ) -> dict[operation_graph_model.ActionExecution, TriggeredActionNames]:
         allocator = naming.NameAllocator()
-        names: dict[operation_graph_model.ActionTrigger, TriggeredActionNames] = {}
-        for planned_trigger in self._plan.action_triggers:
-            action_trigger = planned_trigger.action_trigger
+        names: dict[operation_graph_model.ActionExecution, TriggeredActionNames] = {}
+        for planned_execution in self._plan.action_executions:
+            action_execution = planned_execution.execution
             canonical_name = allocator.allocate(
                 _TRIGGERED_ACTION_PREFIX
-                + self._typed_chain_identifier(action_trigger.action_chain)
+                + self._typed_chain_identifier(action_execution.action_chain)
             )
-            names[action_trigger] = TriggeredActionNames(
+            names[action_execution] = TriggeredActionNames(
                 canonical_name=canonical_name,
                 initializer_name=self._execution_allocator.allocate(
                     _INITIALIZER_PREFIX + canonical_name + _EXECUTION_SUFFIX
@@ -202,17 +202,17 @@ class ActionNameGenerator:
     def _triggered_input_method_names(
         self,
         triggered_action_names: dict[
-            operation_graph_model.ActionTrigger, TriggeredActionNames
+            operation_graph_model.ActionExecution, TriggeredActionNames
         ],
     ) -> dict[action_plan.TriggeredActionInput, str]:
         method_names: dict[action_plan.TriggeredActionInput, str] = {}
         for triggered_input in self._plan.triggered_action_inputs:
-            action_trigger = triggered_input.action_trigger
+            action_execution = triggered_input.execution
             callee_input_method_name = self._generated_actions[
-                action_trigger.callee_action_name
+                action_execution.callee_action_name
             ].input_method_names[triggered_input.callee_input]
             method_names[triggered_input] = self._execution_allocator.allocate(
-                triggered_action_names[action_trigger].canonical_name
+                triggered_action_names[action_execution].canonical_name
                 + _TRIGGERED_INPUT_SEPARATOR
                 + callee_input_method_name.removeprefix(_ACCEPT_CALLER_INPUT_PREFIX)
             )
@@ -324,33 +324,31 @@ class ActionNameGenerator:
     def _destruction_connection_names(
         self,
         triggered_action_names: dict[
-            operation_graph_model.ActionTrigger, TriggeredActionNames
+            operation_graph_model.ActionExecution, TriggeredActionNames
         ],
     ) -> dict[action_plan.DestructionConnection, str]:
         names: dict[action_plan.DestructionConnection, str] = {}
-        for action_trigger in self._plan.action_triggers:
-            for connection in action_trigger.created_destruction_connections:
+        for execution_plan in self._plan.action_executions:
+            for connection in execution_plan.created_destruction_connections:
                 names[connection] = self._execution_allocator.allocate(
                     _DESTRUCTION_CONNECTION_PREFIX
-                    + triggered_action_names[
-                        action_trigger.action_trigger
-                    ].canonical_name
+                    + triggered_action_names[execution_plan.execution].canonical_name
                 )
         return names
 
     def _triggered_destruction_connection_names(
         self,
         triggered_action_names: dict[
-            operation_graph_model.ActionTrigger, TriggeredActionNames
+            operation_graph_model.ActionExecution, TriggeredActionNames
         ],
-    ) -> dict[operation_graph_model.ActionTrigger, str]:
-        names: dict[operation_graph_model.ActionTrigger, str] = {}
-        for action_trigger in self._plan.action_triggers:
-            if not action_trigger.created_destruction_connections:
+    ) -> dict[operation_graph_model.ActionExecution, str]:
+        names: dict[operation_graph_model.ActionExecution, str] = {}
+        for execution_plan in self._plan.action_executions:
+            if not execution_plan.created_destruction_connections:
                 continue
-            trigger = action_trigger.action_trigger
-            names[trigger] = self._execution_allocator.allocate(
-                triggered_action_names[trigger].canonical_name
+            execution = execution_plan.execution
+            names[execution] = self._execution_allocator.allocate(
+                triggered_action_names[execution].canonical_name
                 + _DESTRUCTION_CONNECTIONS_SUFFIX
             )
         return names

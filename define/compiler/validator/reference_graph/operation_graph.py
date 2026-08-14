@@ -151,10 +151,10 @@ class OperationGraph:
         self._last_operation: dict[
             tuple[str, ...], operation_graph_model.LastOperationNode
         ] = {}
-        # Every Action Trigger this action performs, in the order it performs them.
+        # Every Action Execution this action performs, in the order it performs them.
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
-        self._triggers: list[operation_graph_model.ActionTrigger] = []
+        self._executions: list[operation_graph_model.ActionExecution] = []
         # Every local position has the position of the particle this action is
         # assigned to as a transitive parent from the caller's perspective.
         self._action_parent_last_operation: operation_graph_model.ActionParentLastOperationNode = operation_graph_model.ActionParentLastOperationNode(
@@ -169,12 +169,12 @@ class OperationGraph:
             operation_graph_model.DestructionFact,
             operation_graph_model.OperationGraphDestruction,
         ] = {}
-        self._contributed_destruction_fragments_by_direct_callee_trigger: dict[
-            operation_graph_model.ActionTrigger,
+        self._contributed_destruction_fragments_by_direct_callee_execution: dict[
+            operation_graph_model.ActionExecution,
             list[operation_graph_model.ContributedDestructionFragment],
         ] = {}
-        self._triggers_propagating_destruction_to_caller: set[
-            operation_graph_model.ActionTrigger
+        self._executions_propagating_destruction_to_caller: set[
+            operation_graph_model.ActionExecution
         ] = set()
 
     @property
@@ -243,7 +243,7 @@ class OperationGraph:
         self._nodes.append(node)
         self._set_last_operation(key, node)
 
-    def record_action_trigger(
+    def record_action_execution(
         self,
         callee: ast.ActionReference,
         acting_on_position: ast.PositionReference,
@@ -254,8 +254,8 @@ class OperationGraph:
         required_preceding_child_operations: Iterable[
             operation_graph_model.PrecedingChildOperations
         ],
-    ) -> operation_graph_model.ActionTrigger:
-        """Record that this action triggers ``callee``, returning that Action Trigger.
+    ) -> operation_graph_model.ActionExecution:
+        """Record that this action triggers ``callee``, returning that Action Execution.
 
         The firing operation is the one that filled ``acting_on_position`` (a
         trigger position for an action, or the action being operated on by a
@@ -327,14 +327,14 @@ class OperationGraph:
                     action_parent_position.canonical_chained_name_tuple
                 ),
             )
-        trigger = operation_graph_model.ActionTrigger(
+        execution = operation_graph_model.ActionExecution(
             callee=callee,
             trigger_operation=firing_operation,
             bindings=bindings,
             action_parent_last_operation=action_parent_last_operation,
         )
-        self._triggers.append(trigger)
-        return trigger
+        self._executions.append(execution)
+        return execution
 
     def _requirement_binding(
         self,
@@ -351,9 +351,9 @@ class OperationGraph:
         return operation_graph_model.RequirementBinding(operation, child_operations)
 
     @property
-    def triggers(self) -> Sequence[operation_graph_model.ActionTrigger]:
+    def executions(self) -> Sequence[operation_graph_model.ActionExecution]:
         """Every action this action triggers, in the order it triggers them."""
-        return self._triggers
+        return self._executions
 
     def destruction_for_fact(
         self, destruction_fact: operation_graph_model.DestructionFact
@@ -370,18 +370,18 @@ class OperationGraph:
         )
 
     def contributed_destruction_fragments_for(
-        self, direct_callee_trigger: operation_graph_model.ActionTrigger
+        self, direct_callee_execution: operation_graph_model.ActionExecution
     ) -> Sequence[operation_graph_model.ContributedDestructionFragment]:
-        """Return destruction fragments contributed around one Action Trigger."""
-        return self._contributed_destruction_fragments_by_direct_callee_trigger.get(
-            direct_callee_trigger, ()
+        """Return destruction fragments contributed around one Action Execution."""
+        return self._contributed_destruction_fragments_by_direct_callee_execution.get(
+            direct_callee_execution, ()
         )
 
-    def propagates_destruction_from_trigger_to_caller(
-        self, trigger: operation_graph_model.ActionTrigger
+    def propagates_destruction_from_execution_to_caller(
+        self, execution: operation_graph_model.ActionExecution
     ) -> bool:
-        """Return whether a Destruction Fact from the Action Trigger's callee is propagated to this action's caller."""
-        return trigger in self._triggers_propagating_destruction_to_caller
+        """Return whether a Destruction Fact from the Action Execution's callee is propagated to this action's caller."""
+        return execution in self._executions_propagating_destruction_to_caller
 
     def record_destruction_fact_destroy(
         self,
@@ -435,7 +435,7 @@ class OperationGraph:
 
     def record_contributed_destruction_fragment(
         self,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
         newly_occupied_children: operation_graph_model.DestructionContractNewlyOccupiedChildren,
     ):
         """Record only the ordinary child Destroys newly known by this caller."""
@@ -443,13 +443,13 @@ class OperationGraph:
         destruction = self._get_or_create_destruction(destruction_fact)
         if newly_occupied_children.is_propagated_to_caller:
             destruction.is_propagated_to_caller = True
-            destruction.direct_callee_trigger = trigger
-            self._triggers_propagating_destruction_to_caller.add(trigger)
+            destruction.direct_callee_execution = execution
+            self._executions_propagating_destruction_to_caller.add(execution)
         fact_key = destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
         destroyed_position_key = newly_occupied_children.destroyed_position_in_destroying_action.canonical_chained_name_tuple
         destroyed_position_relative_to_fact = destroyed_position_key[len(fact_key) :]
         unrecorded_positions = self._unrecorded_contributed_destruction_positions(
-            trigger,
+            execution,
             newly_occupied_children,
             destruction,
             destroyed_position_relative_to_fact,
@@ -462,7 +462,7 @@ class OperationGraph:
             destroyed_particle_key,
         )
         fragment = self._record_contributed_destruction_operations(
-            trigger,
+            execution,
             newly_occupied_children,
             destruction,
             destroyed_position_relative_to_fact,
@@ -470,13 +470,13 @@ class OperationGraph:
             unrecorded_positions,
             relationships,
         )
-        self._contributed_destruction_fragments_by_direct_callee_trigger.setdefault(
-            trigger, []
+        self._contributed_destruction_fragments_by_direct_callee_execution.setdefault(
+            execution, []
         ).append(fragment)
 
     def _unrecorded_contributed_destruction_positions(
         self,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
         newly_occupied_children: operation_graph_model.DestructionContractNewlyOccupiedChildren,
         destruction: operation_graph_model.OperationGraphDestruction,
         destroyed_position_relative_to_fact: tuple[str, ...],
@@ -489,7 +489,7 @@ class OperationGraph:
             )
             # Destroying a caller-supplied parent records Destruction Contracts
             # for both the parent and its caller-supplied children. Those contracts
-            # can expose the same caller-known descendant through one Action Trigger,
+            # can expose the same caller-known descendant through one Action Execution,
             # but the descendant is destroyed once.
             existing_operation = destruction.operations_by_position.get(
                 destruction_position
@@ -499,7 +499,7 @@ class OperationGraph:
                     existing_operation,
                     operation_graph_model.DestructionFragmentDestroyNode,
                 )
-                and existing_operation.direct_callee_trigger is trigger
+                and existing_operation.direct_callee_execution is execution
             ):
                 continue
             unrecorded_positions.append(
@@ -512,7 +512,7 @@ class OperationGraph:
 
     def _record_contributed_destruction_operations(
         self,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
         newly_occupied_children: operation_graph_model.DestructionContractNewlyOccupiedChildren,
         destruction: operation_graph_model.OperationGraphDestruction,
         destroyed_position_relative_to_fact: tuple[str, ...],
@@ -523,11 +523,11 @@ class OperationGraph:
         destruction_fact = newly_occupied_children.destruction_fact
         # By the Empty Rule, a caller-contributed Destroy depends on the caller's
         # earlier operations on relevant child positions of the destroyed particle.
-        # The Action Trigger binding records those operations.
+        # The Action Execution binding records those operations.
         destroyed_particle_position_in_callee = ast.chain_in_callee(
-            trigger.action_chain, destroyed_particle_key
+            execution.action_chain, destroyed_particle_key
         )
-        child_operations = trigger.bindings[
+        child_operations = execution.bindings[
             destroyed_particle_position_in_callee
         ].child_operations
         # Each separate contribution needs only the preceding operations on child
@@ -591,7 +591,7 @@ class OperationGraph:
                             self._most_recent_ancestor_chain_operation(position_key),
                         ),
                     ),
-                    trigger=trigger,
+                    execution=execution,
                     destruction_fact=destruction_fact,
                     callee_destroy_position=callee_destroy_position,
                 )
@@ -618,7 +618,7 @@ class OperationGraph:
                 destruction_position=unrecorded_position.destruction_position,
                 dependencies_before_caller_contribution=dependencies_before_caller_contribution,
                 dependencies_after_caller_contribution=dependencies_after_caller_contribution,
-                direct_callee_trigger=trigger,
+                direct_callee_execution=execution,
                 target_in_destroying_action=target_in_destroying_action,
             )
             self._nodes.append(operation)
@@ -892,8 +892,8 @@ class OperationGraph:
 
     def record_guarantees(
         self,
-        trigger: operation_graph_model.ActionTrigger,
-        nested_triggers: tuple[operation_graph_model.ActionTrigger, ...],
+        execution: operation_graph_model.ActionExecution,
+        nested_executions: tuple[operation_graph_model.ActionExecution, ...],
         guaranteed_positions: Iterable[
             tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]
         ],
@@ -901,7 +901,7 @@ class OperationGraph:
         guarantee_action_chain: tuple[str, ...],
         operation_graph_action_chain: tuple[str, ...],
     ) -> dict[tuple[str, ...], operation_graph_model.GuaranteeNode]:
-        """Record the positions ``trigger`` guarantees, as nodes hanging off it.
+        """Record the positions ``execution`` guarantees, as nodes hanging off it.
 
         Each key is a contracted position's absolute key. That position's last
         operation becomes a new guarantee node, so caller operations that read
@@ -914,7 +914,7 @@ class OperationGraph:
         # avoidable allocation costs because guarantees account for most nodes
         # in dense action call graphs. A July 2026 experiment shared one
         # dependency list among every GuaranteeNode produced by the same
-        # Action Trigger, eliminating over one million list allocations in the
+        # Action Execution, eliminating over one million list allocations in the
         # largest profile. It failed to reduce compiler CPU: alternating
         # unprofiled runs averaged 8.013s before and 8.037s after, so the
         # prototype was rejected as a CPU optimization.
@@ -930,12 +930,12 @@ class OperationGraph:
         for caller_position, operation_positions_in_guarantee in guaranteed_positions:
             node = operation_graph_model.GuaranteeNode(
                 node_id=len(self._nodes),
-                trigger=trigger,
-                nested_triggers=nested_triggers,
+                execution=execution,
+                nested_executions=nested_executions,
                 guaranteed_position=ast.chain_in_callee(
                     operation_graph_action_chain, caller_position
                 ),
-                depends_on=(trigger.trigger_operation,),
+                depends_on=(execution.trigger_operation,),
                 operation_positions=tuple(
                     ast.chain_in_caller(guarantee_action_chain, operation_position)
                     for operation_position in operation_positions_in_guarantee
@@ -964,9 +964,9 @@ class OperationGraph:
 
 @dataclass(slots=True)
 class GuaranteePath:
-    """Action Triggers from a guarantee to its publishing Particle Operation."""
+    """Action Executions from a guarantee to its publishing Particle Operation."""
 
-    triggers: list[operation_graph_model.ActionTrigger]
+    executions: list[operation_graph_model.ActionExecution]
     operation: operation_graph_model.PositionOperationNode
 
 
@@ -989,7 +989,7 @@ class OperationGraphs(
         ] = collections.defaultdict(dict)
         self._destruction_dependencies: dict[
             tuple[
-                operation_graph_model.ActionTrigger,
+                operation_graph_model.ActionExecution,
                 operation_graph_model.DestructionFact,
                 tuple[str, ...],
             ],
@@ -1000,8 +1000,8 @@ class OperationGraphs(
         self, guarantee: operation_graph_model.GuaranteeNode
     ) -> GuaranteePath:
         """Resolve one guarantee to its Particle Operation through callee graphs."""
-        triggers = [guarantee.trigger, *guarantee.nested_triggers]
-        action = triggers[-1].callee_action_name
+        executions = [guarantee.execution, *guarantee.nested_executions]
+        action = executions[-1].callee_action_name
         position = guarantee.guaranteed_position
         action_resolutions = self._guarantee_resolutions[action.full_typed_name]
         operation = action_resolutions.get(position)
@@ -1012,14 +1012,14 @@ class OperationGraphs(
                 graph.last_operation_on_position_or_parents(position),
             )
             action_resolutions[position] = operation
-        return GuaranteePath(triggers, operation)
+        return GuaranteePath(executions, operation)
 
     def _resolve_destruction_operation(
         self,
         contribution: operation_graph_model.DestructionContributionNode,
     ) -> operation_graph_model.DestructionOperation:
         """Resolve a Destruction Fact position through direct callees."""
-        action = contribution.trigger.callee_action_name
+        action = contribution.execution.callee_action_name
         while True:
             graph = self[action]
             destruction = graph.destruction_for_fact(contribution.destruction_fact)
@@ -1031,10 +1031,11 @@ class OperationGraphs(
                     graph.action,
                     operation,
                 )
-            trigger = typing.cast(
-                "operation_graph_model.ActionTrigger", destruction.direct_callee_trigger
+            execution = typing.cast(
+                "operation_graph_model.ActionExecution",
+                destruction.direct_callee_execution,
             )
-            action = trigger.callee_action_name
+            action = execution.callee_action_name
 
     def resolve_destruction_dependency(
         self,
@@ -1042,14 +1043,14 @@ class OperationGraphs(
     ) -> operation_graph_model.DestructionDependency:
         """Resolve one caller contribution to the callee Destroy it precedes."""
         dependency_key = (
-            contribution.trigger,
+            contribution.execution,
             contribution.destruction_fact,
             contribution.callee_destroy_position,
         )
         dependency = self._destruction_dependencies.get(dependency_key)
         if dependency is None:
             dependency = operation_graph_model.DestructionDependency(
-                contribution.trigger,
+                contribution.execution,
                 self._resolve_destruction_operation(contribution),
             )
             self._destruction_dependencies[dependency_key] = dependency
@@ -1067,8 +1068,8 @@ class OperationGraphs(
             operation_graph_model.DestructionDependency,
             operation_graph_model.DestructionContribution,
         ] = {}
-        for trigger in graph.triggers:
-            for fragment in graph.contributed_destruction_fragments_for(trigger):
+        for execution in graph.executions:
+            for fragment in graph.contributed_destruction_fragments_for(execution):
                 for contributed_destruction in fragment.contributed_destructions:
                     dependency = self.resolve_destruction_dependency(
                         contributed_destruction.contribution_node

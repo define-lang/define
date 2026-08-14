@@ -262,7 +262,7 @@ class NestedGuarantees:
     """A callee's guarantees."""
 
     guarantees: Guarantees
-    trigger: operation_graph_model.ActionTrigger
+    execution: operation_graph_model.ActionExecution
 
 
 type NestedGuaranteesByActionChain = tuple[

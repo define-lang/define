@@ -554,8 +554,8 @@ class ActionPostorderValidator:
         ``requirements_in_caller`` contains the contract's requirements and
         their positions from the caller's perspective.
         """
-        # Action trigger:
-        #   the chain that fired the trigger:
+        # Action Execution:
+        #   the chain that triggered the execution:
         #     position<box>::action</outer>
         #   acting_on_position:
         #     position<box>::action</outer>::position<trigger>

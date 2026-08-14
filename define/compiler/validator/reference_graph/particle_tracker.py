@@ -137,17 +137,18 @@ class _PendingGuarantee:
     # The triggered action's chain.
     action_chain: tuple[str, ...]
     guarantees: action_contract.Guarantees
-    # The body operation number of the trigger that produced this nested guarantee.
+    # The body operation number of the Action Execution that produced this nested
+    # guarantee.
     # All of a triggered contract's guarantees (own and nested) carry it, so a
     # body statement that executes later supersedes them.
     body_operation_number: int
-    # DLP 44: the Action Trigger, in the operation graph, that fired this callee.
+    # DLP 44: the Action Execution, in the operation graph, that fired this callee.
     # Each contracted position the guarantee touches has its last operation
     # pointed at the operation that fired it, so the caller's later ops on it
     # depend on it through the Fill, Empty, or Move Rule. Nested children inherit
     # it verbatim (the whole callee subtree happens, from the caller's view, at
-    # the one trigger).
-    trigger: operation_graph_model.ActionTrigger
+    # the one Action Execution).
+    execution: operation_graph_model.ActionExecution
     # The full action chain whose graph contains the operation that last
     # affected these guaranteed positions. A Move keeps this chain at the action
     # performing the Move while the guaranteed positions continue beneath the
@@ -155,10 +156,10 @@ class _PendingGuarantee:
     operation_graph_action_chain: tuple[str, ...]
     # All the callees down to the one that actually first created this guarantee.
     # Direct callee first and original creator last.
-    transitive_callees: tuple[operation_graph_model.ActionTrigger, ...] = ()
+    transitive_executions: tuple[operation_graph_model.ActionExecution, ...] = ()
     # Call-chain depth from the directly-applied contract: its own guarantees
     # are depth 0; each nested guarantee increments the depth. Within a single
-    # trigger (same sequence), a lower-depth guarantee outranks a higher-depth
+    # Action Execution (same sequence), a lower-depth guarantee outranks a higher-depth
     # one it resolved.
     call_chain_depth: int = 0
 
@@ -370,7 +371,9 @@ class _CurrentActionNestedGuarantees:
             for action_chain, guarantees in self._by_action_chain.items()
             for nested_guarantees in guarantees
         ]
-        result.sort(key=lambda item: item[1].trigger.trigger_operation.operation_order)
+        result.sort(
+            key=lambda item: item[1].execution.trigger_operation.operation_order
+        )
         return tuple(result)
 
 
@@ -1290,8 +1293,8 @@ class ParticleTracker:
         newly_occupied_children_by_destruction_contract: Sequence[
             operation_graph_model.DestructionContractNewlyOccupiedChildren
         ] = (),
-    ) -> operation_graph_model.ActionTrigger:
-        """Record an Action Trigger and apply the triggered action's guarantees.
+    ) -> operation_graph_model.ActionExecution:
+        """Record an Action Execution and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.
@@ -1324,11 +1327,11 @@ class ParticleTracker:
         # dense action call graph.
         self._body_operation_number += 1
         action_chain_key = action_chain.canonical_chained_name_tuple
-        # We have to record the action trigger when particles are still
+        # We have to record the Action Execution when particles are still
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        trigger = self._operation_graph.record_action_trigger(
+        execution = self._operation_graph.record_action_execution(
             action_chain,
             acting_on_position,
             requirements_in_caller,
@@ -1345,25 +1348,25 @@ class ParticleTracker:
         )
         for newly_occupied_children in newly_occupied_children_by_destruction_contract:
             self._operation_graph.record_contributed_destruction_fragment(
-                trigger,
+                execution,
                 newly_occupied_children,
             )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
             guarantees,
             self._body_operation_number,
-            trigger,
+            execution,
             operation_graph_action_chain=action_chain_key,
         )
         self._nested_guarantees.add(
             action_chain_key,
             action_contract.NestedGuarantees(
                 guarantees=guarantees,
-                trigger=trigger,
+                execution=execution,
             ),
         )
         self._apply_pending_guarantee(callee_guarantees)
-        return trigger
+        return execution
 
     def nested_guarantees(
         self,
@@ -1377,8 +1380,8 @@ class ParticleTracker:
             pending_guarantee
         )
         guarantee_nodes = self._operation_graph.record_guarantees(
-            pending_guarantee.trigger,
-            pending_guarantee.transitive_callees,
+            pending_guarantee.execution,
+            pending_guarantee.transitive_executions,
             operation_graph_positions,
             guarantee_action_chain=pending_guarantee.action_chain,
             operation_graph_action_chain=(
@@ -1396,7 +1399,7 @@ class ParticleTracker:
             child_action_chain_in_caller = pending_guarantee.key_for(
                 child_action_chain_in_guarantee
             )
-            # child.trigger.action_chain is the full chain the action had from
+            # child.execution.action_chain is the full chain the action had from
             # the perspective of its caller, when it was triggered.
             #
             # child_action_chain_in_guarantee is where that action was, from the
@@ -1489,7 +1492,7 @@ class ParticleTracker:
             #     position<gateway>::action</relocate_particle>
             # child_action_chain_in_guarantee =
             #     position<stationary>::action</inspect_particle>
-            # child.trigger.action_chain =
+            # child.execution.action_chain =
             #     position<stationary>::action</inspect_particle>
             # child_action_chain_in_caller =
             #     position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>
@@ -1506,7 +1509,7 @@ class ParticleTracker:
             #     position<gateway>::action</relocate_particle>
             # child_action_chain_in_guarantee =
             #     position<destination>::action</process_particle>
-            # child.trigger.action_chain =
+            # child.execution.action_chain =
             #     position<source>::action</process_particle>
             # child_action_chain_in_caller =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
@@ -1523,7 +1526,7 @@ class ParticleTracker:
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
             # child_action_chain_in_guarantee =
             #     position<marker_parent>::action</fill_marker>
-            # child.trigger.action_chain =
+            # child.execution.action_chain =
             #     position<marker_parent>::action</fill_marker>
             # child_action_chain_in_caller =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>
@@ -1531,25 +1534,25 @@ class ParticleTracker:
             guarantee_moved = (
                 pending_guarantee.operation_graph_action_chain
                 != pending_guarantee.action_chain
-                or child_action_chain_in_guarantee != child.trigger.action_chain
+                or child_action_chain_in_guarantee != child.execution.action_chain
             )
             if guarantee_moved:
-                transitive_callees = pending_guarantee.transitive_callees
+                transitive_executions = pending_guarantee.transitive_executions
                 operation_graph_action_chain = (
                     pending_guarantee.operation_graph_action_chain
                 )
             else:
-                transitive_callees = (
-                    *pending_guarantee.transitive_callees,
-                    child.trigger,
+                transitive_executions = (
+                    *pending_guarantee.transitive_executions,
+                    child.execution,
                 )
                 operation_graph_action_chain = child_action_chain_in_caller
             child_nested_guarantee = _PendingGuarantee(
                 child_action_chain_in_caller,
                 child.guarantees,
                 pending_guarantee.body_operation_number,
-                pending_guarantee.trigger,
-                transitive_callees=transitive_callees,
+                pending_guarantee.execution,
+                transitive_executions=transitive_executions,
                 operation_graph_action_chain=operation_graph_action_chain,
                 call_chain_depth=pending_guarantee.call_chain_depth + 1,
             )

@@ -2,7 +2,7 @@
 """A Destruction Contract whose destruction happens many trigger hops away.
 
 A particle carrying two destructors (d1, d2) is passed down a long chain of
-action triggers and destroyed at the bottom, where both destructors fire with
+Action Executions and destroyed at the bottom, where both destructors fire with
 unmet requirements (p1 is filled, so d1's empty-requirement is violated; p2 is
 emptied, so d2's occupied-requirement is violated). The chain must trace every
 trigger hop from the verifying definition down to the destruction, the same way

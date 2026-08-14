@@ -92,7 +92,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     caller_graph = operation_graph.OperationGraph(caller_action)
     trigger_position = _position("run")
     trigger_position_create = caller_graph.record_create(trigger_position)
-    trigger = caller_graph.record_action_trigger(
+    execution = caller_graph.record_action_execution(
         _action_reference(worker_action),
         trigger_position,
         (),
@@ -108,18 +108,18 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
     resolved_callee = resolved_actions.resolve(worker_action)
     resolved = resolved_actions.resolve(caller_action)
-    (resolved_trigger,) = resolved.action_triggers
-    action_parent = trigger.action_parent_last_operation
+    (resolved_execution,) = resolved.action_executions
+    action_parent = execution.action_parent_last_operation
     assert isinstance(
         action_parent, operation_graph_model.ActionParentLastOperationNode
     )
 
-    assert resolved_trigger.trigger is trigger
-    assert len(resolved.action_triggers) == 1
-    assert resolved.operations[trigger_position_create].action_triggers == [
-        resolved_trigger
+    assert resolved_execution.execution is execution
+    assert len(resolved.action_executions) == 1
+    assert resolved.operations[trigger_position_create].action_executions == [
+        resolved_execution
     ]
-    (resolved_input,) = resolved_trigger.inputs.values()
+    (resolved_input,) = resolved_execution.inputs.values()
     assert resolved_input.callee_input is resolved_callee.caller_inputs[0]
     assert (
         resolved_input.caller_dependencies
@@ -129,7 +129,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert caller_input is action_parent
     assert resolved_input.caller_input_dependencies == [caller_input]
     assert resolved.operations[trigger_position_create].caller_inputs == [caller_input]
-    assert trigger.caller_input_dependency is None
+    assert execution.caller_input_dependency is None
 
 
 def test_requirement_input_fires_destructor():
@@ -140,7 +140,7 @@ def test_requirement_input_fires_destructor():
     caller_graph.record_requirement(
         item, action_contract.PositionOccupancyState.OCCUPIED
     )
-    destructor_trigger = caller_graph.record_action_trigger(
+    destructor_execution = caller_graph.record_action_execution(
         ast.ActionReference(
             typed_names=(*item.typed_names, destructor_action),
             location=_LOCATION,
@@ -161,15 +161,15 @@ def test_requirement_input_fires_destructor():
     resolved = resolved_actions.resolve(caller_action)
 
     assert isinstance(
-        destructor_trigger.trigger_operation,
+        destructor_execution.trigger_operation,
         operation_graph_model.RequirementNode,
     )
-    (resolved_destructor_trigger,) = resolved.action_triggers
-    (resolved_destructor_input,) = resolved_destructor_trigger.inputs.values()
+    (resolved_destructor_execution,) = resolved.action_executions
+    (resolved_destructor_input,) = resolved_destructor_execution.inputs.values()
     (caller_input,) = resolved.caller_inputs
-    assert caller_input is destructor_trigger.trigger_operation
+    assert caller_input is destructor_execution.trigger_operation
     assert resolved_destructor_input.caller_input_dependencies == [caller_input]
-    assert destructor_trigger.caller_input_dependency is caller_input
+    assert destructor_execution.caller_input_dependency is caller_input
     assert all(
-        not operation.action_triggers for operation in resolved.operations.values()
+        not operation.action_executions for operation in resolved.operations.values()
     )

@@ -64,7 +64,7 @@ class ActionFragment:
     triggered_input_successors: list[TriggeredActionInput] = field(
         init=False, default_factory=list
     )
-    triggered_action_successors: list[operation_graph_model.ActionTrigger] = field(
+    action_execution_successors: list[operation_graph_model.ActionExecution] = field(
         init=False, default_factory=list
     )
     execution_input_successors: list[TriggeredActionInput] = field(
@@ -106,10 +106,10 @@ class DestructionConnection:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
-class ActionTriggerPlan:
-    """One direct Action Trigger and its destruction-connection behavior."""
+class ActionExecutionPlan:
+    """One direct Action Execution and its destruction-connection behavior."""
 
-    action_trigger: operation_graph_model.ActionTrigger
+    execution: operation_graph_model.ActionExecution
     created_destruction_connections: list[DestructionConnection]
     forwards_destruction_connections: bool
 
@@ -123,7 +123,7 @@ class CallerInputPlan:
     triggered_inputs: list[TriggeredActionInput] = field(
         init=False, default_factory=list
     )
-    destructor_triggers: list[operation_graph_model.ActionTrigger] = field(
+    destructor_executions: list[operation_graph_model.ActionExecution] = field(
         init=False, default_factory=list
     )
 
@@ -132,7 +132,7 @@ class CallerInputPlan:
 class TriggeredActionInput:
     """One direct callee input connected to dependencies in its caller."""
 
-    action_trigger: operation_graph_model.ActionTrigger
+    execution: operation_graph_model.ActionExecution
     callee_input: operation_graph_action_resolver.CallerInput
     contributed_destruction_operations: list[
         operation_graph_model.DestructionFragmentDestroyNode
@@ -142,7 +142,7 @@ class TriggeredActionInput:
 
 
 type _TriggeredInputsByResolvedInput = dict[
-    operation_graph_action_resolver.ResolvedActionTriggerInput,
+    operation_graph_action_resolver.ResolvedActionExecutionInput,
     TriggeredActionInput,
 ]
 
@@ -158,9 +158,9 @@ class GuaranteePublication:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class TriggerForDestroyedCalleeGuaranteeParticle:
-    """An Action Trigger for a destroyed callee-guaranteed particle."""
+    """An Action Execution for a destroyed callee-guaranteed particle."""
 
-    action_trigger: operation_graph_model.ActionTrigger
+    execution: operation_graph_model.ActionExecution
     guarantee_dependency: operation_graph.GuaranteePath
     triggered_inputs: list[TriggeredActionInput]
 
@@ -172,7 +172,7 @@ class ActionPlan:
     fragments: list[ActionFragment]
     execute_fragments: list[ActionFragment]
     caller_inputs: list[CallerInputPlan]
-    action_triggers: list[ActionTriggerPlan]
+    action_executions: list[ActionExecutionPlan]
     triggered_action_inputs: list[TriggeredActionInput]
     triggers_for_destroyed_callee_guarantee_particles: list[
         TriggerForDestroyedCalleeGuaranteeParticle
@@ -205,7 +205,7 @@ class _FragmentTopologyBuilder:
     """Partition one action's Particle Operations into code-generation fragments.
 
     A fragment ends where a direct method call would not preserve fan-out, a
-    join, an Action Trigger, guarantee publication, or a dependency supplied
+    join, an Action Execution, guarantee publication, or a dependency supplied
     by the caller.
     """
 
@@ -340,7 +340,7 @@ class _FragmentTopologyBuilder:
                 in self._resolved_action.graph.guaranteed_positions_by_operation
             )
             or resolved_operation.triggered_inputs
-            or resolved_operation.action_triggers
+            or resolved_operation.action_executions
         )
 
 
@@ -364,7 +364,7 @@ class _ActionPlanBuilder:
         )
 
     def build_triggered_action(self) -> ActionPlan:
-        """Build the reusable caller-input plan for Action Triggers of this action."""
+        """Build the reusable caller-input plan for Action Executions of this action."""
         return self._build(
             self._resolved_action.caller_inputs,
             publishes_guarantees=True,
@@ -384,9 +384,9 @@ class _ActionPlanBuilder:
             uses_caller_inputs=not start_directly,
         ).build()
         (
-            action_triggers,
+            action_executions,
             destruction_connection_by_operation,
-        ) = self._plan_action_triggers(topology)
+        ) = self._plan_action_executions(topology)
         triggered_inputs_by_resolved_input = self._plan_triggered_actions(
             topology.fragment_for_operation,
             caller_inputs,
@@ -410,7 +410,7 @@ class _ActionPlanBuilder:
             fragments=topology.fragments,
             execute_fragments=execute_fragments,
             caller_inputs=planned_caller_inputs,
-            action_triggers=action_triggers,
+            action_executions=action_executions,
             triggered_action_inputs=list(triggered_inputs_by_resolved_input.values()),
             triggers_for_destroyed_callee_guarantee_particles=(
                 self._plan_triggers_for_destroyed_callee_guarantee_particles(
@@ -424,31 +424,33 @@ class _ActionPlanBuilder:
             destruction_connection_by_operation=destruction_connection_by_operation,
         )
 
-    def _plan_action_triggers(
+    def _plan_action_executions(
         self,
         topology: _FragmentTopology,
     ) -> tuple[
-        list[ActionTriggerPlan],
+        list[ActionExecutionPlan],
         dict[
             operation_graph_model.DestructionFragmentDestroyNode,
             DestructionConnection,
         ],
     ]:
-        action_triggers: list[ActionTriggerPlan] = []
-        action_trigger_by_trigger: dict[
-            operation_graph_model.ActionTrigger,
-            ActionTriggerPlan,
+        action_executions: list[ActionExecutionPlan] = []
+        action_execution_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            ActionExecutionPlan,
         ] = {}
-        for resolved_trigger in self._resolved_action.action_triggers:
-            planned_trigger = ActionTriggerPlan(
-                action_trigger=resolved_trigger.trigger,
+        for resolved_execution in self._resolved_action.action_executions:
+            planned_execution = ActionExecutionPlan(
+                execution=resolved_execution.execution,
                 created_destruction_connections=[],
                 forwards_destruction_connections=(
-                    resolved_trigger.forwards_destruction_connections
+                    resolved_execution.forwards_destruction_connections
                 ),
             )
-            action_triggers.append(planned_trigger)
-            action_trigger_by_trigger[resolved_trigger.trigger] = planned_trigger
+            action_executions.append(planned_execution)
+            action_execution_by_execution[resolved_execution.execution] = (
+                planned_execution
+            )
         destruction_connection_by_operation: dict[
             operation_graph_model.DestructionFragmentDestroyNode,
             DestructionConnection,
@@ -471,14 +473,14 @@ class _ActionPlanBuilder:
                 first_fragments_of_destructions,
                 completion_fragments,
             )
-            action_trigger_by_trigger[
-                destruction_dependency.trigger
+            action_execution_by_execution[
+                destruction_dependency.execution
             ].created_destruction_connections.append(connection)
             for fragment in completion_fragments:
                 fragment.destruction_connections_to_complete.append(connection)
             for operation in connection.operations:
                 destruction_connection_by_operation[operation] = connection
-        return action_triggers, destruction_connection_by_operation
+        return action_executions, destruction_connection_by_operation
 
     def _plan_triggered_actions(
         self,
@@ -488,9 +490,9 @@ class _ActionPlanBuilder:
         caller_inputs: Sequence[operation_graph_action_resolver.CallerInput],
     ) -> _TriggeredInputsByResolvedInput:
         triggered_inputs_by_resolved_input: _TriggeredInputsByResolvedInput = {}
-        for resolved_action_trigger in self._resolved_action.action_triggers:
-            action_trigger = resolved_action_trigger.trigger
-            for resolved_input in resolved_action_trigger.inputs.values():
+        for resolved_action_execution in self._resolved_action.action_executions:
+            action_execution = resolved_action_execution.execution
+            for resolved_input in resolved_action_execution.inputs.values():
                 dependencies = resolved_input.caller_dependencies
                 dependency_count = (
                     len(dependencies.local_operations)
@@ -501,7 +503,7 @@ class _ActionPlanBuilder:
                 if caller_inputs:
                     dependency_count += len(resolved_input.caller_input_dependencies)
                 triggered_input = TriggeredActionInput(
-                    action_trigger=action_trigger,
+                    execution=action_execution,
                     callee_input=resolved_input.callee_input,
                     contributed_destruction_operations=(
                         resolved_input.contributed_destruction_operations
@@ -516,13 +518,13 @@ class _ActionPlanBuilder:
                 fragment.triggered_input_successors.append(
                     triggered_inputs_by_resolved_input[resolved_input]
                 )
-            for resolved_action_trigger in resolved_operation.action_triggers:
-                fragment.triggered_action_successors.append(
-                    resolved_action_trigger.trigger
+            for resolved_action_execution in resolved_operation.action_executions:
+                fragment.action_execution_successors.append(
+                    resolved_action_execution.execution
                 )
                 fragment.execution_input_successors.extend(
                     triggered_inputs_by_resolved_input[resolved_input]
-                    for resolved_input in resolved_action_trigger.inputs.values()
+                    for resolved_input in resolved_action_execution.inputs.values()
                 )
         return triggered_inputs_by_resolved_input
 
@@ -530,24 +532,24 @@ class _ActionPlanBuilder:
         self,
         triggered_inputs_by_resolved_input: _TriggeredInputsByResolvedInput,
     ) -> list[TriggerForDestroyedCalleeGuaranteeParticle]:
-        action_triggers: list[TriggerForDestroyedCalleeGuaranteeParticle] = []
-        for resolved_action_trigger in self._resolved_action.action_triggers:
-            guarantee_dependency = resolved_action_trigger.guarantee_dependency
+        triggers: list[TriggerForDestroyedCalleeGuaranteeParticle] = []
+        for resolved_action_execution in self._resolved_action.action_executions:
+            guarantee_dependency = resolved_action_execution.guarantee_dependency
             if guarantee_dependency is None:
                 continue
             triggered_inputs: list[TriggeredActionInput] = []
-            for resolved_input in resolved_action_trigger.inputs.values():
+            for resolved_input in resolved_action_execution.inputs.values():
                 triggered_inputs.append(
                     triggered_inputs_by_resolved_input[resolved_input]
                 )
-            action_triggers.append(
+            triggers.append(
                 TriggerForDestroyedCalleeGuaranteeParticle(
-                    action_trigger=resolved_action_trigger.trigger,
+                    execution=resolved_action_execution.execution,
                     guarantee_dependency=guarantee_dependency,
                     triggered_inputs=triggered_inputs,
                 )
             )
-        return action_triggers
+        return triggers
 
     def _plan_guarantee_publications(
         self,
@@ -623,24 +625,28 @@ class _ActionPlanBuilder:
                     fragment
                 )
                 fragment.dependency_count += 1
-        for resolved_action_trigger in self._resolved_action.action_triggers:
-            for resolved_trigger_input in resolved_action_trigger.inputs.values():
+        for resolved_action_execution in self._resolved_action.action_executions:
+            for resolved_execution_input in resolved_action_execution.inputs.values():
                 triggered_input = triggered_inputs_by_resolved_input[
-                    resolved_trigger_input
+                    resolved_execution_input
                 ]
-                for resolved_input in resolved_trigger_input.caller_input_dependencies:
+                for (
+                    resolved_input
+                ) in resolved_execution_input.caller_input_dependencies:
                     caller_input_by_resolved_input[
                         resolved_input
                     ].triggered_inputs.append(triggered_input)
             caller_input_dependency = (
-                resolved_action_trigger.trigger.caller_input_dependency
+                resolved_action_execution.execution.caller_input_dependency
             )
             if caller_input_dependency is not None:
                 caller_input = caller_input_by_resolved_input[caller_input_dependency]
-                caller_input.destructor_triggers.append(resolved_action_trigger.trigger)
+                caller_input.destructor_executions.append(
+                    resolved_action_execution.execution
+                )
                 caller_input.triggered_inputs.extend(
                     triggered_inputs_by_resolved_input[resolved_input]
-                    for resolved_input in resolved_action_trigger.inputs.values()
+                    for resolved_input in resolved_action_execution.inputs.values()
                 )
         return caller_inputs
 

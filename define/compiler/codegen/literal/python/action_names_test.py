@@ -66,9 +66,9 @@ define the potential action<my.domain.com:my_lib:/test> {{
     return definition
 
 
-def _action_triggers(
+def _action_executions(
     validate_project: conftest.ValidateProject,
-) -> collections.abc.Sequence[operation_graph_model.ActionTrigger]:
+) -> collections.abc.Sequence[operation_graph_model.ActionExecution]:
     result = validate_project(
         {
             "test.dfn": """\
@@ -123,7 +123,7 @@ define the potential action<my.domain.com:my_lib:/worker_2> {
     )
     return result.operation_graphs[
         test_definition_result.definition.typed_name
-    ].triggers
+    ].executions
 
 
 def _create_fragment(position_name: str) -> action_plan.ActionFragment:
@@ -171,7 +171,7 @@ def _generated_action(
         local_position_statements=[],
         fragments=[],
         caller_inputs=[],
-        action_triggers=[],
+        action_executions=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         triggered_action_inputs=[],
         guarantees=None,
@@ -197,9 +197,9 @@ def _action_names(
     generated_actions = typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_context.GeneratedAction
     ]()
-    for planned_trigger in plan.action_triggers:
-        action_trigger = planned_trigger.action_trigger
-        generated_actions[action_trigger.callee_action_name] = _generated_action(None)
+    for planned_execution in plan.action_executions:
+        action_execution = planned_execution.execution
+        generated_actions[action_execution.callee_action_name] = _generated_action(None)
     return action_names.ActionNameGenerator(
         definition or _action_definition(),
         plan,
@@ -217,7 +217,7 @@ def _input_method_names(
             action_plan.CallerInputPlan(resolved_input)
             for resolved_input in resolved_inputs
         ],
-        action_triggers=[],
+        action_executions=[],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
@@ -232,7 +232,7 @@ def test_local_position_names():
         fragments=[],
         execute_fragments=[],
         caller_inputs=[],
-        action_triggers=[],
+        action_executions=[],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
@@ -311,7 +311,7 @@ def test_fragments_skip_a_normalized_source_suffix():
         fragments=fragments,
         execute_fragments=fragments,
         caller_inputs=[],
-        action_triggers=[],
+        action_executions=[],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
@@ -337,7 +337,7 @@ def test_fragment_names_preserve_external_universes_and_multiverse():
         fragments=fragments,
         execute_fragments=fragments,
         caller_inputs=[],
-        action_triggers=[],
+        action_executions=[],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
@@ -354,22 +354,22 @@ def test_fragment_names_preserve_external_universes_and_multiverse():
     }
 
 
-def test_repeated_action_trigger_skips_a_source_suffix(
+def test_repeated_action_execution_skips_a_source_suffix(
     validate_project: conftest.ValidateProject,
 ):
-    naturally_suffixed, first, second = _action_triggers(validate_project)
-    action_triggers = [naturally_suffixed, first, second]
+    naturally_suffixed, first, second = _action_executions(validate_project)
+    action_executions = [naturally_suffixed, first, second]
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
         caller_inputs=[],
-        action_triggers=[
-            action_plan.ActionTriggerPlan(
-                action_trigger=action_trigger,
+        action_executions=[
+            action_plan.ActionExecutionPlan(
+                execution=action_execution,
                 created_destruction_connections=[],
                 forwards_destruction_connections=False,
             )
-            for action_trigger in action_triggers
+            for action_execution in action_executions
         ],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
@@ -409,14 +409,14 @@ def test_repeated_action_trigger_skips_a_source_suffix(
     }
 
 
-def test_destruction_connection_names_use_action_trigger(
+def test_destruction_connection_names_use_action_execution(
     validate_project: conftest.ValidateProject,
 ):
-    _, trigger, _ = _action_triggers(validate_project)
+    _, execution, _ = _action_executions(validate_project)
     destroyed_position = _position("/destroyed")
     destruction_fact = operation_graph_model.DestructionFact(
         destroyed_position,
-        trigger.callee_action_name,
+        execution.callee_action_name,
     )
     destruction_start = operation_graph_model.ActionParentLastOperationNode(
         node_id=0,
@@ -442,7 +442,7 @@ def test_destruction_connection_names_use_action_trigger(
     )
     first_connection = action_plan.DestructionConnection(
         operation_graph_model.DestructionOperation(
-            trigger.callee_action_name,
+            execution.callee_action_name,
             first_destroy,
         ),
         [],
@@ -451,7 +451,7 @@ def test_destruction_connection_names_use_action_trigger(
     )
     second_connection = action_plan.DestructionConnection(
         operation_graph_model.DestructionOperation(
-            trigger.callee_action_name,
+            execution.callee_action_name,
             second_destroy,
         ),
         [],
@@ -462,9 +462,9 @@ def test_destruction_connection_names_use_action_trigger(
         fragments=[],
         execute_fragments=[],
         caller_inputs=[],
-        action_triggers=[
-            action_plan.ActionTriggerPlan(
-                action_trigger=trigger,
+        action_executions=[
+            action_plan.ActionExecutionPlan(
+                execution=execution,
                 created_destruction_connections=[
                     first_connection,
                     second_connection,
@@ -516,7 +516,7 @@ def test_continue_destroy_method_uses_destroy_fragment_name():
         fragments=[fragment],
         execute_fragments=[],
         caller_inputs=[],
-        action_triggers=[],
+        action_executions=[],
         triggered_action_inputs=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],

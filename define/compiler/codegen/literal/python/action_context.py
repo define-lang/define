@@ -62,14 +62,14 @@ class ActionDefinitionContext:
                 class_references.extend(position.class_references)
                 if statement.to_position is not None:
                     class_references.extend(statement.to_position.class_references)
-        for action_trigger in self.execution.action_triggers:
+        for action_execution in self.execution.action_executions:
             class_references.extend(
                 connection.destruction_continuation.execution_class
-                for connection in action_trigger.created_destruction_connections
+                for connection in action_execution.created_destruction_connections
             )
-            if action_trigger.action is not None:
-                class_references.extend(action_trigger.action.class_references)
-            class_references.append(action_trigger.execution_class)
+            if action_execution.action is not None:
+                class_references.extend(action_execution.action.class_references)
+            class_references.append(action_execution.execution_class)
         for triggered_input in self.execution.triggered_action_inputs:
             for destruction_position in triggered_input.destruction_positions:
                 class_references.extend(destruction_position.position.class_references)
@@ -91,7 +91,7 @@ class GuaranteeInterface:
     """Generated guarantee members exposed across one action boundary."""
 
     class_reference: naming.ClassReference
-    child_guarantees: dict[operation_graph_model.ActionTrigger, ChildGuarantees]
+    child_guarantees: dict[operation_graph_model.ActionExecution, ChildGuarantees]
     # Guarantee paths end at the Position Operation that publishes the
     # guarantee; its value here is the generated task-list member name.
     guarantee_names_by_operation: dict[operation_graph_model.PositionOperationNode, str]

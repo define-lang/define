@@ -31,7 +31,7 @@ def test_trigger_inlines_callee(
     }
 
 
-def test_local_create_and_action_trigger_run_in_parallel(
+def test_local_create_and_action_execution_run_in_parallel(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

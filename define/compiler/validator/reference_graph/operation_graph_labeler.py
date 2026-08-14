@@ -19,21 +19,21 @@ if typing.TYPE_CHECKING:
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
-# One Action Trigger, by the operation that fired it and the action it fires. An
-# action names each of its own Action Triggers, and one operation can fire
-# more than one of them.
-type _TriggerKey = tuple[operation_graph_model.LastOperationNode, str]
+# One Action Execution, by the operation that triggered it and the action it runs.
+# An action names each of its direct Action Executions, and one operation can
+# trigger more than one of them.
+type _ExecutionKey = tuple[operation_graph_model.LastOperationNode, str]
 
 _CREATE_OPERATION_NAME = "create"
 _MOVE_OPERATION_NAME = "move"
 _DESTROY_OPERATION_NAME = "destroy"
 
 
-def _trigger_key(trigger: operation_graph_model.ActionTrigger) -> _TriggerKey:
-    """Return the identity of one Action Trigger performed by an action."""
+def _execution_key(execution: operation_graph_model.ActionExecution) -> _ExecutionKey:
+    """Return the identity of one Action Execution performed by an action."""
     return (
-        trigger.trigger_operation,
-        trigger.callee_action_name.full_typed_name,
+        execution.trigger_operation,
+        execution.callee_action_name.full_typed_name,
     )
 
 
@@ -124,35 +124,35 @@ class _OperationLabels:
         )
 
 
-class _InvocationLabels:
+class _ExecutionLabels:
     """The local name one action gives each action it triggers."""
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Name every action ``graph`` triggers."""
-        self._names: dict[_TriggerKey, str] = {}
+        self._names: dict[_ExecutionKey, str] = {}
         self._callees: list[ast.GlobalTypedNameReference] = []
-        times_invoked: dict[str, int] = {}
-        for trigger in graph.triggers:
-            action_name = _action_name(trigger.callee_action_name)
+        execution_counts: dict[str, int] = {}
+        for execution in graph.executions:
+            action_name = _action_name(execution.callee_action_name)
             # An action can trigger the same action more than once, which every
-            # Action Trigger after the first says in its name.
-            count = times_invoked.get(action_name, 0) + 1
-            times_invoked[action_name] = count
-            self._names[_trigger_key(trigger)] = (
+            # Action Execution after the first says in its name.
+            count = execution_counts.get(action_name, 0) + 1
+            execution_counts[action_name] = count
+            self._names[_execution_key(execution)] = (
                 action_name if count == 1 else f"{action_name}#{count}"
             )
-            self._callees.append(trigger.callee_action_name)
+            self._callees.append(execution.callee_action_name)
 
-    def __getitem__(self, trigger: operation_graph_model.ActionTrigger) -> str:
-        """Return the local name of the action ``trigger`` fires."""
-        return self._names[_trigger_key(trigger)]
+    def __getitem__(self, execution: operation_graph_model.ActionExecution) -> str:
+        """Return the local name of ``execution``'s action."""
+        return self._names[_execution_key(execution)]
 
     def names(self) -> Iterable[str]:
         """Return the local name of every action this action triggers."""
         return self._names.values()
 
     def callees(self) -> Iterable[ast.GlobalTypedNameReference]:
-        """Return the action every Action Trigger of this action fires."""
+        """Return the action run by every direct Action Execution."""
         return self._callees
 
 
@@ -170,54 +170,54 @@ class TriggeredActionExecutionName:
         return self.local_name
 
 
-class _ActionInvocationLabels:
-    """The name of every Action Trigger, by the action that performs it.
+class _ActionExecutionLabels:
+    """The name of every Action Execution, by the action that performs it.
 
-    Each action names its own Action Triggers, knowing nothing of the rest of the
-    program, so a name can fail to stand for one Action Trigger in two ways: two
-    actions that trigger the same callee both name their first Action Trigger of it
+    Each action names its own Action Executions, knowing nothing of the rest of the
+    program, so a name can fail to stand for one Action Execution in two ways: two
+    actions that trigger the same callee both name their first Action Execution of it
     ``worker``, and an action triggered more than once hands out every one of its
-    names again in each copy of itself. Either way, the name carries the name of
-    the Action Trigger it was spliced in by: ``first:worker``, ``first#2:worker``.
+    names again in each execution. Either way, the name carries its caller's Action
+    Execution name: ``first:worker``, ``first#2:worker``.
     """
 
     def __init__(self, graphs: operation_graph.OperationGraphs):
-        """Name every Action Trigger the actions in ``graphs`` perform."""
+        """Name every Action Execution the actions in ``graphs`` perform."""
         self._labels: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, _InvocationLabels
+            ast.GlobalTypedName, _ExecutionLabels
         ] = typed_name_dict.TypedNameDict()
         # How many actions give out each name, and how many times each action is
-        # triggered. A name stands for one Action Trigger only when one action gives it
+        # triggered. A name stands for one Action Execution only when one action gives it
         # and that action is itself triggered only once.
         callers_naming: dict[str, int] = {}
-        times_invoked: typed_name_dict.TypedNameDict[ast.GlobalTypedName, int] = (
+        execution_counts: typed_name_dict.TypedNameDict[ast.GlobalTypedName, int] = (
             typed_name_dict.TypedNameDict()
         )
         for caller, graph in graphs.items():
-            labels = _InvocationLabels(graph)
+            labels = _ExecutionLabels(graph)
             self._labels[caller] = labels
             for name in labels.names():
                 callers_naming[name] = callers_naming.get(name, 0) + 1
             for callee in labels.callees():
-                times_invoked[callee] = times_invoked.get(callee, 0) + 1
+                execution_counts[callee] = execution_counts.get(callee, 0) + 1
         self._ambiguous: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, set[str]
         ] = typed_name_dict.TypedNameDict()
         for caller, labels in self._labels.items():
-            caller_invoked_repeatedly = times_invoked.get(caller, 0) > 1
+            caller_executes_repeatedly = execution_counts.get(caller, 0) > 1
             self._ambiguous[caller] = {
                 name
                 for name in labels.names()
-                if callers_naming[name] > 1 or caller_invoked_repeatedly
+                if callers_naming[name] > 1 or caller_executes_repeatedly
             }
 
     def name(
         self,
         action: ast.GlobalTypedName,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
     ) -> TriggeredActionExecutionName:
-        """Return the local name and qualification rule for ``trigger``."""
-        local_name = self._labels[action][trigger]
+        """Return the local name and qualification rule for ``execution``."""
+        local_name = self._labels[action][execution]
         return TriggeredActionExecutionName(
             local_name=local_name,
             uses_caller_name=local_name in self._ambiguous[action],
@@ -229,9 +229,9 @@ class OperationGraphLabeler:
     """The names every operation and Action Execution in a program go by.
 
     Both are decided across the whole program at once: an action's operations are
-    labeled with its own name for them wherever it is spliced in, and whether a
-    Action Trigger's name says which Action Trigger spliced it in depends on what the
-    other actions call theirs. Construction prepares every label across the
+    labeled with its own name for them in every execution, and whether an Action
+    Execution's name includes its caller's Action Execution name depends on what
+    the other actions call theirs. Construction prepares every label across the
     supplied graphs, so callers should construct a labeler only when they will
     use it.
     """
@@ -250,7 +250,7 @@ class OperationGraphLabeler:
                     node, operation_graph_model.DestructionFragmentDestroyNode
                 ):
                     self._fragment_operation_labels[node] = labels[node]
-        self._invocation_labels = _ActionInvocationLabels(graphs)
+        self._action_execution_labels = _ActionExecutionLabels(graphs)
 
     @staticmethod
     def entry_action_execution_name(action: ast.GlobalTypedName) -> str:
@@ -270,10 +270,10 @@ class OperationGraphLabeler:
     def triggered_action_execution_name(
         self,
         action: ast.GlobalTypedName,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
     ) -> TriggeredActionExecutionName:
-        """Return the name rule for the Action Execution fired by ``trigger``."""
-        return self._invocation_labels.name(action, trigger)
+        """Return the name rule for ``execution``."""
+        return self._action_execution_labels.name(action, execution)
 
     def resolved_operation_labels(
         self,
@@ -323,6 +323,6 @@ class OperationGraphLabeler:
             )
             execution_names[unnamed_execution] = self.triggered_action_execution_name(
                 triggered_by.caller.action,
-                triggered_by.action_trigger.trigger,
+                triggered_by.direct_execution.execution,
             ).render(execution_names[triggered_by.caller])
         return execution_names[action_execution]

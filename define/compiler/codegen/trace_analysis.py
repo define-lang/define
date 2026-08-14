@@ -72,7 +72,7 @@ def _execution_identity(
             _execution_identity(triggered_by.caller, labels, identities),
             labels.triggered_action_execution_name(
                 triggered_by.caller.action,
-                triggered_by.action_trigger.trigger,
+                triggered_by.direct_execution.execution,
             ).local_name,
         )
     identities[execution] = identity

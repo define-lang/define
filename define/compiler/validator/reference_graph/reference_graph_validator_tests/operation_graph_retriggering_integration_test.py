@@ -46,7 +46,7 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
     }
 
 
-def test_reused_callee_receives_distinct_destruction_connections_per_trigger(
+def test_reused_callee_receives_distinct_destruction_connections_per_execution(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -56,7 +56,7 @@ def test_reused_callee_receives_distinct_destruction_connections_per_trigger(
         "test.create(first::/first_child)": ["test.create(first)"],
         "test.move(first, /destroyer::run)": ["test.create(first::/first_child)"],
         "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
-        # The first caller-known child Destroy belongs to the first Action Trigger.
+        # The first caller-known child Destroy belongs to the first Action Execution.
         "destroyer.destroy(/target::/first_child)": ["destroyer.move(run, /target)"],
         "destroyer.destroy(/target)": ["destroyer.destroy(/target::/first_child)"],
         "test.create(second)": [],
@@ -113,7 +113,7 @@ def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
         "test.create(source)": [],
         "test.create(source::/child)": ["test.create(source)"],
         "test.move(source, /middle::run)": ["test.create(source::/child)"],
-        # Only the first Action Trigger receives the caller-known child Destroy.
+        # Only the first Action Execution receives the caller-known child Destroy.
         "destroyer.destroy(run::/child)": ["middle.move(run, /destroyer::run)"],
         "middle.move(run, /destroyer::run)": ["test.move(source, /middle::run)"],
         "middle.create(local)": [],
@@ -123,7 +123,7 @@ def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
         ],
         "destroyer.destroy(run)": ["destroyer.destroy(run::/child)"],
         # The locally created particle has no caller-known child, so its Destroy
-        # depends directly on the second Action Trigger's Move.
+        # depends directly on the second Action Execution's Move.
         "destroyer#2.destroy(run)": ["middle.move(local, /destroyer::run)"],
     }
 
@@ -170,7 +170,7 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
     }
 
 
-def test_retriggered_action_with_no_guarantees_runs_once_per_trigger(
+def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

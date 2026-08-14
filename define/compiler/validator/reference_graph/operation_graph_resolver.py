@@ -17,10 +17,10 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class TriggeredBy:
-    """The direct Action Trigger that created an action execution."""
+    """The direct Action Execution that created an action execution."""
 
     caller: ActionExecution
-    action_trigger: operation_graph_action_resolver.ResolvedActionTrigger
+    direct_execution: operation_graph_action_resolver.ResolvedActionExecution
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -68,7 +68,7 @@ class ResolvedOperationGraphBuilder:
         self._resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
         self._callee_action_executions: dict[
             ActionExecution,
-            list[tuple[operation_graph_model.ActionTrigger, ActionExecution]],
+            list[tuple[operation_graph_model.ActionExecution, ActionExecution]],
         ] = {}
         self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
         # Only full-operation-graph resolution expands callee inputs that are not
@@ -77,10 +77,10 @@ class ResolvedOperationGraphBuilder:
         # relationships that codegen never consumes.
         self._destruction_dependency_inputs: dict[
             tuple[
-                operation_graph_action_resolver.ResolvedActionTrigger,
+                operation_graph_action_resolver.ResolvedActionExecution,
                 operation_graph_action_resolver.CallerInput,
             ],
-            operation_graph_action_resolver.ResolvedActionTriggerInput,
+            operation_graph_action_resolver.ResolvedActionExecutionInput,
         ] = {}
 
     def build(self) -> ResolvedOperationGraph:
@@ -90,20 +90,20 @@ class ResolvedOperationGraphBuilder:
         operation_keys: list[_ResolvedOperationKey] = []
         work = [entry_action_execution]
         while work:
-            action_execution = work.pop()
-            resolved_action = self._resolved_actions[action_execution.action]
+            caller_execution = work.pop()
+            resolved_action = self._resolved_actions[caller_execution.action]
             for node in resolved_action.graph.nodes:
                 if isinstance(node, operation_graph_model.PositionOperationNode):
-                    operation_keys.append((action_execution, node))
+                    operation_keys.append((caller_execution, node))
 
             callees: list[ActionExecution] = []
-            for action_trigger in resolved_action.action_triggers:
+            for resolved_execution in resolved_action.action_executions:
                 callee = ActionExecution(
-                    action_trigger.trigger.callee_action_name,
-                    TriggeredBy(action_execution, action_trigger),
+                    resolved_execution.execution.callee_action_name,
+                    TriggeredBy(caller_execution, resolved_execution),
                 )
-                self._callee_action_executions.setdefault(action_execution, []).append(
-                    (action_trigger.trigger, callee)
+                self._callee_action_executions.setdefault(caller_execution, []).append(
+                    (resolved_execution.execution, callee)
                 )
                 callees.append(callee)
             work.extend(reversed(callees))
@@ -128,8 +128,8 @@ class ResolvedOperationGraphBuilder:
                 continue
             visited_actions.add(action_name)
             work.append((action, True))
-            for trigger in reversed(graph.triggers):
-                work.append((trigger.callee_action_name, False))
+            for execution in reversed(graph.executions):
+                work.append((execution.callee_action_name, False))
 
     def _resolve_operation(
         self, operation_key: _ResolvedOperationKey
@@ -224,7 +224,7 @@ class ResolvedOperationGraphBuilder:
         """Return the destroying Action Execution for a destruction-fragment operation."""
         current_execution = self._callee_execution(
             caller_execution,
-            operation.direct_callee_trigger,
+            operation.direct_callee_execution,
         )
         destroying_action = operation.destruction_fact.destroying_action
         while (
@@ -232,13 +232,13 @@ class ResolvedOperationGraphBuilder:
             != destroying_action.full_typed_name
         ):
             resolved_action = self._resolved_actions[current_execution.action]
-            trigger = typing.cast(
-                "operation_graph_model.ActionTrigger",
+            execution = typing.cast(
+                "operation_graph_model.ActionExecution",
                 resolved_action.graph.destruction_for_fact(
                     operation.destruction_fact
-                ).direct_callee_trigger,
+                ).direct_callee_execution,
             )
-            current_execution = self._callee_execution(current_execution, trigger)
+            current_execution = self._callee_execution(current_execution, execution)
         return current_execution
 
     def _add_action_dependencies(
@@ -293,7 +293,7 @@ class ResolvedOperationGraphBuilder:
             callee_destroy = destruction_dependency.callee_destroy
             direct_callee_execution = self._callee_execution(
                 action_execution,
-                destruction_dependency.trigger,
+                destruction_dependency.execution,
             )
             callee_destroy_owner_execution = self._execution_for_destruction_action(
                 direct_callee_execution,
@@ -382,7 +382,7 @@ class ResolvedOperationGraphBuilder:
             if triggered_by.caller is stop_execution:
                 continue
             resolved_input = self._destruction_dependency_input_for(
-                triggered_by.action_trigger,
+                triggered_by.direct_execution,
                 current_input,
             )
             self._add_action_dependencies(
@@ -406,19 +406,19 @@ class ResolvedOperationGraphBuilder:
 
     def _destruction_dependency_input_for(
         self,
-        action_trigger: operation_graph_action_resolver.ResolvedActionTrigger,
+        resolved_execution: operation_graph_action_resolver.ResolvedActionExecution,
         callee_input: operation_graph_action_resolver.CallerInput,
-    ) -> operation_graph_action_resolver.ResolvedActionTriggerInput:
+    ) -> operation_graph_action_resolver.ResolvedActionExecutionInput:
         """Resolve an input used only before caller-contributed destruction."""
-        resolved_input = action_trigger.inputs.get(callee_input)
+        resolved_input = resolved_execution.inputs.get(callee_input)
         if resolved_input is not None:
             return resolved_input
-        key = action_trigger, callee_input
+        key = resolved_execution, callee_input
         resolved_input = self._destruction_dependency_inputs.get(key)
         if resolved_input is None:
             resolved_input = (
-                operation_graph_action_resolver.resolve_action_trigger_input(
-                    action_trigger.trigger,
+                operation_graph_action_resolver.resolve_action_execution_input(
+                    resolved_execution.execution,
                     self._graphs,
                     callee_input,
                 )
@@ -436,7 +436,7 @@ class ResolvedOperationGraphBuilder:
         if triggered_by is None:
             return
         resolved_input = self._destruction_dependency_input_for(
-            triggered_by.action_trigger,
+            triggered_by.direct_execution,
             caller_input,
         )
         self._add_action_dependencies(
@@ -471,7 +471,7 @@ class ResolvedOperationGraphBuilder:
             caller_execution = triggered_by.caller
             caller_action = self._resolved_actions[caller_execution.action]
             destruction_dependency = operation_graph_model.DestructionDependency(
-                triggered_by.action_trigger.trigger,
+                triggered_by.direct_execution.execution,
                 resolved_destruction_operation,
             )
             contribution = caller_action.destruction_contributions.get(
@@ -481,12 +481,12 @@ class ResolvedOperationGraphBuilder:
                 for operation in contribution.completion_operations:
                     dependency_keys[caller_execution, operation] = None
                 found_contribution = True
-            # TODO: Consume ResolvedActionTrigger.forwards_destruction_connections
+            # TODO: Consume ResolvedActionExecution.forwards_destruction_connections
             # here so full-graph resolution exercises the same Action Resolver
             # relationship as codegen. Recomputing it from the Operation Graph can
             # hide an Action Resolver defect from operation-graph integration tests.
-            if not caller_action.graph.propagates_destruction_from_trigger_to_caller(
-                triggered_by.action_trigger.trigger
+            if not caller_action.graph.propagates_destruction_from_execution_to_caller(
+                triggered_by.direct_execution.execution
             ):
                 return found_contribution
             current_execution = caller_execution
@@ -501,27 +501,27 @@ class ResolvedOperationGraphBuilder:
         current_execution = action_execution
         while current_execution.action.full_typed_name != action.full_typed_name:
             resolved_action = self._resolved_actions[current_execution.action]
-            trigger = typing.cast(
-                "operation_graph_model.ActionTrigger",
+            execution = typing.cast(
+                "operation_graph_model.ActionExecution",
                 resolved_action.graph.destruction_for_fact(
                     destruction_fact
-                ).direct_callee_trigger,
+                ).direct_callee_execution,
             )
-            current_execution = self._callee_execution(current_execution, trigger)
+            current_execution = self._callee_execution(current_execution, execution)
         return current_execution
 
     def _callee_execution(
         self,
         caller_execution: ActionExecution,
-        trigger: operation_graph_model.ActionTrigger,
+        execution: operation_graph_model.ActionExecution,
     ) -> ActionExecution:
-        """Return the execution created by one direct Action Trigger."""
+        """Return the execution created by one direct Action Execution."""
         return next(
             callee_execution
-            for candidate_trigger, callee_execution in self._callee_action_executions[
+            for candidate_execution, callee_execution in self._callee_action_executions[
                 caller_execution
             ]
-            if candidate_trigger is trigger
+            if candidate_execution is execution
         )
 
     def _add_caller_input(
@@ -533,7 +533,7 @@ class ResolvedOperationGraphBuilder:
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
             return
-        resolved_input = triggered_by.action_trigger.inputs[caller_input]
+        resolved_input = triggered_by.direct_execution.inputs[caller_input]
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
@@ -553,9 +553,9 @@ class ResolvedOperationGraphBuilder:
         resolution: operation_graph.GuaranteePath,
     ):
         guaranteed_action_execution = action_execution
-        for trigger in resolution.triggers:
+        for execution in resolution.executions:
             guaranteed_action_execution = self._callee_execution(
                 guaranteed_action_execution,
-                trigger,
+                execution,
             )
         dependency_keys[guaranteed_action_execution, resolution.operation] = None

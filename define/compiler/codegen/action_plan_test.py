@@ -194,7 +194,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
     )
     callee_reference = callee_position.get_chain_to_last_action()
     assert callee_reference is not None
-    trigger = caller_graph.record_action_trigger(
+    execution = caller_graph.record_action_execution(
         callee_reference,
         item,
         (),
@@ -218,10 +218,10 @@ def test_callee_continuation_ends_a_direct_call_chain():
         (destroy,),
     ]
     assert plan.execute_fragments == [plan.fragments[0]]
-    (action_trigger,) = plan.action_triggers
-    assert action_trigger.action_trigger is trigger
+    (execution_plan,) = plan.action_executions
+    assert execution_plan.execution is execution
     (triggered_input,) = plan.triggered_action_inputs
-    assert plan.fragments[0].triggered_action_successors == [trigger]
+    assert plan.fragments[0].action_execution_successors == [execution]
     assert plan.fragments[0].triggered_input_successors == [triggered_input]
     assert plan.fragments[0].execution_input_successors == [triggered_input]
     assert triggered_input.dependency_count == 2
@@ -239,7 +239,7 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
     callee = trigger_position.get_chain_to_last_action()
     assert callee is not None
     trigger_create = caller_graph.record_create(trigger_position)
-    trigger = caller_graph.record_action_trigger(
+    execution = caller_graph.record_action_execution(
         callee,
         trigger_position,
         (),
@@ -265,11 +265,11 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
         (gateway_create,),
         (trigger_create,),
     ]
-    (action_trigger,) = caller_plan.action_triggers
-    assert action_trigger.action_trigger is trigger
+    (execution_plan,) = caller_plan.action_executions
+    assert execution_plan.execution is execution
     (triggered_input,) = caller_plan.triggered_action_inputs
     assert caller_plan.fragments[0].triggered_input_successors == [triggered_input]
-    assert caller_plan.fragments[1].triggered_action_successors == [trigger]
+    assert caller_plan.fragments[1].action_execution_successors == [execution]
     assert caller_plan.fragments[1].execution_input_successors == [triggered_input]
 
 
@@ -286,7 +286,7 @@ def test_caller_input_fires_destructor():
     )
     destructor_reference = destructor_position.get_chain_to_last_action()
     assert destructor_reference is not None
-    destructor_trigger = caller_graph.record_action_trigger(
+    destructor_execution = caller_graph.record_action_execution(
         destructor_reference,
         item,
         (),
@@ -304,12 +304,12 @@ def test_caller_input_fires_destructor():
     _ = plans.plan_for(destructor_definition)
     plan = plans.plan_for(caller_definition)
 
-    (planned_destructor_trigger,) = plan.action_triggers
-    assert planned_destructor_trigger.action_trigger is destructor_trigger
+    (planned_destructor_execution,) = plan.action_executions
+    assert planned_destructor_execution.execution is destructor_execution
     (destructor_input,) = plan.triggered_action_inputs
     (caller_input,) = plan.caller_inputs
-    assert caller_input.destructor_triggers == [destructor_trigger]
-    # The same caller input supplies both the destructor's Action Trigger and
+    assert caller_input.destructor_executions == [destructor_execution]
+    # The same caller input supplies both the destructor's Action Execution and
     # its occupied requirement, so both dependency arrivals must be retained.
     assert caller_input.triggered_inputs == [destructor_input, destructor_input]
     assert destructor_input.dependency_count == 2
