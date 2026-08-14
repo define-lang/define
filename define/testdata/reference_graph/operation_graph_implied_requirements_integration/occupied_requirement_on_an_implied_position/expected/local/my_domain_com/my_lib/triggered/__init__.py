@@ -37,15 +37,21 @@ class TriggeredExecution:
         action: Triggered,
         scheduler: literal.Scheduler,
         guarantees: TriggeredGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_global_position_implied(self):
         self.destroy_global_position_implied()
 
     def destroy_global_position_implied(self):
+        literal.continue_destruction(self.continue_destroy_global_position_implied)
+
+    def continue_destroy_global_position_implied(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()

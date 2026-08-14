@@ -49,10 +49,13 @@ class InnerExecution:
         action: Inner,
         scheduler: literal.Scheduler,
         guarantees: InnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_source(self):
         self.move_position_source_to_position_destination()
@@ -69,6 +72,9 @@ class InnerExecution:
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_destination)
 
     def destroy_position_destination__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_position_destination__global_position_child)
+
+    def continue_destroy_position_destination__global_position_child(self):
         self.action.get_interface_position(
             "position<destination>"
         ).particle.get_position(

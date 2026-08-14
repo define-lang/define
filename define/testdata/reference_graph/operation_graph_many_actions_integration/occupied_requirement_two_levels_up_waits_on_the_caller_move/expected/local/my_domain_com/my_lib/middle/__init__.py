@@ -42,10 +42,13 @@ class MiddleExecution:
         action: Middle,
         scheduler: literal.Scheduler,
         guarantees: MiddleGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_position_gw__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_trigger_position_gw__global_action_inner__for_empty_rule_position_slot = literal.Join(2)
 
@@ -77,6 +80,7 @@ class MiddleExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_position_gw__global_action_inner,
+            destruction_connections=self.destruction_connections,
         )
 
     def trigger_position_gw__global_action_inner__for_empty_rule_position_slot(self):

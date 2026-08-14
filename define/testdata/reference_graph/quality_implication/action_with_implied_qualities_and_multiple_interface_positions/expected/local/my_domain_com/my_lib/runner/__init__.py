@@ -55,10 +55,13 @@ class RunnerExecution:
         action: Runner,
         scheduler: literal.Scheduler,
         guarantees: RunnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.join_for_destroy_position_input_a = literal.Join(2)
         self.join_for_destroy_position_input_b = literal.Join(2)
 
@@ -89,12 +92,7 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_a.QualityA
         ).create_particle()
-        self.action.get_interface_position(
-            "position<input_a>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.quality_a.QualityA
-        ).destroy_particle()
-        self.destroy_position_input_a()
+        self.destroy_position_input_a__global_position_quality_a()
 
     def create_position_input_b__global_position_quality_b(self):
         self.action.get_interface_position(
@@ -102,6 +100,34 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_b.QualityB
         ).create_particle()
+        self.destroy_position_input_b__global_position_quality_b()
+
+    def destroy_position_input_a__global_position_quality_a(self):
+        literal.continue_destruction(self.continue_destroy_position_input_a__global_position_quality_a)
+
+    def continue_destroy_position_input_a__global_position_quality_a(self):
+        self.action.get_interface_position(
+            "position<input_a>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.quality_a.QualityA
+        ).destroy_particle()
+        self.destroy_position_input_a()
+
+    def destroy_position_input_a(self):
+        if not self.join_for_destroy_position_input_a.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_input_a)
+
+    def continue_destroy_position_input_a(self):
+        self.action.get_interface_position(
+            "position<input_a>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_input_a)
+
+    def destroy_position_input_b__global_position_quality_b(self):
+        literal.continue_destruction(self.continue_destroy_position_input_b__global_position_quality_b)
+
+    def continue_destroy_position_input_b__global_position_quality_b(self):
         self.action.get_interface_position(
             "position<input_b>"
         ).particle.get_position(
@@ -109,17 +135,12 @@ class RunnerExecution:
         ).destroy_particle()
         self.destroy_position_input_b()
 
-    def destroy_position_input_a(self):
-        if not self.join_for_destroy_position_input_a.arrive():
-            return
-        self.action.get_interface_position(
-            "position<input_a>"
-        ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input_a)
-
     def destroy_position_input_b(self):
         if not self.join_for_destroy_position_input_b.arrive():
             return
+        literal.continue_destruction(self.continue_destroy_position_input_b)
+
+    def continue_destroy_position_input_b(self):
         self.action.get_interface_position(
             "position<input_b>"
         ).destroy_particle()

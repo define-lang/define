@@ -67,18 +67,6 @@
       },
       "action_name": "destroyer"
     },
-    "operation_name": "destroy_if_occupied",
-    "target": "/target::/child",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "action_name": "destroyer"
-    },
     "operation_name": "destroy",
     "target": "/target",
     "occurrence": 1
@@ -104,7 +92,7 @@
       },
       "action_name": "destroyer#2"
     },
-    "operation_name": "destroy_if_occupied",
+    "operation_name": "destroy",
     "target": "/target::/child",
     "occurrence": 1
   },

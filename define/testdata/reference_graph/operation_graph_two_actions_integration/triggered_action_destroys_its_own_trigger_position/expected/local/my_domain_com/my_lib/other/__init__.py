@@ -32,15 +32,21 @@ class OtherExecution:
         action: Other,
         scheduler: literal.Scheduler,
         guarantees: OtherGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_trigger_pos(self):
         self.destroy_position_trigger_pos()
 
     def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -1,0 +1,11 @@
+{% from "method_invocation.j2" import invoke_method %}
+{% macro trigger_methods_for_destroyed_callee_guarantee_particles(action_triggers) %}
+    {% for action_trigger in action_triggers %}
+
+    def {{ action_trigger.method_name }}(self):
+        self.{{ action_trigger.action_execution_init_method_name }}()
+        {% for method_name in action_trigger.triggered_input_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}

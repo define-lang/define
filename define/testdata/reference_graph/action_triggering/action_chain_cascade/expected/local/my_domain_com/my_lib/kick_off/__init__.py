@@ -46,10 +46,13 @@ class KickOffExecution:
         action: KickOff,
         scheduler: literal.Scheduler,
         guarantees: KickOffGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_position_output__global_action_react_a__execution: local.my_domain_com.my_lib.react_a.ReactAExecution
         self.trigger_position_output__global_action_react_b__execution: local.my_domain_com.my_lib.react_b.ReactBExecution
         self.join_for_trigger_position_output__global_action_react_a__when_empty_position_result = literal.Join(2)
@@ -100,6 +103,9 @@ class KickOffExecution:
         self.trigger_position_output__global_action_react_b__for_empty_rule_position_trigger()
 
     def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

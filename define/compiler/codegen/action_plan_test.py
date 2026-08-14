@@ -85,7 +85,7 @@ def _fragment_operations(
 
 
 def test_serial_operations_form_one_fragment():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     item = _position("item")
     create = graph.record_create(item)
     destroy = graph.record_destroy(item, ())
@@ -100,7 +100,7 @@ def test_serial_operations_form_one_fragment():
 
 
 def test_triggered_action_has_no_execute_fragments():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     _ = graph.record_create(_position("item"))
 
     plan = _triggered_plan(graph)
@@ -109,7 +109,7 @@ def test_triggered_action_has_no_execute_fragments():
 
 
 def test_fan_out_forms_parallel_serial_fragments():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     first = _position("first")
     second = _position("second")
     first_create = graph.record_create(first)
@@ -127,7 +127,7 @@ def test_fan_out_forms_parallel_serial_fragments():
 
 
 def test_join_starts_a_new_fragment():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     source = _position("source")
     destination = _position("destination")
     source_create = graph.record_create(source)
@@ -149,7 +149,7 @@ def test_join_starts_a_new_fragment():
 def test_entry_action_resolves_independent_empty_requirement_away():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
     create = graph.record_create(item)
     move = graph.record_move(item, destination, ())
@@ -164,7 +164,7 @@ def test_entry_action_resolves_independent_empty_requirement_away():
 def test_triggered_action_preserves_independent_caller_input():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
     create = graph.record_create(item)
     move = graph.record_move(item, destination, ())
@@ -186,7 +186,7 @@ def test_triggered_action_preserves_independent_caller_input():
 def test_callee_continuation_ends_a_direct_call_chain():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph()
+    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
     item = _position("item")
     create = caller_graph.record_create(item)
     callee_position = _position_reference(
@@ -203,7 +203,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
         required_preceding_child_operations=(),
     )
     destroy = caller_graph.record_destroy(item, ())
-    callee_graph = operation_graph.OperationGraph()
+    callee_graph = operation_graph.OperationGraph(callee_definition.typed_name)
     _ = callee_graph.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
     graphs[callee_definition.typed_name] = callee_graph
@@ -219,9 +219,9 @@ def test_callee_continuation_ends_a_direct_call_chain():
     ]
     assert plan.execute_fragments == [plan.fragments[0]]
     (action_trigger,) = plan.action_triggers
-    assert action_trigger is trigger
+    assert action_trigger.action_trigger is trigger
     (triggered_input,) = plan.triggered_action_inputs
-    assert plan.fragments[0].triggered_action_successors == [action_trigger]
+    assert plan.fragments[0].triggered_action_successors == [trigger]
     assert plan.fragments[0].triggered_input_successors == [triggered_input]
     assert plan.fragments[0].execution_input_successors == [triggered_input]
     assert triggered_input.dependency_count == 2
@@ -230,7 +230,7 @@ def test_callee_continuation_ends_a_direct_call_chain():
 def test_triggered_action_input_uses_its_resolved_caller_dependency():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph()
+    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
     gateway = _position("gateway")
     gateway_create = caller_graph.record_create(gateway)
     trigger_position = _position_reference(
@@ -239,7 +239,7 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
     callee = trigger_position.get_chain_to_last_action()
     assert callee is not None
     trigger_create = caller_graph.record_create(trigger_position)
-    _ = caller_graph.record_action_trigger(
+    trigger = caller_graph.record_action_trigger(
         callee,
         trigger_position,
         (),
@@ -248,7 +248,7 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
         required_preceding_child_operations=(),
     )
     output = _position("output")
-    callee_graph = operation_graph.OperationGraph()
+    callee_graph = operation_graph.OperationGraph(callee_definition.typed_name)
     callee_graph.record_requirement(
         output, action_contract.PositionOccupancyState.EMPTY
     )
@@ -266,16 +266,17 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
         (trigger_create,),
     ]
     (action_trigger,) = caller_plan.action_triggers
+    assert action_trigger.action_trigger is trigger
     (triggered_input,) = caller_plan.triggered_action_inputs
     assert caller_plan.fragments[0].triggered_input_successors == [triggered_input]
-    assert caller_plan.fragments[1].triggered_action_successors == [action_trigger]
+    assert caller_plan.fragments[1].triggered_action_successors == [trigger]
     assert caller_plan.fragments[1].execution_input_successors == [triggered_input]
 
 
 def test_caller_input_fires_destructor():
     caller_definition = _DUMMY_ACTION
     destructor_definition = _action_definition("/destructor")
-    caller_graph = operation_graph.OperationGraph()
+    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
     item = _position("item")
     caller_graph.record_requirement(
         item, action_contract.PositionOccupancyState.OCCUPIED
@@ -293,7 +294,7 @@ def test_caller_input_fires_destructor():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    destructor_graph = operation_graph.OperationGraph()
+    destructor_graph = operation_graph.OperationGraph(destructor_definition.typed_name)
     _ = destructor_graph.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
     graphs[destructor_definition.typed_name] = destructor_graph
@@ -304,10 +305,10 @@ def test_caller_input_fires_destructor():
     plan = plans.plan_for(caller_definition)
 
     (planned_destructor_trigger,) = plan.action_triggers
-    assert planned_destructor_trigger is destructor_trigger
+    assert planned_destructor_trigger.action_trigger is destructor_trigger
     (destructor_input,) = plan.triggered_action_inputs
     (caller_input,) = plan.caller_inputs
-    assert caller_input.destructor_triggers == [planned_destructor_trigger]
+    assert caller_input.destructor_triggers == [destructor_trigger]
     # The same caller input supplies both the destructor's Action Trigger and
     # its occupied requirement, so both dependency arrivals must be retained.
     assert caller_input.triggered_inputs == [destructor_input, destructor_input]
@@ -315,7 +316,7 @@ def test_caller_input_fires_destructor():
 
 
 def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     first = _position("first")
     second = _position("second")
     first_create = graph.record_create(first)
@@ -341,10 +342,11 @@ def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
     assert publication.guaranteed_source is None
     assert publication.guaranteed_target == second.canonical_chained_name_tuple
     assert triggered_plan.fragments[0].guarantee_publications == [publication]
+    assert triggered_plan.fragments[1].guarantee_publications == []
 
 
 def test_move_guarantee_publication_separates_source_and_target():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
     source = _position("source")
     target = _position("target")
     _ = graph.record_create(source)

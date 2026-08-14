@@ -36,15 +36,21 @@ class ActExecution:
         action: Act,
         scheduler: literal.Scheduler,
         guarantees: ActGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_src(self):
         self.destroy_position_src()
 
     def destroy_position_src(self):
+        literal.continue_destruction(self.continue_destroy_position_src)
+
+    def continue_destroy_position_src(self):
         self.action.get_interface_position(
             "position<src>"
         ).destroy_particle()

@@ -29,6 +29,23 @@ py_test(
     ],
 )
 
+py_test(
+    name = "callee_codegen_independence_integration_test",
+    size = "small",
+    srcs = ["callee_codegen_independence_integration_test.py"],
+    data = glob(["testdata/callee_codegen_independence/**/*.dfn"]) + [
+        "//define/testdata/reference_graph/operation_graph_many_actions_integration:codegen_testdata",
+        "//define/testdata/reference_graph/operation_graph_two_actions_integration:codegen_testdata",
+    ],
+    deps = [
+        ":generated_program_runner",
+        "//define/compiler:driver",
+        "//define/compiler/validator:test_helpers",
+        "//define/runtime:literal",  # keep
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "codegen",
     srcs = ["__init__.py"],
@@ -156,6 +173,7 @@ pyright_test(
     deps = [
         ":action_plan",
         ":action_plan_test",
+        ":callee_codegen_independence_integration_test",
         ":codegen",
         ":generated_program_runner",
         ":generator",

@@ -1,5 +1,6 @@
 {% from "action_statements.j2" import action_statements %}
 {% macro action_execution_init(action_class_name, execution) %}
+{% set destruction_connection_class = "tracing.DestructionConnection" if execution.trace_operations else "literal.DestructionConnection" %}
     def __init__(
         self,
     {% if execution.needs_action %}
@@ -12,6 +13,10 @@
     {% endif %}
     {% if execution.needs_guarantees %}
         guarantees: {{ execution.guarantees.class_name }},
+    {% endif %}
+    {% if execution.accepts_destruction_connections %}
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     {% endif %}
     ):
     {% if execution.needs_action %}
@@ -27,6 +32,9 @@
     {% if execution.needs_guarantees %}
         self.guarantees = guarantees
     {% endif %}
+    {% if execution.accepts_destruction_connections %}
+        self.destruction_connections = destruction_connections
+    {% endif %}
     {% if execution.local_position_statements %}
 {{ action_statements(execution.local_position_statements) -}}
     {% endif %}
@@ -41,15 +49,27 @@
         )
         {% endfor %}
     {% endif %}
-    {% for action_trigger in execution.action_triggers.action_triggers %}
+    {# TODO: Declare fields initialized by later execution methods at class scope so __init__ contains only initialization work. #}
+    {% for action_trigger in execution.action_triggers %}
         self.{{ action_trigger.execution_name }}: {{ action_trigger.execution_class.module_name }}.{{ action_trigger.execution_class.class_name }}
+        {% for connection in action_trigger.created_destruction_connections %}
+        self.{{ connection.member_name }}: {{ destruction_connection_class }}
+        {% endfor %}
+        {% if action_trigger.created_destruction_connections %}
+        self.{{ action_trigger.destruction_connections_member_name }}: literal.DestructionConnections
+        {% endif %}
+    {% endfor %}
+    {% for triggered_input in execution.triggered_action_inputs %}
+        {% for destruction_position in triggered_input.destruction_positions %}
+        self.{{ destruction_position.member_name }}: literal.Position
+        {% endfor %}
     {% endfor %}
     {% for fragment in execution.fragments %}
         {% if fragment.dependency_count > 1 %}
         self.join_for_{{ fragment.method_name }} = literal.Join({{ fragment.dependency_count }})
         {% endif %}
     {% endfor %}
-    {% for triggered_input in execution.action_triggers.triggered_action_inputs %}
+    {% for triggered_input in execution.triggered_action_inputs %}
         {% if triggered_input.dependency_count > 1 %}
         self.join_for_{{ triggered_input.method_name }} = literal.Join({{ triggered_input.dependency_count }})
         {% endif %}

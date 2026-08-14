@@ -20,12 +20,6 @@ _TRACE_TEST_CASE_DIRS = [
     test_file.parent for test_file in sorted(_TESTDATA_ROOT.glob("*/test.dfn"))
 ]
 _UNSUPPORTED_TRACE_CASE_REASONS = {
-    "caller_contributed_child_destruction_precedes_later_operation": (
-        "caller-contributed child destruction fragments are not implemented"
-    ),
-    "destruction_cascade_includes_disjoint_child_paths_from_two_callers": (
-        "caller-contributed child destruction fragments are not implemented"
-    ),
     "destructor_known_only_two_callers_up": (
         "destructors learned through Destruction Contracts are not recorded"
     ),
@@ -59,11 +53,6 @@ _GENERATED_OPERATION_TRACE_TEST_CASES = [
     )
     for trace_file in sorted(_TESTDATA_ROOT.glob("*/operation_trace.json"))
 ]
-_UNLOWERABLE_TRACE_CASES = {
-    "caller_contributed_child_destruction_precedes_later_operation",
-    "destruction_cascade_includes_disjoint_child_paths_from_two_callers",
-    "destructor_with_children_known_only_two_callers_up",
-}
 _CONCURRENT_RUNTIME_TEST_CASES = [
     pytest.param(
         test_case_dir,
@@ -72,7 +61,7 @@ _CONCURRENT_RUNTIME_TEST_CASES = [
             strict=True,
             reason=_UNSUPPORTED_TRACE_CASE_REASONS[test_case_dir.name],
         )
-        if test_case_dir.name in _UNLOWERABLE_TRACE_CASES
+        if test_case_dir.name in _UNSUPPORTED_TRACE_CASE_REASONS
         else (),
     )
     for test_case_dir in _TRACE_TEST_CASE_DIRS
@@ -114,6 +103,13 @@ def _assert_trace_respects_resolved_operation_dependencies(
     trace: list[tracing.OperationTraceRecord],
     result: driver.DriverResult,
 ):
+    # TODO: Derive the generated runtime's operation partial order independently
+    # from the Action Plan, including joins, Action Trigger inputs, guarantees, and
+    # destruction connections. Project its synchronization events to Position
+    # Operations and compare its transitive closure with the Operation Graph
+    # Resolver's closure. Checking one observed trace only proves that execution
+    # respected the resolver; it cannot detect extra serialization, and scheduling
+    # can conceal a missing generated dependency.
     entry_action = result.result.entry_action
     assert entry_action is not None
     resolved_dependencies = trace_analysis.resolved_operation_dependencies(
@@ -177,5 +173,8 @@ def test_concurrent_runtime_respects_resolved_operation_dependencies(
     trace = _trace(
         generated_dir,
         tmp_path / "operation_trace.json",
+    )
+    assert collections.Counter(trace) == collections.Counter(
+        trace_analysis.read_operation_trace(Path("operation_trace.json"))
     )
     _assert_trace_respects_resolved_operation_dependencies(trace, result)

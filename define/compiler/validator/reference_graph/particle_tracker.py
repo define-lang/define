@@ -144,8 +144,9 @@ class _PendingGuarantee:
     # DLP 44: the Action Trigger, in the operation graph, that fired this callee.
     # Each contracted position the guarantee touches has its last operation
     # pointed at the operation that fired it, so the caller's later ops on it
-    # chain via the Ancestor Rule. Nested children inherit it verbatim (the whole
-    # callee subtree happens, from the caller's view, at the one trigger).
+    # depend on it through the Fill, Empty, or Move Rule. Nested children inherit
+    # it verbatim (the whole callee subtree happens, from the caller's view, at
+    # the one trigger).
     trigger: operation_graph_model.ActionTrigger
     # The full action chain whose graph contains the operation that last
     # affected these guaranteed positions. A Move keeps this chain at the action
@@ -588,7 +589,7 @@ class _ParticleStateStore:
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
 
-    def __init__(self):
+    def __init__(self, action: ast.GlobalTypedName):
         """Initialize an empty particle tracker."""
         self._store: _ParticleStateStore = _ParticleStateStore()
         self._pending: _PendingNestedGuarantees = _PendingNestedGuarantees()
@@ -599,7 +600,7 @@ class ParticleTracker:
         # once per trigger.
         self._body_operation_number: int = 0
         self._operation_graph: operation_graph.OperationGraph = (
-            operation_graph.OperationGraph()
+            operation_graph.OperationGraph(action)
         )
 
     @property
@@ -953,42 +954,75 @@ class ParticleTracker:
 
         Raises ValueError if the position is not occupied.
         """
+        key, preceding_child_operations, _ = self._prepare_destroy(in_position)
+        operation_node = self._operation_graph.record_destroy(
+            in_position,
+            preceding_child_operations,
+        )
+        self._record_destroyed_state(key, in_position, operation_node)
+
+    def destroy_explicit(
+        self,
+        in_position: ast.PositionReference,
+        destruction_fact: operation_graph_model.DestructionFact,
+    ):
+        """Remove the particle targeted by an explicit Destroy statement."""
+        key, preceding_child_operations, particle = self._prepare_destroy(in_position)
+        if particle.from_caller:
+            operation_node = self._operation_graph.record_destruction_fact_destroy(
+                destruction_fact,
+                in_position,
+                preceding_child_operations,
+                propagate_to_caller=True,
+            )
+        else:
+            operation_node = self._operation_graph.record_destroy(
+                in_position,
+                preceding_child_operations,
+            )
+        self._record_destroyed_state(key, in_position, operation_node)
+
+    def destroy_for_destruction_fact(
+        self,
+        in_position: ast.PositionReference,
+        destruction_fact: operation_graph_model.DestructionFact,
+    ):
+        """Remove a particle as part of one Destruction Fact."""
+        key, preceding_child_operations, particle = self._prepare_destroy(in_position)
+        operation_node = self._operation_graph.record_destruction_fact_destroy(
+            destruction_fact,
+            in_position,
+            preceding_child_operations,
+            propagate_to_caller=particle.from_caller,
+        )
+        self._record_destroyed_state(key, in_position, operation_node)
+
+    def _prepare_destroy(
+        self, in_position: ast.PositionReference
+    ) -> tuple[
+        tuple[str, ...],
+        operation_graph_model.PrecedingChildOperations,
+        ParticleInfo,
+    ]:
+        """Validate a destruction and capture its child operations."""
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         existing = self._store.state.get(key)
         if existing is None or existing.particle_info is None:
             raise ValueError(f"position {key} is not occupied")
-        self._record_destroy(in_position, particle_is_known_to_exist=True)
+        # Capture these before the subtree is deleted so graph dependencies see
+        # the child operations.
+        return key, self._preceding_child_operations(key), existing.particle_info
 
-    def destroy_if_occupied(self, in_position: ast.PositionReference):
-        """Remove a particle if this position is occupied at runtime."""
-        key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
-        self._ensure_action_parent(key)
-        self._record_destroy(in_position, particle_is_known_to_exist=False)
-
-    def _record_destroy(
+    def _record_destroyed_state(
         self,
+        key: tuple[str, ...],
         in_position: ast.PositionReference,
-        *,
-        particle_is_known_to_exist: bool,
+        operation_node: operation_graph_model.DestroyNode,
     ):
-        """Record one particle destruction and its resulting empty state."""
-        key = in_position.canonical_chained_name_tuple
-        # Record before the subtree is deleted, so graph dependencies see the children.
-        preceding_child_operations = self._preceding_child_operations(key)
-        if particle_is_known_to_exist:
-            operation_node = self._operation_graph.record_destroy(
-                in_position,
-                preceding_child_operations,
-            )
-            # We have to del to remove all the children in the trie.
-            del self._store.state[key]
-        else:
-            operation_node = self._operation_graph.record_destroy_if_occupied(
-                in_position,
-                preceding_child_operations,
-            )
+        """Record the empty state produced by a Destroy operation."""
+        # We have to del to remove all the children in the trie.
+        del self._store.state[key]
         # Destroying puts all children back into a known state (they don't exist).
         if key in self._store.error:
             del self._store.error[key]
@@ -1253,7 +1287,10 @@ class ParticleTracker:
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
         is_destructor: bool,
-    ):
+        newly_occupied_children_by_destruction_contract: Sequence[
+            operation_graph_model.DestructionContractNewlyOccupiedChildren
+        ] = (),
+    ) -> operation_graph_model.ActionTrigger:
         """Record an Action Trigger and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
@@ -1306,6 +1343,11 @@ class ParticleTracker:
                 for requirement in requirements_in_caller
             ),
         )
+        for newly_occupied_children in newly_occupied_children_by_destruction_contract:
+            self._operation_graph.record_contributed_destruction_fragment(
+                trigger,
+                newly_occupied_children,
+            )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
             guarantees,
@@ -1321,6 +1363,7 @@ class ParticleTracker:
             ),
         )
         self._apply_pending_guarantee(callee_guarantees)
+        return trigger
 
     def nested_guarantees(
         self,

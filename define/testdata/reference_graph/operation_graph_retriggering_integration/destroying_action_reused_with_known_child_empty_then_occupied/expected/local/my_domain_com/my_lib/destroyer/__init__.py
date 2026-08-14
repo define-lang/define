@@ -42,10 +42,13 @@ class DestroyerExecution:
         action: Destroyer,
         scheduler: literal.Scheduler,
         guarantees: DestroyerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_position_target()
@@ -58,15 +61,13 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.submit(self.destroy_global_position_target__global_position_child)
+        self.scheduler.submit(self.destroy_global_position_target)
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
-    def destroy_global_position_target__global_position_child(self):
-        self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.target.Target
-        ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
-        ).destroy_particle_if_occupied()
+    def destroy_global_position_target(self):
+        literal.continue_destruction(self.continue_destroy_global_position_target)
+
+    def continue_destroy_global_position_target(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()

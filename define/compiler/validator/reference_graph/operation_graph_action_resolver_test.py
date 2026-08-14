@@ -47,7 +47,7 @@ def _position(name: str) -> ast.PositionReference:
 
 def test_resolved_actions_retains_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(action)
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -59,7 +59,7 @@ def test_resolved_actions_retains_resolved_action():
 
 def test_resolved_actions_reuses_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(action)
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -70,7 +70,7 @@ def test_resolved_actions_reuses_resolved_action():
 
 def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     action = _action("/test")
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(action)
     work = _position("work")
     create = graph.record_create(work)
     destroy = graph.record_destroy(work, ())
@@ -88,7 +88,8 @@ def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
     worker_action = _action("/worker")
-    caller_graph = operation_graph.OperationGraph()
+    caller_action = _action("/caller")
+    caller_graph = operation_graph.OperationGraph(caller_action)
     trigger_position = _position("run")
     trigger_position_create = caller_graph.record_create(trigger_position)
     trigger = caller_graph.record_action_trigger(
@@ -99,9 +100,8 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    callee_graph = operation_graph.OperationGraph()
+    callee_graph = operation_graph.OperationGraph(worker_action)
     _ = callee_graph.record_create(_position("work"))
-    caller_action = _action("/caller")
     graphs = operation_graph.OperationGraphs()
     graphs[worker_action] = callee_graph
     graphs[caller_action] = caller_graph
@@ -119,8 +119,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert resolved.operations[trigger_position_create].action_triggers == [
         resolved_trigger
     ]
-    assert list(resolved.action_triggers.destructors_by_guarantee()) == []
-    (resolved_input,) = resolved_trigger.inputs
+    (resolved_input,) = resolved_trigger.inputs.values()
     assert resolved_input.callee_input is resolved_callee.caller_inputs[0]
     assert (
         resolved_input.caller_dependencies
@@ -130,12 +129,13 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert caller_input is action_parent
     assert resolved_input.caller_input_dependencies == [caller_input]
     assert resolved.operations[trigger_position_create].caller_inputs == [caller_input]
-    assert resolved_trigger.caller_input_dependency is None
+    assert trigger.caller_input_dependency is None
 
 
 def test_requirement_input_fires_destructor():
     destructor_action = _action("/destructor")
-    caller_graph = operation_graph.OperationGraph()
+    caller_action = _action("/caller")
+    caller_graph = operation_graph.OperationGraph(caller_action)
     item = _position("item")
     caller_graph.record_requirement(
         item, action_contract.PositionOccupancyState.OCCUPIED
@@ -151,9 +151,8 @@ def test_requirement_input_fires_destructor():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    destructor_graph = operation_graph.OperationGraph()
+    destructor_graph = operation_graph.OperationGraph(destructor_action)
     _ = destructor_graph.record_create(_position("work"))
-    caller_action = _action("/caller")
     graphs = operation_graph.OperationGraphs()
     graphs[destructor_action] = destructor_graph
     graphs[caller_action] = caller_graph
@@ -162,15 +161,15 @@ def test_requirement_input_fires_destructor():
     resolved = resolved_actions.resolve(caller_action)
 
     assert isinstance(
-        destructor_trigger.trigger_operation, operation_graph_model.RequirementNode
+        destructor_trigger.trigger_operation,
+        operation_graph_model.RequirementNode,
     )
     (resolved_destructor_trigger,) = resolved.action_triggers
-    (resolved_destructor_input,) = resolved_destructor_trigger.inputs
+    (resolved_destructor_input,) = resolved_destructor_trigger.inputs.values()
     (caller_input,) = resolved.caller_inputs
     assert caller_input is destructor_trigger.trigger_operation
     assert resolved_destructor_input.caller_input_dependencies == [caller_input]
-    assert resolved_destructor_trigger.caller_input_dependency is caller_input
+    assert destructor_trigger.caller_input_dependency is caller_input
     assert all(
         not operation.action_triggers for operation in resolved.operations.values()
     )
-    assert list(resolved.action_triggers.destructors_by_guarantee()) == []

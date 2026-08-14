@@ -49,10 +49,13 @@ class DestroyerExecution:
         action: Destroyer,
         scheduler: literal.Scheduler,
         guarantees: DestroyerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
             constraints=(
@@ -62,7 +65,7 @@ class DestroyerExecution:
             scheduler=self.scheduler,
         )
         self.join_for_move_position_local__global_position_known_empty_to_global_position_destination = literal.Join(2)
-        self.join_for_destroy_position_local = literal.Join(3)
+        self.join_for_destroy_position_local = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_position_target()
@@ -87,7 +90,6 @@ class DestroyerExecution:
         ).move_particle_to(self.local_position_local)
         self.scheduler.submit(self.move_position_local__global_position_known_empty_to_global_position_destination)
         self.scheduler.submit(self.create_position_local__global_position_known_occupied)
-        self.scheduler.submit(self.destroy_position_local__global_position_maybe_child)
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_target)
 
     def move_position_local__global_position_known_empty_to_global_position_destination(self):
@@ -107,18 +109,21 @@ class DestroyerExecution:
         self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).create_particle()
+        self.destroy_position_local__global_position_known_occupied()
+
+    def destroy_position_local__global_position_known_occupied(self):
+        literal.continue_destruction(self.continue_destroy_position_local__global_position_known_occupied)
+
+    def continue_destroy_position_local__global_position_known_occupied(self):
         self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).destroy_particle()
         self.destroy_position_local()
 
-    def destroy_position_local__global_position_maybe_child(self):
-        self.local_position_local.particle.get_position(
-            local.my_domain_com.my_lib.maybe_child.MaybeChild
-        ).destroy_particle_if_occupied()
-        self.destroy_position_local()
-
     def destroy_position_local(self):
         if not self.join_for_destroy_position_local.arrive():
             return
+        literal.continue_destruction(self.continue_destroy_position_local)
+
+    def continue_destroy_position_local(self):
         self.local_position_local.destroy_particle()

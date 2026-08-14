@@ -8,6 +8,23 @@ import pytest
 from define.runtime import literal
 
 
+class _ContinuationExecution:
+    destruction_connections: literal.DestructionConnections | None = None
+    _continuation: literal.Task
+
+    def __init__(self, continuation: literal.Task):
+        self._continuation = continuation
+
+    def first_continuation(self):
+        self._continuation()
+
+    def second_continuation(self):
+        pass
+
+    def absent_continuation(self):
+        pass
+
+
 def _assert_execution_thread_count(
     scheduler: literal.Scheduler,
     expected_count: int,
@@ -176,7 +193,6 @@ class TestScheduler:
         scheduler.create_completed(execution, "item", 1)
         scheduler.move_completed(execution, "item", "destination", 1)
         scheduler.destroy_completed(execution, "destination", 1)
-        scheduler.destroy_if_occupied_completed(execution, "destination", 1)
 
         assert execution is None
 
@@ -549,3 +565,279 @@ class TestJoin:
 
         assert arrivals.count(True) == 1
         assert arrivals.count(False) == 31
+
+
+class TestDestructionConnection:
+    def test_connection_waits_for_every_terminal_completion(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                def first():
+                    calls.append("first")
+                    connection.complete()
+
+                def second():
+                    calls.append("second")
+                    connection.complete()
+
+                connection = literal.DestructionConnection(
+                    scheduler,
+                    _ContinuationExecution.first_continuation,
+                    2,
+                    first,
+                    second,
+                )
+                connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=2).start(Entry)
+
+        assert set(calls[:2]) == {"first", "second"}
+        assert calls[2] == "continuation"
+
+    def test_connection_composes_local_and_forwarded_work(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                destruction_continuation = _ContinuationExecution.first_continuation
+
+                def higher_work():
+                    calls.append("higher")
+                    higher_connection.complete()
+
+                higher_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    1,
+                    higher_work,
+                )
+
+                def local_work():
+                    calls.append("local")
+                    local_connection.complete()
+
+                local_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    1,
+                    local_work,
+                    forwarded_connection=higher_connection,
+                )
+                local_connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=2).start(Entry)
+
+        assert set(calls[:2]) == {"local", "higher"}
+        assert calls[2] == "continuation"
+
+    def test_connection_layers_override_only_their_local_continuations(self):
+        scheduler = literal.Scheduler(max_threads=1)
+        first_continuation = _ContinuationExecution.first_continuation
+        second_continuation = _ContinuationExecution.second_continuation
+        absent_continuation = _ContinuationExecution.absent_continuation
+        first = literal.DestructionConnection(
+            scheduler,
+            first_continuation,
+            1,
+            lambda: None,
+        )
+        second = literal.DestructionConnection(
+            scheduler,
+            second_continuation,
+            1,
+            lambda: None,
+        )
+        direct = literal.DestructionConnections(first)
+        local = literal.DestructionConnections(second, direct=direct)
+
+        assert local.connection(first_continuation) is first
+        assert local.connection(second_continuation) is second
+        assert local.connection(absent_continuation) is None
+
+    def test_connection_starts_tasks_concurrently(self):
+        calls: list[str] = []
+        first_started = threading.Event()
+        second_started = threading.Event()
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                def first():
+                    first_started.set()
+                    assert second_started.wait(timeout=5)
+                    calls.append("first")
+                    connection.complete()
+
+                def second():
+                    assert first_started.wait(timeout=5)
+                    second_started.set()
+                    calls.append("second")
+                    connection.complete()
+
+                connection = literal.DestructionConnection(
+                    scheduler,
+                    _ContinuationExecution.first_continuation,
+                    2,
+                    first,
+                    second,
+                )
+                connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=2).start(Entry)
+
+        assert set(calls[:2]) == {"first", "second"}
+        assert calls[2] == "continuation"
+
+    def test_connection_starts_forwarded_layers_concurrently(self):
+        calls: list[str] = []
+        local_started = threading.Event()
+        forwarded_started = threading.Event()
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                destruction_continuation = _ContinuationExecution.first_continuation
+
+                def forwarded_work():
+                    forwarded_started.set()
+                    assert local_started.wait(timeout=5)
+                    calls.append("forwarded")
+                    forwarded_connection.complete()
+
+                forwarded_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    1,
+                    forwarded_work,
+                )
+
+                def local_work():
+                    local_started.set()
+                    assert forwarded_started.wait(timeout=5)
+                    calls.append("local")
+                    local_connection.complete()
+
+                local_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    1,
+                    local_work,
+                    forwarded_connection=forwarded_connection,
+                )
+                local_connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=2).start(Entry)
+
+        assert set(calls[:2]) == {"local", "forwarded"}
+        assert calls[2] == "continuation"
+
+    def test_continuation_runs_directly_without_connections(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+            destruction_connections: literal.DestructionConnections | None = None
+
+            def continue_destroy(self):
+                calls.append("continuation")
+
+            @override
+            def execute(self, _scheduler: literal.Scheduler):
+                literal.continue_destruction(self.continue_destroy)
+
+        literal.Scheduler(max_threads=1).start(Entry)
+
+        assert calls == ["continuation"]
+
+    def test_continuation_runs_directly_without_a_matching_connection(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+            destruction_connections: literal.DestructionConnections | None = None
+
+            def continue_destroy(self):
+                calls.append("continuation")
+
+            def continue_other_destroy(self):
+                calls.append("other continuation")
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                def other_work():
+                    calls.append("other work")
+                    other_connection.complete()
+
+                other_connection = literal.DestructionConnection(
+                    scheduler,
+                    Entry.continue_other_destroy,
+                    1,
+                    other_work,
+                )
+                self.destruction_connections = literal.DestructionConnections(
+                    other_connection
+                )
+                literal.continue_destruction(self.continue_destroy)
+                literal.continue_destruction(self.continue_other_destroy)
+
+        literal.Scheduler(max_threads=1).start(Entry)
+
+        assert calls == ["continuation", "other work", "other continuation"]
+
+    def test_continuation_forwards_one_connection(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+            destruction_connections: literal.DestructionConnections | None = None
+
+            def continue_destroy(self):
+                calls.append("continuation")
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                def work():
+                    calls.append("work")
+                    connection.complete()
+
+                connection = literal.DestructionConnection(
+                    scheduler,
+                    Entry.continue_destroy,
+                    1,
+                    work,
+                )
+                self.destruction_connections = literal.DestructionConnections(
+                    connection
+                )
+                literal.continue_destruction(self.continue_destroy)
+
+        literal.Scheduler(max_threads=1).start(Entry)
+
+        assert calls == ["work", "continuation"]

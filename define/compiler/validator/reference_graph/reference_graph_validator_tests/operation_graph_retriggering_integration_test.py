@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,9 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING = (
-    "destroying actions do not yet include caller-dependent child positions"
-)
 
 
 def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
@@ -35,12 +30,7 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
         "test.create(first)": [],
         "test.move(first, /destroyer::run)": ["test.create(first)"],
         "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
-        "destroyer.destroy_if_occupied(/target::/child)": [
-            "destroyer.move(run, /target)"
-        ],
-        "destroyer.destroy(/target)": [
-            "destroyer.destroy_if_occupied(/target::/child)"
-        ],
+        "destroyer.destroy(/target)": ["destroyer.move(run, /target)"],
         "test.create(second)": [],
         "test.create(second::/child)": ["test.create(second)"],
         "test.move(second, /destroyer::run)": [
@@ -51,16 +41,43 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
             "test.move(second, /destroyer::run)",
             "destroyer.destroy(/target)",
         ],
-        "destroyer#2.destroy_if_occupied(/target::/child)": [
-            "destroyer#2.move(run, /target)"
-        ],
-        "destroyer#2.destroy(/target)": [
-            "destroyer#2.destroy_if_occupied(/target::/child)"
-        ],
+        "destroyer#2.destroy(/target::/child)": ["destroyer#2.move(run, /target)"],
+        "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/child)"],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
+def test_reused_callee_receives_distinct_destruction_connections_per_trigger(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(first)": [],
+        "test.create(first::/first_child)": ["test.create(first)"],
+        "test.move(first, /destroyer::run)": ["test.create(first::/first_child)"],
+        "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
+        # The first caller-known child Destroy belongs to the first Action Trigger.
+        "destroyer.destroy(/target::/first_child)": ["destroyer.move(run, /target)"],
+        "destroyer.destroy(/target)": ["destroyer.destroy(/target::/first_child)"],
+        "test.create(second)": [],
+        "test.create(second::/second_child)": ["test.create(second)"],
+        "test.move(second, /destroyer::run)": [
+            "test.create(second::/second_child)",
+            "destroyer.move(run, /target)",
+        ],
+        "destroyer#2.move(run, /target)": [
+            "test.move(second, /destroyer::run)",
+            "destroyer.destroy(/target)",
+        ],
+        # The second caller-known child Destroy belongs to the second Action
+        # Trigger rather than the first one.
+        "destroyer#2.destroy(/target::/second_child)": [
+            "destroyer#2.move(run, /target)"
+        ],
+        "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/second_child)"],
+    }
+
+
 def test_repeated_destroying_action_invocations_include_caller_dependent_children(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -70,11 +87,9 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
         "test.create(first)": [],
         "test.create(first::/child)": ["test.create(first)"],
         "test.move(first, /destroyer::run)": ["test.create(first::/child)"],
-        "destroyer.destroy_if_occupied(run::/child)": [
-            "test.move(first, /destroyer::run)"
-        ],
+        "destroyer.destroy(run::/child)": ["test.move(first, /destroyer::run)"],
         "destroyer.destroy(run)": [
-            "destroyer.destroy_if_occupied(run::/child)",
+            "destroyer.destroy(run::/child)",
         ],
         "test.create(second)": [],
         "test.create(second::/child)": ["test.create(second)"],
@@ -82,12 +97,34 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
             "test.create(second::/child)",
             "destroyer.destroy(run)",
         ],
-        "destroyer#2.destroy_if_occupied(run::/child)": [
-            "test.move(second, /destroyer::run)"
-        ],
+        "destroyer#2.destroy(run::/child)#2": ["test.move(second, /destroyer::run)"],
         "destroyer#2.destroy(run)": [
-            "destroyer#2.destroy_if_occupied(run::/child)",
+            "destroyer#2.destroy(run::/child)#2",
         ],
+    }
+
+
+def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.move(source, /middle::run)": ["test.create(source::/child)"],
+        # Only the first Action Trigger receives the caller-known child Destroy.
+        "destroyer.destroy(run::/child)": ["middle.move(run, /destroyer::run)"],
+        "middle.move(run, /destroyer::run)": ["test.move(source, /middle::run)"],
+        "middle.create(local)": [],
+        "middle.move(local, /destroyer::run)": [
+            "middle.create(local)",
+            "destroyer.destroy(run)",
+        ],
+        "destroyer.destroy(run)": ["destroyer.destroy(run::/child)"],
+        # The locally created particle has no caller-known child, so its Destroy
+        # depends directly on the second Action Trigger's Move.
+        "destroyer#2.destroy(run)": ["middle.move(local, /destroyer::run)"],
     }
 
 

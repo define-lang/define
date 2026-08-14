@@ -37,15 +37,21 @@ class RightChildExecution:
         action: RightChild,
         scheduler: literal.Scheduler,
         guarantees: RightChildGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_global_position_marker(self):
         self.destroy_global_position_marker()
 
     def destroy_global_position_marker(self):
+        literal.continue_destruction(self.continue_destroy_global_position_marker)
+
+    def continue_destroy_global_position_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()

@@ -32,10 +32,13 @@ class FinalExecution:
         action: Final,
         scheduler: literal.Scheduler,
         guarantees: FinalGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_complete = literal.LocalPosition(
             "position<complete>",
             scheduler=self.scheduler,
@@ -52,6 +55,9 @@ class FinalExecution:
         self.local_position_complete.destroy_particle()
 
     def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

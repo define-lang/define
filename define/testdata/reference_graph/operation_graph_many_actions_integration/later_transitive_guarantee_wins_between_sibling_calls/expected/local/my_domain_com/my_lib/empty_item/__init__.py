@@ -37,15 +37,21 @@ class EmptyItemExecution:
         action: EmptyItem,
         scheduler: literal.Scheduler,
         guarantees: EmptyItemGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_global_position_item(self):
         self.destroy_global_position_item()
 
     def destroy_global_position_item(self):
+        literal.continue_destruction(self.continue_destroy_global_position_item)
+
+    def continue_destroy_global_position_item(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()

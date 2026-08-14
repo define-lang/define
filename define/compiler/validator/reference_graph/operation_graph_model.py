@@ -7,10 +7,10 @@ import enum
 import typing
 from dataclasses import dataclass, field
 
-if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+from define.compiler import ast
 
-    from define.compiler import ast
+if typing.TYPE_CHECKING:
+    from collections.abc import Collection, Iterable, Sequence
 
 
 class PositionOccupancyState(enum.Enum):
@@ -19,6 +19,14 @@ class PositionOccupancyState(enum.Enum):
     EMPTY = enum.auto()
     OCCUPIED = enum.auto()
     ERROR = enum.auto()
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DestructionFact:
+    """Identifies one destruction initiated by its destroying action and propagated through callers."""
+
+    destroyed_position_in_destroyer: ast.PositionReference
+    destroying_action: ast.GlobalTypedName
 
 
 type PrecedingChildOperationNode = PositionOperationNode | GuaranteeNode
@@ -156,6 +164,31 @@ class ParticleChildOperations:
                 operations.append(operation)
         return operations
 
+    def partition_for_child_positions_without_parent_child_relationships(
+        self, child_positions: Collection[tuple[str, ...]]
+    ) -> dict[tuple[str, ...], ParticleChildOperations]:
+        """Partition matching operations among positions where none is a parent of another."""
+        operations_by_position: dict[tuple[str, ...], list[ChildOperation]] = {}
+        for position in child_positions:
+            operations_by_position[position] = []
+        for child_operation in self.operations:
+            operation_position = child_operation.child_position
+            for depth in range(1, len(operation_position) + 1):
+                position = operation_position[:depth]
+                operations = operations_by_position.get(position)
+                if operations is None:
+                    continue
+                relative_position = operation_position[depth:]
+                if relative_position:
+                    operations.append(
+                        ChildOperation(relative_position, child_operation.operation)
+                    )
+                break
+        snapshots: dict[tuple[str, ...], ParticleChildOperations] = {}
+        for position, operations in operations_by_position.items():
+            snapshots[position] = ParticleChildOperations(operations)
+        return snapshots
+
     def empty_rule_dependencies_for(
         self, relative_position: tuple[str, ...]
     ) -> tuple[PrecedingChildOperationNode, ...]:
@@ -184,32 +217,20 @@ class ParticleChildOperations:
         # The action received the particle in the state declared by a position
         # requirement rather than putting it in that state itself.
         if isinstance(emptied_ancestor, RequirementNode):
-            requirement_position = emptied_ancestor.requirement_position
-            # The action empties the required position itself rather than one of
-            # that particle's child positions.
-            if requirement_position == empty_position:
-                dependency_requirements: tuple[tuple[str, ...], ...] = ()
-                # A move empties this position and fills a position whose
-                # required empty state was also supplied by the caller. (We know
-                # it is a move because fill_dependency is not None.)
-                if isinstance(fill_dependency, RequirementNode):
-                    dependency_requirements = (fill_dependency.requirement_position,)
-                # A move empties this position and fills a position that an
-                # earlier Particle Operation in this action emptied.
-                elif fill_dependency is not None:
-                    candidates.add(fill_dependency)
-                caller_dependencies = CallerParticleEmptyRuleDependencies(
-                    requirement_position=empty_position,
-                    dependency_child_positions=self.child_position_set(),
-                    dependency_requirements=dependency_requirements,
-                )
-            # The destruction cascade empties a child position of the particle
-            # that the action received through a position requirement.
-            else:
-                caller_dependencies = CallerChildPositionEmptyRuleDependencies(
-                    requirement_position=requirement_position,
-                    emptied_position=empty_position[len(requirement_position) :],
-                )
+            dependency_requirements: tuple[tuple[str, ...], ...] = ()
+            # A move empties this position and fills a position whose required
+            # empty state was also supplied by the caller.
+            if isinstance(fill_dependency, RequirementNode):
+                dependency_requirements = (fill_dependency.requirement_position,)
+            # A move empties this position and fills a position that an earlier
+            # Particle Operation in this action emptied.
+            elif fill_dependency is not None:
+                candidates.add(fill_dependency)
+            caller_dependencies = CallerEmptyRuleDependencies(
+                requirement_position=empty_position,
+                dependency_child_positions=self.child_position_set(),
+                dependency_requirements=dependency_requirements,
+            )
         # An earlier Particle Operation in this action supplied the particle
         # being emptied, directly or by operating on one of its parent names.
         else:
@@ -240,19 +261,7 @@ class ParticleChildOperations:
 # dependency data, so these values use identity when codegen keys input methods.
 @dataclass(frozen=True, slots=True, eq=False)
 class CallerEmptyRuleDependencies:
-    """Empty Rule dependencies supplied through a position requirement."""
-
-    requirement_position: tuple[str, ...]
-
-    @property
-    def full_emptied_position(self) -> tuple[str, ...]:
-        """The emptied position from the caller's perspective."""
-        return self.requirement_position
-
-
-@dataclass(frozen=True, slots=True, eq=False)
-class CallerParticleEmptyRuleDependencies(CallerEmptyRuleDependencies):
-    """Information needed when the required position itself is emptied.
+    """Empty Rule dependencies for a particle supplied through a position requirement.
 
     ``dependency_child_positions`` are relative to the required particle and
     identify operations that are already dependencies.
@@ -260,21 +269,9 @@ class CallerParticleEmptyRuleDependencies(CallerEmptyRuleDependencies):
     caller-supplied operations must also precede the emptying.
     """
 
+    requirement_position: tuple[str, ...]
     dependency_child_positions: frozenset[tuple[str, ...]]
     dependency_requirements: tuple[tuple[str, ...], ...]
-
-
-@dataclass(frozen=True, slots=True, eq=False)
-class CallerChildPositionEmptyRuleDependencies(CallerEmptyRuleDependencies):
-    """Information needed when a child position of the required particle is emptied."""
-
-    emptied_position: tuple[str, ...]
-
-    @property
-    @typing.override
-    def full_emptied_position(self) -> tuple[str, ...]:
-        """The emptied position from the caller's perspective."""
-        return (*self.requirement_position, *self.emptied_position)
 
 
 @dataclass(frozen=True, slots=True)
@@ -303,6 +300,8 @@ class RequirementBinding:
     child_operations: ParticleChildOperations
 
 
+# TODO: Rename ActionTrigger to ActionExecution and rename the concept it
+# represents everywhere in the codebase.
 @dataclass(frozen=True, slots=True, eq=False)
 class ActionTrigger:
     """One Action Trigger and what satisfies each requirement of the callee.
@@ -331,6 +330,144 @@ class ActionTrigger:
     def action_chain(self) -> tuple[str, ...]:
         """Return the caller's chained name for the triggered action."""
         return self.callee.canonical_chained_name_tuple
+
+    @property
+    def caller_input_dependency(self) -> RequirementNode | None:
+        """Return the caller input that fires a destructor Action Trigger."""
+        if isinstance(self.trigger_operation, RequirementNode):
+            return self.trigger_operation
+        return None
+
+    def caller_dependency_for_input(
+        self,
+        callee_input: ActionParentLastOperationNode | RequirementNode,
+    ) -> ActionParentOperationNode:
+        """Return the caller operation satisfying one direct callee input."""
+        if isinstance(callee_input, ActionParentLastOperationNode):
+            return self.action_parent_last_operation
+        binding = self.bindings.get(callee_input.requirement_position)
+        if binding is not None:
+            return binding.operation
+
+        # Position Requirements form a chain through parent names, so this node has
+        # exactly one direct input: the nearest parent-name requirement, or the
+        # action parent's last operation when there is no parent-name requirement.
+        (parent_input,) = callee_input.depends_on
+        if isinstance(parent_input, ActionParentLastOperationNode):
+            return self.action_parent_last_operation
+        return self.bindings[parent_input.requirement_position].operation
+
+    def substitute_caller_empty_rule_dependencies(
+        self,
+        caller_dependencies: CallerEmptyRuleDependencies,
+    ) -> CallerEmptyRuleSubstitution:
+        """Substitute this caller's bindings into Empty Rule dependencies."""
+        callee_requirement_binding = self.bindings[
+            caller_dependencies.requirement_position
+        ]
+        child_operations = (
+            callee_requirement_binding.child_operations.operations_not_on_same_paths_as(
+                caller_dependencies.dependency_child_positions
+            )
+        )
+        candidates: set[LastOperationNode] = {
+            child_operation.operation for child_operation in child_operations
+        }
+        for requirement in caller_dependencies.dependency_requirements:
+            # The Fill Rule allows an EMPTY requirement to depend on an
+            # operation on any parent position. Search the required position
+            # and its parent-position prefixes for that operation.
+            for depth in range(len(requirement), 0, -1):
+                binding_position = requirement[:depth]
+                requirement_binding = self.bindings.get(binding_position)
+                if requirement_binding is None:
+                    continue
+                # The Move Rule combines the dependencies for emptying the
+                # source position and filling the target position, then applies
+                # the Empty Rule comparison. When filling the target depends on
+                # a Particle Operation on a transitive parent position of the
+                # source, a more recent Particle Operation on the source or one
+                # of its transitive child positions remains as the dependency.
+                if not ast.is_prefix(
+                    binding_position,
+                    caller_dependencies.requirement_position,
+                ):
+                    candidates.add(requirement_binding.operation)
+                break
+
+        requirement_position_in_caller = self._occupied_requirement_position(
+            callee_requirement_binding
+        )
+        # The particle is not from our caller, so we don't have to propagate
+        # Empty Rule child dependencies on it.
+        if requirement_position_in_caller is None:
+            if (
+                not child_operations
+                and not caller_dependencies.dependency_child_positions
+            ):
+                # The direct caller created or moved the required particle, or triggered
+                # an action that guaranteed it.
+                # callee_requirement_binding.operation is the operation on the emptied
+                # position. When there are no later child-position operations, it
+                # remains the required dependency per the Empty Rule.
+                candidates.add(callee_requirement_binding.operation)
+            return CallerEmptyRuleSubstitution(
+                apply_empty_rule_reduction(candidates),
+                None,
+            )
+
+        # If this action received the particle from its caller, some operations
+        # required by the Empty Rule may belong to that caller and must be propagated.
+        # Apply what we can of the Empty Rule now to this caller's operations before
+        # propagating dependencies from this caller's occupied requirement to its caller.
+        dependencies = apply_empty_rule_reduction(candidates)
+        dependency_nodes: list[PrecedingChildOperationNode] = []
+        dependency_requirements: list[tuple[str, ...]] = []
+        dependency_child_positions = set(
+            callee_requirement_binding.child_operations.child_position_set()
+        )
+        dependency_child_positions.update(
+            caller_dependencies.dependency_child_positions
+        )
+        for node in dependencies:
+            if isinstance(node, RequirementNode):
+                dependency_requirements.append(node.requirement_position)
+                continue
+            dependency_nodes.append(node)
+            # This remains linear in the positions on the dependencies because
+            # each position is examined once, without comparing dependencies.
+            self._add_positions_relative_to_particle(
+                dependency_child_positions,
+                node,
+                requirement_position_in_caller,
+            )
+        return CallerEmptyRuleSubstitution(
+            tuple(dependency_nodes),
+            CallerEmptyRuleDependencies(
+                requirement_position=requirement_position_in_caller,
+                dependency_child_positions=frozenset(dependency_child_positions),
+                dependency_requirements=tuple(dependency_requirements),
+            ),
+        )
+
+    @staticmethod
+    def _occupied_requirement_position(
+        binding: RequirementBinding,
+    ) -> tuple[str, ...] | None:
+        if not isinstance(binding.operation, RequirementNode):
+            return None
+        return binding.operation.requirement_position
+
+    @staticmethod
+    def _add_positions_relative_to_particle(
+        relative_positions: set[tuple[str, ...]],
+        node: PrecedingChildOperationNode,
+        particle_position: tuple[str, ...],
+    ):
+        for position in node.operated_positions:
+            if not ast.is_prefix(particle_position, position):
+                continue
+            relative_positions.add(position[len(particle_position) :])
 
 
 # A node_id is unique only within one graph, so nodes use identity equality and
@@ -407,20 +544,107 @@ class DestroyNode(PositionOperationNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
-class DestroyIfOccupiedNode(DestroyNode):
-    """A destroy of the particle in ``target`` only if the position is occupied."""
+class DestructionFactDestroyNode(DestroyNode):
+    """A Destroy performed as part of one Destruction Fact."""
 
-    inserted_before: DestroyNode | None = None
+    destruction_fact: DestructionFact
+    destruction_position: tuple[str, ...]
+    dependencies_before_caller_contribution: tuple[OperationNode, ...]
+    dependencies_after_caller_contribution: tuple[PrecedingChildOperationNode, ...]
 
-    def __post_init__(self):
-        """Set the conditional destruction's order within its action."""
-        OperationNode.__post_init__(self)
-        if self.inserted_before is not None:
-            object.__setattr__(
-                self,
-                "operation_order",
-                (self.inserted_before.node_id, 0, self.node_id),
-            )
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class DestructionFragmentDestroyNode(DestructionFactDestroyNode):
+    """An ordinary Destroy contributed by a direct caller."""
+
+    direct_callee_trigger: ActionTrigger
+    target_in_destroying_action: ast.PositionReference
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionOperation:
+    """A Destruction Fact Destroy and the action whose graph contains it."""
+
+    action: ast.GlobalTypedName = field(compare=False)
+    operation: DestructionFactDestroyNode
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionDependency:
+    """A callee Destroy preceded by caller-contributed Destroys."""
+
+    trigger: ActionTrigger
+    callee_destroy: DestructionOperation
+
+
+@dataclass(slots=True)
+class DestructionContribution:
+    """Caller-contributed Destroy operations for one destruction dependency."""
+
+    operations: dict[DestructionFragmentDestroyNode, None] = field(default_factory=dict)
+    first_operations: dict[DestructionFragmentDestroyNode, None] = field(
+        default_factory=dict
+    )
+    completion_operations: dict[DestructionFragmentDestroyNode, None] = field(
+        default_factory=dict
+    )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class DestructionContributionNode(OperationNode):
+    """Connects preceding caller operations to the first Destroy in one contribution."""
+
+    trigger: ActionTrigger
+    destruction_fact: DestructionFact
+    callee_destroy_position: tuple[str, ...]
+
+
+class ContributedDestructionPosition(typing.NamedTuple):
+    """One caller-known occupied position contributed to a destruction."""
+
+    position: ast.PositionReference
+    position_relative_to_destroyed_particle: tuple[str, ...]
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContractNewlyOccupiedChildren:
+    """Children newly known as occupied while validating a Destruction Contract."""
+
+    destruction_fact: DestructionFact
+    destroyed_particle_position: ast.PositionReference
+    destroyed_position_in_destroying_action: ast.PositionReference
+    children: Sequence[ContributedDestructionPosition]
+    is_propagated_to_caller: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ContributedDestruction:
+    """Ordinary Destroy operations contributed before one callee Destroy."""
+
+    contribution_node: DestructionContributionNode
+    operations: tuple[DestructionFragmentDestroyNode, ...]
+    completion_operations: tuple[DestructionFragmentDestroyNode, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ContributedDestructionFragment:
+    """Ordinary Destroy operations contributed around one direct Action Trigger."""
+
+    contribution_dependencies: tuple[OperationNode, ...]
+    operations: tuple[DestructionFragmentDestroyNode, ...]
+    contributed_destructions: tuple[ContributedDestruction, ...]
+
+
+@dataclass(slots=True, eq=False)
+class OperationGraphDestruction:
+    """One Destruction Fact and its relationships in an Operation Graph."""
+
+    operations_by_position: dict[tuple[str, ...], DestructionFactDestroyNode] = field(
+        init=False, default_factory=dict
+    )
+    direct_callee_trigger: ActionTrigger | None = field(init=False, default=None)
+    is_propagated_to_caller: bool = field(init=False, default=False)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)

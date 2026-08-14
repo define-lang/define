@@ -43,10 +43,13 @@ class ReactAExecution:
         action: ReactA,
         scheduler: literal.Scheduler,
         guarantees: ReactAGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_position_result__global_action_final__execution: local.my_domain_com.my_lib.final.FinalExecution
         self.join_for_trigger_position_result__global_action_final__action_parent = literal.Join(2)
         self.join_for_trigger_position_result__global_action_final__for_empty_rule_position_trigger = literal.Join(2)
@@ -79,6 +82,9 @@ class ReactAExecution:
         self.trigger_position_result__global_action_final__for_empty_rule_position_trigger()
 
     def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

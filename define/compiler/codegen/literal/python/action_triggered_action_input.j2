@@ -1,0 +1,15 @@
+{% from "position_expression.j2" import position_expression %}
+{% macro triggered_action_input_methods(triggered_action_inputs) %}
+    {% for triggered_input in triggered_action_inputs %}
+
+    def {{ triggered_input.method_name }}(self):
+        {% if triggered_input.dependency_count > 1 %}
+        if not self.join_for_{{ triggered_input.method_name }}.arrive():
+            return
+        {% endif %}
+        {% for destruction_position in triggered_input.destruction_positions %}
+        self.{{ destruction_position.member_name }} = {{ position_expression(destruction_position.position) }}
+        {% endfor %}
+        self.{{ triggered_input.triggered_action_execution_name }}.{{ triggered_input.callee_input_method_name }}()
+    {% endfor %}
+{% endmacro %}

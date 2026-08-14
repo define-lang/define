@@ -12,7 +12,10 @@ filegroup(
         ["**"],
         exclude = _TRACING_TESTDATA_EXCLUDES,
     ),
-    visibility = ["//define/testdata/codegen:__pkg__"],
+    visibility = [
+        "//define/compiler/codegen:__pkg__",
+        "//define/testdata/codegen:__pkg__",
+    ],
 )
 
 filegroup(

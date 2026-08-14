@@ -37,10 +37,13 @@ class TriggeredExecution:
         action: Triggered,
         scheduler: literal.Scheduler,
         guarantees: TriggeredGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run = literal.Join(2)
 
     def accept_for_empty_rule_position_run__global_position_child(self):
@@ -50,6 +53,9 @@ class TriggeredExecution:
         self.destroy_position_run()
 
     def destroy_position_run__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_position_run__global_position_child)
+
+    def continue_destroy_position_run__global_position_child(self):
         self.action.get_interface_position(
             "position<run>"
         ).particle.get_position(
@@ -60,6 +66,9 @@ class TriggeredExecution:
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
             return
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()

@@ -7,6 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
 import local.my_domain_com.my_lib.greatgrandchild
+import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 import local.my_domain_com.my_lib.sibling
@@ -47,8 +48,13 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.trigger_global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild = literal.Join(2)
-        self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_sibling = literal.Join(2)
+        self.destruction_connection_trigger_global_action_middle: literal.DestructionConnection
+        self.destruction_connection_trigger_global_action_middle_2: literal.DestructionConnection
+        self.trigger_global_action_middle_destruction_connections: literal.DestructionConnections
+        self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild: literal.Position
+        self.destruction_position_global_position_parent__global_position_sibling: literal.Position
+        self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild = literal.Join(2)
+        self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent = literal.Join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -79,7 +85,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
         ).create_particle()
-        self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild()
+        self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild()
 
     def create_global_position_parent__global_position_sibling(self):
         self.action.on_particle.get_position(
@@ -87,7 +93,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).create_particle()
-        self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_sibling()
+        self.trigger_global_action_middle__for_empty_rule_global_position_parent()
 
     def create_global_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -96,13 +102,35 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_global_action_middle__execution()
-        self.scheduler.submit(self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild)
         self.scheduler.submit(self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild)
         self.scheduler.submit(self.trigger_global_action_middle__when_empty_global_action_inner__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_sibling)
         self.trigger_global_action_middle__for_empty_rule_global_position_parent()
 
+    def destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
+        self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
+        self.destruction_connection_trigger_global_action_middle.complete()
+
+    def destroy_global_position_parent__global_position_sibling(self):
+        self.destruction_position_global_position_parent__global_position_sibling.destroy_particle()
+        self.destruction_connection_trigger_global_action_middle_2.complete()
+
     def init_trigger_global_action_middle__execution(self):
+        self.destruction_connection_trigger_global_action_middle = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.middle.MiddleExecution.continue_destroy_global_position_parent__global_position_child__global_position_grandchild,
+            1,
+            self.destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild,
+        )
+        self.destruction_connection_trigger_global_action_middle_2 = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent,
+            1,
+            self.destroy_global_position_parent__global_position_sibling,
+        )
+        self.trigger_global_action_middle_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_global_action_middle,
+            self.destruction_connection_trigger_global_action_middle_2,
+        )
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         )
@@ -110,23 +138,32 @@ class TestExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_global_action_middle,
+            destruction_connections=self.trigger_global_action_middle_destruction_connections,
         )
 
-    def trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
-        if not self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.arrive():
-            return
-        self.trigger_global_action_middle__execution.accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild()
-
     def trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
+        self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild = self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_position(
+            local.my_domain_com.my_lib.grandchild.Grandchild
+        ).particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        )
         self.trigger_global_action_middle__execution.accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild()
 
     def trigger_global_action_middle__when_empty_global_action_inner__position_trigger_pos(self):
         self.trigger_global_action_middle__execution.accept_when_empty_global_action_inner__position_trigger_pos()
 
-    def trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_sibling(self):
-        if not self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent__global_position_sibling.arrive():
-            return
-        self.trigger_global_action_middle__execution.accept_for_empty_rule_global_position_parent__global_position_sibling()
-
     def trigger_global_action_middle__for_empty_rule_global_position_parent(self):
+        if not self.join_for_trigger_global_action_middle__for_empty_rule_global_position_parent.arrive():
+            return
+        self.destruction_position_global_position_parent__global_position_sibling = self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        )
         self.trigger_global_action_middle__execution.accept_for_empty_rule_global_position_parent()

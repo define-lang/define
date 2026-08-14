@@ -23,6 +23,30 @@
         "caller": null,
         "action_name": "test"
       },
+      "action_name": "middle_b"
+    },
+    "operation_name": "create",
+    "target": "box",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "middle_b"
+    },
+    "operation_name": "create",
+    "target": "box::/b",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
       "action_name": "middle_a"
     },
     "operation_name": "create",
@@ -82,30 +106,6 @@
     },
     "operation_name": "destroy",
     "target": "run",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "action_name": "middle_b"
-    },
-    "operation_name": "create",
-    "target": "box",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "action_name": "middle_b"
-    },
-    "operation_name": "create",
-    "target": "box::/b",
     "occurrence": 1
   },
   {

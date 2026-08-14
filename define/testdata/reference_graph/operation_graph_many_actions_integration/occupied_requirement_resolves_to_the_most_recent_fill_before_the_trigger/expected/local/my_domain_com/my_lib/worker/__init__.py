@@ -36,15 +36,21 @@ class WorkerExecution:
         action: Worker,
         scheduler: literal.Scheduler,
         guarantees: WorkerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_slot(self):
         self.destroy_position_slot()
 
     def destroy_position_slot(self):
+        literal.continue_destruction(self.continue_destroy_position_slot)
+
+    def continue_destroy_position_slot(self):
         self.action.get_interface_position(
             "position<slot>"
         ).destroy_particle()

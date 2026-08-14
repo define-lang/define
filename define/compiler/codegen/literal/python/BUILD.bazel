@@ -49,6 +49,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_labeler",
+        "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
 
@@ -92,7 +93,6 @@ py_test(
     deps = [
         ":action_context",
         ":action_names",
-        ":naming",
         ":template_context",
         "//define/compiler:ast",
         "//define/compiler:conftest",
@@ -114,6 +114,7 @@ py_library(
         ":naming",
         ":template_context",
         "//define/compiler:ast",
+        "//define/compiler/codegen:action_plan",
         "//define/compiler/validator/reference_graph:operation_graph_labeler",
         "//define/compiler/validator/reference_graph:operation_graph_model",
     ],

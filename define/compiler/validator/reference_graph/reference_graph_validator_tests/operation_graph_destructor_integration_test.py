@@ -136,6 +136,74 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
+def test_auto_destruction_of_child_with_caller_known_destructor(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/extra)": ["test.create(source)"],
+        "test.move(source, /destroyer::run)": ["test.create(source::/extra)"],
+        "destroyer.move(run, local)": ["test.move(source, /destroyer::run)"],
+        "child_destruct.create(_noop)": ["destroyer.move(run, local)"],
+        "child_destruct.destroy(_noop)": ["child_destruct.create(_noop)"],
+        # The caller-known child's Destructor must finish before the contributed
+        # Destroy empties that child position.
+        "destroyer.destroy(local::/extra)": ["child_destruct.destroy(_noop)"],
+        # The contributed child Destroy must finish before automatic destruction
+        # empties the local position.
+        "destroyer.destroy(local)": ["destroyer.destroy(local::/extra)"],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
+def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.create(parent::/maker::trigger_pos)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "maker.create(result)": ["test.move(source, /destroyer::parent)"],
+        "destruct.move(/maker::result, held_result)": ["maker.create(result)"],
+        "destruct.move(held_result, /maker::result)": [
+            "destruct.move(/maker::result, held_result)"
+        ],
+        "destruct.move(/sibling, held_sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destruct.move(held_sibling, /sibling)": [
+            "destruct.move(/sibling, held_sibling)"
+        ],
+        # The caller-known destructor operates on this callee-guaranteed child
+        # before the callee destroys it.
+        "destroyer.destroy(parent::/maker::result)": [
+            "destruct.move(held_result, /maker::result)"
+        ],
+        "destroyer.destroy(parent::/maker::trigger_pos)": [
+            "destroyer.create(parent::/maker::trigger_pos)"
+        ],
+        # The same destructor also operates on the later caller-contributed child
+        # before its contributed destruction fragment runs.
+        "destroyer.destroy(parent::/sibling)": [
+            "destruct.move(held_sibling, /sibling)"
+        ],
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/maker::result)",
+            "destroyer.destroy(parent::/maker::trigger_pos)",
+            "destroyer.destroy(parent::/sibling)",
+        ],
+    }
+
+
+@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
 def test_destructor_known_only_two_callers_up(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -32,10 +32,13 @@ class ReactBExecution:
         action: ReactB,
         scheduler: literal.Scheduler,
         guarantees: ReactBGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_local_result = literal.LocalPosition(
             "position<local_result>",
             scheduler=self.scheduler,
@@ -52,6 +55,9 @@ class ReactBExecution:
         self.local_position_local_result.destroy_particle()
 
     def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

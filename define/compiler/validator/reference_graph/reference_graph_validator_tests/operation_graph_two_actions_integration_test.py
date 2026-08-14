@@ -1,14 +1,8 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
-
-_MODULAR_DESTRUCTION_FRAGMENTS_MISSING = (
-    "caller-contributed child destruction fragments are not implemented"
-)
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
@@ -137,12 +131,10 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
             "test.create(gateway::/other::input::/item)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.destroy_if_occupied(input::/item::/deep)": [
+        "other.destroy(input::/item::/deep)": [
             "test.create(gateway::/other::input::/item::/deep)"
         ],
-        "other.destroy(input::/item)": [
-            "other.destroy_if_occupied(input::/item::/deep)"
-        ],
+        "other.destroy(input::/item)": ["other.destroy(input::/item::/deep)"],
     }
 
 
@@ -158,8 +150,7 @@ def test_callee_destroy_of_a_refilled_position_ignores_the_previous_particles_ch
         "test.destroy(/origin)": ["test.destroy(/origin::/child)"],
         "test.create(/origin)#2": ["test.destroy(/origin)"],
         "test.create(/other::trigger_pos)": [],
-        "other.destroy_if_occupied(/origin::/child)": ["test.create(/origin)#2"],
-        "other.destroy(/origin)": ["other.destroy_if_occupied(/origin::/child)"],
+        "other.destroy(/origin)": ["test.create(/origin)#2"],
     }
 
 
@@ -456,11 +447,11 @@ def test_intermediate_callee_emptying_reaches_a_deeper_caller_operation(
             "test.create(gateway::/other::parent::/child::/grandchild)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.destroy_if_occupied(parent::/child::/grandchild::/greatgrandchild)": [
+        "other.destroy(parent::/child::/grandchild::/greatgrandchild)": [
             "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)"
         ],
         "other.destroy(parent::/child::/grandchild)": [
-            "other.destroy_if_occupied(parent::/child::/grandchild::/greatgrandchild)"
+            "other.destroy(parent::/child::/grandchild::/greatgrandchild)"
         ],
         "other.destroy(parent::/child)": ["other.destroy(parent::/child::/grandchild)"],
         "other.destroy(parent)": ["other.destroy(parent::/child)"],
@@ -600,7 +591,77 @@ def test_trigger_inlines_callee_internal_dependencies(
     }
 
 
-def test_local_cascade_conditionally_destroys_unknown_child(
+def test_callee_known_child_and_caller_unknown_sibling_are_disjoint(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": [
+            "test.create(source::/child)",
+            "test.create(source::/sibling)",
+        ],
+        "test.create(/destroyer::trigger_pos)": [],
+        # The caller-only sibling Destroy and the callee's first Move of /child
+        # both depend on the Move that supplied the parent particle. Neither
+        # operation depends on the other.
+        "destroyer.destroy(parent::/sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(parent::/child, keeper)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(keeper, parent::/child)": [
+            "destroyer.move(parent::/child, keeper)"
+        ],
+        "destroyer.destroy(parent::/child)": ["destroyer.move(keeper, parent::/child)"],
+        # The parent Destroy waits for both independently ordered child Destroys.
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "destroyer.destroy(parent::/child)",
+        ],
+    }
+
+
+def test_caller_only_child_assigned_before_callee_known_child_is_disjoint(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.create(source::/child)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": [
+            "test.create(source::/sibling)",
+            "test.create(source::/child)",
+        ],
+        "test.create(/destroyer::trigger_pos)": [],
+        # Assigning the caller-only sibling before the callee-known child does not
+        # add a dependency between the sibling Destroy and the first Move of the
+        # child particle.
+        "destroyer.destroy(parent::/sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(parent::/child, keeper)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(keeper, parent::/child)": [
+            "destroyer.move(parent::/child, keeper)"
+        ],
+        "destroyer.destroy(parent::/child)": ["destroyer.move(keeper, parent::/child)"],
+        # The parent Destroy still waits for both child Destroys.
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "destroyer.destroy(parent::/child)",
+        ],
+    }
+
+
+def test_local_cascade_uses_caller_fragment_for_occupied_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -611,14 +672,31 @@ def test_local_cascade_conditionally_destroys_unknown_child(
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
         "triggered.move(/target, local)": ["triggered.move(run, /target)"],
-        "triggered.destroy_if_occupied(local::/b)": ["triggered.move(/target, local)"],
-        "triggered.destroy(local)": [
-            "triggered.destroy_if_occupied(local::/b)",
-        ],
+        # The contributed child Destroy follows the particle across both Moves
+        # and must finish before the local-position Destroy.
+        "triggered.destroy(local::/a)": ["triggered.move(/target, local)"],
+        "triggered.destroy(local)": ["triggered.destroy(local::/a)"],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_MODULAR_DESTRUCTION_FRAGMENTS_MISSING)
+def test_auto_destruction_uses_caller_fragment_for_occupied_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.move(source, /triggered::run)": ["test.create(source::/a)"],
+        "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
+        "triggered.move(/target, local)": ["triggered.move(run, /target)"],
+        # The caller-only child must be destroyed before the callee's local
+        # position is automatically destroyed.
+        "triggered.destroy(local::/a)": ["triggered.move(/target, local)"],
+        "triggered.destroy(local)": ["triggered.destroy(local::/a)"],
+    }
+
+
 def test_caller_contributed_child_destruction_precedes_later_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -640,4 +718,75 @@ def test_caller_contributed_child_destruction_precedes_later_operation(
         # The caller-contributed child Destroy must remain before the later parent
         # Destroy recorded after the contracted particle's destruction cascade.
         "destroyer.destroy(run)": ["destroyer.destroy(run::/run)"],
+    }
+
+
+def test_caller_contributes_one_destroy_before_shared_callee_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::parent)": ["test.create(gateway)"],
+        "test.create(gateway::/other::parent::/child)": [
+            "test.create(gateway::/other::parent)"
+        ],
+        "test.create(gateway::/other::parent::/child::/sibling)": [
+            "test.create(gateway::/other::parent::/child)"
+        ],
+        "test.create(gateway::/other::parent::/child::/grandchild)": [
+            "test.create(gateway::/other::parent::/child)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        # The caller contributes the sibling Destroy, which follows the caller's
+        # Create of that sibling particle.
+        "other.destroy(parent::/child::/sibling)": [
+            "test.create(gateway::/other::parent::/child::/sibling)",
+        ],
+        # The callee's explicit grandchild Destroy retains its ordinary dependency.
+        "other.destroy(parent::/child::/grandchild)": [
+            "test.create(gateway::/other::parent::/child::/grandchild)"
+        ],
+        # The callee-known child Destroy waits for both the caller-contributed
+        # sibling Destroy and the callee's grandchild Destroy.
+        "other.destroy(parent::/child)": [
+            "other.destroy(parent::/child::/sibling)",
+            "other.destroy(parent::/child::/grandchild)",
+        ],
+        # The parent Destroy waits for that shared child Destroy once.
+        "other.destroy(parent)": ["other.destroy(parent::/child)"],
+    }
+
+
+def test_caller_contributions_share_a_parent_destroy_before_callee_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/branch)": ["test.create(source)"],
+        "test.create(source::/branch::/a)": ["test.create(source::/branch)"],
+        "test.create(source::/branch::/b)": ["test.create(source::/branch)"],
+        "test.move(source, /destroyer::parent)": [
+            "test.create(source::/branch::/a)",
+            "test.create(source::/branch::/b)",
+        ],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.destroy(parent::/branch::/b)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.destroy(parent::/branch::/a)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        # The separately begun contributions share this caller-contributed
+        # parent-position Destroy before the callee destroys parent.
+        "destroyer.destroy(parent::/branch)": [
+            "destroyer.destroy(parent::/branch::/a)",
+            "destroyer.destroy(parent::/branch::/b)",
+        ],
+        # The callee's parent Destroy waits on the shared caller-contributed
+        # branch Destroy.
+        "destroyer.destroy(parent)": ["destroyer.destroy(parent::/branch)"],
     }

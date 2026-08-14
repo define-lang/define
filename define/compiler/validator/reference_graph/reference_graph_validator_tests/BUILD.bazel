@@ -808,7 +808,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
-        "@pypi//pytest",
     ],
 )
 
@@ -821,7 +820,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
-        "@pypi//pytest",
     ],
 )
 
@@ -858,7 +856,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
-        "@pypi//pytest",
     ],
 )
 

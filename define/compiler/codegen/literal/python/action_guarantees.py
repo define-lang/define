@@ -84,7 +84,7 @@ class ActionGuaranteesGenerator:
                 triggered_input.guarantee_dependencies
                 for triggered_input in self._plan.triggered_action_inputs
             )
-            or bool(self._plan.guarantee_destructor_triggers)
+            or bool(self._plan.triggers_for_destroyed_callee_guarantee_particles)
         )
 
     def _child_guarantees(
@@ -93,13 +93,14 @@ class ActionGuaranteesGenerator:
         child_guarantees: dict[
             operation_graph_model.ActionTrigger, action_context.ChildGuarantees
         ] = {}
-        for action_trigger in self._plan.action_triggers:
+        for planned_trigger in self._plan.action_triggers:
+            action_trigger = planned_trigger.action_trigger
             callee_interface = self._generated_actions[
                 action_trigger.callee_action_name
             ].guarantee_interface
             if callee_interface is not None:
                 child_guarantees[action_trigger] = action_context.ChildGuarantees(
-                    self._names.child_guarantees[action_trigger],
+                    self._names.triggered_actions[action_trigger].canonical_name,
                     callee_interface,
                 )
         return child_guarantees
@@ -167,17 +168,19 @@ class ActionGuaranteesGenerator:
                         method_name=self._names.triggered_inputs[triggered_input],
                     )
                 )
-        for destructor_trigger in self._plan.guarantee_destructor_triggers:
+        for (
+            action_trigger
+        ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
             child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
-                interface, destructor_trigger.guarantee_dependency
+                interface, action_trigger.guarantee_dependency
             )
             registrations.append(
                 template_context.GuaranteeRegistrationContext(
                     child_guarantees_names=child_guarantees_names,
                     guarantee_name=guarantee_name,
-                    method_name=self._names.guarantee_destructor_triggers[
-                        destructor_trigger
-                    ],
+                    method_name=self._names.triggered_actions[
+                        action_trigger.action_trigger
+                    ].canonical_name,
                 )
             )
         return registrations

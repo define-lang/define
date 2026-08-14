@@ -37,16 +37,39 @@ class DestroyerExecution:
         action: Destroyer,
         scheduler: literal.Scheduler,
         guarantees: DestroyerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
+        self.trigger_position_run__global_action_destruct__execution: local.my_domain_com.my_lib.destruct.DestructExecution
+        self.join_for_trigger_position_run__global_action_destruct__action_parent = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.destroy_position_run()
 
+    def accept_when_occupied_position_run(self):
+        self.init_trigger_position_run__global_action_destruct__execution()
+        self.scheduler.submit(self.trigger_position_run__global_action_destruct__action_parent)
+        self.trigger_position_run__global_action_destruct__action_parent()
+
     def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+
+    def init_trigger_position_run__global_action_destruct__execution(self):
+        self.trigger_position_run__global_action_destruct__execution = local.my_domain_com.my_lib.destruct.DestructExecution(
+            self.scheduler,
+        )
+
+    def trigger_position_run__global_action_destruct__action_parent(self):
+        if not self.join_for_trigger_position_run__global_action_destruct__action_parent.arrive():
+            return
+        self.trigger_position_run__global_action_destruct__execution.accept_action_parent()

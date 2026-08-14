@@ -10,6 +10,10 @@ from define.compiler.validator.reference_graph import (
 _ENTRY_POINT_ACTION_PATH = "/test"
 
 
+# TODO: Add operation-graph integration-test infrastructure that computes the
+# exact transitively minimal scheduling table and asserts that the table written
+# in each test is that table. These graphs are small, so require perfect
+# minimality rather than using a heuristic.
 def operation_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> dict[str, list[str]]:

@@ -1,0 +1,26 @@
+# The same callee receives a different destruction connection for each Action Trigger.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the position</first_child>.
+                it has the position</second_child>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the position</first_child>.
+                it has the position</second_child>.
+            }
+        }
+        create a particle in position<first>.
+        create a particle in position<first>::position</first_child>.
+        move the particle in position<first> to action</destroyer>::position<run>.
+        create a particle in position<second>.
+        create a particle in position<second>::position</second_child>.
+        move the particle in position<second> to action</destroyer>::position<run>.
+    }
+}

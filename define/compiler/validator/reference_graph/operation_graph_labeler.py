@@ -27,12 +27,14 @@ type _TriggerKey = tuple[operation_graph_model.LastOperationNode, str]
 _CREATE_OPERATION_NAME = "create"
 _MOVE_OPERATION_NAME = "move"
 _DESTROY_OPERATION_NAME = "destroy"
-_DESTROY_IF_OCCUPIED_OPERATION_NAME = "destroy_if_occupied"
 
 
 def _trigger_key(trigger: operation_graph_model.ActionTrigger) -> _TriggerKey:
     """Return the identity of one Action Trigger performed by an action."""
-    return (trigger.trigger_operation, trigger.callee_action_name.full_typed_name)
+    return (
+        trigger.trigger_operation,
+        trigger.callee_action_name.full_typed_name,
+    )
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -97,15 +99,18 @@ class _OperationLabels:
         cls, node: operation_graph_model.PositionOperationNode
     ) -> tuple[str, str | None, str]:
         """Return the operation name and positions of one operation."""
-        target = cls._position_name(node.target)
+        target_position = (
+            node.target_in_destroying_action
+            if isinstance(node, operation_graph_model.DestructionFragmentDestroyNode)
+            else node.target
+        )
+        target = cls._position_name(target_position)
         match node:
             case operation_graph_model.CreateNode():
                 return _CREATE_OPERATION_NAME, None, target
             case operation_graph_model.MoveNode():
                 source = cls._position_name(node.source)
                 return _MOVE_OPERATION_NAME, source, target
-            case operation_graph_model.DestroyIfOccupiedNode():
-                return _DESTROY_IF_OCCUPIED_OPERATION_NAME, None, target
             case operation_graph_model.DestroyNode():
                 return _DESTROY_OPERATION_NAME, None, target
             case _:
@@ -234,8 +239,17 @@ class OperationGraphLabeler:
     def __init__(self, graphs: operation_graph.OperationGraphs):
         """Prepare labels for every action in ``graphs``."""
         self._operation_labels: _ActionOperationLabels = typed_name_dict.TypedNameDict()
+        self._fragment_operation_labels: dict[
+            operation_graph_model.DestructionFragmentDestroyNode, OperationLabel
+        ] = {}
         for action, graph in graphs.items():
-            self._operation_labels[action] = _OperationLabels(graph)
+            labels = _OperationLabels(graph)
+            self._operation_labels[action] = labels
+            for node in graph.nodes:
+                if isinstance(
+                    node, operation_graph_model.DestructionFragmentDestroyNode
+                ):
+                    self._fragment_operation_labels[node] = labels[node]
         self._invocation_labels = _ActionInvocationLabels(graphs)
 
     @staticmethod
@@ -249,6 +263,8 @@ class OperationGraphLabeler:
         node: operation_graph_model.PositionOperationNode,
     ) -> OperationLabel:
         """Return ``action``'s local label for ``node``."""
+        if isinstance(node, operation_graph_model.DestructionFragmentDestroyNode):
+            return self._fragment_operation_labels[node]
         return self._operation_labels[action][node]
 
     def triggered_action_execution_name(

@@ -36,15 +36,21 @@ class InnerExecution:
         action: Inner,
         scheduler: literal.Scheduler,
         guarantees: InnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_item(self):
         self.destroy_position_item()
 
     def destroy_position_item(self):
+        literal.continue_destruction(self.continue_destroy_position_item)
+
+    def continue_destroy_position_item(self):
         self.action.get_interface_position(
             "position<item>"
         ).destroy_particle()

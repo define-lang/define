@@ -1,6 +1,7 @@
 """Python code generator for action statements blocks."""
 
 from define.compiler import ast
+from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import naming, template_context
 from define.compiler.validator.reference_graph import (
     operation_graph_labeler,
@@ -16,6 +17,14 @@ class ActionStatementsGenerator:
     _defining_typed_name: ast.GlobalTypedNameInDefinition
     _interface_position_names: set[str]
     _local_position_names: dict[str, str]
+    _destruction_position_names: dict[
+        operation_graph_model.DestructionFragmentDestroyNode, str
+    ]
+    _destruction_connection_by_operation: dict[
+        operation_graph_model.DestructionFragmentDestroyNode,
+        action_plan.DestructionConnection,
+    ]
+    _destruction_connection_names: dict[action_plan.DestructionConnection, str]
     _operation_labels: operation_graph_labeler.OperationGraphLabeler | None
 
     def __init__(
@@ -23,6 +32,14 @@ class ActionStatementsGenerator:
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
         local_position_names: dict[str, str],
+        destruction_position_names: dict[
+            operation_graph_model.DestructionFragmentDestroyNode, str
+        ],
+        destruction_connection_by_operation: dict[
+            operation_graph_model.DestructionFragmentDestroyNode,
+            action_plan.DestructionConnection,
+        ],
+        destruction_connection_names: dict[action_plan.DestructionConnection, str],
         operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
     ):
         """Initialize with the action definition to generate data for.
@@ -38,6 +55,9 @@ class ActionStatementsGenerator:
             for interface_position in definition.interface_positions
         }
         self._local_position_names = local_position_names
+        self._destruction_position_names = destruction_position_names
+        self._destruction_connection_by_operation = destruction_connection_by_operation
+        self._destruction_connection_names = destruction_connection_names
         self._operation_labels = operation_labels
 
     def build_local_positions(self) -> list[template_context.ActionStatementContext]:
@@ -77,27 +97,36 @@ class ActionStatementsGenerator:
             case operation_graph_model.CreateNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.CREATE_PARTICLE,
-                    position=self._build_position_expr(node.target),
+                    position=self.build_position(node.target),
                     operation_label=local_label,
-                )
-            case operation_graph_model.DestroyIfOccupiedNode():
-                return template_context.ActionStatementContext(
-                    kind=template_context.StatementKind.DESTROY_PARTICLE,
-                    position=self._build_position_expr(node.target),
-                    operation_label=local_label,
-                    destroy_if_occupied=True,
                 )
             case operation_graph_model.DestroyNode():
+                destruction_connection_name = None
+                if isinstance(
+                    node, operation_graph_model.DestructionFragmentDestroyNode
+                ):
+                    destruction_connection_name = self._destruction_connection_names[
+                        self._destruction_connection_by_operation[node]
+                    ]
+                    position = template_context.PositionExpr(
+                        local_position_member_name=self._destruction_position_names[
+                            node
+                        ],
+                        chain_elements=[],
+                    )
+                else:
+                    position = self.build_position(node.target)
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.DESTROY_PARTICLE,
-                    position=self._build_position_expr(node.target),
+                    position=position,
                     operation_label=local_label,
+                    destruction_connection_name=destruction_connection_name,
                 )
             case operation_graph_model.MoveNode():
                 return template_context.ActionStatementContext(
                     kind=template_context.StatementKind.MOVE_PARTICLE,
-                    position=self._build_position_expr(node.source),
-                    to_position=self._build_position_expr(node.target),
+                    position=self.build_position(node.source),
+                    to_position=self.build_position(node.target),
                     operation_label=local_label,
                 )
             case _:
@@ -110,13 +139,13 @@ class ActionStatementsGenerator:
         action_reference: ast.ActionReference,
     ) -> template_context.PositionExpr:
         """Build an expression that accesses a triggered action."""
-        return self._build_position_expr(action_reference)
+        return self.build_position(action_reference)
 
-    def _build_position_expr(
+    def build_position(
         self,
         position_reference: ast.PositionReference | ast.ActionReference,
     ) -> template_context.PositionExpr:
-        """Build a position expression from a position reference chain."""
+        """Build an expression that accesses a Position or Action Reference."""
         first = position_reference.typed_names[0]
         if isinstance(first, ast.LocalTypedNameReference):
             if first.source_typed_name in self._interface_position_names:

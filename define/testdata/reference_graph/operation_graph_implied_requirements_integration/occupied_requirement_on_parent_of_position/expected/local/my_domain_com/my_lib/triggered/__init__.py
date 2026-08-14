@@ -41,15 +41,21 @@ class TriggeredExecution:
         action: Triggered,
         scheduler: literal.Scheduler,
         guarantees: TriggeredGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_input__global_position_child(self):
         self.destroy_position_input__global_position_child()
 
     def destroy_position_input__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_position_input__global_position_child)
+
+    def continue_destroy_position_input__global_position_child(self):
         self.action.get_interface_position(
             "position<input>"
         ).particle.get_position(

@@ -75,10 +75,13 @@ class ActExecution:
         action: Act,
         scheduler: literal.Scheduler,
         guarantees: ActGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_local_dest = literal.LocalPosition(
             "position<local_dest>",
             scheduler=self.scheduler,
@@ -137,4 +140,7 @@ class ActExecution:
         self.scheduler.continue_with(self.guarantees.guarantee_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c__move__position_chain_dest__global_position_mid_dest__global_position_end_dest)
 
     def destroy_position_local_dest(self):
+        literal.continue_destruction(self.continue_destroy_position_local_dest)
+
+    def continue_destroy_position_local_dest(self):
         self.local_position_local_dest.destroy_particle()

@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,9 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING = (
-    "destroying actions do not yet include caller-dependent child positions"
-)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -563,22 +558,22 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
         ],
         "test.create(/parent::/sibling)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],
-        "middle.destroy_if_occupied(/parent::/child::/grandchild::/greatgrandchild)": [
+        "middle.destroy(/parent::/child::/grandchild::/greatgrandchild)": [
             "test.create(/parent::/child::/grandchild::/greatgrandchild)"
         ],
         "middle.destroy(/parent::/child::/grandchild)": [
-            "middle.destroy_if_occupied(/parent::/child::/grandchild::/greatgrandchild)"
+            "middle.destroy(/parent::/child::/grandchild::/greatgrandchild)"
         ],
         "middle.create(/inner::trigger_pos)": [],
-        "inner.destroy_if_occupied(/parent::/sibling)": [
-            "test.create(/parent::/sibling)"
+        "inner.destroy(/parent::/sibling)": [
+            "test.create(/parent::/sibling)",
         ],
-        "inner.destroy_if_occupied(/parent::/child)": [
+        "inner.destroy(/parent::/child)": [
             "middle.destroy(/parent::/child::/grandchild)",
         ],
         "inner.destroy(/parent)": [
-            "inner.destroy_if_occupied(/parent::/sibling)",
-            "inner.destroy_if_occupied(/parent::/child)",
+            "inner.destroy(/parent::/child)",
+            "inner.destroy(/parent::/sibling)",
         ],
     }
 
@@ -837,7 +832,6 @@ def test_triggered_action_input_depends_on_multiple_guarantees(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
 def test_destruction_cascade_child_state_crosses_two_actions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -852,20 +846,41 @@ def test_destruction_cascade_child_state_crosses_two_actions(
             "test.create(source::/b)",
         ],
         "middle.move(run, /inner::inner_run)": ["test.move(source, /middle::run)"],
-        "inner.destroy_if_occupied(inner_run::/a)": [
-            "middle.move(run, /inner::inner_run)"
-        ],
-        "inner.destroy_if_occupied(inner_run::/b)": [
-            "middle.move(run, /inner::inner_run)"
-        ],
+        "inner.destroy(inner_run::/a)": ["middle.move(run, /inner::inner_run)"],
+        "inner.destroy(inner_run::/b)": ["middle.move(run, /inner::inner_run)"],
         "inner.destroy(inner_run)": [
-            "inner.destroy_if_occupied(inner_run::/a)",
-            "inner.destroy_if_occupied(inner_run::/b)",
+            "inner.destroy(inner_run::/b)",
+            "inner.destroy(inner_run::/a)",
         ],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
+def test_auto_destruction_child_state_crosses_two_actions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/a)": ["test.create(source)"],
+        "test.create(source::/b)": ["test.create(source)"],
+        "test.move(source, /middle::run)": [
+            "test.create(source::/a)",
+            "test.create(source::/b)",
+        ],
+        "middle.move(run, /inner::inner_run)": ["test.move(source, /middle::run)"],
+        "inner.move(inner_run, local)": ["middle.move(run, /inner::inner_run)"],
+        # The Destruction Contract crosses middle, and both caller-only child
+        # Destroys must finish before inner automatically destroys local.
+        "inner.destroy(local::/a)": ["inner.move(inner_run, local)"],
+        "inner.destroy(local::/b)": ["inner.move(inner_run, local)"],
+        "inner.destroy(local)": [
+            "inner.destroy(local::/b)",
+            "inner.destroy(local::/a)",
+        ],
+    }
+
+
 def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -877,15 +892,9 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
         "middle_a.create(box)": [],
         "middle_a.create(box::/a)": ["middle_a.create(box)"],
         "middle_a.move(box, /destroyer::run)": ["middle_a.create(box::/a)"],
-        "middle_a:destroyer.destroy_if_occupied(run::/a)": [
-            "middle_a.move(box, /destroyer::run)"
-        ],
-        "middle_a:destroyer.destroy_if_occupied(run::/b)": [
-            "middle_a.move(box, /destroyer::run)"
-        ],
+        "middle_a:destroyer.destroy(run::/a)": ["middle_a.move(box, /destroyer::run)"],
         "middle_a:destroyer.destroy(run)": [
-            "middle_a:destroyer.destroy_if_occupied(run::/a)",
-            "middle_a:destroyer.destroy_if_occupied(run::/b)",
+            "middle_a:destroyer.destroy(run::/a)",
         ],
         "middle_b.create(box)": [],
         "middle_b.create(box::/b)": ["middle_b.create(box)"],
@@ -893,20 +902,13 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
             "middle_b.create(box::/b)",
             "middle_a:destroyer.destroy(run)",
         ],
-        "middle_b:destroyer.destroy_if_occupied(run::/a)": [
-            "middle_b.move(box, /destroyer::run)"
-        ],
-        "middle_b:destroyer.destroy_if_occupied(run::/b)": [
-            "middle_b.move(box, /destroyer::run)"
-        ],
+        "middle_b:destroyer.destroy(run::/b)": ["middle_b.move(box, /destroyer::run)"],
         "middle_b:destroyer.destroy(run)": [
-            "middle_b:destroyer.destroy_if_occupied(run::/a)",
-            "middle_b:destroyer.destroy_if_occupied(run::/b)",
+            "middle_b:destroyer.destroy(run::/b)",
         ],
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_CALLER_DEPENDENT_DESTRUCTION_CHILDREN_MISSING)
 def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -918,23 +920,50 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
         "middle_a.create(box)": [],
         "middle_a.create(box::/child)": ["middle_a.create(box)"],
         "middle_a.move(box, /destroyer::run)": ["middle_a.create(box::/child)"],
-        "middle_a:destroyer.destroy_if_occupied(run::/child)": [
+        "middle_a:destroyer.destroy(run::/child)": [
             "middle_a.move(box, /destroyer::run)"
         ],
-        "middle_a:destroyer.destroy(run)": [
-            "middle_a:destroyer.destroy_if_occupied(run::/child)"
-        ],
+        "middle_a:destroyer.destroy(run)": ["middle_a:destroyer.destroy(run::/child)"],
         "middle_b.create(box)": [],
         "middle_b.create(box::/child)": ["middle_b.create(box)"],
         "middle_b.move(box, /destroyer::run)": [
             "middle_b.create(box::/child)",
             "middle_a:destroyer.destroy(run)",
         ],
-        "middle_b:destroyer.destroy_if_occupied(run::/child)": [
+        "middle_b:destroyer.destroy(run::/child)": [
             "middle_b.move(box, /destroyer::run)"
         ],
-        "middle_b:destroyer.destroy(run)": [
-            "middle_b:destroyer.destroy_if_occupied(run::/child)"
+        "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/child)"],
+    }
+
+
+def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.create(parent::/maker::trigger_pos)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "maker.create(result)": ["test.move(source, /destroyer::parent)"],
+        "maker.destroy(result)": ["maker.create(result)"],
+        "destroyer.destroy(parent::/sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.destroy(parent::/maker::trigger_pos)": [
+            "destroyer.create(parent::/maker::trigger_pos)"
+        ],
+        # Both the caller-contributed sibling Destroy and the callee-guaranteed
+        # particle's Destroy must finish before the parent Destroy.
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "maker.destroy(result)",
+            "destroyer.destroy(parent::/maker::trigger_pos)",
         ],
     }
 
@@ -958,15 +987,77 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
             "destroyer.move(/target, local)"
         ],
         "destroyer.create(local::/known_occupied)": ["destroyer.move(/target, local)"],
-        "destroyer.destroy_if_occupied(local::/maybe_child)": [
-            "destroyer.move(/target, local)"
-        ],
+        "destroyer.destroy(local::/maybe_child)": ["destroyer.move(/target, local)"],
         "destroyer.destroy(local::/known_occupied)": [
             "destroyer.create(local::/known_occupied)"
         ],
         "destroyer.destroy(local)": [
+            "destroyer.destroy(local::/maybe_child)",
             "destroyer.move(local::/known_empty, /destination)",
-            "destroyer.destroy_if_occupied(local::/maybe_child)",
             "destroyer.destroy(local::/known_occupied)",
+        ],
+    }
+
+
+def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/middle_a::run)": [],
+        "test.create(/middle_b::run)": [],
+        "middle_a.create(box)": [],
+        "middle_a.create(box::/child)": ["middle_a.create(box)"],
+        "middle_a.create(box::/sibling)": ["middle_a.create(box)"],
+        "middle_a.move(box, /destroyer::run)": [
+            "middle_a.create(box::/child)",
+            "middle_a.create(box::/sibling)",
+        ],
+        # Assigning /child before /sibling does not order the sibling Destroy and
+        # the first Move of the child particle relative to each other.
+        "middle_a:destroyer.destroy(run::/sibling)": [
+            "middle_a.move(box, /destroyer::run)"
+        ],
+        "middle_a:destroyer.move(run::/child, keeper)": [
+            "middle_a.move(box, /destroyer::run)"
+        ],
+        "middle_a:destroyer.move(keeper, run::/child)": [
+            "middle_a:destroyer.move(run::/child, keeper)"
+        ],
+        "middle_a:destroyer.destroy(run::/child)": [
+            "middle_a:destroyer.move(keeper, run::/child)"
+        ],
+        # The parent Destroy waits for both independently ordered child Destroys.
+        "middle_a:destroyer.destroy(run)": [
+            "middle_a:destroyer.destroy(run::/sibling)",
+            "middle_a:destroyer.destroy(run::/child)",
+        ],
+        "middle_b.create(box)": [],
+        "middle_b.create(box::/sibling)": ["middle_b.create(box)"],
+        "middle_b.create(box::/child)": ["middle_b.create(box)"],
+        "middle_b.move(box, /destroyer::run)": [
+            "middle_b.create(box::/sibling)",
+            "middle_b.create(box::/child)",
+            "middle_a:destroyer.destroy(run)",
+        ],
+        # Assigning /sibling before /child produces the same independent
+        # dependencies for the sibling Destroy and the first child Move.
+        "middle_b:destroyer.destroy(run::/sibling)": [
+            "middle_b.move(box, /destroyer::run)"
+        ],
+        "middle_b:destroyer.move(run::/child, keeper)": [
+            "middle_b.move(box, /destroyer::run)"
+        ],
+        "middle_b:destroyer.move(keeper, run::/child)": [
+            "middle_b:destroyer.move(run::/child, keeper)"
+        ],
+        "middle_b:destroyer.destroy(run::/child)": [
+            "middle_b:destroyer.move(keeper, run::/child)"
+        ],
+        # The parent Destroy again waits for both child Destroys.
+        "middle_b:destroyer.destroy(run)": [
+            "middle_b:destroyer.destroy(run::/sibling)",
+            "middle_b:destroyer.destroy(run::/child)",
         ],
     }

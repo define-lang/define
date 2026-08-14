@@ -82,9 +82,12 @@ See [define/spec/spec.md] for the language specification.
   requires one.
 - Avoid redundant casts and assignment annotations when the type checker can
   infer the exact type.
-- Use comprehensions only when their iteration and filtering are immediately
-  readable. Use ordinary control flow for comprehensions with nested iteration,
-  multiple conditions, or nontrivial expressions.
+- Use a comprehension only when it has exactly one `for` clause, no assignment
+  expression (`:=`), at most one simple condition, and a short result
+  expression. The key and value of a dictionary comprehension must both be
+  simple expressions. Use ordinary control flow if the comprehension constructs
+  a multi-argument object, performs intermediate computation, contains nested
+  iteration, has multiple conditions, or spans multiple lines after formatting.
 
 ## Design
 

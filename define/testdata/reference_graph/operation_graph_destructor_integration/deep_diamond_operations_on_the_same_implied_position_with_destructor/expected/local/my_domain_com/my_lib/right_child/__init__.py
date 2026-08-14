@@ -38,10 +38,13 @@ class RightChildExecution:
         action: RightChild,
         scheduler: literal.Scheduler,
         guarantees: RightChildGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_global_position_marker__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_trigger_global_position_marker__global_action_destructor__action_parent = literal.Join(2)
 
@@ -54,6 +57,9 @@ class RightChildExecution:
         self.trigger_global_position_marker__global_action_destructor__action_parent()
 
     def destroy_global_position_marker(self):
+        literal.continue_destruction(self.continue_destroy_global_position_marker)
+
+    def continue_destroy_global_position_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()

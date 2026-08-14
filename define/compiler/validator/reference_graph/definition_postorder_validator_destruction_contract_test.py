@@ -109,11 +109,15 @@ def test_passed_in_direct_destroy_records_contract():
     assert len(dcs) == 1
     dc = dcs[0]
     assert dc.destroyed_position_contracted.source_chained_name == "position<target>"
-    # Destroyed directly, so local == contracted.
-    assert dc.destroyed_position_local.source_chained_name == "position<target>"
+    # Destroyed directly, so the destroyer's position is the contracted position.
+    assert (
+        dc.destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<target>"
+    )
     assert dc.is_auto_destruction is False
     assert (
-        dc.destroying_action.full_typed_name == "action<my.domain.com:my_lib:/closer>"
+        dc.destruction_fact.destroying_action.full_typed_name
+        == "action<my.domain.com:my_lib:/closer>"
     )
     assert [quality.full_typed_name for quality in dc.verified_destructors] == [
         "action<my.domain.com:my_lib:/delete_file_destructor>"
@@ -141,7 +145,10 @@ def test_moved_in_particle_preserves_contracted_origin():
     assert (
         dcs[0].destroyed_position_contracted.source_chained_name == "position<incoming>"
     )
-    assert dcs[0].destroyed_position_local.source_chained_name == "position<box>"
+    assert (
+        dcs[0].destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<box>"
+    )
     assert dcs[0].is_auto_destruction is False
 
 
@@ -163,7 +170,10 @@ def test_auto_destruction_of_moved_in_particle():
     assert (
         dcs[0].destroyed_position_contracted.source_chained_name == "position<incoming>"
     )
-    assert dcs[0].destroyed_position_local.source_chained_name == "position<box>"
+    assert (
+        dcs[0].destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<box>"
+    )
     assert dcs[0].is_auto_destruction is True
 
 
@@ -232,7 +242,10 @@ def test_destroy_implied_position_keys_on_implied_origin():
     dcs = _destruction_contracts(source, "implier")
     assert len(dcs) == 1
     assert dcs[0].destroyed_position_contracted.source_chained_name == "position</slot>"
-    assert dcs[0].destroyed_position_local.source_chained_name == "position</slot>"
+    assert (
+        dcs[0].destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position</slot>"
+    )
     assert dcs[0].is_auto_destruction is False
 
 
@@ -354,9 +367,12 @@ def test_pass_through_re_records_contract_with_carry_over_and_accumulation():
     # Remapped to how mid received the particle...
     assert dc.destroyed_position_contracted.source_chained_name == "position<incoming>"
     # ...while where/how/who destroyed it carry over unchanged from close_file.
-    assert dc.destroyed_position_local.source_chained_name == "position<target>"
     assert (
-        dc.destroying_action.full_typed_name
+        dc.destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<target>"
+    )
+    assert (
+        dc.destruction_fact.destroying_action.full_typed_name
         == "action<my.domain.com:my_lib:/close_file>"
     )
     assert dc.is_auto_destruction is False
@@ -416,11 +432,17 @@ def test_auto_destructions_record_in_reverse_definition_order():
         dcs[0].destroyed_position_contracted.source_chained_name
         == "position<incoming2>"
     )
-    assert dcs[0].destroyed_position_local.source_chained_name == "position<box2>"
+    assert (
+        dcs[0].destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<box2>"
+    )
     assert dcs[0].is_auto_destruction is True
     assert (
         dcs[1].destroyed_position_contracted.source_chained_name
         == "position<incoming1>"
     )
-    assert dcs[1].destroyed_position_local.source_chained_name == "position<box1>"
+    assert (
+        dcs[1].destruction_fact.destroyed_position_in_destroyer.source_chained_name
+        == "position<box1>"
+    )
     assert dcs[1].is_auto_destruction is True

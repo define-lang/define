@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/additional_caller> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</a>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</a>.
+        move the particle in position<box> to action</destroyer>::position<run>.
+    }
+}

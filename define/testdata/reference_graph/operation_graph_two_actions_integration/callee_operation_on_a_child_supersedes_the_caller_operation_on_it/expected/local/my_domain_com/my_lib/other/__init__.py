@@ -48,10 +48,13 @@ class OtherExecution:
         action: Other,
         scheduler: literal.Scheduler,
         guarantees: OtherGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.join_for_move_position_source_to_position_holder = literal.Join(2)
 
     def accept_for_empty_rule_position_source__global_position_a(self):
@@ -61,6 +64,9 @@ class OtherExecution:
         self.move_position_source_to_position_holder()
 
     def destroy_position_source__global_position_a(self):
+        literal.continue_destruction(self.continue_destroy_position_source__global_position_a)
+
+    def continue_destroy_position_source__global_position_a(self):
         self.action.get_interface_position(
             "position<source>"
         ).particle.get_position(

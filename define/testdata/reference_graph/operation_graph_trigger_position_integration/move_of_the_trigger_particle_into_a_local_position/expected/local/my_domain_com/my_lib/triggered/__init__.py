@@ -32,10 +32,13 @@ class TriggeredExecution:
         action: Triggered,
         scheduler: literal.Scheduler,
         guarantees: TriggeredGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
             scheduler=self.scheduler,
@@ -52,4 +55,7 @@ class TriggeredExecution:
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
     def destroy_position_local(self):
+        literal.continue_destruction(self.continue_destroy_position_local)
+
+    def continue_destroy_position_local(self):
         self.local_position_local.destroy_particle()

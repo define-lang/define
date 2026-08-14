@@ -43,10 +43,13 @@ class MiddleExecution:
         action: Middle,
         scheduler: literal.Scheduler,
         guarantees: MiddleGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_position_gw__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_trigger_position_gw__global_action_inner__when_empty_position_holder__global_position_a = literal.Join(2)
 
@@ -57,6 +60,9 @@ class MiddleExecution:
         self.create_position_gw__global_action_inner__position_trigger_pos()
 
     def destroy_position_gw__global_action_inner__position_holder__global_position_a(self):
+        literal.continue_destruction(self.continue_destroy_position_gw__global_action_inner__position_holder__global_position_a)
+
+    def continue_destroy_position_gw__global_action_inner__position_holder__global_position_a(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(

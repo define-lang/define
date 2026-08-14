@@ -38,10 +38,13 @@ class RightExecution:
         action: Right,
         scheduler: literal.Scheduler,
         guarantees: RightGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_global_action_right_child__execution: local.my_domain_com.my_lib.right_child.RightChildExecution
         self.join_for_trigger_global_action_right_child__for_empty_rule_global_position_marker = literal.Join(2)
         self.join_for_trigger_global_action_right_child__when_occupied_global_position_marker = literal.Join(2)
@@ -74,6 +77,7 @@ class RightExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_global_action_right_child,
+            destruction_connections=self.destruction_connections,
         )
 
     def trigger_global_action_right_child__for_empty_rule_global_position_marker(self):

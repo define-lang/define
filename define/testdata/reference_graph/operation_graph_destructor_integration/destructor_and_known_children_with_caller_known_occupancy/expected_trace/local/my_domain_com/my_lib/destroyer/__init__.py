@@ -46,6 +46,8 @@ class DestroyerExecution:
         caller_execution: object | None,
         action_name: str,
         guarantees: DestroyerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -54,6 +56,7 @@ class DestroyerExecution:
             action_name,
         )
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_holder_a = literal.LocalPosition(
             "position<holder_a>",
             scheduler=self.scheduler,
@@ -168,6 +171,9 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def destroy_position_run__global_position_marker_b(self):
+        literal.continue_destruction(self.continue_destroy_position_run__global_position_marker_b)
+
+    def continue_destroy_position_run__global_position_marker_b(self):
         self.action.get_interface_position(
             "position<run>"
         ).particle.get_position(
@@ -181,6 +187,9 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def destroy_position_run__global_position_marker_a(self):
+        literal.continue_destruction(self.continue_destroy_position_run__global_position_marker_a)
+
+    def continue_destroy_position_run__global_position_marker_a(self):
         self.action.get_interface_position(
             "position<run>"
         ).particle.get_position(
@@ -196,6 +205,9 @@ class DestroyerExecution:
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
             return
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()

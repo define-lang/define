@@ -97,7 +97,15 @@ class ActionStatementContext:
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
     operation_label: operation_graph_labeler.OperationLabel | None = None
-    destroy_if_occupied: bool = False
+    destruction_connection_name: str | None = None
+
+
+@dataclass
+class DestructionContinuationContext:
+    """A generated reference to one callee destruction continuation."""
+
+    execution_class: naming.ClassReference
+    member_name: str
 
 
 @dataclass
@@ -112,6 +120,26 @@ class ActionFragmentContext:
     execution_input_successor_method_names: list[str]
     guarantee_publication_names: list[str]
     dependency_count: int
+    continue_destroy_method_name: str | None
+    destruction_connection_names_to_complete: list[str]
+
+
+@dataclass
+class DestructionConnectionContext:
+    """One destruction connection created for a direct callee."""
+
+    member_name: str
+    destruction_continuation: DestructionContinuationContext
+    start_method_names: list[str]
+    expected_completions: int
+
+
+@dataclass
+class DestructionPositionContext:
+    """A caller-known position used by a contributed Destroy."""
+
+    member_name: str
+    position: PositionExpr
 
 
 @dataclass
@@ -123,6 +151,9 @@ class ActionTriggerContext:
     init_method_name: str
     execution_name: str
     child_guarantees_name: str | None
+    created_destruction_connections: list[DestructionConnectionContext]
+    destruction_connections_member_name: str | None
+    forwards_destruction_connections: bool
     trace_action_name: str | None = None
 
     @property
@@ -171,6 +202,7 @@ class TriggeredActionInputContext:
     callee_input_method_name: str
     method_name: str
     dependency_count: int
+    destruction_positions: list[DestructionPositionContext]
 
 
 @dataclass
@@ -184,21 +216,12 @@ class CallerInputContext:
 
 
 @dataclass
-class GuaranteeDestructorTriggerContext:
-    """One destructor Action Trigger fired by a guarantee."""
+class TriggerForDestroyedCalleeGuaranteeParticleContext:
+    """One Action Trigger for a destroyed callee-guaranteed particle."""
 
     method_name: str
-    destructor_execution_init_method: str
+    action_execution_init_method_name: str
     triggered_input_method_names: list[str]
-
-
-@dataclass
-class ActionTriggersContext:
-    """Generated members and methods for direct Action Triggers."""
-
-    action_triggers: list[ActionTriggerContext]
-    triggered_action_inputs: list[TriggeredActionInputContext]
-    guarantee_destructor_triggers: list[GuaranteeDestructorTriggerContext]
 
 
 @dataclass
@@ -209,8 +232,13 @@ class ActionExecutionContext:
     local_position_statements: list[ActionStatementContext]
     fragments: list[ActionFragmentContext]
     caller_inputs: list[CallerInputContext]
-    action_triggers: ActionTriggersContext
+    action_triggers: list[ActionTriggerContext]
+    triggers_for_destroyed_callee_guarantee_particles: list[
+        TriggerForDestroyedCalleeGuaranteeParticleContext
+    ]
+    triggered_action_inputs: list[TriggeredActionInputContext]
     guarantees: GuaranteesContext | None
+    accepts_destruction_connections: bool
     trace_operations: bool = False
     needs_action: bool = field(init=False)
 
@@ -233,7 +261,17 @@ class ActionExecutionContext:
         self.needs_action = any(
             triggered_action.action is not None
             and triggered_action.action.local_position_member_name is None
-            for triggered_action in self.action_triggers.action_triggers
+            for triggered_action in self.action_triggers
+        )
+
+    @property
+    def needs_tracing(self) -> bool:
+        """Whether generated code imports the tracing runtime."""
+        if not self.trace_operations:
+            return False
+        return any(
+            action_trigger.created_destruction_connections
+            for action_trigger in self.action_triggers
         )
 
     @property

@@ -9,13 +9,17 @@ import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import ClassVar, cast, override
+from typing import TYPE_CHECKING, ClassVar, Protocol, cast, final, override
+
+if TYPE_CHECKING:
+    import types
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
 _MAX_THREADS_ENV_VAR = "DEFINE_MAX_THREADS"
 
 type Task = Callable[[], None]
 type Tasks = Sequence[Task]
+type DestructionContinuation = Callable[..., None]
 
 
 class Join:
@@ -32,6 +36,110 @@ class Join:
     def arrive(self) -> bool:
         """Return true exactly once, on the final expected arrival."""
         return next(self._arrivals) == self._final_arrival
+
+
+class _DestructionExecution(Protocol):
+    destruction_connections: DestructionConnections | None
+
+
+def continue_destruction(continuation: types.MethodType):
+    """Run a destruction continuation after its caller-contributed work."""
+    execution = cast("_DestructionExecution", continuation.__self__)
+    destruction_continuation = continuation.__func__
+    if execution.destruction_connections is None:
+        continuation()
+        return
+    connection = execution.destruction_connections.connection(destruction_continuation)
+    if connection is None:
+        continuation()
+        return
+    connection.ready(continuation)
+
+
+class DestructionConnection:
+    """Caller destruction work inserted before a callee Destroy."""
+
+    _scheduler: Scheduler
+    _destruction_continuation: DestructionContinuation
+    _start_tasks: Tasks
+    # The destruction connection supplied by this Action Execution's caller.
+    _forwarded_connection: DestructionConnection | None
+    _completion_join: Join | None
+    _continuation: types.MethodType | None
+
+    def __init__(
+        self,
+        scheduler: Scheduler,
+        destruction_continuation: DestructionContinuation,
+        expected_completions: int,
+        *start_tasks: Task,
+        forwarded_connection: DestructionConnection | None = None,
+    ):
+        """Initialize local destruction work and an optional forwarded connection."""
+        if not start_tasks:
+            raise ValueError("a destruction connection requires local work")
+        if expected_completions <= 0:
+            raise ValueError("expected completions must be positive")
+        self._scheduler = scheduler
+        self._destruction_continuation = destruction_continuation
+        self._start_tasks = start_tasks
+        self._forwarded_connection = forwarded_connection
+        arrivals = expected_completions + (forwarded_connection is not None)
+        self._completion_join = Join(arrivals) if arrivals > 1 else None
+        self._continuation = None
+
+    @property
+    def destruction_continuation(self) -> DestructionContinuation:
+        """Return the generated continuation preceded by this work."""
+        return self._destruction_continuation
+
+    def ready(self, continuation: types.MethodType):
+        """Start the connected work and run ``continuation`` after it completes."""
+        if self._continuation is not None:
+            raise RuntimeError("a destruction connection can only become ready once")
+        self._continuation = continuation
+        if self._forwarded_connection is None:
+            self._scheduler.continue_with(self._start_tasks)
+            return
+        self._scheduler.submit_all(self._start_tasks)
+        self._forwarded_connection.ready(self.complete)
+
+    def complete(self):
+        """Record one terminal completion from connected work."""
+        if self._continuation is None:
+            raise RuntimeError("a destruction connection is not ready")
+        if self._completion_join is not None and not self._completion_join.arrive():
+            return
+        self._continuation()
+
+
+@final
+class DestructionConnections:
+    """Locally added destruction connections over a forwarded interface."""
+
+    def __init__(
+        self,
+        *connections: DestructionConnection,
+        direct: DestructionConnections | None = None,
+    ):
+        """Initialize one local connection layer over ``direct``."""
+        self._direct = direct
+        self._local = {
+            connection.destruction_continuation: connection
+            for connection in connections
+        }
+
+    def connection(
+        self, destruction_continuation: DestructionContinuation
+    ) -> DestructionConnection | None:
+        """Return the nearest connection for a generated continuation."""
+        current: DestructionConnections | None = self
+        while current is not None:
+            connection = current._local.get(destruction_continuation)
+            if connection is not None:
+                return connection
+            current = current._direct
+        return None
 
 
 class Scheduler:
@@ -165,15 +273,6 @@ class Scheduler:
         /,
     ):
         """Observe completion of a Destroy."""
-
-    def destroy_if_occupied_completed(
-        self,
-        _execution: object | None,
-        _position_name: str,
-        _occurrence: int,
-        /,
-    ):
-        """Observe completion of a conditional Destroy."""
 
     def start(self, entry_point: type[EntryPoint]):
         """Execute the Define program startup sequence once."""
@@ -482,11 +581,6 @@ class Position(ABC):
         if self._particle is None:
             raise NoParticleError(self.name)
         self._particle = None
-
-    def destroy_particle_if_occupied(self):
-        """Destroy this position's particle if it has one."""
-        if self._particle is not None:
-            self.destroy_particle()
 
     def _after_particle_arrived(self):  # noqa: B027
         """Run after a particle arrives. Override in subclasses."""

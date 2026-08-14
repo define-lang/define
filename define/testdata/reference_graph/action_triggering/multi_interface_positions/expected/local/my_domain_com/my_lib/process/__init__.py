@@ -41,10 +41,13 @@ class ProcessExecution:
         action: Process,
         scheduler: literal.Scheduler,
         guarantees: ProcessGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
@@ -64,6 +67,9 @@ class ProcessExecution:
         self.local_position_result.destroy_particle()
 
     def destroy_position_input(self):
+        literal.continue_destruction(self.continue_destroy_position_input)
+
+    def continue_destroy_position_input(self):
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()

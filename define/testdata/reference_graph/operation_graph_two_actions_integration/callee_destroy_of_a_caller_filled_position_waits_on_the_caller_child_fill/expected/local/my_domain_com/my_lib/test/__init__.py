@@ -53,7 +53,10 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.trigger_position_gateway__global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item__global_position_deep = literal.Join(2)
+        self.destruction_connection_trigger_position_gateway__global_action_other: literal.DestructionConnection
+        self.trigger_position_gateway__global_action_other_destruction_connections: literal.DestructionConnections
+        self.destruction_position_position_gateway__global_action_other__position_input__global_position_item__global_position_deep: literal.Position
+        self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item = literal.Join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -90,7 +93,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.deep.Deep
         ).create_particle()
-        self.trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item__global_position_deep()
+        self.trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item()
 
     def create_position_gateway__global_action_other__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -101,10 +104,22 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_trigger_position_gateway__global_action_other__execution()
-        self.scheduler.submit(self.trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item__global_position_deep)
         self.trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item()
 
+    def destroy_position_gateway__global_action_other__position_input__global_position_item__global_position_deep(self):
+        self.destruction_position_position_gateway__global_action_other__position_input__global_position_item__global_position_deep.destroy_particle()
+        self.destruction_connection_trigger_position_gateway__global_action_other.complete()
+
     def init_trigger_position_gateway__global_action_other__execution(self):
+        self.destruction_connection_trigger_position_gateway__global_action_other = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.other.OtherExecution.continue_destroy_position_input__global_position_item,
+            1,
+            self.destroy_position_gateway__global_action_other__position_input__global_position_item__global_position_deep,
+        )
+        self.trigger_position_gateway__global_action_other_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_position_gateway__global_action_other,
+        )
         action = self.action.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
@@ -114,12 +129,21 @@ class TestExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_position_gateway__global_action_other,
+            destruction_connections=self.trigger_position_gateway__global_action_other_destruction_connections,
         )
 
-    def trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item__global_position_deep(self):
-        if not self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item__global_position_deep.arrive():
-            return
-        self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_input__global_position_item__global_position_deep()
-
     def trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item(self):
+        if not self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_input__global_position_item.arrive():
+            return
+        self.destruction_position_position_gateway__global_action_other__position_input__global_position_item__global_position_deep = self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.item.Item
+        ).particle.get_position(
+            local.my_domain_com.my_lib.deep.Deep
+        )
         self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_input__global_position_item()

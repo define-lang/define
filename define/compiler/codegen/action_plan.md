@@ -83,15 +83,16 @@ fragmentation, resolution:
 2. Records each caller input and the Particle Operations that consume it.
 3. Resolves every direct callee input through its `ActionTrigger`, recording its
    dependencies in the caller and the caller inputs that consume it.
-4. Associates each resolved Action Trigger with the Particle Operation,
-   guarantee, or caller requirement that fires it.
+4. Associates each resolved Action Trigger with its trigger operation,
+   represented in the caller's Operation Graph by a `PositionOperationNode`,
+   `GuaranteeNode`, or `RequirementNode`.
 
 `ResolvedActionTriggers` retains all resolved Action Triggers and provides the
-reverse indexes required by planning. Action Triggers fired by Particle
-Operations are indexed by their firing operation. Destructor Action Triggers
-fired by guarantees are indexed by their `GuaranteeNode`. A destructor on a
-child of a particle from the caller is attached to the corresponding caller
-input.
+reverse indexes required by planning. An Action Trigger whose trigger operation
+is a `PositionOperationNode` is indexed by that operation. A destructor Action
+Trigger whose trigger operation is represented by a `GuaranteeNode` retains that
+node. A destructor on a child of a particle from the caller is attached to the
+corresponding caller input.
 
 `ResolvedAction` is independent of whether the action will execute directly or
 be triggered. The planner applies that compilation-context decision after
@@ -103,12 +104,11 @@ compute a transitive reduction, or expand the complete program graph.
 ## Action Triggers and Guarantees
 
 An `ActionTrigger` describes wiring rather than a synchronous call boundary. Its
-`trigger_operation` records what makes the Action Trigger happen:
+`trigger_operation` records the operation that triggers it:
 
-- a `PositionOperationNode` for an Action Trigger fired by a Particle Operation
-  in the action body;
-- a `GuaranteeNode` for a destructor on a particle supplied by a callee
-  guarantee; or
+- a `PositionOperationNode` for a Particle Operation in the action body;
+- a `GuaranteeNode` standing in for the Particle Operation in a callee's
+  Operation Graph; or
 - a `RequirementNode` for a destructor on a child of a particle supplied by the
   caller.
 
@@ -194,7 +194,7 @@ only that guarantee's callee chain and never visits sibling guarantees. Codegen
 does not flatten descendant guarantees or enumerate contextual guarantees merely
 to define an action's execution API.
 
-### Destructors fired by guarantees
+### Destructor trigger operations represented by guarantees
 
 When an action creates or moves a particle in one of its positions, the caller
 may know that particle only through the resulting guarantee. If the particle has
@@ -202,11 +202,12 @@ a destructor and the caller destroys it, the validator records an ordinary
 Action Trigger whose `trigger_operation` is that `GuaranteeNode`.
 
 The resolver first resolves every destructor input exactly like the inputs of
-any other triggered action. The planner then resolves the firing `GuaranteeNode`
-to a `GuaranteePath` and records a `GuaranteeDestructorTrigger` containing:
+any other triggered action. The planner then resolves the trigger operation's
+`GuaranteeNode` to a `GuaranteePath` and records a
+`TriggerForDestroyedCalleeGuaranteeParticle` containing:
 
 - the destructor's ordinary `ActionTrigger`;
-- the guarantee path that fires it; and
+- the guarantee path to the trigger operation; and
 - the ordinary `TriggeredActionInput` values for the destructor.
 
 Codegen registers one generated callback on the task list at the end of that

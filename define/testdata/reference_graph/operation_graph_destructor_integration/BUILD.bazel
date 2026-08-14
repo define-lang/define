@@ -6,6 +6,8 @@ _TRACING_TESTDATA_EXCLUDES = [
 ]
 
 _CODEGEN_TESTDATA_EXCLUDES = [
+    "auto_destruction_of_child_with_caller_known_destructor/**",
+    "caller_contributed_child_destructor_depends_on_callee_guarantee/**",
     "destructor_known_only_two_callers_up/**",
     "destructor_on_particle_from_callee_guarantee/**",
     "destructor_with_children_known_only_two_callers_up/**",

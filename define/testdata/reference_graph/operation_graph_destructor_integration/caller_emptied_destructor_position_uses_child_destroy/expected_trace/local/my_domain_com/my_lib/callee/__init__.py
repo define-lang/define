@@ -44,6 +44,8 @@ class CalleeExecution:
         caller_execution: object | None,
         action_name: str,
         guarantees: CalleeGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -52,6 +54,7 @@ class CalleeExecution:
             action_name,
         )
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         guarantees.trigger_position_src__global_action_destructor.guarantee_global_position_marker.append(
             self.destroy_position_src
         )
@@ -72,6 +75,9 @@ class CalleeExecution:
     def destroy_position_src(self):
         if not self.join_for_destroy_position_src.arrive():
             return
+        literal.continue_destruction(self.continue_destroy_position_src)
+
+    def continue_destroy_position_src(self):
         self.action.get_interface_position(
             "position<src>"
         ).destroy_particle()

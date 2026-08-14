@@ -18,6 +18,7 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     operation_graph_action_resolver,
     operation_graph_labeler,
+    operation_graph_model,
 )
 
 
@@ -29,6 +30,10 @@ class GeneratedExecution:
     input_method_names: dict[operation_graph_action_resolver.CallerInput, str]
     guarantee_interface: action_context.GuaranteeInterface | None
     execute_method_names: list[str]
+    destruction_continuations: dict[
+        operation_graph_model.DestructionFactDestroyNode,
+        template_context.DestructionContinuationContext,
+    ]
 
 
 @typing.final
@@ -63,13 +68,16 @@ class ActionExecutionGenerator:
             self._plan,
             self._generated_actions,
         ).generate()
-        block_generator = action_statements.ActionStatementsGenerator(
+        statement_generator = action_statements.ActionStatementsGenerator(
             self._definition,
             self._converter,
             names.local_positions,
+            names.destruction_positions,
+            self._plan.destruction_connection_by_operation,
+            names.destruction_connections,
             self._operation_labels,
         )
-        local_position_statements = block_generator.build_local_positions()
+        local_position_statements = statement_generator.build_local_positions()
         guarantees = action_guarantees.ActionGuaranteesGenerator(
             self._definition,
             self._converter,
@@ -77,7 +85,7 @@ class ActionExecutionGenerator:
             self._generated_actions,
             names,
         ).generate()
-        generated_action_triggers = action_trigger.ActionTriggerGenerator(
+        action_trigger_contexts = action_trigger.ActionTriggerGenerator(
             self._definition,
             self._converter,
             self._generated_actions,
@@ -85,8 +93,16 @@ class ActionExecutionGenerator:
             self._operation_labels,
             names,
             guarantees.interface,
-            block_generator,
+            statement_generator,
         ).generate()
+        triggered_action_input_contexts = self._generate_triggered_action_inputs(
+            names,
+            statement_generator,
+        )
+        triggers_for_destroyed_callee_guarantee_particle_contexts = (
+            self._generate_triggers_for_destroyed_callee_guarantee_particles(names)
+        )
+        destruction_continuations = self._generate_destruction_continuations(names)
         context = template_context.ActionExecutionContext(
             execution_class_name=self._converter.execution_class_name(
                 self._definition.typed_name.name_content.path.relative_path
@@ -94,12 +110,18 @@ class ActionExecutionGenerator:
             local_position_statements=local_position_statements,
             fragments=self._generate_fragments(
                 names,
-                guarantees.interface,
-                block_generator,
+                statement_generator,
             ),
             caller_inputs=self._generate_caller_inputs(names),
-            action_triggers=generated_action_triggers,
+            action_triggers=action_trigger_contexts,
+            triggers_for_destroyed_callee_guarantee_particles=(
+                triggers_for_destroyed_callee_guarantee_particle_contexts
+            ),
+            triggered_action_inputs=triggered_action_input_contexts,
             guarantees=guarantees.context,
+            accepts_destruction_connections=(
+                self._plan.accepts_destruction_connections
+            ),
             trace_operations=self._operation_labels is not None,
         )
         return GeneratedExecution(
@@ -109,21 +131,51 @@ class ActionExecutionGenerator:
             execute_method_names=[
                 names.fragments[fragment] for fragment in self._plan.execute_fragments
             ],
+            destruction_continuations=destruction_continuations,
         )
+
+    def _generate_destruction_continuations(
+        self,
+        names: action_names.ActionNames,
+    ) -> dict[
+        operation_graph_model.DestructionFactDestroyNode,
+        template_context.DestructionContinuationContext,
+    ]:
+        destruction_continuations: dict[
+            operation_graph_model.DestructionFactDestroyNode,
+            template_context.DestructionContinuationContext,
+        ] = {}
+        for fragment in self._plan.fragments:
+            if not isinstance(fragment, action_plan.DestructionActionFragment):
+                continue
+            operation = fragment.destruction_operation
+            destruction_continuations[operation] = (
+                template_context.DestructionContinuationContext(
+                    execution_class=self._converter.execution_class_reference(
+                        self._definition.typed_name
+                    ),
+                    member_name=names.continue_destroy_methods[fragment],
+                )
+            )
+        return destruction_continuations
 
     def _generate_fragments(
         self,
         names: action_names.ActionNames,
-        guarantee_interface: action_context.GuaranteeInterface | None,
         statement_generator: action_statements.ActionStatementsGenerator,
     ) -> list[template_context.ActionFragmentContext]:
-        guarantee_names_by_operation = (
-            guarantee_interface.guarantee_names_by_operation
-            if guarantee_interface is not None
-            else {}
-        )
         fragments: list[template_context.ActionFragmentContext] = []
         for fragment in self._plan.fragments:
+            destruction_connection_names_to_complete: list[str] = []
+            for connection in fragment.destruction_connections_to_complete:
+                destruction_connection_names_to_complete.append(
+                    names.destruction_connections[connection]
+                )
+            guarantee_publication_names: list[str] = []
+            for publication in fragment.guarantee_publications:
+                guarantee_publication_names.append(
+                    names.guarantee_publications[publication]
+                )
             fragments.append(
                 template_context.ActionFragmentContext(
                     method_name=names.fragments[fragment],
@@ -147,11 +199,14 @@ class ActionExecutionGenerator:
                         names.triggered_inputs[triggered_input]
                         for triggered_input in fragment.execution_input_successors
                     ],
-                    guarantee_publication_names=[
-                        guarantee_names_by_operation[publication.operation]
-                        for publication in fragment.guarantee_publications
-                    ],
+                    guarantee_publication_names=guarantee_publication_names,
                     dependency_count=fragment.dependency_count,
+                    continue_destroy_method_name=names.continue_destroy_methods.get(
+                        fragment
+                    ),
+                    destruction_connection_names_to_complete=(
+                        destruction_connection_names_to_complete
+                    ),
                 )
             )
         return fragments
@@ -161,7 +216,7 @@ class ActionExecutionGenerator:
     ) -> list[template_context.CallerInputContext]:
         return [
             template_context.CallerInputContext(
-                input_method_name=names.caller_inputs[caller_input.resolved_input],
+                input_method_name=names.caller_inputs[caller_input.caller_input],
                 fragment_method_names=[
                     names.fragments[fragment] for fragment in caller_input.fragments
                 ],
@@ -176,3 +231,65 @@ class ActionExecutionGenerator:
             )
             for caller_input in self._plan.caller_inputs
         ]
+
+    def _generate_triggered_action_inputs(
+        self,
+        names: action_names.ActionNames,
+        statement_generator: action_statements.ActionStatementsGenerator,
+    ) -> list[template_context.TriggeredActionInputContext]:
+        triggered_action_inputs: list[template_context.TriggeredActionInputContext] = []
+        for triggered_input in self._plan.triggered_action_inputs:
+            trigger = triggered_input.action_trigger
+            triggered_action_inputs.append(
+                template_context.TriggeredActionInputContext(
+                    triggered_action_execution_name=(
+                        names.triggered_actions[trigger].execution_name
+                    ),
+                    callee_input_method_name=self._generated_actions[
+                        trigger.callee_action_name
+                    ].input_method_names[triggered_input.callee_input],
+                    method_name=names.triggered_inputs[triggered_input],
+                    dependency_count=triggered_input.dependency_count,
+                    destruction_positions=[
+                        template_context.DestructionPositionContext(
+                            member_name=names.destruction_positions[operation],
+                            position=statement_generator.build_position(
+                                operation.target
+                            ),
+                        )
+                        for operation in triggered_input.contributed_destruction_operations
+                    ],
+                )
+            )
+        return triggered_action_inputs
+
+    def _generate_triggers_for_destroyed_callee_guarantee_particles(
+        self,
+        names: action_names.ActionNames,
+    ) -> list[template_context.TriggerForDestroyedCalleeGuaranteeParticleContext]:
+        contexts: list[
+            template_context.TriggerForDestroyedCalleeGuaranteeParticleContext
+        ] = []
+        for (
+            trigger_for_destroyed_callee_guarantee_particle
+        ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
+            triggered_action_names = names.triggered_actions[
+                trigger_for_destroyed_callee_guarantee_particle.action_trigger
+            ]
+            triggered_input_method_names: list[str] = []
+            for (
+                triggered_input
+            ) in trigger_for_destroyed_callee_guarantee_particle.triggered_inputs:
+                triggered_input_method_names.append(
+                    names.triggered_inputs[triggered_input]
+                )
+            contexts.append(
+                template_context.TriggerForDestroyedCalleeGuaranteeParticleContext(
+                    method_name=triggered_action_names.canonical_name,
+                    action_execution_init_method_name=(
+                        triggered_action_names.initializer_name
+                    ),
+                    triggered_input_method_names=triggered_input_method_names,
+                )
+            )
+        return contexts

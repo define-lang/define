@@ -42,15 +42,21 @@ class RunnerExecution:
         action: Runner,
         scheduler: literal.Scheduler,
         guarantees: RunnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_wrap__global_position_mid__global_position_leaf(self):
         self.destroy_position_wrap__global_position_mid__global_position_leaf()
 
     def destroy_position_wrap__global_position_mid__global_position_leaf(self):
+        literal.continue_destruction(self.continue_destroy_position_wrap__global_position_mid__global_position_leaf)
+
+    def continue_destroy_position_wrap__global_position_mid__global_position_leaf(self):
         self.action.get_interface_position(
             "position<wrap>"
         ).particle.get_position(

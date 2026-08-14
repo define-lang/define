@@ -42,23 +42,24 @@ class ActionTriggerGenerator:
         self._guarantee_interface = guarantee_interface
         self._statement_generator = statement_generator
 
-    def generate(self) -> template_context.ActionTriggersContext:
-        """Generate the template context for direct Action Triggers."""
-        return template_context.ActionTriggersContext(
-            action_triggers=self._generate_action_triggers(),
-            triggered_action_inputs=self._generate_triggered_inputs(),
-            guarantee_destructor_triggers=(
-                self._generate_guarantee_destructor_triggers()
-            ),
-        )
-
-    def _generate_action_triggers(
-        self,
-    ) -> list[template_context.ActionTriggerContext]:
+    def generate(self) -> list[template_context.ActionTriggerContext]:
+        """Generate direct Action Trigger contexts."""
         action_triggers: list[template_context.ActionTriggerContext] = []
-        for trigger in self._plan.action_triggers:
+        for planned_trigger in self._plan.action_triggers:
+            trigger = planned_trigger.action_trigger
             action_trigger_names = self._names.triggered_actions[trigger]
             generated_callee = self._generated_actions[trigger.callee_action_name]
+            destruction_connections = planned_trigger.created_destruction_connections
+            created_destruction_connections = (
+                self._generate_created_destruction_connections(destruction_connections)
+            )
+            destruction_connections_member_name = None
+            if destruction_connections:
+                destruction_connections_member_name = (
+                    self._names.triggered_destruction_connections[trigger]
+                )
+            elif planned_trigger.forwards_destruction_connections:
+                destruction_connections_member_name = "destruction_connections"
             action = None
             if generated_callee.context.execution.needs_action:
                 action = self._statement_generator.build_action(trigger.callee)
@@ -78,6 +79,13 @@ class ActionTriggerGenerator:
                     init_method_name=action_trigger_names.initializer_name,
                     execution_name=action_trigger_names.execution_name,
                     child_guarantees_name=child_guarantees_name,
+                    created_destruction_connections=created_destruction_connections,
+                    destruction_connections_member_name=(
+                        destruction_connections_member_name
+                    ),
+                    forwards_destruction_connections=(
+                        planned_trigger.forwards_destruction_connections
+                    ),
                     trace_action_name=(
                         self._operation_labels.triggered_action_execution_name(
                             self._definition.typed_name,
@@ -90,41 +98,25 @@ class ActionTriggerGenerator:
             )
         return action_triggers
 
-    def _generate_triggered_inputs(
+    def _generate_created_destruction_connections(
         self,
-    ) -> list[template_context.TriggeredActionInputContext]:
-        triggered_action_inputs: list[template_context.TriggeredActionInputContext] = []
-        for triggered_input in self._plan.triggered_action_inputs:
-            trigger = triggered_input.action_trigger
-            triggered_action_inputs.append(
-                template_context.TriggeredActionInputContext(
-                    triggered_action_execution_name=(
-                        self._names.triggered_actions[trigger].execution_name
-                    ),
-                    callee_input_method_name=self._generated_actions[
-                        trigger.callee_action_name
-                    ].input_method_names[triggered_input.callee_input],
-                    method_name=self._names.triggered_inputs[triggered_input],
-                    dependency_count=triggered_input.dependency_count,
+        destruction_connections: list[action_plan.DestructionConnection],
+    ) -> list[template_context.DestructionConnectionContext]:
+        contexts: list[template_context.DestructionConnectionContext] = []
+        for connection in destruction_connections:
+            callee_destroy = connection.callee_destroy
+            destruction_continuation = self._generated_actions[
+                callee_destroy.action
+            ].destruction_continuations[callee_destroy.operation]
+            contexts.append(
+                template_context.DestructionConnectionContext(
+                    member_name=self._names.destruction_connections[connection],
+                    destruction_continuation=destruction_continuation,
+                    start_method_names=[
+                        self._names.fragments[fragment]
+                        for fragment in connection.first_fragments_of_destructions
+                    ],
+                    expected_completions=len(connection.completion_fragments),
                 )
             )
-        return triggered_action_inputs
-
-    def _generate_guarantee_destructor_triggers(
-        self,
-    ) -> list[template_context.GuaranteeDestructorTriggerContext]:
-        return [
-            template_context.GuaranteeDestructorTriggerContext(
-                method_name=self._names.guarantee_destructor_triggers[
-                    destructor_trigger
-                ],
-                destructor_execution_init_method=self._names.triggered_actions[
-                    destructor_trigger.action_trigger
-                ].initializer_name,
-                triggered_input_method_names=[
-                    self._names.triggered_inputs[triggered_input]
-                    for triggered_input in destructor_trigger.triggered_inputs
-                ],
-            )
-            for destructor_trigger in self._plan.guarantee_destructor_triggers
-        ]
+        return contexts

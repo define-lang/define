@@ -12,6 +12,7 @@ from typing import final, override
 from define.runtime import literal
 
 if typing.TYPE_CHECKING:
+    import types
     from collections.abc import Sequence
 
 _OPERATION_TRACE_FILE_ENV_VAR = "DEFINE_OPERATION_TRACE_FILE"
@@ -34,6 +35,27 @@ class OperationTraceRecord:
     source: str | None
     target: str
     occurrence: int
+
+
+class _TraceExecutionProvider(typing.Protocol):
+    trace_execution: ActionExecutionIdentity
+
+
+@final
+class DestructionConnection(literal.DestructionConnection):
+    """A destruction connection associated with one logical Action Execution."""
+
+    # ready() assigns this before any connected work can access it.
+    trace_execution: ActionExecutionIdentity  # pyright: ignore[reportUninitializedInstanceVariable]
+
+    @typing.override
+    def ready(self, continuation: types.MethodType):
+        """Capture the destroying Action Execution before starting connected work."""
+        trace_execution_provider = typing.cast(
+            "_TraceExecutionProvider", continuation.__self__
+        )
+        self.trace_execution = trace_execution_provider.trace_execution
+        super().ready(continuation)
 
 
 @final
@@ -115,23 +137,6 @@ class TracingScheduler(literal.Scheduler):
             occurrence,
         )
 
-    @override
-    def destroy_if_occupied_completed(
-        self,
-        execution: object | None,
-        position_name: str,
-        occurrence: int,
-        /,
-    ):
-        """Record a completed conditional Destroy."""
-        self._operation_completed(
-            execution,
-            "destroy_if_occupied",
-            None,
-            position_name,
-            occurrence,
-        )
-
     def _operation_completed(
         self,
         execution: object | None,
@@ -140,9 +145,13 @@ class TracingScheduler(literal.Scheduler):
         target: str,
         occurrence: int,
     ):
+        if execution is None:
+            raise ValueError("trace execution is required")
+        if not isinstance(execution, ActionExecutionIdentity):
+            raise TypeError("invalid trace execution type")
         self._records.append(
             OperationTraceRecord(
-                typing.cast("ActionExecutionIdentity", execution),
+                execution,
                 operation_name,
                 source,
                 target,

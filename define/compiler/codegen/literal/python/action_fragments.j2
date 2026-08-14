@@ -1,5 +1,32 @@
 {% from "action_statements.j2" import action_statements %}
 {% from "method_invocation.j2" import invoke_method %}
+{% macro action_fragment_body(fragment) %}
+{{ action_statements(fragment.statements) -}}
+        {% for init_method_name in fragment.triggered_action_successor_init_method_names %}
+        self.{{ init_method_name }}()
+        {% endfor %}
+        {% for successor_method_name in fragment.successor_fragment_method_names %}
+            {% set has_later = not loop.last or fragment.triggered_input_successor_method_names or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names or fragment.destruction_connection_names_to_complete %}
+        {{ invoke_method(successor_method_name, submit=has_later) }}
+        {% endfor %}
+        {% for method_name in fragment.triggered_input_successor_method_names %}
+            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names or fragment.destruction_connection_names_to_complete %}
+        {{ invoke_method(method_name, submit=has_later) }}
+        {% endfor %}
+        {% for publication_name in fragment.guarantee_publication_names %}
+            {% if loop.last and not fragment.execution_input_successor_method_names and not fragment.destruction_connection_names_to_complete %}
+        self.scheduler.continue_with(self.guarantees.{{ publication_name }})
+            {% else %}
+        self.scheduler.submit_all(self.guarantees.{{ publication_name }})
+            {% endif %}
+        {% endfor %}
+        {% for method_name in fragment.execution_input_successor_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last or fragment.destruction_connection_names_to_complete) }}
+        {% endfor %}
+        {% for connection_name in fragment.destruction_connection_names_to_complete %}
+        {{ invoke_method(connection_name ~ ".complete", submit=not loop.last) }}
+        {% endfor %}
+{% endmacro %}
 {% macro action_fragment_methods(fragments) %}
     {% for fragment in fragments %}
 
@@ -8,27 +35,15 @@
         if not self.join_for_{{ fragment.method_name }}.arrive():
             return
         {% endif %}
-{{ action_statements(fragment.statements) -}}
-        {% for init_method_name in fragment.triggered_action_successor_init_method_names %}
-        self.{{ init_method_name }}()
-        {% endfor %}
-        {% for successor_method_name in fragment.successor_fragment_method_names %}
-            {% set has_later = not loop.last or fragment.triggered_input_successor_method_names or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names %}
-        {{ invoke_method(successor_method_name, submit=has_later) }}
-        {% endfor %}
-        {% for method_name in fragment.triggered_input_successor_method_names %}
-            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names %}
-        {{ invoke_method(method_name, submit=has_later) }}
-        {% endfor %}
-        {% for publication_name in fragment.guarantee_publication_names %}
-            {% if loop.last and not fragment.execution_input_successor_method_names %}
-        self.scheduler.continue_with(self.guarantees.{{ publication_name }})
-            {% else %}
-        self.scheduler.submit_all(self.guarantees.{{ publication_name }})
-            {% endif %}
-        {% endfor %}
-        {% for method_name in fragment.execution_input_successor_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
+        {% if fragment.continue_destroy_method_name %}
+        literal.continue_destruction(self.{{ fragment.continue_destroy_method_name }})
+        {% else %}
+{{ action_fragment_body(fragment) -}}
+        {% endif %}
+    {% if fragment.continue_destroy_method_name %}
+
+    def {{ fragment.continue_destroy_method_name }}(self):
+{{ action_fragment_body(fragment) -}}
+    {% endif %}
     {% endfor %}
 {% endmacro %}

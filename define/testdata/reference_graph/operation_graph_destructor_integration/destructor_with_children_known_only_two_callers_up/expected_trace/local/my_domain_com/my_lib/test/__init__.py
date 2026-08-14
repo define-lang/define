@@ -3,7 +3,9 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
+import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct
 import local.my_domain_com.my_lib.extra
 import local.my_domain_com.my_lib.marker_a
@@ -60,7 +62,13 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.trigger_global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.destruction_connection_trigger_global_action_middle: tracing.DestructionConnection
+        self.trigger_global_action_middle_destruction_connections: literal.DestructionConnections
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_b: literal.Position
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_a: literal.Position
+        self.destruction_position_global_action_middle__position_run__global_position_extra: literal.Position
         self.join_for_move_position_source_to_global_action_middle__position_run = literal.Join(2)
+        self.join_for_destroy_global_action_middle__position_run__global_position_extra = literal.Join(2)
         self.join_for_trigger_global_action_middle__for_empty_rule_position_run = literal.Join(2)
 
     def create_position_source(self):
@@ -127,7 +135,46 @@ class TestExecution:
         self.scheduler.submit(self.trigger_global_action_middle__for_empty_rule_position_run)
         self.trigger_global_action_middle__for_empty_rule_position_run()
 
+    def destroy_global_action_middle__position_run__global_position_extra__global_position_marker_b(self):
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_b.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.destruction_connection_trigger_global_action_middle.trace_execution,
+            "run::/extra::/marker_b",
+            1,
+        )
+        self.destroy_global_action_middle__position_run__global_position_extra()
+
+    def destroy_global_action_middle__position_run__global_position_extra__global_position_marker_a(self):
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_a.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.destruction_connection_trigger_global_action_middle.trace_execution,
+            "run::/extra::/marker_a",
+            1,
+        )
+        self.destroy_global_action_middle__position_run__global_position_extra()
+
+    def destroy_global_action_middle__position_run__global_position_extra(self):
+        if not self.join_for_destroy_global_action_middle__position_run__global_position_extra.arrive():
+            return
+        self.destruction_position_global_action_middle__position_run__global_position_extra.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.destruction_connection_trigger_global_action_middle.trace_execution,
+            "run::/extra",
+            1,
+        )
+        self.destruction_connection_trigger_global_action_middle.complete()
+
     def init_trigger_global_action_middle__execution(self):
+        self.destruction_connection_trigger_global_action_middle = tracing.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run,
+            1,
+            self.destroy_global_action_middle__position_run__global_position_extra__global_position_marker_b,
+            self.destroy_global_action_middle__position_run__global_position_extra__global_position_marker_a,
+        )
+        self.trigger_global_action_middle_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_global_action_middle,
+        )
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         )
@@ -137,9 +184,35 @@ class TestExecution:
             self.trace_execution,
             "middle",
             self.guarantees.trigger_global_action_middle,
+            destruction_connections=self.trigger_global_action_middle_destruction_connections,
         )
 
     def trigger_global_action_middle__for_empty_rule_position_run(self):
         if not self.join_for_trigger_global_action_middle__for_empty_rule_position_run.arrive():
             return
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_b = self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerB
+        )
+        self.destruction_position_global_action_middle__position_run__global_position_extra__global_position_marker_a = self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_a.MarkerA
+        )
+        self.destruction_position_global_action_middle__position_run__global_position_extra = self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        )
         self.trigger_global_action_middle__execution.accept_for_empty_rule_position_run()

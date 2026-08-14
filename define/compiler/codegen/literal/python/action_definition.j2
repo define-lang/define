@@ -8,7 +8,7 @@ literal.EntryPoint
 literal.Action
     {%- endif -%}
 {%- endmacro %}
-{{ file_header(definition, needs_final=true, needs_override=definition.role.has_execute_method) }}
+{{ file_header(definition, needs_final=true, needs_override=definition.role.has_execute_method, needs_tracing=definition.execution.needs_tracing) }}
 
 class {{ definition.class_name }}({{ action_base_class(definition.role) }}):
     {% if definition.implied_qualities %}

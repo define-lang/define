@@ -9,10 +9,9 @@ import typing
 from dataclasses import dataclass
 from pathlib import Path
 
-from define.compiler import constants
+from define.compiler import ast, constants
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
     from define.compiler.data_structures import define_path
 
 _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
@@ -182,7 +181,7 @@ class NameConverter:
         return safe
 
     def execution_class_reference(
-        self, typed_global_name: ast.GlobalTypedNameReference
+        self, typed_global_name: ast.GlobalTypedName
     ) -> ClassReference:
         """Build a reference to one generated action execution class."""
         action_class = self.class_reference(typed_global_name)
@@ -266,12 +265,13 @@ class NameConverter:
             for implication in quality_implications
         ]
 
-    def class_reference(
-        self, typed_global_name: ast.GlobalTypedNameReference
-    ) -> ClassReference:
+    def class_reference(self, typed_global_name: ast.GlobalTypedName) -> ClassReference:
         """Build a reference to one generated global class."""
         name_content = typed_global_name.name_content
         cls_name = self.class_name(name_content.path.relative_path)
-        fqun = name_content.fqun or typed_global_name.enclosing_fqun
+        if isinstance(typed_global_name, ast.GlobalTypedNameReference):
+            fqun = typed_global_name.effective_fqun
+        else:
+            fqun = typing.cast("ast.DefinitionGlobalNameContent", name_content).fqun
         module_name = ".".join(self._module_name_parts(fqun, name_content.path))
         return ClassReference(class_name=cls_name, module_name=module_name)

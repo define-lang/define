@@ -53,6 +53,7 @@ py_test(
     size = "small",
     srcs = ["tracing_test.py"],
     deps = [
+        ":literal",
         ":tracing",
         "@pypi//pytest",
     ],

@@ -44,6 +44,8 @@ class MiddleExecution:
         caller_execution: object | None,
         action_name: str,
         guarantees: MiddleGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -52,8 +54,10 @@ class MiddleExecution:
             action_name,
         )
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_global_action_destroyer__execution: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.join_for_trigger_global_action_destroyer__for_empty_rule_position_run = literal.Join(2)
+        self.join_for_trigger_global_action_destroyer__when_occupied_position_run = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_action_destroyer__position_run()
@@ -76,8 +80,10 @@ class MiddleExecution:
         )
         self.init_trigger_global_action_destroyer__execution()
         self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_global_action_destroyer__when_occupied_position_run)
         self.scheduler.submit_all(self.guarantees.guarantee_position_run)
-        self.trigger_global_action_destroyer__for_empty_rule_position_run()
+        self.scheduler.submit(self.trigger_global_action_destroyer__for_empty_rule_position_run)
+        self.trigger_global_action_destroyer__when_occupied_position_run()
 
     def init_trigger_global_action_destroyer__execution(self):
         action = self.action.on_particle.get_action(
@@ -89,9 +95,15 @@ class MiddleExecution:
             self.trace_execution,
             "destroyer",
             self.guarantees.trigger_global_action_destroyer,
+            destruction_connections=self.destruction_connections,
         )
 
     def trigger_global_action_destroyer__for_empty_rule_position_run(self):
         if not self.join_for_trigger_global_action_destroyer__for_empty_rule_position_run.arrive():
             return
         self.trigger_global_action_destroyer__execution.accept_for_empty_rule_position_run()
+
+    def trigger_global_action_destroyer__when_occupied_position_run(self):
+        if not self.join_for_trigger_global_action_destroyer__when_occupied_position_run.arrive():
+            return
+        self.trigger_global_action_destroyer__execution.accept_when_occupied_position_run()

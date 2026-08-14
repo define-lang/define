@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import (
+        operation_graph_model,
         particle_tracker,
         quality_assignment,
     )
@@ -167,11 +168,16 @@ class ParticleOperationExecutor:
         self._tracker.move(op.source, op.target)
         return []
 
-    def execute_destroy(
+    def execute_destroy[BeforeDestroyResultT](
         self,
         op: Destroy,
-        before_destroy: Callable[[], None],
-    ) -> list[diagnostics.Diagnostic]:
+        before_destroy: Callable[[], BeforeDestroyResultT],
+        *,
+        destruction_fact: operation_graph_model.DestructionFact,
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        BeforeDestroyResultT | None,
+    ]:
         """Execute the Destroy operation.
 
         ``before_destroy`` runs only on the success path, immediately before the
@@ -186,28 +192,34 @@ class ParticleOperationExecutor:
         parent_diags = self._check_parents_occupied(op.target)
         if parent_diags:
             self._tracker.mark_error(op.target)
-            return parent_diags
+            return parent_diags, None
         if not self._tracker.is_occupied(op.target):
             self._tracker.mark_error(op.target)
             from_action = op.target.get_last_action()
             if from_action is not None:
                 emptied_by = self._tracker.get_emptied_by(op.target)
-                return [
-                    diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                return (
+                    [
+                        diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                            location=op.target.location,
+                            position_name=op.target.source_chained_name,
+                            inferred_at=emptied_by.location if emptied_by else None,
+                        )
+                    ],
+                    None,
+                )
+            return (
+                [
+                    diagnostics.DestroyInEmptyPositionDiagnostic(
                         location=op.target.location,
                         position_name=op.target.source_chained_name,
-                        inferred_at=emptied_by.location if emptied_by else None,
                     )
-                ]
-            return [
-                diagnostics.DestroyInEmptyPositionDiagnostic(
-                    location=op.target.location,
-                    position_name=op.target.source_chained_name,
-                )
-            ]
-        before_destroy()
-        self._tracker.destroy(op.target)
-        return []
+                ],
+                None,
+            )
+        before_destroy_result = before_destroy()
+        self._tracker.destroy_explicit(op.target, destruction_fact)
+        return [], before_destroy_result
 
     def _check_parents_occupied(
         self, target: ast.PositionReference

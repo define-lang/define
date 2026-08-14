@@ -87,4 +87,5 @@ class ActionDefinitionGenerator:
             context,
             generated_execution.input_method_names,
             generated_execution.guarantee_interface,
+            generated_execution.destruction_continuations,
         )

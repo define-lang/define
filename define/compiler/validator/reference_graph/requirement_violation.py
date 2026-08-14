@@ -160,9 +160,9 @@ def contract_destructor(
     cascade_req = action_contract.PositionRequirement(
         required_state=propagated_requirement.required_state,
         position=propagated_requirement.position.in_caller(
-            destruction_contract.destroyed_position_local
+            destruction_contract.destruction_fact.destroyed_position_in_destroyer
         ),
-        inferred_at=destruction_contract.destroyed_position_local.location,
+        inferred_at=destruction_contract.destruction_fact.destroyed_position_in_destroyer.location,
         enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
     )
@@ -195,11 +195,11 @@ def contract_destructor(
     if destruction_contract.is_auto_destruction:
         auto_step = _auto(
             _AutoDestruction(
-                local_position_name=destruction_contract.destroyed_position_local.source_form_in_universe(
+                local_position_name=destruction_contract.destruction_fact.destroyed_position_in_destroyer.source_form_in_universe(
                     enclosing_fqun
                 ),
-                containing_definition_name=destruction_contract.destroying_action.source_typed_name,
-                location=destruction_contract.destroyed_position_local.location,
+                containing_definition_name=destruction_contract.destruction_fact.destroying_action.source_typed_name,
+                location=destruction_contract.destruction_fact.destroyed_position_in_destroyer.location,
             )
         )
     steps = [

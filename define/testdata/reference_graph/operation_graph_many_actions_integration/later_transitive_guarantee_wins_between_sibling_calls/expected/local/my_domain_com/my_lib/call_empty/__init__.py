@@ -38,10 +38,13 @@ class CallEmptyExecution:
         action: CallEmpty,
         scheduler: literal.Scheduler,
         guarantees: CallEmptyGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_global_action_empty_item__execution: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
         self.join_for_trigger_global_action_empty_item__for_empty_rule_global_position_item = literal.Join(2)
 
@@ -69,6 +72,7 @@ class CallEmptyExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_global_action_empty_item,
+            destruction_connections=self.destruction_connections,
         )
 
     def trigger_global_action_empty_item__for_empty_rule_global_position_item(self):

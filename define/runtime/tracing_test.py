@@ -1,11 +1,76 @@
 """Tests for operation tracing."""
 
 import json
+import typing
 from pathlib import Path
 
 import pytest
 
-from define.runtime import tracing
+from define.runtime import literal, tracing
+
+
+@typing.final
+class _ContinuationExecution:
+    def __init__(
+        self,
+        trace_execution: tracing.ActionExecutionIdentity,
+        destruction_connections: literal.DestructionConnections,
+    ):
+        self.trace_execution = trace_execution
+        self.destruction_connections = destruction_connections
+        self.destroyed = False
+
+    def continue_destroy(self):
+        self.destroyed = True
+
+
+def test_destruction_connection_propagates_execution_through_forwarded_connections():
+    connections: list[tracing.DestructionConnection] = []
+    executions: list[_ContinuationExecution] = []
+
+    class Entry(literal.EntryPoint):
+        typed_name: typing.ClassVar[str] = "action<entry>"
+
+        @typing.override
+        def execute(self, scheduler: literal.Scheduler):
+            destruction_continuation = _ContinuationExecution.continue_destroy
+
+            def complete_forwarded_connection():
+                forwarded_connection.complete()
+
+            forwarded_connection = tracing.DestructionConnection(
+                scheduler,
+                destruction_continuation,
+                1,
+                complete_forwarded_connection,
+            )
+
+            def complete_local_connection():
+                local_connection.complete()
+
+            local_connection = tracing.DestructionConnection(
+                scheduler,
+                destruction_continuation,
+                1,
+                complete_local_connection,
+                forwarded_connection=forwarded_connection,
+            )
+            trace_execution = scheduler.execution_created(None, "test")
+            assert isinstance(trace_execution, tracing.ActionExecutionIdentity)
+            execution = _ContinuationExecution(
+                trace_execution,
+                literal.DestructionConnections(local_connection),
+            )
+            connections.extend((local_connection, forwarded_connection))
+            executions.append(execution)
+
+            literal.continue_destruction(execution.continue_destroy)
+
+    tracing.TracingScheduler(max_threads=2).start(Entry)
+
+    assert executions[0].destroyed
+    assert connections[0].trace_execution is executions[0].trace_execution
+    assert connections[1].trace_execution is executions[0].trace_execution
 
 
 def test_action_execution_identity_retains_each_caller():
@@ -31,7 +96,6 @@ def test_completion_hooks_retain_every_operation_in_order():
     scheduler.create_completed(execution, "item", 1)
     scheduler.move_completed(execution, "item", "destination", 1)
     scheduler.destroy_completed(execution, "destination", 1)
-    scheduler.destroy_if_occupied_completed(execution, "conditional", 1)
     scheduler.create_completed(execution, "item", 2)
 
     assert scheduler.records == [
@@ -48,13 +112,6 @@ def test_completion_hooks_retain_every_operation_in_order():
             "destroy",
             None,
             "destination",
-            1,
-        ),
-        tracing.OperationTraceRecord(
-            execution,
-            "destroy_if_occupied",
-            None,
-            "conditional",
             1,
         ),
         tracing.OperationTraceRecord(execution, "create", None, "item", 2),

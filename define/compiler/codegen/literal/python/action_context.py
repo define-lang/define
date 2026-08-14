@@ -62,10 +62,17 @@ class ActionDefinitionContext:
                 class_references.extend(position.class_references)
                 if statement.to_position is not None:
                     class_references.extend(statement.to_position.class_references)
-        for action_trigger in self.execution.action_triggers.action_triggers:
+        for action_trigger in self.execution.action_triggers:
+            class_references.extend(
+                connection.destruction_continuation.execution_class
+                for connection in action_trigger.created_destruction_connections
+            )
             if action_trigger.action is not None:
                 class_references.extend(action_trigger.action.class_references)
             class_references.append(action_trigger.execution_class)
+        for triggered_input in self.execution.triggered_action_inputs:
+            for destruction_position in triggered_input.destruction_positions:
+                class_references.extend(destruction_position.position.class_references)
         return sorted(
             {class_reference.module_name for class_reference in class_references}
         )
@@ -97,3 +104,7 @@ class GeneratedAction:
     context: ActionDefinitionContext
     input_method_names: dict[operation_graph_action_resolver.CallerInput, str]
     guarantee_interface: GuaranteeInterface | None
+    destruction_continuations: dict[
+        operation_graph_model.DestructionFactDestroyNode,
+        template_context.DestructionContinuationContext,
+    ]

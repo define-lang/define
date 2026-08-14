@@ -40,6 +40,25 @@ from define.compiler.validator.reference_graph import (
 )
 
 _LOC = ast.start_of_file_location()
+_FQUN = ast.Fqun(
+    multiverse=None,
+    authority=ast.Authority(name="my.domain.com", location=_LOC),
+    universe=ast.Universe(name="my_lib", location=_LOC),
+    location=_LOC,
+)
+
+
+def _action(path: str) -> ast.GlobalTypedNameReference:
+    return ast.GlobalTypedNameReference(
+        name_type=ast.NameType.ACTION,
+        name_content=ast.ReferenceGlobalNameContent(
+            fqun=None,
+            path=ast.GlobalPathName(name=path, location=_LOC),
+            location=_LOC,
+        ),
+        enclosing_fqun=_FQUN,
+        location=_LOC,
+    )
 
 
 def _ref(*names: str) -> ast.PositionReference:
@@ -66,6 +85,107 @@ def _operation_node(node_index: int) -> operation_graph_model.MoveNode:
     )
 
 
+def _destruction_contribution(
+    action: ast.GlobalTypedNameReference,
+    destruction_fact: operation_graph_model.DestructionFact,
+    destruction_position: tuple[str, ...],
+    node_id: int,
+) -> operation_graph_model.DestructionContributionNode:
+    trigger_operation = _operation_node(0)
+    trigger = operation_graph_model.ActionTrigger(
+        ast.ActionReference(typed_names=(action,), location=_LOC),
+        trigger_operation,
+        {},
+        action_parent_last_operation=trigger_operation,
+    )
+    return operation_graph_model.DestructionContributionNode(
+        node_id=node_id,
+        depends_on=(),
+        trigger=trigger,
+        destruction_fact=destruction_fact,
+        callee_destroy_position=destruction_position,
+    )
+
+
+def test_repeated_destruction_at_one_position_retains_distinct_facts():
+    action = _action("/test")
+    graph = operation_graph.OperationGraph(action)
+    destroyed_position = _ref("destroyed")
+    first_fact = operation_graph_model.DestructionFact(destroyed_position, action)
+    second_fact = operation_graph_model.DestructionFact(destroyed_position, action)
+    _ = graph.record_create(destroyed_position)
+    first_destroy = graph.record_destruction_fact_destroy(
+        first_fact,
+        destroyed_position,
+        (),
+        propagate_to_caller=True,
+    )
+    _ = graph.record_create(destroyed_position)
+    second_destroy = graph.record_destruction_fact_destroy(
+        second_fact,
+        destroyed_position,
+        (),
+        propagate_to_caller=True,
+    )
+    graphs = operation_graph.OperationGraphs()
+    graphs[action] = graph
+
+    first_contribution = _destruction_contribution(action, first_fact, (), 1)
+    second_contribution = _destruction_contribution(action, second_fact, (), 2)
+    resolved_first_destroy = graphs.resolve_destruction_dependency(
+        first_contribution
+    ).callee_destroy
+    resolved_second_destroy = graphs.resolve_destruction_dependency(
+        second_contribution
+    ).callee_destroy
+
+    assert resolved_first_destroy.operation is first_destroy
+    assert resolved_second_destroy.operation is second_destroy
+    assert resolved_first_destroy.action is action
+    assert resolved_second_destroy.action is action
+
+
+def test_destruction_operations_distinguish_parent_and_child_destroys():
+    action = _action("/test")
+    graph = operation_graph.OperationGraph(action)
+    parent = _ref("parent")
+    child = _ref("parent", "child")
+    destruction_fact = operation_graph_model.DestructionFact(parent, action)
+    _ = graph.record_create(parent)
+    _ = graph.record_create(child)
+    child_destroy = graph.record_destruction_fact_destroy(
+        destruction_fact,
+        child,
+        (),
+        propagate_to_caller=True,
+    )
+    parent_destroy = graph.record_destruction_fact_destroy(
+        destruction_fact,
+        parent,
+        (),
+        propagate_to_caller=True,
+    )
+    graphs = operation_graph.OperationGraphs()
+    graphs[action] = graph
+
+    child_contribution = _destruction_contribution(
+        action,
+        destruction_fact,
+        child.canonical_chained_name_tuple[len(parent.canonical_chained_name_tuple) :],
+        1,
+    )
+    parent_contribution = _destruction_contribution(action, destruction_fact, (), 2)
+    resolved_child_destroy = graphs.resolve_destruction_dependency(
+        child_contribution
+    ).callee_destroy
+    resolved_parent_destroy = graphs.resolve_destruction_dependency(
+        parent_contribution
+    ).callee_destroy
+
+    assert resolved_child_destroy.operation is child_destroy
+    assert resolved_parent_destroy.operation is parent_destroy
+
+
 def test_operation_nodes_use_identity_equality():
     one = operation_graph_model.CreateNode(node_id=1, target=_ref("one"), depends_on=())
     equivalent = operation_graph_model.CreateNode(
@@ -76,30 +196,8 @@ def test_operation_nodes_use_identity_equality():
     assert len({one, equivalent}) == 2
 
 
-def test_inserted_destroy_if_occupied_orders_before_existing_destruction():
-    preceding = operation_graph_model.CreateNode(
-        node_id=1, target=_ref("preceding"), depends_on=()
-    )
-    destruction = operation_graph_model.DestroyNode(
-        node_id=2, target=_ref("particle"), depends_on=(preceding,)
-    )
-    following = operation_graph_model.CreateNode(
-        node_id=3, target=_ref("following"), depends_on=(destruction,)
-    )
-    inserted = operation_graph_model.DestroyIfOccupiedNode(
-        node_id=4,
-        target=_ref("particle", "child"),
-        depends_on=(preceding,),
-        inserted_before=destruction,
-    )
-
-    assert preceding.operation_order < inserted.operation_order
-    assert inserted.operation_order < destruction.operation_order
-    assert destruction.operation_order < following.operation_order
-
-
 def test_last_operation_on_position_raises_for_an_untouched_position():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_action("/test"))
     box = _ref("box")
     operation = graph.record_create(box)
 
@@ -111,7 +209,7 @@ def test_last_operation_on_position_raises_for_an_untouched_position():
 
 
 def test_last_operation_on_position_or_parents_includes_parent_names():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_action("/test"))
     parent = _ref("parent")
     operation = graph.record_create(parent)
 
@@ -130,7 +228,7 @@ def test_last_operation_on_position_or_parents_includes_parent_names():
 
 
 def test_last_operation_on_position_or_parents_uses_newest_operation():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_action("/test"))
     child = _ref("parent", "child")
     _ = graph.record_create(child)
     parent_operation = graph.record_create(_ref("parent"))
@@ -146,7 +244,7 @@ def test_last_operation_on_position_or_parents_uses_newest_operation():
 
 
 def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent():
-    graph = operation_graph.OperationGraph()
+    graph = operation_graph.OperationGraph(_action("/test"))
     _ = graph.record_create(_ref("parent"))
     child_operation = graph.record_create(_ref("parent", "child"))
 

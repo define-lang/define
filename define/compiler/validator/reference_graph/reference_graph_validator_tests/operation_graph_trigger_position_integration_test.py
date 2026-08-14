@@ -77,7 +77,7 @@ def test_operation_on_a_child_of_the_trigger_position(
     }
 
 
-def test_destroy_of_trigger_particle_conditionally_destroys_unknown_children(
+def test_destroy_of_trigger_particle_uses_caller_fragment_for_occupied_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -87,10 +87,8 @@ def test_destroy_of_trigger_particle_conditionally_destroys_unknown_children(
         "test.create(source::/a)": ["test.create(source)"],
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
-        "triggered.destroy_if_occupied(/target::/b)": ["triggered.move(run, /target)"],
-        "triggered.destroy_if_occupied(/target::/a)": ["triggered.move(run, /target)"],
-        "triggered.destroy(/target)": [
-            "triggered.destroy_if_occupied(/target::/b)",
-            "triggered.destroy_if_occupied(/target::/a)",
-        ],
+        # The caller-known child Destroy must finish before the Destroy of the
+        # particle that satisfied the Trigger Conditions Block.
+        "triggered.destroy(/target::/a)": ["triggered.move(run, /target)"],
+        "triggered.destroy(/target)": ["triggered.destroy(/target::/a)"],
     }

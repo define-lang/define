@@ -281,22 +281,18 @@ class DestructionContract:
     # The contracted position whose particle was destroyed (its contracted
     # origin), as a chained name within the action providing this DestructionContract.
     destroyed_position_contracted: ast.PositionReference
-    # The position the destroying action actually destroyed, as a chained name
-    # within that action: the Destruction Statement target (or the local position
-    # that was auto-destroyed at the end of a block). Carries the DESTRUCTOR_CASCADE
-    # step location and, for auto-destruction, the local position name.
-    destroyed_position_local: ast.PositionReference
+    destruction_fact: operation_graph_model.DestructionFact
+    # The destroyed contracted position from the destroying action's perspective.
+    destroyed_position_in_destroying_action: ast.PositionReference
     # The occupancy of every transitive child position immediately before
     # destruction, keyed by canonical chained-name tuple relative to the
     # destroyed particle (the suffix that you would put after the particle's
     # position).
     child_state: dict[tuple[str, ...], ChildOccupancy]
-    # The action that physically performed the destruction.
-    destroying_action: ast.GlobalTypedName
     # Destructors we have already verified, so consumers do not re-verify.
     verified_destructors: quality_assignment.QualityAssignments
-    # True when destroyed_position_local was auto-destroyed at block end rather
-    # than by an explicit destroy statement.
+    # True when the destruction fact's local position was auto-destroyed at block
+    # end rather than by an explicit Destroy statement.
     is_auto_destruction: bool
     # The trigger hops, in execution order, from the verifying definition's
     # immediate callee down to the destroying action. One step is prepended each

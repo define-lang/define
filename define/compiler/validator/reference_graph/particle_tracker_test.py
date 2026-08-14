@@ -81,7 +81,7 @@ def _quality_assignments(
 
 
 def test_create_records_particle_metadata():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     position = _make_position(_make_local_name("item"))
     qualities = _quality_assignments(_make_global_name("/x"))
 
@@ -97,7 +97,7 @@ def test_create_records_particle_metadata():
 
 
 def test_create_from_caller_records_contracted_origin():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     position = _make_position(_make_local_name("local"))
     contracted_position = _make_position(_make_local_name("interface"))
 
@@ -109,7 +109,7 @@ def test_create_from_caller_records_contracted_origin():
 
 
 def test_mark_empty_records_touched_state_and_allows_create():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     position = _make_position(_make_local_name("item"))
 
     assert tracker.has_been_touched(position) is False
@@ -127,7 +127,7 @@ def test_mark_empty_records_touched_state_and_allows_create():
 
 
 def test_error_state_applies_to_child_names_but_not_siblings():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     parent = _make_position(_make_local_name("parent"))
     child = _make_position(_make_local_name("parent"), _make_global_name("/child"))
     sibling = _make_position(_make_local_name("sibling"))
@@ -144,7 +144,7 @@ def test_error_state_applies_to_child_names_but_not_siblings():
 
 
 def test_occupancy_info_returns_the_particle_without_error():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     position = _make_position(_make_local_name("item"))
     tracker.create(position, _NO_QUALITIES)
 
@@ -156,7 +156,7 @@ def test_occupancy_info_returns_the_particle_without_error():
 
 
 def test_move_relocates_particle_state_and_child_names():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     source = _make_position(_make_local_name("source"))
     source_child = _make_position(
         _make_local_name("source"), _make_global_name("/child")
@@ -183,7 +183,7 @@ def test_move_relocates_particle_state_and_child_names():
 
 
 def test_action_parent_state_is_created_for_an_interface_position():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     parent = _make_position(_make_local_name("parent"))
     interface_position = _make_position(
         _make_local_name("parent"),
@@ -199,7 +199,7 @@ def test_action_parent_state_is_created_for_an_interface_position():
 
 
 def test_destroy_prunes_child_state_and_records_empty_position():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     parent = _make_position(_make_local_name("parent"))
     child = _make_position(_make_local_name("parent"), _make_global_name("/child"))
     error_child = _make_position(
@@ -218,7 +218,7 @@ def test_destroy_prunes_child_state_and_records_empty_position():
 
 
 def test_snapshot_child_state_captures_occupancy_and_is_decoupled():
-    tracker = particle_tracker.ParticleTracker()
+    tracker = particle_tracker.ParticleTracker(_make_action_name("/test"))
     parent = _make_position(_make_local_name("parent"))
     occupied = _make_position(_make_local_name("parent"), _make_local_name("occupied"))
     empty = _make_position(_make_local_name("parent"), _make_local_name("empty"))

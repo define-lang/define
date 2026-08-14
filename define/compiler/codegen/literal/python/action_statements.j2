@@ -28,19 +28,14 @@
         )
             {% endif %}
         {% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
-            {% if stmt.destroy_if_occupied %}
-        {{ position_expression(stmt.position) }}.destroy_particle_if_occupied()
-            {% else %}
         {{ position_expression(stmt.position) }}.destroy_particle()
-            {% endif %}
             {% if stmt.operation_label is not none %}
-                {% if stmt.destroy_if_occupied %}
-                    {# TODO: Trace this operation only when it actually destroys a particle. #}
-        self.scheduler.destroy_if_occupied_completed(
-                {% else %}
         self.scheduler.destroy_completed(
-                {% endif %}
+                {% if stmt.destruction_connection_name is not none %}
+            self.{{ stmt.destruction_connection_name }}.trace_execution,
+                {% else %}
             self.trace_execution,
+                {% endif %}
             "{{ stmt.operation_label.target }}",
             {{ stmt.operation_label.occurrence }},
         )

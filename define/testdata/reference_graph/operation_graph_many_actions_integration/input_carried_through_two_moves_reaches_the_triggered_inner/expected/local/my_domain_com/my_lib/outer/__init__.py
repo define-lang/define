@@ -52,10 +52,13 @@ class OuterExecution:
         action: Outer,
         scheduler: literal.Scheduler,
         guarantees: OuterGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.trigger_position_middle_holder__global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_move_position_input_to_position_middle_holder__global_action_middle__position_input = literal.Join(2)
         self.join_for_trigger_position_middle_holder__global_action_middle__when_empty_position_input__global_action_inner__position_run = literal.Join(2)
@@ -116,6 +119,7 @@ class OuterExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_position_middle_holder__global_action_middle,
+            destruction_connections=self.destruction_connections,
         )
 
     def trigger_position_middle_holder__global_action_middle__when_empty_position_input__global_action_inner__position_run(self):

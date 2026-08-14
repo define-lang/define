@@ -46,10 +46,13 @@ class BrewExecution:
         action: Brew,
         scheduler: literal.Scheduler,
         guarantees: BrewGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_when_empty_position_cup(self):
         self.create_position_cup()
@@ -67,6 +70,9 @@ class BrewExecution:
         self.scheduler.continue_with(self.guarantees.guarantee_position_cup)
 
     def destroy_position_water(self):
+        literal.continue_destruction(self.continue_destroy_position_water)
+
+    def continue_destroy_position_water(self):
         self.action.get_interface_position(
             "position<water>"
         ).destroy_particle()

@@ -287,21 +287,6 @@ class TestDestroyParticle:
             pos.destroy_particle()
         assert exc_info.value.position_name == "test"
 
-    def test_destroy_if_occupied_ignores_empty_position(self):
-        pos = _local_position("test")
-
-        pos.destroy_particle_if_occupied()
-
-        assert not pos.has_particle
-
-    def test_destroy_if_occupied_destroys_particle(self):
-        pos = _local_position("test")
-        pos.create_particle()
-
-        pos.destroy_particle_if_occupied()
-
-        assert not pos.has_particle
-
     def test_destroy_then_create_succeeds(self):
         pos = _local_position("test")
         pos.create_particle()
