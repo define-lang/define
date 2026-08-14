@@ -18,5 +18,4 @@ py_library(
     name = "lark_standalone",
     srcs = [":lark_standalone.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["@pypi//regex"],
 )

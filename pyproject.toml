@@ -13,7 +13,6 @@ dependencies = [
     # 1.1.2 is the first version to support protobuf v7
     "protovalidate>=1.1.2",
     "pygtrie",
-    "regex",
 ]
 
 [tool.ruff.lint]

@@ -22,7 +22,8 @@ def main():
     parser = lark.Lark(
         grammar,
         parser="lalr",
-        regex=True,
+        # TODO: Allow Lark's regex engine when Define names support UTF-8.
+        regex=False,
         # The transformer derives SourceLocation directly from each Tree's
         # transformed children (Tokens carry line/column from the lexer;
         # already-transformed ASTNode children carry .location), so we do

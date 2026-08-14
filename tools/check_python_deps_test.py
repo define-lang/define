@@ -148,7 +148,7 @@ class Example:
 
 
 def test_import_analysis_resolves_generated_and_external_modules():
-    tree = ast.parse("import define.config.project.config_pb2\nimport regex\n")
+    tree = ast.parse("import click\nimport define.config.project.config_pb2\n")
 
     assert check_python_deps.analyze_imports(
         tree,
@@ -157,12 +157,12 @@ def test_import_analysis_resolves_generated_and_external_modules():
                 "//define/config/project:config_proto_py"
             )
         },
-        {"regex": "@pypi//regex"},
+        {"click": "@pypi//click"},
     ) == check_python_deps.ImportAnalysis(
         frozenset(
             {
                 "//define/config/project:config_proto_py",
-                "@pypi//regex",
+                "@pypi//click",
             }
         ),
         frozenset(),
@@ -263,7 +263,7 @@ def test_report_results_rewrites_multiple_targets_and_preserves_kept_deps(
     name = "first",
     srcs = ["first.py"],
     deps = [
-        "@pypi//regex",  # keep
+        "@pypi//click",  # keep
     ],
 )
 py_library(
@@ -278,8 +278,8 @@ py_library(
         "py_library",
         Path("tools/BUILD.bazel"),
         Path("tools/first.py"),
-        frozenset({"@pypi//regex"}),
-        frozenset({"@pypi//regex"}),
+        frozenset({"@pypi//click"}),
+        frozenset({"@pypi//click"}),
     )
     second = check_python_deps.PythonTarget(
         "//tools:second",
@@ -291,7 +291,7 @@ py_library(
     repository = check_python_deps.RepositoryAnalysis(tmp_path, (), {}, {}, {})
     results = check_python_deps.AnalysisResults(
         (
-            check_python_deps.DependencyChanges(first, frozenset({"@pypi//regex"})),
+            check_python_deps.DependencyChanges(first, frozenset({"@pypi//click"})),
             check_python_deps.DependencyChanges(second, frozenset()),
         ),
         {},
@@ -299,7 +299,7 @@ py_library(
 
     assert check_python_deps.report_results(repository, results, check_only=False) == 1
     contents = build_file.read_text()
-    assert '"@pypi//regex",  # keep' in contents
+    assert '"@pypi//click",  # keep' in contents
     assert "//old:unused" not in contents
     assert 'name = "second"' in contents
 

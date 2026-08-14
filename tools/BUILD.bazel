@@ -77,10 +77,7 @@ py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
-    deps = [
-        "@pypi//lark",
-        "@pypi//regex",  # keep
-    ],
+    deps = ["@pypi//lark"],
 )
 
 py_binary(
