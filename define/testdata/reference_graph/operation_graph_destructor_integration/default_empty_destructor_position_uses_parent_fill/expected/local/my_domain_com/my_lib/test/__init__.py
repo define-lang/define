@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_carrier__global_action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
+        self.trigger_position_carrier__action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
 
 
 @final
@@ -50,18 +50,18 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_carrier__global_action_callee__execution: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_trigger_position_carrier__global_action_callee__when_empty_position_src__global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_carrier__global_action_callee__when_occupied_position_src = literal.Join(2)
+        self.execution_trigger_position_carrier__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
+        self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = literal.Join(2)
+        self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src = literal.Join(2)
 
     def create_position_carrier(self):
         self.action.get_interface_position(
             "position<carrier>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_carrier__global_action_callee__position_src)
-        self.create_position_carrier__global_action_callee__position_trigger_pos()
+        self.scheduler.submit(self.create_position_carrier__action_callee__position_src)
+        self.create_position_carrier__action_callee__position_trigger_pos()
 
-    def create_position_carrier__global_action_callee__position_src(self):
+    def create_position_carrier__action_callee__position_src(self):
         self.action.get_interface_position(
             "position<carrier>"
         ).particle.get_action(
@@ -69,10 +69,10 @@ class TestExecution:
         ).get_interface_position(
             "position<src>"
         ).create_particle()
-        self.scheduler.submit(self.trigger_position_carrier__global_action_callee__when_empty_position_src__global_position_marker)
-        self.trigger_position_carrier__global_action_callee__when_occupied_position_src()
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
+        self.trigger_position_carrier__action_callee__when_occupied_position_src()
 
-    def create_position_carrier__global_action_callee__position_trigger_pos(self):
+    def create_position_carrier__action_callee__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<carrier>"
         ).particle.get_action(
@@ -80,32 +80,32 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_carrier__global_action_callee__execution()
-        self.scheduler.submit(self.trigger_position_carrier__global_action_callee__for_empty_rule_position_src)
-        self.scheduler.submit(self.trigger_position_carrier__global_action_callee__when_empty_position_src__global_position_marker)
-        self.trigger_position_carrier__global_action_callee__when_occupied_position_src()
+        self.init_execution_trigger_position_carrier__action_callee()
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__for_empty_rule_position_src)
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
+        self.trigger_position_carrier__action_callee__when_occupied_position_src()
 
-    def init_trigger_position_carrier__global_action_callee__execution(self):
+    def init_execution_trigger_position_carrier__action_callee(self):
         action = self.action.get_interface_position(
             "position<carrier>"
         ).particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         )
-        self.trigger_position_carrier__global_action_callee__execution = local.my_domain_com.my_lib.callee.CalleeExecution(
+        self.execution_trigger_position_carrier__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_carrier__global_action_callee,
+            self.guarantees.trigger_position_carrier__action_callee,
         )
 
-    def trigger_position_carrier__global_action_callee__for_empty_rule_position_src(self):
-        self.trigger_position_carrier__global_action_callee__execution.accept_for_empty_rule_position_src()
+    def trigger_position_carrier__action_callee__for_empty_rule_position_src(self):
+        self.execution_trigger_position_carrier__action_callee.accept_for_empty_rule_position_src()
 
-    def trigger_position_carrier__global_action_callee__when_empty_position_src__global_position_marker(self):
-        if not self.join_for_trigger_position_carrier__global_action_callee__when_empty_position_src__global_position_marker.arrive():
+    def trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker(self):
+        if not self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker.arrive():
             return
-        self.trigger_position_carrier__global_action_callee__execution.accept_when_empty_position_src__global_position_marker()
+        self.execution_trigger_position_carrier__action_callee.accept_when_empty_position_src__global_position_marker()
 
-    def trigger_position_carrier__global_action_callee__when_occupied_position_src(self):
-        if not self.join_for_trigger_position_carrier__global_action_callee__when_occupied_position_src.arrive():
+    def trigger_position_carrier__action_callee__when_occupied_position_src(self):
+        if not self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src.arrive():
             return
-        self.trigger_position_carrier__global_action_callee__execution.accept_when_occupied_position_src()
+        self.execution_trigger_position_carrier__action_callee.accept_when_occupied_position_src()

@@ -32,8 +32,8 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self):
         self.guarantee_position_box: list[literal.Task] = []
-        self.guarantee_position_box__global_action_inner__position_run: list[literal.Task] = []
-        self.trigger_position_box__global_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.guarantee_position_box__action_inner__position_run: list[literal.Task] = []
+        self.trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
 @final
@@ -53,8 +53,8 @@ class MiddleExecution:
             action_name,
         )
         self.guarantees = guarantees
-        self.trigger_position_box__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_box__global_action_inner__when_empty_position_result = literal.Join(2)
+        self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_position_box__action_inner__when_empty_position_result = literal.Join(2)
 
     def accept_when_empty_position_box(self):
         self.create_position_box()
@@ -68,11 +68,11 @@ class MiddleExecution:
             "box",
             1,
         )
-        self.scheduler.submit(self.create_position_box__global_action_inner__position_run)
-        self.scheduler.submit(self.trigger_position_box__global_action_inner__when_empty_position_result)
+        self.scheduler.submit(self.create_position_box__action_inner__position_run)
+        self.scheduler.submit(self.trigger_position_box__action_inner__when_empty_position_result)
         self.scheduler.continue_with(self.guarantees.guarantee_position_box)
 
-    def create_position_box__global_action_inner__position_run(self):
+    def create_position_box__action_inner__position_run(self):
         self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
@@ -85,25 +85,25 @@ class MiddleExecution:
             "box::/inner::run",
             1,
         )
-        self.init_trigger_position_box__global_action_inner__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_box__global_action_inner__position_run)
-        self.trigger_position_box__global_action_inner__when_empty_position_result()
+        self.init_execution_trigger_position_box__action_inner()
+        self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
+        self.trigger_position_box__action_inner__when_empty_position_result()
 
-    def init_trigger_position_box__global_action_inner__execution(self):
+    def init_execution_trigger_position_box__action_inner(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         )
-        self.trigger_position_box__global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "inner",
-            self.guarantees.trigger_position_box__global_action_inner,
+            self.guarantees.trigger_position_box__action_inner,
         )
 
-    def trigger_position_box__global_action_inner__when_empty_position_result(self):
-        if not self.join_for_trigger_position_box__global_action_inner__when_empty_position_result.arrive():
+    def trigger_position_box__action_inner__when_empty_position_result(self):
+        if not self.join_for_trigger_position_box__action_inner__when_empty_position_result.arrive():
             return
-        self.trigger_position_box__global_action_inner__execution.accept_when_empty_position_result()
+        self.execution_trigger_position_box__action_inner.accept_when_empty_position_result()

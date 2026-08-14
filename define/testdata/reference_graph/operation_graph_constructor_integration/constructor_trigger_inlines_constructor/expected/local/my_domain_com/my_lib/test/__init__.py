@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_construct = local.my_domain_com.my_lib.construct.ConstructGuarantees()
+        self.trigger_position_box__action_construct = local.my_domain_com.my_lib.construct.ConstructGuarantees()
 
 
 @final
@@ -50,30 +50,30 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_box__global_action_construct__execution: local.my_domain_com.my_lib.construct.ConstructExecution
-        self.join_for_trigger_position_box__global_action_construct__when_empty_global_position_marker = literal.Join(2)
+        self.execution_trigger_position_box__action_construct: local.my_domain_com.my_lib.construct.ConstructExecution
+        self.join_for_trigger_position_box__action_construct__when_empty_global_position_marker = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_construct__execution()
-        self.scheduler.submit(self.trigger_position_box__global_action_construct__when_empty_global_position_marker)
-        self.trigger_position_box__global_action_construct__when_empty_global_position_marker()
+        self.init_execution_trigger_position_box__action_construct()
+        self.scheduler.submit(self.trigger_position_box__action_construct__when_empty_global_position_marker)
+        self.trigger_position_box__action_construct__when_empty_global_position_marker()
 
-    def init_trigger_position_box__global_action_construct__execution(self):
+    def init_execution_trigger_position_box__action_construct(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.construct.Construct
         )
-        self.trigger_position_box__global_action_construct__execution = local.my_domain_com.my_lib.construct.ConstructExecution(
+        self.execution_trigger_position_box__action_construct = local.my_domain_com.my_lib.construct.ConstructExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_construct,
+            self.guarantees.trigger_position_box__action_construct,
         )
 
-    def trigger_position_box__global_action_construct__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_position_box__global_action_construct__when_empty_global_position_marker.arrive():
+    def trigger_position_box__action_construct__when_empty_global_position_marker(self):
+        if not self.join_for_trigger_position_box__action_construct__when_empty_global_position_marker.arrive():
             return
-        self.trigger_position_box__global_action_construct__execution.accept_when_empty_global_position_marker()
+        self.execution_trigger_position_box__action_construct.accept_when_empty_global_position_marker()

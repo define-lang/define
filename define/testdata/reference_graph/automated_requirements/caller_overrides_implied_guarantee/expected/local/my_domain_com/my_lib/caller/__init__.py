@@ -30,8 +30,8 @@ class Caller(literal.Action):
 class CallerGuarantees:
     def __init__(self):
         self.guarantee_global_position_implied: list[literal.Task] = []
-        self.guarantee_global_action_callee__position_run: list[literal.Task] = []
-        self.trigger_global_action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
+        self.guarantee_action_callee__position_run: list[literal.Task] = []
+        self.trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
 
 
 @final
@@ -45,27 +45,27 @@ class CallerExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_callee.guarantee_global_position_implied.append(
+        guarantees.trigger_action_callee.guarantee_global_position_implied.append(
             self.destroy_global_position_implied
         )
-        self.trigger_global_action_callee__execution: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_trigger_global_action_callee__when_empty_global_position_implied = literal.Join(2)
+        self.execution_trigger_action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
+        self.join_for_trigger_action_callee__when_empty_global_position_implied = literal.Join(2)
 
-    def accept_when_empty_global_action_callee__position_run(self):
-        self.create_global_action_callee__position_run()
+    def accept_when_empty_action_callee__position_run(self):
+        self.create_action_callee__position_run()
 
     def accept_when_empty_global_position_implied(self):
-        self.trigger_global_action_callee__when_empty_global_position_implied()
+        self.trigger_action_callee__when_empty_global_position_implied()
 
-    def create_global_action_callee__position_run(self):
+    def create_action_callee__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_callee__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_callee__position_run)
-        self.trigger_global_action_callee__when_empty_global_position_implied()
+        self.init_execution_trigger_action_callee()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_callee__position_run)
+        self.trigger_action_callee__when_empty_global_position_implied()
 
     def destroy_global_position_implied(self):
         self.action.on_particle.get_position(
@@ -73,17 +73,17 @@ class CallerExecution:
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
 
-    def init_trigger_global_action_callee__execution(self):
+    def init_execution_trigger_action_callee(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         )
-        self.trigger_global_action_callee__execution = local.my_domain_com.my_lib.callee.CalleeExecution(
+        self.execution_trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_callee,
+            self.guarantees.trigger_action_callee,
         )
 
-    def trigger_global_action_callee__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_global_action_callee__when_empty_global_position_implied.arrive():
+    def trigger_action_callee__when_empty_global_position_implied(self):
+        if not self.join_for_trigger_action_callee__when_empty_global_position_implied.arrive():
             return
-        self.trigger_global_action_callee__execution.accept_when_empty_global_position_implied()
+        self.execution_trigger_action_callee.accept_when_empty_global_position_implied()

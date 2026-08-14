@@ -31,17 +31,17 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_position_outer_position__global_action_perform_operation__execution: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
-        self.join_for_trigger_global_position_outer_position__global_action_perform_operation__action_parent = literal.Join(2)
+        self.execution_trigger_global_position_outer_position__action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
+        self.join_for_trigger_global_position_outer_position__action_perform_operation__action_parent = literal.Join(2)
 
     def create_global_position_outer_position(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_library_collection.outer_position.OuterPosition
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_outer_position__global_action_perform_operation__position_operation_trigger)
-        self.trigger_global_position_outer_position__global_action_perform_operation__action_parent()
+        self.scheduler.submit(self.create_global_position_outer_position__action_perform_operation__position_operation_trigger)
+        self.trigger_global_position_outer_position__action_perform_operation__action_parent()
 
-    def create_global_position_outer_position__global_action_perform_operation__position_operation_trigger(self):
+    def create_global_position_outer_position__action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_library_collection.outer_position.OuterPosition
         ).particle.get_action(
@@ -49,15 +49,15 @@ class TestExecution:
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()
-        self.init_trigger_global_position_outer_position__global_action_perform_operation__execution()
-        self.trigger_global_position_outer_position__global_action_perform_operation__action_parent()
+        self.init_execution_trigger_global_position_outer_position__action_perform_operation()
+        self.trigger_global_position_outer_position__action_perform_operation__action_parent()
 
-    def init_trigger_global_position_outer_position__global_action_perform_operation__execution(self):
-        self.trigger_global_position_outer_position__global_action_perform_operation__execution = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
+    def init_execution_trigger_global_position_outer_position__action_perform_operation(self):
+        self.execution_trigger_global_position_outer_position__action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
             self.scheduler,
         )
 
-    def trigger_global_position_outer_position__global_action_perform_operation__action_parent(self):
-        if not self.join_for_trigger_global_position_outer_position__global_action_perform_operation__action_parent.arrive():
+    def trigger_global_position_outer_position__action_perform_operation__action_parent(self):
+        if not self.join_for_trigger_global_position_outer_position__action_perform_operation__action_parent.arrive():
             return
-        self.trigger_global_position_outer_position__global_action_perform_operation__execution.accept_action_parent()
+        self.execution_trigger_global_position_outer_position__action_perform_operation.accept_action_parent()

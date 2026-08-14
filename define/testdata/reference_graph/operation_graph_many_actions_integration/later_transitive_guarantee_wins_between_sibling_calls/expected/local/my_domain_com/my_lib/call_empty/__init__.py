@@ -27,8 +27,8 @@ class CallEmpty(literal.Action):
 @final
 class CallEmptyGuarantees:
     def __init__(self):
-        self.guarantee_global_action_empty_item__position_trigger_pos: list[literal.Task] = []
-        self.trigger_global_action_empty_item = local.my_domain_com.my_lib.empty_item.EmptyItemGuarantees()
+        self.guarantee_action_empty_item__position_trigger_pos: list[literal.Task] = []
+        self.trigger_action_empty_item = local.my_domain_com.my_lib.empty_item.EmptyItemGuarantees()
 
 
 @final
@@ -45,37 +45,37 @@ class CallEmptyExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_global_action_empty_item__execution: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
-        self.join_for_trigger_global_action_empty_item__for_empty_rule_global_position_item = literal.Join(2)
+        self.execution_trigger_action_empty_item: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
+        self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item = literal.Join(2)
 
-    def accept_when_empty_global_action_empty_item__position_trigger_pos(self):
-        self.create_global_action_empty_item__position_trigger_pos()
+    def accept_when_empty_action_empty_item__position_trigger_pos(self):
+        self.create_action_empty_item__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_item(self):
-        self.trigger_global_action_empty_item__for_empty_rule_global_position_item()
+        self.trigger_action_empty_item__for_empty_rule_global_position_item()
 
-    def create_global_action_empty_item__position_trigger_pos(self):
+    def create_action_empty_item__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.empty_item.EmptyItem
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_empty_item__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_empty_item__position_trigger_pos)
-        self.trigger_global_action_empty_item__for_empty_rule_global_position_item()
+        self.init_execution_trigger_action_empty_item()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_empty_item__position_trigger_pos)
+        self.trigger_action_empty_item__for_empty_rule_global_position_item()
 
-    def init_trigger_global_action_empty_item__execution(self):
+    def init_execution_trigger_action_empty_item(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.empty_item.EmptyItem
         )
-        self.trigger_global_action_empty_item__execution = local.my_domain_com.my_lib.empty_item.EmptyItemExecution(
+        self.execution_trigger_action_empty_item = local.my_domain_com.my_lib.empty_item.EmptyItemExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_empty_item,
+            self.guarantees.trigger_action_empty_item,
             destruction_connections=self.destruction_connections,
         )
 
-    def trigger_global_action_empty_item__for_empty_rule_global_position_item(self):
-        if not self.join_for_trigger_global_action_empty_item__for_empty_rule_global_position_item.arrive():
+    def trigger_action_empty_item__for_empty_rule_global_position_item(self):
+        if not self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item.arrive():
             return
-        self.trigger_global_action_empty_item__execution.accept_for_empty_rule_global_position_item()
+        self.execution_trigger_action_empty_item.accept_for_empty_rule_global_position_item()

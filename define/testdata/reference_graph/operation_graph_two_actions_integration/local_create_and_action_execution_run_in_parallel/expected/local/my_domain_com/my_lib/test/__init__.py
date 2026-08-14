@@ -18,7 +18,7 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_global_action_other__position_trigger_pos)
+        execution.scheduler.submit(execution.create_action_other__position_trigger_pos)
         execution.create_position_local_item()
 
 
@@ -35,25 +35,25 @@ class TestExecution:
             "position<local_item>",
             scheduler=self.scheduler,
         )
-        self.trigger_global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
 
-    def create_global_action_other__position_trigger_pos(self):
+    def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_other__execution()
-        self.trigger_global_action_other__action_parent()
+        self.init_execution_trigger_action_other()
+        self.trigger_action_other__action_parent()
 
     def create_position_local_item(self):
         self.local_position_local_item.create_particle()
         self.local_position_local_item.destroy_particle()
 
-    def init_trigger_global_action_other__execution(self):
-        self.trigger_global_action_other__execution = local.my_domain_com.my_lib.other.OtherExecution(
+    def init_execution_trigger_action_other(self):
+        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_other__action_parent(self):
-        self.trigger_global_action_other__execution.accept_action_parent()
+    def trigger_action_other__action_parent(self):
+        self.execution_trigger_action_other.accept_action_parent()

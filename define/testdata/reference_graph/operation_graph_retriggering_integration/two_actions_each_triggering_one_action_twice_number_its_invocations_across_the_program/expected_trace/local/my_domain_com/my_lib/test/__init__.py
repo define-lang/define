@@ -58,10 +58,10 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.trigger_position_holder_first__global_action_first__execution: local.my_domain_com.my_lib.first.FirstExecution
-        self.trigger_position_holder_second__global_action_second__execution: local.my_domain_com.my_lib.second.SecondExecution
-        self.join_for_trigger_position_holder_first__global_action_first__action_parent = literal.Join(2)
-        self.join_for_trigger_position_holder_second__global_action_second__action_parent = literal.Join(2)
+        self.execution_trigger_position_holder_first__action_first: local.my_domain_com.my_lib.first.FirstExecution
+        self.execution_trigger_position_holder_second__action_second: local.my_domain_com.my_lib.second.SecondExecution
+        self.join_for_trigger_position_holder_first__action_first__action_parent = literal.Join(2)
+        self.join_for_trigger_position_holder_second__action_second__action_parent = literal.Join(2)
 
     def create_position_holder_first(self):
         self.action.get_interface_position(
@@ -72,10 +72,10 @@ class TestExecution:
             "holder_first",
             1,
         )
-        self.scheduler.submit(self.create_position_holder_first__global_action_first__position_trigger_pos)
-        self.trigger_position_holder_first__global_action_first__action_parent()
+        self.scheduler.submit(self.create_position_holder_first__action_first__position_trigger_pos)
+        self.trigger_position_holder_first__action_first__action_parent()
 
-    def create_position_holder_first__global_action_first__position_trigger_pos(self):
+    def create_position_holder_first__action_first__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<holder_first>"
         ).particle.get_action(
@@ -88,8 +88,8 @@ class TestExecution:
             "holder_first::/first::trigger_pos",
             1,
         )
-        self.init_trigger_position_holder_first__global_action_first__execution()
-        self.trigger_position_holder_first__global_action_first__action_parent()
+        self.init_execution_trigger_position_holder_first__action_first()
+        self.trigger_position_holder_first__action_first__action_parent()
 
     def create_position_holder_second(self):
         self.action.get_interface_position(
@@ -100,10 +100,10 @@ class TestExecution:
             "holder_second",
             1,
         )
-        self.scheduler.submit(self.create_position_holder_second__global_action_second__position_trigger_pos)
-        self.trigger_position_holder_second__global_action_second__action_parent()
+        self.scheduler.submit(self.create_position_holder_second__action_second__position_trigger_pos)
+        self.trigger_position_holder_second__action_second__action_parent()
 
-    def create_position_holder_second__global_action_second__position_trigger_pos(self):
+    def create_position_holder_second__action_second__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<holder_second>"
         ).particle.get_action(
@@ -116,29 +116,29 @@ class TestExecution:
             "holder_second::/second::trigger_pos",
             1,
         )
-        self.init_trigger_position_holder_second__global_action_second__execution()
-        self.trigger_position_holder_second__global_action_second__action_parent()
+        self.init_execution_trigger_position_holder_second__action_second()
+        self.trigger_position_holder_second__action_second__action_parent()
 
-    def init_trigger_position_holder_first__global_action_first__execution(self):
-        self.trigger_position_holder_first__global_action_first__execution = local.my_domain_com.my_lib.first.FirstExecution(
+    def init_execution_trigger_position_holder_first__action_first(self):
+        self.execution_trigger_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
             self.scheduler,
             self.trace_execution,
             "first",
         )
 
-    def init_trigger_position_holder_second__global_action_second__execution(self):
-        self.trigger_position_holder_second__global_action_second__execution = local.my_domain_com.my_lib.second.SecondExecution(
+    def init_execution_trigger_position_holder_second__action_second(self):
+        self.execution_trigger_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
             self.trace_execution,
             "second",
         )
 
-    def trigger_position_holder_first__global_action_first__action_parent(self):
-        if not self.join_for_trigger_position_holder_first__global_action_first__action_parent.arrive():
+    def trigger_position_holder_first__action_first__action_parent(self):
+        if not self.join_for_trigger_position_holder_first__action_first__action_parent.arrive():
             return
-        self.trigger_position_holder_first__global_action_first__execution.accept_action_parent()
+        self.execution_trigger_position_holder_first__action_first.accept_action_parent()
 
-    def trigger_position_holder_second__global_action_second__action_parent(self):
-        if not self.join_for_trigger_position_holder_second__global_action_second__action_parent.arrive():
+    def trigger_position_holder_second__action_second__action_parent(self):
+        if not self.join_for_trigger_position_holder_second__action_second__action_parent.arrive():
             return
-        self.trigger_position_holder_second__global_action_second__execution.accept_action_parent()
+        self.execution_trigger_position_holder_second__action_second.accept_action_parent()

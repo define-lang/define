@@ -45,7 +45,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_outer_holder__global_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        self.trigger_position_outer_holder__action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
 
 
 @final
@@ -59,10 +59,10 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_outer_holder__global_action_outer__execution: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_move_position_box_to_position_outer_holder__global_action_outer__position_input = literal.Join(2)
-        self.join_for_trigger_position_outer_holder__global_action_outer__when_empty_position_middle_holder = literal.Join(2)
-        self.join_for_trigger_position_outer_holder__global_action_outer__for_empty_rule_position_input = literal.Join(2)
+        self.execution_trigger_position_outer_holder__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = literal.Join(2)
+        self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder = literal.Join(2)
+        self.join_for_trigger_position_outer_holder__action_outer__for_empty_rule_position_input = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -75,18 +75,18 @@ class TestExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.move_position_box_to_position_outer_holder__global_action_outer__position_input()
+        self.move_position_box_to_position_outer_holder__action_outer__position_input()
 
     def create_position_outer_holder(self):
         self.action.get_interface_position(
             "position<outer_holder>"
         ).create_particle()
-        self.scheduler.submit(self.move_position_box_to_position_outer_holder__global_action_outer__position_input)
-        self.scheduler.submit(self.create_position_outer_holder__global_action_outer__position_run)
-        self.trigger_position_outer_holder__global_action_outer__when_empty_position_middle_holder()
+        self.scheduler.submit(self.move_position_box_to_position_outer_holder__action_outer__position_input)
+        self.scheduler.submit(self.create_position_outer_holder__action_outer__position_run)
+        self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder()
 
-    def move_position_box_to_position_outer_holder__global_action_outer__position_input(self):
-        if not self.join_for_move_position_box_to_position_outer_holder__global_action_outer__position_input.arrive():
+    def move_position_box_to_position_outer_holder__action_outer__position_input(self):
+        if not self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input.arrive():
             return
         self.action.get_interface_position(
             "position<box>"
@@ -99,9 +99,9 @@ class TestExecution:
                 "position<input>"
             )
         )
-        self.trigger_position_outer_holder__global_action_outer__for_empty_rule_position_input()
+        self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
 
-    def create_position_outer_holder__global_action_outer__position_run(self):
+    def create_position_outer_holder__action_outer__position_run(self):
         self.action.get_interface_position(
             "position<outer_holder>"
         ).particle.get_action(
@@ -109,28 +109,28 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_outer_holder__global_action_outer__execution()
-        self.scheduler.submit(self.trigger_position_outer_holder__global_action_outer__when_empty_position_middle_holder)
-        self.trigger_position_outer_holder__global_action_outer__for_empty_rule_position_input()
+        self.init_execution_trigger_position_outer_holder__action_outer()
+        self.scheduler.submit(self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder)
+        self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
 
-    def init_trigger_position_outer_holder__global_action_outer__execution(self):
+    def init_execution_trigger_position_outer_holder__action_outer(self):
         action = self.action.get_interface_position(
             "position<outer_holder>"
         ).particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         )
-        self.trigger_position_outer_holder__global_action_outer__execution = local.my_domain_com.my_lib.outer.OuterExecution(
+        self.execution_trigger_position_outer_holder__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_outer_holder__global_action_outer,
+            self.guarantees.trigger_position_outer_holder__action_outer,
         )
 
-    def trigger_position_outer_holder__global_action_outer__when_empty_position_middle_holder(self):
-        if not self.join_for_trigger_position_outer_holder__global_action_outer__when_empty_position_middle_holder.arrive():
+    def trigger_position_outer_holder__action_outer__when_empty_position_middle_holder(self):
+        if not self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder.arrive():
             return
-        self.trigger_position_outer_holder__global_action_outer__execution.accept_when_empty_position_middle_holder()
+        self.execution_trigger_position_outer_holder__action_outer.accept_when_empty_position_middle_holder()
 
-    def trigger_position_outer_holder__global_action_outer__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_position_outer_holder__global_action_outer__for_empty_rule_position_input.arrive():
+    def trigger_position_outer_holder__action_outer__for_empty_rule_position_input(self):
+        if not self.join_for_trigger_position_outer_holder__action_outer__for_empty_rule_position_input.arrive():
             return
-        self.trigger_position_outer_holder__global_action_outer__execution.accept_for_empty_rule_position_input()
+        self.execution_trigger_position_outer_holder__action_outer.accept_for_empty_rule_position_input()

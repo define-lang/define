@@ -20,13 +20,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_act__position_trigger_pos()
+        execution.create_action_act__position_trigger_pos()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
+        self.trigger_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
 
 
 @final
@@ -40,24 +40,24 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_act.guarantee_position_trigger_pos__global_position_inner.append(
-            self.create_global_action_act__position_trigger_pos__global_position_inner
+        guarantees.trigger_action_act.guarantee_position_trigger_pos__global_position_inner.append(
+            self.create_action_act__position_trigger_pos__global_position_inner
         )
-        self.trigger_global_action_act__execution: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_global_action_act__when_empty_position_trigger_pos__global_position_inner = literal.Join(2)
+        self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
+        self.join_for_trigger_action_act__when_empty_position_trigger_pos__global_position_inner = literal.Join(2)
 
-    def create_global_action_act__position_trigger_pos(self):
+    def create_action_act__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_act__execution()
-        self.scheduler.submit(self.trigger_global_action_act__when_empty_position_trigger_pos__global_position_inner)
-        self.scheduler.submit(self.trigger_global_action_act__action_parent)
-        self.trigger_global_action_act__when_empty_position_trigger_pos__global_position_inner()
+        self.init_execution_trigger_action_act()
+        self.scheduler.submit(self.trigger_action_act__when_empty_position_trigger_pos__global_position_inner)
+        self.scheduler.submit(self.trigger_action_act__action_parent)
+        self.trigger_action_act__when_empty_position_trigger_pos__global_position_inner()
 
-    def create_global_action_act__position_trigger_pos__global_position_inner(self):
+    def create_action_act__position_trigger_pos__global_position_inner(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
@@ -66,20 +66,20 @@ class TestExecution:
             local.my_domain_com.my_lib.inner.Inner
         ).create_particle()
 
-    def init_trigger_global_action_act__execution(self):
+    def init_execution_trigger_action_act(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         )
-        self.trigger_global_action_act__execution = local.my_domain_com.my_lib.act.ActExecution(
+        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_act,
+            self.guarantees.trigger_action_act,
         )
 
-    def trigger_global_action_act__action_parent(self):
-        self.trigger_global_action_act__execution.accept_action_parent()
+    def trigger_action_act__action_parent(self):
+        self.execution_trigger_action_act.accept_action_parent()
 
-    def trigger_global_action_act__when_empty_position_trigger_pos__global_position_inner(self):
-        if not self.join_for_trigger_global_action_act__when_empty_position_trigger_pos__global_position_inner.arrive():
+    def trigger_action_act__when_empty_position_trigger_pos__global_position_inner(self):
+        if not self.join_for_trigger_action_act__when_empty_position_trigger_pos__global_position_inner.arrive():
             return
-        self.trigger_global_action_act__execution.accept_when_empty_position_trigger_pos__global_position_inner()
+        self.execution_trigger_action_act.accept_when_empty_position_trigger_pos__global_position_inner()

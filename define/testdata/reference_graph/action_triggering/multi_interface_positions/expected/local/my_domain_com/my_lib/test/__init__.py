@@ -19,14 +19,14 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_process__position_input)
-        execution.create_global_action_process__position_trigger()
+        execution.scheduler.submit(execution.create_action_process__position_input)
+        execution.create_action_process__position_trigger()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_process = local.my_domain_com.my_lib.process.ProcessGuarantees()
+        self.trigger_action_process = local.my_domain_com.my_lib.process.ProcessGuarantees()
 
 
 @final
@@ -40,45 +40,45 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_process__execution: local.my_domain_com.my_lib.process.ProcessExecution
-        self.join_for_trigger_global_action_process__for_empty_rule_position_input = literal.Join(2)
+        self.execution_trigger_action_process: local.my_domain_com.my_lib.process.ProcessExecution
+        self.join_for_trigger_action_process__for_empty_rule_position_input = literal.Join(2)
 
-    def create_global_action_process__position_input(self):
+    def create_action_process__position_input(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.process.Process
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.trigger_global_action_process__for_empty_rule_position_input()
+        self.trigger_action_process__for_empty_rule_position_input()
 
-    def create_global_action_process__position_trigger(self):
+    def create_action_process__position_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.process.Process
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_global_action_process__execution()
-        self.scheduler.submit(self.trigger_global_action_process__action_parent)
-        self.scheduler.submit(self.trigger_global_action_process__for_empty_rule_position_input)
-        self.trigger_global_action_process__when_empty_position_config()
+        self.init_execution_trigger_action_process()
+        self.scheduler.submit(self.trigger_action_process__action_parent)
+        self.scheduler.submit(self.trigger_action_process__for_empty_rule_position_input)
+        self.trigger_action_process__when_empty_position_config()
 
-    def init_trigger_global_action_process__execution(self):
+    def init_execution_trigger_action_process(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.process.Process
         )
-        self.trigger_global_action_process__execution = local.my_domain_com.my_lib.process.ProcessExecution(
+        self.execution_trigger_action_process = local.my_domain_com.my_lib.process.ProcessExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_process,
+            self.guarantees.trigger_action_process,
         )
 
-    def trigger_global_action_process__action_parent(self):
-        self.trigger_global_action_process__execution.accept_action_parent()
+    def trigger_action_process__action_parent(self):
+        self.execution_trigger_action_process.accept_action_parent()
 
-    def trigger_global_action_process__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_global_action_process__for_empty_rule_position_input.arrive():
+    def trigger_action_process__for_empty_rule_position_input(self):
+        if not self.join_for_trigger_action_process__for_empty_rule_position_input.arrive():
             return
-        self.trigger_global_action_process__execution.accept_for_empty_rule_position_input()
+        self.execution_trigger_action_process.accept_for_empty_rule_position_input()
 
-    def trigger_global_action_process__when_empty_position_config(self):
-        self.trigger_global_action_process__execution.accept_when_empty_position_config()
+    def trigger_action_process__when_empty_position_config(self):
+        self.execution_trigger_action_process.accept_when_empty_position_config()

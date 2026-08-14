@@ -42,8 +42,8 @@ class Runner(literal.Action):
 class RunnerGuarantees:
     def __init__(self):
         self.guarantee_position_source__move__position_dest: list[literal.Task] = []
-        self.trigger_position_source__global_action_implier_one = local.my_domain_com.my_lib.implier_one.ImplierOneGuarantees()
-        self.trigger_position_source__global_action_implier_two = local.my_domain_com.my_lib.implier_two.ImplierTwoGuarantees()
+        self.trigger_position_source__action_implier_one = local.my_domain_com.my_lib.implier_one.ImplierOneGuarantees()
+        self.trigger_position_source__action_implier_two = local.my_domain_com.my_lib.implier_two.ImplierTwoGuarantees()
 
 
 @final
@@ -57,14 +57,14 @@ class RunnerExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_position_source__global_action_implier_one.guarantee_global_position_implied.append(
-            self.trigger_position_source__global_action_implier_two__when_empty_global_position_implied
+        guarantees.trigger_position_source__action_implier_one.guarantee_global_position_implied.append(
+            self.trigger_position_source__action_implier_two__when_empty_global_position_implied
         )
-        self.trigger_position_source__global_action_implier_one__execution: local.my_domain_com.my_lib.implier_one.ImplierOneExecution
-        self.trigger_position_source__global_action_implier_two__execution: local.my_domain_com.my_lib.implier_two.ImplierTwoExecution
+        self.execution_trigger_position_source__action_implier_one: local.my_domain_com.my_lib.implier_one.ImplierOneExecution
+        self.execution_trigger_position_source__action_implier_two: local.my_domain_com.my_lib.implier_two.ImplierTwoExecution
         self.join_for_move_position_source_to_position_dest = literal.Join(2)
-        self.join_for_trigger_position_source__global_action_implier_one__when_empty_global_position_implied = literal.Join(2)
-        self.join_for_trigger_position_source__global_action_implier_two__when_empty_global_position_implied = literal.Join(2)
+        self.join_for_trigger_position_source__action_implier_one__when_empty_global_position_implied = literal.Join(2)
+        self.join_for_trigger_position_source__action_implier_two__when_empty_global_position_implied = literal.Join(2)
 
     def accept_when_empty_position_source(self):
         self.create_position_source()
@@ -76,12 +76,12 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.init_trigger_position_source__global_action_implier_one__execution()
-        self.init_trigger_position_source__global_action_implier_two__execution()
+        self.init_execution_trigger_position_source__action_implier_one()
+        self.init_execution_trigger_position_source__action_implier_two()
         self.scheduler.submit(self.move_position_source_to_position_dest)
-        self.scheduler.submit(self.trigger_position_source__global_action_implier_one__when_empty_global_position_implied)
-        self.scheduler.submit(self.trigger_position_source__global_action_implier_one__when_empty_global_position_implied)
-        self.trigger_position_source__global_action_implier_two__when_empty_global_position_implied()
+        self.scheduler.submit(self.trigger_position_source__action_implier_one__when_empty_global_position_implied)
+        self.scheduler.submit(self.trigger_position_source__action_implier_one__when_empty_global_position_implied)
+        self.trigger_position_source__action_implier_two__when_empty_global_position_implied()
 
     def move_position_source_to_position_dest(self):
         if not self.join_for_move_position_source_to_position_dest.arrive():
@@ -95,36 +95,36 @@ class RunnerExecution:
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_dest)
 
-    def init_trigger_position_source__global_action_implier_one__execution(self):
+    def init_execution_trigger_position_source__action_implier_one(self):
         action = self.action.get_interface_position(
             "position<source>"
         ).particle.get_action(
             local.my_domain_com.my_lib.implier_one.ImplierOne
         )
-        self.trigger_position_source__global_action_implier_one__execution = local.my_domain_com.my_lib.implier_one.ImplierOneExecution(
+        self.execution_trigger_position_source__action_implier_one = local.my_domain_com.my_lib.implier_one.ImplierOneExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_source__global_action_implier_one,
+            self.guarantees.trigger_position_source__action_implier_one,
         )
 
-    def init_trigger_position_source__global_action_implier_two__execution(self):
+    def init_execution_trigger_position_source__action_implier_two(self):
         action = self.action.get_interface_position(
             "position<source>"
         ).particle.get_action(
             local.my_domain_com.my_lib.implier_two.ImplierTwo
         )
-        self.trigger_position_source__global_action_implier_two__execution = local.my_domain_com.my_lib.implier_two.ImplierTwoExecution(
+        self.execution_trigger_position_source__action_implier_two = local.my_domain_com.my_lib.implier_two.ImplierTwoExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_source__global_action_implier_two,
+            self.guarantees.trigger_position_source__action_implier_two,
         )
 
-    def trigger_position_source__global_action_implier_one__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_position_source__global_action_implier_one__when_empty_global_position_implied.arrive():
+    def trigger_position_source__action_implier_one__when_empty_global_position_implied(self):
+        if not self.join_for_trigger_position_source__action_implier_one__when_empty_global_position_implied.arrive():
             return
-        self.trigger_position_source__global_action_implier_one__execution.accept_when_empty_global_position_implied()
+        self.execution_trigger_position_source__action_implier_one.accept_when_empty_global_position_implied()
 
-    def trigger_position_source__global_action_implier_two__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_position_source__global_action_implier_two__when_empty_global_position_implied.arrive():
+    def trigger_position_source__action_implier_two__when_empty_global_position_implied(self):
+        if not self.join_for_trigger_position_source__action_implier_two__when_empty_global_position_implied.arrive():
             return
-        self.trigger_position_source__global_action_implier_two__execution.accept_when_empty_global_position_implied()
+        self.execution_trigger_position_source__action_implier_two.accept_when_empty_global_position_implied()

@@ -22,7 +22,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
+        self.trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
 
 
 @final
@@ -41,37 +41,37 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__global_action_maker.guarantee_position_result.append(
-            self.destroy_position_box__global_action_maker__position_result
+        guarantees.trigger_position_box__action_maker.guarantee_position_result.append(
+            self.destroy_position_box__action_maker__position_result
         )
-        guarantees.trigger_position_box__global_action_maker.guarantee_position_result.append(
-            self.trigger_position_box__global_action_maker__position_result__global_action_destructor__action_parent
+        guarantees.trigger_position_box__action_maker.guarantee_position_result.append(
+            self.trigger_position_box__action_maker__position_result__action_destructor__action_parent
         )
-        guarantees.trigger_position_box__global_action_maker.guarantee_position_result.append(
-            self.trigger_position_box__global_action_maker__position_result__global_action_destructor
+        guarantees.trigger_position_box__action_maker.guarantee_position_result.append(
+            self.trigger_position_box__action_maker__position_result__action_destructor
         )
-        self.trigger_position_box__global_action_maker__execution: local.my_domain_com.my_lib.maker.MakerExecution
-        self.trigger_position_box__global_action_maker__position_result__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.execution_trigger_position_box__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
+        self.execution_trigger_position_box__action_maker__position_result__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_maker__when_empty_position_result = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_maker__position_result__global_action_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_maker__when_empty_position_result = literal.Join(2)
+        self.join_for_trigger_position_box__action_maker__position_result__action_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.submit(self.create_position_box__global_action_maker__position_run)
-        self.trigger_position_box__global_action_maker__when_empty_position_result()
+        self.scheduler.submit(self.create_position_box__action_maker__position_run)
+        self.trigger_position_box__action_maker__when_empty_position_result()
 
-    def create_position_box__global_action_maker__position_run(self):
+    def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_maker__execution()
-        self.scheduler.submit(self.destroy_position_box__global_action_maker__position_run)
-        self.trigger_position_box__global_action_maker__when_empty_position_result()
+        self.init_execution_trigger_position_box__action_maker()
+        self.scheduler.submit(self.destroy_position_box__action_maker__position_run)
+        self.trigger_position_box__action_maker__when_empty_position_result()
 
-    def destroy_position_box__global_action_maker__position_result(self):
+    def destroy_position_box__action_maker__position_result(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
@@ -79,7 +79,7 @@ class TestExecution:
         ).destroy_particle()
         self.destroy_position_box()
 
-    def destroy_position_box__global_action_maker__position_run(self):
+    def destroy_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
@@ -92,31 +92,31 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_trigger_position_box__global_action_maker__execution(self):
+    def init_execution_trigger_position_box__action_maker(self):
         action = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         )
-        self.trigger_position_box__global_action_maker__execution = local.my_domain_com.my_lib.maker.MakerExecution(
+        self.execution_trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_maker,
+            self.guarantees.trigger_position_box__action_maker,
         )
 
-    def init_trigger_position_box__global_action_maker__position_result__global_action_destructor__execution(self):
-        self.trigger_position_box__global_action_maker__position_result__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+    def init_execution_trigger_position_box__action_maker__position_result__action_destructor(self):
+        self.execution_trigger_position_box__action_maker__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
 
-    def trigger_position_box__global_action_maker__position_result__global_action_destructor(self):
-        self.init_trigger_position_box__global_action_maker__position_result__global_action_destructor__execution()
-        self.trigger_position_box__global_action_maker__position_result__global_action_destructor__action_parent()
+    def trigger_position_box__action_maker__position_result__action_destructor(self):
+        self.init_execution_trigger_position_box__action_maker__position_result__action_destructor()
+        self.trigger_position_box__action_maker__position_result__action_destructor__action_parent()
 
-    def trigger_position_box__global_action_maker__when_empty_position_result(self):
-        if not self.join_for_trigger_position_box__global_action_maker__when_empty_position_result.arrive():
+    def trigger_position_box__action_maker__when_empty_position_result(self):
+        if not self.join_for_trigger_position_box__action_maker__when_empty_position_result.arrive():
             return
-        self.trigger_position_box__global_action_maker__execution.accept_when_empty_position_result()
+        self.execution_trigger_position_box__action_maker.accept_when_empty_position_result()
 
-    def trigger_position_box__global_action_maker__position_result__global_action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_maker__position_result__global_action_destructor__action_parent.arrive():
+    def trigger_position_box__action_maker__position_result__action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__action_maker__position_result__action_destructor__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_maker__position_result__global_action_destructor__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_maker__position_result__action_destructor.accept_action_parent()

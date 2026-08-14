@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_host = local.my_domain_com.my_lib.host.HostGuarantees()
+        self.trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostGuarantees()
 
 
 @final
@@ -50,38 +50,38 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_box__global_action_host__execution: local.my_domain_com.my_lib.host.HostExecution
-        self.join_for_trigger_position_box__global_action_host__when_empty_global_action_worker__position_input = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_host__when_empty_global_action_worker__position_run = literal.Join(2)
+        self.execution_trigger_position_box__action_host: local.my_domain_com.my_lib.host.HostExecution
+        self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_input = literal.Join(2)
+        self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_run = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_host__execution()
-        self.scheduler.submit(self.trigger_position_box__global_action_host__when_empty_global_action_worker__position_input)
-        self.scheduler.submit(self.trigger_position_box__global_action_host__when_empty_global_action_worker__position_run)
-        self.scheduler.submit(self.trigger_position_box__global_action_host__when_empty_global_action_worker__position_input)
-        self.trigger_position_box__global_action_host__when_empty_global_action_worker__position_run()
+        self.init_execution_trigger_position_box__action_host()
+        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_input)
+        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_run)
+        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_input)
+        self.trigger_position_box__action_host__when_empty_action_worker__position_run()
 
-    def init_trigger_position_box__global_action_host__execution(self):
+    def init_execution_trigger_position_box__action_host(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.host.Host
         )
-        self.trigger_position_box__global_action_host__execution = local.my_domain_com.my_lib.host.HostExecution(
+        self.execution_trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_host,
+            self.guarantees.trigger_position_box__action_host,
         )
 
-    def trigger_position_box__global_action_host__when_empty_global_action_worker__position_input(self):
-        if not self.join_for_trigger_position_box__global_action_host__when_empty_global_action_worker__position_input.arrive():
+    def trigger_position_box__action_host__when_empty_action_worker__position_input(self):
+        if not self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_input.arrive():
             return
-        self.trigger_position_box__global_action_host__execution.accept_when_empty_global_action_worker__position_input()
+        self.execution_trigger_position_box__action_host.accept_when_empty_action_worker__position_input()
 
-    def trigger_position_box__global_action_host__when_empty_global_action_worker__position_run(self):
-        if not self.join_for_trigger_position_box__global_action_host__when_empty_global_action_worker__position_run.arrive():
+    def trigger_position_box__action_host__when_empty_action_worker__position_run(self):
+        if not self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_run.arrive():
             return
-        self.trigger_position_box__global_action_host__execution.accept_when_empty_global_action_worker__position_run()
+        self.execution_trigger_position_box__action_host.accept_when_empty_action_worker__position_run()

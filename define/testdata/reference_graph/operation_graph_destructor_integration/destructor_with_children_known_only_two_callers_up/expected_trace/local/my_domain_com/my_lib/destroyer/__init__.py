@@ -50,16 +50,16 @@ class DestroyerExecution:
         )
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_position_run__global_action_destruct__execution: local.my_domain_com.my_lib.destruct.DestructExecution
-        self.join_for_trigger_position_run__global_action_destruct__action_parent = literal.Join(2)
+        self.execution_trigger_position_run__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
+        self.join_for_trigger_position_run__action_destruct__action_parent = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.init_trigger_position_run__global_action_destruct__execution()
-        self.scheduler.submit(self.trigger_position_run__global_action_destruct__action_parent)
-        self.trigger_position_run__global_action_destruct__action_parent()
+        self.init_execution_trigger_position_run__action_destruct()
+        self.scheduler.submit(self.trigger_position_run__action_destruct__action_parent)
+        self.trigger_position_run__action_destruct__action_parent()
 
     def destroy_position_run(self):
         literal.continue_destruction(self.continue_destroy_position_run)
@@ -75,14 +75,14 @@ class DestroyerExecution:
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
-    def init_trigger_position_run__global_action_destruct__execution(self):
-        self.trigger_position_run__global_action_destruct__execution = local.my_domain_com.my_lib.destruct.DestructExecution(
+    def init_execution_trigger_position_run__action_destruct(self):
+        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
             self.scheduler,
             self.trace_execution,
             "destruct",
         )
 
-    def trigger_position_run__global_action_destruct__action_parent(self):
-        if not self.join_for_trigger_position_run__global_action_destruct__action_parent.arrive():
+    def trigger_position_run__action_destruct__action_parent(self):
+        if not self.join_for_trigger_position_run__action_destruct__action_parent.arrive():
             return
-        self.trigger_position_run__global_action_destruct__execution.accept_action_parent()
+        self.execution_trigger_position_run__action_destruct.accept_action_parent()

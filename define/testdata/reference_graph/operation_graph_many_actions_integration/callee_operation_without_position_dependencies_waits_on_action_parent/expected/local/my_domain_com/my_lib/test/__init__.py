@@ -26,7 +26,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_position_box__global_action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        self.trigger_global_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
 
 
 @final
@@ -40,17 +40,17 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_position_box__global_action_worker__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_global_position_box__global_action_worker__when_empty_position_result = literal.Join(2)
+        self.execution_trigger_global_position_box__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_trigger_global_position_box__action_worker__when_empty_position_result = literal.Join(2)
 
     def create_global_position_box(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.box.Box
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_box__global_action_worker__position_trigger_pos)
-        self.trigger_global_position_box__global_action_worker__when_empty_position_result()
+        self.scheduler.submit(self.create_global_position_box__action_worker__position_trigger_pos)
+        self.trigger_global_position_box__action_worker__when_empty_position_result()
 
-    def create_global_position_box__global_action_worker__position_trigger_pos(self):
+    def create_global_position_box__action_worker__position_trigger_pos(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.box.Box
         ).particle.get_action(
@@ -58,22 +58,22 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_position_box__global_action_worker__execution()
-        self.trigger_global_position_box__global_action_worker__when_empty_position_result()
+        self.init_execution_trigger_global_position_box__action_worker()
+        self.trigger_global_position_box__action_worker__when_empty_position_result()
 
-    def init_trigger_global_position_box__global_action_worker__execution(self):
+    def init_execution_trigger_global_position_box__action_worker(self):
         action = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.box.Box
         ).particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         )
-        self.trigger_global_position_box__global_action_worker__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+        self.execution_trigger_global_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_position_box__global_action_worker,
+            self.guarantees.trigger_global_position_box__action_worker,
         )
 
-    def trigger_global_position_box__global_action_worker__when_empty_position_result(self):
-        if not self.join_for_trigger_global_position_box__global_action_worker__when_empty_position_result.arrive():
+    def trigger_global_position_box__action_worker__when_empty_position_result(self):
+        if not self.join_for_trigger_global_position_box__action_worker__when_empty_position_result.arrive():
             return
-        self.trigger_global_position_box__global_action_worker__execution.accept_when_empty_position_result()
+        self.execution_trigger_global_position_box__action_worker.accept_when_empty_position_result()

@@ -16,8 +16,8 @@ class Host(literal.Action):
 @final
 class HostGuarantees:
     def __init__(self):
-        self.guarantee_global_action_worker__position_run: list[literal.Task] = []
-        self.trigger_global_action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        self.guarantee_action_worker__position_run: list[literal.Task] = []
+        self.trigger_action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
 
 
 @final
@@ -31,44 +31,44 @@ class HostExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_worker__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_global_action_worker__for_empty_rule_position_input = literal.Join(2)
+        self.execution_trigger_action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_trigger_action_worker__for_empty_rule_position_input = literal.Join(2)
 
-    def accept_when_empty_global_action_worker__position_input(self):
-        self.create_global_action_worker__position_input()
+    def accept_when_empty_action_worker__position_input(self):
+        self.create_action_worker__position_input()
 
-    def accept_when_empty_global_action_worker__position_run(self):
-        self.create_global_action_worker__position_run()
+    def accept_when_empty_action_worker__position_run(self):
+        self.create_action_worker__position_run()
 
-    def create_global_action_worker__position_input(self):
+    def create_action_worker__position_input(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.trigger_global_action_worker__for_empty_rule_position_input()
+        self.trigger_action_worker__for_empty_rule_position_input()
 
-    def create_global_action_worker__position_run(self):
+    def create_action_worker__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_worker__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_worker__position_run)
-        self.trigger_global_action_worker__for_empty_rule_position_input()
+        self.init_execution_trigger_action_worker()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_worker__position_run)
+        self.trigger_action_worker__for_empty_rule_position_input()
 
-    def init_trigger_global_action_worker__execution(self):
+    def init_execution_trigger_action_worker(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         )
-        self.trigger_global_action_worker__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+        self.execution_trigger_action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_worker,
+            self.guarantees.trigger_action_worker,
         )
 
-    def trigger_global_action_worker__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_global_action_worker__for_empty_rule_position_input.arrive():
+    def trigger_action_worker__for_empty_rule_position_input(self):
+        if not self.join_for_trigger_action_worker__for_empty_rule_position_input.arrive():
             return
-        self.trigger_global_action_worker__execution.accept_for_empty_rule_position_input()
+        self.execution_trigger_action_worker.accept_for_empty_rule_position_input()

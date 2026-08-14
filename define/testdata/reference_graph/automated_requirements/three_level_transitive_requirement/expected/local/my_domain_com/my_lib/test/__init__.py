@@ -20,14 +20,14 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_outer__position_middle_iface)
-        execution.create_global_action_outer__position_run()
+        execution.scheduler.submit(execution.create_action_outer__position_middle_iface)
+        execution.create_action_outer__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
 
 
 @final
@@ -41,21 +41,21 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_outer__execution: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data = literal.Join(2)
-        self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_run = literal.Join(2)
-        self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run = literal.Join(2)
+        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data = literal.Join(2)
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run = literal.Join(2)
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run = literal.Join(2)
 
-    def create_global_action_outer__position_middle_iface(self):
+    def create_action_outer__position_middle_iface(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<middle_iface>"
         ).create_particle()
-        self.scheduler.submit(self.create_global_action_outer__position_middle_iface__global_action_middle__position_inner_iface)
-        self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_run()
+        self.scheduler.submit(self.create_action_outer__position_middle_iface__action_middle__position_inner_iface)
+        self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run()
 
-    def create_global_action_outer__position_middle_iface__global_action_middle__position_inner_iface(self):
+    def create_action_outer__position_middle_iface__action_middle__position_inner_iface(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
@@ -65,41 +65,41 @@ class TestExecution:
         ).get_interface_position(
             "position<inner_iface>"
         ).create_particle()
-        self.scheduler.submit(self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data)
-        self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run()
+        self.scheduler.submit(self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data)
+        self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run()
 
-    def create_global_action_outer__position_run(self):
+    def create_action_outer__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_outer__execution()
-        self.scheduler.submit(self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data)
-        self.scheduler.submit(self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_run)
-        self.trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run()
+        self.init_execution_trigger_action_outer()
+        self.scheduler.submit(self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data)
+        self.scheduler.submit(self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run)
+        self.trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run()
 
-    def init_trigger_global_action_outer__execution(self):
+    def init_execution_trigger_action_outer(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         )
-        self.trigger_global_action_outer__execution = local.my_domain_com.my_lib.outer.OuterExecution(
+        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_outer,
+            self.guarantees.trigger_action_outer,
         )
 
-    def trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data(self):
-        if not self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data.arrive():
+    def trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data(self):
+        if not self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data.arrive():
             return
-        self.trigger_global_action_outer__execution.accept_when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_data()
+        self.execution_trigger_action_outer.accept_when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data()
 
-    def trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_run(self):
-        if not self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_run.arrive():
+    def trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run(self):
+        if not self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run.arrive():
             return
-        self.trigger_global_action_outer__execution.accept_when_empty_position_middle_iface__global_action_middle__position_run()
+        self.execution_trigger_action_outer.accept_when_empty_position_middle_iface__action_middle__position_run()
 
-    def trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run(self):
-        if not self.join_for_trigger_global_action_outer__when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run.arrive():
+    def trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run(self):
+        if not self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run.arrive():
             return
-        self.trigger_global_action_outer__execution.accept_when_empty_position_middle_iface__global_action_middle__position_inner_iface__global_action_inner__position_run()
+        self.execution_trigger_action_outer.accept_when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run()

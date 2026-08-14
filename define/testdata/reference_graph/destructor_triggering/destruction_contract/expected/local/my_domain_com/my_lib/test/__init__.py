@@ -23,7 +23,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_close_thing = local.my_domain_com.my_lib.close_thing.CloseThingGuarantees()
+        self.trigger_position_box__action_close_thing = local.my_domain_com.my_lib.close_thing.CloseThingGuarantees()
 
 
 @final
@@ -49,25 +49,25 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__global_action_close_thing.guarantee_position_target.append(
+        guarantees.trigger_position_box__action_close_thing.guarantee_position_target.append(
             self.destroy_position_box
         )
-        self.trigger_position_box__global_action_close_thing__execution: local.my_domain_com.my_lib.close_thing.CloseThingExecution
-        self.join_for_move_position_source_to_position_box__global_action_close_thing__position_target = literal.Join(2)
+        self.execution_trigger_position_box__action_close_thing: local.my_domain_com.my_lib.close_thing.CloseThingExecution
+        self.join_for_move_position_source_to_position_box__action_close_thing__position_target = literal.Join(2)
         self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_close_thing__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_trigger_position_box__action_close_thing__for_empty_rule_position_target = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.submit(self.move_position_source_to_position_box__global_action_close_thing__position_target)
-        self.create_position_box__global_action_close_thing__position_run()
+        self.scheduler.submit(self.move_position_source_to_position_box__action_close_thing__position_target)
+        self.create_position_box__action_close_thing__position_run()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.move_position_source_to_position_box__global_action_close_thing__position_target()
+        self.move_position_source_to_position_box__action_close_thing__position_target()
 
-    def move_position_source_to_position_box__global_action_close_thing__position_target(self):
-        if not self.join_for_move_position_source_to_position_box__global_action_close_thing__position_target.arrive():
+    def move_position_source_to_position_box__action_close_thing__position_target(self):
+        if not self.join_for_move_position_source_to_position_box__action_close_thing__position_target.arrive():
             return
         self.local_position_source.move_particle_to(
             self.local_position_box.particle.get_action(
@@ -76,19 +76,19 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.trigger_position_box__global_action_close_thing__for_empty_rule_position_target()
+        self.trigger_position_box__action_close_thing__for_empty_rule_position_target()
 
-    def create_position_box__global_action_close_thing__position_run(self):
+    def create_position_box__action_close_thing__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_close_thing__execution()
-        self.scheduler.submit(self.destroy_position_box__global_action_close_thing__position_run)
-        self.trigger_position_box__global_action_close_thing__for_empty_rule_position_target()
+        self.init_execution_trigger_position_box__action_close_thing()
+        self.scheduler.submit(self.destroy_position_box__action_close_thing__position_run)
+        self.trigger_position_box__action_close_thing__for_empty_rule_position_target()
 
-    def destroy_position_box__global_action_close_thing__position_run(self):
+    def destroy_position_box__action_close_thing__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
         ).get_interface_position(
@@ -101,17 +101,17 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_trigger_position_box__global_action_close_thing__execution(self):
+    def init_execution_trigger_position_box__action_close_thing(self):
         action = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
         )
-        self.trigger_position_box__global_action_close_thing__execution = local.my_domain_com.my_lib.close_thing.CloseThingExecution(
+        self.execution_trigger_position_box__action_close_thing = local.my_domain_com.my_lib.close_thing.CloseThingExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_close_thing,
+            self.guarantees.trigger_position_box__action_close_thing,
         )
 
-    def trigger_position_box__global_action_close_thing__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_box__global_action_close_thing__for_empty_rule_position_target.arrive():
+    def trigger_position_box__action_close_thing__for_empty_rule_position_target(self):
+        if not self.join_for_trigger_position_box__action_close_thing__for_empty_rule_position_target.arrive():
             return
-        self.trigger_position_box__global_action_close_thing__execution.accept_for_empty_rule_position_target()
+        self.execution_trigger_position_box__action_close_thing.accept_for_empty_rule_position_target()

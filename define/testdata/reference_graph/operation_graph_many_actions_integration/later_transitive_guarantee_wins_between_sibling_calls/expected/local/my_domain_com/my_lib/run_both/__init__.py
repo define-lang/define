@@ -29,10 +29,10 @@ class RunBoth(literal.Action):
 @final
 class RunBothGuarantees:
     def __init__(self):
-        self.guarantee_global_action_call_fill__position_trigger_pos: list[literal.Task] = []
-        self.guarantee_global_action_call_empty__position_trigger_pos: list[literal.Task] = []
-        self.trigger_global_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillGuarantees()
-        self.trigger_global_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyGuarantees()
+        self.guarantee_action_call_fill__position_trigger_pos: list[literal.Task] = []
+        self.guarantee_action_call_empty__position_trigger_pos: list[literal.Task] = []
+        self.trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillGuarantees()
+        self.trigger_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyGuarantees()
 
 
 @final
@@ -46,89 +46,89 @@ class RunBothExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_call_fill.trigger_global_action_fill_item.guarantee_global_position_item.append(
-            self.trigger_global_action_call_empty__for_empty_rule_global_position_item
+        guarantees.trigger_action_call_fill.trigger_action_fill_item.guarantee_global_position_item.append(
+            self.trigger_action_call_empty__for_empty_rule_global_position_item
         )
-        self.trigger_global_action_call_fill__execution: local.my_domain_com.my_lib.call_fill.CallFillExecution
-        self.trigger_global_action_call_empty__execution: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
-        self.join_for_trigger_global_action_call_fill__when_empty_global_action_fill_item__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_global_action_call_fill__when_empty_global_position_item = literal.Join(2)
-        self.join_for_trigger_global_action_call_empty__when_empty_global_action_empty_item__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_global_action_call_empty__for_empty_rule_global_position_item = literal.Join(2)
+        self.execution_trigger_action_call_fill: local.my_domain_com.my_lib.call_fill.CallFillExecution
+        self.execution_trigger_action_call_empty: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
+        self.join_for_trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos = literal.Join(2)
+        self.join_for_trigger_action_call_fill__when_empty_global_position_item = literal.Join(2)
+        self.join_for_trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos = literal.Join(2)
+        self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item = literal.Join(2)
 
-    def accept_when_empty_global_action_call_fill__position_trigger_pos(self):
-        self.create_global_action_call_fill__position_trigger_pos()
+    def accept_when_empty_action_call_fill__position_trigger_pos(self):
+        self.create_action_call_fill__position_trigger_pos()
 
-    def accept_when_empty_global_action_call_empty__position_trigger_pos(self):
-        self.create_global_action_call_empty__position_trigger_pos()
+    def accept_when_empty_action_call_empty__position_trigger_pos(self):
+        self.create_action_call_empty__position_trigger_pos()
 
-    def accept_when_empty_global_action_fill_item__position_trigger_pos(self):
-        self.trigger_global_action_call_fill__when_empty_global_action_fill_item__position_trigger_pos()
+    def accept_when_empty_action_fill_item__position_trigger_pos(self):
+        self.trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos()
 
     def accept_when_empty_global_position_item(self):
-        self.trigger_global_action_call_fill__when_empty_global_position_item()
+        self.trigger_action_call_fill__when_empty_global_position_item()
 
-    def accept_when_empty_global_action_empty_item__position_trigger_pos(self):
-        self.trigger_global_action_call_empty__when_empty_global_action_empty_item__position_trigger_pos()
+    def accept_when_empty_action_empty_item__position_trigger_pos(self):
+        self.trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos()
 
-    def create_global_action_call_fill__position_trigger_pos(self):
+    def create_action_call_fill__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_fill.CallFill
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_call_fill__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_call_fill__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_call_fill__when_empty_global_action_fill_item__position_trigger_pos)
-        self.trigger_global_action_call_fill__when_empty_global_position_item()
+        self.init_execution_trigger_action_call_fill()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_call_fill__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos)
+        self.trigger_action_call_fill__when_empty_global_position_item()
 
-    def create_global_action_call_empty__position_trigger_pos(self):
+    def create_action_call_empty__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_empty.CallEmpty
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_call_empty__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_call_empty__when_empty_global_action_empty_item__position_trigger_pos)
-        self.trigger_global_action_call_empty__for_empty_rule_global_position_item()
+        self.init_execution_trigger_action_call_empty()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_call_empty__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos)
+        self.trigger_action_call_empty__for_empty_rule_global_position_item()
 
-    def init_trigger_global_action_call_fill__execution(self):
+    def init_execution_trigger_action_call_fill(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_fill.CallFill
         )
-        self.trigger_global_action_call_fill__execution = local.my_domain_com.my_lib.call_fill.CallFillExecution(
+        self.execution_trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_call_fill,
+            self.guarantees.trigger_action_call_fill,
         )
 
-    def init_trigger_global_action_call_empty__execution(self):
+    def init_execution_trigger_action_call_empty(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_empty.CallEmpty
         )
-        self.trigger_global_action_call_empty__execution = local.my_domain_com.my_lib.call_empty.CallEmptyExecution(
+        self.execution_trigger_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_call_empty,
+            self.guarantees.trigger_action_call_empty,
         )
 
-    def trigger_global_action_call_fill__when_empty_global_action_fill_item__position_trigger_pos(self):
-        if not self.join_for_trigger_global_action_call_fill__when_empty_global_action_fill_item__position_trigger_pos.arrive():
+    def trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos(self):
+        if not self.join_for_trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos.arrive():
             return
-        self.trigger_global_action_call_fill__execution.accept_when_empty_global_action_fill_item__position_trigger_pos()
+        self.execution_trigger_action_call_fill.accept_when_empty_action_fill_item__position_trigger_pos()
 
-    def trigger_global_action_call_fill__when_empty_global_position_item(self):
-        if not self.join_for_trigger_global_action_call_fill__when_empty_global_position_item.arrive():
+    def trigger_action_call_fill__when_empty_global_position_item(self):
+        if not self.join_for_trigger_action_call_fill__when_empty_global_position_item.arrive():
             return
-        self.trigger_global_action_call_fill__execution.accept_when_empty_global_position_item()
+        self.execution_trigger_action_call_fill.accept_when_empty_global_position_item()
 
-    def trigger_global_action_call_empty__when_empty_global_action_empty_item__position_trigger_pos(self):
-        if not self.join_for_trigger_global_action_call_empty__when_empty_global_action_empty_item__position_trigger_pos.arrive():
+    def trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos(self):
+        if not self.join_for_trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos.arrive():
             return
-        self.trigger_global_action_call_empty__execution.accept_when_empty_global_action_empty_item__position_trigger_pos()
+        self.execution_trigger_action_call_empty.accept_when_empty_action_empty_item__position_trigger_pos()
 
-    def trigger_global_action_call_empty__for_empty_rule_global_position_item(self):
-        if not self.join_for_trigger_global_action_call_empty__for_empty_rule_global_position_item.arrive():
+    def trigger_action_call_empty__for_empty_rule_global_position_item(self):
+        if not self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item.arrive():
             return
-        self.trigger_global_action_call_empty__execution.accept_for_empty_rule_global_position_item()
+        self.execution_trigger_action_call_empty.accept_for_empty_rule_global_position_item()

@@ -20,14 +20,14 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_act__position_chain_dest)
-        execution.create_global_action_act__position_trigger()
+        execution.scheduler.submit(execution.create_action_act__position_chain_dest)
+        execution.create_action_act__position_trigger()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
+        self.trigger_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
 
 
 @final
@@ -41,10 +41,10 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_act__execution: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_global_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest = literal.Join(2)
+        self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
+        self.join_for_trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest = literal.Join(2)
 
-    def create_global_action_act__position_chain_dest(self):
+    def create_action_act__position_chain_dest(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
@@ -57,36 +57,36 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.mid_dest.MidDest
         ).create_particle()
-        self.trigger_global_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
+        self.trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
 
-    def create_global_action_act__position_trigger(self):
+    def create_action_act__position_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_global_action_act__execution()
-        self.scheduler.submit(self.trigger_global_action_act__action_parent)
-        self.scheduler.submit(self.trigger_global_action_act__when_empty_position_iface_dest)
-        self.trigger_global_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
+        self.init_execution_trigger_action_act()
+        self.scheduler.submit(self.trigger_action_act__action_parent)
+        self.scheduler.submit(self.trigger_action_act__when_empty_position_iface_dest)
+        self.trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
 
-    def init_trigger_global_action_act__execution(self):
+    def init_execution_trigger_action_act(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         )
-        self.trigger_global_action_act__execution = local.my_domain_com.my_lib.act.ActExecution(
+        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_act,
+            self.guarantees.trigger_action_act,
         )
 
-    def trigger_global_action_act__action_parent(self):
-        self.trigger_global_action_act__execution.accept_action_parent()
+    def trigger_action_act__action_parent(self):
+        self.execution_trigger_action_act.accept_action_parent()
 
-    def trigger_global_action_act__when_empty_position_iface_dest(self):
-        self.trigger_global_action_act__execution.accept_when_empty_position_iface_dest()
+    def trigger_action_act__when_empty_position_iface_dest(self):
+        self.execution_trigger_action_act.accept_when_empty_position_iface_dest()
 
-    def trigger_global_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
-        if not self.join_for_trigger_global_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest.arrive():
+    def trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
+        if not self.join_for_trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest.arrive():
             return
-        self.trigger_global_action_act__execution.accept_when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
+        self.execution_trigger_action_act.accept_when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()

@@ -24,10 +24,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_global_action_do_thing__position_trigger_pos)
-        execution.scheduler.submit(execution.create_global_action_a_b_c_the_lib_do_thing__position_trigger_pos)
-        execution.scheduler.submit(execution.create_global_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos)
-        execution.create_global_action_a_b_c_the_lib_do_thing__position_trigger_pos_2()
+        execution.scheduler.submit(execution.create_action_do_thing__position_trigger_pos)
+        execution.scheduler.submit(execution.create_action_a_b_c_the_lib_do_thing__position_trigger_pos)
+        execution.scheduler.submit(execution.create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos)
+        execution.create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2()
 
 
 @final
@@ -39,75 +39,75 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_action_do_thing__execution: local.a_b_c.the_lib.do_thing.DoThingExecution
-        self.trigger_global_action_a_b_c_the_lib_do_thing__execution: local.a_b_c_.the_lib.do_thing.DoThingExecution
-        self.trigger_global_action_mv_a_b_c_the_lib_do_thing__execution: mv.a_b_c.the_lib.do_thing.DoThingExecution
-        self.trigger_global_action_a_b_c_the_lib_do_thing_2__execution: local.a_b_c__.the_lib.do_thing.DoThingExecution
+        self.execution_trigger_action_do_thing: local.a_b_c.the_lib.do_thing.DoThingExecution
+        self.execution_trigger_action_a_b_c_the_lib_do_thing: local.a_b_c_.the_lib.do_thing.DoThingExecution
+        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing: mv.a_b_c.the_lib.do_thing.DoThingExecution
+        self.execution_trigger_action_a_b_c_the_lib_do_thing_2: local.a_b_c__.the_lib.do_thing.DoThingExecution
 
-    def create_global_action_do_thing__position_trigger_pos(self):
+    def create_action_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.a_b_c.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_do_thing__execution()
-        self.trigger_global_action_do_thing__action_parent()
+        self.init_execution_trigger_action_do_thing()
+        self.trigger_action_do_thing__action_parent()
 
-    def create_global_action_a_b_c_the_lib_do_thing__position_trigger_pos(self):
+    def create_action_a_b_c_the_lib_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.a_b_c_.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_a_b_c_the_lib_do_thing__execution()
-        self.trigger_global_action_a_b_c_the_lib_do_thing__action_parent()
+        self.init_execution_trigger_action_a_b_c_the_lib_do_thing()
+        self.trigger_action_a_b_c_the_lib_do_thing__action_parent()
 
-    def create_global_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos(self):
+    def create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
             mv.a_b_c.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_mv_a_b_c_the_lib_do_thing__execution()
-        self.trigger_global_action_mv_a_b_c_the_lib_do_thing__action_parent()
+        self.init_execution_trigger_action_mv_a_b_c_the_lib_do_thing()
+        self.trigger_action_mv_a_b_c_the_lib_do_thing__action_parent()
 
-    def create_global_action_a_b_c_the_lib_do_thing__position_trigger_pos_2(self):
+    def create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2(self):
         self.action.on_particle.get_action(
             local.a_b_c__.the_lib.do_thing.DoThing
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_a_b_c_the_lib_do_thing_2__execution()
-        self.trigger_global_action_a_b_c_the_lib_do_thing_2__action_parent()
+        self.init_execution_trigger_action_a_b_c_the_lib_do_thing_2()
+        self.trigger_action_a_b_c_the_lib_do_thing_2__action_parent()
 
-    def init_trigger_global_action_do_thing__execution(self):
-        self.trigger_global_action_do_thing__execution = local.a_b_c.the_lib.do_thing.DoThingExecution(
+    def init_execution_trigger_action_do_thing(self):
+        self.execution_trigger_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_a_b_c_the_lib_do_thing__execution(self):
-        self.trigger_global_action_a_b_c_the_lib_do_thing__execution = local.a_b_c_.the_lib.do_thing.DoThingExecution(
+    def init_execution_trigger_action_a_b_c_the_lib_do_thing(self):
+        self.execution_trigger_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_mv_a_b_c_the_lib_do_thing__execution(self):
-        self.trigger_global_action_mv_a_b_c_the_lib_do_thing__execution = mv.a_b_c.the_lib.do_thing.DoThingExecution(
+    def init_execution_trigger_action_mv_a_b_c_the_lib_do_thing(self):
+        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_a_b_c_the_lib_do_thing_2__execution(self):
-        self.trigger_global_action_a_b_c_the_lib_do_thing_2__execution = local.a_b_c__.the_lib.do_thing.DoThingExecution(
+    def init_execution_trigger_action_a_b_c_the_lib_do_thing_2(self):
+        self.execution_trigger_action_a_b_c_the_lib_do_thing_2 = local.a_b_c__.the_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_do_thing__action_parent(self):
-        self.trigger_global_action_do_thing__execution.accept_action_parent()
+    def trigger_action_do_thing__action_parent(self):
+        self.execution_trigger_action_do_thing.accept_action_parent()
 
-    def trigger_global_action_a_b_c_the_lib_do_thing__action_parent(self):
-        self.trigger_global_action_a_b_c_the_lib_do_thing__execution.accept_action_parent()
+    def trigger_action_a_b_c_the_lib_do_thing__action_parent(self):
+        self.execution_trigger_action_a_b_c_the_lib_do_thing.accept_action_parent()
 
-    def trigger_global_action_mv_a_b_c_the_lib_do_thing__action_parent(self):
-        self.trigger_global_action_mv_a_b_c_the_lib_do_thing__execution.accept_action_parent()
+    def trigger_action_mv_a_b_c_the_lib_do_thing__action_parent(self):
+        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing.accept_action_parent()
 
-    def trigger_global_action_a_b_c_the_lib_do_thing_2__action_parent(self):
-        self.trigger_global_action_a_b_c_the_lib_do_thing_2__execution.accept_action_parent()
+    def trigger_action_a_b_c_the_lib_do_thing_2__action_parent(self):
+        self.execution_trigger_action_a_b_c_the_lib_do_thing_2.accept_action_parent()

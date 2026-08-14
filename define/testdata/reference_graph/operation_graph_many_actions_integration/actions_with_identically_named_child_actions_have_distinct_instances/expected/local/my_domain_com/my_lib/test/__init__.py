@@ -20,8 +20,8 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_global_action_first__position_trigger_pos)
-        execution.create_global_action_second__position_trigger_pos()
+        execution.scheduler.submit(execution.create_action_first__position_trigger_pos)
+        execution.create_action_second__position_trigger_pos()
 
 
 @final
@@ -33,39 +33,39 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_action_first__execution: local.my_domain_com.my_lib.first.FirstExecution
-        self.trigger_global_action_second__execution: local.my_domain_com.my_lib.second.SecondExecution
+        self.execution_trigger_action_first: local.my_domain_com.my_lib.first.FirstExecution
+        self.execution_trigger_action_second: local.my_domain_com.my_lib.second.SecondExecution
 
-    def create_global_action_first__position_trigger_pos(self):
+    def create_action_first__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.first.First
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_first__execution()
-        self.trigger_global_action_first__action_parent()
+        self.init_execution_trigger_action_first()
+        self.trigger_action_first__action_parent()
 
-    def create_global_action_second__position_trigger_pos(self):
+    def create_action_second__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.second.Second
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_second__execution()
-        self.trigger_global_action_second__action_parent()
+        self.init_execution_trigger_action_second()
+        self.trigger_action_second__action_parent()
 
-    def init_trigger_global_action_first__execution(self):
-        self.trigger_global_action_first__execution = local.my_domain_com.my_lib.first.FirstExecution(
+    def init_execution_trigger_action_first(self):
+        self.execution_trigger_action_first = local.my_domain_com.my_lib.first.FirstExecution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_second__execution(self):
-        self.trigger_global_action_second__execution = local.my_domain_com.my_lib.second.SecondExecution(
+    def init_execution_trigger_action_second(self):
+        self.execution_trigger_action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_first__action_parent(self):
-        self.trigger_global_action_first__execution.accept_action_parent()
+    def trigger_action_first__action_parent(self):
+        self.execution_trigger_action_first.accept_action_parent()
 
-    def trigger_global_action_second__action_parent(self):
-        self.trigger_global_action_second__execution.accept_action_parent()
+    def trigger_action_second__action_parent(self):
+        self.execution_trigger_action_second.accept_action_parent()

@@ -382,29 +382,23 @@ def test_repeated_action_execution_skips_a_source_suffix(
 
     assert names.triggered_actions == {
         naturally_suffixed: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__global_action_worker_2",
+            canonical_name="trigger_position_gateway__action_worker_2",
             initializer_name=(
-                "init_trigger_position_gateway__global_action_worker_2__execution"
+                "init_execution_trigger_position_gateway__action_worker_2"
             ),
-            execution_name=(
-                "trigger_position_gateway__global_action_worker_2__execution"
-            ),
+            execution_name="execution_trigger_position_gateway__action_worker_2",
         ),
         first: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__global_action_worker",
-            initializer_name=(
-                "init_trigger_position_gateway__global_action_worker__execution"
-            ),
-            execution_name="trigger_position_gateway__global_action_worker__execution",
+            canonical_name="trigger_position_gateway__action_worker",
+            initializer_name="init_execution_trigger_position_gateway__action_worker",
+            execution_name="execution_trigger_position_gateway__action_worker",
         ),
         second: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__global_action_worker_3",
+            canonical_name="trigger_position_gateway__action_worker_3",
             initializer_name=(
-                "init_trigger_position_gateway__global_action_worker_3__execution"
+                "init_execution_trigger_position_gateway__action_worker_3"
             ),
-            execution_name=(
-                "trigger_position_gateway__global_action_worker_3__execution"
-            ),
+            execution_name="execution_trigger_position_gateway__action_worker_3",
         ),
     }
 
@@ -483,10 +477,10 @@ def test_destruction_connection_names_use_action_execution(
 
     assert names.destruction_connections == {
         first_connection: (
-            "destruction_connection_trigger_position_gateway__global_action_worker"
+            "destruction_connection_trigger_position_gateway__action_worker"
         ),
         second_connection: (
-            "destruction_connection_trigger_position_gateway__global_action_worker_2"
+            "destruction_connection_trigger_position_gateway__action_worker_2"
         ),
     }
 

@@ -33,7 +33,7 @@ class ReactAGuarantees:
     def __init__(self):
         self.guarantee_position_result: list[literal.Task] = []
         self.guarantee_position_trigger: list[literal.Task] = []
-        self.trigger_position_result__global_action_final = local.my_domain_com.my_lib.final.FinalGuarantees()
+        self.trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalGuarantees()
 
 
 @final
@@ -50,9 +50,9 @@ class ReactAExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_position_result__global_action_final__execution: local.my_domain_com.my_lib.final.FinalExecution
-        self.join_for_trigger_position_result__global_action_final__action_parent = literal.Join(2)
-        self.join_for_trigger_position_result__global_action_final__for_empty_rule_position_trigger = literal.Join(2)
+        self.execution_trigger_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
+        self.join_for_trigger_position_result__action_final__action_parent = literal.Join(2)
+        self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger = literal.Join(2)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -64,11 +64,11 @@ class ReactAExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_result__global_action_final__position_trigger)
-        self.scheduler.submit(self.trigger_position_result__global_action_final__action_parent)
+        self.scheduler.submit(self.create_position_result__action_final__position_trigger)
+        self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
         self.scheduler.continue_with(self.guarantees.guarantee_position_result)
 
-    def create_position_result__global_action_final__position_trigger(self):
+    def create_position_result__action_final__position_trigger(self):
         self.action.get_interface_position(
             "position<result>"
         ).particle.get_action(
@@ -76,10 +76,10 @@ class ReactAExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_position_result__global_action_final__execution()
-        self.scheduler.submit(self.trigger_position_result__global_action_final__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_position_result__global_action_final__action_parent)
-        self.trigger_position_result__global_action_final__for_empty_rule_position_trigger()
+        self.init_execution_trigger_position_result__action_final()
+        self.scheduler.submit(self.trigger_position_result__action_final__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
+        self.trigger_position_result__action_final__for_empty_rule_position_trigger()
 
     def destroy_position_trigger(self):
         literal.continue_destruction(self.continue_destroy_position_trigger)
@@ -90,24 +90,24 @@ class ReactAExecution:
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
 
-    def init_trigger_position_result__global_action_final__execution(self):
+    def init_execution_trigger_position_result__action_final(self):
         action = self.action.get_interface_position(
             "position<result>"
         ).particle.get_action(
             local.my_domain_com.my_lib.final.Final
         )
-        self.trigger_position_result__global_action_final__execution = local.my_domain_com.my_lib.final.FinalExecution(
+        self.execution_trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_result__global_action_final,
+            self.guarantees.trigger_position_result__action_final,
         )
 
-    def trigger_position_result__global_action_final__action_parent(self):
-        if not self.join_for_trigger_position_result__global_action_final__action_parent.arrive():
+    def trigger_position_result__action_final__action_parent(self):
+        if not self.join_for_trigger_position_result__action_final__action_parent.arrive():
             return
-        self.trigger_position_result__global_action_final__execution.accept_action_parent()
+        self.execution_trigger_position_result__action_final.accept_action_parent()
 
-    def trigger_position_result__global_action_final__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_position_result__global_action_final__for_empty_rule_position_trigger.arrive():
+    def trigger_position_result__action_final__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger.arrive():
             return
-        self.trigger_position_result__global_action_final__execution.accept_for_empty_rule_position_trigger()
+        self.execution_trigger_position_result__action_final.accept_for_empty_rule_position_trigger()

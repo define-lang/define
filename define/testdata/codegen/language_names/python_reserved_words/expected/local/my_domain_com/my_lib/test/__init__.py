@@ -22,9 +22,9 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_global_action_class_var__position_trigger_pos)
-        execution.scheduler.submit(execution.create_global_action_class_var__position_trigger_pos_2)
-        execution.create_global_action_type_error__position_pp()
+        execution.scheduler.submit(execution.create_action_class_var__position_trigger_pos)
+        execution.scheduler.submit(execution.create_action_class_var__position_trigger_pos_2)
+        execution.create_action_type_error__position_pp()
 
 
 @final
@@ -36,57 +36,57 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_action_class_var__execution: local.my_domain_com.my_lib.class_var.ClassVar_Execution
-        self.trigger_global_action_class_var_2__execution: local.my_domain_com.my_lib.class_var_.ClassVar__Execution
-        self.trigger_global_action_type_error__execution: local.my_domain_com.my_lib.type_error.TypeError_Execution
+        self.execution_trigger_action_class_var: local.my_domain_com.my_lib.class_var.ClassVar_Execution
+        self.execution_trigger_action_class_var_2: local.my_domain_com.my_lib.class_var_.ClassVar__Execution
+        self.execution_trigger_action_type_error: local.my_domain_com.my_lib.type_error.TypeError_Execution
 
-    def create_global_action_class_var__position_trigger_pos(self):
+    def create_action_class_var__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.class_var.ClassVar_
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_class_var__execution()
-        self.trigger_global_action_class_var__action_parent()
+        self.init_execution_trigger_action_class_var()
+        self.trigger_action_class_var__action_parent()
 
-    def create_global_action_class_var__position_trigger_pos_2(self):
+    def create_action_class_var__position_trigger_pos_2(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.class_var_.ClassVar__
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_class_var_2__execution()
-        self.trigger_global_action_class_var_2__action_parent()
+        self.init_execution_trigger_action_class_var_2()
+        self.trigger_action_class_var_2__action_parent()
 
-    def create_global_action_type_error__position_pp(self):
+    def create_action_type_error__position_pp(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.type_error.TypeError_
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
-        self.init_trigger_global_action_type_error__execution()
-        self.trigger_global_action_type_error__action_parent()
+        self.init_execution_trigger_action_type_error()
+        self.trigger_action_type_error__action_parent()
 
-    def init_trigger_global_action_class_var__execution(self):
-        self.trigger_global_action_class_var__execution = local.my_domain_com.my_lib.class_var.ClassVar_Execution(
+    def init_execution_trigger_action_class_var(self):
+        self.execution_trigger_action_class_var = local.my_domain_com.my_lib.class_var.ClassVar_Execution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_class_var_2__execution(self):
-        self.trigger_global_action_class_var_2__execution = local.my_domain_com.my_lib.class_var_.ClassVar__Execution(
+    def init_execution_trigger_action_class_var_2(self):
+        self.execution_trigger_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVar__Execution(
             self.scheduler,
         )
 
-    def init_trigger_global_action_type_error__execution(self):
-        self.trigger_global_action_type_error__execution = local.my_domain_com.my_lib.type_error.TypeError_Execution(
+    def init_execution_trigger_action_type_error(self):
+        self.execution_trigger_action_type_error = local.my_domain_com.my_lib.type_error.TypeError_Execution(
             self.scheduler,
         )
 
-    def trigger_global_action_class_var__action_parent(self):
-        self.trigger_global_action_class_var__execution.accept_action_parent()
+    def trigger_action_class_var__action_parent(self):
+        self.execution_trigger_action_class_var.accept_action_parent()
 
-    def trigger_global_action_class_var_2__action_parent(self):
-        self.trigger_global_action_class_var_2__execution.accept_action_parent()
+    def trigger_action_class_var_2__action_parent(self):
+        self.execution_trigger_action_class_var_2.accept_action_parent()
 
-    def trigger_global_action_type_error__action_parent(self):
-        self.trigger_global_action_type_error__execution.accept_action_parent()
+    def trigger_action_type_error__action_parent(self):
+        self.execution_trigger_action_type_error.accept_action_parent()

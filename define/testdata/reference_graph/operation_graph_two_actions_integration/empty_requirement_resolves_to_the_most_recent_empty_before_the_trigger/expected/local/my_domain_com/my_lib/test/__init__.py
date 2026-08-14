@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_gw__global_action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
+        self.trigger_position_gw__action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
 
 
 @final
@@ -50,17 +50,17 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_gw__global_action_filler__execution: local.my_domain_com.my_lib.filler.FillerExecution
-        self.join_for_trigger_position_gw__global_action_filler__when_empty_position_slot = literal.Join(2)
+        self.execution_trigger_position_gw__action_filler: local.my_domain_com.my_lib.filler.FillerExecution
+        self.join_for_trigger_position_gw__action_filler__when_empty_position_slot = literal.Join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gw__global_action_filler__position_slot)
-        self.create_position_gw__global_action_filler__position_trigger_pos()
+        self.scheduler.submit(self.create_position_gw__action_filler__position_slot)
+        self.create_position_gw__action_filler__position_trigger_pos()
 
-    def create_position_gw__global_action_filler__position_slot(self):
+    def create_position_gw__action_filler__position_slot(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -89,9 +89,9 @@ class TestExecution:
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        self.trigger_position_gw__global_action_filler__when_empty_position_slot()
+        self.trigger_position_gw__action_filler__when_empty_position_slot()
 
-    def create_position_gw__global_action_filler__position_trigger_pos(self):
+    def create_position_gw__action_filler__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -99,22 +99,22 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_gw__global_action_filler__execution()
-        self.trigger_position_gw__global_action_filler__when_empty_position_slot()
+        self.init_execution_trigger_position_gw__action_filler()
+        self.trigger_position_gw__action_filler__when_empty_position_slot()
 
-    def init_trigger_position_gw__global_action_filler__execution(self):
+    def init_execution_trigger_position_gw__action_filler(self):
         action = self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
         )
-        self.trigger_position_gw__global_action_filler__execution = local.my_domain_com.my_lib.filler.FillerExecution(
+        self.execution_trigger_position_gw__action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_gw__global_action_filler,
+            self.guarantees.trigger_position_gw__action_filler,
         )
 
-    def trigger_position_gw__global_action_filler__when_empty_position_slot(self):
-        if not self.join_for_trigger_position_gw__global_action_filler__when_empty_position_slot.arrive():
+    def trigger_position_gw__action_filler__when_empty_position_slot(self):
+        if not self.join_for_trigger_position_gw__action_filler__when_empty_position_slot.arrive():
             return
-        self.trigger_position_gw__global_action_filler__execution.accept_when_empty_position_slot()
+        self.execution_trigger_position_gw__action_filler.accept_when_empty_position_slot()

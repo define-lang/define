@@ -33,30 +33,30 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.trigger_position_box__global_action_beep__execution: local.my_domain_com.my_lib.beep.BeepExecution
-        self.trigger_position_box__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__global_action_beep__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_destructor__action_parent = literal.Join(2)
+        self.execution_trigger_position_box__action_beep: local.my_domain_com.my_lib.beep.BeepExecution
+        self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_trigger_position_box__action_beep__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_trigger_position_box__global_action_destructor__execution()
-        self.scheduler.submit(self.create_position_box__global_action_beep__position_trigger)
-        self.scheduler.submit(self.trigger_position_box__global_action_beep__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_destructor__action_parent)
-        self.trigger_position_box__global_action_destructor__action_parent()
+        self.init_execution_trigger_position_box__action_destructor()
+        self.scheduler.submit(self.create_position_box__action_beep__position_trigger)
+        self.scheduler.submit(self.trigger_position_box__action_beep__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
+        self.trigger_position_box__action_destructor__action_parent()
 
-    def create_position_box__global_action_beep__position_trigger(self):
+    def create_position_box__action_beep__position_trigger(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.beep.Beep
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_beep__execution()
-        self.scheduler.submit(self.destroy_position_box__global_action_beep__position_trigger)
-        self.trigger_position_box__global_action_beep__action_parent()
+        self.init_execution_trigger_position_box__action_beep()
+        self.scheduler.submit(self.destroy_position_box__action_beep__position_trigger)
+        self.trigger_position_box__action_beep__action_parent()
 
-    def destroy_position_box__global_action_beep__position_trigger(self):
+    def destroy_position_box__action_beep__position_trigger(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.beep.Beep
         ).get_interface_position(
@@ -64,22 +64,22 @@ class TestExecution:
         ).destroy_particle()
         self.local_position_box.destroy_particle()
 
-    def init_trigger_position_box__global_action_beep__execution(self):
-        self.trigger_position_box__global_action_beep__execution = local.my_domain_com.my_lib.beep.BeepExecution(
+    def init_execution_trigger_position_box__action_beep(self):
+        self.execution_trigger_position_box__action_beep = local.my_domain_com.my_lib.beep.BeepExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_box__global_action_destructor__execution(self):
-        self.trigger_position_box__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+    def init_execution_trigger_position_box__action_destructor(self):
+        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
 
-    def trigger_position_box__global_action_beep__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_beep__action_parent.arrive():
+    def trigger_position_box__action_beep__action_parent(self):
+        if not self.join_for_trigger_position_box__action_beep__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_beep__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_beep.accept_action_parent()
 
-    def trigger_position_box__global_action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_destructor__action_parent.arrive():
+    def trigger_position_box__action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__action_destructor__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_destructor__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_destructor.accept_action_parent()

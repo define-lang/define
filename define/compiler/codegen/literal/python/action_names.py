@@ -22,8 +22,7 @@ _DESTRUCTION_CONNECTION_PREFIX = "destruction_connection_"
 _DESTRUCTION_CONNECTIONS_SUFFIX = "_destruction_connections"
 _DESTRUCTION_POSITION_PREFIX = "destruction_position_"
 _EMPTY_RULE_CALLER_INPUT_PREFIX = "accept_for_empty_rule_"
-# TODO: Move "execution" to a prefix so generated member kinds use a consistent naming scheme.
-_EXECUTION_SUFFIX = "__execution"
+_EXECUTION_PREFIX = "execution_"
 _GLOBAL_NAME_PREFIX = "global_"
 _GUARANTEE_MOVE_SEPARATOR = "__move__"
 _GUARANTEE_PREFIX = "guarantee_"
@@ -193,10 +192,10 @@ class ActionNameGenerator:
             names[action_execution] = TriggeredActionNames(
                 canonical_name=canonical_name,
                 initializer_name=self._execution_allocator.allocate(
-                    _INITIALIZER_PREFIX + canonical_name + _EXECUTION_SUFFIX
+                    _INITIALIZER_PREFIX + _EXECUTION_PREFIX + canonical_name
                 ),
                 execution_name=self._execution_allocator.allocate(
-                    canonical_name + _EXECUTION_SUFFIX
+                    _EXECUTION_PREFIX + canonical_name
                 ),
             )
         return names
@@ -268,9 +267,13 @@ class ActionNameGenerator:
             _IDENTIFIER_SEPARATOR,
             typed_name_parts.source_name,
         ).strip(_IDENTIFIER_SEPARATOR)
-        # TODO: Actions are always global, so omit the redundant global_
-        # prefix for action names and regenerate the codegen expectations.
-        prefix = _GLOBAL_NAME_PREFIX if typed_name_parts.is_global else ""
+        # Actions are always global, so only a position name needs the prefix to
+        # distinguish it from a local name.
+        is_global_position = (
+            typed_name_parts.name_type is ast.NameType.POSITION
+            and typed_name_parts.is_global
+        )
+        prefix = _GLOBAL_NAME_PREFIX if is_global_position else ""
         identifier = (
             prefix
             + typed_name_parts.name_type.value

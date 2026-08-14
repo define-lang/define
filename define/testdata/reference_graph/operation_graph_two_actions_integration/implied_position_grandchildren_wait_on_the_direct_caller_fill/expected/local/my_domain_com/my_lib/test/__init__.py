@@ -23,13 +23,13 @@ class Test(literal.EntryPoint):
             TestGuarantees(),
         )
         execution.scheduler.submit(execution.create_global_position_parent)
-        execution.create_global_action_inner__position_trigger_pos()
+        execution.create_action_inner__position_trigger_pos()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
 @final
@@ -43,9 +43,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1 = literal.Join(2)
-        self.join_for_trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2 = literal.Join(2)
+        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1 = literal.Join(2)
+        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2 = literal.Join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -56,35 +56,35 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.submit(self.trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
-        self.trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
+        self.scheduler.submit(self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
+        self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
 
-    def create_global_action_inner__position_trigger_pos(self):
+    def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_inner__execution()
-        self.scheduler.submit(self.trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
-        self.trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
+        self.init_execution_trigger_action_inner()
+        self.scheduler.submit(self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
+        self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
 
-    def init_trigger_global_action_inner__execution(self):
+    def init_execution_trigger_action_inner(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         )
-        self.trigger_global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_inner,
+            self.guarantees.trigger_action_inner,
         )
 
-    def trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1(self):
-        if not self.join_for_trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1.arrive():
+    def trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1(self):
+        if not self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1.arrive():
             return
-        self.trigger_global_action_inner__execution.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild1()
+        self.execution_trigger_action_inner.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild1()
 
-    def trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2(self):
-        if not self.join_for_trigger_global_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2.arrive():
+    def trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2(self):
+        if not self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2.arrive():
             return
-        self.trigger_global_action_inner__execution.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild2()
+        self.execution_trigger_action_inner.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild2()

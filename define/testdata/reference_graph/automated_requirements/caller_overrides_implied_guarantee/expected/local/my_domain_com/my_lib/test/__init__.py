@@ -19,13 +19,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_outer__position_run()
+        execution.create_action_outer__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
 
 
 @final
@@ -39,34 +39,34 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_outer__execution: local.my_domain_com.my_lib.outer.OuterExecution
+        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
 
-    def create_global_action_outer__position_run(self):
+    def create_action_outer__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_outer__execution()
-        self.scheduler.submit(self.trigger_global_action_outer__when_empty_global_action_caller__position_run)
-        self.scheduler.submit(self.trigger_global_action_outer__when_empty_global_action_callee__position_run)
-        self.trigger_global_action_outer__when_empty_global_position_implied()
+        self.init_execution_trigger_action_outer()
+        self.scheduler.submit(self.trigger_action_outer__when_empty_action_caller__position_run)
+        self.scheduler.submit(self.trigger_action_outer__when_empty_action_callee__position_run)
+        self.trigger_action_outer__when_empty_global_position_implied()
 
-    def init_trigger_global_action_outer__execution(self):
+    def init_execution_trigger_action_outer(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         )
-        self.trigger_global_action_outer__execution = local.my_domain_com.my_lib.outer.OuterExecution(
+        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_outer,
+            self.guarantees.trigger_action_outer,
         )
 
-    def trigger_global_action_outer__when_empty_global_action_caller__position_run(self):
-        self.trigger_global_action_outer__execution.accept_when_empty_global_action_caller__position_run()
+    def trigger_action_outer__when_empty_action_caller__position_run(self):
+        self.execution_trigger_action_outer.accept_when_empty_action_caller__position_run()
 
-    def trigger_global_action_outer__when_empty_global_action_callee__position_run(self):
-        self.trigger_global_action_outer__execution.accept_when_empty_global_action_callee__position_run()
+    def trigger_action_outer__when_empty_action_callee__position_run(self):
+        self.execution_trigger_action_outer.accept_when_empty_action_callee__position_run()
 
-    def trigger_global_action_outer__when_empty_global_position_implied(self):
-        self.trigger_global_action_outer__execution.accept_when_empty_global_position_implied()
+    def trigger_action_outer__when_empty_global_position_implied(self):
+        self.execution_trigger_action_outer.accept_when_empty_global_position_implied()

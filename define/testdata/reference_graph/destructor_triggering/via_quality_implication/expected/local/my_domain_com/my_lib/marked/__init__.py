@@ -16,7 +16,7 @@ class Marked(literal.Action):
 @final
 class MarkedGuarantees:
     def __init__(self):
-        self.guarantee_global_action_destructor__position_slot: list[literal.Task] = []
+        self.guarantee_action_destructor__position_slot: list[literal.Task] = []
 
 
 @final
@@ -31,13 +31,13 @@ class MarkedExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
 
-    def accept_when_empty_global_action_destructor__position_slot(self):
-        self.create_global_action_destructor__position_slot()
+    def accept_when_empty_action_destructor__position_slot(self):
+        self.create_action_destructor__position_slot()
 
-    def create_global_action_destructor__position_slot(self):
+    def create_action_destructor__position_slot(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destructor.Destructor
         ).get_interface_position(
             "position<slot>"
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_action_destructor__position_slot)
+        self.scheduler.continue_with(self.guarantees.guarantee_action_destructor__position_slot)

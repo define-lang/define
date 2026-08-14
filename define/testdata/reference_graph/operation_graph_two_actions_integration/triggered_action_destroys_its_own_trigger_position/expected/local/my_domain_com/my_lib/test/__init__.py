@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_gateway__global_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        self.trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
 
 
 @final
@@ -50,8 +50,8 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_gateway__global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_trigger_pos = literal.Join(2)
+        self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos = literal.Join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -64,23 +64,23 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_gateway__global_action_other__execution()
-        self.scheduler.submit(self.trigger_position_gateway__global_action_other__for_empty_rule_position_trigger_pos)
-        self.trigger_position_gateway__global_action_other__for_empty_rule_position_trigger_pos()
+        self.init_execution_trigger_position_gateway__action_other()
+        self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos)
+        self.trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos()
 
-    def init_trigger_position_gateway__global_action_other__execution(self):
+    def init_execution_trigger_position_gateway__action_other(self):
         action = self.action.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
             local.my_domain_com.my_lib.other.Other
         )
-        self.trigger_position_gateway__global_action_other__execution = local.my_domain_com.my_lib.other.OtherExecution(
+        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_gateway__global_action_other,
+            self.guarantees.trigger_position_gateway__action_other,
         )
 
-    def trigger_position_gateway__global_action_other__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__global_action_other__for_empty_rule_position_trigger_pos.arrive():
+    def trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos.arrive():
             return
-        self.trigger_position_gateway__global_action_other__execution.accept_for_empty_rule_position_trigger_pos()
+        self.execution_trigger_position_gateway__action_other.accept_for_empty_rule_position_trigger_pos()

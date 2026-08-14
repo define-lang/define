@@ -27,7 +27,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_global_action_inner__position_trigger_pos: list[literal.Task] = []
+        self.guarantee_action_inner__position_trigger_pos: list[literal.Task] = []
 
 
 @final
@@ -41,31 +41,31 @@ class MiddleExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_global_action_inner__action_parent = literal.Join(2)
+        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_action_inner__action_parent = literal.Join(2)
 
-    def accept_when_empty_global_action_inner__position_trigger_pos(self):
-        self.create_global_action_inner__position_trigger_pos()
+    def accept_when_empty_action_inner__position_trigger_pos(self):
+        self.create_action_inner__position_trigger_pos()
 
     def accept_action_parent(self):
-        self.trigger_global_action_inner__action_parent()
+        self.trigger_action_inner__action_parent()
 
-    def create_global_action_inner__position_trigger_pos(self):
+    def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_inner__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_inner__position_trigger_pos)
-        self.trigger_global_action_inner__action_parent()
+        self.init_execution_trigger_action_inner()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
+        self.trigger_action_inner__action_parent()
 
-    def init_trigger_global_action_inner__execution(self):
-        self.trigger_global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+    def init_execution_trigger_action_inner(self):
+        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_inner__action_parent(self):
-        if not self.join_for_trigger_global_action_inner__action_parent.arrive():
+    def trigger_action_inner__action_parent(self):
+        if not self.join_for_trigger_action_inner__action_parent.arrive():
             return
-        self.trigger_global_action_inner__execution.accept_action_parent()
+        self.execution_trigger_action_inner.accept_action_parent()

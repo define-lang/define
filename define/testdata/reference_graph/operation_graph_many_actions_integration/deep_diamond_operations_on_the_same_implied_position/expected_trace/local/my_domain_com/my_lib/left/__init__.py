@@ -27,8 +27,8 @@ class Left(literal.Action):
 @final
 class LeftGuarantees:
     def __init__(self):
-        self.guarantee_global_action_left_child__position_trigger_pos: list[literal.Task] = []
-        self.trigger_global_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildGuarantees()
+        self.guarantee_action_left_child__position_trigger_pos: list[literal.Task] = []
+        self.trigger_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildGuarantees()
 
 
 @final
@@ -48,16 +48,16 @@ class LeftExecution:
             action_name,
         )
         self.guarantees = guarantees
-        self.trigger_global_action_left_child__execution: local.my_domain_com.my_lib.left_child.LeftChildExecution
-        self.join_for_trigger_global_action_left_child__when_empty_global_position_marker = literal.Join(2)
+        self.execution_trigger_action_left_child: local.my_domain_com.my_lib.left_child.LeftChildExecution
+        self.join_for_trigger_action_left_child__when_empty_global_position_marker = literal.Join(2)
 
-    def accept_when_empty_global_action_left_child__position_trigger_pos(self):
-        self.create_global_action_left_child__position_trigger_pos()
+    def accept_when_empty_action_left_child__position_trigger_pos(self):
+        self.create_action_left_child__position_trigger_pos()
 
     def accept_when_empty_global_position_marker(self):
-        self.trigger_global_action_left_child__when_empty_global_position_marker()
+        self.trigger_action_left_child__when_empty_global_position_marker()
 
-    def create_global_action_left_child__position_trigger_pos(self):
+    def create_action_left_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.left_child.LeftChild
         ).get_interface_position(
@@ -68,23 +68,23 @@ class LeftExecution:
             "/left_child::trigger_pos",
             1,
         )
-        self.init_trigger_global_action_left_child__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_left_child__position_trigger_pos)
-        self.trigger_global_action_left_child__when_empty_global_position_marker()
+        self.init_execution_trigger_action_left_child()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_left_child__position_trigger_pos)
+        self.trigger_action_left_child__when_empty_global_position_marker()
 
-    def init_trigger_global_action_left_child__execution(self):
+    def init_execution_trigger_action_left_child(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.left_child.LeftChild
         )
-        self.trigger_global_action_left_child__execution = local.my_domain_com.my_lib.left_child.LeftChildExecution(
+        self.execution_trigger_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "left_child",
-            self.guarantees.trigger_global_action_left_child,
+            self.guarantees.trigger_action_left_child,
         )
 
-    def trigger_global_action_left_child__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_global_action_left_child__when_empty_global_position_marker.arrive():
+    def trigger_action_left_child__when_empty_global_position_marker(self):
+        if not self.join_for_trigger_action_left_child__when_empty_global_position_marker.arrive():
             return
-        self.trigger_global_action_left_child__execution.accept_when_empty_global_position_marker()
+        self.execution_trigger_action_left_child.accept_when_empty_global_position_marker()

@@ -19,13 +19,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_runner__position_run()
+        execution.create_action_runner__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
+        self.trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
 
 
 @final
@@ -39,26 +39,26 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_runner__execution: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
 
-    def create_global_action_runner__position_run(self):
+    def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_runner__execution()
-        self.trigger_global_action_runner__when_empty_global_position_marker()
+        self.init_execution_trigger_action_runner()
+        self.trigger_action_runner__when_empty_global_position_marker()
 
-    def init_trigger_global_action_runner__execution(self):
+    def init_execution_trigger_action_runner(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
         )
-        self.trigger_global_action_runner__execution = local.my_domain_com.my_lib.runner.RunnerExecution(
+        self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_runner,
+            self.guarantees.trigger_action_runner,
         )
 
-    def trigger_global_action_runner__when_empty_global_position_marker(self):
-        self.trigger_global_action_runner__execution.accept_when_empty_global_position_marker()
+    def trigger_action_runner__when_empty_global_position_marker(self):
+        self.execution_trigger_action_runner.accept_when_empty_global_position_marker()

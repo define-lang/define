@@ -28,7 +28,7 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self):
         self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_global_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
 @final
@@ -45,13 +45,13 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_global_action_inner__for_empty_rule_position_inner_run = literal.Join(2)
+        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_action_inner__for_empty_rule_position_inner_run = literal.Join(2)
 
     def accept_for_empty_rule_position_run(self):
-        self.move_position_run_to_global_action_inner__position_inner_run()
+        self.move_position_run_to_action_inner__position_inner_run()
 
-    def move_position_run_to_global_action_inner__position_inner_run(self):
+    def move_position_run_to_action_inner__position_inner_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -61,23 +61,23 @@ class MiddleExecution:
                 "position<inner_run>"
             )
         )
-        self.init_trigger_global_action_inner__execution()
-        self.scheduler.submit(self.trigger_global_action_inner__for_empty_rule_position_inner_run)
+        self.init_execution_trigger_action_inner()
+        self.scheduler.submit(self.trigger_action_inner__for_empty_rule_position_inner_run)
         self.scheduler.submit_all(self.guarantees.guarantee_position_run)
-        self.trigger_global_action_inner__for_empty_rule_position_inner_run()
+        self.trigger_action_inner__for_empty_rule_position_inner_run()
 
-    def init_trigger_global_action_inner__execution(self):
+    def init_execution_trigger_action_inner(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         )
-        self.trigger_global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_inner,
+            self.guarantees.trigger_action_inner,
             destruction_connections=self.destruction_connections,
         )
 
-    def trigger_global_action_inner__for_empty_rule_position_inner_run(self):
-        if not self.join_for_trigger_global_action_inner__for_empty_rule_position_inner_run.arrive():
+    def trigger_action_inner__for_empty_rule_position_inner_run(self):
+        if not self.join_for_trigger_action_inner__for_empty_rule_position_inner_run.arrive():
             return
-        self.trigger_global_action_inner__execution.accept_for_empty_rule_position_inner_run()
+        self.execution_trigger_action_inner.accept_for_empty_rule_position_inner_run()

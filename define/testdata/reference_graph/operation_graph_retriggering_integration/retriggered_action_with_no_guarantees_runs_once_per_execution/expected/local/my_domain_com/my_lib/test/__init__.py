@@ -41,20 +41,20 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_position_gw__global_action_worker__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.trigger_position_gw__global_action_worker_2__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gw__global_action_worker__action_parent = literal.Join(2)
-        self.join_for_trigger_position_gw__global_action_worker_2__action_parent = literal.Join(2)
+        self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_trigger_position_gw__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_trigger_position_gw__action_worker__action_parent = literal.Join(2)
+        self.join_for_trigger_position_gw__action_worker_2__action_parent = literal.Join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gw__global_action_worker__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gw__global_action_worker__action_parent)
-        self.trigger_position_gw__global_action_worker_2__action_parent()
+        self.scheduler.submit(self.create_position_gw__action_worker__position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_gw__action_worker__action_parent)
+        self.trigger_position_gw__action_worker_2__action_parent()
 
-    def create_position_gw__global_action_worker__position_trigger_pos(self):
+    def create_position_gw__action_worker__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -62,11 +62,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_gw__global_action_worker__execution()
-        self.scheduler.submit(self.destroy_position_gw__global_action_worker__position_trigger_pos)
-        self.trigger_position_gw__global_action_worker__action_parent()
+        self.init_execution_trigger_position_gw__action_worker()
+        self.scheduler.submit(self.destroy_position_gw__action_worker__position_trigger_pos)
+        self.trigger_position_gw__action_worker__action_parent()
 
-    def destroy_position_gw__global_action_worker__position_trigger_pos(self):
+    def destroy_position_gw__action_worker__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -81,25 +81,25 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_gw__global_action_worker_2__execution()
-        self.trigger_position_gw__global_action_worker_2__action_parent()
+        self.init_execution_trigger_position_gw__action_worker_2()
+        self.trigger_position_gw__action_worker_2__action_parent()
 
-    def init_trigger_position_gw__global_action_worker__execution(self):
-        self.trigger_position_gw__global_action_worker__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+    def init_execution_trigger_position_gw__action_worker(self):
+        self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_gw__global_action_worker_2__execution(self):
-        self.trigger_position_gw__global_action_worker_2__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+    def init_execution_trigger_position_gw__action_worker_2(self):
+        self.execution_trigger_position_gw__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.scheduler,
         )
 
-    def trigger_position_gw__global_action_worker__action_parent(self):
-        if not self.join_for_trigger_position_gw__global_action_worker__action_parent.arrive():
+    def trigger_position_gw__action_worker__action_parent(self):
+        if not self.join_for_trigger_position_gw__action_worker__action_parent.arrive():
             return
-        self.trigger_position_gw__global_action_worker__execution.accept_action_parent()
+        self.execution_trigger_position_gw__action_worker.accept_action_parent()
 
-    def trigger_position_gw__global_action_worker_2__action_parent(self):
-        if not self.join_for_trigger_position_gw__global_action_worker_2__action_parent.arrive():
+    def trigger_position_gw__action_worker_2__action_parent(self):
+        if not self.join_for_trigger_position_gw__action_worker_2__action_parent.arrive():
             return
-        self.trigger_position_gw__global_action_worker_2__execution.accept_action_parent()
+        self.execution_trigger_position_gw__action_worker_2.accept_action_parent()

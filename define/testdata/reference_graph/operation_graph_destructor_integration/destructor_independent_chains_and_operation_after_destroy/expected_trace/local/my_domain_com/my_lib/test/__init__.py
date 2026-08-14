@@ -49,8 +49,8 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.trigger_position_box__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__global_action_destructor__action_parent = literal.Join(2)
+        self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_trigger_position_box__action_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -61,10 +61,10 @@ class TestExecution:
             "box",
             1,
         )
-        self.init_trigger_position_box__global_action_destructor__execution()
+        self.init_execution_trigger_position_box__action_destructor()
         self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.trigger_position_box__global_action_destructor__action_parent)
-        self.trigger_position_box__global_action_destructor__action_parent()
+        self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
+        self.trigger_position_box__action_destructor__action_parent()
 
     def destroy_position_box(self):
         self.action.get_interface_position(
@@ -84,14 +84,14 @@ class TestExecution:
             2,
         )
 
-    def init_trigger_position_box__global_action_destructor__execution(self):
-        self.trigger_position_box__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+    def init_execution_trigger_position_box__action_destructor(self):
+        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
             self.trace_execution,
             "destructor",
         )
 
-    def trigger_position_box__global_action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_destructor__action_parent.arrive():
+    def trigger_position_box__action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__action_destructor__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_destructor__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_destructor.accept_action_parent()

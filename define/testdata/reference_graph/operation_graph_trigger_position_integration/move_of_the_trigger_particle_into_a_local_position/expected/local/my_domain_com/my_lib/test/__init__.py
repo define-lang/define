@@ -19,13 +19,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_triggered__position_run()
+        execution.create_action_triggered__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredGuarantees()
+        self.trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredGuarantees()
 
 
 @final
@@ -39,30 +39,30 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_triggered__execution: local.my_domain_com.my_lib.triggered.TriggeredExecution
-        self.join_for_trigger_global_action_triggered__for_empty_rule_position_run = literal.Join(2)
+        self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
+        self.join_for_trigger_action_triggered__for_empty_rule_position_run = literal.Join(2)
 
-    def create_global_action_triggered__position_run(self):
+    def create_action_triggered__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.triggered.Triggered
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_triggered__execution()
-        self.scheduler.submit(self.trigger_global_action_triggered__for_empty_rule_position_run)
-        self.trigger_global_action_triggered__for_empty_rule_position_run()
+        self.init_execution_trigger_action_triggered()
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
+        self.trigger_action_triggered__for_empty_rule_position_run()
 
-    def init_trigger_global_action_triggered__execution(self):
+    def init_execution_trigger_action_triggered(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.triggered.Triggered
         )
-        self.trigger_global_action_triggered__execution = local.my_domain_com.my_lib.triggered.TriggeredExecution(
+        self.execution_trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_triggered,
+            self.guarantees.trigger_action_triggered,
         )
 
-    def trigger_global_action_triggered__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_global_action_triggered__for_empty_rule_position_run.arrive():
+    def trigger_action_triggered__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_triggered__for_empty_rule_position_run.arrive():
             return
-        self.trigger_global_action_triggered__execution.accept_for_empty_rule_position_run()
+        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run()

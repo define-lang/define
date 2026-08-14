@@ -39,9 +39,9 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_box__global_action_inner__position_output__move__position_final: list[literal.Task] = []
-        self.guarantee_position_box__global_action_inner__position_run: list[literal.Task] = []
-        self.trigger_position_box__global_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.guarantee_position_box__action_inner__position_output__move__position_final: list[literal.Task] = []
+        self.guarantee_position_box__action_inner__position_run: list[literal.Task] = []
+        self.trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
 @final
@@ -55,23 +55,23 @@ class MiddleExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_position_box__global_action_inner.guarantee_position_input__move__position_output.append(
-            self.move_position_box__global_action_inner__position_output_to_position_final
+        guarantees.trigger_position_box__action_inner.guarantee_position_input__move__position_output.append(
+            self.move_position_box__action_inner__position_output_to_position_final
         )
-        self.trigger_position_box__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_box__global_action_inner__position_output_to_position_final = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_inner__for_empty_rule_position_input = literal.Join(2)
+        self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_box__action_inner__position_output_to_position_final = literal.Join(2)
+        self.join_for_trigger_position_box__action_inner__for_empty_rule_position_input = literal.Join(2)
 
-    def accept_when_empty_position_box__global_action_inner__position_run(self):
-        self.create_position_box__global_action_inner__position_run()
+    def accept_when_empty_position_box__action_inner__position_run(self):
+        self.create_position_box__action_inner__position_run()
 
     def accept_when_empty_position_final(self):
-        self.move_position_box__global_action_inner__position_output_to_position_final()
+        self.move_position_box__action_inner__position_output_to_position_final()
 
-    def accept_for_empty_rule_position_box__global_action_inner__position_input(self):
-        self.trigger_position_box__global_action_inner__for_empty_rule_position_input()
+    def accept_for_empty_rule_position_box__action_inner__position_input(self):
+        self.trigger_position_box__action_inner__for_empty_rule_position_input()
 
-    def create_position_box__global_action_inner__position_run(self):
+    def create_position_box__action_inner__position_run(self):
         self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
@@ -79,12 +79,12 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_inner__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_box__global_action_inner__position_run)
-        self.trigger_position_box__global_action_inner__for_empty_rule_position_input()
+        self.init_execution_trigger_position_box__action_inner()
+        self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
+        self.trigger_position_box__action_inner__for_empty_rule_position_input()
 
-    def move_position_box__global_action_inner__position_output_to_position_final(self):
-        if not self.join_for_move_position_box__global_action_inner__position_output_to_position_final.arrive():
+    def move_position_box__action_inner__position_output_to_position_final(self):
+        if not self.join_for_move_position_box__action_inner__position_output_to_position_final.arrive():
             return
         self.action.get_interface_position(
             "position<box>"
@@ -97,21 +97,21 @@ class MiddleExecution:
                 "position<final>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_action_inner__position_output__move__position_final)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_box__action_inner__position_output__move__position_final)
 
-    def init_trigger_position_box__global_action_inner__execution(self):
+    def init_execution_trigger_position_box__action_inner(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         )
-        self.trigger_position_box__global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_inner,
+            self.guarantees.trigger_position_box__action_inner,
         )
 
-    def trigger_position_box__global_action_inner__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_position_box__global_action_inner__for_empty_rule_position_input.arrive():
+    def trigger_position_box__action_inner__for_empty_rule_position_input(self):
+        if not self.join_for_trigger_position_box__action_inner__for_empty_rule_position_input.arrive():
             return
-        self.trigger_position_box__global_action_inner__execution.accept_for_empty_rule_position_input()
+        self.execution_trigger_position_box__action_inner.accept_for_empty_rule_position_input()

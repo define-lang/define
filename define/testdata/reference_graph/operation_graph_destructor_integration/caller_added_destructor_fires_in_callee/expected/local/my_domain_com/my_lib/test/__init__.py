@@ -23,7 +23,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
+        self.trigger_position_box__action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
 
 
 @final
@@ -49,25 +49,25 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__global_action_callee.guarantee_position_target.append(
+        guarantees.trigger_position_box__action_callee.guarantee_position_target.append(
             self.destroy_position_box
         )
-        self.trigger_position_box__global_action_callee__execution: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_move_position_carrier_to_position_box__global_action_callee__position_target = literal.Join(2)
+        self.execution_trigger_position_box__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
+        self.join_for_move_position_carrier_to_position_box__action_callee__position_target = literal.Join(2)
         self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_callee__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.submit(self.move_position_carrier_to_position_box__global_action_callee__position_target)
-        self.create_position_box__global_action_callee__position_run()
+        self.scheduler.submit(self.move_position_carrier_to_position_box__action_callee__position_target)
+        self.create_position_box__action_callee__position_run()
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.move_position_carrier_to_position_box__global_action_callee__position_target()
+        self.move_position_carrier_to_position_box__action_callee__position_target()
 
-    def move_position_carrier_to_position_box__global_action_callee__position_target(self):
-        if not self.join_for_move_position_carrier_to_position_box__global_action_callee__position_target.arrive():
+    def move_position_carrier_to_position_box__action_callee__position_target(self):
+        if not self.join_for_move_position_carrier_to_position_box__action_callee__position_target.arrive():
             return
         self.local_position_carrier.move_particle_to(
             self.local_position_box.particle.get_action(
@@ -76,19 +76,19 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.trigger_position_box__global_action_callee__for_empty_rule_position_target()
+        self.trigger_position_box__action_callee__for_empty_rule_position_target()
 
-    def create_position_box__global_action_callee__position_run(self):
+    def create_position_box__action_callee__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_callee__execution()
-        self.scheduler.submit(self.destroy_position_box__global_action_callee__position_run)
-        self.trigger_position_box__global_action_callee__for_empty_rule_position_target()
+        self.init_execution_trigger_position_box__action_callee()
+        self.scheduler.submit(self.destroy_position_box__action_callee__position_run)
+        self.trigger_position_box__action_callee__for_empty_rule_position_target()
 
-    def destroy_position_box__global_action_callee__position_run(self):
+    def destroy_position_box__action_callee__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
@@ -101,17 +101,17 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_trigger_position_box__global_action_callee__execution(self):
+    def init_execution_trigger_position_box__action_callee(self):
         action = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         )
-        self.trigger_position_box__global_action_callee__execution = local.my_domain_com.my_lib.callee.CalleeExecution(
+        self.execution_trigger_position_box__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_callee,
+            self.guarantees.trigger_position_box__action_callee,
         )
 
-    def trigger_position_box__global_action_callee__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_box__global_action_callee__for_empty_rule_position_target.arrive():
+    def trigger_position_box__action_callee__for_empty_rule_position_target(self):
+        if not self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target.arrive():
             return
-        self.trigger_position_box__global_action_callee__execution.accept_for_empty_rule_position_target()
+        self.execution_trigger_position_box__action_callee.accept_for_empty_rule_position_target()

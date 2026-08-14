@@ -23,9 +23,9 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_station__global_action_grind = local.my_domain_com.my_lib.grind.GrindGuarantees()
-        self.trigger_position_station__global_action_heat = local.my_domain_com.my_lib.heat.HeatGuarantees()
-        self.trigger_position_station__global_action_brew = local.my_domain_com.my_lib.brew.BrewGuarantees()
+        self.trigger_position_station__action_grind = local.my_domain_com.my_lib.grind.GrindGuarantees()
+        self.trigger_position_station__action_heat = local.my_domain_com.my_lib.heat.HeatGuarantees()
+        self.trigger_position_station__action_brew = local.my_domain_com.my_lib.brew.BrewGuarantees()
 
 
 @final
@@ -46,58 +46,58 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_station__global_action_grind.guarantee_position_beans__move__position_grounds.append(
-            self.move_position_station__global_action_grind__position_grounds_to_position_station__global_action_brew__position_grounds
+        guarantees.trigger_position_station__action_grind.guarantee_position_beans__move__position_grounds.append(
+            self.move_position_station__action_grind__position_grounds_to_position_station__action_brew__position_grounds
         )
-        guarantees.trigger_position_station__global_action_heat.guarantee_position_cold_water__move__position_hot_water.append(
-            self.move_position_station__global_action_heat__position_hot_water_to_position_station__global_action_brew__position_water
+        guarantees.trigger_position_station__action_heat.guarantee_position_cold_water__move__position_hot_water.append(
+            self.move_position_station__action_heat__position_hot_water_to_position_station__action_brew__position_water
         )
-        guarantees.trigger_position_station__global_action_brew.guarantee_position_cup.append(
-            self.destroy_position_station__global_action_brew__position_cup
+        guarantees.trigger_position_station__action_brew.guarantee_position_cup.append(
+            self.destroy_position_station__action_brew__position_cup
         )
-        guarantees.trigger_position_station__global_action_brew.guarantee_position_grounds__move__position_spent_puck.append(
-            self.destroy_position_station__global_action_brew__position_spent_puck
+        guarantees.trigger_position_station__action_brew.guarantee_position_grounds__move__position_spent_puck.append(
+            self.destroy_position_station__action_brew__position_spent_puck
         )
-        guarantees.trigger_position_station__global_action_brew.guarantee_position_water.append(
+        guarantees.trigger_position_station__action_brew.guarantee_position_water.append(
             self.destroy_position_station
         )
-        self.trigger_position_station__global_action_grind__execution: local.my_domain_com.my_lib.grind.GrindExecution
-        self.trigger_position_station__global_action_heat__execution: local.my_domain_com.my_lib.heat.HeatExecution
-        self.trigger_position_station__global_action_brew__execution: local.my_domain_com.my_lib.brew.BrewExecution
+        self.execution_trigger_position_station__action_grind: local.my_domain_com.my_lib.grind.GrindExecution
+        self.execution_trigger_position_station__action_heat: local.my_domain_com.my_lib.heat.HeatExecution
+        self.execution_trigger_position_station__action_brew: local.my_domain_com.my_lib.brew.BrewExecution
         self.join_for_destroy_position_station = literal.Join(3)
-        self.join_for_trigger_position_station__global_action_grind__for_empty_rule_position_beans = literal.Join(2)
-        self.join_for_trigger_position_station__global_action_heat__for_empty_rule_position_cold_water = literal.Join(2)
-        self.join_for_trigger_position_station__global_action_brew__when_empty_position_cup = literal.Join(2)
-        self.join_for_trigger_position_station__global_action_brew__for_empty_rule_position_water = literal.Join(2)
-        self.join_for_trigger_position_station__global_action_brew__for_empty_rule_position_grounds = literal.Join(2)
+        self.join_for_trigger_position_station__action_grind__for_empty_rule_position_beans = literal.Join(2)
+        self.join_for_trigger_position_station__action_heat__for_empty_rule_position_cold_water = literal.Join(2)
+        self.join_for_trigger_position_station__action_brew__when_empty_position_cup = literal.Join(2)
+        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_water = literal.Join(2)
+        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_grounds = literal.Join(2)
 
     def create_position_station(self):
         self.local_position_station.create_particle()
-        self.scheduler.submit(self.create_position_station__global_action_grind__position_beans)
-        self.scheduler.submit(self.create_position_station__global_action_heat__position_cold_water)
-        self.trigger_position_station__global_action_brew__when_empty_position_cup()
+        self.scheduler.submit(self.create_position_station__action_grind__position_beans)
+        self.scheduler.submit(self.create_position_station__action_heat__position_cold_water)
+        self.trigger_position_station__action_brew__when_empty_position_cup()
 
-    def create_position_station__global_action_grind__position_beans(self):
+    def create_position_station__action_grind__position_beans(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.Grind
         ).get_interface_position(
             "position<beans>"
         ).create_particle()
-        self.init_trigger_position_station__global_action_grind__execution()
-        self.scheduler.submit(self.trigger_position_station__global_action_grind__for_empty_rule_position_beans)
-        self.trigger_position_station__global_action_grind__for_empty_rule_position_beans()
+        self.init_execution_trigger_position_station__action_grind()
+        self.scheduler.submit(self.trigger_position_station__action_grind__for_empty_rule_position_beans)
+        self.trigger_position_station__action_grind__for_empty_rule_position_beans()
 
-    def create_position_station__global_action_heat__position_cold_water(self):
+    def create_position_station__action_heat__position_cold_water(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.Heat
         ).get_interface_position(
             "position<cold_water>"
         ).create_particle()
-        self.init_trigger_position_station__global_action_heat__execution()
-        self.scheduler.submit(self.trigger_position_station__global_action_heat__for_empty_rule_position_cold_water)
-        self.trigger_position_station__global_action_heat__for_empty_rule_position_cold_water()
+        self.init_execution_trigger_position_station__action_heat()
+        self.scheduler.submit(self.trigger_position_station__action_heat__for_empty_rule_position_cold_water)
+        self.trigger_position_station__action_heat__for_empty_rule_position_cold_water()
 
-    def move_position_station__global_action_grind__position_grounds_to_position_station__global_action_brew__position_grounds(self):
+    def move_position_station__action_grind__position_grounds_to_position_station__action_brew__position_grounds(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.Grind
         ).get_interface_position(
@@ -109,9 +109,9 @@ class TestExecution:
                 "position<grounds>"
             )
         )
-        self.trigger_position_station__global_action_brew__for_empty_rule_position_grounds()
+        self.trigger_position_station__action_brew__for_empty_rule_position_grounds()
 
-    def move_position_station__global_action_heat__position_hot_water_to_position_station__global_action_brew__position_water(self):
+    def move_position_station__action_heat__position_hot_water_to_position_station__action_brew__position_water(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.Heat
         ).get_interface_position(
@@ -123,13 +123,13 @@ class TestExecution:
                 "position<water>"
             )
         )
-        self.init_trigger_position_station__global_action_brew__execution()
-        self.scheduler.submit(self.trigger_position_station__global_action_brew__for_empty_rule_position_water)
-        self.scheduler.submit(self.trigger_position_station__global_action_brew__when_empty_position_cup)
-        self.scheduler.submit(self.trigger_position_station__global_action_brew__for_empty_rule_position_water)
-        self.trigger_position_station__global_action_brew__for_empty_rule_position_grounds()
+        self.init_execution_trigger_position_station__action_brew()
+        self.scheduler.submit(self.trigger_position_station__action_brew__for_empty_rule_position_water)
+        self.scheduler.submit(self.trigger_position_station__action_brew__when_empty_position_cup)
+        self.scheduler.submit(self.trigger_position_station__action_brew__for_empty_rule_position_water)
+        self.trigger_position_station__action_brew__for_empty_rule_position_grounds()
 
-    def destroy_position_station__global_action_brew__position_cup(self):
+    def destroy_position_station__action_brew__position_cup(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.Brew
         ).get_interface_position(
@@ -137,7 +137,7 @@ class TestExecution:
         ).destroy_particle()
         self.destroy_position_station()
 
-    def destroy_position_station__global_action_brew__position_spent_puck(self):
+    def destroy_position_station__action_brew__position_spent_puck(self):
         self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.Brew
         ).get_interface_position(
@@ -150,57 +150,57 @@ class TestExecution:
             return
         self.local_position_station.destroy_particle()
 
-    def init_trigger_position_station__global_action_grind__execution(self):
+    def init_execution_trigger_position_station__action_grind(self):
         action = self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.Grind
         )
-        self.trigger_position_station__global_action_grind__execution = local.my_domain_com.my_lib.grind.GrindExecution(
+        self.execution_trigger_position_station__action_grind = local.my_domain_com.my_lib.grind.GrindExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_station__global_action_grind,
+            self.guarantees.trigger_position_station__action_grind,
         )
 
-    def init_trigger_position_station__global_action_heat__execution(self):
+    def init_execution_trigger_position_station__action_heat(self):
         action = self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.Heat
         )
-        self.trigger_position_station__global_action_heat__execution = local.my_domain_com.my_lib.heat.HeatExecution(
+        self.execution_trigger_position_station__action_heat = local.my_domain_com.my_lib.heat.HeatExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_station__global_action_heat,
+            self.guarantees.trigger_position_station__action_heat,
         )
 
-    def init_trigger_position_station__global_action_brew__execution(self):
+    def init_execution_trigger_position_station__action_brew(self):
         action = self.local_position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.Brew
         )
-        self.trigger_position_station__global_action_brew__execution = local.my_domain_com.my_lib.brew.BrewExecution(
+        self.execution_trigger_position_station__action_brew = local.my_domain_com.my_lib.brew.BrewExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_station__global_action_brew,
+            self.guarantees.trigger_position_station__action_brew,
         )
 
-    def trigger_position_station__global_action_grind__for_empty_rule_position_beans(self):
-        if not self.join_for_trigger_position_station__global_action_grind__for_empty_rule_position_beans.arrive():
+    def trigger_position_station__action_grind__for_empty_rule_position_beans(self):
+        if not self.join_for_trigger_position_station__action_grind__for_empty_rule_position_beans.arrive():
             return
-        self.trigger_position_station__global_action_grind__execution.accept_for_empty_rule_position_beans()
+        self.execution_trigger_position_station__action_grind.accept_for_empty_rule_position_beans()
 
-    def trigger_position_station__global_action_heat__for_empty_rule_position_cold_water(self):
-        if not self.join_for_trigger_position_station__global_action_heat__for_empty_rule_position_cold_water.arrive():
+    def trigger_position_station__action_heat__for_empty_rule_position_cold_water(self):
+        if not self.join_for_trigger_position_station__action_heat__for_empty_rule_position_cold_water.arrive():
             return
-        self.trigger_position_station__global_action_heat__execution.accept_for_empty_rule_position_cold_water()
+        self.execution_trigger_position_station__action_heat.accept_for_empty_rule_position_cold_water()
 
-    def trigger_position_station__global_action_brew__when_empty_position_cup(self):
-        if not self.join_for_trigger_position_station__global_action_brew__when_empty_position_cup.arrive():
+    def trigger_position_station__action_brew__when_empty_position_cup(self):
+        if not self.join_for_trigger_position_station__action_brew__when_empty_position_cup.arrive():
             return
-        self.trigger_position_station__global_action_brew__execution.accept_when_empty_position_cup()
+        self.execution_trigger_position_station__action_brew.accept_when_empty_position_cup()
 
-    def trigger_position_station__global_action_brew__for_empty_rule_position_water(self):
-        if not self.join_for_trigger_position_station__global_action_brew__for_empty_rule_position_water.arrive():
+    def trigger_position_station__action_brew__for_empty_rule_position_water(self):
+        if not self.join_for_trigger_position_station__action_brew__for_empty_rule_position_water.arrive():
             return
-        self.trigger_position_station__global_action_brew__execution.accept_for_empty_rule_position_water()
+        self.execution_trigger_position_station__action_brew.accept_for_empty_rule_position_water()
 
-    def trigger_position_station__global_action_brew__for_empty_rule_position_grounds(self):
-        if not self.join_for_trigger_position_station__global_action_brew__for_empty_rule_position_grounds.arrive():
+    def trigger_position_station__action_brew__for_empty_rule_position_grounds(self):
+        if not self.join_for_trigger_position_station__action_brew__for_empty_rule_position_grounds.arrive():
             return
-        self.trigger_position_station__global_action_brew__execution.accept_for_empty_rule_position_grounds()
+        self.execution_trigger_position_station__action_brew.accept_for_empty_rule_position_grounds()

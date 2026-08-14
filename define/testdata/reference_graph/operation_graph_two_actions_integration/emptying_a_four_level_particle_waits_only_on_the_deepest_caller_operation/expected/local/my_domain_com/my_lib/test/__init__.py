@@ -25,13 +25,13 @@ class Test(literal.EntryPoint):
             TestGuarantees(),
         )
         execution.scheduler.submit(execution.create_global_position_parent)
-        execution.create_global_action_other__position_trigger_pos()
+        execution.create_action_other__position_trigger_pos()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        self.trigger_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
 
 
 @final
@@ -45,8 +45,8 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_global_action_other__for_empty_rule_global_position_parent = literal.Join(2)
+        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_for_trigger_action_other__for_empty_rule_global_position_parent = literal.Join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -73,28 +73,28 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
         ).create_particle()
-        self.trigger_global_action_other__for_empty_rule_global_position_parent()
+        self.trigger_action_other__for_empty_rule_global_position_parent()
 
-    def create_global_action_other__position_trigger_pos(self):
+    def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_other__execution()
-        self.trigger_global_action_other__for_empty_rule_global_position_parent()
+        self.init_execution_trigger_action_other()
+        self.trigger_action_other__for_empty_rule_global_position_parent()
 
-    def init_trigger_global_action_other__execution(self):
+    def init_execution_trigger_action_other(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         )
-        self.trigger_global_action_other__execution = local.my_domain_com.my_lib.other.OtherExecution(
+        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_other,
+            self.guarantees.trigger_action_other,
         )
 
-    def trigger_global_action_other__for_empty_rule_global_position_parent(self):
-        if not self.join_for_trigger_global_action_other__for_empty_rule_global_position_parent.arrive():
+    def trigger_action_other__for_empty_rule_global_position_parent(self):
+        if not self.join_for_trigger_action_other__for_empty_rule_global_position_parent.arrive():
             return
-        self.trigger_global_action_other__execution.accept_for_empty_rule_global_position_parent()
+        self.execution_trigger_action_other.accept_for_empty_rule_global_position_parent()

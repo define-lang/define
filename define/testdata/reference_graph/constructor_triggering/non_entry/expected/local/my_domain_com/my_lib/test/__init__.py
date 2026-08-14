@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        self.trigger_position_box__action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
 
 
 @final
@@ -50,30 +50,30 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_box__global_action_other__execution: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_box__global_action_other__when_empty_global_position_filled = literal.Join(2)
+        self.execution_trigger_position_box__action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_for_trigger_position_box__action_other__when_empty_global_position_filled = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_other__execution()
-        self.scheduler.submit(self.trigger_position_box__global_action_other__when_empty_global_position_filled)
-        self.trigger_position_box__global_action_other__when_empty_global_position_filled()
+        self.init_execution_trigger_position_box__action_other()
+        self.scheduler.submit(self.trigger_position_box__action_other__when_empty_global_position_filled)
+        self.trigger_position_box__action_other__when_empty_global_position_filled()
 
-    def init_trigger_position_box__global_action_other__execution(self):
+    def init_execution_trigger_position_box__action_other(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.other.Other
         )
-        self.trigger_position_box__global_action_other__execution = local.my_domain_com.my_lib.other.OtherExecution(
+        self.execution_trigger_position_box__action_other = local.my_domain_com.my_lib.other.OtherExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_other,
+            self.guarantees.trigger_position_box__action_other,
         )
 
-    def trigger_position_box__global_action_other__when_empty_global_position_filled(self):
-        if not self.join_for_trigger_position_box__global_action_other__when_empty_global_position_filled.arrive():
+    def trigger_position_box__action_other__when_empty_global_position_filled(self):
+        if not self.join_for_trigger_position_box__action_other__when_empty_global_position_filled.arrive():
             return
-        self.trigger_position_box__global_action_other__execution.accept_when_empty_global_position_filled()
+        self.execution_trigger_position_box__action_other.accept_when_empty_global_position_filled()

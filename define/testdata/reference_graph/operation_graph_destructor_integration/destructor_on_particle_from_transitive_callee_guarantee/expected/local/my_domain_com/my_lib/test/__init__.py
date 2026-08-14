@@ -24,8 +24,8 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_gateway__global_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
+        self.trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
 
 
 @final
@@ -44,45 +44,45 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor.guarantee_global_position_marker.append(
-            self.destroy_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_position_marker
+        guarantees.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor.guarantee_global_position_marker.append(
+            self.destroy_position_gateway__action_middle__position_box__action_inner__position_result__global_position_marker
         )
-        guarantees.trigger_position_gateway__global_action_middle.guarantee_position_box__global_action_inner__position_run.append(
-            self.destroy_position_gateway__global_action_middle__position_box__global_action_inner__position_run
+        guarantees.trigger_position_gateway__action_middle.guarantee_position_box__action_inner__position_run.append(
+            self.destroy_position_gateway__action_middle__position_box__action_inner__position_run
         )
-        guarantees.trigger_position_gateway__global_action_middle.trigger_position_box__global_action_inner.guarantee_position_result.append(
-            self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__action_parent
+        guarantees.trigger_position_gateway__action_middle.trigger_position_box__action_inner.guarantee_position_result.append(
+            self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent
         )
-        guarantees.trigger_position_gateway__global_action_middle.trigger_position_box__global_action_inner.guarantee_position_result__global_position_marker.append(
-            self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__for_empty_rule_global_position_marker
+        guarantees.trigger_position_gateway__action_middle.trigger_position_box__action_inner.guarantee_position_result__global_position_marker.append(
+            self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker
         )
-        guarantees.trigger_position_gateway__global_action_middle.trigger_position_box__global_action_inner.guarantee_position_result.append(
-            self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor
+        guarantees.trigger_position_gateway__action_middle.trigger_position_box__action_inner.guarantee_position_result.append(
+            self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor
         )
-        self.trigger_position_gateway__global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_destroy_position_gateway__global_action_middle__position_box = literal.Join(2)
+        self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_destroy_position_gateway__action_middle__position_box = literal.Join(2)
         self.join_for_destroy_position_gateway = literal.Join(2)
-        self.join_for_trigger_position_gateway__global_action_middle__when_empty_position_box = literal.Join(2)
-        self.join_for_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__action_parent = literal.Join(2)
-        self.join_for_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_middle__when_empty_position_box = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker = literal.Join(2)
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
-        self.scheduler.submit(self.create_position_gateway__global_action_middle__position_run)
-        self.trigger_position_gateway__global_action_middle__when_empty_position_box()
+        self.scheduler.submit(self.create_position_gateway__action_middle__position_run)
+        self.trigger_position_gateway__action_middle__when_empty_position_box()
 
-    def create_position_gateway__global_action_middle__position_run(self):
+    def create_position_gateway__action_middle__position_run(self):
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_gateway__global_action_middle__execution()
-        self.scheduler.submit(self.destroy_position_gateway__global_action_middle__position_run)
-        self.trigger_position_gateway__global_action_middle__when_empty_position_box()
+        self.init_execution_trigger_position_gateway__action_middle()
+        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_run)
+        self.trigger_position_gateway__action_middle__when_empty_position_box()
 
-    def destroy_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_position_marker(self):
+    def destroy_position_gateway__action_middle__position_box__action_inner__position_result__global_position_marker(self):
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -103,9 +103,9 @@ class TestExecution:
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
-        self.destroy_position_gateway__global_action_middle__position_box()
+        self.destroy_position_gateway__action_middle__position_box()
 
-    def destroy_position_gateway__global_action_middle__position_run(self):
+    def destroy_position_gateway__action_middle__position_run(self):
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -113,7 +113,7 @@ class TestExecution:
         ).destroy_particle()
         self.destroy_position_gateway()
 
-    def destroy_position_gateway__global_action_middle__position_box__global_action_inner__position_run(self):
+    def destroy_position_gateway__action_middle__position_box__action_inner__position_run(self):
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -123,10 +123,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.destroy_position_gateway__global_action_middle__position_box()
+        self.destroy_position_gateway__action_middle__position_box()
 
-    def destroy_position_gateway__global_action_middle__position_box(self):
-        if not self.join_for_destroy_position_gateway__global_action_middle__position_box.arrive():
+    def destroy_position_gateway__action_middle__position_box(self):
+        if not self.join_for_destroy_position_gateway__action_middle__position_box.arrive():
             return
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -140,17 +140,17 @@ class TestExecution:
             return
         self.local_position_gateway.destroy_particle()
 
-    def init_trigger_position_gateway__global_action_middle__execution(self):
+    def init_execution_trigger_position_gateway__action_middle(self):
         action = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         )
-        self.trigger_position_gateway__global_action_middle__execution = local.my_domain_com.my_lib.middle.MiddleExecution(
+        self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_gateway__global_action_middle,
+            self.guarantees.trigger_position_gateway__action_middle,
         )
 
-    def init_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution(self):
+    def init_execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor(self):
         action = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -162,28 +162,28 @@ class TestExecution:
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.Destructor
         )
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor,
+            self.guarantees.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor,
         )
 
-    def trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor(self):
-        self.init_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution()
-        self.scheduler.submit(self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__action_parent)
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__for_empty_rule_global_position_marker()
+    def trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor(self):
+        self.init_execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor()
+        self.scheduler.submit(self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent)
+        self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker()
 
-    def trigger_position_gateway__global_action_middle__when_empty_position_box(self):
-        if not self.join_for_trigger_position_gateway__global_action_middle__when_empty_position_box.arrive():
+    def trigger_position_gateway__action_middle__when_empty_position_box(self):
+        if not self.join_for_trigger_position_gateway__action_middle__when_empty_position_box.arrive():
             return
-        self.trigger_position_gateway__global_action_middle__execution.accept_when_empty_position_box()
+        self.execution_trigger_position_gateway__action_middle.accept_when_empty_position_box()
 
-    def trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__action_parent.arrive():
+    def trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent.arrive():
             return
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution.accept_action_parent()
+        self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor.accept_action_parent()
 
-    def trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__for_empty_rule_global_position_marker.arrive():
+    def trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker(self):
+        if not self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker.arrive():
             return
-        self.trigger_position_gateway__global_action_middle__position_box__global_action_inner__position_result__global_action_destructor__execution.accept_for_empty_rule_global_position_marker()
+        self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor.accept_for_empty_rule_global_position_marker()

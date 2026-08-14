@@ -25,15 +25,15 @@ class Test(literal.EntryPoint):
             TestGuarantees(),
         )
         execution.scheduler.submit(execution.create_global_position_parent)
-        execution.scheduler.submit(execution.create_global_action_filler__position_trigger_pos)
-        execution.create_global_action_mover__position_trigger_pos()
+        execution.scheduler.submit(execution.create_action_filler__position_trigger_pos)
+        execution.create_action_mover__position_trigger_pos()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
-        self.trigger_global_action_mover = local.my_domain_com.my_lib.mover.MoverGuarantees()
+        self.trigger_action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
+        self.trigger_action_mover = local.my_domain_com.my_lib.mover.MoverGuarantees()
 
 
 @final
@@ -47,13 +47,13 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_filler.guarantee_global_position_parent__global_position_child__global_position_gc.append(
-            self.trigger_global_action_mover__for_empty_rule_global_position_parent__global_position_child
+        guarantees.trigger_action_filler.guarantee_global_position_parent__global_position_child__global_position_gc.append(
+            self.trigger_action_mover__for_empty_rule_global_position_parent__global_position_child
         )
-        self.trigger_global_action_filler__execution: local.my_domain_com.my_lib.filler.FillerExecution
-        self.trigger_global_action_mover__execution: local.my_domain_com.my_lib.mover.MoverExecution
-        self.join_for_trigger_global_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc = literal.Join(2)
-        self.join_for_trigger_global_action_mover__for_empty_rule_global_position_parent__global_position_child = literal.Join(2)
+        self.execution_trigger_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
+        self.execution_trigger_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
+        self.join_for_trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc = literal.Join(2)
+        self.join_for_trigger_action_mover__for_empty_rule_global_position_parent__global_position_child = literal.Join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -64,52 +64,52 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.trigger_global_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc()
+        self.trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc()
 
-    def create_global_action_filler__position_trigger_pos(self):
+    def create_action_filler__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_filler__execution()
-        self.trigger_global_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc()
+        self.init_execution_trigger_action_filler()
+        self.trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc()
 
-    def create_global_action_mover__position_trigger_pos(self):
+    def create_action_mover__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.mover.Mover
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_mover__execution()
-        self.trigger_global_action_mover__for_empty_rule_global_position_parent__global_position_child()
+        self.init_execution_trigger_action_mover()
+        self.trigger_action_mover__for_empty_rule_global_position_parent__global_position_child()
 
-    def init_trigger_global_action_filler__execution(self):
+    def init_execution_trigger_action_filler(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
         )
-        self.trigger_global_action_filler__execution = local.my_domain_com.my_lib.filler.FillerExecution(
+        self.execution_trigger_action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_filler,
+            self.guarantees.trigger_action_filler,
         )
 
-    def init_trigger_global_action_mover__execution(self):
+    def init_execution_trigger_action_mover(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.mover.Mover
         )
-        self.trigger_global_action_mover__execution = local.my_domain_com.my_lib.mover.MoverExecution(
+        self.execution_trigger_action_mover = local.my_domain_com.my_lib.mover.MoverExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_mover,
+            self.guarantees.trigger_action_mover,
         )
 
-    def trigger_global_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc(self):
-        if not self.join_for_trigger_global_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc.arrive():
+    def trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc(self):
+        if not self.join_for_trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc.arrive():
             return
-        self.trigger_global_action_filler__execution.accept_when_empty_global_position_parent__global_position_child__global_position_gc()
+        self.execution_trigger_action_filler.accept_when_empty_global_position_parent__global_position_child__global_position_gc()
 
-    def trigger_global_action_mover__for_empty_rule_global_position_parent__global_position_child(self):
-        if not self.join_for_trigger_global_action_mover__for_empty_rule_global_position_parent__global_position_child.arrive():
+    def trigger_action_mover__for_empty_rule_global_position_parent__global_position_child(self):
+        if not self.join_for_trigger_action_mover__for_empty_rule_global_position_parent__global_position_child.arrive():
             return
-        self.trigger_global_action_mover__execution.accept_for_empty_rule_global_position_parent__global_position_child()
+        self.execution_trigger_action_mover.accept_for_empty_rule_global_position_parent__global_position_child()

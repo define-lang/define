@@ -47,74 +47,74 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_position_box__global_action_construct_a__execution: local.my_domain_com.my_lib.construct_a.ConstructAExecution
-        self.trigger_position_box__global_action_construct_b__execution: local.my_domain_com.my_lib.construct_b.ConstructBExecution
-        self.trigger_position_box__global_action_destruct_b__execution: local.my_domain_com.my_lib.destruct_b.DestructBExecution
-        self.trigger_position_box__global_action_destruct_a__execution: local.my_domain_com.my_lib.destruct_a.DestructAExecution
-        self.join_for_trigger_position_box__global_action_construct_a__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_construct_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_destruct_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_destruct_a__action_parent = literal.Join(2)
+        self.execution_trigger_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
+        self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
+        self.execution_trigger_position_box__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
+        self.execution_trigger_position_box__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
+        self.join_for_trigger_position_box__action_construct_a__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_construct_b__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_destruct_b__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_destruct_a__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_construct_a__execution()
-        self.init_trigger_position_box__global_action_construct_b__execution()
-        self.init_trigger_position_box__global_action_destruct_b__execution()
-        self.init_trigger_position_box__global_action_destruct_a__execution()
+        self.init_execution_trigger_position_box__action_construct_a()
+        self.init_execution_trigger_position_box__action_construct_b()
+        self.init_execution_trigger_position_box__action_destruct_b()
+        self.init_execution_trigger_position_box__action_destruct_a()
         self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.trigger_position_box__global_action_construct_a__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_construct_b__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_destruct_b__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_destruct_a__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_construct_a__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_construct_b__action_parent)
-        self.scheduler.submit(self.trigger_position_box__global_action_destruct_b__action_parent)
-        self.trigger_position_box__global_action_destruct_a__action_parent()
+        self.scheduler.submit(self.trigger_position_box__action_construct_a__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_construct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_destruct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_destruct_a__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_construct_a__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_construct_b__action_parent)
+        self.scheduler.submit(self.trigger_position_box__action_destruct_b__action_parent)
+        self.trigger_position_box__action_destruct_a__action_parent()
 
     def destroy_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
 
-    def init_trigger_position_box__global_action_construct_a__execution(self):
-        self.trigger_position_box__global_action_construct_a__execution = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+    def init_execution_trigger_position_box__action_construct_a(self):
+        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_box__global_action_construct_b__execution(self):
-        self.trigger_position_box__global_action_construct_b__execution = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+    def init_execution_trigger_position_box__action_construct_b(self):
+        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_box__global_action_destruct_b__execution(self):
-        self.trigger_position_box__global_action_destruct_b__execution = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
+    def init_execution_trigger_position_box__action_destruct_b(self):
+        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_box__global_action_destruct_a__execution(self):
-        self.trigger_position_box__global_action_destruct_a__execution = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
+    def init_execution_trigger_position_box__action_destruct_a(self):
+        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
             self.scheduler,
         )
 
-    def trigger_position_box__global_action_construct_a__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_construct_a__action_parent.arrive():
+    def trigger_position_box__action_construct_a__action_parent(self):
+        if not self.join_for_trigger_position_box__action_construct_a__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_construct_a__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_construct_a.accept_action_parent()
 
-    def trigger_position_box__global_action_construct_b__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_construct_b__action_parent.arrive():
+    def trigger_position_box__action_construct_b__action_parent(self):
+        if not self.join_for_trigger_position_box__action_construct_b__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_construct_b__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_construct_b.accept_action_parent()
 
-    def trigger_position_box__global_action_destruct_b__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_destruct_b__action_parent.arrive():
+    def trigger_position_box__action_destruct_b__action_parent(self):
+        if not self.join_for_trigger_position_box__action_destruct_b__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_destruct_b__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_destruct_b.accept_action_parent()
 
-    def trigger_position_box__global_action_destruct_a__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_destruct_a__action_parent.arrive():
+    def trigger_position_box__action_destruct_a__action_parent(self):
+        if not self.join_for_trigger_position_box__action_destruct_a__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_destruct_a__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_destruct_a.accept_action_parent()

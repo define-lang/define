@@ -35,28 +35,28 @@ class FirstExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.trigger_position_box__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_box__global_action_inner__action_parent = literal.Join(2)
+        self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_position_box__action_inner__action_parent = literal.Join(2)
 
     def accept_action_parent(self):
         self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.submit(self.create_position_box__global_action_inner__position_trigger_pos)
-        self.trigger_position_box__global_action_inner__action_parent()
+        self.scheduler.submit(self.create_position_box__action_inner__position_trigger_pos)
+        self.trigger_position_box__action_inner__action_parent()
 
-    def create_position_box__global_action_inner__position_trigger_pos(self):
+    def create_position_box__action_inner__position_trigger_pos(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_inner__execution()
-        self.scheduler.submit(self.destroy_position_box__global_action_inner__position_trigger_pos)
-        self.trigger_position_box__global_action_inner__action_parent()
+        self.init_execution_trigger_position_box__action_inner()
+        self.scheduler.submit(self.destroy_position_box__action_inner__position_trigger_pos)
+        self.trigger_position_box__action_inner__action_parent()
 
-    def destroy_position_box__global_action_inner__position_trigger_pos(self):
+    def destroy_position_box__action_inner__position_trigger_pos(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
@@ -64,12 +64,12 @@ class FirstExecution:
         ).destroy_particle()
         self.local_position_box.destroy_particle()
 
-    def init_trigger_position_box__global_action_inner__execution(self):
-        self.trigger_position_box__global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+    def init_execution_trigger_position_box__action_inner(self):
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.scheduler,
         )
 
-    def trigger_position_box__global_action_inner__action_parent(self):
-        if not self.join_for_trigger_position_box__global_action_inner__action_parent.arrive():
+    def trigger_position_box__action_inner__action_parent(self):
+        if not self.join_for_trigger_position_box__action_inner__action_parent.arrive():
             return
-        self.trigger_position_box__global_action_inner__execution.accept_action_parent()
+        self.execution_trigger_position_box__action_inner.accept_action_parent()

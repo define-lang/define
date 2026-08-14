@@ -31,8 +31,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_inner_iface__global_action_inner__position_run: list[literal.Task] = []
-        self.trigger_position_inner_iface__global_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.guarantee_position_inner_iface__action_inner__position_run: list[literal.Task] = []
+        self.trigger_position_inner_iface__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
 @final
@@ -49,16 +49,16 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_position_inner_iface__global_action_inner__execution: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_inner_iface__global_action_inner__for_empty_rule_position_data = literal.Join(2)
+        self.execution_trigger_position_inner_iface__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_trigger_position_inner_iface__action_inner__for_empty_rule_position_data = literal.Join(2)
 
-    def accept_when_empty_position_inner_iface__global_action_inner__position_run(self):
-        self.create_position_inner_iface__global_action_inner__position_run()
+    def accept_when_empty_position_inner_iface__action_inner__position_run(self):
+        self.create_position_inner_iface__action_inner__position_run()
 
-    def accept_for_empty_rule_position_inner_iface__global_action_inner__position_data(self):
-        self.trigger_position_inner_iface__global_action_inner__for_empty_rule_position_data()
+    def accept_for_empty_rule_position_inner_iface__action_inner__position_data(self):
+        self.trigger_position_inner_iface__action_inner__for_empty_rule_position_data()
 
-    def create_position_inner_iface__global_action_inner__position_run(self):
+    def create_position_inner_iface__action_inner__position_run(self):
         self.action.get_interface_position(
             "position<inner_iface>"
         ).particle.get_action(
@@ -66,24 +66,24 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_position_inner_iface__global_action_inner__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_inner_iface__global_action_inner__position_run)
-        self.trigger_position_inner_iface__global_action_inner__for_empty_rule_position_data()
+        self.init_execution_trigger_position_inner_iface__action_inner()
+        self.scheduler.submit_all(self.guarantees.guarantee_position_inner_iface__action_inner__position_run)
+        self.trigger_position_inner_iface__action_inner__for_empty_rule_position_data()
 
-    def init_trigger_position_inner_iface__global_action_inner__execution(self):
+    def init_execution_trigger_position_inner_iface__action_inner(self):
         action = self.action.get_interface_position(
             "position<inner_iface>"
         ).particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         )
-        self.trigger_position_inner_iface__global_action_inner__execution = local.my_domain_com.my_lib.inner.InnerExecution(
+        self.execution_trigger_position_inner_iface__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_inner_iface__global_action_inner,
+            self.guarantees.trigger_position_inner_iface__action_inner,
             destruction_connections=self.destruction_connections,
         )
 
-    def trigger_position_inner_iface__global_action_inner__for_empty_rule_position_data(self):
-        if not self.join_for_trigger_position_inner_iface__global_action_inner__for_empty_rule_position_data.arrive():
+    def trigger_position_inner_iface__action_inner__for_empty_rule_position_data(self):
+        if not self.join_for_trigger_position_inner_iface__action_inner__for_empty_rule_position_data.arrive():
             return
-        self.trigger_position_inner_iface__global_action_inner__execution.accept_for_empty_rule_position_data()
+        self.execution_trigger_position_inner_iface__action_inner.accept_for_empty_rule_position_data()

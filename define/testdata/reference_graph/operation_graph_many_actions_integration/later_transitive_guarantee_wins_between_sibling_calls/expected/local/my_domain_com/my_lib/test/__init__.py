@@ -21,13 +21,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_run_both__position_trigger_pos()
+        execution.create_action_run_both__position_trigger_pos()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_run_both = local.my_domain_com.my_lib.run_both.RunBothGuarantees()
+        self.trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothGuarantees()
 
 
 @final
@@ -41,50 +41,50 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_run_both.trigger_global_action_call_empty.trigger_global_action_empty_item.guarantee_global_position_item.append(
+        guarantees.trigger_action_run_both.trigger_action_call_empty.trigger_action_empty_item.guarantee_global_position_item.append(
             self.create_global_position_item
         )
-        self.trigger_global_action_run_both__execution: local.my_domain_com.my_lib.run_both.RunBothExecution
+        self.execution_trigger_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
 
-    def create_global_action_run_both__position_trigger_pos(self):
+    def create_action_run_both__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.run_both.RunBoth
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_run_both__execution()
-        self.scheduler.submit(self.trigger_global_action_run_both__when_empty_global_action_call_fill__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_run_both__when_empty_global_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_run_both__when_empty_global_action_fill_item__position_trigger_pos)
-        self.scheduler.submit(self.trigger_global_action_run_both__when_empty_global_position_item)
-        self.trigger_global_action_run_both__when_empty_global_action_empty_item__position_trigger_pos()
+        self.init_execution_trigger_action_run_both()
+        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_run_both__when_empty_global_position_item)
+        self.trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos()
 
     def create_global_position_item(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
 
-    def init_trigger_global_action_run_both__execution(self):
+    def init_execution_trigger_action_run_both(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.run_both.RunBoth
         )
-        self.trigger_global_action_run_both__execution = local.my_domain_com.my_lib.run_both.RunBothExecution(
+        self.execution_trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_run_both,
+            self.guarantees.trigger_action_run_both,
         )
 
-    def trigger_global_action_run_both__when_empty_global_action_call_fill__position_trigger_pos(self):
-        self.trigger_global_action_run_both__execution.accept_when_empty_global_action_call_fill__position_trigger_pos()
+    def trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos(self):
+        self.execution_trigger_action_run_both.accept_when_empty_action_call_fill__position_trigger_pos()
 
-    def trigger_global_action_run_both__when_empty_global_action_call_empty__position_trigger_pos(self):
-        self.trigger_global_action_run_both__execution.accept_when_empty_global_action_call_empty__position_trigger_pos()
+    def trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos(self):
+        self.execution_trigger_action_run_both.accept_when_empty_action_call_empty__position_trigger_pos()
 
-    def trigger_global_action_run_both__when_empty_global_action_fill_item__position_trigger_pos(self):
-        self.trigger_global_action_run_both__execution.accept_when_empty_global_action_fill_item__position_trigger_pos()
+    def trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos(self):
+        self.execution_trigger_action_run_both.accept_when_empty_action_fill_item__position_trigger_pos()
 
-    def trigger_global_action_run_both__when_empty_global_position_item(self):
-        self.trigger_global_action_run_both__execution.accept_when_empty_global_position_item()
+    def trigger_action_run_both__when_empty_global_position_item(self):
+        self.execution_trigger_action_run_both.accept_when_empty_global_position_item()
 
-    def trigger_global_action_run_both__when_empty_global_action_empty_item__position_trigger_pos(self):
-        self.trigger_global_action_run_both__execution.accept_when_empty_global_action_empty_item__position_trigger_pos()
+    def trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos(self):
+        self.execution_trigger_action_run_both.accept_when_empty_action_empty_item__position_trigger_pos()

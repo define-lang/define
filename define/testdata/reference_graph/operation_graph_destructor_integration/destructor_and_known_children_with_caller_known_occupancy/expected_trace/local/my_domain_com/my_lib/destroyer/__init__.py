@@ -34,7 +34,7 @@ class Destroyer(literal.Action):
 class DestroyerGuarantees:
     def __init__(self):
         self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_position_run__global_action_destruct = local.my_domain_com.my_lib.destruct.DestructGuarantees()
+        self.trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructGuarantees()
 
 
 @final
@@ -65,16 +65,16 @@ class DestroyerExecution:
             "position<holder_b>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_run__global_action_destruct.guarantee_global_position_marker_b.append(
+        guarantees.trigger_position_run__action_destruct.guarantee_global_position_marker_b.append(
             self.destroy_position_run__global_position_marker_b
         )
-        guarantees.trigger_position_run__global_action_destruct.guarantee_global_position_marker_a.append(
+        guarantees.trigger_position_run__action_destruct.guarantee_global_position_marker_a.append(
             self.destroy_position_run__global_position_marker_a
         )
-        self.trigger_position_run__global_action_destruct__execution: local.my_domain_com.my_lib.destruct.DestructExecution
+        self.execution_trigger_position_run__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
         self.join_for_destroy_position_run = literal.Join(4)
-        self.join_for_trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_a = literal.Join(2)
-        self.join_for_trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_b = literal.Join(2)
+        self.join_for_trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a = literal.Join(2)
+        self.join_for_trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b = literal.Join(2)
 
     def accept_for_empty_rule_position_run__global_position_marker_a(self):
         self.move_position_run__global_position_marker_a_to_position_holder_a()
@@ -89,9 +89,9 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.init_trigger_position_run__global_action_destruct__execution()
-        self.scheduler.submit(self.trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_a)
-        self.trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_b()
+        self.init_execution_trigger_position_run__action_destruct()
+        self.scheduler.submit(self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a)
+        self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b()
 
     def move_position_run__global_position_marker_a_to_position_holder_a(self):
         self.action.get_interface_position(
@@ -118,7 +118,7 @@ class DestroyerExecution:
             "run::/marker_a",
             1,
         )
-        self.trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_a()
+        self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a()
 
     def move_position_run__global_position_marker_b_to_position_holder_b(self):
         self.action.get_interface_position(
@@ -145,7 +145,7 @@ class DestroyerExecution:
             "run::/marker_b",
             1,
         )
-        self.trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_b()
+        self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b()
 
     def create_position_run__global_position_maybe_empty(self):
         self.action.get_interface_position(
@@ -218,26 +218,26 @@ class DestroyerExecution:
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
-    def init_trigger_position_run__global_action_destruct__execution(self):
+    def init_execution_trigger_position_run__action_destruct(self):
         action = self.action.get_interface_position(
             "position<run>"
         ).particle.get_action(
             local.my_domain_com.my_lib.destruct.Destruct
         )
-        self.trigger_position_run__global_action_destruct__execution = local.my_domain_com.my_lib.destruct.DestructExecution(
+        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "destruct",
-            self.guarantees.trigger_position_run__global_action_destruct,
+            self.guarantees.trigger_position_run__action_destruct,
         )
 
-    def trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_a(self):
-        if not self.join_for_trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_a.arrive():
+    def trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a(self):
+        if not self.join_for_trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a.arrive():
             return
-        self.trigger_position_run__global_action_destruct__execution.accept_for_empty_rule_global_position_marker_a()
+        self.execution_trigger_position_run__action_destruct.accept_for_empty_rule_global_position_marker_a()
 
-    def trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_b(self):
-        if not self.join_for_trigger_position_run__global_action_destruct__for_empty_rule_global_position_marker_b.arrive():
+    def trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b(self):
+        if not self.join_for_trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b.arrive():
             return
-        self.trigger_position_run__global_action_destruct__execution.accept_for_empty_rule_global_position_marker_b()
+        self.execution_trigger_position_run__action_destruct.accept_for_empty_rule_global_position_marker_b()

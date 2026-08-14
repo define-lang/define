@@ -31,17 +31,17 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_position_a__global_action_b__execution: local.a_b.cd.b.BExecution
-        self.join_for_trigger_global_position_a__global_action_b__action_parent = literal.Join(2)
+        self.execution_trigger_global_position_a__action_b: local.a_b.cd.b.BExecution
+        self.join_for_trigger_global_position_a__action_b__action_parent = literal.Join(2)
 
     def create_global_position_a(self):
         self.action.on_particle.get_position(
             local.a_b.cd.a.A
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_a__global_action_b__position_t)
-        self.trigger_global_position_a__global_action_b__action_parent()
+        self.scheduler.submit(self.create_global_position_a__action_b__position_t)
+        self.trigger_global_position_a__action_b__action_parent()
 
-    def create_global_position_a__global_action_b__position_t(self):
+    def create_global_position_a__action_b__position_t(self):
         self.action.on_particle.get_position(
             local.a_b.cd.a.A
         ).particle.get_action(
@@ -49,15 +49,15 @@ class TestExecution:
         ).get_interface_position(
             "position<t>"
         ).create_particle()
-        self.init_trigger_global_position_a__global_action_b__execution()
-        self.trigger_global_position_a__global_action_b__action_parent()
+        self.init_execution_trigger_global_position_a__action_b()
+        self.trigger_global_position_a__action_b__action_parent()
 
-    def init_trigger_global_position_a__global_action_b__execution(self):
-        self.trigger_global_position_a__global_action_b__execution = local.a_b.cd.b.BExecution(
+    def init_execution_trigger_global_position_a__action_b(self):
+        self.execution_trigger_global_position_a__action_b = local.a_b.cd.b.BExecution(
             self.scheduler,
         )
 
-    def trigger_global_position_a__global_action_b__action_parent(self):
-        if not self.join_for_trigger_global_position_a__global_action_b__action_parent.arrive():
+    def trigger_global_position_a__action_b__action_parent(self):
+        if not self.join_for_trigger_global_position_a__action_b__action_parent.arrive():
             return
-        self.trigger_global_position_a__global_action_b__execution.accept_action_parent()
+        self.execution_trigger_global_position_a__action_b.accept_action_parent()

@@ -32,7 +32,7 @@ class Callee(literal.Action):
 class CalleeGuarantees:
     def __init__(self):
         self.guarantee_position_src: list[literal.Task] = []
-        self.trigger_position_src__global_action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
+        self.trigger_position_src__action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
 
 
 @final
@@ -55,22 +55,22 @@ class CalleeExecution:
         )
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_src__global_action_destructor.guarantee_global_position_marker.append(
+        guarantees.trigger_position_src__action_destructor.guarantee_global_position_marker.append(
             self.destroy_position_src
         )
-        self.trigger_position_src__global_action_destructor__execution: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.execution_trigger_position_src__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_destroy_position_src = literal.Join(2)
-        self.join_for_trigger_position_src__global_action_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker = literal.Join(2)
 
     def accept_for_empty_rule_position_src(self):
         self.destroy_position_src()
 
     def accept_when_empty_position_src__global_position_marker(self):
-        self.trigger_position_src__global_action_destructor__when_empty_global_position_marker()
+        self.trigger_position_src__action_destructor__when_empty_global_position_marker()
 
     def accept_when_occupied_position_src(self):
-        self.init_trigger_position_src__global_action_destructor__execution()
-        self.trigger_position_src__global_action_destructor__when_empty_global_position_marker()
+        self.init_execution_trigger_position_src__action_destructor()
+        self.trigger_position_src__action_destructor__when_empty_global_position_marker()
 
     def destroy_position_src(self):
         if not self.join_for_destroy_position_src.arrive():
@@ -88,21 +88,21 @@ class CalleeExecution:
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_src)
 
-    def init_trigger_position_src__global_action_destructor__execution(self):
+    def init_execution_trigger_position_src__action_destructor(self):
         action = self.action.get_interface_position(
             "position<src>"
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.Destructor
         )
-        self.trigger_position_src__global_action_destructor__execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_trigger_position_src__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "destructor",
-            self.guarantees.trigger_position_src__global_action_destructor,
+            self.guarantees.trigger_position_src__action_destructor,
         )
 
-    def trigger_position_src__global_action_destructor__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_position_src__global_action_destructor__when_empty_global_position_marker.arrive():
+    def trigger_position_src__action_destructor__when_empty_global_position_marker(self):
+        if not self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker.arrive():
             return
-        self.trigger_position_src__global_action_destructor__execution.accept_when_empty_global_position_marker()
+        self.execution_trigger_position_src__action_destructor.accept_when_empty_global_position_marker()

@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_gw__global_action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        self.trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
 
 
 @final
@@ -50,17 +50,17 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_gw__global_action_worker__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gw__global_action_worker__for_empty_rule_position_in = literal.Join(3)
+        self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = literal.Join(3)
 
     def create_position_gw(self):
         self.action.get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gw__global_action_worker__position_out)
-        self.create_position_gw__global_action_worker__position_in()
+        self.scheduler.submit(self.create_position_gw__action_worker__position_out)
+        self.create_position_gw__action_worker__position_in()
 
-    def create_position_gw__global_action_worker__position_out(self):
+    def create_position_gw__action_worker__position_out(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -75,9 +75,9 @@ class TestExecution:
         ).get_interface_position(
             "position<out>"
         ).destroy_particle()
-        self.trigger_position_gw__global_action_worker__for_empty_rule_position_in()
+        self.trigger_position_gw__action_worker__for_empty_rule_position_in()
 
-    def create_position_gw__global_action_worker__position_in(self):
+    def create_position_gw__action_worker__position_in(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -85,23 +85,23 @@ class TestExecution:
         ).get_interface_position(
             "position<in>"
         ).create_particle()
-        self.init_trigger_position_gw__global_action_worker__execution()
-        self.scheduler.submit(self.trigger_position_gw__global_action_worker__for_empty_rule_position_in)
-        self.trigger_position_gw__global_action_worker__for_empty_rule_position_in()
+        self.init_execution_trigger_position_gw__action_worker()
+        self.scheduler.submit(self.trigger_position_gw__action_worker__for_empty_rule_position_in)
+        self.trigger_position_gw__action_worker__for_empty_rule_position_in()
 
-    def init_trigger_position_gw__global_action_worker__execution(self):
+    def init_execution_trigger_position_gw__action_worker(self):
         action = self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         )
-        self.trigger_position_gw__global_action_worker__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+        self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_gw__global_action_worker,
+            self.guarantees.trigger_position_gw__action_worker,
         )
 
-    def trigger_position_gw__global_action_worker__for_empty_rule_position_in(self):
-        if not self.join_for_trigger_position_gw__global_action_worker__for_empty_rule_position_in.arrive():
+    def trigger_position_gw__action_worker__for_empty_rule_position_in(self):
+        if not self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in.arrive():
             return
-        self.trigger_position_gw__global_action_worker__execution.accept_for_empty_rule_position_in()
+        self.execution_trigger_position_gw__action_worker.accept_for_empty_rule_position_in()

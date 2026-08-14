@@ -19,13 +19,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_kick_off__position_trigger()
+        execution.create_action_kick_off__position_trigger()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_kick_off = local.my_domain_com.my_lib.kick_off.KickOffGuarantees()
+        self.trigger_action_kick_off = local.my_domain_com.my_lib.kick_off.KickOffGuarantees()
 
 
 @final
@@ -39,34 +39,34 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_kick_off__execution: local.my_domain_com.my_lib.kick_off.KickOffExecution
-        self.join_for_trigger_global_action_kick_off__for_empty_rule_position_trigger = literal.Join(2)
+        self.execution_trigger_action_kick_off: local.my_domain_com.my_lib.kick_off.KickOffExecution
+        self.join_for_trigger_action_kick_off__for_empty_rule_position_trigger = literal.Join(2)
 
-    def create_global_action_kick_off__position_trigger(self):
+    def create_action_kick_off__position_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.kick_off.KickOff
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_global_action_kick_off__execution()
-        self.scheduler.submit(self.trigger_global_action_kick_off__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_global_action_kick_off__when_empty_position_output)
-        self.trigger_global_action_kick_off__for_empty_rule_position_trigger()
+        self.init_execution_trigger_action_kick_off()
+        self.scheduler.submit(self.trigger_action_kick_off__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_action_kick_off__when_empty_position_output)
+        self.trigger_action_kick_off__for_empty_rule_position_trigger()
 
-    def init_trigger_global_action_kick_off__execution(self):
+    def init_execution_trigger_action_kick_off(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.kick_off.KickOff
         )
-        self.trigger_global_action_kick_off__execution = local.my_domain_com.my_lib.kick_off.KickOffExecution(
+        self.execution_trigger_action_kick_off = local.my_domain_com.my_lib.kick_off.KickOffExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_kick_off,
+            self.guarantees.trigger_action_kick_off,
         )
 
-    def trigger_global_action_kick_off__when_empty_position_output(self):
-        self.trigger_global_action_kick_off__execution.accept_when_empty_position_output()
+    def trigger_action_kick_off__when_empty_position_output(self):
+        self.execution_trigger_action_kick_off.accept_when_empty_position_output()
 
-    def trigger_global_action_kick_off__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_global_action_kick_off__for_empty_rule_position_trigger.arrive():
+    def trigger_action_kick_off__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_kick_off__for_empty_rule_position_trigger.arrive():
             return
-        self.trigger_global_action_kick_off__execution.accept_for_empty_rule_position_trigger()
+        self.execution_trigger_action_kick_off.accept_for_empty_rule_position_trigger()

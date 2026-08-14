@@ -20,13 +20,13 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_global_action_perform_operation__position_operation_trigger()
+        execution.create_action_perform_operation__position_operation_trigger()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationGuarantees()
+        self.trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationGuarantees()
 
 
 @final
@@ -40,24 +40,24 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_perform_operation.guarantee_position_operation_trigger__global_position_inner_position.append(
-            self.create_global_action_perform_operation__position_operation_trigger__global_position_inner_position
+        guarantees.trigger_action_perform_operation.guarantee_position_operation_trigger__global_position_inner_position.append(
+            self.create_action_perform_operation__position_operation_trigger__global_position_inner_position
         )
-        self.trigger_global_action_perform_operation__execution: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
-        self.join_for_trigger_global_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position = literal.Join(2)
+        self.execution_trigger_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
+        self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position = literal.Join(2)
 
-    def create_global_action_perform_operation__position_operation_trigger(self):
+    def create_action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_library_collection.perform_operation.PerformOperation
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()
-        self.init_trigger_global_action_perform_operation__execution()
-        self.scheduler.submit(self.trigger_global_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position)
-        self.scheduler.submit(self.trigger_global_action_perform_operation__action_parent)
-        self.trigger_global_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position()
+        self.init_execution_trigger_action_perform_operation()
+        self.scheduler.submit(self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position)
+        self.scheduler.submit(self.trigger_action_perform_operation__action_parent)
+        self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position()
 
-    def create_global_action_perform_operation__position_operation_trigger__global_position_inner_position(self):
+    def create_action_perform_operation__position_operation_trigger__global_position_inner_position(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_library_collection.perform_operation.PerformOperation
         ).get_interface_position(
@@ -66,20 +66,20 @@ class TestExecution:
             local.my_domain_com.my_library_collection.inner_position.InnerPosition
         ).create_particle()
 
-    def init_trigger_global_action_perform_operation__execution(self):
+    def init_execution_trigger_action_perform_operation(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_library_collection.perform_operation.PerformOperation
         )
-        self.trigger_global_action_perform_operation__execution = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
+        self.execution_trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_perform_operation,
+            self.guarantees.trigger_action_perform_operation,
         )
 
-    def trigger_global_action_perform_operation__action_parent(self):
-        self.trigger_global_action_perform_operation__execution.accept_action_parent()
+    def trigger_action_perform_operation__action_parent(self):
+        self.execution_trigger_action_perform_operation.accept_action_parent()
 
-    def trigger_global_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position(self):
-        if not self.join_for_trigger_global_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position.arrive():
+    def trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position(self):
+        if not self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position.arrive():
             return
-        self.trigger_global_action_perform_operation__execution.accept_when_empty_position_operation_trigger__global_position_inner_position()
+        self.execution_trigger_action_perform_operation.accept_when_empty_position_operation_trigger__global_position_inner_position()

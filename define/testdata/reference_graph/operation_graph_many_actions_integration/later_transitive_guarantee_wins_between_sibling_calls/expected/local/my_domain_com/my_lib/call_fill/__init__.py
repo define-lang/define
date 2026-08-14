@@ -27,8 +27,8 @@ class CallFill(literal.Action):
 @final
 class CallFillGuarantees:
     def __init__(self):
-        self.guarantee_global_action_fill_item__position_trigger_pos: list[literal.Task] = []
-        self.trigger_global_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemGuarantees()
+        self.guarantee_action_fill_item__position_trigger_pos: list[literal.Task] = []
+        self.trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemGuarantees()
 
 
 @final
@@ -42,36 +42,36 @@ class CallFillExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_fill_item__execution: local.my_domain_com.my_lib.fill_item.FillItemExecution
-        self.join_for_trigger_global_action_fill_item__when_empty_global_position_item = literal.Join(2)
+        self.execution_trigger_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
+        self.join_for_trigger_action_fill_item__when_empty_global_position_item = literal.Join(2)
 
-    def accept_when_empty_global_action_fill_item__position_trigger_pos(self):
-        self.create_global_action_fill_item__position_trigger_pos()
+    def accept_when_empty_action_fill_item__position_trigger_pos(self):
+        self.create_action_fill_item__position_trigger_pos()
 
     def accept_when_empty_global_position_item(self):
-        self.trigger_global_action_fill_item__when_empty_global_position_item()
+        self.trigger_action_fill_item__when_empty_global_position_item()
 
-    def create_global_action_fill_item__position_trigger_pos(self):
+    def create_action_fill_item__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.fill_item.FillItem
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_action_fill_item__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_fill_item__position_trigger_pos)
-        self.trigger_global_action_fill_item__when_empty_global_position_item()
+        self.init_execution_trigger_action_fill_item()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_fill_item__position_trigger_pos)
+        self.trigger_action_fill_item__when_empty_global_position_item()
 
-    def init_trigger_global_action_fill_item__execution(self):
+    def init_execution_trigger_action_fill_item(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.fill_item.FillItem
         )
-        self.trigger_global_action_fill_item__execution = local.my_domain_com.my_lib.fill_item.FillItemExecution(
+        self.execution_trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_fill_item,
+            self.guarantees.trigger_action_fill_item,
         )
 
-    def trigger_global_action_fill_item__when_empty_global_position_item(self):
-        if not self.join_for_trigger_global_action_fill_item__when_empty_global_position_item.arrive():
+    def trigger_action_fill_item__when_empty_global_position_item(self):
+        if not self.join_for_trigger_action_fill_item__when_empty_global_position_item.arrive():
             return
-        self.trigger_global_action_fill_item__execution.accept_when_empty_global_position_item()
+        self.execution_trigger_action_fill_item.accept_when_empty_global_position_item()

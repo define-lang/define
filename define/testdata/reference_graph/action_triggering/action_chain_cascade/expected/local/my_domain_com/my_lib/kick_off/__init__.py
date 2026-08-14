@@ -35,8 +35,8 @@ class KickOffGuarantees:
     def __init__(self):
         self.guarantee_position_output: list[literal.Task] = []
         self.guarantee_position_trigger: list[literal.Task] = []
-        self.trigger_position_output__global_action_react_a = local.my_domain_com.my_lib.react_a.ReactAGuarantees()
-        self.trigger_position_output__global_action_react_b = local.my_domain_com.my_lib.react_b.ReactBGuarantees()
+        self.trigger_position_output__action_react_a = local.my_domain_com.my_lib.react_a.ReactAGuarantees()
+        self.trigger_position_output__action_react_b = local.my_domain_com.my_lib.react_b.ReactBGuarantees()
 
 
 @final
@@ -53,12 +53,12 @@ class KickOffExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.trigger_position_output__global_action_react_a__execution: local.my_domain_com.my_lib.react_a.ReactAExecution
-        self.trigger_position_output__global_action_react_b__execution: local.my_domain_com.my_lib.react_b.ReactBExecution
-        self.join_for_trigger_position_output__global_action_react_a__when_empty_position_result = literal.Join(2)
-        self.join_for_trigger_position_output__global_action_react_a__for_empty_rule_position_trigger = literal.Join(2)
-        self.join_for_trigger_position_output__global_action_react_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_output__global_action_react_b__for_empty_rule_position_trigger = literal.Join(2)
+        self.execution_trigger_position_output__action_react_a: local.my_domain_com.my_lib.react_a.ReactAExecution
+        self.execution_trigger_position_output__action_react_b: local.my_domain_com.my_lib.react_b.ReactBExecution
+        self.join_for_trigger_position_output__action_react_a__when_empty_position_result = literal.Join(2)
+        self.join_for_trigger_position_output__action_react_a__for_empty_rule_position_trigger = literal.Join(2)
+        self.join_for_trigger_position_output__action_react_b__action_parent = literal.Join(2)
+        self.join_for_trigger_position_output__action_react_b__for_empty_rule_position_trigger = literal.Join(2)
 
     def accept_when_empty_position_output(self):
         self.create_position_output()
@@ -70,13 +70,13 @@ class KickOffExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_output__global_action_react_a__position_trigger)
-        self.scheduler.submit(self.create_position_output__global_action_react_b__position_trigger)
-        self.scheduler.submit(self.trigger_position_output__global_action_react_a__when_empty_position_result)
-        self.scheduler.submit(self.trigger_position_output__global_action_react_b__action_parent)
+        self.scheduler.submit(self.create_position_output__action_react_a__position_trigger)
+        self.scheduler.submit(self.create_position_output__action_react_b__position_trigger)
+        self.scheduler.submit(self.trigger_position_output__action_react_a__when_empty_position_result)
+        self.scheduler.submit(self.trigger_position_output__action_react_b__action_parent)
         self.scheduler.continue_with(self.guarantees.guarantee_position_output)
 
-    def create_position_output__global_action_react_a__position_trigger(self):
+    def create_position_output__action_react_a__position_trigger(self):
         self.action.get_interface_position(
             "position<output>"
         ).particle.get_action(
@@ -84,12 +84,12 @@ class KickOffExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_position_output__global_action_react_a__execution()
-        self.scheduler.submit(self.trigger_position_output__global_action_react_a__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_position_output__global_action_react_a__when_empty_position_result)
-        self.trigger_position_output__global_action_react_a__for_empty_rule_position_trigger()
+        self.init_execution_trigger_position_output__action_react_a()
+        self.scheduler.submit(self.trigger_position_output__action_react_a__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_position_output__action_react_a__when_empty_position_result)
+        self.trigger_position_output__action_react_a__for_empty_rule_position_trigger()
 
-    def create_position_output__global_action_react_b__position_trigger(self):
+    def create_position_output__action_react_b__position_trigger(self):
         self.action.get_interface_position(
             "position<output>"
         ).particle.get_action(
@@ -97,10 +97,10 @@ class KickOffExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_position_output__global_action_react_b__execution()
-        self.scheduler.submit(self.trigger_position_output__global_action_react_b__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_position_output__global_action_react_b__action_parent)
-        self.trigger_position_output__global_action_react_b__for_empty_rule_position_trigger()
+        self.init_execution_trigger_position_output__action_react_b()
+        self.scheduler.submit(self.trigger_position_output__action_react_b__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_position_output__action_react_b__action_parent)
+        self.trigger_position_output__action_react_b__for_empty_rule_position_trigger()
 
     def destroy_position_trigger(self):
         literal.continue_destruction(self.continue_destroy_position_trigger)
@@ -111,46 +111,46 @@ class KickOffExecution:
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
 
-    def init_trigger_position_output__global_action_react_a__execution(self):
+    def init_execution_trigger_position_output__action_react_a(self):
         action = self.action.get_interface_position(
             "position<output>"
         ).particle.get_action(
             local.my_domain_com.my_lib.react_a.ReactA
         )
-        self.trigger_position_output__global_action_react_a__execution = local.my_domain_com.my_lib.react_a.ReactAExecution(
+        self.execution_trigger_position_output__action_react_a = local.my_domain_com.my_lib.react_a.ReactAExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_output__global_action_react_a,
+            self.guarantees.trigger_position_output__action_react_a,
         )
 
-    def init_trigger_position_output__global_action_react_b__execution(self):
+    def init_execution_trigger_position_output__action_react_b(self):
         action = self.action.get_interface_position(
             "position<output>"
         ).particle.get_action(
             local.my_domain_com.my_lib.react_b.ReactB
         )
-        self.trigger_position_output__global_action_react_b__execution = local.my_domain_com.my_lib.react_b.ReactBExecution(
+        self.execution_trigger_position_output__action_react_b = local.my_domain_com.my_lib.react_b.ReactBExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_output__global_action_react_b,
+            self.guarantees.trigger_position_output__action_react_b,
         )
 
-    def trigger_position_output__global_action_react_a__when_empty_position_result(self):
-        if not self.join_for_trigger_position_output__global_action_react_a__when_empty_position_result.arrive():
+    def trigger_position_output__action_react_a__when_empty_position_result(self):
+        if not self.join_for_trigger_position_output__action_react_a__when_empty_position_result.arrive():
             return
-        self.trigger_position_output__global_action_react_a__execution.accept_when_empty_position_result()
+        self.execution_trigger_position_output__action_react_a.accept_when_empty_position_result()
 
-    def trigger_position_output__global_action_react_a__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_position_output__global_action_react_a__for_empty_rule_position_trigger.arrive():
+    def trigger_position_output__action_react_a__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_position_output__action_react_a__for_empty_rule_position_trigger.arrive():
             return
-        self.trigger_position_output__global_action_react_a__execution.accept_for_empty_rule_position_trigger()
+        self.execution_trigger_position_output__action_react_a.accept_for_empty_rule_position_trigger()
 
-    def trigger_position_output__global_action_react_b__action_parent(self):
-        if not self.join_for_trigger_position_output__global_action_react_b__action_parent.arrive():
+    def trigger_position_output__action_react_b__action_parent(self):
+        if not self.join_for_trigger_position_output__action_react_b__action_parent.arrive():
             return
-        self.trigger_position_output__global_action_react_b__execution.accept_action_parent()
+        self.execution_trigger_position_output__action_react_b.accept_action_parent()
 
-    def trigger_position_output__global_action_react_b__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_position_output__global_action_react_b__for_empty_rule_position_trigger.arrive():
+    def trigger_position_output__action_react_b__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_position_output__action_react_b__for_empty_rule_position_trigger.arrive():
             return
-        self.trigger_position_output__global_action_react_b__execution.accept_for_empty_rule_position_trigger()
+        self.execution_trigger_position_output__action_react_b.accept_for_empty_rule_position_trigger()

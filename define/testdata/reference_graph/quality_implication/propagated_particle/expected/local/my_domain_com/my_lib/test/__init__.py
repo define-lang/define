@@ -19,14 +19,14 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_runner__position_wrapper)
-        execution.create_global_action_runner__position_run()
+        execution.scheduler.submit(execution.create_action_runner__position_wrapper)
+        execution.create_action_runner__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
+        self.trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
 
 
 @final
@@ -40,53 +40,53 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_runner__execution: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_box = literal.Join(2)
-        self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_run = literal.Join(2)
-        self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_final = literal.Join(2)
+        self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box = literal.Join(2)
+        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run = literal.Join(2)
+        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_final = literal.Join(2)
 
-    def create_global_action_runner__position_wrapper(self):
+    def create_action_runner__position_wrapper(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<wrapper>"
         ).create_particle()
-        self.scheduler.submit(self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_box)
-        self.scheduler.submit(self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_run)
-        self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_final()
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
+        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final()
 
-    def create_global_action_runner__position_run(self):
+    def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_runner__execution()
-        self.scheduler.submit(self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_box)
-        self.scheduler.submit(self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_run)
-        self.trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_final()
+        self.init_execution_trigger_action_runner()
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
+        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final()
 
-    def init_trigger_global_action_runner__execution(self):
+    def init_execution_trigger_action_runner(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
         )
-        self.trigger_global_action_runner__execution = local.my_domain_com.my_lib.runner.RunnerExecution(
+        self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_runner,
+            self.guarantees.trigger_action_runner,
         )
 
-    def trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_box(self):
-        if not self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_box.arrive():
+    def trigger_action_runner__when_empty_position_wrapper__action_middle__position_box(self):
+        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box.arrive():
             return
-        self.trigger_global_action_runner__execution.accept_when_empty_position_wrapper__global_action_middle__position_box()
+        self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_box()
 
-    def trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_run(self):
-        if not self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_run.arrive():
+    def trigger_action_runner__when_empty_position_wrapper__action_middle__position_run(self):
+        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run.arrive():
             return
-        self.trigger_global_action_runner__execution.accept_when_empty_position_wrapper__global_action_middle__position_run()
+        self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_run()
 
-    def trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_final(self):
-        if not self.join_for_trigger_global_action_runner__when_empty_position_wrapper__global_action_middle__position_final.arrive():
+    def trigger_action_runner__when_empty_position_wrapper__action_middle__position_final(self):
+        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_final.arrive():
             return
-        self.trigger_global_action_runner__execution.accept_when_empty_position_wrapper__global_action_middle__position_final()
+        self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_final()

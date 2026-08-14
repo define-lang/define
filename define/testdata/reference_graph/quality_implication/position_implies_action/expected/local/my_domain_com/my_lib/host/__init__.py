@@ -16,7 +16,7 @@ class Host(literal.Action):
 @final
 class HostGuarantees:
     def __init__(self):
-        self.guarantee_global_action_helper__position_run: list[literal.Task] = []
+        self.guarantee_action_helper__position_run: list[literal.Task] = []
 
 
 @final
@@ -30,31 +30,31 @@ class HostExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_helper__execution: local.my_domain_com.my_lib.helper.HelperExecution
-        self.join_for_trigger_global_action_helper__action_parent = literal.Join(2)
+        self.execution_trigger_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
+        self.join_for_trigger_action_helper__action_parent = literal.Join(2)
 
-    def accept_when_empty_global_action_helper__position_run(self):
-        self.create_global_action_helper__position_run()
+    def accept_when_empty_action_helper__position_run(self):
+        self.create_action_helper__position_run()
 
     def accept_action_parent(self):
-        self.trigger_global_action_helper__action_parent()
+        self.trigger_action_helper__action_parent()
 
-    def create_global_action_helper__position_run(self):
+    def create_action_helper__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.helper.Helper
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_helper__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_helper__position_run)
-        self.trigger_global_action_helper__action_parent()
+        self.init_execution_trigger_action_helper()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_helper__position_run)
+        self.trigger_action_helper__action_parent()
 
-    def init_trigger_global_action_helper__execution(self):
-        self.trigger_global_action_helper__execution = local.my_domain_com.my_lib.helper.HelperExecution(
+    def init_execution_trigger_action_helper(self):
+        self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_helper__action_parent(self):
-        if not self.join_for_trigger_global_action_helper__action_parent.arrive():
+    def trigger_action_helper__action_parent(self):
+        if not self.join_for_trigger_action_helper__action_parent.arrive():
             return
-        self.trigger_global_action_helper__execution.accept_action_parent()
+        self.execution_trigger_action_helper.accept_action_parent()

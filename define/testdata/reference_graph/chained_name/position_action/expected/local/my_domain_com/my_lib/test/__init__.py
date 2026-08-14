@@ -31,17 +31,17 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_position_a__global_action_act__execution: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_global_position_a__global_action_act__action_parent = literal.Join(2)
+        self.execution_trigger_global_position_a__action_act: local.my_domain_com.my_lib.act.ActExecution
+        self.join_for_trigger_global_position_a__action_act__action_parent = literal.Join(2)
 
     def create_global_position_a(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_a__global_action_act__position_trigger_pos)
-        self.trigger_global_position_a__global_action_act__action_parent()
+        self.scheduler.submit(self.create_global_position_a__action_act__position_trigger_pos)
+        self.trigger_global_position_a__action_act__action_parent()
 
-    def create_global_position_a__global_action_act__position_trigger_pos(self):
+    def create_global_position_a__action_act__position_trigger_pos(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).particle.get_action(
@@ -49,15 +49,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_global_position_a__global_action_act__execution()
-        self.trigger_global_position_a__global_action_act__action_parent()
+        self.init_execution_trigger_global_position_a__action_act()
+        self.trigger_global_position_a__action_act__action_parent()
 
-    def init_trigger_global_position_a__global_action_act__execution(self):
-        self.trigger_global_position_a__global_action_act__execution = local.my_domain_com.my_lib.act.ActExecution(
+    def init_execution_trigger_global_position_a__action_act(self):
+        self.execution_trigger_global_position_a__action_act = local.my_domain_com.my_lib.act.ActExecution(
             self.scheduler,
         )
 
-    def trigger_global_position_a__global_action_act__action_parent(self):
-        if not self.join_for_trigger_global_position_a__global_action_act__action_parent.arrive():
+    def trigger_global_position_a__action_act__action_parent(self):
+        if not self.join_for_trigger_global_position_a__action_act__action_parent.arrive():
             return
-        self.trigger_global_position_a__global_action_act__execution.accept_action_parent()
+        self.execution_trigger_global_position_a__action_act.accept_action_parent()

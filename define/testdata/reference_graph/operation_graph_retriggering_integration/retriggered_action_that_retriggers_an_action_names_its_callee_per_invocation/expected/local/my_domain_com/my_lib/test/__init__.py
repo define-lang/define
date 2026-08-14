@@ -41,20 +41,20 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_position_holder__global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.trigger_position_holder__global_action_middle_2__execution: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_holder__global_action_middle__action_parent = literal.Join(2)
-        self.join_for_trigger_position_holder__global_action_middle_2__action_parent = literal.Join(2)
+        self.execution_trigger_position_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.execution_trigger_position_holder__action_middle_2: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_trigger_position_holder__action_middle__action_parent = literal.Join(2)
+        self.join_for_trigger_position_holder__action_middle_2__action_parent = literal.Join(2)
 
     def create_position_holder(self):
         self.action.get_interface_position(
             "position<holder>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_holder__global_action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_holder__global_action_middle__action_parent)
-        self.trigger_position_holder__global_action_middle_2__action_parent()
+        self.scheduler.submit(self.create_position_holder__action_middle__position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_holder__action_middle__action_parent)
+        self.trigger_position_holder__action_middle_2__action_parent()
 
-    def create_position_holder__global_action_middle__position_trigger_pos(self):
+    def create_position_holder__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<holder>"
         ).particle.get_action(
@@ -62,11 +62,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_holder__global_action_middle__execution()
-        self.scheduler.submit(self.destroy_position_holder__global_action_middle__position_trigger_pos)
-        self.trigger_position_holder__global_action_middle__action_parent()
+        self.init_execution_trigger_position_holder__action_middle()
+        self.scheduler.submit(self.destroy_position_holder__action_middle__position_trigger_pos)
+        self.trigger_position_holder__action_middle__action_parent()
 
-    def destroy_position_holder__global_action_middle__position_trigger_pos(self):
+    def destroy_position_holder__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<holder>"
         ).particle.get_action(
@@ -81,25 +81,25 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_holder__global_action_middle_2__execution()
-        self.trigger_position_holder__global_action_middle_2__action_parent()
+        self.init_execution_trigger_position_holder__action_middle_2()
+        self.trigger_position_holder__action_middle_2__action_parent()
 
-    def init_trigger_position_holder__global_action_middle__execution(self):
-        self.trigger_position_holder__global_action_middle__execution = local.my_domain_com.my_lib.middle.MiddleExecution(
+    def init_execution_trigger_position_holder__action_middle(self):
+        self.execution_trigger_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.scheduler,
         )
 
-    def init_trigger_position_holder__global_action_middle_2__execution(self):
-        self.trigger_position_holder__global_action_middle_2__execution = local.my_domain_com.my_lib.middle.MiddleExecution(
+    def init_execution_trigger_position_holder__action_middle_2(self):
+        self.execution_trigger_position_holder__action_middle_2 = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.scheduler,
         )
 
-    def trigger_position_holder__global_action_middle__action_parent(self):
-        if not self.join_for_trigger_position_holder__global_action_middle__action_parent.arrive():
+    def trigger_position_holder__action_middle__action_parent(self):
+        if not self.join_for_trigger_position_holder__action_middle__action_parent.arrive():
             return
-        self.trigger_position_holder__global_action_middle__execution.accept_action_parent()
+        self.execution_trigger_position_holder__action_middle.accept_action_parent()
 
-    def trigger_position_holder__global_action_middle_2__action_parent(self):
-        if not self.join_for_trigger_position_holder__global_action_middle_2__action_parent.arrive():
+    def trigger_position_holder__action_middle_2__action_parent(self):
+        if not self.join_for_trigger_position_holder__action_middle_2__action_parent.arrive():
             return
-        self.trigger_position_holder__global_action_middle_2__execution.accept_action_parent()
+        self.execution_trigger_position_holder__action_middle_2.accept_action_parent()

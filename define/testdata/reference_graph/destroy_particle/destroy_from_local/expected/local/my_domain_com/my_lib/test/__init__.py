@@ -18,7 +18,7 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.create_global_action_act__position_trigger()
+        execution.create_action_act__position_trigger()
 
 
 @final
@@ -30,21 +30,21 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_global_action_act__execution: local.my_domain_com.my_lib.act.ActExecution
+        self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
 
-    def create_global_action_act__position_trigger(self):
+    def create_action_act__position_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_global_action_act__execution()
-        self.trigger_global_action_act__action_parent()
+        self.init_execution_trigger_action_act()
+        self.trigger_action_act__action_parent()
 
-    def init_trigger_global_action_act__execution(self):
-        self.trigger_global_action_act__execution = local.my_domain_com.my_lib.act.ActExecution(
+    def init_execution_trigger_action_act(self):
+        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
             self.scheduler,
         )
 
-    def trigger_global_action_act__action_parent(self):
-        self.trigger_global_action_act__execution.accept_action_parent()
+    def trigger_action_act__action_parent(self):
+        self.execution_trigger_action_act.accept_action_parent()

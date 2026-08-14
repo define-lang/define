@@ -19,14 +19,14 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_act__position_src)
-        execution.create_global_action_act__position_trigger()
+        execution.scheduler.submit(execution.create_action_act__position_src)
+        execution.create_action_act__position_trigger()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
+        self.trigger_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
 
 
 @final
@@ -40,37 +40,37 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_global_action_act__execution: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_global_action_act__for_empty_rule_position_src = literal.Join(2)
+        self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
+        self.join_for_trigger_action_act__for_empty_rule_position_src = literal.Join(2)
 
-    def create_global_action_act__position_src(self):
+    def create_action_act__position_src(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<src>"
         ).create_particle()
-        self.trigger_global_action_act__for_empty_rule_position_src()
+        self.trigger_action_act__for_empty_rule_position_src()
 
-    def create_global_action_act__position_trigger(self):
+    def create_action_act__position_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_trigger_global_action_act__execution()
-        self.trigger_global_action_act__for_empty_rule_position_src()
+        self.init_execution_trigger_action_act()
+        self.trigger_action_act__for_empty_rule_position_src()
 
-    def init_trigger_global_action_act__execution(self):
+    def init_execution_trigger_action_act(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.act.Act
         )
-        self.trigger_global_action_act__execution = local.my_domain_com.my_lib.act.ActExecution(
+        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_act,
+            self.guarantees.trigger_action_act,
         )
 
-    def trigger_global_action_act__for_empty_rule_position_src(self):
-        if not self.join_for_trigger_global_action_act__for_empty_rule_position_src.arrive():
+    def trigger_action_act__for_empty_rule_position_src(self):
+        if not self.join_for_trigger_action_act__for_empty_rule_position_src.arrive():
             return
-        self.trigger_global_action_act__execution.accept_for_empty_rule_position_src()
+        self.execution_trigger_action_act.accept_for_empty_rule_position_src()

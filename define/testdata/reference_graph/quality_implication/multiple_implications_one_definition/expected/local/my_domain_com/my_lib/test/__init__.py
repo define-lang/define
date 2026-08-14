@@ -36,7 +36,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_position_box__global_action_combiner = local.my_domain_com.my_lib.combiner.CombinerGuarantees()
+        self.trigger_position_box__action_combiner = local.my_domain_com.my_lib.combiner.CombinerGuarantees()
 
 
 @final
@@ -50,38 +50,38 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.trigger_position_box__global_action_combiner__execution: local.my_domain_com.my_lib.combiner.CombinerExecution
-        self.join_for_trigger_position_box__global_action_combiner__when_empty_global_position_first_marker = literal.Join(2)
-        self.join_for_trigger_position_box__global_action_combiner__when_empty_global_position_second_marker = literal.Join(2)
+        self.execution_trigger_position_box__action_combiner: local.my_domain_com.my_lib.combiner.CombinerExecution
+        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker = literal.Join(2)
+        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_second_marker = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_trigger_position_box__global_action_combiner__execution()
-        self.scheduler.submit(self.trigger_position_box__global_action_combiner__when_empty_global_position_first_marker)
-        self.scheduler.submit(self.trigger_position_box__global_action_combiner__when_empty_global_position_second_marker)
-        self.scheduler.submit(self.trigger_position_box__global_action_combiner__when_empty_global_position_first_marker)
-        self.trigger_position_box__global_action_combiner__when_empty_global_position_second_marker()
+        self.init_execution_trigger_position_box__action_combiner()
+        self.scheduler.submit(self.trigger_position_box__action_combiner__when_empty_global_position_first_marker)
+        self.scheduler.submit(self.trigger_position_box__action_combiner__when_empty_global_position_second_marker)
+        self.scheduler.submit(self.trigger_position_box__action_combiner__when_empty_global_position_first_marker)
+        self.trigger_position_box__action_combiner__when_empty_global_position_second_marker()
 
-    def init_trigger_position_box__global_action_combiner__execution(self):
+    def init_execution_trigger_position_box__action_combiner(self):
         action = self.action.get_interface_position(
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.combiner.Combiner
         )
-        self.trigger_position_box__global_action_combiner__execution = local.my_domain_com.my_lib.combiner.CombinerExecution(
+        self.execution_trigger_position_box__action_combiner = local.my_domain_com.my_lib.combiner.CombinerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_box__global_action_combiner,
+            self.guarantees.trigger_position_box__action_combiner,
         )
 
-    def trigger_position_box__global_action_combiner__when_empty_global_position_first_marker(self):
-        if not self.join_for_trigger_position_box__global_action_combiner__when_empty_global_position_first_marker.arrive():
+    def trigger_position_box__action_combiner__when_empty_global_position_first_marker(self):
+        if not self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker.arrive():
             return
-        self.trigger_position_box__global_action_combiner__execution.accept_when_empty_global_position_first_marker()
+        self.execution_trigger_position_box__action_combiner.accept_when_empty_global_position_first_marker()
 
-    def trigger_position_box__global_action_combiner__when_empty_global_position_second_marker(self):
-        if not self.join_for_trigger_position_box__global_action_combiner__when_empty_global_position_second_marker.arrive():
+    def trigger_position_box__action_combiner__when_empty_global_position_second_marker(self):
+        if not self.join_for_trigger_position_box__action_combiner__when_empty_global_position_second_marker.arrive():
             return
-        self.trigger_position_box__global_action_combiner__execution.accept_when_empty_global_position_second_marker()
+        self.execution_trigger_position_box__action_combiner.accept_when_empty_global_position_second_marker()

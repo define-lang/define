@@ -30,7 +30,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
 
 @final
@@ -59,9 +59,9 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.trigger_global_action_middle__execution: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_move_position_source_to_global_action_middle__position_run = literal.Join(2)
-        self.join_for_trigger_global_action_middle__for_empty_rule_position_run = literal.Join(2)
+        self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_move_position_source_to_action_middle__position_run = literal.Join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_position_run = literal.Join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -82,7 +82,7 @@ class TestExecution:
             "source::/marker_a",
             1,
         )
-        self.move_position_source_to_global_action_middle__position_run()
+        self.move_position_source_to_action_middle__position_run()
 
     def create_position_source__global_position_marker_b(self):
         self.local_position_source.particle.get_position(
@@ -93,10 +93,10 @@ class TestExecution:
             "source::/marker_b",
             1,
         )
-        self.move_position_source_to_global_action_middle__position_run()
+        self.move_position_source_to_action_middle__position_run()
 
-    def move_position_source_to_global_action_middle__position_run(self):
-        if not self.join_for_move_position_source_to_global_action_middle__position_run.arrive():
+    def move_position_source_to_action_middle__position_run(self):
+        if not self.join_for_move_position_source_to_action_middle__position_run.arrive():
             return
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -111,23 +111,23 @@ class TestExecution:
             "/middle::run",
             1,
         )
-        self.init_trigger_global_action_middle__execution()
-        self.scheduler.submit(self.trigger_global_action_middle__for_empty_rule_position_run)
-        self.trigger_global_action_middle__for_empty_rule_position_run()
+        self.init_execution_trigger_action_middle()
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run)
+        self.trigger_action_middle__for_empty_rule_position_run()
 
-    def init_trigger_global_action_middle__execution(self):
+    def init_execution_trigger_action_middle(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         )
-        self.trigger_global_action_middle__execution = local.my_domain_com.my_lib.middle.MiddleExecution(
+        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "middle",
-            self.guarantees.trigger_global_action_middle,
+            self.guarantees.trigger_action_middle,
         )
 
-    def trigger_global_action_middle__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_global_action_middle__for_empty_rule_position_run.arrive():
+    def trigger_action_middle__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_middle__for_empty_rule_position_run.arrive():
             return
-        self.trigger_global_action_middle__execution.accept_for_empty_rule_position_run()
+        self.execution_trigger_action_middle.accept_for_empty_rule_position_run()

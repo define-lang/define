@@ -32,7 +32,7 @@ class Destroyer(literal.Action):
 class DestroyerGuarantees:
     def __init__(self):
         self.guarantee_position_parent: list[literal.Task] = []
-        self.trigger_position_parent__global_action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
+        self.trigger_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
 
 
 @final
@@ -49,23 +49,23 @@ class DestroyerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_parent__global_action_maker.guarantee_position_result.append(
-            self.destroy_position_parent__global_action_maker__position_result
+        guarantees.trigger_position_parent__action_maker.guarantee_position_result.append(
+            self.destroy_position_parent__action_maker__position_result
         )
-        self.trigger_position_parent__global_action_maker__execution: local.my_domain_com.my_lib.maker.MakerExecution
+        self.execution_trigger_position_parent__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
         self.join_for_destroy_position_parent = literal.Join(3)
-        self.join_for_trigger_position_parent__global_action_maker__when_empty_position_result = literal.Join(2)
+        self.join_for_trigger_position_parent__action_maker__when_empty_position_result = literal.Join(2)
 
-    def accept_when_empty_position_parent__global_action_maker__position_trigger_pos(self):
-        self.create_position_parent__global_action_maker__position_trigger_pos()
+    def accept_when_empty_position_parent__action_maker__position_trigger_pos(self):
+        self.create_position_parent__action_maker__position_trigger_pos()
 
     def accept_for_empty_rule_position_parent(self):
         self.destroy_position_parent()
 
-    def accept_when_empty_position_parent__global_action_maker__position_result(self):
-        self.trigger_position_parent__global_action_maker__when_empty_position_result()
+    def accept_when_empty_position_parent__action_maker__position_result(self):
+        self.trigger_position_parent__action_maker__when_empty_position_result()
 
-    def create_position_parent__global_action_maker__position_trigger_pos(self):
+    def create_position_parent__action_maker__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_action(
@@ -73,14 +73,14 @@ class DestroyerExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_parent__global_action_maker__execution()
-        self.scheduler.submit(self.destroy_position_parent__global_action_maker__position_trigger_pos)
-        self.trigger_position_parent__global_action_maker__when_empty_position_result()
+        self.init_execution_trigger_position_parent__action_maker()
+        self.scheduler.submit(self.destroy_position_parent__action_maker__position_trigger_pos)
+        self.trigger_position_parent__action_maker__when_empty_position_result()
 
-    def destroy_position_parent__global_action_maker__position_result(self):
-        literal.continue_destruction(self.continue_destroy_position_parent__global_action_maker__position_result)
+    def destroy_position_parent__action_maker__position_result(self):
+        literal.continue_destruction(self.continue_destroy_position_parent__action_maker__position_result)
 
-    def continue_destroy_position_parent__global_action_maker__position_result(self):
+    def continue_destroy_position_parent__action_maker__position_result(self):
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_action(
@@ -90,10 +90,10 @@ class DestroyerExecution:
         ).destroy_particle()
         self.destroy_position_parent()
 
-    def destroy_position_parent__global_action_maker__position_trigger_pos(self):
-        literal.continue_destruction(self.continue_destroy_position_parent__global_action_maker__position_trigger_pos)
+    def destroy_position_parent__action_maker__position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_parent__action_maker__position_trigger_pos)
 
-    def continue_destroy_position_parent__global_action_maker__position_trigger_pos(self):
+    def continue_destroy_position_parent__action_maker__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_action(
@@ -114,19 +114,19 @@ class DestroyerExecution:
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
 
-    def init_trigger_position_parent__global_action_maker__execution(self):
+    def init_execution_trigger_position_parent__action_maker(self):
         action = self.action.get_interface_position(
             "position<parent>"
         ).particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         )
-        self.trigger_position_parent__global_action_maker__execution = local.my_domain_com.my_lib.maker.MakerExecution(
+        self.execution_trigger_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_position_parent__global_action_maker,
+            self.guarantees.trigger_position_parent__action_maker,
         )
 
-    def trigger_position_parent__global_action_maker__when_empty_position_result(self):
-        if not self.join_for_trigger_position_parent__global_action_maker__when_empty_position_result.arrive():
+    def trigger_position_parent__action_maker__when_empty_position_result(self):
+        if not self.join_for_trigger_position_parent__action_maker__when_empty_position_result.arrive():
             return
-        self.trigger_position_parent__global_action_maker__execution.accept_when_empty_position_result()
+        self.execution_trigger_position_parent__action_maker.accept_when_empty_position_result()

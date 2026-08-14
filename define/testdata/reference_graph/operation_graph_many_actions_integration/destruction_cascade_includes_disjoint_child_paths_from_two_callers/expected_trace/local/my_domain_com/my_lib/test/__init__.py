@@ -23,15 +23,15 @@ class Test(literal.EntryPoint):
             "test",
             TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_action_middle_a__position_run)
-        execution.create_global_action_middle_b__position_run()
+        execution.scheduler.submit(execution.create_action_middle_a__position_run)
+        execution.create_action_middle_b__position_run()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAGuarantees()
-        self.trigger_global_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBGuarantees()
+        self.trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAGuarantees()
+        self.trigger_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBGuarantees()
 
 
 @final
@@ -51,14 +51,14 @@ class TestExecution:
             action_name,
         )
         self.guarantees = guarantees
-        guarantees.trigger_global_action_middle_a.trigger_global_action_destroyer.guarantee_position_run.append(
-            self.trigger_global_action_middle_b__when_empty_global_action_destroyer__position_run
+        guarantees.trigger_action_middle_a.trigger_action_destroyer.guarantee_position_run.append(
+            self.trigger_action_middle_b__when_empty_action_destroyer__position_run
         )
-        self.trigger_global_action_middle_a__execution: local.my_domain_com.my_lib.middle_a.MiddleAExecution
-        self.trigger_global_action_middle_b__execution: local.my_domain_com.my_lib.middle_b.MiddleBExecution
-        self.join_for_trigger_global_action_middle_b__when_empty_global_action_destroyer__position_run = literal.Join(2)
+        self.execution_trigger_action_middle_a: local.my_domain_com.my_lib.middle_a.MiddleAExecution
+        self.execution_trigger_action_middle_b: local.my_domain_com.my_lib.middle_b.MiddleBExecution
+        self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run = literal.Join(2)
 
-    def create_global_action_middle_a__position_run(self):
+    def create_action_middle_a__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_a.MiddleA
         ).get_interface_position(
@@ -69,11 +69,11 @@ class TestExecution:
             "/middle_a::run",
             1,
         )
-        self.init_trigger_global_action_middle_a__execution()
-        self.scheduler.submit(self.trigger_global_action_middle_a__action_parent)
-        self.trigger_global_action_middle_a__when_empty_global_action_destroyer__position_run()
+        self.init_execution_trigger_action_middle_a()
+        self.scheduler.submit(self.trigger_action_middle_a__action_parent)
+        self.trigger_action_middle_a__when_empty_action_destroyer__position_run()
 
-    def create_global_action_middle_b__position_run(self):
+    def create_action_middle_b__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_b.MiddleB
         ).get_interface_position(
@@ -84,44 +84,44 @@ class TestExecution:
             "/middle_b::run",
             1,
         )
-        self.init_trigger_global_action_middle_b__execution()
-        self.scheduler.submit(self.trigger_global_action_middle_b__action_parent)
-        self.trigger_global_action_middle_b__when_empty_global_action_destroyer__position_run()
+        self.init_execution_trigger_action_middle_b()
+        self.scheduler.submit(self.trigger_action_middle_b__action_parent)
+        self.trigger_action_middle_b__when_empty_action_destroyer__position_run()
 
-    def init_trigger_global_action_middle_a__execution(self):
+    def init_execution_trigger_action_middle_a(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_a.MiddleA
         )
-        self.trigger_global_action_middle_a__execution = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
+        self.execution_trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "middle_a",
-            self.guarantees.trigger_global_action_middle_a,
+            self.guarantees.trigger_action_middle_a,
         )
 
-    def init_trigger_global_action_middle_b__execution(self):
+    def init_execution_trigger_action_middle_b(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_b.MiddleB
         )
-        self.trigger_global_action_middle_b__execution = local.my_domain_com.my_lib.middle_b.MiddleBExecution(
+        self.execution_trigger_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBExecution(
             action,
             self.scheduler,
             self.trace_execution,
             "middle_b",
-            self.guarantees.trigger_global_action_middle_b,
+            self.guarantees.trigger_action_middle_b,
         )
 
-    def trigger_global_action_middle_a__action_parent(self):
-        self.trigger_global_action_middle_a__execution.accept_action_parent()
+    def trigger_action_middle_a__action_parent(self):
+        self.execution_trigger_action_middle_a.accept_action_parent()
 
-    def trigger_global_action_middle_a__when_empty_global_action_destroyer__position_run(self):
-        self.trigger_global_action_middle_a__execution.accept_when_empty_global_action_destroyer__position_run()
+    def trigger_action_middle_a__when_empty_action_destroyer__position_run(self):
+        self.execution_trigger_action_middle_a.accept_when_empty_action_destroyer__position_run()
 
-    def trigger_global_action_middle_b__action_parent(self):
-        self.trigger_global_action_middle_b__execution.accept_action_parent()
+    def trigger_action_middle_b__action_parent(self):
+        self.execution_trigger_action_middle_b.accept_action_parent()
 
-    def trigger_global_action_middle_b__when_empty_global_action_destroyer__position_run(self):
-        if not self.join_for_trigger_global_action_middle_b__when_empty_global_action_destroyer__position_run.arrive():
+    def trigger_action_middle_b__when_empty_action_destroyer__position_run(self):
+        if not self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run.arrive():
             return
-        self.trigger_global_action_middle_b__execution.accept_when_empty_global_action_destroyer__position_run()
+        self.execution_trigger_action_middle_b.accept_when_empty_action_destroyer__position_run()

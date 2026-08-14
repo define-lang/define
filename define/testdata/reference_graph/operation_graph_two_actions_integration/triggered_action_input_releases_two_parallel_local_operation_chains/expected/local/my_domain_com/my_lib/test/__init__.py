@@ -41,17 +41,17 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.trigger_position_gateway__global_action_worker__execution: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gateway__global_action_worker__action_parent = literal.Join(2)
+        self.execution_trigger_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_trigger_position_gateway__action_worker__action_parent = literal.Join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gateway__global_action_worker__position_trigger_pos)
-        self.trigger_position_gateway__global_action_worker__action_parent()
+        self.scheduler.submit(self.create_position_gateway__action_worker__position_trigger_pos)
+        self.trigger_position_gateway__action_worker__action_parent()
 
-    def create_position_gateway__global_action_worker__position_trigger_pos(self):
+    def create_position_gateway__action_worker__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
@@ -59,15 +59,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_trigger_position_gateway__global_action_worker__execution()
-        self.trigger_position_gateway__global_action_worker__action_parent()
+        self.init_execution_trigger_position_gateway__action_worker()
+        self.trigger_position_gateway__action_worker__action_parent()
 
-    def init_trigger_position_gateway__global_action_worker__execution(self):
-        self.trigger_position_gateway__global_action_worker__execution = local.my_domain_com.my_lib.worker.WorkerExecution(
+    def init_execution_trigger_position_gateway__action_worker(self):
+        self.execution_trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.scheduler,
         )
 
-    def trigger_position_gateway__global_action_worker__action_parent(self):
-        if not self.join_for_trigger_position_gateway__global_action_worker__action_parent.arrive():
+    def trigger_position_gateway__action_worker__action_parent(self):
+        if not self.join_for_trigger_position_gateway__action_worker__action_parent.arrive():
             return
-        self.trigger_position_gateway__global_action_worker__execution.accept_action_parent()
+        self.execution_trigger_position_gateway__action_worker.accept_action_parent()

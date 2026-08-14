@@ -19,7 +19,7 @@ class Destruct(literal.Action):
 class DestructGuarantees:
     def __init__(self):
         self.guarantee_global_position_sibling: list[literal.Task] = []
-        self.guarantee_global_action_maker__position_result: list[literal.Task] = []
+        self.guarantee_action_maker__position_result: list[literal.Task] = []
 
 
 @final
@@ -42,13 +42,13 @@ class DestructExecution:
             scheduler=self.scheduler,
         )
 
-    def accept_for_empty_rule_global_action_maker__position_result(self):
-        self.move_global_action_maker__position_result_to_position_held_result()
+    def accept_for_empty_rule_action_maker__position_result(self):
+        self.move_action_maker__position_result_to_position_held_result()
 
     def accept_for_empty_rule_global_position_sibling(self):
         self.move_global_position_sibling_to_position_held_sibling()
 
-    def move_global_action_maker__position_result_to_position_held_result(self):
+    def move_action_maker__position_result_to_position_held_result(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
@@ -61,7 +61,7 @@ class DestructExecution:
                 "position<result>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_action_maker__position_result)
+        self.scheduler.continue_with(self.guarantees.guarantee_action_maker__position_result)
 
     def move_global_position_sibling_to_position_held_sibling(self):
         self.action.on_particle.get_position(

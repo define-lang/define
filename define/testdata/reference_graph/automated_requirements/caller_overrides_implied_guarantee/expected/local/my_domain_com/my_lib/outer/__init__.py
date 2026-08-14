@@ -30,8 +30,8 @@ class Outer(literal.Action):
 class OuterGuarantees:
     def __init__(self):
         self.guarantee_global_position_implied: list[literal.Task] = []
-        self.guarantee_global_action_caller__position_run: list[literal.Task] = []
-        self.trigger_global_action_caller = local.my_domain_com.my_lib.caller.CallerGuarantees()
+        self.guarantee_action_caller__position_run: list[literal.Task] = []
+        self.trigger_action_caller = local.my_domain_com.my_lib.caller.CallerGuarantees()
 
 
 @final
@@ -45,32 +45,32 @@ class OuterExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_global_action_caller.guarantee_global_position_implied.append(
+        guarantees.trigger_action_caller.guarantee_global_position_implied.append(
             self.create_global_position_implied
         )
-        self.trigger_global_action_caller__execution: local.my_domain_com.my_lib.caller.CallerExecution
-        self.join_for_trigger_global_action_caller__when_empty_global_action_callee__position_run = literal.Join(2)
-        self.join_for_trigger_global_action_caller__when_empty_global_position_implied = literal.Join(2)
+        self.execution_trigger_action_caller: local.my_domain_com.my_lib.caller.CallerExecution
+        self.join_for_trigger_action_caller__when_empty_action_callee__position_run = literal.Join(2)
+        self.join_for_trigger_action_caller__when_empty_global_position_implied = literal.Join(2)
 
-    def accept_when_empty_global_action_caller__position_run(self):
-        self.create_global_action_caller__position_run()
+    def accept_when_empty_action_caller__position_run(self):
+        self.create_action_caller__position_run()
 
-    def accept_when_empty_global_action_callee__position_run(self):
-        self.trigger_global_action_caller__when_empty_global_action_callee__position_run()
+    def accept_when_empty_action_callee__position_run(self):
+        self.trigger_action_caller__when_empty_action_callee__position_run()
 
     def accept_when_empty_global_position_implied(self):
-        self.trigger_global_action_caller__when_empty_global_position_implied()
+        self.trigger_action_caller__when_empty_global_position_implied()
 
-    def create_global_action_caller__position_run(self):
+    def create_action_caller__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller.Caller
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_trigger_global_action_caller__execution()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_action_caller__position_run)
-        self.scheduler.submit(self.trigger_global_action_caller__when_empty_global_action_callee__position_run)
-        self.trigger_global_action_caller__when_empty_global_position_implied()
+        self.init_execution_trigger_action_caller()
+        self.scheduler.submit_all(self.guarantees.guarantee_action_caller__position_run)
+        self.scheduler.submit(self.trigger_action_caller__when_empty_action_callee__position_run)
+        self.trigger_action_caller__when_empty_global_position_implied()
 
     def create_global_position_implied(self):
         self.action.on_particle.get_position(
@@ -78,22 +78,22 @@ class OuterExecution:
         ).create_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
 
-    def init_trigger_global_action_caller__execution(self):
+    def init_execution_trigger_action_caller(self):
         action = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller.Caller
         )
-        self.trigger_global_action_caller__execution = local.my_domain_com.my_lib.caller.CallerExecution(
+        self.execution_trigger_action_caller = local.my_domain_com.my_lib.caller.CallerExecution(
             action,
             self.scheduler,
-            self.guarantees.trigger_global_action_caller,
+            self.guarantees.trigger_action_caller,
         )
 
-    def trigger_global_action_caller__when_empty_global_action_callee__position_run(self):
-        if not self.join_for_trigger_global_action_caller__when_empty_global_action_callee__position_run.arrive():
+    def trigger_action_caller__when_empty_action_callee__position_run(self):
+        if not self.join_for_trigger_action_caller__when_empty_action_callee__position_run.arrive():
             return
-        self.trigger_global_action_caller__execution.accept_when_empty_global_action_callee__position_run()
+        self.execution_trigger_action_caller.accept_when_empty_action_callee__position_run()
 
-    def trigger_global_action_caller__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_global_action_caller__when_empty_global_position_implied.arrive():
+    def trigger_action_caller__when_empty_global_position_implied(self):
+        if not self.join_for_trigger_action_caller__when_empty_global_position_implied.arrive():
             return
-        self.trigger_global_action_caller__execution.accept_when_empty_global_position_implied()
+        self.execution_trigger_action_caller.accept_when_empty_global_position_implied()
