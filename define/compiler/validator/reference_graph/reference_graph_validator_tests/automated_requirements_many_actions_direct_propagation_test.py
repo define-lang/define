@@ -11,6 +11,7 @@ from define.compiler.conftest import (
 )
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph,
     action_graph_set,
 )
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -208,15 +209,181 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_satisfy_later
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CALL_PARENT),
+    assert action_graph(result.operation_graphs) == [
         (_CALL_PARENT, _FILL_PARENT),
-        (_TEST, _CALL_CHILD),
         (_CALL_CHILD, _FILL_CHILD),
-        (_TEST, _CALL_FILL),
         (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CALL_CHILD),
+        (_TEST, _CALL_PARENT),
+        (_TEST, _CALL_FILL),
         (_TEST, _CONSUME_COMBINED),
-    }
+    ]
+
+
+def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later_requirements(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+    parent_marker_diagnostic = all_diags[0]
+    assert isinstance(
+        parent_marker_diagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
+    )
+    assert parent_marker_diagnostic.location.line == 21
+    assert parent_marker_diagnostic.location.column == 30
+    assert parent_marker_diagnostic.location.end_line == 21
+    assert parent_marker_diagnostic.location.end_column == 93
+    assert parent_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        parent_marker_diagnostic.position_name
+        == "position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</parent_marker>"
+    )
+    assert parent_marker_diagnostic.required_empty is True
+    assert parent_marker_diagnostic.action_name == _CONSUME_COMBINED
+    assert_propagation_chain(
+        parent_marker_diagnostic,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": parent_marker_diagnostic.position_name,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "fill_parent.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CONSUME_COMBINED,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CONSUME_COMBINED,
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "consume_combined.dfn",
+        },
+    )
+    assert parent_marker_diagnostic.propagation_chain[0].location.end_line == 7
+    assert parent_marker_diagnostic.propagation_chain[0].location.end_column == 54
+    assert parent_marker_diagnostic.propagation_chain[1].location.end_line == 21
+    assert parent_marker_diagnostic.propagation_chain[1].location.end_column == 93
+    assert parent_marker_diagnostic.propagation_chain[2].location.end_line == 16
+    assert parent_marker_diagnostic.propagation_chain[2].location.end_column == 97
+
+    child_marker_diagnostic = all_diags[1]
+    assert isinstance(
+        child_marker_diagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
+    )
+    assert child_marker_diagnostic.location.line == 21
+    assert child_marker_diagnostic.location.column == 30
+    assert child_marker_diagnostic.location.end_line == 21
+    assert child_marker_diagnostic.location.end_column == 93
+    assert child_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        child_marker_diagnostic.position_name
+        == "position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</child>::position</child_marker>"
+    )
+    assert child_marker_diagnostic.required_empty is True
+    assert child_marker_diagnostic.action_name == _CONSUME_COMBINED
+    assert_propagation_chain(
+        child_marker_diagnostic,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": child_marker_diagnostic.position_name,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "fill_child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CONSUME_COMBINED,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CONSUME_COMBINED,
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "consume_combined.dfn",
+        },
+    )
+    assert child_marker_diagnostic.propagation_chain[0].location.end_line == 7
+    assert child_marker_diagnostic.propagation_chain[0].location.end_column == 53
+    assert child_marker_diagnostic.propagation_chain[1].location.end_line == 21
+    assert child_marker_diagnostic.propagation_chain[1].location.end_column == 93
+    assert child_marker_diagnostic.propagation_chain[2].location.end_line == 17
+    assert child_marker_diagnostic.propagation_chain[2].location.end_column == 114
+
+    item_diagnostic = all_diags[2]
+    assert isinstance(
+        item_diagnostic, diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert item_diagnostic.location.line == 21
+    assert item_diagnostic.location.column == 30
+    assert item_diagnostic.location.end_line == 21
+    assert item_diagnostic.location.end_column == 93
+    assert item_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        item_diagnostic.position_name
+        == "position<box>::action</consume_combined>::position<right>::position</fillable>::position</item>"
+    )
+    assert item_diagnostic.required_empty is True
+    assert item_diagnostic.action_name == _CONSUME_COMBINED
+    assert_propagation_chain(
+        item_diagnostic,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": item_diagnostic.position_name,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "fill_item.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CONSUME_COMBINED,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CONSUME_COMBINED,
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "consume_combined.dfn",
+        },
+    )
+    assert item_diagnostic.propagation_chain[0].location.end_line == 7
+    assert item_diagnostic.propagation_chain[0].location.end_column == 45
+    assert item_diagnostic.propagation_chain[1].location.end_line == 21
+    assert item_diagnostic.propagation_chain[1].location.end_column == 93
+    assert item_diagnostic.propagation_chain[2].location.end_line == 18
+    assert item_diagnostic.propagation_chain[2].location.end_column == 83
+    assert action_graph(result.operation_graphs) == [
+        (_CALL_PARENT, _FILL_PARENT),
+        (_CALL_CHILD, _FILL_CHILD),
+        (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CALL_CHILD),
+        (_TEST, _CALL_PARENT),
+        (_TEST, _CALL_FILL),
+        (_TEST, _CONSUME_COMBINED),
+    ]
 
 
 def test_three_deep_action_chain_requirement_propagates(

@@ -1,0 +1,6 @@
+# The pending depth work has an already-deep branch before the branch that closes the cycle.
+define the potential position<mv:define-lang.org:reference_graph_depth:/test> {
+    it may only contain particles where {
+        it has the position</a>.
+    }
+}

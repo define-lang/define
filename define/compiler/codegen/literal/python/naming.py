@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import builtins
 import hashlib
-import keyword
 import typing
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,8 +11,6 @@ from define.compiler import ast, constants
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path
-
-_PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
 _EXECUTION_CLASS_SUFFIX = "Execution"
@@ -38,20 +34,15 @@ def _truncate_module_component(component: str) -> str:
     The digest covers the full original component, so two components that
     share an over-long prefix still truncate to distinct results.
     """
-    # An ASCII component's character count is its byte count, and str.isascii()
-    # reads a flag cached on the string, so names that cannot exceed the limit
-    # are cleared without encoding a copy of every component the compiler names.
-    if component.isascii() and len(component) <= _MODULE_COMPONENT_BYTE_LIMIT:
+    # Every component has already passed structural name validation, which
+    # permits only ASCII characters in module-name components.
+    if len(component) <= _MODULE_COMPONENT_BYTE_LIMIT:
         return component
     encoded = component.encode()
-    if len(encoded) <= _MODULE_COMPONENT_BYTE_LIMIT:
-        return component
     digest = hashlib.blake2b(encoded, digest_size=_MODULE_COMPONENT_DIGEST_BYTES)
     suffix = f"_{digest.hexdigest()}"
-    prefix_byte_limit = _MODULE_COMPONENT_BYTE_LIMIT - len(suffix.encode())
-    # Slicing bytes can split a multi-byte UTF-8 sequence; errors="ignore"
-    # drops the resulting incomplete trailing bytes instead of raising.
-    prefix = encoded[:prefix_byte_limit].decode("utf-8", errors="ignore")
+    prefix_byte_limit = _MODULE_COMPONENT_BYTE_LIMIT - len(suffix)
+    prefix = component[:prefix_byte_limit]
     return prefix + suffix
 
 
@@ -72,9 +63,9 @@ def _authority_to_module_segment(name: str) -> str:
 class NameAllocator:
     """Allocate unique names within one generated Python namespace."""
 
-    def __init__(self, reserved: tuple[str, ...] = ()):
-        """Initialize with names that generated members may not use."""
-        self._used: set[str] = set(reserved)
+    def __init__(self):
+        """Initialize with no allocated names."""
+        self._used: set[str] = set()
         self._next_suffix: dict[str, int] = {}
 
     def allocate(self, candidate: str) -> str:
@@ -100,38 +91,11 @@ def file_path_for_module(module_name: str) -> Path:
     return Path(*module_name.split(".")) / "__init__.py"
 
 
-# Names used at module scope in generated Python code.
-_CLASS_EXTRA_RESERVED: frozenset[str] = frozenset(
-    {
-        "ClassVar",
-        "literal",
-        "main",
-        "override",
-    }
-)
-
-
 def _path_to_pascal(path: define_path.DefinePath) -> str:
     """Convert a definition path to a PascalCase class name."""
     return "".join(
         part.capitalize() for segment in path.parts for part in segment.split("_")
     )
-
-
-def _is_reserved(name: str, extra: frozenset[str]) -> bool:
-    return (
-        keyword.iskeyword(name)
-        or keyword.issoftkeyword(name)
-        or name in _PYTHON_BUILTINS
-        or name in extra
-    )
-
-
-def _make_unique(name: str, extra_reserved: frozenset[str], occupied: set[str]) -> str:
-    """Append trailing underscores until the name is safe and unique."""
-    while _is_reserved(name, extra_reserved) or name in occupied:
-        name += "_"
-    return name
 
 
 class NameConverter:
@@ -145,7 +109,6 @@ class NameConverter:
     _class_names: dict[define_path.DefinePath, str]
     _class_references: dict[str, ClassReference]
     _execution_class_names: dict[define_path.DefinePath, str]
-    _used_class_names: set[str]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
 
@@ -154,33 +117,28 @@ class NameConverter:
         self._class_names = {}
         self._class_references = {}
         self._execution_class_names = {}
-        self._used_class_names = set()
         self._authority_names = {}
         self._used_authority_names = set()
 
     def class_name(self, path: define_path.DefinePath) -> str:
-        """Convert a definition path to a safe PascalCase class name.
+        """Convert a definition path to a PascalCase class name.
 
         Results are cached so the same path always returns the same name.
         """
         if path in self._class_names:
             return self._class_names[path]
-        raw = _path_to_pascal(path)
-        safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
-        self._class_names[path] = safe
-        self._used_class_names.add(safe)
-        return safe
+        name = _path_to_pascal(path)
+        self._class_names[path] = name
+        return name
 
     def execution_class_name(self, path: define_path.DefinePath) -> str:
-        """Return a unique class name for one action's generated execution state."""
+        """Return the class name for one action's generated execution state."""
         existing = self._execution_class_names.get(path)
         if existing is not None:
             return existing
-        raw = self.class_name(path) + _EXECUTION_CLASS_SUFFIX
-        safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
-        self._execution_class_names[path] = safe
-        self._used_class_names.add(safe)
-        return safe
+        name = self.class_name(path) + _EXECUTION_CLASS_SUFFIX
+        self._execution_class_names[path] = name
+        return name
 
     def execution_class_reference(
         self, typed_global_name: ast.GlobalTypedName
@@ -195,11 +153,8 @@ class NameConverter:
         )
 
     def _guarantees_class_name(self, path: define_path.DefinePath) -> str:
-        """Return a unique class name for one action's guarantee continuations."""
-        raw = self.class_name(path) + _GUARANTEES_CLASS_SUFFIX
-        safe = _make_unique(raw, _CLASS_EXTRA_RESERVED, self._used_class_names)
-        self._used_class_names.add(safe)
-        return safe
+        """Return the class name for one action's guarantee continuations."""
+        return self.class_name(path) + _GUARANTEES_CLASS_SUFFIX
 
     def guarantees_class_reference(
         self, typed_global_name: ast.GlobalTypedNameInDefinition

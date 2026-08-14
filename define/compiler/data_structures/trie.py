@@ -186,6 +186,9 @@ class StrictReparentingTrie[V]:
         subtree.
         """
         result: dict[TrieKey, StrictReparentingTrie[V]] = {}
+        # Reverse tuple order puts every descendant before its ancestor.
+        # key=len is only a performance optimization: it compares precomputed
+        # integer depths instead of repeatedly comparing long shared prefixes.
         for key in sorted(keys, key=len, reverse=True):
             if key in self._values:
                 result[key] = self._detach_subtree(key)

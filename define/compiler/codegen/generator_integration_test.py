@@ -19,10 +19,16 @@ from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TESTDATA_ROOT = Path("define/testdata/codegen")
-_TESTDATA_CATEGORY = os.environ["DEFINE_CODEGEN_TESTDATA_CATEGORY"]
+# Bazel shards these tests by category through this environment variable, but
+# direct pytest runners such as mutmut do not set it and must discover all cases.
+_TESTDATA_CATEGORY = os.environ.get("DEFINE_CODEGEN_TESTDATA_CATEGORY")
+_TESTDATA_PATTERN = (
+    f"{_TESTDATA_CATEGORY}/*/test.dfn"
+    if _TESTDATA_CATEGORY is not None
+    else "*/*/test.dfn"
+)
 _TEST_CASES = sorted(
-    Path(path).parent
-    for path in glob.glob(str(_TESTDATA_ROOT / _TESTDATA_CATEGORY / "*/test.dfn"))
+    Path(path).parent for path in glob.glob(str(_TESTDATA_ROOT / _TESTDATA_PATTERN))
 )
 
 

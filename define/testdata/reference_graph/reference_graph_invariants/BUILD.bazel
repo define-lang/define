@@ -1,0 +1,9 @@
+filegroup(
+    name = "reference_graph_invariants",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)

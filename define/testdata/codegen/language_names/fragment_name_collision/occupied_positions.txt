@@ -1,3 +1,3 @@
 position<local.my_domain_com.my_lib.item.name.ItemName>
 position<local.my_domain_com.my_lib.item.name_2.ItemName2>
-position<local.my_domain_com.my_lib.item_name.ItemName_>
+position<local.my_domain_com.my_lib.item_name.ItemName>

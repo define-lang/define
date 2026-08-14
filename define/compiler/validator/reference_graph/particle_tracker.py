@@ -229,7 +229,7 @@ class _PendingNestedGuarantees:
         # the longest pending guarantee key.
         key_len = len(key)
         length = 0
-        while length <= key_len and length <= self._longest_pending_guarantee_key:
+        while length < key_len and length <= self._longest_pending_guarantee_key:
             prefix = key[:length]
             # Applying a yielded guarantee can re-add one at this same prefix, so
             # drain it fully before moving to a prefix with another child name.
@@ -280,9 +280,9 @@ class _PendingNestedGuarantees:
                 # next length is therefore the first prefix not yet drained.
                 length = common_depth + 1
             key_len = len(key)
-            # A guarantee applies when its prefix is the queried position or one
-            # of its parent names. Prefixes beyond either bound cannot match.
-            while length <= key_len and length <= self._longest_pending_guarantee_key:
+            # A guarantee can affect the queried position only when its prefix
+            # is one of the queried position's parent names.
+            while length < key_len and length <= self._longest_pending_guarantee_key:
                 prefix = key[:length]
                 # Applying a guarantee can add another pending guarantee at this
                 # same prefix, so do not advance until the prefix stays empty.

@@ -11,6 +11,7 @@ from define.compiler.conftest import (
 )
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph,
     action_graph_set,
 )
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -200,3 +201,33 @@ def test_transitive_child_guarantee_follows_particle_through_move(
         (_OUTER, _MIDDLE),
         (_MIDDLE, _INNER),
     }
+
+
+def test_transitive_child_guarantee_at_moved_position_follows_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diagnostic.location.line == 15
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 15
+    assert diagnostic.location.end_column == 106
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<gateway>::action</middle>::position<destination>::position</result>"
+    )
+    assert diagnostic.populated_at.line == 7
+    assert diagnostic.populated_at.column == 30
+    assert diagnostic.populated_at.end_line == 7
+    assert diagnostic.populated_at.end_column == 47
+    assert diagnostic.populated_at.file_path == PurePosixPath("inner.dfn")
+    assert action_graph(result.operation_graphs) == [
+        (_OUTER, _INNER),
+        (_MIDDLE, _OUTER),
+        (_TEST, _MIDDLE),
+    ]

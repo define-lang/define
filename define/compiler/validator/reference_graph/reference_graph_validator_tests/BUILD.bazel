@@ -889,6 +889,17 @@ py_test(
     ],
 )
 
+py_test(
+    name = "reference_graph_invariants_test",
+    size = "small",
+    srcs = ["reference_graph_invariants_test.py"],
+    data = ["//define/testdata/reference_graph/reference_graph_invariants"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
 py_library(
     name = "reference_graph_validator_tests",
     srcs = ["__init__.py"],
@@ -995,6 +1006,7 @@ pyright_test(
         ":particle_conflict_test",
         ":quality_implication_particle_test",
         ":quality_implication_test",
+        ":reference_graph_invariants_test",
         ":reference_graph_validator_tests",
         ":test_helpers",
         ":trigger_conditions_test",

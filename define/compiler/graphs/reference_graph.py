@@ -79,7 +79,6 @@ class ReferenceGraph:
         if referencing_name == referenced_name:
             return [referencing_name, referenced_name]
 
-        self._add_name(referencing_name)
         if referenced_name not in self._references_by_name:
             # A name with no references cannot lead back to the definition
             # that references it.
@@ -172,7 +171,7 @@ class ReferenceGraph:
         """Find the shortest reference path between two connected definitions."""
         predecessor_by_name: dict[str, str | None] = {starting_name: None}
         names_at_current_distance = [starting_name]
-        while names_at_current_distance and destination_name not in predecessor_by_name:
+        while destination_name not in predecessor_by_name:
             names_at_next_distance: list[str] = []
             for current_name in names_at_current_distance:
                 for referenced_name in self._references_by_name[current_name]:

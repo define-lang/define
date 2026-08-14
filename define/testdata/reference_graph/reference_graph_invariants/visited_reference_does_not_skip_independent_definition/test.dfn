@@ -1,0 +1,16 @@
+# The position reference is visited before an independent action in this same file.
+define the potential position<mv:define-lang.org:reference_graph_postorder:/test> {
+    it may only contain particles where {
+        it has the position</b>.
+    }
+}
+define the potential action<mv:define-lang.org:reference_graph_postorder:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<work>.
+        create a particle in position<work>.
+        create a particle in position<work>.
+    }
+}

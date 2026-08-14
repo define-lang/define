@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<trigger_pos>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the action</outer>.
+            it has the action</inner>.
+            it has the position</result>.
+        }
+    }
+    define the position<destination> {
+        it may only contain particles where {
+            it has the action</outer>.
+            it has the action</inner>.
+            it has the position</result>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<item>::action</outer>::position<trigger_pos>.
+        move the particle in position<item> to position<destination>.
+    }
+}

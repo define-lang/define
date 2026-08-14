@@ -36,29 +36,28 @@ def test_class_name_multi_segment():
     assert converter.class_name(define_path.DefinePath("my_action")) == "MyAction"
 
 
-def test_class_name_mangles_classvar():
+def test_class_name_can_match_imported_name():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar_"
+    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar"
 
 
-def test_class_name_mangles_builtin():
+def test_class_name_can_match_builtin_name():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("type_error")) == "TypeError_"
+    assert converter.class_name(define_path.DefinePath("type_error")) == "TypeError"
 
 
 def test_class_name_cached():
     converter = naming.NameConverter()
     first = converter.class_name(define_path.DefinePath("class_var"))
     second = converter.class_name(define_path.DefinePath("class_var"))
-    assert first == second == "ClassVar_"
+    assert first == second == "ClassVar"
 
 
-def test_class_name_double_conflict():
+def test_class_names_in_different_modules_can_match():
     converter = naming.NameConverter()
     first = converter.class_name(define_path.DefinePath("class_var"))
     second = converter.class_name(define_path.DefinePath("class_var_"))
-    assert first == "ClassVar_"
-    assert second == "ClassVar__"
+    assert first == second == "ClassVar"
 
 
 def test_guarantees_class_reference():
@@ -71,12 +70,11 @@ def test_guarantees_class_reference():
     )
 
 
-def test_guarantees_class_reference_avoids_definition_class_conflict():
+def test_guarantees_class_name_can_match_definition_in_another_module():
     converter = naming.NameConverter()
     definition_class = converter.class_name(define_path.DefinePath("worker_guarantees"))
     guarantees_class = converter.guarantees_class_reference(_action_name("/worker"))
-    assert definition_class == "WorkerGuarantees"
-    assert guarantees_class.class_name == "WorkerGuarantees_"
+    assert definition_class == guarantees_class.class_name == "WorkerGuarantees"
 
 
 def test_class_reference_cached():
@@ -155,12 +153,6 @@ def test_name_allocator_skips_conflicting_generated_suffixes():
     assert allocator.allocate("name") == "name"
     assert allocator.allocate("name") == "name_2"
     assert allocator.allocate("name_2") == "name_2_2"
-
-
-def test_name_allocator_honors_reserved_names():
-    allocator = naming.NameAllocator(("action", "scheduler"))
-    assert allocator.allocate("action") == "action_2"
-    assert allocator.allocate("scheduler") == "scheduler_2"
 
 
 def test_name_allocators_are_independent_namespaces():

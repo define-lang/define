@@ -54,7 +54,7 @@ class TestGlobalPosition:
 
         pos = MyPosition(literal.Particle())
 
-        assert pos.name == "position<literal_test.MyPosition>"
+        assert pos.name == f"position<{__name__}.MyPosition>"
 
     def test_create_particle(self):
         class MyPosition(literal.GlobalPosition):
@@ -74,7 +74,7 @@ class TestGlobalPosition:
 
         with pytest.raises(literal.ParticleExistsError) as exc_info:
             pos.create_particle()
-        assert exc_info.value.position_name == "position<literal_test.MyPosition>"
+        assert exc_info.value.position_name == f"position<{__name__}.MyPosition>"
 
     def test_constraints_default_to_empty(self):
         class MyPosition(literal.GlobalPosition):
@@ -237,11 +237,10 @@ class TestMovePosition:
             source.move_particle_to(dest)
         assert exc_info.value.position_name == "position<dest>"
         assert (
-            exc_info.value.constraint_name
-            == "position<literal_test.ConstraintPosition>"
+            exc_info.value.constraint_name == f"position<{__name__}.ConstraintPosition>"
         )
         assert "position<dest>" in str(exc_info.value)
-        assert "position<literal_test.ConstraintPosition>" in str(exc_info.value)
+        assert f"position<{__name__}.ConstraintPosition>" in str(exc_info.value)
 
     def test_move_with_unsatisfied_action_constraint_raises(self):
         class ConstraintAction(literal.Action):
@@ -254,7 +253,7 @@ class TestMovePosition:
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
             source.move_particle_to(dest)
         assert exc_info.value.position_name == "position<dest>"
-        assert exc_info.value.constraint_name == "action<literal_test.ConstraintAction>"
+        assert exc_info.value.constraint_name == f"action<{__name__}.ConstraintAction>"
 
     def test_move_constraint_check_does_not_transfer_on_failure(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -379,7 +378,7 @@ class TestStart:
 
         assert (
             occupied_positions_file.read_text()
-            == "action<literal_test.Entry>::position<output>\n"
+            == f"action<{__name__}.Entry>::position<output>\n"
         )
 
     def test_no_report_when_env_var_unset(
@@ -415,7 +414,7 @@ class TestOccupiedPositionNames:
         particle.assign_position(Entry)
         particle.get_position(Entry).create_particle()
 
-        assert particle.occupied_position_names() == ["position<literal_test.Entry>"]
+        assert particle.occupied_position_names() == [f"position<{__name__}.Entry>"]
 
     def test_reports_nested_occupied_positions_parent_first(self):
         class Inner(literal.GlobalPosition):
@@ -432,8 +431,8 @@ class TestOccupiedPositionNames:
         entry.particle.get_position(Inner).create_particle()
 
         assert particle.occupied_position_names() == [
-            "position<literal_test.Entry>",
-            "position<literal_test.Entry>::position<literal_test.Inner>",
+            f"position<{__name__}.Entry>",
+            f"position<{__name__}.Entry>::position<{__name__}.Inner>",
         ]
 
     def test_reports_occupied_interface_position(self):
@@ -455,7 +454,7 @@ class TestOccupiedPositionNames:
         ).create_particle()
 
         assert particle.occupied_position_names() == [
-            "action<literal_test.MyAction>::position<trigger_pos>"
+            f"action<{__name__}.MyAction>::position<trigger_pos>"
         ]
 
     def test_traverses_qualities_in_assignment_order(self):
@@ -482,8 +481,8 @@ class TestOccupiedPositionNames:
         particle.get_position(Later).create_particle()
 
         assert particle.occupied_position_names() == [
-            "action<literal_test.MyAction>::position<trigger_pos>",
-            "position<literal_test.Later>",
+            f"action<{__name__}.MyAction>::position<trigger_pos>",
+            f"position<{__name__}.Later>",
         ]
 
 
@@ -494,7 +493,7 @@ class TestAction:
 
         action = MyAction(literal.Particle())
 
-        assert action.name == "action<literal_test.MyAction>"
+        assert action.name == f"action<{__name__}.MyAction>"
 
     def test_entry_point_execute_requires_an_implementation(self):
         class MyEntryPoint(literal.EntryPoint):
@@ -712,7 +711,7 @@ class TestImpliedQualities:
 
         with pytest.raises(literal.DuplicateConstraintError) as exc_info:
             _ = _local_position("test", constraints=(Implier, Implied, Implied))
-        assert exc_info.value.position_name == "position<literal_test.Implied>"
+        assert exc_info.value.position_name == f"position<{__name__}.Implied>"
 
     def test_global_position_with_a_duplicate_constraint_raises(self):
         class Foo(literal.GlobalPosition):
@@ -723,7 +722,7 @@ class TestImpliedQualities:
             class _Bad(literal.GlobalPosition):  # pyright: ignore[reportUnusedClass]
                 constraints: ClassVar[tuple[type[literal.Quality], ...]] = (Foo, Foo)
 
-        assert exc_info.value.position_name == "position<literal_test.Foo>"
+        assert exc_info.value.position_name == f"position<{__name__}.Foo>"
 
     def test_action_processes_its_implied_qualities(self):
         class ImpliedPosition(literal.GlobalPosition):

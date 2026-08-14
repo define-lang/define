@@ -13,7 +13,7 @@ class Test(literal.EntryPoint):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.item.name.ItemName,
         local.my_domain_com.my_lib.item.name_2.ItemName2,
-        local.my_domain_com.my_lib.item_name.ItemName_,
+        local.my_domain_com.my_lib.item_name.ItemName,
     )
 
     @override
@@ -49,5 +49,5 @@ class TestExecution:
 
     def create_global_position_item_name_3(self):
         self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.item_name.ItemName_
+            local.my_domain_com.my_lib.item_name.ItemName
         ).create_particle()
