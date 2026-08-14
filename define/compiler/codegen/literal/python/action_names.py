@@ -1,5 +1,6 @@
 """Name generation for literal Python actions."""
 
+import re
 import typing
 from dataclasses import dataclass
 
@@ -39,6 +40,7 @@ _REQUIREMENT_CALLER_INPUT_PREFIXES = {
 _TRIGGERED_ACTION_PREFIX = "trigger_"
 _TRIGGERED_INPUT_SEPARATOR = "__"
 _TYPED_CHAIN_SEPARATOR = "__"
+_UNSAFE_IDENTIFIER_CHARACTERS = re.compile(r"[\W_]+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,7 +249,7 @@ class ActionNameGenerator:
     def _typed_chain_identifier(self, chain: tuple[str, ...]) -> str:
         """Convert a canonical typed chain to a DLP 27-style Python identifier."""
         return _TYPED_CHAIN_SEPARATOR.join(
-            self._typed_name_identifier(typed_name) for typed_name in chain
+            [self._typed_name_identifier(typed_name) for typed_name in chain]
         )
 
     def _typed_name_identifier(self, typed_name: str) -> str:
@@ -262,13 +264,10 @@ class ActionNameGenerator:
             typed_name,
             self._current_fqun,
         )
-        replaced_name = "".join(
-            character if character.isalnum() else _IDENTIFIER_SEPARATOR
-            for character in typed_name_parts.source_name
-        )
-        safe_name = _IDENTIFIER_SEPARATOR.join(
-            part for part in replaced_name.split(_IDENTIFIER_SEPARATOR) if part
-        )
+        safe_name = _UNSAFE_IDENTIFIER_CHARACTERS.sub(
+            _IDENTIFIER_SEPARATOR,
+            typed_name_parts.source_name,
+        ).strip(_IDENTIFIER_SEPARATOR)
         # TODO: Actions are always global, so omit the redundant global_
         # prefix for action names and regenerate the codegen expectations.
         prefix = _GLOBAL_NAME_PREFIX if typed_name_parts.is_global else ""

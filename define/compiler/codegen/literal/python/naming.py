@@ -143,6 +143,7 @@ class NameConverter:
     """
 
     _class_names: dict[define_path.DefinePath, str]
+    _class_references: dict[str, ClassReference]
     _execution_class_names: dict[define_path.DefinePath, str]
     _used_class_names: set[str]
     _authority_names: dict[str, str]
@@ -151,6 +152,7 @@ class NameConverter:
     def __init__(self):
         """Initialize with empty name caches."""
         self._class_names = {}
+        self._class_references = {}
         self._execution_class_names = {}
         self._used_class_names = set()
         self._authority_names = {}
@@ -267,6 +269,10 @@ class NameConverter:
 
     def class_reference(self, typed_global_name: ast.GlobalTypedName) -> ClassReference:
         """Build a reference to one generated global class."""
+        canonical_name = typed_global_name.full_typed_name
+        existing = self._class_references.get(canonical_name)
+        if existing is not None:
+            return existing
         name_content = typed_global_name.name_content
         cls_name = self.class_name(name_content.path.relative_path)
         if isinstance(typed_global_name, ast.GlobalTypedNameReference):
@@ -274,4 +280,6 @@ class NameConverter:
         else:
             fqun = typing.cast("ast.DefinitionGlobalNameContent", name_content).fqun
         module_name = ".".join(self._module_name_parts(fqun, name_content.path))
-        return ClassReference(class_name=cls_name, module_name=module_name)
+        class_reference = ClassReference(class_name=cls_name, module_name=module_name)
+        self._class_references[canonical_name] = class_reference
+        return class_reference

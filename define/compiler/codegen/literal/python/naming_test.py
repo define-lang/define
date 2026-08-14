@@ -79,6 +79,14 @@ def test_guarantees_class_reference_avoids_definition_class_conflict():
     assert guarantees_class.class_name == "WorkerGuarantees_"
 
 
+def test_class_reference_cached():
+    converter = naming.NameConverter()
+    action_name = _action_name("/worker")
+    first = converter.class_reference(action_name)
+    second = converter.class_reference(action_name)
+    assert first is second
+
+
 def test_module_name_short_component_unchanged():
     converter = naming.NameConverter()
     name_content = _action_name("/worker").name_content
