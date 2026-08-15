@@ -783,9 +783,10 @@ class RequirementNode(OperationNode):
 
     This stands in for the caller operation that satisfies an inferred requirement.
     The renderer/codegen resolves it to the caller op that most recently operated
-    on ``requirement_position`` before the Action Execution. A position can be empty
-    without any operation emptying it, so an empty requirement can have no such
-    caller op at all, which is why the required state is recorded here.
+    on the position identified by ``requirement`` before the Action Execution. A
+    position can be empty without any operation emptying it, so an empty requirement
+    can have no such caller op at all, which is why the required state is recorded
+    here.
 
     ``depends_on`` contains exactly one node. It is the RequirementNode for the
     nearest parent name with a Position Requirement, or the action parent's last

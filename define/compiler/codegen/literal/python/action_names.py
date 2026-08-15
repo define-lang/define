@@ -160,11 +160,11 @@ class ActionNameGenerator:
         """Return the method name for a caller input."""
         match resolved_input:
             case operation_graph_model.CallerMoveRuleFillDependencyNode():
-                return self._move_rule_fill_caller_input_name(
-                    resolved_input.caller_move_rule_fill_dependency
+                return self._requirement_caller_input_name(
+                    resolved_input.caller_move_rule_fill_dependency.requirement
                 )
             case operation_graph_model.CallerMoveRuleFillDependency():
-                return self._move_rule_fill_caller_input_name(resolved_input)
+                return self._requirement_caller_input_name(resolved_input.requirement)
             case operation_graph_model.CallerEmptyRuleDependenciesNode():
                 return self._empty_rule_caller_input_name(
                     resolved_input.caller_empty_rule_dependencies
@@ -174,15 +174,7 @@ class ActionNameGenerator:
             case operation_graph_model.ActionParentLastOperationNode():
                 return _ACTION_PARENT_CALLER_INPUT_NAME
             case operation_graph_model.RequirementNode():
-                identifier = self._typed_chain_identifier(
-                    resolved_input.requirement.requirement_position
-                )
-                return (
-                    _REQUIREMENT_CALLER_INPUT_PREFIXES[
-                        resolved_input.requirement.required_state
-                    ]
-                    + identifier
-                )
+                return self._requirement_caller_input_name(resolved_input.requirement)
         typing.assert_never(resolved_input)
 
     def _empty_rule_caller_input_name(
@@ -192,16 +184,13 @@ class ActionNameGenerator:
         identifier = self._typed_chain_identifier(dependencies.requirement_position)
         return _EMPTY_RULE_CALLER_INPUT_PREFIX + identifier
 
-    def _move_rule_fill_caller_input_name(
+    def _requirement_caller_input_name(
         self,
-        dependency: operation_graph_model.CallerMoveRuleFillDependency,
+        requirement: operation_graph_model.OperationGraphRequirement,
     ) -> str:
-        identifier = self._typed_chain_identifier(
-            dependency.requirement.requirement_position
-        )
+        identifier = self._typed_chain_identifier(requirement.requirement_position)
         return (
-            _REQUIREMENT_CALLER_INPUT_PREFIXES[dependency.requirement.required_state]
-            + identifier
+            _REQUIREMENT_CALLER_INPUT_PREFIXES[requirement.required_state] + identifier
         )
 
     def _triggered_action_names(
