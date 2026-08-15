@@ -14,6 +14,14 @@ _EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
     "The Empty Rule retains a child dependency already reachable through a later "
     "operation on a disjoint child position"
 )
+_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES = (
+    "The Empty Rule retains a child operation dependency already reachable through "
+    "later Moves of its parent particle"
+)
+_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET = (
+    "The Move Rule retains an operation required to fill its target even when that "
+    "operation is already reachable through a source dependency"
+)
 
 
 def test_single_create(
@@ -65,6 +73,63 @@ def test_move_chain_returning_to_first_position_has_minimal_dependencies(
         "test.move(c, d)": ["test.move(b, c)"],
         "test.move(d, a)": ["test.move(c, d)"],
         "test.destroy(a)": ["test.move(d, a)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET,
+)
+def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.move(box::/item, holder)": ["test.create(box::/item)"],
+        "test.create(holder::/payload)": ["test.move(box::/item, holder)"],
+        # The source Create already reaches the operation required to fill the target.
+        "test.move(holder::/payload, box::/destination)": [
+            "test.create(holder::/payload)"
+        ],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET,
+)
+def test_move_excludes_fill_dependency_reached_through_replaced_source_operation(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.move(box::/item, holder)": ["test.create(box::/item)"],
+        "test.destroy(holder)": ["test.move(box::/item, holder)"],
+        "test.create(holder)": ["test.destroy(holder)"],
+        # The source Create already reaches the operation required to fill the target.
+        "test.move(holder, box::/destination)": ["test.create(holder)"],
+    }
+
+
+def test_move_excludes_create_fill_dependency_reached_through_source_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.create(box::/item::/payload)": ["test.create(box::/item)"],
+        "test.move(box::/item, holder)": ["test.create(box::/item::/payload)"],
+        "test.destroy(holder::/payload)": ["test.move(box::/item, holder)"],
+        # The source Destroy already reaches the operation required to fill the target.
+        "test.move(holder, box::/destination)": ["test.destroy(holder::/payload)"],
     }
 
 
@@ -248,6 +313,70 @@ def test_destroy_excludes_disjoint_earlier_child_move_reached_through_later_chil
         # Empty Rule excludes the earlier Move from the Destroy's dependencies.
         "test.destroy(box)": ["test.move(box::/target, holder_c)"],
         "test.destroy(holder_c)": ["test.move(box::/target, holder_c)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
+)
+def test_move_excludes_create_on_child_reached_through_parent_move_chain(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.move(box, holder_a)": ["test.create(box::/item)"],
+        "test.move(holder_a, holder_b)": ["test.move(box, holder_a)"],
+        # The final parent Move already reaches the earlier child Create.
+        "test.move(holder_b, holder_c)": ["test.move(holder_a, holder_b)"],
+        "test.destroy(holder_c::/item)": ["test.move(holder_b, holder_c)"],
+        "test.destroy(holder_c)": ["test.destroy(holder_c::/item)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
+)
+def test_move_excludes_transitive_child_create_reached_through_parent_move_chain(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.create(box::/item::/deep)": ["test.create(box::/item)"],
+        "test.move(box, holder_a)": ["test.create(box::/item::/deep)"],
+        "test.move(holder_a, holder_b)": ["test.move(box, holder_a)"],
+        # The final parent Move already reaches the transitive child Create.
+        "test.move(holder_b, holder_c)": ["test.move(holder_a, holder_b)"],
+        "test.destroy(holder_c::/item::/deep)": ["test.move(holder_b, holder_c)"],
+        "test.destroy(holder_c::/item)": ["test.destroy(holder_c::/item::/deep)"],
+        "test.destroy(holder_c)": ["test.destroy(holder_c::/item)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
+)
+def test_destroy_excludes_child_destroy_reached_through_parent_move_chain(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.destroy(box::/item)": ["test.create(box::/item)"],
+        "test.move(box, holder_a)": ["test.destroy(box::/item)"],
+        "test.move(holder_a, holder_b)": ["test.move(box, holder_a)"],
+        # The final parent Move already reaches the earlier child Destroy.
+        "test.destroy(holder_b)": ["test.move(holder_a, holder_b)"],
     }
 
 

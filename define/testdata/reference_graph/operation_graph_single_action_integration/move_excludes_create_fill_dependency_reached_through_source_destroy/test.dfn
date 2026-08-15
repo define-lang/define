@@ -1,0 +1,25 @@
+# The Destroy of holder::/payload depends on the Create of box through the Move
+# of box::/item to holder. The final Move therefore needs only the source Destroy.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</item>.
+            it has the position</destination>.
+        }
+    }
+    define the position<holder> {
+        it may only contain particles where {
+            it has the position</payload>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::position</item>.
+        create a particle in position<box>::position</item>::position</payload>.
+        move the particle in position<box>::position</item> to position<holder>.
+        destroy the particle in position<holder>::position</payload>.
+        move the particle in position<holder> to position<box>::position</destination>.
+    }
+}

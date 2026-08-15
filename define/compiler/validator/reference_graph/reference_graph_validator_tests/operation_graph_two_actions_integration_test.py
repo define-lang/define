@@ -231,6 +231,24 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
     }
 
 
+def test_caller_empty_rule_excludes_child_create_reached_through_parent_move_chain(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/item)": ["test.create(box)"],
+        "test.move(box, holder_a)": ["test.create(box::/item)"],
+        "test.move(holder_a, /input)": ["test.move(box, holder_a)"],
+        "test.create(/other::trigger_pos)": [],
+        # The latest caller Move already reaches the earlier child Create.
+        "other.move(/input, output)": ["test.move(holder_a, /input)"],
+        "other.destroy(output::/item)": ["other.move(/input, output)"],
+        "other.destroy(output)": ["other.destroy(output::/item)"],
+    }
+
+
 def test_callee_destroy_of_a_refilled_position_ignores_the_previous_particles_child_fill(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

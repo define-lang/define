@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</input>.
+    it also assigns the action</other>.
+    define the position<holder_a>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</item>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::position</item>.
+        move the particle in position<box> to position<holder_a>.
+        move the particle in position<holder_a> to position</input>.
+        create a particle in action</other>::position<trigger_pos>.
+    }
+}

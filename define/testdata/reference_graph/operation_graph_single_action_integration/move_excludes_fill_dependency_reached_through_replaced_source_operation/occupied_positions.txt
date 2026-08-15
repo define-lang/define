@@ -1,0 +1,2 @@
+action<local.my_domain_com.my_lib.test.Test>::position<box>
+action<local.my_domain_com.my_lib.test.Test>::position<box>::position<local.my_domain_com.my_lib.destination.Destination>

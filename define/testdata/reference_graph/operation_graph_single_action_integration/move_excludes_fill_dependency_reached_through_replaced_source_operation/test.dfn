@@ -1,0 +1,21 @@
+# The Create in holder depends on the Create in box through the earlier Move,
+# Destroy, and Create. The final Move therefore needs only its source Create.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</item>.
+            it has the position</destination>.
+        }
+    }
+    define the position<holder>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::position</item>.
+        move the particle in position<box>::position</item> to position<holder>.
+        destroy the particle in position<holder>.
+        create a particle in position<holder>.
+        move the particle in position<holder> to position<box>::position</destination>.
+    }
+}
