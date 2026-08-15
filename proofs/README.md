@@ -15,3 +15,7 @@ real-world situations. However, the proofs are often helpful to discover
 counter-examples.
 
 Rigorous analysis and verification by more experienced humans would be welcome.
+
+Since these are written by AI, none of the language in this directory is
+canonical; the terms used to describe things are not necessarily valid Define
+terms.

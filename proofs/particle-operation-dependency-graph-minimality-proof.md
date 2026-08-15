@@ -115,6 +115,13 @@ additional entries on transitive child positions are used by later Empty Rule
 calculations. The Fill Rule continues to select among operations actually on the
 filled position and its transitive parent positions.
 
+A resolved position name can stop referring to a valid position before a later
+operation runs, if a transitive parent particle of that position is destroyed,
+moved, or replaced. The rules query only the positions that exist when an
+operation runs, so an earlier operation's position may have no entry to collect.
+The Collection completeness lemma below identifies the collected candidate that
+stands in for such an operation.
+
 ### Collection
 
 The word _candidate_ is used only in this proof as shorthand for a Particle
@@ -252,6 +259,34 @@ relationships. Resolving a guarantee exposes the concrete Create, Move, or
 Destroy that produced the guarantee. Repeating the argument through every caller
 proves the invariant for the complete graph. ∎
 
+### Collection completeness lemma
+
+Let an operation `O` empty `s`, and let a previous operation `Z` operate on a
+position `z` with `z ~ s`. Then `E(s)` contains a candidate that is `Z` or more
+recent than `Z` and that operates on `z` or a transitive parent position of `z`.
+
+#### Proof
+
+Among the previous operations that operate on `z` or a transitive parent
+position of `z`, let `W` be the most recent, and let `w` be its operated
+position on that chain. `Z` is such an operation, so `W` is `Z` or more recent
+than `Z`.
+
+The position `w` still exists when `O` runs. A position stops existing only when
+a particle needed to name it is removed, and the operation that removes that
+particle is a Destroy on, or a Move away from, a transitive parent position of
+`w`. That operation would be more recent than `W` and operate on the same chain,
+contrary to the choice of `W`.
+
+Because a transitive parent position of `z` is related to every position related
+to `z`, the position `w` satisfies `w ~ s`. The position `w` therefore is `s`, a
+transitive parent position of `s`, or a transitive child position of `s`, and
+`E(s)` contains the most-recent entry for `w`. That entry is `W` or more recent,
+because `W` operates on `w` and only later applicable operations replace
+entries. By the candidate-position invariant, the entry operates on `w` or a
+transitive parent position of `w`, and that position is also `z` or a transitive
+parent position of `z`. ∎
+
 ### Direct-dependency position lemma
 
 For every direct dependency `O -> D`, some position operated on by `O` has a
@@ -311,9 +346,11 @@ dependency, statement 3 holds for `O`.
 Next prove statement 1 for pairs containing `O`. Let `A` be an earlier operation
 with a position related to a position of `O`.
 
-- If `O` empties `s`, the Empty Rule selects the most-recent entry for the
-  applicable position of `A`. That entry is `A` or, by induction statement 2,
-  reaches `A`; by the newly proved statement 3, `O` reaches the entry.
+- If `O` empties `s`, the Collection completeness lemma supplies a candidate
+  that is `A` or more recent than `A` and that operates on the applicable
+  position of `A` or one of its transitive parent positions. That candidate is
+  `A` or, by induction statement 1, reaches `A`; by the newly proved statement
+  3, `O` reaches the candidate.
 - If `O` fills `t` and `A` operates on `t` or a transitive parent position of
   `t`, the Fill Rule selects an operation `B` at least as recent as `A` on that
   parent/child chain. If `B` is distinct from `A`, induction statement 1 gives
@@ -366,15 +403,13 @@ such that both `z ~ y` and `z ~ s`, the Comparison excludes `Y`.
 
 #### Proof
 
-Because `z ~ s`, `E(s)` includes the most-recent entry `B` for `z`. The entry
-`B` is at least as recent as `Z`, and is therefore more recent than `Y`.
-
-If `B` is a Create or Destroy, it operates on `z`. If `B` is a Move, the
-candidate-position invariant gives it an operated position equal to `z` or a
-transitive parent position of `z`. Since `z ~ y`, that position is also related
-to `y`. Thus `B` and `Y` participate in the Comparison and `B` excludes `Y`. The
-comparison is simultaneous, so this conclusion still holds if a third candidate
-excludes `B`. ∎
+Because `z ~ s`, the Collection completeness lemma supplies a candidate `B` in
+`E(s)` that is `Z` or more recent than `Z`, and is therefore more recent than
+`Y`, and that operates on `z` or a transitive parent position of `z`. Since
+`z ~ y`, that operated position is also related to `y`. Thus `B` and `Y`
+participate in the Comparison and `B` excludes `Y`. The comparison is
+simultaneous, so this conclusion still holds if a third candidate excludes `B`.
+∎
 
 ## The Key Empty-candidate Lemma
 
@@ -414,9 +449,11 @@ The remaining possibility is that `X` is only the Fill Dependency of a Move. A
 Destroy on `y` leaves `s` unavailable. A Create on `y` creates a new particle
 for which the strict child position `s` is empty. In either case, a later
 Particle Operation must fill `s` or move a particle that supplies `s` and its
-required transitive parent positions. That operation has a position `z` on the
-parent/child chain from `y` to `s`. The later-related-entry lemma again says
-that the Comparison excludes `Y`.
+required transitive parent positions. If that operation operated on `y`, or
+moved a particle whose transitive child positions include `y`, it would have
+become the most-recent entry for `y` in place of `Y`. That operation therefore
+has a position `z` on the parent/child chain from `y` to `s`, below `y`. The
+later-related-entry lemma again says that the Comparison excludes `Y`.
 
 Every case contradicts the premise that `Y` remains. ∎
 

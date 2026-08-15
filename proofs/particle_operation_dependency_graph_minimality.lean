@@ -61,6 +61,15 @@ immediately before each occurrence supplies `ExactOccupancyExecution`. Caller
 and destruction resolution contribute only the concrete Particle Operations and
 ordinary rule calculations described by the English proof.
 
+`latest_source_candidate` also covers a position name that no longer refers to
+a position when the emptying operation runs. A valid program satisfies it by
+keying, at that name, the most recent operation on the name or the most recent
+Move of a particle whose transitive child positions included it. The operation
+that removed the position's naming chain is a strictly more recent collected
+candidate on a related position (the English proof's Collection completeness
+lemma), so the Comparison always excludes these additional keys and they never
+change the final dependency set.
+
 The structure omits validity constraints unrelated to dependency minimality.
 It can therefore describe abstract values that no valid Define program produces,
 but every valid program satisfies the obligations used by the theorem. Proving
