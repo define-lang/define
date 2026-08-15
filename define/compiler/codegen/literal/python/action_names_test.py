@@ -146,8 +146,10 @@ def _requirement_input(
     return operation_graph_model.RequirementNode(
         node_id=1,
         depends_on=(action_parent_input,),
-        required_state=required_state,
-        requirement_position=(f"position<{position_name}>",),
+        requirement=operation_graph_model.OperationGraphRequirement(
+            requirement_position=(f"position<{position_name}>",),
+            required_state=required_state,
+        ),
     )
 
 

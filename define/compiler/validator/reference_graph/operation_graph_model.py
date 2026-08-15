@@ -21,6 +21,14 @@ class PositionOccupancyState(enum.Enum):
     ERROR = enum.auto()
 
 
+@dataclass(frozen=True, slots=True)
+class OperationGraphRequirement:
+    """A caller-controlled position and the state an action requires."""
+
+    requirement_position: tuple[str, ...]
+    required_state: PositionOccupancyState
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class DestructionFact:
     """Identifies one destruction initiated by its destroying action and propagated through callers."""
@@ -257,7 +265,9 @@ class ParticleChildOperations:
             # A move empties this position and fills a position whose required
             # empty state was also supplied by the caller.
             if isinstance(fill_dependency, RequirementNode):
-                dependency_requirements = (fill_dependency.requirement_position,)
+                dependency_requirements = (
+                    fill_dependency.requirement.requirement_position,
+                )
             # A move empties this position and fills a position that an earlier
             # Particle Operation in this action emptied.
             elif fill_dependency is not None:
@@ -337,12 +347,7 @@ class CallerMoveRuleFillDependency:
     """A Fill dependency awaiting the Move Rule comparison in a caller."""
 
     fill_dependency: ActionParentLastOperationNode | RequirementNode
-    # TODO: Extract these two fields into a shared operation-graph requirement
-    # value and migrate RequirementNode and caller-input consumers together. Keeping
-    # them flat here avoids broadening the Move Rule fix into a requirement-model
-    # refactor.
-    requirement_position: tuple[str, ...]
-    required_state: PositionOccupancyState
+    requirement: OperationGraphRequirement
     # Retained across caller substitutions because the Move Rule cannot apply the
     # Empty Rule comparison until the caller's Fill dependency becomes a Particle
     # Operation with known operated positions.
@@ -402,7 +407,7 @@ class ActionExecution:
         """Return the caller operation satisfying one direct callee input."""
         if isinstance(callee_input, ActionParentLastOperationNode):
             return self.action_parent_last_operation
-        binding = self.bindings.get(callee_input.requirement_position)
+        binding = self.bindings.get(callee_input.requirement.requirement_position)
         if binding is not None:
             return binding.operation
 
@@ -412,7 +417,7 @@ class ActionExecution:
         (parent_input,) = callee_input.depends_on
         if isinstance(parent_input, ActionParentLastOperationNode):
             return self.action_parent_last_operation
-        return self.bindings[parent_input.requirement_position].operation
+        return self.bindings[parent_input.requirement.requirement_position].operation
 
     def substitute_caller_empty_rule_dependencies(
         self,
@@ -488,7 +493,7 @@ class ActionExecution:
         )
         for node in dependencies:
             if isinstance(node, RequirementNode):
-                dependency_requirements.append(node.requirement_position)
+                dependency_requirements.append(node.requirement.requirement_position)
                 continue
             dependency_nodes.append(node)
             # This remains linear in the positions on the dependencies because
@@ -535,11 +540,13 @@ class ActionExecution:
         # state to the next caller substitution.
         return CallerMoveRuleFillDependency(
             fill_dependency=fill_dependency,
-            requirement_position=ast.chain_in_caller(
-                self.action_chain,
-                caller_dependency.requirement_position,
+            requirement=OperationGraphRequirement(
+                requirement_position=ast.chain_in_caller(
+                    self.action_chain,
+                    caller_dependency.requirement.requirement_position,
+                ),
+                required_state=caller_dependency.requirement.required_state,
             ),
-            required_state=caller_dependency.required_state,
             move_rule_comparison_positions=move_rule_comparison_positions,
         )
 
@@ -549,7 +556,7 @@ class ActionExecution:
     ) -> tuple[str, ...] | None:
         if not isinstance(binding.operation, RequirementNode):
             return None
-        return binding.operation.requirement_position
+        return binding.operation.requirement.requirement_position
 
     @staticmethod
     def _add_positions_relative_to_particle(
@@ -787,10 +794,7 @@ class RequirementNode(OperationNode):
     """
 
     depends_on: tuple[ActionParentLastOperationNode | RequirementNode]
-    # The state this action needs the position to be in.
-    required_state: PositionOccupancyState
-    # This action's own key for the caller-controlled contracted position.
-    requirement_position: tuple[str, ...] = field(default=(), compare=False)
+    requirement: OperationGraphRequirement
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)

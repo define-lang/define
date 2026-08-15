@@ -175,10 +175,12 @@ class ActionNameGenerator:
                 return _ACTION_PARENT_CALLER_INPUT_NAME
             case operation_graph_model.RequirementNode():
                 identifier = self._typed_chain_identifier(
-                    resolved_input.requirement_position
+                    resolved_input.requirement.requirement_position
                 )
                 return (
-                    _REQUIREMENT_CALLER_INPUT_PREFIXES[resolved_input.required_state]
+                    _REQUIREMENT_CALLER_INPUT_PREFIXES[
+                        resolved_input.requirement.required_state
+                    ]
                     + identifier
                 )
         typing.assert_never(resolved_input)
@@ -194,9 +196,12 @@ class ActionNameGenerator:
         self,
         dependency: operation_graph_model.CallerMoveRuleFillDependency,
     ) -> str:
-        identifier = self._typed_chain_identifier(dependency.requirement_position)
+        identifier = self._typed_chain_identifier(
+            dependency.requirement.requirement_position
+        )
         return (
-            _REQUIREMENT_CALLER_INPUT_PREFIXES[dependency.required_state] + identifier
+            _REQUIREMENT_CALLER_INPUT_PREFIXES[dependency.requirement.required_state]
+            + identifier
         )
 
     def _triggered_action_names(

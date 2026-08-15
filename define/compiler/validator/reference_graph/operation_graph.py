@@ -235,8 +235,10 @@ class OperationGraph:
             ancestor = self._action_parent_last_operation
         node = operation_graph_model.RequirementNode(
             node_id=len(self._nodes),
-            required_state=required_state,
-            requirement_position=key,
+            requirement=operation_graph_model.OperationGraphRequirement(
+                requirement_position=key,
+                required_state=required_state,
+            ),
             depends_on=(ancestor,),
         )
         self._nodes.append(node)
@@ -799,8 +801,7 @@ class OperationGraph:
             node_id=len(self._nodes),
             caller_move_rule_fill_dependency=operation_graph_model.CallerMoveRuleFillDependency(
                 fill_dependency=fill_dependency,
-                requirement_position=fill_dependency.requirement_position,
-                required_state=fill_dependency.required_state,
+                requirement=fill_dependency.requirement,
                 move_rule_comparison_positions=tuple(move_rule_comparison_positions),
             ),
         )
