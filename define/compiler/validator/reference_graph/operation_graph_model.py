@@ -55,10 +55,13 @@ def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
     return one[:shared_depth] == other[:shared_depth]
 
 
-def _apply_empty_rule_reduction_newest_first[DependencyNodeT: LastOperationNode](
+def _apply_empty_rule_comparison_newest_first[DependencyNodeT: LastOperationNode](
     candidates: Iterable[DependencyNodeT],
 ) -> tuple[DependencyNodeT, ...]:
-    """Apply the Empty Rule to dependencies ordered newest to oldest."""
+    """Apply Comparison to candidates from most to least recent.
+
+    Dependencies are returned from least to most recent.
+    """
     dependencies: list[DependencyNodeT] = []
     newer_positions: set[tuple[str, ...]] = set()
     newer_position_prefixes: set[tuple[str, ...]] = set()
@@ -86,12 +89,67 @@ def _apply_empty_rule_reduction_newest_first[DependencyNodeT: LastOperationNode]
     return tuple(dependencies)
 
 
-def apply_empty_rule_reduction[DependencyNodeT: LastOperationNode](
+def apply_empty_rule_comparison[DependencyNodeT: LastOperationNode](
     candidates: set[DependencyNodeT],
 ) -> tuple[DependencyNodeT, ...]:
-    """Apply the Empty Rule to unordered candidate dependencies."""
-    return _apply_empty_rule_reduction_newest_first(
+    """Apply Comparison and return dependencies from least to most recent."""
+    return _apply_empty_rule_comparison_newest_first(
         sorted(candidates, key=lambda item: item.operation_order, reverse=True)
+    )
+
+
+def apply_empty_rule_move_correction[DependencyNodeT: LastOperationNode](
+    dependencies: tuple[DependencyNodeT, ...],
+) -> tuple[DependencyNodeT, ...]:
+    """Apply Move Correction to concrete dependencies.
+
+    Dependencies must be ordered from least to most recent.
+    """
+    if len(dependencies) < 2:
+        return dependencies
+    remaining_move_dependencies: set[MoveNode] = set()
+    least_recent_move_dependency: MoveNode | None = None
+    for dependency in dependencies:
+        if not isinstance(dependency, MoveNode):
+            continue
+        remaining_move_dependencies.add(dependency)
+        if least_recent_move_dependency is None:
+            least_recent_move_dependency = dependency
+    if least_recent_move_dependency is None:
+        return dependencies
+
+    dependencies_to_visit: list[OperationNode] = []
+    # Starting one edge below the remaining dependencies prevents a Move from
+    # excluding itself merely because it is one of the traversal's starting points.
+    for dependency in dependencies:
+        dependencies_to_visit.extend(dependency.depends_on)
+    visited: set[OperationNode] = set()
+    excluded_move_dependencies: set[MoveNode] = set()
+    while dependencies_to_visit and remaining_move_dependencies:
+        dependency = dependencies_to_visit.pop()
+        if dependency in visited:
+            continue
+        visited.add(dependency)
+        if (
+            isinstance(dependency, MoveNode)
+            and dependency in remaining_move_dependencies
+        ):
+            remaining_move_dependencies.remove(dependency)
+            excluded_move_dependencies.add(dependency)
+        # Every dependency edge leads to an earlier operation, so continuing past
+        # the least recent possible removal target cannot reach another target.
+        if dependency.operation_order <= least_recent_move_dependency.operation_order:
+            continue
+        # A reached Move can itself reach an older remaining Move, so its
+        # dependencies must participate in the same traversal.
+        dependencies_to_visit.extend(dependency.depends_on)
+
+    if not excluded_move_dependencies:
+        return dependencies
+    return tuple(
+        dependency
+        for dependency in dependencies
+        if dependency not in excluded_move_dependencies
     )
 
 
@@ -223,7 +281,8 @@ class ParticleChildOperations:
                 continue
             seen_operations.add(operation)
             matching_operations.append(operation)
-        return _apply_empty_rule_reduction_newest_first(matching_operations)
+        dependencies = _apply_empty_rule_comparison_newest_first(matching_operations)
+        return apply_empty_rule_move_correction(dependencies)
 
     def determine_empty_rule_dependencies(
         self,
@@ -256,16 +315,14 @@ class ParticleChildOperations:
         fill_dependency: LastOperationNode | None,
         emptied_ancestor: LastOperationNode,
     ) -> _EmptyRuleDependencies:
-        # TODO: Fuse the two post-Comparison corrections. After one Comparison over
-        # the combined Empty Dependencies and Fill Dependency, the only possible
-        # removal targets are remaining Move Particle Statements and the remaining
-        # Fill Dependency. Starting from the direct dependencies of every remaining
-        # dependency, traverse dependency edges once with a shared visited set. Mark
-        # every removal target encountered, continue through marked targets, and
-        # remove all marked targets after the traversal. Starting one edge below the
-        # remaining dependencies enforces that a dependency cannot remove itself.
-        # Defer this combined calculation through caller substitution until all
-        # participating dependencies are concrete.
+        # TODO: Complete the combined post-Comparison calculation by adding the
+        # remaining Fill Dependency to the removal targets used by
+        # apply_empty_rule_move_correction. Continue using one traversal from the
+        # direct dependencies of every remaining dependency, with one shared visited
+        # set, and continue through every reached removal target. Starting one edge
+        # below the remaining dependencies prevents a dependency from removing
+        # itself. Defer the combined calculation through caller substitution until
+        # every participating dependency is concrete.
         candidates: set[LastOperationNode] = set()
         caller_dependencies: CallerEmptyRuleDependencies | None = None
         # The action received the particle in the state declared by a position
@@ -298,7 +355,7 @@ class ParticleChildOperations:
             child_operation.operation for child_operation in self.operations
         )
         return _EmptyRuleDependencies(
-            apply_empty_rule_reduction(candidates),
+            apply_empty_rule_comparison(candidates),
             caller_dependencies,
         )
 
@@ -484,7 +541,7 @@ class ActionExecution:
                 # remains the required dependency per the Empty Rule.
                 candidates.add(callee_requirement_binding.operation)
             return CallerEmptyRuleSubstitution(
-                apply_empty_rule_reduction(candidates),
+                apply_empty_rule_comparison(candidates),
                 None,
             )
 
@@ -492,7 +549,7 @@ class ActionExecution:
         # required by the Empty Rule may belong to that caller and must be propagated.
         # Apply what we can of the Empty Rule now to this caller's operations before
         # propagating dependencies from this caller's occupied requirement to its caller.
-        dependencies = apply_empty_rule_reduction(candidates)
+        dependencies = apply_empty_rule_comparison(candidates)
         dependency_nodes: list[PrecedingChildOperationNode] = []
         dependency_requirements: list[tuple[str, ...]] = []
         dependency_child_positions = set(

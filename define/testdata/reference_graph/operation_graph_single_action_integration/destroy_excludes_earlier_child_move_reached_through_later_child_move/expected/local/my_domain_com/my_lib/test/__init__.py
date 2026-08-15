@@ -53,7 +53,6 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_destroy_position_box = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -73,10 +72,6 @@ class TestExecution:
                 "position<holder_a>"
             )
         )
-        self.scheduler.submit(self.move_position_holder_a_to_position_box__global_position_middle)
-        self.destroy_position_box()
-
-    def move_position_holder_a_to_position_box__global_position_middle(self):
         self.action.get_interface_position(
             "position<holder_a>"
         ).move_particle_to(
@@ -110,8 +105,6 @@ class TestExecution:
         self.destroy_position_holder_c()
 
     def destroy_position_box(self):
-        if not self.join_for_destroy_position_box.arrive():
-            return
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()

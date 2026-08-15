@@ -6,14 +6,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_DISJOINT_MOVE_CHAIN_RETAINS_REACHABLE_FILL_DEPENDENCY = (
-    "The Move Rule retains a Fill dependency already reachable through Moves on "
-    "disjoint positions"
-)
-_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
-    "The Empty Rule retains a child dependency already reachable through a later "
-    "operation on a disjoint child position"
-)
 _MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET = (
     "The Move Rule retains an operation required to fill its target even when that "
     "operation is already reachable through a source dependency"
@@ -53,10 +45,6 @@ def test_three_operation_chain(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_DISJOINT_MOVE_CHAIN_RETAINS_REACHABLE_FILL_DEPENDENCY,
-)
 def test_move_chain_returning_to_first_position_has_minimal_dependencies(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -289,11 +277,7 @@ def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
-)
-def test_destroy_excludes_disjoint_earlier_child_move_reached_through_later_child_move(
+def test_destroy_excludes_earlier_child_move_reached_through_later_child_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

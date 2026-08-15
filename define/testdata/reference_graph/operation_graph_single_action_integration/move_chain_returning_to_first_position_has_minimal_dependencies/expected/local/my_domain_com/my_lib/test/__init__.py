@@ -38,21 +38,11 @@ class TestExecution:
             "position<d>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_d_to_position_a = literal.Join(2)
 
     def create_position_a(self):
         self.local_position_a.create_particle()
         self.local_position_a.move_particle_to(self.local_position_b)
-        self.scheduler.submit(self.move_position_b_to_position_c)
-        self.move_position_d_to_position_a()
-
-    def move_position_b_to_position_c(self):
         self.local_position_b.move_particle_to(self.local_position_c)
         self.local_position_c.move_particle_to(self.local_position_d)
-        self.move_position_d_to_position_a()
-
-    def move_position_d_to_position_a(self):
-        if not self.join_for_move_position_d_to_position_a.arrive():
-            return
         self.local_position_d.move_particle_to(self.local_position_a)
         self.local_position_a.destroy_particle()

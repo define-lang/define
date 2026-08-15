@@ -655,7 +655,9 @@ class OperationGraph:
             emptied_ancestor,
         )
         if dependencies.caller_dependencies is None:
-            return dependencies.local_dependencies
+            return operation_graph_model.apply_empty_rule_move_correction(
+                dependencies.local_dependencies
+            )
         return (
             *dependencies.local_dependencies,
             self._add_caller_empty_rule_dependencies(dependencies.caller_dependencies),
@@ -693,7 +695,9 @@ class OperationGraph:
                     dependencies.caller_dependencies
                 ),
             )
-        return dependencies.local_dependencies
+        return operation_graph_model.apply_empty_rule_move_correction(
+            dependencies.local_dependencies
+        )
 
     def _move_dependencies_with_caller_fill_dependency(
         self,
