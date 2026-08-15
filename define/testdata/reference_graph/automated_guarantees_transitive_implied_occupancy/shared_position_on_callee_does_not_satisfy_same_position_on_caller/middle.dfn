@@ -1,11 +1,12 @@
-# The worker's Create of shared depends on the Create of box through the Action
-# Parent Rule. Moving shared to a child position of box therefore needs only the
-# source Create; retaining the Fill dependency would add a redundant edge.
-define the potential action<my.domain.com:my_lib:/test> {
+# The worker fills position</box>::position</shared> from /middle's perspective,
+# so its guarantee cannot satisfy /middle's requirement that position</shared>
+# be occupied.
+define the potential action<my.domain.com:my_lib:/middle> {
     it also assigns the position</box>.
     it also assigns the position</shared>.
+    define the position<trigger_pos>.
     it happens when {
-        this particle is created.
+        the position<trigger_pos> has a particle.
     } and it does {
         create a particle in position</box>.
         create a particle in position</box>::action</worker>::position<trigger_pos>.

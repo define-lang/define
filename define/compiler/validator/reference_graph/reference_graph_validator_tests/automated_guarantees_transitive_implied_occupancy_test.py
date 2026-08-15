@@ -18,6 +18,22 @@ _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _FILLER = "action<my.domain.com:my_lib:/filler>"
 
 
+def test_shared_position_on_callee_does_not_satisfy_same_position_on_caller(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].position_name == "position<gateway>::position</shared>"
+
+
 def test_occupied_guarantee_propagates_through_transitive_implication(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
