@@ -871,15 +871,24 @@ def test_caller_contributes_one_destroy_before_shared_callee_destroy(
         "test.create(gateway::/other::parent::/child::/grandchild)": [
             "test.create(gateway::/other::parent::/child)"
         ],
+        "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)": [
+            "test.create(gateway::/other::parent::/child::/grandchild)"
+        ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         # The caller contributes the sibling Destroy, which follows the caller's
         # Create of that sibling particle.
         "other.destroy(parent::/child::/sibling)": [
             "test.create(gateway::/other::parent::/child::/sibling)",
         ],
-        # The callee's explicit grandchild Destroy retains its ordinary dependency.
+        # The grandchild contract has a distinct Destruction Fact, so the child
+        # contract independently contributes the caller-known greatgrandchild.
+        "other.destroy(parent::/child::/grandchild::/greatgrandchild)": [
+            "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)"
+        ],
+        # The explicit grandchild Destroy waits for the contribution belonging to
+        # its distinct Destruction Fact.
         "other.destroy(parent::/child::/grandchild)": [
-            "test.create(gateway::/other::parent::/child::/grandchild)"
+            "other.destroy(parent::/child::/grandchild::/greatgrandchild)",
         ],
         # The callee-known child Destroy waits for both the caller-contributed
         # sibling Destroy and the callee's grandchild Destroy.

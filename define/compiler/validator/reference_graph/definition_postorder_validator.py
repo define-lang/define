@@ -672,30 +672,16 @@ class ActionPostorderValidator:
             enclosing_quality_name=self._definition.typed_name.source_typed_name,
             triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
         )
-        # TODO: Make validation non-overlapping among Destruction Contracts that
-        # share one Destruction Fact. Build one lookup keyed by each contract's
-        # destroyed_position_contracted.in_caller(action_chain), rather than
-        # comparing every pair of contracts. While checking one contract, stop
-        # when the cascade reaches the destroyed position of another contract for
-        # that same Destruction Fact; the contract for that position must validate
-        # the position and its child names. Contracts for different Destruction
-        # Facts remain independent. This should make the work linear in the
-        # contracts and positions visited, and ensure each caller-known child
-        # produces graph input through one contract. Then remove the duplicate
-        # suppression in OperationGraph.record_contributed_destruction_fragment.
-        # While _verify_destruction_cascade recursively visits child names, also
-        # preserve the relationships it already knows among newly occupied
-        # positions: the contributed child Destroys preceding each parent-position
-        # Destroy, the positions whose Destroys begin separate contributions, and
-        # the Destroys with no contributed parent-position Destroy. Include those
-        # relationships in DestructionContractNewlyOccupiedChildren rather than
-        # making OperationGraph reconstruct them by comparing parent and child names.
-        # Once validation is non-overlapping, no graph-side duplicate filtering or
-        # index remapping will be needed, and
-        # _ContributedDestructionRelationships.from_unrecorded_positions can be
-        # removed with its second traversal and prefix comparisons.
-        # The caller_contributes_one_destroy_before_shared_callee_destroy case
-        # covers a parent and child contract currently exposing the same position.
+        contract_positions_by_destruction_fact: dict[
+            operation_graph_model.DestructionFact, set[tuple[str, ...]]
+        ] = {}
+        for destruction_contract in contract.destruction_contracts:
+            position = destruction_contract.destroyed_position_contracted.in_caller(
+                action_chain
+            )
+            contract_positions_by_destruction_fact.setdefault(
+                destruction_contract.destruction_fact, set()
+            ).add(position.canonical_chained_name_tuple)
         newly_occupied_children_by_destruction_contract: list[
             operation_graph_model.DestructionContractNewlyOccupiedChildren
         ] = []
@@ -704,6 +690,9 @@ class ActionPostorderValidator:
                 destruction_contract,
                 action_chain,
                 trigger_step,
+                contract_positions_by_destruction_fact[
+                    destruction_contract.destruction_fact
+                ],
             )
             if newly_occupied_children is not None:
                 newly_occupied_children_by_destruction_contract.append(
@@ -716,6 +705,7 @@ class ActionPostorderValidator:
         destruction_contract: action_contract.DestructionContract,
         action_chain: ast.ActionReference,
         trigger_step: action_contract.PropagationStep,
+        contract_positions: set[tuple[str, ...]],
     ) -> operation_graph_model.DestructionContractNewlyOccupiedChildren | None:
         caller_particle_position = (
             destruction_contract.destroyed_position_contracted.in_caller(action_chain)
@@ -753,7 +743,7 @@ class ActionPostorderValidator:
         newly_occupied_children: list[
             operation_graph_model.ContributedDestructionPosition
         ] = []
-        self._verify_destruction_cascade(
+        final_contributed_positions = self._verify_destruction_cascade(
             caller_particle_position,
             destruction_contract=destruction_contract,
             destroying_definition=destroying_definition,
@@ -766,6 +756,8 @@ class ActionPostorderValidator:
             newly_verified=newly_verified,
             newly_occupied_children=newly_occupied_children,
             callee_destroy_position=(),
+            contract_positions=contract_positions,
+            contracted_position=caller_particle_position.canonical_chained_name_tuple,
         )
         if not created_in_this_action:
             self._re_record_destruction_contract(
@@ -780,6 +772,7 @@ class ActionPostorderValidator:
             caller_particle_position,
             destruction_contract.destroyed_position_in_destroying_action,
             newly_occupied_children,
+            final_contributed_positions,
             is_propagated_to_caller=not created_in_this_action,
         )
 
@@ -829,10 +822,18 @@ class ActionPostorderValidator:
             operation_graph_model.ContributedDestructionPosition
         ],
         callee_destroy_position: tuple[str, ...],
-    ):
+        contract_positions: set[tuple[str, ...]],
+        contracted_position: tuple[str, ...],
+    ) -> tuple[operation_graph_model.ContributedDestructionPosition, ...]:
+        position_key = position.canonical_chained_name_tuple
+        # Another Destruction Contract for this Destruction Fact starts at this
+        # position. It validates this position and its child names, so continuing
+        # this traversal would record their caller-contributed Destroys twice.
+        if position_key != contracted_position and position_key in contract_positions:
+            return ()
         occupancy_info = self._tracker.get_occupancy_info(position)
         if occupancy_info.has_error or occupancy_info.occupant is None:
-            return
+            return ()
         relative_key = position.canonical_chained_name_tuple[caller_prefix_length:]
         occupancy = merged_child_state.get(relative_key)
         # A position the destruction-time picture records as empty was emptied
@@ -842,7 +843,7 @@ class ActionPostorderValidator:
             occupancy is not None
             and occupancy.state == action_contract.PositionOccupancyState.EMPTY
         ):
-            return
+            return ()
         # A child absent from the contract was unknown to the callee but is
         # occupied from this caller's perspective, so this caller contributes
         # its Destroy. The contracted position itself is already destroyed by
@@ -860,21 +861,28 @@ class ActionPostorderValidator:
         ):
             callee_destroy_position_for_children = relative_key
         particle = occupancy_info.occupant
+        final_contributed_positions: list[
+            operation_graph_model.ContributedDestructionPosition
+        ] = []
         for assignment in reversed(particle.qualities.assignments):
             quality = assignment.quality
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
-                self._verify_destruction_cascade(
-                    child,
-                    destruction_contract=destruction_contract,
-                    destroying_definition=destroying_definition,
-                    caller_prefix_length=caller_prefix_length,
-                    trigger_step=trigger_step,
-                    merged_child_state=merged_child_state,
-                    created_in_this_action=created_in_this_action,
-                    newly_verified=newly_verified,
-                    newly_occupied_children=newly_occupied_children,
-                    callee_destroy_position=callee_destroy_position_for_children,
+                final_contributed_positions.extend(
+                    self._verify_destruction_cascade(
+                        child,
+                        destruction_contract=destruction_contract,
+                        destroying_definition=destroying_definition,
+                        caller_prefix_length=caller_prefix_length,
+                        trigger_step=trigger_step,
+                        merged_child_state=merged_child_state,
+                        created_in_this_action=created_in_this_action,
+                        newly_verified=newly_verified,
+                        newly_occupied_children=newly_occupied_children,
+                        callee_destroy_position=callee_destroy_position_for_children,
+                        contract_positions=contract_positions,
+                        contracted_position=contracted_position,
+                    )
                 )
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
@@ -909,30 +917,36 @@ class ActionPostorderValidator:
                     child = position.with_position_suffix(
                         quality, interface_position.typed_name
                     )
-                    self._verify_destruction_cascade(
-                        child,
-                        destruction_contract=destruction_contract,
-                        destroying_definition=destroying_definition,
-                        caller_prefix_length=caller_prefix_length,
-                        trigger_step=trigger_step,
-                        merged_child_state=merged_child_state,
-                        created_in_this_action=created_in_this_action,
-                        newly_verified=newly_verified,
-                        newly_occupied_children=newly_occupied_children,
-                        callee_destroy_position=callee_destroy_position_for_children,
+                    final_contributed_positions.extend(
+                        self._verify_destruction_cascade(
+                            child,
+                            destruction_contract=destruction_contract,
+                            destroying_definition=destroying_definition,
+                            caller_prefix_length=caller_prefix_length,
+                            trigger_step=trigger_step,
+                            merged_child_state=merged_child_state,
+                            created_in_this_action=created_in_this_action,
+                            newly_verified=newly_verified,
+                            newly_occupied_children=newly_occupied_children,
+                            callee_destroy_position=callee_destroy_position_for_children,
+                            contract_positions=contract_positions,
+                            contracted_position=contracted_position,
+                        )
                     )
         # Record only occupied child positions absent from the callee's
         # destruction-time state. Append after visiting their children so the
         # contributed Destroy operations are recorded child before parent; the
         # contracted position itself is destroyed by the callee.
         if is_newly_occupied_child:
-            newly_occupied_children.append(
-                operation_graph_model.ContributedDestructionPosition(
-                    position,
-                    relative_key,
-                    callee_destroy_position,
-                )
+            contributed_position = operation_graph_model.ContributedDestructionPosition(
+                position,
+                relative_key,
+                callee_destroy_position,
+                tuple(reversed(final_contributed_positions)),
             )
+            newly_occupied_children.append(contributed_position)
+            return (contributed_position,)
+        return tuple(final_contributed_positions)
 
     def _verify_one_cascade_destructor(
         self,

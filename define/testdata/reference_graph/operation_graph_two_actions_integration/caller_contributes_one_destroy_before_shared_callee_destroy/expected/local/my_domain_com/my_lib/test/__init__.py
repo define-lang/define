@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
+import local.my_domain_com.my_lib.greatgrandchild
 import local.my_domain_com.my_lib.other
 import local.my_domain_com.my_lib.sibling
 
@@ -55,7 +56,9 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.destruction_connection_trigger_position_gateway__action_other: literal.DestructionConnection
+        self.destruction_connection_trigger_position_gateway__action_other_2: literal.DestructionConnection
         self.trigger_position_gateway__action_other_destruction_connections: literal.DestructionConnections
+        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild: literal.Position
         self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_sibling: literal.Position
         self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild = literal.Join(2)
         self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child = literal.Join(2)
@@ -113,6 +116,19 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<parent>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_position(
+            local.my_domain_com.my_lib.grandchild.Grandchild
+        ).particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        ).create_particle()
         self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild()
 
     def create_position_gateway__action_other__position_trigger_pos(self):
@@ -128,12 +144,22 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child)
         self.trigger_position_gateway__action_other__for_empty_rule_position_parent()
 
+    def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
+        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
+        self.destruction_connection_trigger_position_gateway__action_other.complete()
+
     def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_sibling(self):
         self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_sibling.destroy_particle()
-        self.destruction_connection_trigger_position_gateway__action_other.complete()
+        self.destruction_connection_trigger_position_gateway__action_other_2.complete()
 
     def init_execution_trigger_position_gateway__action_other(self):
         self.destruction_connection_trigger_position_gateway__action_other = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.other.OtherExecution.continue_destroy_position_parent__global_position_child__global_position_grandchild,
+            1,
+            self.destroy_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild,
+        )
+        self.destruction_connection_trigger_position_gateway__action_other_2 = literal.DestructionConnection(
             self.scheduler,
             local.my_domain_com.my_lib.other.OtherExecution.continue_destroy_position_parent__global_position_child,
             1,
@@ -141,6 +167,7 @@ class TestExecution:
         )
         self.trigger_position_gateway__action_other_destruction_connections = literal.DestructionConnections(
             self.destruction_connection_trigger_position_gateway__action_other,
+            self.destruction_connection_trigger_position_gateway__action_other_2,
         )
         action = self.action.get_interface_position(
             "position<gateway>"
@@ -157,6 +184,19 @@ class TestExecution:
     def trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild.arrive():
             return
+        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild = self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<parent>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_position(
+            local.my_domain_com.my_lib.grandchild.Grandchild
+        ).particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        )
         self.execution_trigger_position_gateway__action_other.accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild()
 
     def trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child(self):

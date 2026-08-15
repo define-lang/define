@@ -700,12 +700,16 @@ class DestructionContributionNode(OperationNode):
     callee_destroy_position: tuple[str, ...]
 
 
-class ContributedDestructionPosition(typing.NamedTuple):
+@dataclass(frozen=True, slots=True, eq=False)
+class ContributedDestructionPosition:
     """One caller-known occupied position contributed to a destruction."""
 
     position: ast.PositionReference
     position_relative_to_destroyed_particle: tuple[str, ...]
     callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
+    # Retaining the contributed child positions preserves the Destroys that must
+    # precede this position's Destroy without reconstructing name relationships.
+    preceding_contributed_positions: tuple[ContributedDestructionPosition, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -716,6 +720,9 @@ class DestructionContractNewlyOccupiedChildren:
     destroyed_particle_position: ast.PositionReference
     destroyed_position_in_destroying_action: ast.PositionReference
     children: Sequence[ContributedDestructionPosition]
+    # Retaining the final contributed positions preserves the Destroys that finish
+    # their contributions before the callee Destroy without another traversal.
+    final_contributed_positions: Sequence[ContributedDestructionPosition]
     is_propagated_to_caller: bool
 
 
