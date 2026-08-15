@@ -18,25 +18,6 @@ considered complete.
 The corresponding executable proof is
 [`particle_operation_dependency_graph_minimality.lean`](particle_operation_dependency_graph_minimality.lean).
 
-The proof uses the following three additions to the rules that existed when the
-proof began:
-
-1. After the Empty Rule's Comparison, a remaining Move dependency is removed
-   when another remaining dependency reaches it.
-2. After the Comparison and Move Correction are applied to a Move Particle
-   Statement's combined dependencies, the dependency required for filling the
-   target position is removed when a remaining dependency required for emptying
-   the source position reaches it.
-3. For a later Empty Rule calculation, a Move Particle Statement becomes the
-   most recent Particle Operation on the moved particle's transitive child
-   positions.
-
-The first two additions remove dependencies only when a directed dependency path
-already provides the same ordering. The third makes the Empty Rule's notion of
-“most recent” follow a particle when the particle moves; without it, a later
-Empty Rule can select an earlier child-position operation that is already
-reached through the Move.
-
 ## Definitions
 
 ### Resolved Particle Operations
@@ -289,7 +270,7 @@ position or one of that position's transitive parent positions. From the
 resolved caller's perspective, every position belonging to that Action Execution
 is a transitive child position of the action's parent position. A position that
 uses the same global position definition in a different Action Execution is a
-different position and does not provide a counterexample to this relationship.
+different position and is not selected by this Action Parent Rule calculation.
 
 Requirement and guarantee resolution preserves these relationships, as shown in
 the candidate-position invariant. The rule comparisons only delete dependencies;
@@ -322,7 +303,7 @@ reaches `A`.
 For the Move Correction, consider any excluded Move `A` in `P(C)`. Among the
 members of `P(C)` that reach `A`, choose one that no other member of `P(C)`
 reaches. It is not removed by the Move Correction and it reaches `A`. The Move
-Rule's target Fill comparison removes only `F(t)`, and only when a remaining
+Rule's Fill Dependency removal removes only `F(t)`, and only when a remaining
 source-side candidate reaches `F(t)`. Thus each stage leaves some final
 dependency reaching every candidate it removed. Since `O` depends on every final
 dependency, statement 3 holds for `O`.
@@ -429,12 +410,12 @@ If `X` is another source-side candidate, the candidate-position invariant gives
 position `y`. Because `X > Y`, `X` is more recent, so the Comparison would
 exclude `Y`.
 
-The remaining possibility is that `X` is only the target-position dependency of
-a Move. A Destroy on `y` leaves `s` unavailable. A Create on `y` creates a new
-particle for which the strict child position `s` is empty. In either case, a
-later Particle Operation must fill `s` or move a particle that supplies `s` and
-its required transitive parent positions. That operation has a position `z` on
-the parent/child chain from `y` to `s`. The later-related-entry lemma again says
+The remaining possibility is that `X` is only the Fill Dependency of a Move. A
+Destroy on `y` leaves `s` unavailable. A Create on `y` creates a new particle
+for which the strict child position `s` is empty. In either case, a later
+Particle Operation must fill `s` or move a particle that supplies `s` and its
+required transitive parent positions. That operation has a position `z` on the
+parent/child chain from `y` to `s`. The later-related-entry lemma again says
 that the Comparison excludes `Y`.
 
 Every case contradicts the premise that `Y` remains. ∎
@@ -475,17 +456,17 @@ Therefore the Empty Rule's final dependency set is a reachability antichain.
 
 ### Move Rule
 
-Suppose distinct remaining dependencies `X` and `Y` satisfy `X > Y` after all
-Move Rule comparisons.
+Suppose distinct dependencies `X` and `Y` remain after applying the Move Rule
+and satisfy `X > Y`.
 
 If `Y` is a Move, the Move Correction removes it because the Move Rule applies
 the Empty Rule's Comparison and Move Correction to the combined set.
 
 Suppose `Y` is a Create or Destroy. If `Y` is a source-side candidate, the key
 Empty-candidate lemma says it could not remain, whether `X` is another
-source-side candidate or the target-position dependency. If `Y` is the
-target-position dependency, `X` must be a source-side candidate, and the added
-Move Rule comparison removes `Y`.
+source-side candidate or the Fill Dependency. If `Y` is the Fill Dependency, `X`
+must be a source-side candidate, and the Move Rule removes `Y` because `X`
+depends on it directly or indirectly.
 
 These cases cover every member of the combined set. Therefore the Move Rule's
 final dependency set is a reachability antichain.
@@ -596,7 +577,7 @@ specification:
 - its optional Action Parent candidate is the operation selected by the Action
   Parent Rule; and
 - its final dependencies are exactly the candidates left by the simultaneous
-  Comparison, the Move Correction, the Move Rule's target Fill comparison, and
+  Comparison, the Move Correction, the Move Rule's Fill Dependency removal, and
   the Action Parent fallback, in that order.
 
 The Lean types contain structurally possible Particle Operation values that are
@@ -674,15 +655,12 @@ The Lean theorem file contains no concrete witnesses. The separate
 [`particle_operation_dependency_graph_minimality_witnesses.lean`](particle_operation_dependency_graph_minimality_witnesses.lean)
 file imports the theorem, so a witness cannot supply any premise to it. The
 witness itself has a valid operation history: an entry action creates its
-assigned implied position and then destroys it. It corresponds to the existing
-passing
+assigned implied position and then destroys it, as in the
 [`create_and_destroy_of_an_implied_position` test](../define/testdata/reference_graph/operation_graph_single_action_integration/create_and_destroy_of_an_implied_position/test.dfn).
-The separate algebraic branch examples that did not represent valid operation
-histories have been removed.
 
 ## Whole-rule-set Theorem
 
-The Particle Operation Dependency Graph produced by the amended rules is a
+The Particle Operation Dependency Graph produced by the specified rules is a
 transitively reduced directed acyclic graph.
 
 ### Proof
@@ -725,7 +703,7 @@ rule calculation is definitionally the following complete sequence:
 1. the Empty Rule Collection and optional Fill dependency;
 2. the simultaneous Comparison;
 3. the Empty Rule's Move Correction;
-4. the Move Rule's target Fill comparison; and
+4. the Move Rule's Fill Dependency removal; and
 5. the Action Parent fallback exactly when the preceding result is empty.
 
 The relation `RuleGraph.exact_dependency` states that an edge exists if and only
@@ -768,47 +746,6 @@ execution with a real Create-to-Destroy dependency. This proves that the
 combined semantic premises are inhabited by a nonempty graph. The rule cases
 themselves are exhaustive conditional proofs; they do not require a fabricated
 operation history to make every branch inhabited.
-
-## Why Each Addition Is Necessary
-
-The proof obligations are reflected by durable integration tests.
-
-- A chain of Moves among different child positions can leave an earlier Move as
-  an Empty candidate even though a later candidate reaches it. This requires the
-  Empty Rule's Move Correction.
-- A source-side dependency of a Move can reach the operation required for
-  filling its target through an intermediate Move and a Create. This requires
-  the target Fill comparison in the Move Rule.
-- After a parent particle moves repeatedly, the written position of an earlier
-  child Create or Destroy need not have a parent/child relationship with the
-  final parent Move's written positions. This requires the Empty Rule to
-  consider a Move on the moved particle's transitive child positions;
-  restricting the reachability comparison to an earlier Move does not suffice.
-
-The strict expected-failure tests include:
-
-- the strict xfail for an earlier child Move reached through a later child Move;
-- `test_move_excludes_create_fill_dependency_reached_through_source_dependency`;
-- `test_move_excludes_fill_dependency_reached_through_replaced_source_operation`;
-- `test_move_excludes_create_on_child_reached_through_parent_move_chain`;
-- `test_move_excludes_transitive_child_create_reached_through_parent_move_chain`;
-- `test_destroy_excludes_child_destroy_reached_through_parent_move_chain`.
-
-They are in
-[`operation_graph_single_action_integration_test.py`](../define/compiler/validator/reference_graph/reference_graph_validator_tests/operation_graph_single_action_integration_test.py).
-Caller-substitution variants are in the two-action and many-action operation
-graph integration tests.
-
-The ordinary passing caller test
-`test_caller_empty_rule_excludes_child_create_reached_through_parent_move_chain`
-shows that caller substitution already uses the latest parent Move instead of
-repeating the earlier child Create.
-
-The ordinary passing test
-`test_independent_child_moves_with_shared_move_chain_remain_dependencies` guards
-the opposite direction: two candidates are not comparable merely because they
-both depend on the same earlier operation. Every removal above requires a
-directed path from one candidate to the other.
 
 ## Scope
 
