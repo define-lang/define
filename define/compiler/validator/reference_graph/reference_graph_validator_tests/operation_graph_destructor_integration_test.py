@@ -10,10 +10,6 @@ _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded in the "
     "operation graph"
 )
-_TRANSITIVELY_REDUNDANT_DEPENDENCY = (
-    "Operation Graph contains a direct dependency already reachable through another "
-    "dependency path"
-)
 
 
 def test_destructor_independent_chains_and_operation_after_destroy(
@@ -291,7 +287,6 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_caller_moves_callee_guaranteed_particle_before_destroying(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -301,10 +296,7 @@ def test_caller_moves_callee_guaranteed_particle_before_destroying(
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(temp)": ["test.create(box)"],
-        "maker.move(temp, result)": [
-            "maker.create(temp)",
-            "test.create(box)",
-        ],
+        "maker.move(temp, result)": ["maker.create(temp)"],
         "test.move(box::/maker::result, held)": ["maker.move(temp, result)"],
         # After the move, it is the operation that fires the destructor.
         "destructor.create(_noop)": ["test.move(box::/maker::result, held)"],
@@ -340,7 +332,6 @@ def test_destructor_on_particle_from_callee_guarantee(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -350,10 +341,7 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
         "test.create(box)": [],
         "test.create(box::/make_thing::run)": ["test.create(box)"],
         "make_thing.create(temp)": ["test.create(box)"],
-        "make_thing.move(temp, result)": [
-            "make_thing.create(temp)",
-            "test.create(box)",
-        ],
+        "make_thing.move(temp, result)": ["make_thing.create(temp)"],
         # The move propagates the destructor even though result has no such constraint.
         "destructor.create(_noop)": ["make_thing.move(temp, result)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
@@ -366,7 +354,6 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_destructor_attached_in_callee_on_implied_position_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -376,7 +363,7 @@ def test_destructor_attached_in_callee_on_implied_position_guarantee(
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(temp)": ["test.create(box)"],
-        "maker.move(temp, /child)": ["maker.create(temp)", "test.create(box)"],
+        "maker.move(temp, /child)": ["maker.create(temp)"],
         # The implied-position guarantee propagates and fires the destructor that
         # /maker attached to the particle.
         "destructor.create(_noop)": ["maker.move(temp, /child)"],

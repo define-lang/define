@@ -142,9 +142,7 @@ def _requirement_input(
     position_name: str,
     required_state: action_contract.PositionOccupancyState,
 ) -> operation_graph_model.RequirementNode:
-    action_parent_input = operation_graph_model.ActionParentLastOperationNode(
-        node_id=0, depends_on=()
-    )
+    action_parent_input = operation_graph_model.ActionParentLastOperationNode(node_id=0)
     return operation_graph_model.RequirementNode(
         node_id=1,
         depends_on=(action_parent_input,),
@@ -248,9 +246,7 @@ def test_local_position_names():
 
 
 def test_action_parent_input_name():
-    action_parent = operation_graph_model.ActionParentLastOperationNode(
-        node_id=0, depends_on=()
-    )
+    action_parent = operation_graph_model.ActionParentLastOperationNode(node_id=0)
 
     assert _input_method_names(action_parent) == {action_parent: "accept_action_parent"}
 
@@ -412,17 +408,13 @@ def test_destruction_connection_names_use_action_execution(
         destroyed_position,
         execution.callee_action_name,
     )
-    destruction_start = operation_graph_model.ActionParentLastOperationNode(
-        node_id=0,
-        depends_on=(),
-    )
     first_destroy = operation_graph_model.DestructionFactDestroyNode(
         node_id=1,
         depends_on=(),
         target=destroyed_position,
         destruction_fact=destruction_fact,
         destruction_position=(),
-        dependencies_before_caller_contribution=(destruction_start,),
+        dependencies_before_caller_contribution=(),
         dependencies_after_caller_contribution=(),
     )
     second_destroy = operation_graph_model.DestructionFactDestroyNode(
@@ -431,7 +423,7 @@ def test_destruction_connection_names_use_action_execution(
         target=destroyed_position,
         destruction_fact=destruction_fact,
         destruction_position=(),
-        dependencies_before_caller_contribution=(destruction_start,),
+        dependencies_before_caller_contribution=(),
         dependencies_after_caller_contribution=(),
     )
     first_connection = action_plan.DestructionConnection(
@@ -492,17 +484,13 @@ def test_continue_destroy_method_uses_destroy_fragment_name():
         destroyed_position,
         definition.typed_name,
     )
-    destruction_start = operation_graph_model.ActionParentLastOperationNode(
-        node_id=0,
-        depends_on=(),
-    )
     destroy = operation_graph_model.DestructionFactDestroyNode(
         node_id=1,
         depends_on=(),
         target=destroyed_position,
         destruction_fact=destruction_fact,
         destruction_position=(),
-        dependencies_before_caller_contribution=(destruction_start,),
+        dependencies_before_caller_contribution=(),
         dependencies_after_caller_contribution=(),
     )
     fragment = action_plan.DestructionActionFragment([destroy])

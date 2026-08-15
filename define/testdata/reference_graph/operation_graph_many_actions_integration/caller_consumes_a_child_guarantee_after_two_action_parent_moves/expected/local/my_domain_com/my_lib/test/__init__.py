@@ -62,7 +62,6 @@ class TestExecution:
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_trigger_pos = literal.Join(2)
         self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__when_empty_position_holder = literal.Join(2)
         self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result = literal.Join(2)
 
     def create_position_gateway(self):
@@ -70,8 +69,7 @@ class TestExecution:
             "position<gateway>"
         ).create_particle()
         self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_trigger_pos)
-        self.trigger_position_gateway__action_middle__when_empty_position_holder()
+        self.create_position_gateway__action_middle__position_trigger_pos()
 
     def create_position_gateway__action_middle__position_source(self):
         self.action.get_interface_position(
@@ -151,8 +149,6 @@ class TestExecution:
         self.execution_trigger_position_gateway__action_middle.accept_for_empty_rule_position_source()
 
     def trigger_position_gateway__action_middle__when_empty_position_holder(self):
-        if not self.join_for_trigger_position_gateway__action_middle__when_empty_position_holder.arrive():
-            return
         self.execution_trigger_position_gateway__action_middle.accept_when_empty_position_holder()
 
     def trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result(self):

@@ -332,6 +332,46 @@ def test_move_joins_an_in_body_source_and_a_requirement_target(
     }
 
 
+def test_move_excludes_non_action_parent_create_fill_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::box)": ["test.create(gateway)"],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(box::/item)": ["test.create(gateway::/other::box)"],
+        # The parent Create is already reachable through the more recent child Create,
+        # so the Move Rule excludes it.
+        "other.move(box::/item, box::/destination)": ["other.create(box::/item)"],
+    }
+
+
+def test_move_excludes_non_action_parent_move_fill_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::box)": ["test.create(gateway)"],
+        "test.move(gateway::/other::box, gateway::/other::destination)": [
+            "test.create(gateway::/other::box)"
+        ],
+        "test.move(gateway::/other::destination, gateway::/other::box)": [
+            "test.move(gateway::/other::box, gateway::/other::destination)"
+        ],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(box::/item)": [
+            "test.move(gateway::/other::destination, gateway::/other::box)"
+        ],
+        # The caller Move is already reachable through the more recent child Create, so
+        # the Move Rule excludes it through its other operated position, box.
+        "other.move(box::/item, destination)": ["other.create(box::/item)"],
+    }
+
+
 def test_child_empty_requirement_waits_on_the_caller_empty_of_the_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

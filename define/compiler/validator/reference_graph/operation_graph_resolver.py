@@ -256,7 +256,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        dependencies: tuple[operation_graph_model.OperationNode, ...],
+        dependencies: tuple[operation_graph_model.EmptyRuleDependencyNode, ...],
     ):
         for dependency in dependencies:
             match dependency:
@@ -269,18 +269,13 @@ class ResolvedOperationGraphBuilder:
                         self._graphs.resolve_guarantee(dependency),
                     )
                 case (
-                    operation_graph_model.ActionParentLastOperationNode()
-                    | operation_graph_model.RequirementNode()
+                    operation_graph_model.RequirementNode()
                     | operation_graph_model.CallerEmptyRuleDependenciesNode()
                 ):
                     self._add_destruction_dependency_input(
                         dependency_keys,
                         action_execution,
                         dependency,
-                    )
-                case _:
-                    raise TypeError(
-                        f"unknown operation node type: {type(dependency).__name__}"
                     )
 
     def _add_destruction_dependencies(
@@ -350,8 +345,7 @@ class ResolvedOperationGraphBuilder:
                     )
                     has_dependency = True
                 case (
-                    operation_graph_model.ActionParentLastOperationNode()
-                    | operation_graph_model.RequirementNode()
+                    operation_graph_model.RequirementNode()
                     | operation_graph_model.CallerEmptyRuleDependenciesNode()
                 ):
                     has_dependency |= self._add_caller_input_before_execution(
@@ -359,10 +353,6 @@ class ResolvedOperationGraphBuilder:
                         action_execution,
                         dependency,
                         caller_execution,
-                    )
-                case _:
-                    raise TypeError(
-                        f"unknown operation node type: {type(dependency).__name__}"
                     )
         return has_dependency
 
@@ -417,7 +407,7 @@ class ResolvedOperationGraphBuilder:
         resolved_input = self._destruction_dependency_inputs.get(key)
         if resolved_input is None:
             resolved_input = (
-                operation_graph_action_resolver.resolve_action_execution_input(
+                operation_graph_action_resolver.ResolvedActionExecutionInput.resolve(
                     resolved_execution.execution,
                     self._graphs,
                     callee_input,

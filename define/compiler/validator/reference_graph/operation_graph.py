@@ -159,7 +159,6 @@ class OperationGraph:
         # assigned to as a transitive parent from the caller's perspective.
         self._action_parent_last_operation: operation_graph_model.ActionParentLastOperationNode = operation_graph_model.ActionParentLastOperationNode(
             node_id=len(self._nodes),
-            depends_on=(),
         )
         self._nodes.append(self._action_parent_last_operation)
         self.guaranteed_positions_by_operation: dict[
@@ -569,11 +568,10 @@ class OperationGraph:
             if local_dependencies:
                 # A parent-position Destroy continues the contributions begun by its
                 # child-position Destroys rather than beginning another contribution.
-                dependencies: tuple[operation_graph_model.OperationNode, ...] = tuple(
-                    local_dependencies
-                )
-                dependencies_before_caller_contribution = dependencies
-                dependencies_after_caller_contribution = dependencies
+                local_dependency_nodes = tuple(local_dependencies)
+                dependencies = local_dependency_nodes
+                dependencies_before_caller_contribution = local_dependency_nodes
+                dependencies_after_caller_contribution = local_dependency_nodes
             else:
                 # A caller-known occupied child position with no contributed child
                 # Destroy must begin a separate contribution because no existing
@@ -649,7 +647,9 @@ class OperationGraph:
                     tuple(recorded_contribution.completion_operations),
                 )
             )
-        contribution_dependencies: list[operation_graph_model.OperationNode] = []
+        contribution_dependencies: list[
+            operation_graph_model.EmptyRuleDependencyNode
+        ] = []
         for contribution in contributions:
             contribution_dependencies.extend(contribution.node.depends_on)
         return operation_graph_model.ContributedDestructionFragment(
@@ -701,7 +701,11 @@ class OperationGraph:
         fill_position: tuple[str, ...],
         empty_position: tuple[str, ...] | None = None,
         child_operations: operation_graph_model.ParticleChildOperations | None = None,
-    ) -> tuple[operation_graph_model.OperationNode, ...]:
+    ) -> tuple[
+        operation_graph_model.EmptyingOperationDependencyNode
+        | operation_graph_model.ActionParentLastOperationNode,
+        ...,
+    ]:
         """Return dependencies required before optionally emptying and filling positions."""
         if child_operations is None:
             child_operations = operation_graph_model.ParticleChildOperations()
@@ -710,7 +714,7 @@ class OperationGraph:
         fill_dependency = self._most_recent_ancestor_chain_operation(fill_position)
 
         if empty_position is not None:
-            return self._empty_dependencies(
+            return self._move_dependencies(
                 empty_position,
                 child_operations,
                 fill_dependency,
@@ -727,18 +731,12 @@ class OperationGraph:
         self,
         empty_position: tuple[str, ...],
         child_operations: operation_graph_model.ParticleChildOperations,
-        fill_dependency: operation_graph_model.LastOperationNode | None,
         *,
         emptied_ancestor: operation_graph_model.LastOperationNode,
-    ) -> tuple[
-        operation_graph_model.LastOperationNode
-        | operation_graph_model.CallerEmptyRuleDependenciesNode,
-        ...,
-    ]:
+    ) -> tuple[operation_graph_model.EmptyRuleDependencyNode, ...]:
         """Apply the Empty Rule with the known most recent operation on the position or its parent names."""
         dependencies = child_operations.determine_empty_rule_dependencies(
             empty_position,
-            fill_dependency,
             emptied_ancestor,
         )
         if dependencies.caller_dependencies is None:
@@ -746,6 +744,70 @@ class OperationGraph:
         return (
             *dependencies.local_dependencies,
             self._add_caller_empty_rule_dependencies(dependencies.caller_dependencies),
+        )
+
+    def _move_dependencies(
+        self,
+        empty_position: tuple[str, ...],
+        child_operations: operation_graph_model.ParticleChildOperations,
+        fill_dependency: operation_graph_model.LastOperationNode | None,
+        *,
+        emptied_ancestor: operation_graph_model.LastOperationNode,
+    ) -> tuple[operation_graph_model.EmptyingOperationDependencyNode, ...]:
+        """Apply the Move Rule with the known Fill and Empty dependencies."""
+        # If only the Fill dependency comes from the caller, defer the Move Rule
+        # comparison until caller substitution.
+        if isinstance(
+            fill_dependency, operation_graph_model.RequirementNode
+        ) and not isinstance(emptied_ancestor, operation_graph_model.RequirementNode):
+            return self._move_dependencies_with_caller_fill_dependency(
+                empty_position,
+                child_operations,
+                fill_dependency,
+                emptied_ancestor,
+            )
+        dependencies = child_operations.determine_move_rule_dependencies(
+            empty_position,
+            fill_dependency,
+            emptied_ancestor,
+        )
+        if dependencies.caller_dependencies is not None:
+            return (
+                *dependencies.local_dependencies,
+                self._add_caller_empty_rule_dependencies(
+                    dependencies.caller_dependencies
+                ),
+            )
+        return dependencies.local_dependencies
+
+    def _move_dependencies_with_caller_fill_dependency(
+        self,
+        empty_position: tuple[str, ...],
+        child_operations: operation_graph_model.ParticleChildOperations,
+        fill_dependency: operation_graph_model.RequirementNode,
+        emptied_ancestor: operation_graph_model.PrecedingChildOperationNode,
+    ) -> tuple[operation_graph_model.EmptyingOperationDependencyNode, ...]:
+        """Return Move dependencies when the Fill dependency awaits its caller."""
+        dependencies = child_operations.determine_empty_rule_dependencies(
+            empty_position,
+            emptied_ancestor,
+        )
+        move_rule_comparison_positions: list[tuple[str, ...]] = []
+        for dependency in dependencies.local_dependencies:
+            move_rule_comparison_positions.extend(dependency.operated_positions)
+        node = operation_graph_model.CallerMoveRuleFillDependencyNode(
+            node_id=len(self._nodes),
+            caller_move_rule_fill_dependency=operation_graph_model.CallerMoveRuleFillDependency(
+                fill_dependency=fill_dependency,
+                requirement_position=fill_dependency.requirement_position,
+                required_state=fill_dependency.required_state,
+                move_rule_comparison_positions=tuple(move_rule_comparison_positions),
+            ),
+        )
+        self._nodes.append(node)
+        return (
+            *dependencies.local_dependencies,
+            node,
         )
 
     def _most_recent_ancestor_chain_operation(
@@ -793,7 +855,6 @@ class OperationGraph:
         """Add and return the caller contribution for emptying a required particle."""
         node = operation_graph_model.CallerEmptyRuleDependenciesNode(
             node_id=len(self._nodes),
-            depends_on=(),
             caller_empty_rule_dependencies=caller_empty_rule_dependencies,
         )
         self._nodes.append(node)
@@ -876,12 +937,11 @@ class OperationGraph:
         target: ast.PositionReference,
         child_operations: operation_graph_model.ParticleChildOperations,
         emptied_ancestor: operation_graph_model.LastOperationNode,
-    ) -> tuple[operation_graph_model.OperationNode, ...]:
+    ) -> tuple[operation_graph_model.EmptyRuleDependencyNode, ...]:
         key = target.canonical_chained_name_tuple
         return self._empty_dependencies(
             key,
             child_operations,
-            None,
             emptied_ancestor=emptied_ancestor,
         )
 

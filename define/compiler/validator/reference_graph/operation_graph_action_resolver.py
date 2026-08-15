@@ -31,10 +31,14 @@ type _CallerInputNode = (
     | operation_graph_model.RequirementNode
 )
 type _CallerInputDependencyNode = (
-    _CallerInputNode | operation_graph_model.CallerEmptyRuleDependenciesNode
+    _CallerInputNode
+    | operation_graph_model.CallerEmptyRuleDependenciesNode
+    | operation_graph_model.CallerMoveRuleFillDependencyNode
 )
 type CallerInput = (
-    _CallerInputDependencyNode | operation_graph_model.CallerEmptyRuleDependencies
+    _CallerInputDependencyNode
+    | operation_graph_model.CallerEmptyRuleDependencies
+    | operation_graph_model.CallerMoveRuleFillDependency
 )
 
 
@@ -79,6 +83,7 @@ def _append_action_dependency(
             operation_graph_model.ActionParentLastOperationNode()
             | operation_graph_model.RequirementNode()
             | operation_graph_model.CallerEmptyRuleDependenciesNode()
+            | operation_graph_model.CallerMoveRuleFillDependencyNode()
         ):
             caller_inputs.append(node)
         case operation_graph_model.GuaranteeNode():
@@ -112,36 +117,126 @@ class ResolvedActionExecutionInput:
         operation_graph_model.DestructionFragmentDestroyNode
     ] = field(default_factory=list)
 
+    @classmethod
+    def resolve(
+        cls,
+        execution: operation_graph_model.ActionExecution,
+        operation_graphs: operation_graph.OperationGraphs,
+        callee_input: CallerInput,
+    ) -> typing.Self:
+        """Resolve one callee input from the direct caller's perspective."""
+        match callee_input:
+            case operation_graph_model.CallerMoveRuleFillDependencyNode(
+                caller_move_rule_fill_dependency=caller_dependency
+            ):
+                return cls._resolve_caller_move_rule_fill_dependency(
+                    execution,
+                    operation_graphs,
+                    callee_input,
+                    caller_dependency,
+                )
+            case (
+                operation_graph_model.CallerMoveRuleFillDependency() as caller_dependency
+            ):
+                return cls._resolve_caller_move_rule_fill_dependency(
+                    execution,
+                    operation_graphs,
+                    callee_input,
+                    caller_dependency,
+                )
+            case operation_graph_model.CallerEmptyRuleDependenciesNode(
+                caller_empty_rule_dependencies=caller_dependencies
+            ):
+                return cls._resolve_caller_empty_rule_dependencies(
+                    execution,
+                    operation_graphs,
+                    callee_input,
+                    caller_dependencies,
+                )
+            case (
+                operation_graph_model.CallerEmptyRuleDependencies() as caller_dependencies
+            ):
+                return cls._resolve_caller_empty_rule_dependencies(
+                    execution,
+                    operation_graphs,
+                    callee_input,
+                    caller_dependencies,
+                )
+            case (
+                operation_graph_model.ActionParentLastOperationNode()
+                | operation_graph_model.RequirementNode()
+            ):
+                return cls._resolve_caller_input_node(
+                    execution,
+                    operation_graphs,
+                    callee_input,
+                )
+        typing.assert_never(callee_input)
 
-def resolve_action_execution_input(
-    execution: operation_graph_model.ActionExecution,
-    operation_graphs: operation_graph.OperationGraphs,
-    callee_input: CallerInput,
-) -> ResolvedActionExecutionInput:
-    """Resolve one callee input from the direct caller's perspective."""
-    if isinstance(callee_input, operation_graph_model.CallerEmptyRuleDependencies):
-        caller_empty_rule_dependencies = callee_input
-    elif isinstance(
-        callee_input, operation_graph_model.CallerEmptyRuleDependenciesNode
-    ):
-        caller_empty_rule_dependencies = callee_input.caller_empty_rule_dependencies
-    else:
+    @classmethod
+    def _resolve_caller_move_rule_fill_dependency(
+        cls,
+        execution: operation_graph_model.ActionExecution,
+        operation_graphs: operation_graph.OperationGraphs,
+        callee_input: (
+            operation_graph_model.CallerMoveRuleFillDependencyNode
+            | operation_graph_model.CallerMoveRuleFillDependency
+        ),
+        caller_dependency: operation_graph_model.CallerMoveRuleFillDependency,
+    ) -> typing.Self:
+        """Resolve one Move Rule Fill dependency from the caller's perspective."""
+        substitution = execution.substitute_caller_move_rule_fill_dependency(
+            caller_dependency
+        )
+        dependencies = ActionDependencies([], [])
+        caller_inputs: list[CallerInput] = []
+        if isinstance(substitution, operation_graph_model.CallerMoveRuleFillDependency):
+            caller_inputs.append(substitution)
+        elif substitution is not None:
+            _append_action_dependency(
+                substitution,
+                dependencies,
+                caller_inputs,
+                operation_graphs,
+            )
+        return cls(callee_input, dependencies, caller_inputs)
+
+    @classmethod
+    def _resolve_caller_empty_rule_dependencies(
+        cls,
+        execution: operation_graph_model.ActionExecution,
+        operation_graphs: operation_graph.OperationGraphs,
+        callee_input: (
+            operation_graph_model.CallerEmptyRuleDependenciesNode
+            | operation_graph_model.CallerEmptyRuleDependencies
+        ),
+        caller_dependencies: operation_graph_model.CallerEmptyRuleDependencies,
+    ) -> typing.Self:
+        """Resolve one set of Empty Rule dependencies from the caller's perspective."""
+        substitution = execution.substitute_caller_empty_rule_dependencies(
+            caller_dependencies
+        )
+        dependencies, caller_inputs = _partition_caller_dependencies(
+            substitution.dependency_nodes,
+            operation_graphs,
+        )
+        if substitution.caller_empty_rule_dependencies is not None:
+            caller_inputs.append(substitution.caller_empty_rule_dependencies)
+        return cls(callee_input, dependencies, caller_inputs)
+
+    @classmethod
+    def _resolve_caller_input_node(
+        cls,
+        execution: operation_graph_model.ActionExecution,
+        operation_graphs: operation_graph.OperationGraphs,
+        callee_input: _CallerInputNode,
+    ) -> typing.Self:
+        """Resolve one Action Parent or requirement input from the caller's perspective."""
         dependencies, caller_inputs = _partition_caller_dependencies(
             (execution.caller_dependency_for_input(callee_input),),
             operation_graphs,
         )
-        return ResolvedActionExecutionInput(callee_input, dependencies, caller_inputs)
-
-    substitution = execution.substitute_caller_empty_rule_dependencies(
-        caller_empty_rule_dependencies
-    )
-    dependencies, caller_inputs = _partition_caller_dependencies(
-        substitution.dependency_nodes,
-        operation_graphs,
-    )
-    if substitution.caller_empty_rule_dependencies is not None:
-        caller_inputs.append(substitution.caller_empty_rule_dependencies)
-    return ResolvedActionExecutionInput(callee_input, dependencies, caller_inputs)
+        return cls(callee_input, dependencies, caller_inputs)
 
 
 @typing.final
@@ -168,7 +263,7 @@ class ResolvedActionExecutionInputs:
         """Resolve the inputs and their caller-contributed destruction fragments."""
         direct_inputs: dict[CallerInput, ResolvedActionExecutionInput] = {}
         for callee_input in callee_inputs:
-            direct_inputs[callee_input] = resolve_action_execution_input(
+            direct_inputs[callee_input] = ResolvedActionExecutionInput.resolve(
                 execution,
                 operation_graphs,
                 callee_input,
@@ -221,10 +316,9 @@ class ResolvedActionExecutionInputs:
         ] = {}
         for input_index, resolved_input in enumerate(self._direct_inputs.values()):
             input_indexes[resolved_input] = input_index
-            # A RequirementNode, ActionParentLastOperationNode, or
-            # CallerEmptyRuleDependenciesNode can resolve directly to a caller
-            # Particle Operation. A contributed Destroy that follows the same
-            # Particle Operation belongs with that callee node.
+            # A caller input can resolve directly to a caller Particle Operation.
+            # A contributed Destroy that follows the same Particle Operation belongs
+            # with that callee node.
             for operation in resolved_input.caller_dependencies.local_operations:
                 _ = inputs_by_local_operation.setdefault(
                     operation,
@@ -238,9 +332,8 @@ class ResolvedActionExecutionInputs:
                     (tuple(guarantee.executions), guarantee.operation),
                     resolved_input,
                 )
-            # When the direct caller cannot satisfy the callee node, its
-            # RequirementNode, ActionParentLastOperationNode, or
-            # CallerEmptyRuleDependenciesNode is passed to the next caller.
+            # A caller input that the direct caller cannot satisfy is passed to the
+            # next caller.
             for caller_input in resolved_input.caller_input_dependencies:
                 _ = inputs_by_caller_input.setdefault(
                     caller_input,

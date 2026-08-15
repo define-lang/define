@@ -52,14 +52,12 @@ class TestExecution:
         self.execution_trigger_position_held__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_destroy_position_box = literal.Join(2)
         self.join_for_trigger_position_box__action_maker__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_maker__when_empty_position_result = literal.Join(2)
         self.join_for_trigger_position_held__action_destructor__action_parent = literal.Join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
         self.scheduler.submit(self.create_position_box__action_maker__position_run)
-        self.scheduler.submit(self.trigger_position_box__action_maker__action_parent)
-        self.trigger_position_box__action_maker__when_empty_position_result()
+        self.trigger_position_box__action_maker__action_parent()
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -121,8 +119,6 @@ class TestExecution:
         self.execution_trigger_position_box__action_maker.accept_action_parent()
 
     def trigger_position_box__action_maker__when_empty_position_result(self):
-        if not self.join_for_trigger_position_box__action_maker__when_empty_position_result.arrive():
-            return
         self.execution_trigger_position_box__action_maker.accept_when_empty_position_result()
 
     def trigger_position_held__action_destructor__action_parent(self):

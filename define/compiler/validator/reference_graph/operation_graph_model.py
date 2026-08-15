@@ -32,6 +32,10 @@ class DestructionFact:
 type PrecedingChildOperationNode = PositionOperationNode | GuaranteeNode
 type LastOperationNode = PrecedingChildOperationNode | RequirementNode
 type ActionParentOperationNode = ActionParentLastOperationNode | LastOperationNode
+type EmptyRuleDependencyNode = LastOperationNode | CallerEmptyRuleDependenciesNode
+type EmptyingOperationDependencyNode = (
+    EmptyRuleDependencyNode | CallerMoveRuleFillDependencyNode
+)
 type PrecedingChildOperations = Iterable[
     tuple[tuple[str, ...], PrecedingChildOperationNode]
 ]
@@ -208,10 +212,34 @@ class ParticleChildOperations:
     def determine_empty_rule_dependencies(
         self,
         empty_position: tuple[str, ...],
+        emptied_ancestor: LastOperationNode,
+    ) -> _EmptyRuleDependencies:
+        """Return dependencies required by the Empty Rule."""
+        return self._determine_emptying_dependencies(
+            empty_position,
+            None,
+            emptied_ancestor,
+        )
+
+    def determine_move_rule_dependencies(
+        self,
+        empty_position: tuple[str, ...],
         fill_dependency: LastOperationNode | None,
         emptied_ancestor: LastOperationNode,
     ) -> _EmptyRuleDependencies:
-        """Return the local and caller dependencies required by the Empty Rule."""
+        """Return dependencies required by the Move Rule."""
+        return self._determine_emptying_dependencies(
+            empty_position,
+            fill_dependency,
+            emptied_ancestor,
+        )
+
+    def _determine_emptying_dependencies(
+        self,
+        empty_position: tuple[str, ...],
+        fill_dependency: LastOperationNode | None,
+        emptied_ancestor: LastOperationNode,
+    ) -> _EmptyRuleDependencies:
         candidates: set[LastOperationNode] = set()
         caller_dependencies: CallerEmptyRuleDependencies | None = None
         # The action received the particle in the state declared by a position
@@ -276,7 +304,7 @@ class CallerEmptyRuleDependencies:
 
 @dataclass(frozen=True, slots=True)
 class _EmptyRuleDependencies:
-    """Local and caller dependencies required by the Empty Rule."""
+    """Local and caller dependencies required by the Empty or Move Rule."""
 
     local_dependencies: tuple[LastOperationNode, ...]
     caller_dependencies: CallerEmptyRuleDependencies | None
@@ -286,8 +314,31 @@ class _EmptyRuleDependencies:
 class CallerEmptyRuleSubstitution:
     """The result of substituting caller bindings into CallerEmptyRuleDependencies."""
 
+    # TODO: Move caller_empty_rule_dependencies to a
+    # PartialCallerEmptyRuleSubstitution subclass where it is non-optional. The base
+    # class should retain dependency_nodes because every substitution produces them;
+    # a base instance means resolution is complete, while the subclass means one
+    # caller supplied concrete dependencies and resolution must continue through an
+    # earlier caller.
     dependency_nodes: tuple[LastOperationNode, ...]
     caller_empty_rule_dependencies: CallerEmptyRuleDependencies | None
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CallerMoveRuleFillDependency:
+    """A Fill dependency awaiting the Move Rule comparison in a caller."""
+
+    fill_dependency: ActionParentLastOperationNode | RequirementNode
+    # TODO: Extract these two fields into a shared operation-graph requirement
+    # value and migrate RequirementNode and caller-input consumers together. Keeping
+    # them flat here avoids broadening the Move Rule fix into a requirement-model
+    # refactor.
+    requirement_position: tuple[str, ...]
+    required_state: PositionOccupancyState
+    # Retained across caller substitutions because the Move Rule cannot apply the
+    # Empty Rule comparison until the caller's Fill dependency becomes a Particle
+    # Operation with known operated positions.
+    move_rule_comparison_positions: tuple[tuple[str, ...], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -448,6 +499,42 @@ class ActionExecution:
             ),
         )
 
+    def substitute_caller_move_rule_fill_dependency(
+        self,
+        caller_dependency: CallerMoveRuleFillDependency,
+    ) -> PrecedingChildOperationNode | CallerMoveRuleFillDependency | None:
+        """Substitute the Fill dependency and apply the Move Rule comparison."""
+        fill_dependency = self.caller_dependency_for_input(
+            caller_dependency.fill_dependency
+        )
+        move_rule_comparison_positions = tuple(
+            ast.chain_in_caller(self.action_chain, position)
+            for position in caller_dependency.move_rule_comparison_positions
+        )
+        if isinstance(fill_dependency, (PositionOperationNode, GuaranteeNode)):
+            for fill_position in fill_dependency.operated_positions:
+                if any(
+                    _shares_path(fill_position, comparison_position)
+                    for comparison_position in move_rule_comparison_positions
+                ):
+                    # The Fill dependency is concrete and the Empty Rule excludes it
+                    # in favor of a more recent related dependency.
+                    return None
+            # The Fill dependency is concrete and remains a direct dependency because
+            # no more recent dependency operates on a related position.
+            return fill_dependency
+        # The Fill dependency is still caller-controlled, so carry the comparison
+        # state to the next caller substitution.
+        return CallerMoveRuleFillDependency(
+            fill_dependency=fill_dependency,
+            requirement_position=ast.chain_in_caller(
+                self.action_chain,
+                caller_dependency.requirement_position,
+            ),
+            required_state=caller_dependency.required_state,
+            move_rule_comparison_positions=move_rule_comparison_positions,
+        )
+
     @staticmethod
     def _occupied_requirement_position(
         binding: RequirementBinding,
@@ -498,7 +585,7 @@ class OperationNode(abc.ABC):
 class ActionParentLastOperationNode(OperationNode):
     """The caller's last operation on this action's parent position or its transitive parents."""
 
-    depends_on: tuple[()]
+    depends_on: tuple[()] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
@@ -547,7 +634,7 @@ class DestructionFactDestroyNode(DestroyNode):
 
     destruction_fact: DestructionFact
     destruction_position: tuple[str, ...]
-    dependencies_before_caller_contribution: tuple[OperationNode, ...]
+    dependencies_before_caller_contribution: tuple[EmptyRuleDependencyNode, ...]
     dependencies_after_caller_contribution: tuple[PrecedingChildOperationNode, ...]
 
 
@@ -592,6 +679,7 @@ class DestructionContribution:
 class DestructionContributionNode(OperationNode):
     """Connects preceding caller operations to the first Destroy in one contribution."""
 
+    depends_on: tuple[EmptyRuleDependencyNode, ...]
     execution: ActionExecution
     destruction_fact: DestructionFact
     callee_destroy_position: tuple[str, ...]
@@ -629,7 +717,7 @@ class ContributedDestruction:
 class ContributedDestructionFragment:
     """Ordinary Destroy operations contributed around one direct Action Execution."""
 
-    contribution_dependencies: tuple[OperationNode, ...]
+    contribution_dependencies: tuple[EmptyRuleDependencyNode, ...]
     operations: tuple[DestructionFragmentDestroyNode, ...]
     contributed_destructions: tuple[ContributedDestruction, ...]
 
@@ -705,5 +793,13 @@ class CallerEmptyRuleDependenciesNode(OperationNode):
     while caller requirement bindings are substituted.
     """
 
-    depends_on: tuple[()]
+    depends_on: tuple[()] = ()
     caller_empty_rule_dependencies: CallerEmptyRuleDependencies
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class CallerMoveRuleFillDependencyNode(OperationNode):
+    """A Move Rule Fill dependency that must be compared after caller substitution."""
+
+    depends_on: tuple[()] = ()
+    caller_move_rule_fill_dependency: CallerMoveRuleFillDependency

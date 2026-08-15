@@ -43,7 +43,6 @@ class TestExecution:
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
         self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box = literal.Join(2)
         self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run = literal.Join(2)
-        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_final = literal.Join(2)
 
     def create_action_runner__position_wrapper(self):
         self.action.on_particle.get_action(
@@ -52,8 +51,7 @@ class TestExecution:
             "position<wrapper>"
         ).create_particle()
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
-        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final()
+        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -87,6 +85,4 @@ class TestExecution:
         self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_run()
 
     def trigger_action_runner__when_empty_position_wrapper__action_middle__position_final(self):
-        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_final.arrive():
-            return
         self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_final()

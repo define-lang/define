@@ -8,8 +8,8 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
-    "Operation Graph contains a direct dependency already reachable through another "
-    "dependency path"
+    "The Move Rule retains a Fill dependency already reachable through Moves on "
+    "disjoint positions"
 )
 
 
@@ -173,7 +173,6 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -195,10 +194,7 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
             "child.create(result)",
             "test.create(gateway::/middle::source::/marker)",
         ],
-        "middle.move(intermediate, holder)": [
-            "middle.move(source, intermediate)",
-            "test.create(gateway)",
-        ],
+        "middle.move(intermediate, holder)": ["middle.move(source, intermediate)"],
         "test.move(gateway::/middle::holder::/child::result, result)": [
             "middle.move(intermediate, holder)"
         ],
@@ -441,6 +437,25 @@ def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
         "producer.move(input, result)": ["test.create(/box::/producer::input)"],
         "test.move(/box::/producer::result, /box::/destination)": [
             "producer.move(input, result)"
+        ],
+    }
+
+
+def test_move_excludes_non_action_parent_guarantee_fill_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/producer::trigger_pos)": [],
+        "producer.move(/input, /box)": ["test.create(/input)"],
+        "test.create(/consumer::trigger_pos)": [],
+        "consumer.create(/box::/item)": ["producer.move(/input, /box)"],
+        # The guaranteed Move is already reachable through the more recent child Create,
+        # so the Move Rule excludes it after caller substitution.
+        "consumer.move(/box::/item, /box::/destination)": [
+            "consumer.create(/box::/item)"
         ],
     }
 
