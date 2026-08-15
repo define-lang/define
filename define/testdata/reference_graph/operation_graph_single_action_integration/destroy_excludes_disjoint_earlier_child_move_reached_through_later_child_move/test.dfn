@@ -1,0 +1,26 @@
+# The particle leaves origin, passes through two other child positions, and then
+# leaves box. Destroying box should depend only on the final Move because that Move
+# already depends on the Move that emptied origin.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<holder_a>.
+    define the position<holder_c>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</origin>.
+            it has the position</middle>.
+            it has the position</target>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::position</origin>.
+        move the particle in position<box>::position</origin> to position<holder_a>.
+        move the particle in position<holder_a> to position<box>::position</middle>.
+        move the particle in position<box>::position</middle> to position<box>::position</target>.
+        move the particle in position<box>::position</target> to position<holder_c>.
+        destroy the particle in position<box>.
+        destroy the particle in position<holder_c>.
+    }
+}

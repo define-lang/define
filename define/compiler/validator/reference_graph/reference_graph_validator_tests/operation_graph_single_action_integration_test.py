@@ -10,6 +10,10 @@ _DISJOINT_MOVE_CHAIN_RETAINS_REACHABLE_FILL_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
     "disjoint positions"
 )
+_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
+    "The Empty Rule retains a child dependency already reachable through a later "
+    "operation on a disjoint child position"
+)
 
 
 def test_single_create(
@@ -221,6 +225,29 @@ def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
         "test.move(box::/target, holder)": ["test.move(box::/origin, box::/target)"],
         "test.destroy(box)": ["test.move(box::/target, holder)"],
         "test.destroy(holder)": ["test.move(box::/target, holder)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
+)
+def test_destroy_excludes_disjoint_earlier_child_move_reached_through_later_child_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(box)": [],
+        "test.create(box::/origin)": ["test.create(box)"],
+        "test.move(box::/origin, holder_a)": ["test.create(box::/origin)"],
+        "test.move(holder_a, box::/middle)": ["test.move(box::/origin, holder_a)"],
+        "test.move(box::/middle, box::/target)": ["test.move(holder_a, box::/middle)"],
+        "test.move(box::/target, holder_c)": ["test.move(box::/middle, box::/target)"],
+        # The final child Move already reaches the Move that emptied origin, so the
+        # Empty Rule excludes the earlier Move from the Destroy's dependencies.
+        "test.destroy(box)": ["test.move(box::/target, holder_c)"],
+        "test.destroy(holder_c)": ["test.move(box::/target, holder_c)"],
     }
 
 

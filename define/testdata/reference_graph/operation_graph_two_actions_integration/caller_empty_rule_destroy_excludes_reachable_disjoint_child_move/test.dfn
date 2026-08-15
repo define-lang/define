@@ -1,0 +1,21 @@
+# Caller substitution receives operations on origin and target. The target Move
+# already depends on the origin Move even though their operated positions are
+# disjoint, so the callee Destroy should depend only on the target Move.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</input>.
+    it also assigns the action</other>.
+    define the position<holder_a>.
+    define the position<holder_c>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</input>.
+        create a particle in position</input>::position</origin>.
+        move the particle in position</input>::position</origin> to position<holder_a>.
+        move the particle in position<holder_a> to position</input>::position</middle>.
+        move the particle in position</input>::position</middle> to position</input>::position</target>.
+        move the particle in position</input>::position</target> to position<holder_c>.
+        destroy the particle in position<holder_c>.
+        create a particle in action</other>::position<trigger_pos>.
+    }
+}

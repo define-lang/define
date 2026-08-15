@@ -11,6 +11,10 @@ _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
     "disjoint positions"
 )
+_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
+    "Caller Empty Rule substitution retains a child dependency already reachable "
+    "through a later operation on a disjoint child position"
+)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -310,6 +314,46 @@ def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
         "inner.move(/input, /destination)": [
             "middle.move(/destination, /input::/marker)"
         ],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
+)
+def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitutions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/origin)": ["test.create(/input)"],
+        "test.move(/input::/origin, holder_a)": ["test.create(/input::/origin)"],
+        "test.move(holder_a, /input::/middle)": [
+            "test.move(/input::/origin, holder_a)"
+        ],
+        "test.move(/input::/middle, /input::/target)": [
+            "test.move(holder_a, /input::/middle)"
+        ],
+        "test.move(/input::/target, holder_c)": [
+            "test.move(/input::/middle, /input::/target)"
+        ],
+        "test.destroy(holder_c)": ["test.move(/input::/target, holder_c)"],
+        "test.create(/middle_action::trigger_pos)": [],
+        "middle_action.create(/input::/marker)": ["test.create(/input)"],
+        "middle_action.destroy(/input::/marker)": [
+            "middle_action.create(/input::/marker)"
+        ],
+        "middle_action.create(/inner::trigger_pos)": [],
+        # The final caller child Move already reaches the Move that emptied origin.
+        # The dependency remains unresolved through middle_action, then the second
+        # caller substitution excludes the earlier Move from this Move.
+        "inner.move(/input, holder)": [
+            "middle_action.destroy(/input::/marker)",
+            "test.move(/input::/target, holder_c)",
+        ],
+        "inner.destroy(holder)": ["inner.move(/input, holder)"],
     }
 
 

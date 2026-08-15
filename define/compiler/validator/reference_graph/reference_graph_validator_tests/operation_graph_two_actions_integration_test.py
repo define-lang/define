@@ -1,3 +1,5 @@
+import pytest
+
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -5,6 +7,10 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
+    "Caller Empty Rule substitution retains a child dependency already reachable "
+    "through a later operation on a disjoint child position"
+)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -135,6 +141,97 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
             "test.create(gateway::/other::input::/item::/deep)"
         ],
         "other.destroy(input::/item)": ["other.destroy(input::/item::/deep)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
+)
+def test_caller_empty_rule_destroy_excludes_reachable_disjoint_child_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/origin)": ["test.create(/input)"],
+        "test.move(/input::/origin, holder_a)": ["test.create(/input::/origin)"],
+        "test.move(holder_a, /input::/middle)": [
+            "test.move(/input::/origin, holder_a)"
+        ],
+        "test.move(/input::/middle, /input::/target)": [
+            "test.move(holder_a, /input::/middle)"
+        ],
+        "test.move(/input::/target, holder_c)": [
+            "test.move(/input::/middle, /input::/target)"
+        ],
+        "test.destroy(holder_c)": ["test.move(/input::/target, holder_c)"],
+        "test.create(/other::trigger_pos)": [],
+        # The final caller child Move already reaches the Move that emptied origin,
+        # so caller substitution excludes the earlier Move from this Destroy.
+        "other.destroy(/input)": ["test.move(/input::/target, holder_c)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
+)
+def test_caller_empty_rule_move_excludes_reachable_disjoint_child_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/origin)": ["test.create(/input)"],
+        "test.move(/input::/origin, holder_a)": ["test.create(/input::/origin)"],
+        "test.move(holder_a, /input::/middle)": [
+            "test.move(/input::/origin, holder_a)"
+        ],
+        "test.move(/input::/middle, /input::/target)": [
+            "test.move(holder_a, /input::/middle)"
+        ],
+        "test.move(/input::/target, holder_c)": [
+            "test.move(/input::/middle, /input::/target)"
+        ],
+        "test.destroy(holder_c)": ["test.move(/input::/target, holder_c)"],
+        "test.create(/other::trigger_pos)": [],
+        # The final caller child Move already reaches the Move that emptied origin,
+        # so caller substitution excludes the earlier Move from this Move.
+        "other.move(/input, holder)": ["test.move(/input::/target, holder_c)"],
+        "other.destroy(holder)": ["other.move(/input, holder)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
+)
+def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/origin)": ["test.create(/input)"],
+        "test.move(/input::/origin, /input::/start)": ["test.create(/input::/origin)"],
+        "test.create(/other::trigger_pos)": [],
+        "other.move(/input::/start, /input::/middle)": [
+            "test.move(/input::/origin, /input::/start)"
+        ],
+        "other.move(/input::/middle, /input::/target)": [
+            "other.move(/input::/start, /input::/middle)"
+        ],
+        "other.move(/input::/target, holder)": [
+            "other.move(/input::/middle, /input::/target)"
+        ],
+        # The final local child Move reaches the caller Move through the local Move
+        # chain, so the Empty Rule excludes the caller Move from this Destroy.
+        "other.destroy(/input)": ["other.move(/input::/target, holder)"],
+        "other.destroy(holder)": ["other.move(/input::/target, holder)"],
     }
 
 

@@ -1,0 +1,8 @@
+define the potential position<my.domain.com:my_lib:/input> {
+    it may only contain particles where {
+        it has the position</origin>.
+        it has the position</middle>.
+        it has the position</target>.
+        it has the position</marker>.
+    }
+}

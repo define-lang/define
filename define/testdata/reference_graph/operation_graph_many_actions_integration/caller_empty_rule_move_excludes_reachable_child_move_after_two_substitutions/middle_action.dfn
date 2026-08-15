@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/middle_action> {
+    it also assigns the position</input>.
+    it also assigns the action</inner>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position</input>::position</marker>.
+        destroy the particle in position</input>::position</marker>.
+        create a particle in action</inner>::position<trigger_pos>.
+    }
+}
