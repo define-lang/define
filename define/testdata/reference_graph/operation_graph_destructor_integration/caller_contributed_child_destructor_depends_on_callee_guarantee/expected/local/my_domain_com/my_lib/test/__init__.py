@@ -57,6 +57,7 @@ class TestExecution:
         self.trigger_action_destroyer_destruction_connections: literal.DestructionConnections
         self.destruction_position_action_destroyer__position_parent__global_position_sibling: literal.Position
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = literal.Join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_parent = literal.Join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = literal.Join(2)
 
     def create_position_source(self):
@@ -72,6 +73,7 @@ class TestExecution:
             )
         )
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_parent)
         self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result()
 
     def create_action_destroyer__position_trigger_pos(self):
@@ -122,6 +124,8 @@ class TestExecution:
         self.execution_trigger_action_destroyer.accept_when_empty_position_parent__action_maker__position_trigger_pos()
 
     def trigger_action_destroyer__for_empty_rule_position_parent(self):
+        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_parent.arrive():
+            return
         self.execution_trigger_action_destroyer.accept_for_empty_rule_position_parent()
 
     def trigger_action_destroyer__when_empty_position_parent__action_maker__position_result(self):

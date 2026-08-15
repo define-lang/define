@@ -105,13 +105,15 @@ class TestMoveSubtree:
         t[("a",)] = 1
         t[("a", "x")] = 2
         t[("a", "y")] = 3
-        t.move_subtree(("a",), ("b",))
+        moved_values: list[int] = []
+        t.move_subtree(("a",), ("b",), moved_value_callback=moved_values.append)
         assert ("a",) not in t
         assert ("a", "x") not in t
         assert ("a", "y") not in t
         assert t[("b",)] == 1
         assert t[("b", "x")] == 2
         assert t[("b", "y")] == 3
+        assert set(moved_values) == {1, 2, 3}
 
     def test_move_deeply_nested_children(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()

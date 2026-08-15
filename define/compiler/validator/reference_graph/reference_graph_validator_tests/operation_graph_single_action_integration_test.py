@@ -14,10 +14,6 @@ _EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
     "The Empty Rule retains a child dependency already reachable through a later "
     "operation on a disjoint child position"
 )
-_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES = (
-    "The Empty Rule retains a child operation dependency already reachable through "
-    "later Moves of its parent particle"
-)
 _MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET = (
     "The Move Rule retains an operation required to fill its target even when that "
     "operation is already reachable through a source dependency"
@@ -316,10 +312,6 @@ def test_destroy_excludes_disjoint_earlier_child_move_reached_through_later_chil
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
-)
 def test_move_excludes_create_on_child_reached_through_parent_move_chain(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -337,10 +329,6 @@ def test_move_excludes_create_on_child_reached_through_parent_move_chain(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
-)
 def test_move_excludes_transitive_child_create_reached_through_parent_move_chain(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -360,10 +348,6 @@ def test_move_excludes_transitive_child_create_reached_through_parent_move_chain
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_EMPTY_RULE_RETAINS_REACHABLE_CHILD_OPERATION_AFTER_PARENT_MOVES,
-)
 def test_destroy_excludes_child_destroy_reached_through_parent_move_chain(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

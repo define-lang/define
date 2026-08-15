@@ -120,12 +120,20 @@ class StrictReparentingTrie[V]:
             _ = self._children.pop(node, None)
         self._unlink_from_parent(key)
 
-    def move_subtree(self, source: TrieKey, target: TrieKey):
+    def move_subtree(
+        self,
+        source: TrieKey,
+        target: TrieKey,
+        *,
+        moved_value_callback: Callable[[V], None] | None = None,
+    ):
         """Detach the subtree at source and reattach it at target.
 
         The source key must exist. The target key must not already exist.
         The target's parent must exist (strict tries) or be auto-created
         (lenient tries). All descendants of source become descendants of target.
+        If provided, ``moved_value_callback`` is called for every moved value
+        after reparenting is complete.
 
         Raises KeyError if source doesn't exist or target's parent doesn't exist.
         Raises TargetExistsError if target already exists.
@@ -160,6 +168,9 @@ class StrictReparentingTrie[V]:
 
         self._unlink_from_parent(source)
         self._children.setdefault(target[:-1], set()).add(target)
+        if moved_value_callback is not None:
+            for _, value, _ in moved:
+                moved_value_callback(value)
 
     def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
         """Detach the subtree at key and return it as a new trie.

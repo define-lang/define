@@ -49,7 +49,6 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_destroy_position_holder_b = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -65,10 +64,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
-        self.scheduler.submit(self.move_position_box_to_position_holder_a)
-        self.destroy_position_holder_b()
-
-    def move_position_box_to_position_holder_a(self):
         self.action.get_interface_position(
             "position<box>"
         ).move_particle_to(
@@ -83,11 +78,6 @@ class TestExecution:
                 "position<holder_b>"
             )
         )
-        self.destroy_position_holder_b()
-
-    def destroy_position_holder_b(self):
-        if not self.join_for_destroy_position_holder_b.arrive():
-            return
         self.action.get_interface_position(
             "position<holder_b>"
         ).destroy_particle()

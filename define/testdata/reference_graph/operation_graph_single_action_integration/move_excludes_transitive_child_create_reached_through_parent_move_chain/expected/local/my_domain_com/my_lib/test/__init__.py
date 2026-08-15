@@ -57,7 +57,6 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_move_position_holder_b_to_position_holder_c = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -75,10 +74,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.deep.Deep
         ).create_particle()
-        self.scheduler.submit(self.move_position_box_to_position_holder_a)
-        self.move_position_holder_b_to_position_holder_c()
-
-    def move_position_box_to_position_holder_a(self):
         self.action.get_interface_position(
             "position<box>"
         ).move_particle_to(
@@ -93,11 +88,6 @@ class TestExecution:
                 "position<holder_b>"
             )
         )
-        self.move_position_holder_b_to_position_holder_c()
-
-    def move_position_holder_b_to_position_holder_c(self):
-        if not self.join_for_move_position_holder_b_to_position_holder_c.arrive():
-            return
         self.action.get_interface_position(
             "position<holder_b>"
         ).move_particle_to(

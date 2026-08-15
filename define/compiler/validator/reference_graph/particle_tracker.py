@@ -1080,8 +1080,21 @@ class ParticleTracker:
             # The target may already exist as an empty node (previously
             # destroyed). Delete it before moving so move_subtree succeeds.
             del self._store.state[to_key]
-        self._store.state.move_subtree(from_key, to_key)
-        self._store.state[to_key].operation_node = operation_node
+
+        # Empty Rule Collection treats this Move as the most recent Particle
+        # Operation on every transitive child position of the moved particle.
+        def record_move_on_position(moved_state: _NodeState):
+            if (
+                moved_state.particle_info is not None
+                or moved_state.emptied_by is not None
+            ):
+                moved_state.operation_node = operation_node
+
+        self._store.state.move_subtree(
+            from_key,
+            to_key,
+            moved_value_callback=record_move_on_position,
+        )
         self._store.state[from_key] = _NodeState(
             emptied_by=source, operation_node=operation_node
         )
