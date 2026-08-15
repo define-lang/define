@@ -3,17 +3,85 @@ import Std
 set_option autoImplicit false
 
 /-!
-This file formalizes the Particle Operation Dependency Graph minimality proof in
-`particle-operation-dependency-graph-minimality-proof.md`.
+# Particle Operation Dependency Graph Minimality
 
-The final theorem is intentionally about the dependency relation produced by
-Define's rules, rather than an arbitrary directed acyclic graph. The generic
-lemmas in the first section establish the graph-theoretic conclusion that the
-Define-specific part must supply.
+This file formalizes the English proof in
+`particle-operation-dependency-graph-minimality-proof.md`. The English proof is
+the source of the mathematical argument; the definitions and theorems here
+encode that argument for Lean to check.
 
-The vertex type has only concrete Particle Operations. Action Requirements,
-Action Guarantees, Action Parent inputs, and modular destruction values are
-therefore resolved before they can participate in the relation proved below.
+## Formalization boundary
+
+Positions are finite chained names. Graph vertices are only concrete Create,
+Destroy, and Move Particle Operations. Action Requirements, Action Guarantees,
+Action Parent inputs, and modular destruction values are resolved before they
+can participate in the dependency relation.
+
+`RuleCalculation` encodes the current rules in this order:
+
+1. the Empty Rule Collection and optional Fill Dependency;
+2. the simultaneous Comparison;
+3. the Empty Rule's Move Correction;
+4. the Move Rule's Fill Dependency removal; and
+5. the Action Parent Rule when the preceding result is empty.
+
+`RuleGraph.exact_dependency` requires an edge exactly when this calculation
+retains the dependency. The generic graph lemmas establish that adding a vertex
+whose dependencies form a reachability antichain preserves transitive
+minimality. The Define-specific theorems prove that every `RuleCalculation`
+produces such an antichain.
+
+No premise states that direct dependencies form an antichain, that an edge is
+necessary, that the graph is acyclic, or that the graph is transitively minimal.
+Every edge is proved to point to a previous operation, from which acyclicity is
+derived.
+
+## Relation to valid Define programs
+
+`ResolvedDefineGraph` records consequences of valid Define execution:
+
+- candidates are previous concrete Particle Operations with their specified
+  position provenance;
+- the position history supplies a candidate at least as recent as every
+  applicable earlier operation;
+- Create, Destroy, and Move have their specified occupancy transitions; and
+- the Action Parent position relationship holds across an Action Execution.
+
+The conversion from a valid Define program to `ResolvedDefineGraph` is not
+itself machine-checked because the complete Define source and validation
+semantics are not modeled in Lean. The machine-checked theorem begins with a
+`ResolvedDefineGraph` whose fields state the consequences listed above; the
+English proof establishes that valid Define programs have those consequences.
+
+A finite valid Define program supplies this structure by assigning a distinct
+order number to every resolved Particle Operation occurrence and encoding each
+fully resolved position as a finite chained name. Caller binding preserves and
+reflects equality and transitive parent/child relationships. The occupancy state
+immediately before each occurrence supplies `ExactOccupancyExecution`. Caller
+and destruction resolution contribute only the concrete Particle Operations and
+ordinary rule calculations described by the English proof.
+
+The structure omits validity constraints unrelated to dependency minimality.
+It can therefore describe abstract values that no valid Define program produces,
+but every valid program satisfies the obligations used by the theorem. Proving
+the theorem for this larger class strengthens the result; those abstract values
+do not supply a premise for the valid-program case.
+
+The non-Move source-candidate result is derived from occupancy transitions. In
+particular, after an earlier Create or Destroy on a strict parent position, an
+occupied source must have changed from empty to occupied at an intervening
+operation. The most-recent entry for that operation's position excludes the
+earlier candidate. The remaining cases cover Move dependencies, the Fill
+Dependency, and the Action Parent Rule.
+
+Caller-prefix resolution is injective and preserves position relationships,
+Particle Operation kinds, operation order, and dependency paths. The final
+theorem concerns a completely resolved graph, so automatic and contributed
+Destroy Particle Statements use the same Destroy case.
+
+The separate witness file constructs a nonempty valid occupancy execution with
+a Create-to-Destroy dependency. It demonstrates that the semantic obligations
+are jointly satisfiable without supplying any theorem premise.
 -/
 
 namespace Define.OperationGraph

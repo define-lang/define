@@ -15,7 +15,7 @@ Guarantee is resolved to its concrete contribution, if any, and every automatic
 or contributed Destroy Particle Statement is included before the graph is
 considered complete.
 
-The corresponding executable proof is
+A Lean formalization of this proof exists in
 [`particle_operation_dependency_graph_minimality.lean`](particle_operation_dependency_graph_minimality.lean).
 
 ## Definitions
@@ -544,120 +544,6 @@ perspective. Values used by a modular compiler to connect the contributions are
 not Particle Operations and are not vertices of the complete graph. Destruction
 therefore introduces no additional case in the antichain proof.
 
-## Semantic Model Lemma
-
-Every finite valid Define program, after caller and destruction resolution,
-gives an instance of the `ResolvedDefineGraph` structure used by the Lean proof.
-
-### Proof
-
-Give every concrete Particle Operation occurrence its own number, including two
-occurrences of the same statement reached through different Action Executions.
-The semantic state changes of a valid program can be sequentialized while
-preserving every ordering denoted by “previous”; choose one such finite order.
-This number is both the occurrence's identity in the model and its order. The
-choice does not impose source-code execution order: Particle Operations that are
-allowed to execute concurrently can be placed in either permitted order.
-
-Use an injective numeric encoding of each fully resolved position identity as
-its position value. Names local to an Action Execution include that execution's
-identity, while a contracted position resolves to the caller position to which
-it is bound. A caller binding therefore replaces one contracted-position prefix
-with its caller-position prefix and preserves and reflects equality and
-transitive parent/child relationships within that binding. Operation occurrence
-numbers keep operations from different Action Executions distinct even if their
-statements and resolved position names are otherwise equal.
-
-For each occurrence `O`, define its rule calculation directly from the
-specification:
-
-- its source candidates are the most-recent entries selected for `E(s)`, tagged
-  by the positions for which they were selected;
-- its optional Fill candidate is `F(t)`;
-- its optional Action Parent candidate is the operation selected by the Action
-  Parent Rule; and
-- its final dependencies are exactly the candidates left by the simultaneous
-  Comparison, the Move Correction, the Move Rule's Fill Dependency removal, and
-  the Action Parent fallback, in that order.
-
-The Lean types contain structurally possible Particle Operation values that are
-not occurrences in this program. Give each such value an empty candidate set and
-no dependency. This makes the formal functions total without adding a graph
-vertex or a semantic premise.
-
-This immediately gives the formal rule equation. It also gives the cases for
-each operation kind required by that equation: a Create has only a Fill
-calculation, a Destroy has only an Empty calculation, and a Move has both source
-and target calculations. There is at most one Fill candidate and at most one
-Action Parent candidate because both rules choose a single most recent
-operation.
-
-The source-candidate obligations follow from the definition of `E(s)`. The
-tagged position is related to `s`; a non-Move candidate operates on exactly that
-position; and a Move candidate operates on that position or a transitive parent
-position by the candidate-position invariant. Every candidate is a previous
-concrete operation. Most importantly, if a previous operation directly operates
-on any position considered by `E(s)`, that position's most-recent entry is
-either that operation or a more recent one. This is the formal
-`latest_source_candidate` obligation; it is a position-history fact and says
-nothing about reachability or minimality.
-
-The Fill obligations follow directly from `F(t)`: if it exists, it is a previous
-concrete operation on `t` or a transitive parent position of `t`. The Action
-Parent obligations follow in the same way. From the resolved caller's
-perspective, every position operated on by an Action Execution is the same as or
-a transitive child position of that action's parent position. Thus the Action
-Parent candidate's position is related to every position of the operation that
-uses it.
-
-Take `occupiedBefore(n, p)` from the valid program state immediately before
-occurrence number `n`. Position-reference validity gives parent occupancy and
-the required occupied source and empty target preconditions. Create fills its
-target, Destroy empties its target and transitive child positions, and Move
-relocates the occupied source particle together with its transitive child
-positions to the target. These are exactly the transitions in
-`ExactOccupancyExecution`. An unused number, if the numbering has one, leaves
-occupancy unchanged. None of these obligations mentions graph reachability.
-
-The resolution lemma shows that Action Requirements, Action Guarantees, and the
-Action Parent input produce exactly these concrete candidates. For destruction,
-each automatic or contributed operation is an ordinary concrete Destroy. A
-modular connection before a contribution resolves to the concrete candidates
-that precede the first contributed Destroy; a connection after a contribution
-resolves to the last concrete child-position operations seen by the contracted
-Destroy's Empty calculation. The connection value itself then disappears. Thus
-destruction resolution adds concrete Destroy occurrences and their ordinary rule
-calculations, but no additional vertex or edge kind.
-
-All fields of `ResolvedDefineGraph` have now been obtained from valid Define
-semantics. In particular, neither the reachability-antichain conclusion nor any
-equivalent minimality premise was used. ∎
-
-### Validity boundary
-
-The Semantic Model Lemma starts with a valid Define program. Its construction
-uses only the operation occurrences and states that the program's validity
-permits: every Move source and Destroy position is occupied, every Move target
-and Create position is empty, every referenced transitive parent position is
-occupied, and every caller input resolves according to its requirement,
-guarantee, or Action Parent relationship. It never introduces an operation
-sequence merely to make a proof case possible.
-
-`ResolvedDefineGraph` deliberately omits validity conditions that are unrelated
-to dependency minimality. For example, its types can describe an abstract Move
-with no Fill candidate even though a valid Move cannot reach caller resolution
-in that state. Such values enlarge the universal theorem's domain; they are not
-used by the Semantic Model Lemma and are not assumptions about valid Define
-programs. Proving the result for those extra values cannot supply a missing
-premise in the valid-program case.
-
-The Lean theorem file contains no concrete witnesses. The separate
-[`particle_operation_dependency_graph_minimality_witnesses.lean`](particle_operation_dependency_graph_minimality_witnesses.lean)
-file imports the theorem, so a witness cannot supply any premise to it. The
-witness itself has a valid operation history: an entry action creates its
-assigned implied position and then destroys it, as in the
-[`create_and_destroy_of_an_implied_position` test](../define/testdata/reference_graph/operation_graph_single_action_integration/create_and_destroy_of_an_implied_position/test.dfn).
-
 ## Whole-rule-set Theorem
 
 The Particle Operation Dependency Graph produced by the specified rules is a
@@ -685,67 +571,6 @@ complete graph is transitively reduced. ∎
 
 Because a finite directed acyclic graph has a unique transitive reduction, this
 is the unique graph with the same dependency reachability and no redundant edge.
-
-## Machine-checked proof boundary
-
-From the repository directory, check the executable proof with:
-
-```text
-mkdir -p /tmp/define-operation-graph-proof/proofs
-lean -t0 -DwarningAsError=true -o /tmp/define-operation-graph-proof/proofs/particle_operation_dependency_graph_minimality.olean proofs/particle_operation_dependency_graph_minimality.lean
-env LEAN_PATH=/tmp/define-operation-graph-proof lean -t0 -DwarningAsError=true proofs/particle_operation_dependency_graph_minimality_witnesses.lean
-```
-
-The Lean proof represents positions as finite chained names and represents only
-concrete Create, Destroy, and Move Particle Operations as graph vertices. Its
-rule calculation is definitionally the following complete sequence:
-
-1. the Empty Rule Collection and optional Fill dependency;
-2. the simultaneous Comparison;
-3. the Empty Rule's Move Correction;
-4. the Move Rule's Fill Dependency removal; and
-5. the Action Parent fallback exactly when the preceding result is empty.
-
-The relation `RuleGraph.exact_dependency` states that an edge exists if and only
-if this calculation retains its dependency. The semantic obligations in
-`ResolvedDefineGraph` are direct consequences of valid Define execution:
-candidates are previous concrete Particle Operations with the specified position
-provenance, the position history returns a candidate at least as recent as every
-applicable earlier operation, and Create, Destroy, and Move have their exact
-occupancy transitions. The Action Parent position relationship is stated
-separately because it crosses an Action Execution boundary.
-
-The structure omits validity constraints that are irrelevant to this theorem.
-That omission enlarges the class of graphs covered by Lean: every graph produced
-by exact valid Define semantics satisfies these obligations, while some abstract
-graphs satisfying them need not come from source code. Proving minimality for
-that larger class strengthens the conclusion and cannot make it vacuous.
-
-No premise says that direct dependencies form an antichain, that an edge is
-necessary, or that the graph is transitively minimal. Even acyclicity is not a
-premise: Lean derives that every edge points to a previous operation from the
-candidate rules and then derives acyclicity.
-
-The key non-Move source-candidate lemma is derived from the occupancy
-transitions. In particular, Lean proves that after an earlier Create or Destroy
-on a strict parent position, the later occupied source must have changed from
-empty to occupied at some intervening operation. The most-recent entry selected
-for that operation's position then excludes the earlier candidate. The rest of
-the proof exhaustively considers Create, Destroy, Move, and Action Parent
-results and derives a reachability antichain for every direct dependency set.
-
-Caller-prefix resolution is proved injective and is proved to preserve position
-relationships, Particle Operation kinds, operation order, and dependency paths.
-The final theorem is quantified over the completely resolved graph, whose vertex
-type cannot represent an unresolved requirement, guarantee, Action Parent input,
-or modular destruction value. Automatic and contributed Destroy Particle
-Statements therefore enter the same exhaustive Destroy case.
-
-Finally, the separate witness file constructs a concrete valid occupancy
-execution with a real Create-to-Destroy dependency. This proves that the
-combined semantic premises are inhabited by a nonempty graph. The rule cases
-themselves are exhaustive conditional proofs; they do not require a fabricated
-operation history to make every branch inhabited.
 
 ## Scope
 
