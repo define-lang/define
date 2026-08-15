@@ -42,6 +42,23 @@ class TestGenerateSourceLines:
         with pytest.raises(ValueError, match="retriggers must be at least"):
             gen.generate_source_lines(retriggers=0)
 
+    @pytest.mark.parametrize("independent_move_branches", [-1, 1])
+    def test_invalid_independent_move_branches_raises(
+        self, independent_move_branches: int
+    ):
+        with pytest.raises(
+            ValueError, match="independent_move_branches must be zero or at least"
+        ):
+            gen.generate_source_lines(
+                independent_move_branches=independent_move_branches
+            )
+
+    def test_too_short_independent_move_chain_raises(self):
+        with pytest.raises(
+            ValueError, match="independent_move_chain_length must be at least"
+        ):
+            gen.generate_source_lines(independent_move_chain_length=1)
+
     def test_output_exercises_operation_graph_syntax(self):
         source = "\n".join(
             gen.generate_source_lines(
@@ -51,6 +68,8 @@ class TestGenerateSourceLines:
                 wide_children=3,
                 pods=1,
                 retriggers=2,
+                independent_move_branches=2,
+                independent_move_chain_length=3,
             )
         )
         assert "move the particle in position<rung_0> to position<rung_1>." in source
@@ -70,26 +89,76 @@ class TestGenerateSourceLines:
             "create a particle in position<spod_0>::action</sink>::position<trigger_pos>."
             in source
         )
+        assert (
+            "move the particle in position<independent_source> to position<independent_stage_0>."
+            in source
+        )
+        assert (
+            "move the particle in position<independent_stage_0> to position<independent_workspace>."
+            in source
+        )
+        assert (
+            "move the particle in position<independent_workspace> to position<independent_moved_marker>."
+            in source
+        )
+        assert (
+            "move the particle in position<independent_workspace>::position</independent_box_1>::position</independent_left> to position<independent_left_holder_1>."
+            in source
+        )
+        assert (
+            "destroy the particle in position<independent_workspace>::position</independent_box_1>."
+            in source
+        )
 
     def test_no_pod_definitions_when_pods_zero(self):
-        source = "\n".join(gen.generate_source_lines(repetitions=1, pods=0))
+        source = "\n".join(
+            gen.generate_source_lines(
+                repetitions=1,
+                pods=0,
+                independent_move_branches=2,
+                independent_move_chain_length=2,
+            )
+        )
         assert "worker" not in source
         assert "sink" not in source
         assert "position<result>" not in source
+
+    def test_no_independent_move_branches_when_count_zero(self):
+        source = "\n".join(
+            gen.generate_source_lines(
+                repetitions=1,
+                pods=0,
+                independent_move_branches=0,
+                independent_move_chain_length=0,
+            )
+        )
+        assert "independent_" not in source
 
 
 class TestWriteToPath:
     def test_writes_file_with_expected_line_count(self, tmp_path: Path):
         out = tmp_path / "opgraph.dfn"
         written = gen.write_to_path(
-            out, repetitions=2, move_chain_length=3, tree_depth=2, wide_children=3
+            out,
+            repetitions=2,
+            move_chain_length=3,
+            tree_depth=2,
+            wide_children=3,
+            independent_move_branches=2,
+            independent_move_chain_length=2,
         )
         assert out.read_text(encoding="utf-8").count("\n") == written
 
     def test_written_file_parses_and_transforms_cleanly(self, tmp_path: Path):
         out = tmp_path / "opgraph.dfn"
         gen.write_to_path(
-            out, repetitions=2, move_chain_length=3, tree_depth=2, wide_children=3
+            out,
+            repetitions=2,
+            move_chain_length=3,
+            tree_depth=2,
+            wide_children=3,
+            independent_move_branches=2,
+            independent_move_chain_length=2,
         )
         _parse_and_transform(out.read_text(encoding="utf-8"))
 
@@ -112,6 +181,10 @@ class TestMain:
                 "2",
                 "--pods",
                 "0",
+                "--independent-move-branches",
+                "2",
+                "--independent-move-chain-length",
+                "2",
             ],
         )
 
@@ -130,6 +203,8 @@ class TestFullDriver:
                     wide_children=2,
                     pods=1,
                     retriggers=1,
+                    independent_move_branches=2,
+                    independent_move_chain_length=2,
                 )
             )
             + "\n"

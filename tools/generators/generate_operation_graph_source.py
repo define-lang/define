@@ -26,6 +26,11 @@ statement families, each aimed at a specific dependency rule:
     positions of a single parent particle, hitting the rule that drops a
     move's target-side dependency when its source-side dependencies
     already reach it.
+  * Many pairs of independent Move Particle Statements, all preceded by
+    the same long Move chain. Each pair remains required by a separate
+    Destroy Particle Statement, so dependency comparison must repeatedly
+    distinguish a common dependency path from reachability between the
+    pair.
   * A per-repetition contracted position that is first referenced through
     a chained create (inferring an occupied Action Requirement) and then
     destroyed while child positions on two separate paths were operated
@@ -64,6 +69,8 @@ DEFAULT_TREE_DEPTH = 32
 DEFAULT_WIDE_CHILDREN = 48
 DEFAULT_PODS = 4
 DEFAULT_RETRIGGERS = 2
+DEFAULT_INDEPENDENT_MOVE_BRANCHES = 1024
+DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH = 1024
 
 _MIN_REPETITIONS = 1
 _MIN_MOVE_CHAIN_LENGTH = 2
@@ -71,11 +78,15 @@ _MIN_TREE_DEPTH = 2
 _MIN_WIDE_CHILDREN = 2
 _MIN_PODS = 0
 _MIN_RETRIGGERS = 1
+_MIN_INDEPENDENT_MOVE_BRANCHES = 2
+_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH = 2
 _OUTER_INDENT = "    "
 _INNER_INDENT = "        "
 _DEEP_INDENT = "            "
 
 _ITEM = "/item"
+_INDEPENDENT_LEFT = "/independent_left"
+_INDEPENDENT_RIGHT = "/independent_right"
 
 
 def _depth_path(i: int) -> str:
@@ -84,6 +95,10 @@ def _depth_path(i: int) -> str:
 
 def _child_path(i: int) -> str:
     return f"/child_{i}"
+
+
+def _independent_box_path(i: int) -> str:
+    return f"/independent_box_{i}"
 
 
 def _qualified(prefix: str, path: str) -> str:
@@ -118,6 +133,30 @@ def _emit_position_pools(prefix: str, tree_depth: int, wide_children: int) -> li
     for i in range(wide_children):
         name = _qualified(prefix, _child_path(i))
         lines.append(f"define the potential position<{name}>.")
+    lines.append("")
+    return lines
+
+
+def _emit_independent_move_branch_positions(
+    prefix: str, independent_move_branches: int
+) -> list[str]:
+    if independent_move_branches == 0:
+        return []
+    lines = [
+        f"define the potential position<{_qualified(prefix, _INDEPENDENT_LEFT)}>.",
+        f"define the potential position<{_qualified(prefix, _INDEPENDENT_RIGHT)}>.",
+    ]
+    for branch in range(independent_move_branches):
+        lines.extend(
+            [
+                f"define the potential position<{_qualified(prefix, _independent_box_path(branch))}> {{",
+                f"{_OUTER_INDENT}it may only contain particles where {{",
+                f"{_INNER_INDENT}it has the position<{_INDEPENDENT_LEFT}>.",
+                f"{_INNER_INDENT}it has the position<{_INDEPENDENT_RIGHT}>.",
+                f"{_OUTER_INDENT}}}",
+                "}",
+            ]
+        )
     lines.append("")
     return lines
 
@@ -270,6 +309,56 @@ def _block_sibling_ladder(wide_children: int) -> list[str]:
     return lines
 
 
+def _block_independent_move_branches(
+    independent_move_branches: int,
+    independent_move_chain_length: int,
+) -> list[str]:
+    lines = [_create("position<independent_source>")]
+    preceding_position = "position<independent_source>"
+    for move_index in range(independent_move_chain_length - 2):
+        next_position = f"position<independent_stage_{move_index}>"
+        lines.append(_move(preceding_position, next_position))
+        preceding_position = next_position
+    lines.extend(
+        [
+            _move(preceding_position, "position<independent_workspace>"),
+            _move(
+                "position<independent_workspace>",
+                "position<independent_moved_marker>",
+            ),
+            _create("position<independent_workspace>"),
+        ]
+    )
+
+    for branch in range(independent_move_branches):
+        box = f"position<independent_workspace>::position<{_independent_box_path(branch)}>"
+        lines.extend(
+            [
+                _create(box),
+                _create(f"{box}::position<{_INDEPENDENT_LEFT}>"),
+                _create(f"{box}::position<{_INDEPENDENT_RIGHT}>"),
+                _move(
+                    f"{box}::position<{_INDEPENDENT_LEFT}>",
+                    f"position<independent_left_holder_{branch}>",
+                ),
+                _move(
+                    f"{box}::position<{_INDEPENDENT_RIGHT}>",
+                    f"position<independent_right_holder_{branch}>",
+                ),
+                _destroy(box),
+                _destroy(f"position<independent_left_holder_{branch}>"),
+                _destroy(f"position<independent_right_holder_{branch}>"),
+            ]
+        )
+    lines.extend(
+        [
+            _destroy("position<independent_workspace>"),
+            _destroy("position<independent_moved_marker>"),
+        ]
+    )
+    return lines
+
+
 def _block_requirement_children(step: int) -> list[str]:
     depth_chain = f"position<req_{step}>::position<{_depth_path(0)}>"
     # The first reference chains through the untouched contracted position,
@@ -328,6 +417,8 @@ def _emit_main_action_header(
     move_chain_length: int,
     wide_children: int,
     pods: int,
+    independent_move_branches: int,
+    independent_move_chain_length: int,
 ) -> list[str]:
     name = _qualified(prefix, "/test")
     all_children = [_child_path(i) for i in range(wide_children)]
@@ -344,6 +435,28 @@ def _emit_main_action_header(
     lines.extend(_emit_constrained_interface("wide_src", all_children))
     lines.extend(_emit_constrained_interface("wide_dst", all_children))
     lines.extend(_emit_constrained_interface("side", all_children))
+    if independent_move_branches > 0:
+        independent_boxes = [
+            _independent_box_path(branch) for branch in range(independent_move_branches)
+        ]
+        lines.extend(
+            _emit_constrained_interface("independent_source", independent_boxes)
+        )
+        lines.extend(
+            _emit_constrained_interface("independent_workspace", independent_boxes)
+        )
+        lines.append(f"{_OUTER_INDENT}define the position<independent_moved_marker>.")
+        for move_index in range(independent_move_chain_length - 2):
+            lines.append(
+                f"{_OUTER_INDENT}define the position<independent_stage_{move_index}>."
+            )
+        for branch in range(independent_move_branches):
+            lines.extend(
+                [
+                    f"{_OUTER_INDENT}define the position<independent_left_holder_{branch}>.",
+                    f"{_OUTER_INDENT}define the position<independent_right_holder_{branch}>.",
+                ]
+            )
     for step in range(repetitions):
         lines.extend(
             _emit_constrained_interface(f"req_{step}", [_depth_path(0), _child_path(0)])
@@ -394,6 +507,8 @@ def generate_source_lines(
     wide_children: int = DEFAULT_WIDE_CHILDREN,
     pods: int = DEFAULT_PODS,
     retriggers: int = DEFAULT_RETRIGGERS,
+    independent_move_branches: int = DEFAULT_INDEPENDENT_MOVE_BRANCHES,
+    independent_move_chain_length: int = DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> list[str]:
     """Return the generated source as a list of lines (no trailing newlines).
@@ -425,18 +540,49 @@ def generate_source_lines(
         raise ValueError(
             f"retriggers must be at least {_MIN_RETRIGGERS}, got {retriggers}"
         )
+    if independent_move_branches < 0 or independent_move_branches == 1:
+        raise ValueError(
+            "independent_move_branches must be zero or at least"
+            + f" {_MIN_INDEPENDENT_MOVE_BRANCHES}, got {independent_move_branches}"
+        )
+    if (
+        independent_move_branches > 0
+        and independent_move_chain_length < _MIN_INDEPENDENT_MOVE_CHAIN_LENGTH
+    ):
+        raise ValueError(
+            "independent_move_chain_length must be at least"
+            + f" {_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH},"
+            + f" got {independent_move_chain_length}"
+        )
 
     lines: list[str] = []
     lines.extend(_emit_header())
     lines.extend(_emit_position_pools(fqun_prefix, tree_depth, wide_children))
+    lines.extend(
+        _emit_independent_move_branch_positions(fqun_prefix, independent_move_branches)
+    )
     if pods > 0:
         lines.extend(_emit_worker_action(fqun_prefix))
         lines.extend(_emit_sink_action(fqun_prefix))
     lines.extend(
         _emit_main_action_header(
-            fqun_prefix, repetitions, move_chain_length, wide_children, pods
+            fqun_prefix,
+            repetitions,
+            move_chain_length,
+            wide_children,
+            pods,
+            independent_move_branches,
+            independent_move_chain_length,
         )
     )
+    if independent_move_branches > 0:
+        lines.append(f"{_INNER_INDENT}# independent Move branches")
+        lines.extend(
+            _block_independent_move_branches(
+                independent_move_branches,
+                independent_move_chain_length,
+            )
+        )
     for step in range(repetitions):
         lines.append(f"{_INNER_INDENT}# repetition {step}")
         lines.extend(_block_move_ladder(move_chain_length))
@@ -460,6 +606,8 @@ def write_to_path(
     wide_children: int = DEFAULT_WIDE_CHILDREN,
     pods: int = DEFAULT_PODS,
     retriggers: int = DEFAULT_RETRIGGERS,
+    independent_move_branches: int = DEFAULT_INDEPENDENT_MOVE_BRANCHES,
+    independent_move_chain_length: int = DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> int:
     """Write generated source to ``output``. Returns the number of lines written."""
@@ -470,6 +618,8 @@ def write_to_path(
         wide_children=wide_children,
         pods=pods,
         retriggers=retriggers,
+        independent_move_branches=independent_move_branches,
+        independent_move_chain_length=independent_move_chain_length,
         fqun_prefix=fqun_prefix,
     )
     return generator_io.write_lines(output, lines)
@@ -522,6 +672,20 @@ def write_to_path(
     help="Trigger rounds per pod per repetition.",
 )
 @click.option(
+    "--independent-move-branches",
+    type=generator_cli.NONNEGATIVE_INTEGER,
+    default=DEFAULT_INDEPENDENT_MOVE_BRANCHES,
+    show_default=True,
+    help="Independent Move dependency pairs sharing one Move chain; zero omits them.",
+)
+@click.option(
+    "--independent-move-chain-length",
+    type=click.IntRange(min=_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH),
+    default=DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
+    show_default=True,
+    help="Moves in the chain preceding every independent dependency pair.",
+)
+@click.option(
     "--fqun-prefix",
     default=DEFAULT_FQUN_PREFIX,
     show_default=True,
@@ -535,6 +699,8 @@ def main(
     wide_children: int,
     pods: int,
     retriggers: int,
+    independent_move_branches: int,
+    independent_move_chain_length: int,
     fqun_prefix: str,
 ):
     """Generate a Define source file whose bodies stress the operation graph.
@@ -543,13 +709,16 @@ def main(
     specific operation dependency rule: a move ladder, a deep position chain moved
     at once and destroyed child by child, a wide particle whose operated-on child
     positions must be filtered into a move's child-operation snapshot, a sibling
-    move ladder under one parent particle, and worker pods whose Action Guarantees
-    the body consumes. The other profiling sources contain few or no move
-    statements, so this is the shape that warms operation-graph construction.
+    move ladder under one parent particle, independent Move pairs with the same
+    preceding Move chain, and worker pods whose Action Guarantees the body consumes.
+    The other profiling sources contain few or no move statements, so this is the
+    shape that warms operation-graph construction.
 
     Scale it with --repetitions for body length; --tree-depth makes the
-    ancestor-chain walk quadratically more expensive. The generated source
-    validates to zero diagnostics.
+    ancestor-chain walk quadratically more expensive. Scale
+    --independent-move-branches and --independent-move-chain-length together to
+    increase the repeated dependency-comparison work. The generated source validates
+    to zero diagnostics.
     """
     written = generator_cli.invoke(
         lambda: write_to_path(
@@ -560,6 +729,8 @@ def main(
             wide_children=wide_children,
             pods=pods,
             retriggers=retriggers,
+            independent_move_branches=independent_move_branches,
+            independent_move_chain_length=independent_move_chain_length,
             fqun_prefix=fqun_prefix,
         )
     )

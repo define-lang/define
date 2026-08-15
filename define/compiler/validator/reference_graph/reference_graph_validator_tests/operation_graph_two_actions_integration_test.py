@@ -11,6 +11,10 @@ _CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
     "Caller Empty Rule substitution retains a child dependency already reachable "
     "through a later operation on a disjoint child position"
 )
+_MOVE_RULE_LOSES_SOURCE_DEPENDENCY_THAT_REACHES_ACTION_PARENT = (
+    "The Move Rule loses its source dependency when that dependency already reaches "
+    "the Fill dependency through the Action Parent Rule"
+)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -426,6 +430,25 @@ def test_move_joins_an_in_body_source_and_a_requirement_target(
             "other.create(src)",
             "test.destroy(gateway::/other::dest)",
         ],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_MOVE_RULE_LOSES_SOURCE_DEPENDENCY_THAT_REACHES_ACTION_PARENT,
+)
+def test_move_source_guarantee_supersedes_action_parent_fill_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/box)": [],
+        "test.create(/box::/worker::trigger_pos)": ["test.create(/box)"],
+        "worker.create(/shared)": ["test.create(/box)"],
+        # The source Create already reaches the Fill dependency through its Action
+        # Parent dependency, so the Move depends only on the source Create.
+        "test.move(/shared, /box::/destination)": ["worker.create(/shared)"],
     }
 
 

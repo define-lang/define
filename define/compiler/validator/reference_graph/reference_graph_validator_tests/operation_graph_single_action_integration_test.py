@@ -596,3 +596,65 @@ def test_destruction_cascade_branches_from_one_preceding_move(
             "test.destroy(destination::/a)",
         ],
     }
+
+
+def test_independent_child_moves_with_shared_move_chain_remain_dependencies(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(source)": [],
+        "test.move(source, stage_a)": ["test.create(source)"],
+        "test.move(stage_a, stage_b)": ["test.move(source, stage_a)"],
+        "test.move(stage_b, workspace)": ["test.move(stage_a, stage_b)"],
+        "test.move(workspace, moved_marker)": ["test.move(stage_b, workspace)"],
+        "test.create(workspace)": ["test.move(workspace, moved_marker)"],
+        "test.create(workspace::/box_a)": ["test.create(workspace)"],
+        "test.create(workspace::/box_a::/left)": ["test.create(workspace::/box_a)"],
+        "test.create(workspace::/box_a::/right)": ["test.create(workspace::/box_a)"],
+        "test.move(workspace::/box_a::/left, left_a_holder)": [
+            "test.create(workspace::/box_a::/left)"
+        ],
+        "test.move(workspace::/box_a::/right, right_a_holder)": [
+            "test.create(workspace::/box_a::/right)"
+        ],
+        # Neither child Move reaches the other, so the Destroy retains both even
+        # though they have the same preceding Move chain.
+        "test.destroy(workspace::/box_a)": [
+            "test.move(workspace::/box_a::/left, left_a_holder)",
+            "test.move(workspace::/box_a::/right, right_a_holder)",
+        ],
+        "test.destroy(left_a_holder)": [
+            "test.move(workspace::/box_a::/left, left_a_holder)"
+        ],
+        "test.destroy(right_a_holder)": [
+            "test.move(workspace::/box_a::/right, right_a_holder)"
+        ],
+        "test.create(workspace::/box_b)": ["test.create(workspace)"],
+        "test.create(workspace::/box_b::/left)": ["test.create(workspace::/box_b)"],
+        "test.create(workspace::/box_b::/right)": ["test.create(workspace::/box_b)"],
+        "test.move(workspace::/box_b::/left, left_b_holder)": [
+            "test.create(workspace::/box_b::/left)"
+        ],
+        "test.move(workspace::/box_b::/right, right_b_holder)": [
+            "test.create(workspace::/box_b::/right)"
+        ],
+        # The second Destroy repeats the same semantic relationship on a different
+        # child position path.
+        "test.destroy(workspace::/box_b)": [
+            "test.move(workspace::/box_b::/left, left_b_holder)",
+            "test.move(workspace::/box_b::/right, right_b_holder)",
+        ],
+        "test.destroy(left_b_holder)": [
+            "test.move(workspace::/box_b::/left, left_b_holder)"
+        ],
+        "test.destroy(right_b_holder)": [
+            "test.move(workspace::/box_b::/right, right_b_holder)"
+        ],
+        "test.destroy(workspace)": [
+            "test.destroy(workspace::/box_a)",
+            "test.destroy(workspace::/box_b)",
+        ],
+        "test.destroy(moved_marker)": ["test.move(workspace, moved_marker)"],
+    }
