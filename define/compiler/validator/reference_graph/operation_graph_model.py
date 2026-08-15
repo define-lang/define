@@ -256,6 +256,16 @@ class ParticleChildOperations:
         fill_dependency: LastOperationNode | None,
         emptied_ancestor: LastOperationNode,
     ) -> _EmptyRuleDependencies:
+        # TODO: Fuse the two post-Comparison corrections. After one Comparison over
+        # the combined Empty Dependencies and Fill Dependency, the only possible
+        # removal targets are remaining Move Particle Statements and the remaining
+        # Fill Dependency. Starting from the direct dependencies of every remaining
+        # dependency, traverse dependency edges once with a shared visited set. Mark
+        # every removal target encountered, continue through marked targets, and
+        # remove all marked targets after the traversal. Starting one edge below the
+        # remaining dependencies enforces that a dependency cannot remove itself.
+        # Defer this combined calculation through caller substitution until all
+        # participating dependencies are concrete.
         candidates: set[LastOperationNode] = set()
         caller_dependencies: CallerEmptyRuleDependencies | None = None
         # The action received the particle in the state declared by a position

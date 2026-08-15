@@ -1572,29 +1572,53 @@ Note that the compiler is not bound to literally implement the rules below
 exactly as written if there is a more efficient implementation that produces the
 same DAG.
 
+The complete proof of transitive minimality is in
+[Particle Operation Dependency Graph Minimality](../../proofs/particle-operation-dependency-graph-minimality-proof.md).
+
 #### The Fill Rule
 
-Filling a position depends on the single most recent Particle Operation among
-the ones on that position and its transitive parent positions. This means that
-fill operations will always have exactly and only one Particle Operation that
-they depend on.
+Filling a position depends on the single most recent previous Particle Operation
+among the ones on that position and its transitive parent positions.
 
 #### The Empty Rule
 
-To calculate the dependencies of a Particle Operation that empties a position,
-first take the most recent previous Particle Operation on the emptied position
-and the most recent previous Particle Operation on each of its transitive parent
-and child positions.
+The Empty Rule has three phases that must logically occur.
+
+##### Collection
+
+Collect the most recent previous Particle Operation on the emptied position and
+the most recent previous Particle Operation on each of its transitive parent and
+child positions.
+
+When collecting those Particle Operations, a Move Particle Statement is also
+considered a Particle Operation on each transitive child position of the moved
+particle.
+
+##### Comparison
 
 When any position operated on by one of those Particle Operations is the same
 as, a transitive parent of, or a transitive child of a position operated on by
 another, only the more recent Particle Operation remains a dependency.
 
+Note: every Particle Operation selected during Collection participates in this
+comparison. A Particle Operation excluded by a more recent operation can still
+exclude an older operation.
+
+##### Move Correction
+
+After the Comparison, if a remaining dependency is a Move Particle Statement and
+another remaining dependency depends on that Move Particle Statement, directly
+or indirectly, only the more recent dependency remains.
+
 #### The Move Rule
 
 To determine the dependencies of a Move Particle Statement, combine all the
-dependencies required for emptying the source position and filling the target
-position, and then apply the comparison in The Empty Rule to the combined set.
+dependencies required for emptying the source position (the "Empty
+Dependencies") and filling the target position (the "Fill Dependency"), and then
+apply the Empty Rule's Comparison and Move Correction to the combined set.
+
+After applying those comparisons, remove the Fill Dependency if any remaining
+Empty Dependency depends on it, directly or indirectly.
 
 #### The Action Parent Rule
 
