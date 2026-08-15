@@ -1612,10 +1612,12 @@ or indirectly, only the more recent dependency remains.
 
 #### The Move Rule
 
-To determine the dependencies of a Move Particle Statement, combine all the
-dependencies required for emptying the source position (the "Empty
-Dependencies") and filling the target position (the "Fill Dependency"), and then
-apply the Empty Rule's Comparison and Move Correction to the combined set.
+To determine the dependencies of a Move Particle Statement, combine the Particle
+Operations that the Empty Rule's Collection gathers for the source position (the
+"Empty Dependencies") with the Particle Operation that the Fill Rule identifies
+for filling the target position (the "Fill Dependency", when one exists), and
+then apply the Empty Rule's Comparison and Move Correction once to the combined
+set.
 
 After applying those comparisons, remove the Fill Dependency if any remaining
 Empty Dependency depends on it, directly or indirectly.
