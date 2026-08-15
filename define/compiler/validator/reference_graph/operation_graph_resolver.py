@@ -471,13 +471,7 @@ class ResolvedOperationGraphBuilder:
                 for operation in contribution.completion_operations:
                     dependency_keys[caller_execution, operation] = None
                 found_contribution = True
-            # TODO: Consume ResolvedActionExecution.forwards_destruction_connections
-            # here so full-graph resolution exercises the same Action Resolver
-            # relationship as codegen. Recomputing it from the Operation Graph can
-            # hide an Action Resolver defect from operation-graph integration tests.
-            if not caller_action.graph.propagates_destruction_from_execution_to_caller(
-                triggered_by.direct_execution.execution
-            ):
+            if not triggered_by.direct_execution.forwards_destruction_connections:
                 return found_contribution
             current_execution = caller_execution
 
