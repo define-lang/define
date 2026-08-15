@@ -1,0 +1,28 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_binary(
+    name = "particle_operation_dependency_graph_minimality_checker",
+    srcs = ["particle_operation_dependency_graph_minimality_checker.py"],
+    deps = ["@pypi//click"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
+# package, you must also add it to the deps list below.
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":particle_operation_dependency_graph_minimality_checker",
+    ],
+)
