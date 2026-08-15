@@ -209,10 +209,6 @@ def test_caller_empty_rule_move_excludes_reachable_disjoint_child_move(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
-)
 def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

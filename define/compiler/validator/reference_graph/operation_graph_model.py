@@ -158,15 +158,23 @@ class ParticleChildOperations:
         self, relative_positions: frozenset[tuple[str, ...]]
     ) -> list[ChildOperation]:
         """Return surviving operations independent of the supplied paths."""
-        operations: list[ChildOperation] = []
-        for operation in self.operations:
+        if not relative_positions:
+            return list(self.operations)
+        excluded_operations: set[PrecedingChildOperationNode] = set()
+        for child_operation in self.operations:
             shares_dependency_path = any(
-                _shares_path(operation.child_position, dependency)
+                _shares_path(child_operation.child_position, dependency)
                 for dependency in relative_positions
             )
-            if not shares_dependency_path:
-                operations.append(operation)
-        return operations
+            if shares_dependency_path:
+                excluded_operations.add(child_operation.operation)
+        # The Empty Rule compares Particle Operations rather than the individual
+        # child positions through which those operations are known.
+        return [
+            child_operation
+            for child_operation in self.operations
+            if child_operation.operation not in excluded_operations
+        ]
 
     def partition_for_child_positions_without_parent_child_relationships(
         self, child_positions: Collection[tuple[str, ...]]

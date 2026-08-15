@@ -273,6 +273,22 @@ def test_particle_child_operations_excludes_operations_on_the_same_paths():
     ) == [operation_graph_model.ChildOperation(("position<b>",), _operation_node(3))]
 
 
+def test_particle_child_operations_excludes_one_operation_known_on_multiple_positions():
+    operation = _operation_node(2)
+    remaining_operation = _operation_node(3)
+    child_operations = operation_graph_model.ParticleChildOperations(
+        (
+            operation_graph_model.ChildOperation(("position<b>",), operation),
+            operation_graph_model.ChildOperation(("position<a>",), operation),
+            operation_graph_model.ChildOperation(("position<c>",), remaining_operation),
+        )
+    )
+
+    assert child_operations.operations_not_on_same_paths_as(
+        frozenset({("position<a>", "position<deep>")})
+    ) == [operation_graph_model.ChildOperation(("position<c>",), remaining_operation)]
+
+
 def test_particle_child_operations_scales_to_wide_particles():
     child_count = 10_000
     child_operations = (

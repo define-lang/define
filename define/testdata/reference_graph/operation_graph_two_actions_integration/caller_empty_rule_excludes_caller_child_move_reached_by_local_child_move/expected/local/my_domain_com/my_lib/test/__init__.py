@@ -46,7 +46,6 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_action_other__for_empty_rule_global_position_input__global_position_start = literal.Join(2)
-        self.join_for_trigger_action_other__for_empty_rule_global_position_input = literal.Join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
@@ -68,8 +67,7 @@ class TestExecution:
                 local.my_domain_com.my_lib.start.Start
             )
         )
-        self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_input__global_position_start)
-        self.trigger_action_other__for_empty_rule_global_position_input()
+        self.trigger_action_other__for_empty_rule_global_position_input__global_position_start()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -105,6 +103,4 @@ class TestExecution:
         self.execution_trigger_action_other.accept_when_empty_position_holder()
 
     def trigger_action_other__for_empty_rule_global_position_input(self):
-        if not self.join_for_trigger_action_other__for_empty_rule_global_position_input.arrive():
-            return
         self.execution_trigger_action_other.accept_for_empty_rule_global_position_input()
