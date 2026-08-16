@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,10 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
-    "Caller Empty Rule substitution retains a child dependency already reachable "
-    "through a later operation on a disjoint child position"
-)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -144,11 +138,7 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
-)
-def test_caller_empty_rule_destroy_excludes_reachable_disjoint_child_move(
+def test_caller_empty_rule_destroy_excludes_reachable_child_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -174,11 +164,7 @@ def test_caller_empty_rule_destroy_excludes_reachable_disjoint_child_move(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
-)
-def test_caller_empty_rule_move_excludes_reachable_disjoint_child_move(
+def test_caller_empty_rule_move_excludes_reachable_child_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

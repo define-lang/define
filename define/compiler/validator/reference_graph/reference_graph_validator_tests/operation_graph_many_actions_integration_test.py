@@ -11,10 +11,6 @@ _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
     "disjoint positions"
 )
-_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY = (
-    "Caller Empty Rule substitution retains a child dependency already reachable "
-    "through a later operation on a disjoint child position"
-)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -317,10 +313,6 @@ def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_CALLER_EMPTY_RULE_RETAINS_REACHABLE_DISJOINT_CHILD_DEPENDENCY,
-)
 def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitutions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

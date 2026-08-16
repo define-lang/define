@@ -62,7 +62,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_middle_action: local.my_domain_com.my_lib.middle_action.MiddleActionExecution
         self.join_for_trigger_action_middle_action__when_empty_global_position_input__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input = literal.Join(3)
+        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input = literal.Join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
@@ -86,10 +86,6 @@ class TestExecution:
                 "position<holder_a>"
             )
         )
-        self.scheduler.submit(self.move_position_holder_a_to_global_position_input__global_position_middle)
-        self.trigger_action_middle_action__for_empty_rule_global_position_input()
-
-    def move_position_holder_a_to_global_position_input__global_position_middle(self):
         self.action.get_interface_position(
             "position<holder_a>"
         ).move_particle_to(

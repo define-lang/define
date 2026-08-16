@@ -551,10 +551,12 @@ class ActionExecution:
                 # position. When there are no later child-position operations, it
                 # remains the required dependency per the Empty Rule.
                 candidates.add(callee_requirement_binding.operation)
-            return CallerEmptyRuleSubstitution(
-                apply_empty_rule_comparison(candidates),
+            dependencies = apply_empty_rule_comparison(candidates)
+            dependencies = _apply_move_correction_and_fill_dependency_removal(
+                dependencies,
                 None,
             )
+            return CallerEmptyRuleSubstitution(dependencies, None)
 
         # If this action received the particle from its caller, some operations
         # required by the Empty Rule may belong to that caller and must be propagated.
