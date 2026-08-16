@@ -9,7 +9,11 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
-    "disjoint positions"
+    "unrelated positions"
+)
+_GUARANTEE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER = (
+    "Action Guarantee resolution does not preserve caller inputs reached by the "
+    "guaranteed operation"
 )
 
 
@@ -492,6 +496,53 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
         # so the Move Rule excludes it after caller substitution.
         "consumer.move(/box::/item, /box::/destination)": [
             "consumer.create(/box::/item)"
+        ],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_GUARANTEE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER,
+)
+def test_caller_fill_dependency_is_removed_through_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/destination)": [],
+        "test.move(/destination, temp)": ["test.create(/destination)"],
+        "test.move(temp, /slot)": ["test.move(/destination, temp)"],
+        "test.create(/mover::trigger_pos)": [],
+        "mover.create(/helper::trigger_pos)": [],
+        "helper.move(/slot, /out)": ["test.move(temp, /slot)"],
+        # The guaranteed Empty Dependency already reaches the caller's Fill
+        # Dependency, so the final Move does not depend on it directly.
+        "mover.move(/out, /destination)": ["helper.move(/slot, /out)"],
+    }
+
+
+def test_pending_move_rule_input_shares_caller_operation_with_another_input(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(gateway)": [],
+        "test.create(gateway::/worker::target)": ["test.create(gateway)"],
+        "test.move(gateway::/worker::target, gateway::/worker::occupied)": [
+            "test.create(gateway::/worker::target)"
+        ],
+        "test.create(gateway::/worker::source)": ["test.create(gateway)"],
+        "test.create(gateway::/worker::trigger_pos)": ["test.create(gateway)"],
+        "worker.destroy(occupied)": [
+            "test.move(gateway::/worker::target, gateway::/worker::occupied)"
+        ],
+        # The independent source Create does not reach the Fill Dependency, so
+        # Worker's Move retains both after its pending relationships are resolved.
+        "worker.move(source, target)": [
+            "test.move(gateway::/worker::target, gateway::/worker::occupied)",
+            "test.create(gateway::/worker::source)",
         ],
     }
 

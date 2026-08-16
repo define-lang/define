@@ -1,3 +1,5 @@
+import pytest
+
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -5,6 +7,11 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+
+_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER = (
+    "CallerEmptyRuleDependencies does not preserve caller inputs reached by "
+    "remaining concrete dependencies"
+)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -214,6 +221,33 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
         # chain, so the Empty Rule excludes the caller Move from this Destroy.
         "other.destroy(/input)": ["other.move(/input::/target, holder)"],
         "other.destroy(holder)": ["other.move(/input::/target, holder)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER,
+)
+def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/a)": ["test.create(/input)"],
+        "test.move(/input::/a, /holder)": ["test.create(/input::/a)"],
+        "test.move(/holder, /source)": ["test.move(/input::/a, /holder)"],
+        "test.create(/other::trigger_pos)": [],
+        "other.move(/source, /input::/b)": [
+            "test.create(/input)",
+            "test.move(/holder, /source)",
+        ],
+        "other.move(/input::/b, sink)": ["other.move(/source, /input::/b)"],
+        # The remaining operation on child b reaches the caller's Move on child a
+        # through the separately required source particle.
+        "other.destroy(/input)": ["other.move(/input::/b, sink)"],
+        "other.destroy(sink)": ["other.move(/input::/b, sink)"],
     }
 
 
