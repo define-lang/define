@@ -1,15 +1,8 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
-
-_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET = (
-    "The Move Rule retains an operation required to fill its target even when that "
-    "operation is already reachable through a source dependency"
-)
 
 
 def test_single_create(
@@ -60,10 +53,6 @@ def test_move_chain_returning_to_first_position_has_minimal_dependencies(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET,
-)
 def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -81,10 +70,6 @@ def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_MOVE_RULE_RETAINS_REACHABLE_OPERATION_REQUIRED_TO_FILL_TARGET,
-)
 def test_move_excludes_fill_dependency_reached_through_replaced_source_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

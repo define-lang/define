@@ -51,16 +51,11 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_move_position_holder__global_position_payload_to_position_box__global_position_destination = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_box__global_position_item)
-        self.move_position_holder__global_position_payload_to_position_box__global_position_destination()
-
-    def create_position_box__global_position_item(self):
         self.action.get_interface_position(
             "position<box>"
         ).particle.get_position(
@@ -80,11 +75,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.payload.Payload
         ).create_particle()
-        self.move_position_holder__global_position_payload_to_position_box__global_position_destination()
-
-    def move_position_holder__global_position_payload_to_position_box__global_position_destination(self):
-        if not self.join_for_move_position_holder__global_position_payload_to_position_box__global_position_destination.arrive():
-            return
         self.action.get_interface_position(
             "position<holder>"
         ).particle.get_position(

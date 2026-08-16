@@ -98,58 +98,63 @@ def apply_empty_rule_comparison[DependencyNodeT: LastOperationNode](
     )
 
 
-def apply_empty_rule_move_correction[DependencyNodeT: LastOperationNode](
+def _apply_move_correction_and_fill_dependency_removal[
+    DependencyNodeT: LastOperationNode
+](
     dependencies: tuple[DependencyNodeT, ...],
+    fill_dependency: DependencyNodeT | None,
 ) -> tuple[DependencyNodeT, ...]:
-    """Apply Move Correction to concrete dependencies.
+    """Apply the Empty Rule's Move Correction and the Move Rule's optional Fill Dependency removal.
 
-    Dependencies must be ordered from least to most recent.
+    ``dependencies`` must be ordered from least to most recent.
     """
     if len(dependencies) < 2:
         return dependencies
-    remaining_move_dependencies: set[MoveNode] = set()
-    least_recent_move_dependency: MoveNode | None = None
-    for dependency in dependencies:
-        if not isinstance(dependency, MoveNode):
+    remaining_removal_targets: set[OperationNode] = set()
+    least_recent_removal_target: OperationNode | None = None
+    # No other remaining dependency can depend on the most recent dependency, so we
+    # don't have to check it (that's why we start at range - 1).
+    for dependency_index in range(len(dependencies) - 1):
+        dependency = dependencies[dependency_index]
+        if not isinstance(dependency, MoveNode) and dependency is not fill_dependency:
             continue
-        remaining_move_dependencies.add(dependency)
-        if least_recent_move_dependency is None:
-            least_recent_move_dependency = dependency
-    if least_recent_move_dependency is None:
+        remaining_removal_targets.add(dependency)
+        if least_recent_removal_target is None:
+            least_recent_removal_target = dependency
+    if least_recent_removal_target is None:
         return dependencies
 
     dependencies_to_visit: list[OperationNode] = []
-    # Starting one edge below the remaining dependencies prevents a Move from
-    # excluding itself merely because it is one of the traversal's starting points.
     for dependency in dependencies:
+        if dependency.operation_order <= least_recent_removal_target.operation_order:
+            continue
+        # A remaining dependency cannot remove itself, so begin from its direct
+        # dependencies.
         dependencies_to_visit.extend(dependency.depends_on)
     visited: set[OperationNode] = set()
-    excluded_move_dependencies: set[MoveNode] = set()
-    while dependencies_to_visit and remaining_move_dependencies:
+    excluded_dependencies: set[OperationNode] = set()
+    while dependencies_to_visit and remaining_removal_targets:
         dependency = dependencies_to_visit.pop()
         if dependency in visited:
             continue
         visited.add(dependency)
-        if (
-            isinstance(dependency, MoveNode)
-            and dependency in remaining_move_dependencies
-        ):
-            remaining_move_dependencies.remove(dependency)
-            excluded_move_dependencies.add(dependency)
+        if dependency in remaining_removal_targets:
+            remaining_removal_targets.remove(dependency)
+            excluded_dependencies.add(dependency)
         # Every dependency edge leads to an earlier operation, so continuing past
         # the least recent possible removal target cannot reach another target.
-        if dependency.operation_order <= least_recent_move_dependency.operation_order:
+        if dependency.operation_order <= least_recent_removal_target.operation_order:
             continue
-        # A reached Move can itself reach an older remaining Move, so its
-        # dependencies must participate in the same traversal.
+        # A reached removal target can reach an earlier target, so its dependencies
+        # must participate in the same traversal.
         dependencies_to_visit.extend(dependency.depends_on)
 
-    if not excluded_move_dependencies:
+    if not excluded_dependencies:
         return dependencies
     return tuple(
         dependency
         for dependency in dependencies
-        if dependency not in excluded_move_dependencies
+        if dependency not in excluded_dependencies
     )
 
 
@@ -282,7 +287,7 @@ class ParticleChildOperations:
             seen_operations.add(operation)
             matching_operations.append(operation)
         dependencies = _apply_empty_rule_comparison_newest_first(matching_operations)
-        return apply_empty_rule_move_correction(dependencies)
+        return _apply_move_correction_and_fill_dependency_removal(dependencies, None)
 
     def determine_empty_rule_dependencies(
         self,
@@ -315,14 +320,6 @@ class ParticleChildOperations:
         fill_dependency: LastOperationNode | None,
         emptied_ancestor: LastOperationNode,
     ) -> _EmptyRuleDependencies:
-        # TODO: Complete the combined post-Comparison calculation by adding the
-        # remaining Fill Dependency to the removal targets used by
-        # apply_empty_rule_move_correction. Continue using one traversal from the
-        # direct dependencies of every remaining dependency, with one shared visited
-        # set, and continue through every reached removal target. Starting one edge
-        # below the remaining dependencies prevents a dependency from removing
-        # itself. Defer the combined calculation through caller substitution until
-        # every participating dependency is concrete.
         candidates: set[LastOperationNode] = set()
         caller_dependencies: CallerEmptyRuleDependencies | None = None
         # The action received the particle in the state declared by a position
@@ -349,13 +346,27 @@ class ParticleChildOperations:
         else:
             candidates.add(emptied_ancestor)
             # This is a move, and its destination was previously operated on.
-            if fill_dependency is not None:
+            if isinstance(
+                fill_dependency,
+                (PositionOperationNode, GuaranteeNode),
+            ):
                 candidates.add(fill_dependency)
         candidates.update(
             child_operation.operation for child_operation in self.operations
         )
+        dependencies = apply_empty_rule_comparison(candidates)
+        # Caller substitution can add dependencies that affect Move Correction or
+        # the Move Rule's Fill Dependency removal, so neither the Empty Rule or
+        # Move Rule can run while a caller dependency remains unresolved.
+        if caller_dependencies is None and not isinstance(
+            fill_dependency, RequirementNode
+        ):
+            dependencies = _apply_move_correction_and_fill_dependency_removal(
+                dependencies,
+                fill_dependency,
+            )
         return _EmptyRuleDependencies(
-            apply_empty_rule_comparison(candidates),
+            dependencies,
             caller_dependencies,
         )
 

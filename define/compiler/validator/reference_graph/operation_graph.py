@@ -655,9 +655,7 @@ class OperationGraph:
             emptied_ancestor,
         )
         if dependencies.caller_dependencies is None:
-            return operation_graph_model.apply_empty_rule_move_correction(
-                dependencies.local_dependencies
-            )
+            return dependencies.local_dependencies
         return (
             *dependencies.local_dependencies,
             self._add_caller_empty_rule_dependencies(dependencies.caller_dependencies),
@@ -695,9 +693,7 @@ class OperationGraph:
                     dependencies.caller_dependencies
                 ),
             )
-        return operation_graph_model.apply_empty_rule_move_correction(
-            dependencies.local_dependencies
-        )
+        return dependencies.local_dependencies
 
     def _move_dependencies_with_caller_fill_dependency(
         self,
@@ -707,8 +703,9 @@ class OperationGraph:
         emptied_ancestor: operation_graph_model.PrecedingChildOperationNode,
     ) -> tuple[operation_graph_model.EmptyingOperationDependencyNode, ...]:
         """Return Move dependencies when the Fill dependency awaits its caller."""
-        dependencies = child_operations.determine_empty_rule_dependencies(
+        dependencies = child_operations.determine_move_rule_dependencies(
             empty_position,
+            fill_dependency,
             emptied_ancestor,
         )
         move_rule_comparison_positions: list[tuple[str, ...]] = []
