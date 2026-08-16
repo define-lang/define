@@ -370,19 +370,19 @@ def test_caller_empty_rule_preserves_reached_input_through_intermediate_action(
         "test.create(/input)": [],
         "test.create(/input::/a)": ["test.create(/input)"],
         "test.move(/input::/a, /holder)": ["test.create(/input::/a)"],
-        "test.move(/holder, /source)": ["test.move(/input::/a, /holder)"],
+        "test.move(/holder, /intermediate)": ["test.move(/input::/a, /holder)"],
         "test.create(/input::/b)": ["test.create(/input)"],
         "test.create(/middle_action::trigger_pos)": [],
         "middle_action.create(/inner::trigger_pos)": [],
-        "inner.destroy(/source)": ["test.move(/holder, /source)"],
-        "inner.move(/input::/b, /source)": [
-            "inner.destroy(/source)",
+        "inner.destroy(/intermediate)": ["test.move(/holder, /intermediate)"],
+        "inner.move(/input::/b, /intermediate)": [
+            "inner.destroy(/intermediate)",
             "test.create(/input::/b)",
         ],
         # The remaining operation on child b reaches the caller's Move on child a
-        # through the separately required source particle. This relationship is
+        # through the particle in the separate intermediate position. This is
         # still unresolved while the Empty Rule passes through middle_action.
-        "inner.destroy(/input)": ["inner.move(/input::/b, /source)"],
+        "inner.destroy(/input)": ["inner.move(/input::/b, /intermediate)"],
     }
 
 

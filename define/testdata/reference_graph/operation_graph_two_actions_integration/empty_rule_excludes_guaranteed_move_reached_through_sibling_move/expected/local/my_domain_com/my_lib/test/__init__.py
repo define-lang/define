@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.holder
 import local.my_domain_com.my_lib.input
+import local.my_domain_com.my_lib.intermediate
 import local.my_domain_com.my_lib.producer
-import local.my_domain_com.my_lib.source
 
 
 class Test(literal.EntryPoint):
@@ -17,7 +17,7 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.holder.Holder,
         local.my_domain_com.my_lib.input.Input,
         local.my_domain_com.my_lib.producer.Producer,
-        local.my_domain_com.my_lib.source.Source,
+        local.my_domain_com.my_lib.intermediate.Intermediate,
     )
 
     @override
@@ -49,13 +49,13 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         guarantees.trigger_action_producer.guarantee_global_position_input__global_position_a__move__global_position_holder.append(
-            self.move_global_position_holder_to_global_position_source
+            self.move_global_position_holder_to_global_position_intermediate
         )
         guarantees.trigger_action_producer.guarantee_global_position_input__global_position_a__move__global_position_holder.append(
             self.destroy_global_position_input
         )
         self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_move_global_position_source_to_global_position_input__global_position_b = literal.Join(2)
+        self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b = literal.Join(2)
         self.join_for_destroy_global_position_input = literal.Join(2)
         self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a = literal.Join(2)
 
@@ -64,7 +64,7 @@ class TestExecution:
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
         self.scheduler.submit(self.create_global_position_input__global_position_a)
-        self.move_global_position_source_to_global_position_input__global_position_b()
+        self.move_global_position_intermediate_to_global_position_input__global_position_b()
 
     def create_global_position_input__global_position_a(self):
         self.action.on_particle.get_position(
@@ -83,21 +83,21 @@ class TestExecution:
         self.init_execution_trigger_action_producer()
         self.trigger_action_producer__for_empty_rule_global_position_input__global_position_a()
 
-    def move_global_position_holder_to_global_position_source(self):
+    def move_global_position_holder_to_global_position_intermediate(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).move_particle_to(
             self.action.on_particle.get_position(
-                local.my_domain_com.my_lib.source.Source
+                local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.move_global_position_source_to_global_position_input__global_position_b()
+        self.move_global_position_intermediate_to_global_position_input__global_position_b()
 
-    def move_global_position_source_to_global_position_input__global_position_b(self):
-        if not self.join_for_move_global_position_source_to_global_position_input__global_position_b.arrive():
+    def move_global_position_intermediate_to_global_position_input__global_position_b(self):
+        if not self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b.arrive():
             return
         self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.source.Source
+            local.my_domain_com.my_lib.intermediate.Intermediate
         ).move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.input.Input

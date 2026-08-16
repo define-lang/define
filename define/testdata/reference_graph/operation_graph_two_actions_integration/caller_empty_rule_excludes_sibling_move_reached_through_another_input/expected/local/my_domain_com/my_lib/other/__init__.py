@@ -6,13 +6,13 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.input
-import local.my_domain_com.my_lib.source
+import local.my_domain_com.my_lib.intermediate
 
 
 class Other(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.source.Source,
+        local.my_domain_com.my_lib.intermediate.Intermediate,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,7 +34,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_source: list[literal.Task] = []
+        self.guarantee_global_position_intermediate: list[literal.Task] = []
         self.guarantee_global_position_input: list[literal.Task] = []
         self.guarantee_position_sink: list[literal.Task] = []
 
@@ -56,8 +56,8 @@ class OtherExecution:
         self.join_for_move_global_position_input__global_position_b_to_position_sink = literal.Join(2)
         self.join_for_destroy_global_position_input = literal.Join(2)
 
-    def accept_for_empty_rule_global_position_source(self):
-        self.move_global_position_source_to_global_position_input__global_position_b()
+    def accept_for_empty_rule_global_position_intermediate(self):
+        self.move_global_position_intermediate_to_global_position_input__global_position_b()
 
     def accept_when_empty_position_sink(self):
         self.move_global_position_input__global_position_b_to_position_sink()
@@ -65,9 +65,9 @@ class OtherExecution:
     def accept_for_empty_rule_global_position_input(self):
         self.destroy_global_position_input()
 
-    def move_global_position_source_to_global_position_input__global_position_b(self):
+    def move_global_position_intermediate_to_global_position_input__global_position_b(self):
         self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.source.Source
+            local.my_domain_com.my_lib.intermediate.Intermediate
         ).move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.input.Input
@@ -76,7 +76,7 @@ class OtherExecution:
             )
         )
         self.scheduler.submit(self.move_global_position_input__global_position_b_to_position_sink)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_source)
+        self.scheduler.continue_with(self.guarantees.guarantee_global_position_intermediate)
 
     def move_global_position_input__global_position_b_to_position_sink(self):
         if not self.join_for_move_global_position_input__global_position_b_to_position_sink.arrive():

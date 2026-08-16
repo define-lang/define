@@ -7,8 +7,8 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.holder
 import local.my_domain_com.my_lib.input
+import local.my_domain_com.my_lib.intermediate
 import local.my_domain_com.my_lib.other
-import local.my_domain_com.my_lib.source
 
 
 class Test(literal.EntryPoint):
@@ -16,7 +16,7 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.holder.Holder,
         local.my_domain_com.my_lib.input.Input,
         local.my_domain_com.my_lib.other.Other,
-        local.my_domain_com.my_lib.source.Source,
+        local.my_domain_com.my_lib.intermediate.Intermediate,
     )
 
     @override
@@ -48,7 +48,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_action_other__for_empty_rule_global_position_source = literal.Join(3)
+        self.join_for_trigger_action_other__for_empty_rule_global_position_intermediate = literal.Join(3)
         self.join_for_trigger_action_other__for_empty_rule_global_position_input = literal.Join(2)
 
     def create_global_position_input(self):
@@ -56,7 +56,7 @@ class TestExecution:
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
         self.scheduler.submit(self.create_global_position_input__global_position_a)
-        self.trigger_action_other__for_empty_rule_global_position_source()
+        self.trigger_action_other__for_empty_rule_global_position_intermediate()
 
     def create_global_position_input__global_position_a(self):
         self.action.on_particle.get_position(
@@ -73,18 +73,18 @@ class TestExecution:
                 local.my_domain_com.my_lib.holder.Holder
             )
         )
-        self.scheduler.submit(self.move_global_position_holder_to_global_position_source)
+        self.scheduler.submit(self.move_global_position_holder_to_global_position_intermediate)
         self.trigger_action_other__for_empty_rule_global_position_input()
 
-    def move_global_position_holder_to_global_position_source(self):
+    def move_global_position_holder_to_global_position_intermediate(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).move_particle_to(
             self.action.on_particle.get_position(
-                local.my_domain_com.my_lib.source.Source
+                local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.trigger_action_other__for_empty_rule_global_position_source()
+        self.trigger_action_other__for_empty_rule_global_position_intermediate()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -93,7 +93,7 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.init_execution_trigger_action_other()
-        self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_source)
+        self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_intermediate)
         self.scheduler.submit(self.trigger_action_other__when_empty_position_sink)
         self.trigger_action_other__for_empty_rule_global_position_input()
 
@@ -107,10 +107,10 @@ class TestExecution:
             self.guarantees.trigger_action_other,
         )
 
-    def trigger_action_other__for_empty_rule_global_position_source(self):
-        if not self.join_for_trigger_action_other__for_empty_rule_global_position_source.arrive():
+    def trigger_action_other__for_empty_rule_global_position_intermediate(self):
+        if not self.join_for_trigger_action_other__for_empty_rule_global_position_intermediate.arrive():
             return
-        self.execution_trigger_action_other.accept_for_empty_rule_global_position_source()
+        self.execution_trigger_action_other.accept_for_empty_rule_global_position_intermediate()
 
     def trigger_action_other__when_empty_position_sink(self):
         self.execution_trigger_action_other.accept_when_empty_position_sink()

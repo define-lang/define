@@ -2,14 +2,14 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</holder>.
     it also assigns the position</input>.
     it also assigns the action</other>.
-    it also assigns the position</source>.
+    it also assigns the position</intermediate>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position</input>.
         create a particle in position</input>::position</a>.
         move the particle in position</input>::position</a> to position</holder>.
-        move the particle in position</holder> to position</source>.
+        move the particle in position</holder> to position</intermediate>.
         create a particle in action</other>::position<trigger_pos>.
     }
 }

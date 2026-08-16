@@ -242,15 +242,15 @@ def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
         "test.create(/input)": [],
         "test.create(/input::/a)": ["test.create(/input)"],
         "test.move(/input::/a, /holder)": ["test.create(/input::/a)"],
-        "test.move(/holder, /source)": ["test.move(/input::/a, /holder)"],
+        "test.move(/holder, /intermediate)": ["test.move(/input::/a, /holder)"],
         "test.create(/other::trigger_pos)": [],
-        "other.move(/source, /input::/b)": [
+        "other.move(/intermediate, /input::/b)": [
             "test.create(/input)",
-            "test.move(/holder, /source)",
+            "test.move(/holder, /intermediate)",
         ],
-        "other.move(/input::/b, sink)": ["other.move(/source, /input::/b)"],
+        "other.move(/input::/b, sink)": ["other.move(/intermediate, /input::/b)"],
         # The remaining operation on child b reaches the caller's Move on child a
-        # through the separately required source particle.
+        # through the particle in the separate intermediate position.
         "other.destroy(/input)": ["other.move(/input::/b, sink)"],
         "other.destroy(sink)": ["other.move(/input::/b, sink)"],
     }
@@ -295,11 +295,11 @@ def test_empty_rule_excludes_guaranteed_move_reached_through_sibling_move(
         "test.create(/input::/a)": ["test.create(/input)"],
         "test.create(/producer::trigger_pos)": [],
         "producer.move(/input::/a, /holder)": ["test.create(/input::/a)"],
-        "test.move(/holder, /source)": ["producer.move(/input::/a, /holder)"],
-        "test.move(/source, /input::/b)": ["test.move(/holder, /source)"],
+        "test.move(/holder, /intermediate)": ["producer.move(/input::/a, /holder)"],
+        "test.move(/intermediate, /input::/b)": ["test.move(/holder, /intermediate)"],
         # The sibling Move reaches the guaranteed Move through the particle's
         # intermediate positions, so Move Correction excludes the guaranteed Move.
-        "test.destroy(/input)": ["test.move(/source, /input::/b)"],
+        "test.destroy(/input)": ["test.move(/intermediate, /input::/b)"],
     }
 
 

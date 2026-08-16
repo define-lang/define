@@ -46,15 +46,15 @@ class MiddleActionExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_source = literal.Join(2)
+        self.join_for_trigger_action_inner__for_empty_rule_global_position_intermediate = literal.Join(2)
         self.join_for_trigger_action_inner__for_empty_rule_global_position_input__global_position_b = literal.Join(2)
         self.join_for_trigger_action_inner__for_empty_rule_global_position_input = literal.Join(2)
 
     def accept_when_empty_action_inner__position_trigger_pos(self):
         self.create_action_inner__position_trigger_pos()
 
-    def accept_for_empty_rule_global_position_source(self):
-        self.trigger_action_inner__for_empty_rule_global_position_source()
+    def accept_for_empty_rule_global_position_intermediate(self):
+        self.trigger_action_inner__for_empty_rule_global_position_intermediate()
 
     def accept_for_empty_rule_global_position_input__global_position_b(self):
         self.trigger_action_inner__for_empty_rule_global_position_input__global_position_b()
@@ -70,7 +70,7 @@ class MiddleActionExecution:
         ).create_particle()
         self.init_execution_trigger_action_inner()
         self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_inner__for_empty_rule_global_position_source)
+        self.scheduler.submit(self.trigger_action_inner__for_empty_rule_global_position_intermediate)
         self.scheduler.submit(self.trigger_action_inner__for_empty_rule_global_position_input__global_position_b)
         self.trigger_action_inner__for_empty_rule_global_position_input()
 
@@ -85,10 +85,10 @@ class MiddleActionExecution:
             destruction_connections=self.destruction_connections,
         )
 
-    def trigger_action_inner__for_empty_rule_global_position_source(self):
-        if not self.join_for_trigger_action_inner__for_empty_rule_global_position_source.arrive():
+    def trigger_action_inner__for_empty_rule_global_position_intermediate(self):
+        if not self.join_for_trigger_action_inner__for_empty_rule_global_position_intermediate.arrive():
             return
-        self.execution_trigger_action_inner.accept_for_empty_rule_global_position_source()
+        self.execution_trigger_action_inner.accept_for_empty_rule_global_position_intermediate()
 
     def trigger_action_inner__for_empty_rule_global_position_input__global_position_b(self):
         if not self.join_for_trigger_action_inner__for_empty_rule_global_position_input__global_position_b.arrive():

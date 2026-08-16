@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.holder
 import local.my_domain_com.my_lib.input
+import local.my_domain_com.my_lib.intermediate
 import local.my_domain_com.my_lib.middle_action
-import local.my_domain_com.my_lib.source
 
 
 class Test(literal.EntryPoint):
@@ -17,7 +17,7 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.holder.Holder,
         local.my_domain_com.my_lib.input.Input,
         local.my_domain_com.my_lib.middle_action.MiddleAction,
-        local.my_domain_com.my_lib.source.Source,
+        local.my_domain_com.my_lib.intermediate.Intermediate,
     )
 
     @override
@@ -49,7 +49,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_middle_action: local.my_domain_com.my_lib.middle_action.MiddleActionExecution
-        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_source = literal.Join(2)
+        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_intermediate = literal.Join(2)
         self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b = literal.Join(2)
         self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input = literal.Join(2)
 
@@ -75,18 +75,18 @@ class TestExecution:
                 local.my_domain_com.my_lib.holder.Holder
             )
         )
-        self.scheduler.submit(self.move_global_position_holder_to_global_position_source)
+        self.scheduler.submit(self.move_global_position_holder_to_global_position_intermediate)
         self.trigger_action_middle_action__for_empty_rule_global_position_input()
 
-    def move_global_position_holder_to_global_position_source(self):
+    def move_global_position_holder_to_global_position_intermediate(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).move_particle_to(
             self.action.on_particle.get_position(
-                local.my_domain_com.my_lib.source.Source
+                local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.trigger_action_middle_action__for_empty_rule_global_position_source()
+        self.trigger_action_middle_action__for_empty_rule_global_position_intermediate()
 
     def create_global_position_input__global_position_b(self):
         self.action.on_particle.get_position(
@@ -104,7 +104,7 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_action_middle_action()
         self.scheduler.submit(self.trigger_action_middle_action__when_empty_action_inner__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle_action__for_empty_rule_global_position_source)
+        self.scheduler.submit(self.trigger_action_middle_action__for_empty_rule_global_position_intermediate)
         self.scheduler.submit(self.trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b)
         self.trigger_action_middle_action__for_empty_rule_global_position_input()
 
@@ -121,10 +121,10 @@ class TestExecution:
     def trigger_action_middle_action__when_empty_action_inner__position_trigger_pos(self):
         self.execution_trigger_action_middle_action.accept_when_empty_action_inner__position_trigger_pos()
 
-    def trigger_action_middle_action__for_empty_rule_global_position_source(self):
-        if not self.join_for_trigger_action_middle_action__for_empty_rule_global_position_source.arrive():
+    def trigger_action_middle_action__for_empty_rule_global_position_intermediate(self):
+        if not self.join_for_trigger_action_middle_action__for_empty_rule_global_position_intermediate.arrive():
             return
-        self.execution_trigger_action_middle_action.accept_for_empty_rule_global_position_source()
+        self.execution_trigger_action_middle_action.accept_for_empty_rule_global_position_intermediate()
 
     def trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b(self):
         if not self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b.arrive():

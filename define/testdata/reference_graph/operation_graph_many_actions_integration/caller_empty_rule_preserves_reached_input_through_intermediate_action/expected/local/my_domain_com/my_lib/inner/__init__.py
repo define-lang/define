@@ -6,13 +6,13 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.input
-import local.my_domain_com.my_lib.source
+import local.my_domain_com.my_lib.intermediate
 
 
 class Inner(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.source.Source,
+        local.my_domain_com.my_lib.intermediate.Intermediate,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -30,7 +30,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_source: list[literal.Task] = []
+        self.guarantee_global_position_intermediate: list[literal.Task] = []
         self.guarantee_global_position_input: list[literal.Task] = []
 
 
@@ -48,29 +48,29 @@ class InnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_move_global_position_input__global_position_b_to_global_position_source = literal.Join(2)
+        self.join_for_move_global_position_input__global_position_b_to_global_position_intermediate = literal.Join(2)
         self.join_for_destroy_global_position_input = literal.Join(2)
 
-    def accept_for_empty_rule_global_position_source(self):
-        self.destroy_global_position_source()
+    def accept_for_empty_rule_global_position_intermediate(self):
+        self.destroy_global_position_intermediate()
 
     def accept_for_empty_rule_global_position_input__global_position_b(self):
-        self.move_global_position_input__global_position_b_to_global_position_source()
+        self.move_global_position_input__global_position_b_to_global_position_intermediate()
 
     def accept_for_empty_rule_global_position_input(self):
         self.destroy_global_position_input()
 
-    def destroy_global_position_source(self):
-        literal.continue_destruction(self.continue_destroy_global_position_source)
+    def destroy_global_position_intermediate(self):
+        literal.continue_destruction(self.continue_destroy_global_position_intermediate)
 
-    def continue_destroy_global_position_source(self):
+    def continue_destroy_global_position_intermediate(self):
         self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.source.Source
+            local.my_domain_com.my_lib.intermediate.Intermediate
         ).destroy_particle()
-        self.move_global_position_input__global_position_b_to_global_position_source()
+        self.move_global_position_input__global_position_b_to_global_position_intermediate()
 
-    def move_global_position_input__global_position_b_to_global_position_source(self):
-        if not self.join_for_move_global_position_input__global_position_b_to_global_position_source.arrive():
+    def move_global_position_input__global_position_b_to_global_position_intermediate(self):
+        if not self.join_for_move_global_position_input__global_position_b_to_global_position_intermediate.arrive():
             return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
@@ -78,11 +78,11 @@ class InnerExecution:
             local.my_domain_com.my_lib.b.B
         ).move_particle_to(
             self.action.on_particle.get_position(
-                local.my_domain_com.my_lib.source.Source
+                local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
         self.scheduler.submit(self.destroy_global_position_input)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_source)
+        self.scheduler.continue_with(self.guarantees.guarantee_global_position_intermediate)
 
     def destroy_global_position_input(self):
         if not self.join_for_destroy_global_position_input.arrive():
