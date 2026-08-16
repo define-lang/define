@@ -256,6 +256,31 @@ def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
     }
 
 
+def test_caller_empty_rule_remaining_move_reaches_one_input_through_two_dependencies(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/a)": ["test.create(/input)"],
+        "test.create(/other::trigger_pos)": [],
+        "other.move(/input::/a, holder_a)": ["test.create(/input::/a)"],
+        "other.move(holder_a, holder_b)": ["other.move(/input::/a, holder_a)"],
+        "other.create(/input::/a)": ["other.move(/input::/a, holder_a)"],
+        "other.destroy(/input::/a)": ["other.create(/input::/a)"],
+        # Both dependencies reach the one caller operation that supplied the
+        # original particle.
+        "other.move(holder_b, /input::/a)": [
+            "other.move(holder_a, holder_b)",
+            "other.destroy(/input::/a)",
+        ],
+        "other.move(/input::/a, holder_c)": ["other.move(holder_b, /input::/a)"],
+        "other.destroy(/input)": ["other.move(/input::/a, holder_c)"],
+        "other.destroy(holder_c)": ["other.move(/input::/a, holder_c)"],
+    }
+
+
 @pytest.mark.xfail(
     strict=True,
     reason=_GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION,
