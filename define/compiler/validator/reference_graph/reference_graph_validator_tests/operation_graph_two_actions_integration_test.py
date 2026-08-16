@@ -13,6 +13,11 @@ _CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER = (
     "remaining concrete dependencies"
 )
 
+_GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION = (
+    "Action Guarantee resolution does not expose a guaranteed Move to the Empty "
+    "Rule's Move Correction"
+)
+
 
 def test_triggered_action_destroys_its_own_trigger_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -248,6 +253,28 @@ def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
         # through the separately required source particle.
         "other.destroy(/input)": ["other.move(/input::/b, sink)"],
         "other.destroy(sink)": ["other.move(/input::/b, sink)"],
+    }
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION,
+)
+def test_empty_rule_excludes_guaranteed_move_reached_through_sibling_move(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/a)": ["test.create(/input)"],
+        "test.create(/producer::trigger_pos)": [],
+        "producer.move(/input::/a, /holder)": ["test.create(/input::/a)"],
+        "test.move(/holder, /source)": ["producer.move(/input::/a, /holder)"],
+        "test.move(/source, /input::/b)": ["test.move(/holder, /source)"],
+        # The sibling Move reaches the guaranteed Move through the particle's
+        # intermediate positions, so Move Correction excludes the guaranteed Move.
+        "test.destroy(/input)": ["test.move(/source, /input::/b)"],
     }
 
 

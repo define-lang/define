@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/producer> {
+    it also assigns the position</holder>.
+    it also assigns the position</input>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        move the particle in position</input>::position</a> to position</holder>.
+    }
+}
