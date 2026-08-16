@@ -11,9 +11,13 @@ _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
     "unrelated positions"
 )
-_GUARANTEE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER = (
+_GUARANTEE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS = (
     "Action Guarantee resolution does not preserve caller inputs reached by the "
     "guaranteed operation"
+)
+_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS = (
+    "Caller Empty Rule substitution does not preserve caller inputs reached by "
+    "remaining dependencies"
 )
 
 
@@ -353,6 +357,35 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
     }
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS,
+)
+def test_caller_empty_rule_preserves_reached_input_through_intermediate_action(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(/input)": [],
+        "test.create(/input::/a)": ["test.create(/input)"],
+        "test.move(/input::/a, /holder)": ["test.create(/input::/a)"],
+        "test.move(/holder, /source)": ["test.move(/input::/a, /holder)"],
+        "test.create(/input::/b)": ["test.create(/input)"],
+        "test.create(/middle_action::trigger_pos)": [],
+        "middle_action.create(/inner::trigger_pos)": [],
+        "inner.destroy(/source)": ["test.move(/holder, /source)"],
+        "inner.move(/input::/b, /source)": [
+            "inner.destroy(/source)",
+            "test.create(/input::/b)",
+        ],
+        # The remaining operation on child b reaches the caller's Move on child a
+        # through the separately required source particle. This relationship is
+        # still unresolved while the Empty Rule passes through middle_action.
+        "inner.destroy(/input)": ["inner.move(/input::/b, /source)"],
+    }
+
+
 def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_it(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -502,7 +535,7 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
 
 @pytest.mark.xfail(
     strict=True,
-    reason=_GUARANTEE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER,
+    reason=_GUARANTEE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS,
 )
 def test_caller_fill_dependency_is_removed_through_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
