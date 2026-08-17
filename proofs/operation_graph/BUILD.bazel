@@ -7,6 +7,7 @@ filegroup(
     name = "all_proofs",
     srcs = [
         ":calculation",
+        ":calculation_correctness",
         ":completeness",
         ":definitions",
         ":independence_witnesses",
@@ -34,6 +35,7 @@ lean_axiom_test(
     imports = ["calculation"],
     theorems = [
         "Define.OperationGraph.IsEntryBefore.unique",
+        "Define.OperationGraph.RuleCalculation.dependency_isInCollection",
         "Define.OperationGraph.calculatedDependencyBefore_add_operation_iff",
         "Define.OperationGraph.calculatedDependencyBefore_source_order_lt",
         "Define.OperationGraph.calculationFor_fillCandidate_iff",
@@ -44,6 +46,35 @@ lean_axiom_test(
         "Define.OperationGraph.not_isEntryBefore_zero",
     ],
     deps = [":calculation"],
+)
+
+lean_library(
+    name = "calculation_correctness",
+    srcs = ["calculation_correctness.lean"],
+    deps = [":calculation"],
+)
+
+lean_axiom_test(
+    name = "calculation_correctness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculation_correctness"],
+    theorems = [
+        "Define.OperationGraph.calculatedCompleteResolvedDefineGraph",
+        "Define.OperationGraph.calculatedDependencyBefore_pointsBackward",
+        "Define.OperationGraph.calculatedDependencyBefore_reaches_iff",
+        "Define.OperationGraph.calculatedDependencyBefore_stable",
+        "Define.OperationGraph.calculatedDependency_exact",
+        "Define.OperationGraph.calculatedDependency_operations",
+        "Define.OperationGraph.calculationFor_latest_fill_candidate",
+        "Define.OperationGraph.calculationFor_latest_source_candidate",
+        "Define.OperationGraph.exists_isEntryBefore_at_least_as_recent",
+    ],
+    deps = [":calculation_correctness"],
 )
 
 lean_library(
@@ -135,7 +166,7 @@ lean_axiom_test(
 lean_library(
     name = "minimality",
     srcs = ["minimality.lean"],
-    deps = [":calculation"],
+    deps = [":calculation_correctness"],
 )
 
 lean_axiom_test(

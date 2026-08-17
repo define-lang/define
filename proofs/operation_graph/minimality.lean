@@ -1,4 +1,4 @@
-import calculation
+import calculation_correctness
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -46,29 +46,26 @@ derived.
   applicable earlier operation;
 - Create, Destroy, and Move have their specified occupancy transitions.
 
-The conversion from a valid Define program to `ResolvedDefineGraph` is not
-itself machine-checked because the complete Define source and validation
-semantics are not modeled in Lean. The machine-checked theorem begins with a
-`ResolvedDefineGraph` whose fields state the consequences listed above; the
-English proof establishes that valid Define programs have those consequences.
+`calculation_correctness.lean` machine-checks the construction of a
+`ResolvedDefineGraph` from every `ValidResolvedHistory`. The remaining
+source-to-history conversion is not machine-checked because complete Define
+source and validation semantics are not modeled in Lean.
 
-A valid resolved history supplies this structure by assigning each Particle
-Operation occurrence its natural-number index and encoding each fully resolved
-position as a finite chained name. The history may stop or continue without end;
-the theorem does not require a finite vertex type. Caller binding preserves and
-reflects equality and transitive parent/child relationships. The occupancy state
-immediately before each occurrence supplies `ExactOccupancyExecution`. Caller
-and destruction resolution contribute only the concrete Particle Operations and
-resolved rule calculations described by the English proof.
+A valid resolved history assigns each Particle Operation occurrence its
+natural-number index and encodes each fully resolved position as a finite
+chained name. The history may stop or continue without end; the theorem does not
+require a finite vertex type. The occupancy state immediately before each
+occurrence supplies `ExactOccupancyExecution`. The source-to-history proof must
+show that caller binding preserves and reflects equality and transitive
+parent/child relationships and that caller and destruction resolution
+contribute the concrete Particle Operations and resolved position names used by
+the calculation.
 
-`latest_source_candidate` also covers a position name that no longer refers to
-a position when the emptying operation runs. A valid program satisfies it by
-keying, at that name, the most recent operation on the name or the most recent
-Move of a particle whose transitive child positions included it. The operation
-that removed the position's naming chain is a strictly more recent collected
-candidate on a related position (the English proof's Collection completeness
-lemma), so the Comparison always excludes these additional keys and they never
-change the final dependency set.
+`latest_source_candidate` also covers a position name that is empty when the
+emptying operation runs. A valid resolved history retains every previously
+operated resolved name for graph queries. The construction-correctness proof
+therefore derives its most-recent entry directly, including a Move that became
+the entry for a changed transitive-child name.
 
 The structure omits validity constraints unrelated to dependency minimality.
 It can therefore describe abstract values that no valid Define program produces,
@@ -175,73 +172,6 @@ theorem dependenciesAreAntichain (calculation : RuleCalculation)
           no_candidate_reaches_older newerCandidate newer_move.1.1 distinct
             reaches_older
 
-/-
-These obligations are stated separately so the final theorem can be audited
-against the specification. None assumes that a dependency set is an antichain
-or that an edge is necessary; the only reachability property used by the key
-lemma is derived from the exact three-rule equation above.
--/
-structure ResolvedDefineGraph extends RuleGraph where
-  occupancy : ExactOccupancyExecution isOperation
-  sourceCandidateAt :
-    ParticleOperation → ParticleOperation → Position → Prop
-  source_candidate_iff :
-    ∀ operation candidate,
-      (calculation operation).sourceCandidate candidate ↔
-        ∃ position, sourceCandidateAt operation candidate position
-  source_candidate_empty_position :
-    ∀ operation candidate position,
-      sourceCandidateAt operation candidate position →
-        ∃ emptyPosition,
-          EmptyPosition operation = some emptyPosition ∧
-            Related position emptyPosition
-  source_candidate_operated_position :
-    ∀ operation candidate position,
-      sourceCandidateAt operation candidate position →
-        ∃ operatedPosition,
-          OperatesOn candidate operatedPosition ∧
-            ParentOrSame operatedPosition position
-  non_move_source_candidate_operates_on_position :
-    ∀ operation candidate position,
-      sourceCandidateAt operation candidate position →
-        ¬IsMove candidate →
-        OperatesOn candidate position
-  source_candidate_is_previous :
-    ∀ operation candidate position,
-      sourceCandidateAt operation candidate position →
-        MoreRecent operation candidate
-  source_candidate_operations :
-    ∀ operation candidate position,
-      sourceCandidateAt operation candidate position →
-        isOperation operation ∧ isOperation candidate
-  latest_source_candidate :
-    ∀ operation emptyPosition position previousOperation,
-      isOperation operation →
-        isOperation previousOperation →
-        EmptyPosition operation = some emptyPosition →
-        Related position emptyPosition →
-        OperatesOn previousOperation position →
-        MoreRecent operation previousOperation →
-        ∃ candidate,
-          sourceCandidateAt operation candidate position ∧
-            (candidate = previousOperation ∨
-              MoreRecent candidate previousOperation)
-  fill_candidate_operated_position :
-    ∀ operation candidate,
-      (calculation operation).IsFillCandidate candidate →
-        ∃ fillPosition operatedPosition,
-          FillPosition operation = some fillPosition ∧
-            OperatesOn candidate operatedPosition ∧
-            ParentOrSame operatedPosition fillPosition
-  fill_candidate_is_previous :
-    ∀ operation candidate,
-      (calculation operation).IsFillCandidate candidate →
-        MoreRecent operation candidate
-  fill_candidate_operations :
-    ∀ operation candidate,
-      (calculation operation).IsFillCandidate candidate →
-        isOperation operation ∧ isOperation candidate
-
 theorem operationsRelated_symm {first second : ParticleOperation} :
     OperationsRelated first second → OperationsRelated second first := by
   rintro ⟨firstPosition, secondPosition, first_operates, second_operates,
@@ -260,29 +190,6 @@ theorem ResolvedDefineGraph.inCollection_is_previous
     exact graph.source_candidate_is_previous operation candidate position
       candidate_at_position
   · exact graph.fill_candidate_is_previous operation candidate fill_candidate
-
-theorem RuleCalculation.dependency_isInCollection
-    {calculation : RuleCalculation}
-    {dependency : ParticleOperation → ParticleOperation → Prop}
-    {candidate : ParticleOperation}
-    (rule_dependency :
-      calculation.Dependency dependency candidate) :
-    calculation.InCollection candidate := by
-  cases operation_kind : calculation.operation.kind with
-  | create target =>
-      exact Or.inr (by
-        simpa [RuleCalculation.Dependency, operation_kind] using
-          rule_dependency)
-  | destroy target =>
-      have after_move_correction : calculation.AfterMoveCorrection dependency candidate := by
-        simpa [RuleCalculation.Dependency, operation_kind] using
-          rule_dependency
-      exact after_move_correction.1.1
-  | move source target =>
-      have move_rule_dependency : calculation.MoveRuleDependency dependency candidate := by
-        simpa [RuleCalculation.Dependency, operation_kind] using
-          rule_dependency
-      exact move_rule_dependency.1.1.1
 
 theorem ResolvedDefineGraph.directDependency_is_previous
     (graph : ResolvedDefineGraph) {operation candidate : ParticleOperation}

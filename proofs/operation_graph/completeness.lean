@@ -24,9 +24,9 @@ filled position or one of its transitive parent positions, the Fill Rule
 selected a candidate at least as recent. The Empty Rule counterpart is already
 a `ResolvedDefineGraph` obligation (`latest_source_candidate`).
 
-The English proof justifies both obligations from the rule text and the
-position history; this file consumes them the same way the minimality file
-consumes its obligations.
+`calculation_correctness.lean` derives both obligations from an arbitrary valid
+resolved history and its exact rule calculation. This file consumes the
+resulting interface without assuming the completeness conclusion.
 
 The final section extends an existing six-operation model to a
 `CompleteResolvedDefineGraph`. Several fills in that history have multiple
@@ -472,31 +472,6 @@ theorem ExactOccupancyExecution.parent_occupied_after_child_operation
         exact
           execution.parent_position_is_occupied (operation.operationOrder + 1)
             parentPosition childPosition parent_of_child child_occupied_after
-
-/-!
-## The complete resolved graph
--/
-
-/--
-A resolved graph together with the Fill Rule counterpart of
-`latest_source_candidate`: the Fill Rule selects the single most recent
-previous Particle Operation among the ones on the filled position and its
-transitive parent positions, so whenever such a previous operation exists, the
-selected Fill Dependency is at least as recent.
--/
-structure CompleteResolvedDefineGraph extends ResolvedDefineGraph where
-  latest_fill_candidate :
-    ∀ operation fillPosition operatedPosition previousOperation,
-      isOperation operation →
-        isOperation previousOperation →
-        FillPosition operation = some fillPosition →
-        OperatesOn previousOperation operatedPosition →
-        ParentOrSame operatedPosition fillPosition →
-        MoreRecent operation previousOperation →
-        ∃ candidate,
-          (calculation operation).IsFillCandidate candidate ∧
-            (candidate = previousOperation ∨
-              MoreRecent candidate previousOperation)
 
 namespace CompleteResolvedDefineGraph
 

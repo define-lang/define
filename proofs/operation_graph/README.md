@@ -8,6 +8,9 @@
 - [Particle Operation Dependency Graph Calculation](calculation.md) defines the
   Fill, Empty, and Move Rules for a valid resolved history and constructs the
   graph one occurrence at a time.
+- [Particle Operation Dependency Graph Calculation Correctness](calculation-correctness-proof.md)
+  proves that construction supplies the candidate and exact-dependency facts
+  consumed by the graph results.
 - [Particle Operation Dependency Graph Minimality](minimality-proof.md) proves
   that the graph the rules produce is a transitively reduced directed acyclic
   graph, and that it is the unique such graph whose reachability is determined
@@ -20,6 +23,9 @@
 
 Lean formalizations and witness models sit beside the documents:
 
+- `calculation.lean` constructs the prefix graph, and
+  `calculation_correctness.lean` derives the complete graph interface from an
+  arbitrary valid resolved history.
 - `minimality.lean` checks transitive minimality, with a non-vacuity model in
   `minimality_witnesses.lean`.
 - `completeness.lean` checks completeness and the uniqueness of the graph.

@@ -230,6 +230,8 @@ resolved history is _valid_ when:
 - `S₀` is prefix-closed;
 - every occupied and operated position has a resolved name that may be queried
   at the corresponding index;
+- a resolved name operated on at an earlier index remains queryable at every
+  later index, even while its position is empty;
 - the set of names that may be queried is prefix-closed;
 - every `Oᵢ` satisfies its occupancy preconditions in `Sᵢ`;
 - `Sᵢ₊₁` is exactly the state produced by the operation's effect;

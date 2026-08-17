@@ -29,9 +29,11 @@ Rules.
 
 A valid resolved history also records, at each index, the resolved position
 names whose most-recent Particle Operation may be queried. Every occupied or
-operated position has such a name, and these names are prefix-closed. The
-occupancy results below do not otherwise depend on that trace; the graph
-calculation does.
+operated position has such a name, a name operated on earlier remains queryable
+at later indices, and these names are prefix-closed. Remaining queryable does
+not mean that the position remains occupied or that source code can currently
+refer to it; the retained name preserves its graph identity. The occupancy
+results below do not otherwise depend on that trace; the graph calculation does.
 
 ## Assumptions and their specification sources
 

@@ -24,15 +24,17 @@ Particle Operation on that resolved name. It does not mean that the position is
 occupied.
 
 The source-to-history construction must derive `Qᵢ` from Position Definitions,
-Action Executions, applicable position names, and Move name changes. In
-particular, it must prove:
+Action Executions, resolved names retained for graph history, and Move name
+changes. In particular, it must prove:
 
 1. every position operated on by `Oᵢ` has an applicable resolved name at index
    `i`;
 2. every occupied position in `Sᵢ` has an applicable resolved name at index `i`;
 3. if a name is applicable, every transitive parent position needed by that name
    is also applicable; and
-4. a Move from `s` to `t` changes the applicable name `s · r` to `t · r` for
+4. once a resolved name has been operated on, the name remains queryable at
+   every later occurrence, even while the position is empty; and
+5. a Move from `s` to `t` changes the applicable name `s · r` to `t · r` for
    every position belonging to the moved particle, while a resolved position
    name contributed by a later Action Execution is not retroactively treated as
    moved.

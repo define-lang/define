@@ -87,6 +87,12 @@ structure ValidResolvedHistory (isOperation : ParticleOperation → Prop) where
       isOperation operation →
         OperatesOn operation position →
         queryableBefore operation.operationOrder position
+  operated_position_remains_queryable :
+    ∀ operationOrder operation position,
+      isOperation operation →
+        operation.operationOrder < operationOrder →
+        OperatesOn operation position →
+        queryableBefore operationOrder position
   empty_position_is_occupied :
     ∀ operation source,
       isOperation operation →
@@ -721,6 +727,13 @@ def history : ValidResolvedHistory IsOperation where
     · exact Or.inr position_is_target
   operated_position_is_queryable := by
     intro operation position operation_member operates_on_position
+    subst operation
+    have position_is_target : position = target := by
+      simpa [createOperation, OperatesOn] using operates_on_position
+    exact Or.inr position_is_target
+  operated_position_remains_queryable := by
+    intro operationOrder operation position operation_member operation_before
+      operates_on_position
     subst operation
     have position_is_target : position = target := by
       simpa [createOperation, OperatesOn] using operates_on_position

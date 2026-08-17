@@ -83,6 +83,30 @@ def RuleCalculation.Dependency (calculation : RuleCalculation)
   | .destroy _ => calculation.AfterMoveCorrection dependency candidate
   | .move _ _ => calculation.MoveRuleDependency dependency candidate
 
+theorem RuleCalculation.dependency_isInCollection
+    {calculation : RuleCalculation}
+    {dependency : ParticleOperation → ParticleOperation → Prop}
+    {candidate : ParticleOperation}
+    (rule_dependency : calculation.Dependency dependency candidate) :
+    calculation.InCollection candidate := by
+  cases operation_kind : calculation.operation.kind with
+  | create target =>
+      exact Or.inr (by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency)
+  | destroy target =>
+      have after_move_correction :
+          calculation.AfterMoveCorrection dependency candidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency
+      exact after_move_correction.1.1
+  | move source target =>
+      have move_rule_dependency :
+          calculation.MoveRuleDependency dependency candidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency
+      exact move_rule_dependency.1.1.1
+
 structure RuleGraph where
   isOperation : ParticleOperation → Prop
   dependency : ParticleOperation → ParticleOperation → Prop
