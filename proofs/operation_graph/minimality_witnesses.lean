@@ -1,3 +1,4 @@
+import create_destroy_history
 import minimality
 
 set_option warningAsError true

@@ -105,6 +105,14 @@ def OperationsRelated (first second : ParticleOperation) : Prop :=
 def MoreRecent (newer older : ParticleOperation) : Prop :=
   older.operationOrder < newer.operationOrder
 
+/--
+The rule-independent related-and-previous relation, written `R` in the English
+proofs.
+-/
+def RelatedPrevious (operation previousOperation : ParticleOperation) : Prop :=
+  MoreRecent operation previousOperation ∧
+    OperationsRelated operation previousOperation
+
 def IsMove (operation : ParticleOperation) : Prop :=
   ∃ source target, operation.kind = .move source target
 

@@ -73,9 +73,11 @@ modules each expose a theorem stated directly for an arbitrary
 `ValidResolvedHistory`, and every Lean module has a Bazel axiom audit.
 
 The other files are supporting evidence, not links in the universal proof chain.
-`minimality_witnesses.lean` demonstrates that selected rule cases and graph
-interfaces are satisfiable. `independence_witnesses.lean` compares the full
-rules with variants changing one clause. Their explanations live beside the
-executable models in those modules. `minimality_checker.py` searches bounded
-concrete histories for counterexamples. None of these witnesses or bounded
-searches substitutes for the universal English and Lean proofs above.
+`create_destroy_history.lean` gives a concrete valid resolved history without
+assuming a graph property. `minimality_witnesses.lean` demonstrates that
+selected rule cases and graph interfaces are satisfiable.
+`independence_witnesses.lean` compares the full rules with variants changing one
+clause. Their explanations live beside the executable models in those modules.
+`minimality_checker.py` searches bounded concrete histories for counterexamples.
+None of these witnesses or bounded searches substitutes for the universal
+English and Lean proofs above.

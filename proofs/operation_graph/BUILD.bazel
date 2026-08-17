@@ -10,6 +10,7 @@ filegroup(
         ":calculation_correctness",
         ":characterization",
         ":completeness",
+        ":create_destroy_history",
         ":definitions",
         ":independence_witnesses",
         ":maximum_safe_concurrency",
@@ -128,6 +129,29 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "create_destroy_history",
+    srcs = ["create_destroy_history.lean"],
+    deps = [":valid_history"],
+)
+
+lean_axiom_test(
+    name = "create_destroy_history_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["create_destroy_history"],
+    theorems = [
+        "Define.OperationGraph.CreateDestroyHistory.destroy_operation_member",
+        "Define.OperationGraph.CreateDestroyHistory.history",
+        "Define.OperationGraph.CreateDestroyHistory.operation_member",
+    ],
+    deps = [":create_destroy_history"],
+)
+
+lean_library(
     name = "definitions",
     srcs = ["definitions.lean"],
 )
@@ -149,7 +173,7 @@ lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
     deps = [
-        ":completeness",
+        ":definitions",
         ":minimality_witnesses",
     ],
 )
@@ -215,7 +239,10 @@ lean_axiom_test(
 lean_library(
     name = "minimality_witnesses",
     srcs = ["minimality_witnesses.lean"],
-    deps = [":minimality"],
+    deps = [
+        ":create_destroy_history",
+        ":minimality",
+    ],
 )
 
 lean_axiom_test(
@@ -254,9 +281,6 @@ lean_axiom_test(
     imports = ["valid_history"],
     theorems = [
         "Define.OperationGraph.ExactOccupancyExecution.toValidOccupancyTrace",
-        "Define.OperationGraph.CreateDestroyHistory.destroy_operation_member",
-        "Define.OperationGraph.CreateDestroyHistory.history",
-        "Define.OperationGraph.CreateDestroyHistory.operation_member",
         "Define.OperationGraph.ValidResolvedHistory.move_preserves_occupancy",
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_operation",
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_responsible_operation",

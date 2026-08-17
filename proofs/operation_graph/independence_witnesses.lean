@@ -1,4 +1,4 @@
-import completeness
+import definitions
 import minimality_witnesses
 
 set_option warningAsError true

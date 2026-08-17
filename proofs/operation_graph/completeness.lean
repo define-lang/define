@@ -37,15 +37,6 @@ namespace Define.OperationGraph
 
 universe u
 
-/--
-The related-and-previous relation, written `R` in the English proof. It
-mentions only the operation order and the operated positions, never the three
-resolved rules.
--/
-def RelatedPrevious (operation previousOperation : ParticleOperation) : Prop :=
-  MoreRecent operation previousOperation ∧
-    OperationsRelated operation previousOperation
-
 theorem related_of_parentOrSame_of_parentOrSame
     {first second sharedChild : Position}
     (first_parent : ParentOrSame first sharedChild)
