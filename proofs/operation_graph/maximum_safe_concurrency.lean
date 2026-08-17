@@ -1,4 +1,4 @@
-import proofs.operation_graph.completeness
+import completeness
 
 set_option autoImplicit false
 

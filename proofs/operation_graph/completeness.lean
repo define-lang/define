@@ -1,5 +1,5 @@
-import proofs.operation_graph.minimality
-import proofs.operation_graph.minimality_witnesses
+import minimality
+import minimality_witnesses
 
 set_option autoImplicit false
 

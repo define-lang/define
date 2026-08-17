@@ -3,6 +3,38 @@ load("@rules_lean//lean:lean.bzl", "lean_library")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+filegroup(
+    name = "all_proofs",
+    srcs = [
+        ":completeness",
+        ":independence_witnesses",
+        ":maximum_safe_concurrency",
+        ":minimality",
+        ":minimality_witnesses",
+    ],
+)
+
+lean_library(
+    name = "completeness",
+    srcs = ["completeness.lean"],
+    deps = [
+        ":minimality",
+        ":minimality_witnesses",
+    ],
+)
+
+lean_library(
+    name = "independence_witnesses",
+    srcs = ["independence_witnesses.lean"],
+    deps = [":completeness"],
+)
+
+lean_library(
+    name = "maximum_safe_concurrency",
+    srcs = ["maximum_safe_concurrency.lean"],
+    deps = [":completeness"],
+)
+
 lean_library(
     name = "minimality",
     srcs = ["minimality.lean"],
