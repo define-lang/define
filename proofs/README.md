@@ -19,3 +19,15 @@ Rigorous analysis and verification by more experienced humans would be welcome.
 Since these are written by AI, none of the language in this directory is
 canonical; the terms used to describe things are not necessarily valid Define
 terms.
+
+## Building proofs
+
+Bazel downloads the Lean toolchain declared by `lean-toolchain`. To compile the
+proofs, run:
+
+```console
+bazelisk build //proofs/...
+```
+
+Lean rejects invalid terms, and the Bazel rule also rejects any proof containing
+an admitted goal such as `sorry`.

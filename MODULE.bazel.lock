@@ -1013,6 +1013,38 @@
         }
       }
     },
+    "@@rules_lean+//lean:lake.bzl%lake": {
+      "general": {
+        "bzlTransitiveDigest": "aPkIHVzLdKk7M5dLQvp7CTCytLzOfKrd3uxlAiQhJ0A=",
+        "usagesDigest": "C6K5DDg/VoU8Z4ix8uTj9vtBrdVoc1gBLB2RTuEIrdI=",
+        "recordedInputs": [
+          "FILE:@@//proofs/lean-toolchain 2bdc48adfa58d0017e538a0ad117c5d73d35deec879978f909406a80c8037273"
+        ],
+        "generatedRepoSpecs": {
+          "lean_dist_4_32_2": {
+            "repoRuleId": "@@rules_lean+//lean:lake.bzl%lean_dist",
+            "attributes": {
+              "version": "v4.32.2"
+            }
+          },
+          "lean_deps": {
+            "repoRuleId": "@@rules_lean+//lean:lake.bzl%lake_workspace",
+            "attributes": {
+              "lean_toolchain": "@@//proofs:lean-toolchain",
+              "lakefile": "@@//proofs:lakefile.lean",
+              "lake_manifest": "@@//proofs:lake-manifest.json",
+              "allow_source_build": false,
+              "cache_roots": [],
+              "olean_cache": "",
+              "olean_cache_packages": [],
+              "emit_imports_manifest": false,
+              "lean_dist_lake": "@@rules_lean++lake+lean_dist_4_32_2//:lean_toolchain/bin/lake",
+              "lean_dist_toolchain": "@@rules_lean++lake+lean_dist_4_32_2//:lean_toolchain"
+            }
+          }
+        }
+      }
+    },
     "@@rules_python+//python/uv:uv.bzl%uv": {
       "general": {
         "bzlTransitiveDigest": "DafUArm1CsjJZcemT0FvUq9rUch+pq38+JqfOBJCpm8=",

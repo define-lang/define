@@ -1,6 +1,12 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@rules_lean//lean:lean.bzl", "lean_library")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+lean_library(
+    name = "minimality",
+    srcs = ["minimality.lean"],
+)
 
 py_binary(
     name = "minimality_checker",

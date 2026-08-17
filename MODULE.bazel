@@ -22,6 +22,7 @@ bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.7.2")
 bazel_dep(name = "aspect_rules_js", version = "3.4.0")
 bazel_dep(name = "rules_nodejs", version = "6.7.5")
+bazel_dep(name = "rules_lean", version = "0.7.0")
 
 # Transitive overrides
 bazel_dep(name = "rules_android", version = "0.7.3")  # Fix build breakage
@@ -32,6 +33,25 @@ local_path_override(
     module_name = "re2",
     path = "vendored/re2",
 )
+
+git_override(
+    module_name = "rules_lean",
+    commit = "6abaa70b3b917304752719ae539c59eacdaa521c",
+    remote = "https://github.com/tomato-bazel/rules_lean.git",
+)
+
+# --- Lean toolchain ---
+
+lake = use_extension("@rules_lean//lean:lake.bzl", "lake")
+lake.workspace(
+    name = "lean_deps",
+    lake_manifest = "//proofs:lake-manifest.json",
+    lakefile = "//proofs:lakefile.lean",
+    lean_toolchain = "//proofs:lean-toolchain",
+)
+use_repo(lake, "lean_deps")
+
+register_toolchains("@lean_deps//:lean_toolchain_def")
 
 # --- Python toolchain ---
 
