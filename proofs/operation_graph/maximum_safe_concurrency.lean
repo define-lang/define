@@ -1,4 +1,4 @@
-import completeness
+import characterization
 
 set_option warningAsError true
 set_option autoImplicit false

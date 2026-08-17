@@ -8,6 +8,7 @@ filegroup(
     srcs = [
         ":calculation",
         ":calculation_correctness",
+        ":characterization",
         ":completeness",
         ":definitions",
         ":independence_witnesses",
@@ -78,12 +79,36 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "characterization",
+    srcs = ["characterization.lean"],
+    deps = [
+        ":completeness",
+        ":minimality",
+    ],
+)
+
+lean_axiom_test(
+    name = "characterization_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["characterization"],
+    theorems = [
+        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_is_unique",
+        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_iff_reaches_relatedPrevious",
+        "Define.OperationGraph.calculatedDependency_is_unique",
+        "Define.OperationGraph.calculatedDependency_reaches_iff_reaches_relatedPrevious",
+    ],
+    deps = [":characterization"],
+)
+
+lean_library(
     name = "completeness",
     srcs = ["completeness.lean"],
-    deps = [
-        ":minimality",
-        ":minimality_witnesses",
-    ],
+    deps = [":calculation_correctness"],
 )
 
 lean_axiom_test(
@@ -97,8 +122,7 @@ lean_axiom_test(
     imports = ["completeness"],
     theorems = [
         "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_of_relatedPrevious",
-        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_iff_reaches_relatedPrevious",
-        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_is_unique",
+        "Define.OperationGraph.calculatedDependency_reaches_of_relatedPrevious",
     ],
     deps = [":completeness"],
 )
@@ -124,7 +148,10 @@ lean_axiom_test(
 lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
-    deps = [":completeness"],
+    deps = [
+        ":completeness",
+        ":minimality_witnesses",
+    ],
 )
 
 lean_axiom_test(
@@ -147,7 +174,7 @@ lean_axiom_test(
 lean_library(
     name = "maximum_safe_concurrency",
     srcs = ["maximum_safe_concurrency.lean"],
-    deps = [":completeness"],
+    deps = [":characterization"],
 )
 
 lean_axiom_test(

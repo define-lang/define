@@ -1,37 +1,80 @@
 # Operation Graph Proofs
 
-- [Shared Definitions](definitions.md) defines resolved Particle Operations,
-  positions, occupancy, and graph notation without assuming any dependency rule.
-- [Valid Resolved Histories](valid-history.md) proves the occupancy invariants
-  used by the graph arguments and identifies the remaining source-resolution
-  obligations.
-- [Particle Operation Dependency Graph Calculation](calculation.md) defines the
-  Fill, Empty, and Move Rules for a valid resolved history and constructs the
-  graph one occurrence at a time.
-- [Particle Operation Dependency Graph Calculation Correctness](calculation-correctness-proof.md)
-  proves that construction supplies the candidate and exact-dependency facts
-  consumed by the graph results.
-- [Particle Operation Dependency Graph Minimality](minimality-proof.md) proves
-  that the graph the rules produce is a transitively reduced directed acyclic
-  graph, independently of completeness.
-- [Particle Operation Maximum Safe Concurrency](maximum-safe-concurrency-proof.md)
-  proves that every execution order consistent with that reachability has the
-  same occupancy behavior, and that no program-oriented ordering constraint can
-  be removed while keeping every permitted order valid. It also gives a
-  counterexample to the stronger global-maximum claim.
+The main argument has one foundation, two independent principal results, and one
+point where those results are deliberately combined:
 
-Lean formalizations and witness models sit beside the documents:
+```text
+shared definitions
+        |
+valid resolved histories
+        |
+graph calculation
+        |
+calculation correctness
+        |
+        +-------------------+
+        |                   |
+   minimality          completeness
+        |                   |
+        +---------+---------+
+                  |
+          characterization
+                  |
+       maximum safe concurrency
+```
 
-- `calculation.lean` constructs the prefix graph, and
-  `calculation_correctness.lean` derives the complete graph interface from an
-  arbitrary valid resolved history.
-- `minimality.lean` checks transitive minimality, with a non-vacuity model in
-  `minimality_witnesses.lean`.
-- `completeness.lean` checks completeness and the uniqueness of the graph.
-- `independence_witnesses.lean` checks the required-ordering or redundant-edge
-  property of concrete witness graphs for the rule clauses covered there. The
-  comments derive each graph from the full and weakened rules.
-- `maximum_safe_concurrency.lean` checks that the occupancy state
-  transformations for operations on unrelated positions commute.
-- `minimality_checker.py` searches bounded concrete operation sequences for
-  counterexamples to the minimality proof.
+Minimality never assumes completeness, and completeness never assumes
+minimality. Characterization is the first proof allowed to depend on both.
+Maximum safe concurrency is a downstream consequence of the characterized
+reachability; it is not used to establish the graph results.
+
+## Recommended reading order
+
+1. Begin with [Shared Definitions](definitions.md), which fixes resolved
+   Particle Operations, positions, occurrence order, occupancy, and graph
+   notation without assuming any dependency rule. Then read
+   [Valid Resolved Histories](valid-history.md), which states the
+   rule-independent history properties available to every later proof. These
+   documents expose the source-to-history obligations that remain outside the
+   current formal model.
+2. Read [Particle Operation Dependency Graph Calculation](calculation.md) for
+   the actual Fill, Empty, and Move calculation. Its result is only a
+   constructed relation; none of the desired graph properties are assumed. Then
+   read [Calculation Correctness](calculation-correctness-proof.md), the
+   essential bridge proving that this construction has all candidate, recency,
+   occupancy, and exact-dependency facts consumed downstream.
+3. Read the two principal graph proofs in either order.
+   [Minimality](minimality-proof.md) proves that the calculated graph is an
+   acyclic, transitively minimal graph. [Completeness](completeness-proof.md)
+   separately proves that every previous operation on a related operated
+   position is reachable. Auditing the full graph result requires both, but
+   neither proof may borrow the other's conclusion.
+4. Read [Characterization](characterization-proof.md) only after both principal
+   proofs. It identifies reachability with the transitive closure of the
+   related-and-previous relation and proves uniqueness among transitively
+   minimal relations that respect the occurrence order.
+5. Read [Maximum Safe Concurrency](maximum-safe-concurrency-proof.md) for the
+   occupancy scheduling consequence, the finite and unbounded-history cases, and
+   the counterexample to the stronger global-maximum claim.
+
+The key graph-correctness documents are therefore Calculation Correctness,
+Minimality, Completeness, and Characterization. The earlier documents are
+necessary to audit their definitions and assumptions; Maximum Safe Concurrency
+uses the graph result for a separate behavioral theorem.
+
+## Lean correspondence and supporting evidence
+
+The Lean modules with matching names mirror the dependency diagram:
+`definitions.lean` through `calculation_correctness.lean` form the foundation;
+`minimality.lean` and `completeness.lean` independently import that foundation;
+`characterization.lean` imports both; and `maximum_safe_concurrency.lean`
+imports characterization. The minimality, completeness, and characterization
+modules each expose a theorem stated directly for an arbitrary
+`ValidResolvedHistory`, and every Lean module has a Bazel axiom audit.
+
+The other files are supporting evidence, not links in the universal proof chain.
+`minimality_witnesses.lean` demonstrates that selected rule cases and graph
+interfaces are satisfiable. `independence_witnesses.lean` compares the full
+rules with variants changing one clause. `minimality_checker.py` searches
+bounded concrete histories for counterexamples. None of these witnesses or
+bounded searches substitutes for the universal English and Lean proofs above.

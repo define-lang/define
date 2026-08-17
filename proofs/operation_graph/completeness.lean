@@ -1,5 +1,4 @@
-import minimality
-import minimality_witnesses
+import calculation_correctness
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -7,12 +6,11 @@ set_option autoImplicit false
 /-!
 # Particle Operation Dependency Graph Completeness
 
-This file formalizes completeness: every previous Particle Operation whose
-operated positions are related to an operation's positions is reachable through
-the dependency graph. Together with the independent minimality theorem,
-dependency reachability is exactly the transitive closure of the
-related-and-previous relation, and the produced graph is the unique transitively
-minimal graph with that reachability.
+This file formalizes `completeness-proof.md`: every previous Particle Operation
+whose operated positions are related to an operation's positions is reachable
+through the dependency graph. The English proof is the source of the
+mathematical argument; the definitions and theorems here encode that argument
+for Lean to check.
 
 ## Formalization boundary
 
@@ -27,18 +25,12 @@ a `ResolvedDefineGraph` obligation (`latest_source_candidate`).
 resolved history and its exact rule calculation. This file consumes the
 resulting interface without assuming the completeness conclusion.
 
-The final section extends an existing six-operation model to a
-`CompleteResolvedDefineGraph`. Several fills in that history have multiple
-eligible previous operations, so the latest-candidate obligation is exercised
-substantively rather than satisfied by the absence of a previous candidate.
-
-Two consequences are machine-checked here beyond completeness itself:
-
-- `dependency_is_unique`: any relation on the resolved Particle Operations
-  that points to previous operations, is transitively minimal, and has the
-  same reachability, is equal to the produced dependency relation. Rule sets
-  with the same dependency semantics can therefore differ only in how they
-  compute the graph, never in the graph itself.
+The proof uses induction on a natural-number occurrence bound. Each rule-stage
+survivor chase and each occupancy bridge lies in the finite prefix before the
+operation under consideration, so neither the history nor its vertex set must
+be finite. No premise states transitive minimality or the completeness
+conclusion. Characterization and uniqueness are separate results that may later
+combine this theorem with independent minimality.
 -/
 
 namespace Define.OperationGraph
@@ -480,7 +472,13 @@ theorem candidates_previous (graph : CompleteResolvedDefineGraph)
       MoreRecent (graph.calculation operation).operation candidate := by
   intro candidate in_collection
   rw [graph.calculation_operation operation]
-  exact graph.inCollection_is_previous in_collection
+  rcases in_collection with source_candidate | fill_candidate
+  · rcases (graph.source_candidate_iff operation candidate).mp
+        source_candidate with ⟨position, candidate_at_position⟩
+    exact
+      graph.source_candidate_is_previous operation candidate position
+        candidate_at_position
+  · exact graph.fill_candidate_is_previous operation candidate fill_candidate
 
 theorem inCollection_operations (graph : CompleteResolvedDefineGraph)
     {operation candidate : ParticleOperation}
@@ -493,6 +491,20 @@ theorem inCollection_operations (graph : CompleteResolvedDefineGraph)
       (graph.source_candidate_operations operation candidate candidatePosition
         candidate_at_position).2
   · exact (graph.fill_candidate_operations operation candidate fill_candidate).2
+
+private theorem reaches_is_moreRecent_for_completeness
+    (graph : CompleteResolvedDefineGraph)
+    {newer older : ParticleOperation}
+    (reaches : Reaches graph.dependency newer older) :
+    MoreRecent newer older := by
+  apply reaches_decreases_order ?_ reaches
+  intro operation candidate direct_dependency
+  have in_collection :=
+    RuleCalculation.dependency_isInCollection
+      ((graph.exact_dependency operation candidate).mp direct_dependency)
+  have candidate_previous := graph.candidates_previous candidate in_collection
+  rw [graph.calculation_operation operation] at candidate_previous
+  exact candidate_previous
 
 /--
 The operation reaches every candidate in its Collection, provided every pair
@@ -531,7 +543,7 @@ theorem reaches_of_inCollection (graph : CompleteResolvedDefineGraph)
   have reaches_is_more_recent :
       ∀ newer older, Reaches graph.dependency newer older →
         MoreRecent newer older :=
-    fun _ _ reaches => graph.reaches_is_moreRecent reaches
+    fun _ _ reaches => reaches_is_moreRecent_for_completeness graph reaches
   cases operation_kind : operation.kind with
   | create target =>
       have well_formed := graph.calculation_well_formed operation
@@ -899,235 +911,29 @@ theorem reaches_of_relatedPrevious (graph : CompleteResolvedDefineGraph) :
                     previous_operates fill_parent fill_is_strict
                     operation_after_previous
 
-/--
-The related-and-previous relation restricted to the graph's operations.
--/
-def MemberRelatedPrevious (graph : CompleteResolvedDefineGraph)
-    (operation previousOperation : ParticleOperation) : Prop :=
-  graph.isOperation operation ∧
-    graph.isOperation previousOperation ∧
-    RelatedPrevious operation previousOperation
-
-/--
-Characterization: dependency reachability is exactly the transitive closure of
-the related-and-previous relation. `Reaches` of a relation is its transitive
-closure, so the two sides are the closures of the produced graph and of `R`.
--/
-theorem reaches_iff_reaches_relatedPrevious (graph : CompleteResolvedDefineGraph)
-    {operation previousOperation : ParticleOperation} :
-    Reaches graph.dependency operation previousOperation ↔
-      Reaches graph.MemberRelatedPrevious operation previousOperation := by
-  constructor
-  · intro path
-    refine Reaches.mono ?_ path
-    intro source target edge
-    have operations := graph.directDependency_operations edge
-    exact
-      ⟨operations.1, operations.2,
-        graph.directDependency_is_previous edge,
-        graph.directDependencyPositionsRelated edge⟩
-  · intro path
-    induction path with
-    | direct edge =>
-        exact graph.reaches_of_relatedPrevious _ _ edge.1 edge.2.1 edge.2.2
-    | step edge _ induction_hypothesis =>
-        exact
-          (graph.reaches_of_relatedPrevious _ _ edge.1 edge.2.1
-            edge.2.2).trans induction_hypothesis
-
 end CompleteResolvedDefineGraph
 
-/-!
-## Uniqueness of the transitively minimal graph
+theorem calculatedDependency_reaches_of_relatedPrevious
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {operation previousOperation : ParticleOperation}
+    (operation_member : isOperation operation)
+    (previous_member : isOperation previousOperation)
+    (related_previous : RelatedPrevious operation previousOperation) :
+    Reaches (CalculatedDependency history) operation previousOperation :=
+  (calculatedCompleteResolvedDefineGraph history).reaches_of_relatedPrevious
+    operation previousOperation operation_member previous_member related_previous
 
-Two relations that point to previous operations, are transitively minimal, and
-have the same reachability are the same relation. Consequently every rule set
-with the same dependency semantics produces the identical graph.
--/
+section TypeContracts
 
-theorem reaches_withoutEdge_of_order_lt {Vertex : Type u}
-    {operationOrder : Vertex → Nat} {dependency : Vertex → Vertex → Prop}
-    (points_backward : PointsBackward operationOrder dependency)
-    {removedSource removedTarget : Vertex} :
-    ∀ source target, Reaches dependency source target →
-      operationOrder source < operationOrder removedSource →
-      Reaches (WithoutEdge dependency removedSource removedTarget) source
-        target := by
-  intro source target path
-  induction path with
-  | @direct pathSource pathTarget edge =>
-      intro source_below
-      refine .direct ⟨edge, ?_⟩
-      rintro ⟨source_is_removed, -⟩
-      subst source_is_removed
-      exact Nat.lt_irrefl _ source_below
-  | @step pathSource next pathTarget edge _ induction_hypothesis =>
-      intro source_below
-      have next_below : operationOrder next < operationOrder removedSource :=
-        Nat.lt_trans (points_backward pathSource next edge) source_below
-      refine .step ⟨edge, ?_⟩ (induction_hypothesis next_below)
-      rintro ⟨source_is_removed, -⟩
-      subst source_is_removed
-      exact Nat.lt_irrefl _ source_below
+example {isOperation : ParticleOperation → Prop} :
+    ∀ (history : ValidResolvedHistory isOperation) operation previousOperation,
+      isOperation operation →
+        isOperation previousOperation →
+        RelatedPrevious operation previousOperation →
+        Reaches (CalculatedDependency history) operation previousOperation :=
+  calculatedDependency_reaches_of_relatedPrevious
 
-theorem reaches_withoutEdge_from_removed_source {Vertex : Type u}
-    {operationOrder : Vertex → Nat} {dependency : Vertex → Vertex → Prop}
-    (points_backward : PointsBackward operationOrder dependency)
-    {removedSource removedTarget target : Vertex}
-    (target_above : operationOrder removedTarget < operationOrder target)
-    (path : Reaches dependency removedSource target) :
-    Reaches (WithoutEdge dependency removedSource removedTarget) removedSource
-      target := by
-  cases path with
-  | direct edge =>
-      refine .direct ⟨edge, ?_⟩
-      rintro ⟨-, target_is_removed⟩
-      subst target_is_removed
-      exact Nat.lt_irrefl _ target_above
-  | @step _ next _ edge remaining_path =>
-      have next_below : operationOrder next < operationOrder removedSource :=
-        points_backward removedSource next edge
-      have next_not_removed_target :
-          ¬(removedSource = removedSource ∧ next = removedTarget) := by
-        rintro ⟨-, next_is_removed⟩
-        subst next_is_removed
-        have target_below :=
-          reaches_decreases_order points_backward remaining_path
-        omega
-      exact
-        .step ⟨edge, next_not_removed_target⟩
-          (reaches_withoutEdge_of_order_lt points_backward next target
-            remaining_path next_below)
-
-theorem dependency_unique {Vertex : Type u} {operationOrder : Vertex → Nat}
-    {firstDependency secondDependency : Vertex → Vertex → Prop}
-    (first_points_backward : PointsBackward operationOrder firstDependency)
-    (second_points_backward : PointsBackward operationOrder secondDependency)
-    (first_minimal : TransitivelyMinimal firstDependency)
-    (same_reachability :
-      ∀ source target,
-        Reaches firstDependency source target ↔
-          Reaches secondDependency source target) :
-    ∀ source target, firstDependency source target →
-      secondDependency source target := by
-  intro source target edge
-  have second_path : Reaches secondDependency source target :=
-    (same_reachability source target).mp (.direct edge)
-  cases second_path with
-  | direct second_edge =>
-      exact second_edge
-  | @step _ next _ second_edge remaining_path =>
-      exfalso
-      have next_below : operationOrder next < operationOrder source :=
-        second_points_backward source next second_edge
-      have target_below : operationOrder target < operationOrder next :=
-        reaches_decreases_order second_points_backward remaining_path
-      have first_to_next : Reaches firstDependency source next :=
-        (same_reachability source next).mpr (.direct second_edge)
-      have first_from_next : Reaches firstDependency next target :=
-        (same_reachability next target).mpr remaining_path
-      have alternate_path :
-          Reaches (WithoutEdge firstDependency source target) source target :=
-        (reaches_withoutEdge_from_removed_source first_points_backward
-            target_below first_to_next).trans
-          (reaches_withoutEdge_of_order_lt first_points_backward next target
-            first_from_next next_below)
-      exact first_minimal source target edge alternate_path
-
-theorem dependency_iff_unique {Vertex : Type u} {operationOrder : Vertex → Nat}
-    {firstDependency secondDependency : Vertex → Vertex → Prop}
-    (first_points_backward : PointsBackward operationOrder firstDependency)
-    (second_points_backward : PointsBackward operationOrder secondDependency)
-    (first_minimal : TransitivelyMinimal firstDependency)
-    (second_minimal : TransitivelyMinimal secondDependency)
-    (same_reachability :
-      ∀ source target,
-        Reaches firstDependency source target ↔
-          Reaches secondDependency source target) :
-    ∀ source target,
-      firstDependency source target ↔ secondDependency source target := by
-  intro source target
-  constructor
-  · exact
-      dependency_unique first_points_backward second_points_backward
-        first_minimal same_reachability source target
-  · exact
-      dependency_unique second_points_backward first_points_backward
-        second_minimal (fun source target =>
-          (same_reachability source target).symm) source target
-
-namespace CompleteResolvedDefineGraph
-
-/--
-Any relation that points to previous operations, is transitively minimal, and
-has the same reachability as the produced dependency relation is that
-dependency relation. Alternative rule sets with the same dependency semantics
-can therefore differ only in how they compute the graph.
--/
-theorem dependency_is_unique (graph : CompleteResolvedDefineGraph)
-    {otherDependency : ParticleOperation → ParticleOperation → Prop}
-    (other_points_backward :
-      PointsBackward ParticleOperation.operationOrder otherDependency)
-    (other_minimal : TransitivelyMinimal otherDependency)
-    (same_reachability :
-      ∀ source target,
-        Reaches graph.dependency source target ↔
-          Reaches otherDependency source target) :
-    ∀ source target,
-      graph.dependency source target ↔ otherDependency source target :=
-  dependency_iff_unique graph.pointsBackward other_points_backward
-    graph.transitivelyMinimal other_minimal same_reachability
-
-end CompleteResolvedDefineGraph
-
-/-!
-## Non-vacuity
-
-The Fill Dependency removal model from `minimality_witnesses.lean` has six
-operations and four fills with eligible previous operations. In particular,
-the second item Create must select the preceding Move rather than either of two
-older operations on the filled position or its parent position.
--/
-
-namespace NonVacuity
-
-def completeGraph : CompleteResolvedDefineGraph where
-  toResolvedDefineGraph := FillDependencyRemoval.graph
-  latest_fill_candidate := by
-    intro operation fillPosition operatedPosition previousOperation
-      operation_member previous_member fill_position previous_operates
-      operated_parent operation_after_previous
-    rcases operation_member with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      rcases previous_member with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      subst_vars <;>
-      simp_all [FillPosition, OperatesOn, ParentOrSame, MoreRecent,
-        RuleCalculation.IsFillCandidate, FillDependencyRemoval.graph,
-        FillDependencyRemoval.calculation,
-        FillDependencyRemoval.createBox, FillDependencyRemoval.createItem,
-        FillDependencyRemoval.createHolder,
-        FillDependencyRemoval.moveItemToPay,
-        FillDependencyRemoval.createSecondItem,
-        FillDependencyRemoval.moveSecondToDeposit,
-        FillDependencyRemoval.boxPosition,
-        FillDependencyRemoval.itemPosition,
-        FillDependencyRemoval.holderPosition,
-        FillDependencyRemoval.payPosition,
-        FillDependencyRemoval.depositPosition]
-    all_goals
-      subst fillPosition
-      first
-      | simp at operated_parent
-      | rcases previous_operates with rfl | rfl <;>
-          simp at operated_parent
-
-example :
-    Reaches completeGraph.dependency
-      FillDependencyRemoval.moveSecondToDeposit
-      FillDependencyRemoval.createHolder :=
-  .step
-    (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))
-    FillDependencyRemoval.second_item_reaches_holder
-
-end NonVacuity
+end TypeContracts
 
 end Define.OperationGraph

@@ -321,11 +321,12 @@ unique inclusion-minimal graph with that reachability. If `V` is finite, adding
 an edge strictly increases the number of edges, giving the stated unique
 fewest-edge result. ∎
 
-By the independent minimality and completeness theorems, the Fill, Empty, and
-Move Rules produce this transitive reduction. The graph therefore allows every
-reordering obtained by commuting operations on unrelated positions, and no
-constraint in its reachability can be removed while keeping every allowed order
-occupancy-safe.
+By
+[Particle Operation Dependency Graph Characterization](characterization-proof.md),
+the Fill, Empty, and Move Rules produce this transitive reduction. The graph
+therefore allows every reordering obtained by commuting operations on unrelated
+positions, and no constraint in its reachability can be removed while keeping
+every allowed order occupancy-safe.
 
 ## Scope
 
