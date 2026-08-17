@@ -29,5 +29,6 @@ proofs, run:
 bazelisk build //proofs/...
 ```
 
-Lean rejects invalid terms, and the Bazel rule also rejects any proof containing
-an admitted goal such as `sorry`.
+Lean rejects invalid terms, every emitted warning is treated as an error, and
+the Bazel rule also rejects any proof containing an admitted goal such as
+`sorry`.

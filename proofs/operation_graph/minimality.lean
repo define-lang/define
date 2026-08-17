@@ -1,5 +1,6 @@
 import Std
 
+set_option warningAsError true
 set_option autoImplicit false
 
 /-!
