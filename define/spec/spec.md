@@ -1572,8 +1572,8 @@ Note that the compiler is not bound to literally implement the rules below
 exactly as written if there is a more efficient implementation that produces the
 same DAG.
 
-The complete proof of transitive minimality is in
-[Particle Operation Dependency Graph Minimality](../../proofs/particle-operation-dependency-graph-minimality-proof.md).
+We have [proofs](../../proofs/operation_graph/) for some of the logic in this
+section.
 
 #### The Fill Rule
 

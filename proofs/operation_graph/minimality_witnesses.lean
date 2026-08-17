@@ -1,4 +1,4 @@
-import proofs.particle_operation_dependency_graph_minimality
+import proofs.operation_graph.minimality
 
 set_option autoImplicit false
 

@@ -3,8 +3,8 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_binary(
-    name = "particle_operation_dependency_graph_minimality_checker",
-    srcs = ["particle_operation_dependency_graph_minimality_checker.py"],
+    name = "minimality_checker",
+    srcs = ["minimality_checker.py"],
     deps = ["@pypi//click"],
 )
 
@@ -23,6 +23,6 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":particle_operation_dependency_graph_minimality_checker",
+        ":minimality_checker",
     ],
 )

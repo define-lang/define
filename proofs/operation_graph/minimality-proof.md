@@ -9,6 +9,11 @@ transitively reduced. This includes operations reached through Action
 Executions, Action Requirements, Action Guarantees, automatic destruction, and
 Destruction Contracts.
 
+The dependency reachability is the transitive closure of a relation determined
+only by the operation order and operated positions. Consequently, the produced
+graph is canonical: any transitively reduced graph with that reachability has
+the same edges.
+
 The proof is about the complete graph of concrete Particle Operations. Every
 Action Execution is expanded separately, every Action Requirement and Action
 Guarantee is resolved to its concrete contribution, if any, and every automatic
@@ -16,7 +21,7 @@ or contributed Destroy Particle Statement is included before the graph is
 considered complete.
 
 A Lean formalization of this proof exists in
-[`particle_operation_dependency_graph_minimality.lean`](particle_operation_dependency_graph_minimality.lean).
+[`minimality.lean`](minimality.lean).
 
 ## Definitions
 
@@ -606,18 +611,119 @@ The Incremental Reduction Theorem proves that adding `O` preserves transitive
 reduction. Induction over all resolved Particle Operations proves that the
 complete graph is transitively reduced. ∎
 
-Because a finite directed acyclic graph has a unique transitive reduction, this
-is the unique graph with the same dependency reachability and no redundant edge.
+## Characterization by Operation Order and Operated Positions
+
+A Lean formalization of this section's completeness half and uniqueness result
+exists in [`completeness.lean`](completeness.lean). Lean models showing why the
+rule clauses covered by those models are needed for this characterization exist
+in [`independence_witnesses.lean`](independence_witnesses.lean).
+
+Define a relation `R` on the resolved Particle Operations by
+
+```text
+(O, A) is in R exactly when A < O and
+there are o in positions(O) and a in positions(A) such that o ~ a.
+```
+
+The definition uses only the strict operation order and the operated positions.
+It does not refer to any of the four dependency rules.
+
+### Reachability is the transitive closure of R
+
+The produced graph reaches exactly the pairs in the transitive closure of `R`.
+
+#### Proof
+
+First consider a direct dependency `O -> D`. By the “Direct-dependency position
+lemma,” `O` and `D` operate on related positions. The dependency rules select
+only previous operations, so `D < O`. Therefore `(O, D)` is in `R`. Replacing
+each edge of a dependency path in this way turns it into an `R` path. Thus every
+pair reachable in the graph belongs to the transitive closure of `R`.
+
+For the other direction, statement 1 of “Ordering, comparison, and replacement
+invariants” proves that `(O, A)` in `R` implies `O > A`. Apply that statement to
+each edge of an `R` path and join the resulting dependency paths. Therefore
+every pair in the transitive closure of `R` is reachable in the graph.
+
+The two directions prove the claim. ∎
+
+### Uniqueness of the graph with this reachability
+
+Two transitively reduced graphs on the same resolved Particle Operations with
+this reachability have the same edges.
+
+#### Proof
+
+For any reachability relation, call `O > D` a _cover pair_ when there is no
+operation `X` with both `O > X` and `X > D`.
+
+In a transitively reduced directed acyclic graph, the edges are exactly the
+cover pairs. To prove this, first take an edge `O -> D`. If some `X` satisfied
+`O > X > D`, joining those two paths would give another path from `O` to `D`.
+Neither path can use `O -> D`, because doing so would create a cycle. The edge
+would therefore be redundant, which is impossible in a transitively reduced
+graph.
+
+Conversely, suppose `O > D` is a cover pair. Any path from `O` to `D` with two
+or more edges would contain an operation strictly between them. Every path must
+therefore consist of the single edge `O -> D`.
+
+The cover pairs depend only on reachability. Two transitively reduced graphs
+with the same reachability consequently have exactly the same edges. ∎
+
+Now consider any other dependency rules that make every pair in `R` reachable,
+use only edges in `R`, and produce no redundant edge. The first condition makes
+their reachability contain the transitive closure of `R`. The second condition
+makes their reachability a subrelation of that closure. Their reachability is
+therefore exactly the same as the Define graph's reachability. The third
+condition makes their graph transitively reduced, so the uniqueness result says
+that the two graphs have the same edges.
+
+The four Define rules are therefore one way to calculate a graph determined
+entirely by this reachability. Different rules may calculate it differently, but
+they cannot produce a different transitively reduced graph with the same
+semantics.
+
+### The Action Parent Rule adds no distinct edge after resolution
+
+There is one useful consequence for the Action Parent Rule. Its candidate
+operates on the current action's parent position or a transitive parent position
+of that position. The current action's parent position is in turn a parent
+position of every position used by the current operation. The candidate is
+therefore among the positions considered by the Fill Rule or the Empty Rule.
+
+Against the complete resolved history, the ordinary rules consequently have at
+least one candidate. Their comparisons may keep the Action Parent candidate or
+replace it with a more recent dependency that reaches it, but they leave some
+ordinary dependency. The Action Parent Rule applies only when no ordinary
+dependency remains, so it adds no distinct edge to the complete resolved graph.
+
+This does not make the rule removable. A callee-local calculation runs before
+any caller is known, so it has no caller history to scan. Without the Action
+Parent Rule, an operation with no callee-local dependency would remain without
+dependencies after resolution and could execute before the caller context that
+its positions require. The rule records the need to consult the caller; full
+resolution then performs the ordinary selection against the caller's history.
+
+The rule also does not automatically select the operation that triggered the
+action. An operation with no callee-local dependency waits for the most recent
+operation on the action's parent position chain. It may therefore logically
+execute before the triggering operation. The machine-checked statement that
+every final edge is ordinary is `dependency_isOrdinary` in
+[`completeness.lean`](completeness.lean).
 
 ## Scope
 
 This document proves the complete transitive-minimality claim for the Particle
 Operation Dependency Graph and proves that the rule comparisons preserve
-reachability to the candidates they remove.
+reachability to the candidates they remove. It also characterizes that
+reachability solely from the strict operation order and operated positions.
 
 It does not attempt to prove every independent semantic premise of the
 concurrency system, such as the validity of Action Requirement inference or the
 runtime implementation of concurrent execution. Those are separate language
 correctness theorems. Given the Fill, Empty, Move, and Action Parent candidate
 definitions in the specification, no additional transitive-reduction pass over
-the complete graph is required.
+the complete graph is required. The occupancy consequences and their exact scope
+are analyzed separately in
+[Particle Operation Maximum Safe Concurrency](maximum-safe-concurrency-proof.md).

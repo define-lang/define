@@ -6,7 +6,7 @@ set_option autoImplicit false
 # Particle Operation Dependency Graph Minimality
 
 This file formalizes the English proof in
-`particle-operation-dependency-graph-minimality-proof.md`. The English proof is
+`minimality-proof.md`. The English proof is
 the source of the mathematical argument; the definitions and theorems here
 encode that argument for Lean to check.
 

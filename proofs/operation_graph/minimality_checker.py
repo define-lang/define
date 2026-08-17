@@ -7,7 +7,7 @@ exhaustively and randomly generated valid operation sequences on kinded
 position trees. It is independent of the compiler's implementation.
 
 At every operation of every generated sequence it verifies the claims of
-``particle-operation-dependency-graph-minimality-proof.md``:
+``minimality-proof.md``:
 
 1. The final dependency set is a reachability antichain, so the graph stays
    transitively reduced (the Incremental Reduction Theorem).
@@ -26,7 +26,7 @@ At every operation of every generated sequence it verifies the claims of
 
 Run with ``uv run``:
 
-    uv run proofs/particle_operation_dependency_graph_minimality_checker.py
+    uv run proofs/operation_graph/minimality_checker.py
 
 The default run starts with a self-test that disables the Move Correction and
 the Fill Dependency removal in turn and confirms that the checker then reports
