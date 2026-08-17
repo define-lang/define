@@ -1,5 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
-load("@rules_lean//lean:lean.bzl", "lean_library")
+load("@rules_lean//lean:lean.bzl", "lean_axiom_test", "lean_library")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
@@ -23,10 +23,46 @@ lean_library(
     ],
 )
 
+lean_axiom_test(
+    name = "completeness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["completeness"],
+    theorems = [
+        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_of_relatedPrevious",
+        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_iff_reaches_relatedPrevious",
+        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_is_unique",
+        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_isOrdinary",
+    ],
+    deps = [":completeness"],
+)
+
 lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
     deps = [":completeness"],
+)
+
+lean_axiom_test(
+    name = "independence_witnesses_axioms_test",
+    size = "small",
+    allowed_axioms = [],
+    imports = ["independence_witnesses"],
+    theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.MoveCorrection.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.ActionParentOnlyAsFallback.weakened_not_transitively_minimal",
+    ],
+    deps = [":independence_witnesses"],
 )
 
 lean_library(
@@ -35,15 +71,60 @@ lean_library(
     deps = [":completeness"],
 )
 
+lean_axiom_test(
+    name = "maximum_safe_concurrency_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["maximum_safe_concurrency"],
+    theorems = ["Define.OperationGraph.occupancyAfter_comm"],
+    deps = [":maximum_safe_concurrency"],
+)
+
 lean_library(
     name = "minimality",
     srcs = ["minimality.lean"],
+)
+
+lean_axiom_test(
+    name = "minimality_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["minimality"],
+    theorems = ["Define.OperationGraph.ResolvedDefineGraph.isMinimalDAG"],
+    deps = [":minimality"],
 )
 
 lean_library(
     name = "minimality_witnesses",
     srcs = ["minimality_witnesses.lean"],
     deps = [":minimality"],
+)
+
+lean_axiom_test(
+    name = "minimality_witnesses_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["minimality_witnesses"],
+    theorems = [
+        "Define.OperationGraph.NonVacuity.exact_dependency",
+        "Define.OperationGraph.ActionParentRule.exact_dependency",
+        "Define.OperationGraph.VanishedChildName.exact_dependency",
+        "Define.OperationGraph.MovedChildEntry.exact_dependency",
+        "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
+    ],
+    deps = [":minimality_witnesses"],
 )
 
 py_binary(
