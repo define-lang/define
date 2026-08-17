@@ -2,18 +2,20 @@
 
 ## What This Proof Establishes
 
-Consider the resolved Particle Operations of a finite valid Define program. This
-document proves three results about occupancy:
+Consider any valid resolved Particle Operation history. The history may stop or
+may continue without end. This document proves three results about occupancy:
 
-1. Every execution order allowed by the relation defined below gives each
-   operation the same occupancy that it has in the program's operation order and
-   leaves the same final occupancy.
+1. Every execution schedule allowed by the relation defined below gives each
+   operation the same occupancy that it has in the history's previous-operation
+   order. When the history stops, every such schedule also leaves the same final
+   occupancy.
 2. No ordering constraint in that relation can simply be removed. Removing one
    allows an execution order in which two adjacent operations are reversed, and
    that execution is undefined.
 3. The Particle Operation Dependency Graph represents the relation with exactly
-   its cover edges. It is therefore the unique graph with the fewest edges and
-   the same reachability.
+   its cover edges. It is therefore the unique inclusion-minimal graph with the
+   same reachability. For a history that stops, it is also the unique graph with
+   the fewest edges and that reachability.
 
 These results give a precise, limited meaning to “maximum safe concurrency.” The
 relation is inclusion-minimal among occupancy-safe precedence relations obtained
@@ -33,9 +35,12 @@ Lean.
 
 ### Operations and positions
 
-Let `V` be the finite set of resolved Particle Operations. Each execution of a
-Particle Operation statement is a separate member of `V`. Assume that executing
-the operations in the program's operation order is defined.
+Let `V` be the set of resolved Particle Operation occurrences in a
+[valid resolved history](definitions.md#resolved-histories). Each execution of a
+Particle Operation statement is a separate member of `V`. As in the
+[shared definitions](definitions.md), index the occurrences by a finite initial
+segment of the natural numbers or by all natural numbers. Assume that executing
+the operations in index order is defined.
 
 Let `<` be that strict linear order. For an operation `O`, let `positions(O)` be
 the positions it operates on. A Create or Destroy operates on one position. A
@@ -78,9 +83,16 @@ positions immediately before it executes. An execution order is undefined if an
 operated position is unavailable or if an operation's occupied-or-empty
 requirement is not met.
 
-Two execution orders of `V` are _occupancy-equivalent_ when both are defined,
-each operation observes the same occupancy in both orders, and both orders leave
-the same final occupancy.
+An _execution schedule_ lists every member of `V` exactly once. For an unbounded
+history, this means a sequence indexed by the natural numbers; in particular,
+every scheduled operation has only finitely many operations before it. A
+schedule respects `>R` when it places `A` before `O` whenever `O >R A`.
+
+Two schedules of a history that stops are _occupancy-equivalent_ when both are
+defined, each operation observes the same occupancy in both schedules, and both
+schedules leave the same final occupancy. For an unbounded history, equivalence
+means that both schedules are defined at every finite index and that each
+operation observes the same occupancy; there is no final state to compare.
 
 This definition deliberately ignores particle identity, qualities, Action
 triggering, destructor effects, and every other possible observation.
@@ -141,32 +153,44 @@ Each consecutive pair in the sequence consisting of `A`, those Moves, and `O`
 therefore operates on related positions. The later and earlier operations of
 each pair form a member of `R`. Chaining those members gives `O >R A`. ∎
 
-## Theorem: Every Consistent Order Is Occupancy-Equivalent
+## Theorem: Every Consistent Schedule Is Occupancy-Equivalent
 
-Every linear execution order that respects `>R` is occupancy-equivalent to the
-program's operation order.
+Every execution schedule that respects `>R` is occupancy-equivalent to the
+history's previous-operation order.
 
 ### Proof
 
-The program's operation order respects `>R`, because every `R` edge points from
-a later operation to an earlier one.
+The history's previous-operation order respects `>R`, because every `R` edge
+points from a later operation to an earlier one.
 
-Any two linear orders that respect the same finite strict partial order can be
-connected by exchanges of adjacent incomparable operations. To see this, take
-the first operation in the desired order, move it left across the operations
-that currently precede it, and repeat with the remaining operations. Every
-crossed operation must be incomparable with it; otherwise one of the two orders
-would violate the partial order.
+First suppose the history stops. Any two linear orders that respect the same
+finite strict partial order can be connected by exchanges of adjacent
+incomparable operations. To see this, take the first operation in the desired
+order, move it left across the operations that currently precede it, and repeat
+with the remaining operations. Every crossed operation must be incomparable with
+it; otherwise one of the two orders would violate the partial order.
 
 Operations incomparable under `>R` have pairwise unrelated operated positions.
 If they had related positions, whichever operation is later under `<` would form
 an `R` pair with the earlier one, so they would be comparable.
 
-Starting from the defined program order, apply the commutation lemma to each
-adjacent exchange. An exchange preserves the observations of the exchanged
-operations and the state received by all later operations. Induction over the
-sequence of exchanges proves that the desired order is defined, gives every
-operation the same occupancy observation, and leaves the same final occupancy. ∎
+Starting from the defined previous-operation order, apply the commutation lemma
+to each adjacent exchange. An exchange preserves the observations of the
+exchanged operations and the state received by all later operations. Induction
+over the sequence of exchanges proves that the desired schedule is defined,
+gives every operation the same occupancy observation, and leaves the same final
+occupancy.
+
+Now suppose the history is unbounded. Construct the desired schedule one finite
+prefix at a time. At stage `i`, the operation desired at index `i` has some
+finite index in the current schedule. Move it left to index `i` across the
+finitely many intervening operations. As in the finite case, every crossed
+operation is incomparable with it, so every exchange preserves definedness and
+occupancy observations. After finitely many stages, any chosen finite prefix of
+the desired schedule has been established and will never change again. Therefore
+every operation in the desired schedule is defined and observes the same
+occupancy as it does in the previous-operation order. An unbounded history has
+no final occupancy claim. ∎
 
 ## Theorem: Every Cover Ordering Is Necessary
 
@@ -180,13 +204,14 @@ First, `(O, A)` must itself be in `R`. If every `R` path from `O` to `A` had at
 least two edges, any intermediate operation on such a path would lie strictly
 between `A` and `O`, contrary to the definition of a cover pair.
 
-Next, a cover pair can be adjacent in a linear order that respects `>R`. Place
-all predecessors of `O` other than `A` first, then place `A` and `O`, and then
-place the remaining operations, choosing an order consistent with `>R` within
-the first and last groups. Every predecessor of `A` is already in the first
-group. No other predecessor of `O` is required to follow `A`, because that would
-put it strictly between the cover pair. Thus the construction respects `>R`. By
-the preceding theorem, this order is a defined execution.
+Next, a cover pair can be adjacent in a schedule that respects `>R`. Every
+predecessor of `O` has a smaller natural-number index than `O`, so there are
+only finitely many. Place all predecessors of `O` other than `A` first, in an
+order consistent with `>R`; then place `A` and `O`; then place the remaining
+operations in an order consistent with `>R`. Every predecessor of `A` is in the
+first group. No other predecessor of `O` is required to follow `A`, because that
+would put it strictly between the cover pair. Thus the construction respects
+`>R`. By the preceding theorem, this schedule is a defined execution.
 
 Because `(O, A)` is in `R`, the two operations have related operated positions.
 There are three cases.
@@ -215,10 +240,12 @@ positions can be related. In every case the adjacent exchange is undefined. ∎
 ### Consequence: no program-oriented constraint can be removed
 
 Let `P` be the precedence relation represented by `>R`, and let `Q` be a strict
-partial order that is a proper subrelation of `P`. Because `P` is finite, every
-pair in `P` is connected by a chain of cover pairs. If `Q` contained every cover
-pair, transitivity would make it contain all of `P`. Therefore `Q` omits at
-least one cover pair.
+partial order that is a proper subrelation of `P`. Choose `(O,A)` in `P` but not
+in `Q`. Every operation strictly between `A` and `O` in `P` has a natural-number
+index strictly between their indices, so there are only finitely many.
+Repeatedly inserting an intermediate operation therefore produces a finite chain
+of cover pairs from `A` to `O`. If `Q` contained every pair in that chain,
+transitivity would put `(O,A)` in `Q`. Thus `Q` omits at least one cover pair.
 
 Take the `P`-consistent order in which that pair is adjacent and exchange the
 pair. The exchanged order violates no relation of `P` except the omitted cover
@@ -269,10 +296,11 @@ relation, but it is not the intersection of all occupancy-equivalent total
 orders and is not a unique global optimum over differently oriented precedence
 relations.
 
-## The Unique Smallest Graph for This Reachability
+## The Unique Transitively Reduced Graph for This Reachability
 
 Among graphs on `V` whose reachability is exactly `>R`, the transitive reduction
-is the unique graph with the fewest edges.
+is the unique inclusion-minimal graph. When `V` is finite, it is consequently
+also the unique graph with the fewest edges.
 
 ### Proof
 
@@ -281,13 +309,17 @@ Without that edge, a path between the pair would have an intermediate operation,
 contrary to the definition of a cover pair.
 
 Conversely, the graph consisting of the cover-pair edges has reachability `>R`.
-Finiteness lets every reachable pair be refined into a chain of cover pairs. No
-cover edge is redundant, because an alternate path would put an intermediate
-operation between its endpoints.
+For any `(O,A)` in `>R`, only finitely many natural-number indices lie strictly
+between the indices of `A` and `O`. As above, this refines `(O,A)` into a finite
+chain of cover pairs. No cover edge is redundant, because an alternate path
+would put an intermediate operation between its endpoints.
 
 The transitive reduction therefore consists of exactly the cover-pair edges.
-Every other graph with the same reachability contains those edges and at least
-one additional edge. ∎
+Every graph with the same reachability contains those edges; any different such
+graph also has at least one additional edge. The cover graph is therefore the
+unique inclusion-minimal graph with that reachability. If `V` is finite, adding
+an edge strictly increases the number of edges, giving the stated unique
+fewest-edge result. ∎
 
 By “Characterization by Operation Order and Operated Positions” in
 [Particle Operation Dependency Graph Minimality](minimality-proof.md#characterization-by-operation-order-and-operated-positions),
@@ -298,9 +330,11 @@ removed while keeping every allowed order occupancy-safe.
 
 ## Scope
 
-This proof concerns occupancy for one finite resolved set of Particle
-Operations. It assumes the program's operation order is defined and uses only
-the specified occupancy effects of Create, Move, and Destroy.
+This proof concerns occupancy for one resolved Particle Operation history, which
+may stop or continue without end. It assumes the history's previous-operation
+order is defined and uses only the specified occupancy effects of Create, Move,
+and Destroy. An unbounded history has observations and states at every finite
+index but no final occupancy state.
 
 It does not prove correctness of the runtime's concurrent execution, Action
 Requirement inference, or any behavior other than occupancy. In particular, it

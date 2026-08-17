@@ -70,11 +70,6 @@ theorem related_of_parentOrSame_of_parentOrSame
     Related first second :=
   List.prefix_or_prefix_of_prefix first_parent second_parent
 
-theorem parentOrSame_antisymm {first second : Position}
-    (first_parent : ParentOrSame first second)
-    (second_parent : ParentOrSame second first) : first = second :=
-  first_parent.eq_of_length_le second_parent.length_le
-
 namespace Reaches
 
 theorem orEq_trans {Vertex : Type u} {dependency : Vertex → Vertex → Prop}

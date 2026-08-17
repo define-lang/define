@@ -7,10 +7,12 @@ filegroup(
     name = "all_proofs",
     srcs = [
         ":completeness",
+        ":definitions",
         ":independence_witnesses",
         ":maximum_safe_concurrency",
         ":minimality",
         ":minimality_witnesses",
+        ":valid_history",
     ],
 )
 
@@ -39,6 +41,24 @@ lean_axiom_test(
         "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_isOrdinary",
     ],
     deps = [":completeness"],
+)
+
+lean_library(
+    name = "definitions",
+    srcs = ["definitions.lean"],
+)
+
+lean_axiom_test(
+    name = "definitions_axioms_test",
+    size = "small",
+    allowed_axioms = [],
+    imports = ["definitions"],
+    theorems = [
+        "Define.OperationGraph.acyclic_of_pointsBackward",
+        "Define.OperationGraph.parentOrSame_antisymm",
+        "Define.OperationGraph.transitivelyMinimal_of_directDependenciesAreAntichains",
+    ],
+    deps = [":definitions"],
 )
 
 lean_library(
@@ -87,6 +107,7 @@ lean_axiom_test(
 lean_library(
     name = "minimality",
     srcs = ["minimality.lean"],
+    deps = [":valid_history"],
 )
 
 lean_axiom_test(
@@ -125,6 +146,36 @@ lean_axiom_test(
         "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
     ],
     deps = [":minimality_witnesses"],
+)
+
+lean_library(
+    name = "valid_history",
+    srcs = ["valid_history.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "valid_history_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["valid_history"],
+    theorems = [
+        "Define.OperationGraph.ExactOccupancyExecution.toValidOccupancyTrace",
+        "Define.OperationGraph.ValidHistoryNonVacuity.history",
+        "Define.OperationGraph.ValidHistoryNonVacuity.operation_member",
+        "Define.OperationGraph.ValidResolvedHistory.move_preserves_occupancy",
+        "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_operation",
+        "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_responsible_operation",
+        "Define.OperationGraph.ValidResolvedHistory.non_move_strict_child_unoccupied_after",
+        "Define.OperationGraph.ValidResolvedHistory.prefix_closed",
+        "Define.OperationGraph.ValidResolvedHistory.toExactOccupancyExecution",
+        "Define.OperationGraph.exists_occupancy_transition",
+    ],
+    deps = [":valid_history"],
 )
 
 py_binary(

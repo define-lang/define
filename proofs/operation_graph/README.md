@@ -1,5 +1,10 @@
 # Operation Graph Proofs
 
+- [Shared Definitions](definitions.md) defines resolved Particle Operations,
+  positions, occupancy, and graph notation without assuming any dependency rule.
+- [Valid Resolved Histories](valid-history.md) proves the occupancy invariants
+  used by the graph arguments and identifies the remaining source-resolution
+  obligations.
 - [Particle Operation Dependency Graph Minimality](minimality-proof.md) proves
   that the graph the rules produce is a transitively reduced directed acyclic
   graph, and that it is the unique such graph whose reachability is determined

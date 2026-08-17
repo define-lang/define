@@ -2,12 +2,12 @@
 
 ## Claim
 
-For every finite valid Define program, the complete Fill, Empty, Move, and
-Action Parent Rules in [`define/spec/spec.md`](../define/spec/spec.md) produce a
-Particle Operation Dependency Graph that is a directed acyclic graph and is
-transitively reduced. This includes operations reached through Action
-Executions, Action Requirements, Action Guarantees, automatic destruction, and
-Destruction Contracts.
+For every valid resolved Particle Operation history, the complete Fill, Empty,
+Move, and Action Parent Rules in
+[`define/spec/spec.md`](../../define/spec/spec.md) produce a Particle Operation
+Dependency Graph that is a directed acyclic graph and is transitively reduced.
+This includes operations reached through Action Executions, Action Requirements,
+Action Guarantees, automatic destruction, and Destruction Contracts.
 
 The dependency reachability is the transitive closure of a relation determined
 only by the operation order and operated positions. Consequently, the produced
@@ -30,7 +30,7 @@ A Lean formalization of this proof exists in
 Each execution of a Particle Operation statement is a separate vertex, even when
 two vertices execute the same statement through two Action Executions.
 
-Let `V` be the finite set of these vertices. For `O` and `D` in `V`, an edge
+Let `V` be the set of these vertices. For `O` and `D` in `V`, an edge
 
 ```text
 O -> D
@@ -67,11 +67,12 @@ one such position. A Move has its source and target positions.
 
 ### Previous Operations
 
-Let `<` be the strict operation order used by the words “previous,” “most
-recent,” and “more recent” in the four rules. Each execution of an action has
-its own operation occurrences in this order. Resolving an Action Execution
-places the callee occurrences at that execution, and resolving a destructor
-places its occurrences at the corresponding destruction.
+Index the occurrences as in the [shared definitions](definitions.md), and let
+`<` be the strict operation order used by the words “previous,” “most recent,”
+and “more recent” in the four rules. Each execution of an action has its own
+operation occurrences in this order. Resolving an Action Execution places the
+callee occurrences at that execution, and resolving a destructor places its
+occurrences at the corresponding destruction.
 
 The rules select only previous Particle Operations. Action Requirement
 resolution selects an operation in the caller that precedes the callee's use of
@@ -142,6 +143,8 @@ For an operation that empties `s`, let `E(s)` contain the most-recent entry for
 exists.
 
 Duplicate selections of the same Particle Operation denote one candidate.
+Although the complete history need not be finite, each candidate set is finite
+because an occurrence with index `i` has only `i` previous occurrences.
 
 ### Comparison
 
@@ -192,12 +195,8 @@ Every direct dependency is earlier in `<`. Along any directed path, `<`
 therefore decreases strictly. A directed cycle would make one operation both
 earlier and later than itself, which is impossible.
 
-The resolved graph is finite because a valid program has finitely many
-statements and its definition reference graph has no reference cycle. Expanding
-an Action Execution or a destructor therefore cannot continue indefinitely.
-
-Thus the complete Particle Operation Dependency Graph is a finite directed
-acyclic graph.
+Thus the complete Particle Operation Dependency Graph is directed and acyclic.
+This argument does not require the vertex set to be finite.
 
 ## The Incremental Reduction Theorem
 
@@ -565,9 +564,11 @@ Fill comparison are evaluated using the final `>` relation. Duplicate
 resolutions of the same operation denote one candidate, as in the candidate-set
 definition.
 
-Apply this argument once for each caller in the finite Action Execution chain.
-After the final resolution, every placeholder has become the exact concrete
-candidate selected by the rules or has contributed no operation. ∎
+Resolve outward by induction on the finite resolution derivation of this
+particular occurrence. This is local to the occurrence and does not require the
+complete history to stop. After the final resolution, every placeholder has
+become the exact concrete candidate selected by the rules or has contributed no
+operation. ∎
 
 The Empty and Move comparisons are comparisons on the complete set of concrete
 dependencies. A modular compiler may perform a comparison before a caller is

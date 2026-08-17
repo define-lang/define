@@ -11,14 +11,14 @@ This file formalizes the commutation lemma of
 Operations whose operated positions are pairwise unrelated produce the same
 occupancy state after either composition of their state transformations. That
 lemma is the semantic core of the sufficiency half of the occupancy-concurrency
-proof: any linear execution order consistent with the transitive closure of the
-related-and-previous relation reorders the program order by adjacent exchanges
-of exactly such pairs.
+proof: any finite or natural-number-indexed execution schedule consistent with
+the transitive closure of the related-and-previous relation can be constructed
+prefix by prefix through adjacent exchanges of exactly such pairs.
 
-The linearization argument itself and the necessity half (every cover pair of
-the closure is a mandatory ordering) remain in the English document; the
-necessity cases are statements about which operation sequences are valid
-Define programs, which this model does not encode.
+The scheduling argument, its extension to unbounded histories, and the necessity
+half (every cover pair of the closure is a mandatory ordering) remain in the
+English document. Formalizing them requires a valid-schedule model that this
+module does not yet encode.
 
 An operation can change occupancy only at its operated positions and their
 transitive child positions, and it reads occupancy only at the queried
