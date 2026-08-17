@@ -26,6 +26,13 @@ reachability antichain, and a later Move's Fill Dependency is removed because a
 remaining Empty Dependency reaches it. This is the redundancy family covered by
 the move_excludes_create_fill_dependency_reached_through_source_dependency
 integration test.
+
+`NonVacuity` reuses the create-and-destroy `ValidResolvedHistory` from
+`valid_history.lean`, and
+`NonVacuity.calculated_dependency` derives its nonempty graph through the
+universal `CalculatedDependency`. The three larger namespaces still construct
+the older `ResolvedDefineGraph` interface directly; they remain to be migrated
+to the same end-to-end path.
 -/
 
 namespace Define.OperationGraph
@@ -86,132 +93,61 @@ theorem prefix_pair_iff {first second : Nat} {name : List Nat} :
 
 namespace NonVacuity
 
-def position : Position := [0]
+open CreateDestroyHistory
 
-def createOperation : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create position
+abbrev position : Position :=
+  CreateDestroyHistory.target
 
-def destroyOperation : ParticleOperation where
-  operationOrder := 1
-  actionParent := []
-  kind := .destroy position
+abbrev isOperation (operation : ParticleOperation) : Prop :=
+  CreateDestroyHistory.IsOperation operation
 
-def isOperation (operation : ParticleOperation) : Prop :=
-  operation = createOperation ∨ operation = destroyOperation
+abbrev occupancy : ExactOccupancyExecution isOperation :=
+  CreateDestroyHistory.history.toExactOccupancyExecution
 
-def operationAt : Nat → Option ParticleOperation
-  | 0 => some createOperation
-  | 1 => some destroyOperation
-  | _ => none
+abbrev history : ValidResolvedHistory isOperation :=
+  CreateDestroyHistory.history
 
-def occupiedBefore (operationOrder : Nat) (occupiedPosition : Position) : Prop :=
-  occupiedPosition = [] ∨
-    (operationOrder = 1 ∧ occupiedPosition = position)
+theorem calculated_source_candidate :
+    IsSourceCandidate history destroyOperation createOperation := by
+  refine ⟨position, Or.inr rfl, position, rfl, Or.inr rfl,
+    related_refl position, ?_⟩
+  refine ⟨Or.inl rfl, by decide, ?_, ?_⟩
+  · simp [WritesEntry, createOperation]
+  · intro newerCandidate newer_member newer_than_create newer_before_destroy
+      newer_writes
+    rcases newer_member with newer_is_create | newer_is_destroy
+    · subst newer_is_create
+      exact (Nat.lt_irrefl _ newer_than_create)
+    · subst newer_is_destroy
+      exact (Nat.lt_irrefl _ newer_before_destroy)
 
-def occupancy : ExactOccupancyExecution isOperation where
-  operationAt := operationAt
-  occupiedBefore := occupiedBefore
-  member_operation_at := by
-    intro operation operation_member
-    rcases operation_member with operation_is_create | operation_is_destroy
-    · subst operation_is_create
-      rfl
-    · subst operation_is_destroy
-      rfl
-  operation_at_is_member := by
-    intro operationOrder operation operation_at
-    cases operationOrder with
-    | zero =>
-        simp [operationAt] at operation_at
-        exact Or.inl operation_at.symm
-    | succ operationOrder =>
-        cases operationOrder with
-        | zero =>
-            simp [operationAt] at operation_at
-            exact Or.inr operation_at.symm
-        | succ operationOrder =>
-            simp [operationAt] at operation_at
-  operation_at_has_order := by
-    intro operationOrder operation operation_at
-    cases operationOrder with
-    | zero =>
-        simp [operationAt] at operation_at
-        subst operation_at
-        rfl
-    | succ operationOrder =>
-        cases operationOrder with
-        | zero =>
-            simp [operationAt] at operation_at
-            subst operation_at
-            rfl
-        | succ operationOrder =>
-            simp [operationAt] at operation_at
-  parent_position_is_occupied := by
-    intro operationOrder parent child parent_of_child child_occupied
-    rcases child_occupied with child_is_action_parent | child_is_particle
-    · subst child_is_action_parent
-      have parent_is_action_parent := List.eq_nil_of_prefix_nil parent_of_child
-      exact Or.inl parent_is_action_parent
-    · rcases child_is_particle with ⟨order_is_one, child_is_position⟩
-      subst child_is_position
-      have parent_shape : parent = [] ∨ parent = position := by
-        simpa [ParentOrSame, position, List.prefix_cons_iff] using parent_of_child
-      rcases parent_shape with parent_is_action_parent | parent_is_position
-      · exact Or.inl parent_is_action_parent
-      · exact Or.inr ⟨order_is_one, parent_is_position⟩
-  empty_position_is_occupied := by
-    intro operation source operation_member empty_position
-    rcases operation_member with operation_is_create | operation_is_destroy
-    · subst operation_is_create
-      simp [EmptyPosition, createOperation] at empty_position
-    · subst operation_is_destroy
-      simp [EmptyPosition, destroyOperation] at empty_position
-      exact Or.inr ⟨rfl, empty_position.symm⟩
-  fill_position_is_empty := by
-    intro operation target operation_member fill_position
-    rcases operation_member with operation_is_create | operation_is_destroy
-    · subst operation_is_create
-      simp [FillPosition, createOperation] at fill_position
-      subst target
-      simp [occupiedBefore, position, createOperation]
-    · subst operation_is_destroy
+theorem calculated_dependency :
+    CalculatedDependency history destroyOperation createOperation := by
+  apply
+    (calculatedDependency_exact history destroyOperation createOperation).mpr
+  change
+    (calculationFor history destroyOperation).AfterMoveCorrection
+      (CalculatedDependency history) createOperation
+  refine ⟨⟨Or.inl calculated_source_candidate, ?_⟩, Or.inl ?_⟩
+  · intro newerCandidate newer_in_collection newer_than_create
+      operations_related
+    rcases newer_in_collection with newer_source | newer_fill
+    · rcases newer_source with
+        ⟨candidatePosition, newer_operation_member, source, empty_position,
+          candidate_queryable, candidate_related, entry⟩
+      rcases entry.candidate_is_operation with
+        newer_is_create | newer_is_destroy
+      · subst newer_is_create
+        exact Nat.lt_irrefl _ newer_than_create
+      · subst newer_is_destroy
+        exact Nat.lt_irrefl _ entry.candidate_is_previous
+    · rcases
+        ((calculationFor_fillCandidate_iff history destroyOperation
+          newerCandidate).mp newer_fill).1 with
+        ⟨operation_member, target, candidatePosition, fill_position,
+          candidate_queryable, candidate_parent, entry⟩
       simp [FillPosition, destroyOperation] at fill_position
-  operation_transition := by
-    intro operationOrder operation operation_at transitionedPosition
-    cases operationOrder with
-    | zero =>
-        simp [operationAt] at operation_at
-        subst operation_at
-        simp [occupiedBefore, OccupancyAfter, createOperation]
-        constructor <;> grind
-    | succ operationOrder =>
-        cases operationOrder with
-        | zero =>
-            simp [operationAt] at operation_at
-            subst operation_at
-            simp [occupiedBefore, OccupancyAfter, destroyOperation, ParentOrSame,
-              position]
-            constructor
-            · intro transitioned_is_action_parent
-              subst transitioned_is_action_parent
-              simp
-            · rintro ⟨_, transitioned_is_action_parent | transitioned_is_position⟩
-              · exact transitioned_is_action_parent
-              · subst transitioned_is_position
-                simp_all
-        | succ operationOrder =>
-            simp [operationAt] at operation_at
-  no_operation_transition := by
-    intro operationOrder no_operation transitionedPosition
-    cases operationOrder with
-    | zero => simp [operationAt] at no_operation
-    | succ operationOrder =>
-        cases operationOrder with
-        | zero => simp [operationAt] at no_operation
-        | succ operationOrder =>
-            simp [occupiedBefore]
+  · exact not_move_of_kind_create rfl
 
 def sourceCandidate (operation candidate : ParticleOperation) : Prop :=
   operation = destroyOperation ∧ candidate = createOperation
@@ -343,17 +279,17 @@ def graph : ResolvedDefineGraph where
 example : dependency destroyOperation createOperation :=
   ⟨rfl, rfl⟩
 
-example : Reaches graph.dependency destroyOperation createOperation :=
-  .direct ⟨rfl, rfl⟩
+example : Reaches (CalculatedDependency history) destroyOperation createOperation :=
+  .direct calculated_dependency
 
-example : ∃ operation candidate, graph.dependency operation candidate :=
-  ⟨destroyOperation, createOperation, rfl, rfl⟩
+example : ∃ operation candidate, CalculatedDependency history operation candidate :=
+  ⟨destroyOperation, createOperation, calculated_dependency⟩
 
-example : Acyclic graph.dependency :=
-  graph.acyclic
+example : Acyclic (CalculatedDependency history) :=
+  (calculatedDependency_isMinimalDAG history).1
 
-example : TransitivelyMinimal graph.dependency :=
-  graph.transitivelyMinimal
+example : TransitivelyMinimal (CalculatedDependency history) :=
+  (calculatedDependency_isMinimalDAG history).2
 
 end NonVacuity
 

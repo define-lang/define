@@ -228,6 +228,7 @@ lean_axiom_test(
     ],
     imports = ["minimality_witnesses"],
     theorems = [
+        "Define.OperationGraph.NonVacuity.calculated_dependency",
         "Define.OperationGraph.NonVacuity.exact_dependency",
         "Define.OperationGraph.VanishedChildName.exact_dependency",
         "Define.OperationGraph.MovedChildEntry.exact_dependency",
@@ -253,8 +254,9 @@ lean_axiom_test(
     imports = ["valid_history"],
     theorems = [
         "Define.OperationGraph.ExactOccupancyExecution.toValidOccupancyTrace",
-        "Define.OperationGraph.ValidHistoryNonVacuity.history",
-        "Define.OperationGraph.ValidHistoryNonVacuity.operation_member",
+        "Define.OperationGraph.CreateDestroyHistory.destroy_operation_member",
+        "Define.OperationGraph.CreateDestroyHistory.history",
+        "Define.OperationGraph.CreateDestroyHistory.operation_member",
         "Define.OperationGraph.ValidResolvedHistory.move_preserves_occupancy",
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_operation",
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_responsible_operation",
