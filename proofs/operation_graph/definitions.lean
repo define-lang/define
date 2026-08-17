@@ -11,7 +11,7 @@ Particle Operation occurrences, position relationships, previous-operation
 ranks, occupancy transitions, dependency reachability, acyclicity, and
 transitive minimality.
 
-It assumes no Fill, Empty, Move, or Action Parent Rule and no finite vertex type.
+It assumes no Fill, Empty, or Move Rule and no finite vertex type.
 Natural-number operation ranks make the predecessors of any particular
 occurrence locally finite without requiring the complete history to stop.
 -/

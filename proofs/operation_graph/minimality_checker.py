@@ -1,10 +1,10 @@
 """Brute-force checker for the Particle Operation Dependency Graph rules.
 
 This checker implements the specification's Fill Rule, Empty Rule (Collection,
-Comparison, Move Correction), Move Rule (with the Fill Dependency removal), and
-Action Parent Rule directly from the rule text in ``define/spec/spec.md``, over
-exhaustively and randomly generated valid operation sequences on kinded
-position trees. It is independent of the compiler's implementation.
+Comparison, Move Correction), and Move Rule (with the Fill Dependency removal)
+directly from the rule text in ``define/spec/spec.md``, over exhaustively and
+randomly generated valid operation sequences on kinded position trees. It is
+independent of the compiler's implementation.
 
 At every operation of every generated sequence it verifies the claims of
 ``minimality-proof.md``:

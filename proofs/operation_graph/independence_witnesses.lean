@@ -36,19 +36,6 @@ collection. An earlier proposed witness destroyed a child position that had
 never been filled, so it was not a valid resolved history; adding the omitted
 child operation also supplies a path to the parent operation.
 
-The Action Parent Rule has no independence witness at this level:
-`CompleteResolvedDefineGraph.dependency_isOrdinary` in
-`completeness.lean` proves that against
-the complete resolved history the rule's condition never holds and its
-candidate is covered by an ordinary dependency, so removing it changes nothing
-in a model that already sees the whole history.
-Its independence is modular: a callee-local calculation has no caller history
-to scan and needs the rule to defer that selection to its callers, and the
-resolved models in this file do not encode that callee-local level. Its
-fallback-only restriction does have a witness here
-(`ActionParentOnlyAsFallback` below): applying it when the other rules already
-left a dependency adds a redundant edge.
-
 Most complete-rule graphs in this file assign each operation at most one
 dependency, so their transitive minimality follows immediately from
 `transitivelyMinimal_of_at_most_one_dependency`. The Fill Dependency removal
@@ -88,7 +75,6 @@ structure RuleVariant where
   simultaneousComparison : Bool := true
   moveCorrection : Bool := true
   fillDependencyRemoval : Bool := true
-  actionParentOnlyAsFallback : Bool := true
   deriving DecidableEq, Repr
 
 def completeRules : RuleVariant := {}
@@ -103,20 +89,19 @@ def nonemptyPrefixes : Position → List Position
   | head :: tail =>
       [head] :: (nonemptyPrefixes tail).map (fun namePrefix => head :: namePrefix)
 
-def strictPrefixes : Position → List Position
-  | [] | [_] => []
-  | head :: second :: tail =>
-      [head] ::
-        (strictPrefixes (second :: tail)).map (fun namePrefix => head :: namePrefix)
+def prefixes (position : Position) : List Position :=
+  [] :: nonemptyPrefixes position
+
+def strictPrefixes (position : Position) : List Position :=
+  (prefixes position).filter fun namePrefix => namePrefix != position
 
 def knownPositions (operations : List ParticleOperation) : List Position :=
   (operations.flatMap fun operation =>
-    (operation.actionParent :: operationPositions operation).flatMap
-      nonemptyPrefixes).eraseDups
+    (operationPositions operation).flatMap prefixes).eraseDups
 
 structure HistoryState where
   entries : List (Position × Nat) := []
-  occupied : List Position := []
+  occupied : List Position := [[]]
   dependencies : List (List Nat) := []
   reachable : List (List Nat) := []
 
@@ -175,7 +160,7 @@ def previousFillCandidates (operations : List ParticleOperation)
 def fillCandidate (variant : RuleVariant) (operations : List ParticleOperation)
     (state : HistoryState) (target : Position) : Option Nat :=
   let positions :=
-    if variant.fillParentPositions then nonemptyPrefixes target else [target]
+    if variant.fillParentPositions then prefixes target else [target]
   if variant.fillMostRecent then
     latestCandidate true (entriesAt state positions)
   else
@@ -266,7 +251,7 @@ def correctMoves (variant : RuleVariant) (operations : List ParticleOperation)
   else
     candidates
 
-def ordinaryDependencies (variant : RuleVariant)
+def dependenciesForOperation (variant : RuleVariant)
     (positions : List Position) (operations : List ParticleOperation)
     (state : HistoryState) (operation : ParticleOperation) : List Nat :=
   match operation.kind with
@@ -303,21 +288,10 @@ def ordinaryDependencies (variant : RuleVariant)
       else
         corrected
 
-def actionParentCandidate (state : HistoryState)
-    (operation : ParticleOperation) : Option Nat :=
-  latestCandidate true (entriesAt state (nonemptyPrefixes operation.actionParent))
-
 def finalDependencies (variant : RuleVariant) (positions : List Position)
     (operations : List ParticleOperation) (state : HistoryState)
     (operation : ParticleOperation) : List Nat :=
-  let ordinary := ordinaryDependencies variant positions operations state operation
-  match actionParentCandidate state operation with
-  | none => ordinary
-  | some candidate =>
-      if variant.actionParentOnlyAsFallback then
-        if ordinary.isEmpty then [candidate] else ordinary
-      else
-        (candidate :: ordinary).eraseDups
+  dependenciesForOperation variant positions operations state operation
 
 def HistoryState.updateOccupancy (state : HistoryState)
     (operation : ParticleOperation) : HistoryState :=
@@ -1273,105 +1247,6 @@ theorem weakened_not_transitively_minimal :
 
 end FillDependencyRemoval
 
-/-!
-## The Action Parent Rule only as a fallback
-
-History: `create parent`, `create parent::child`, `create
-parent::child::grandChild`, all within an action whose parent position is
-`parent`.
-
-Complete rules: each Create depends on the most recent previous operation on
-its chain, and because those dependencies exist, the Action Parent Rule does
-not apply.
-
-Weakened rule (the Action Parent Rule applies to every operation instead of
-only when the other rules identify no dependency): the grandchild Create
-gains a second dependency on the parent Create, the most recent previous
-operation on the action's parent position. That edge is redundant: the child
-Create already reaches the parent Create.
-
-Removing the Action Parent Rule entirely has no witness at this level; see
-`CompleteResolvedDefineGraph.dependency_isOrdinary`.
--/
-
-namespace ActionParentOnlyAsFallback
-
-def parentPosition : Position := [0]
-
-def childPosition : Position := [0, 0]
-
-def grandChildPosition : Position := [0, 0, 0]
-
-def createParent : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create parentPosition
-
-def createChild : ParticleOperation where
-  operationOrder := 1
-  actionParent := parentPosition
-  kind := .create childPosition
-
-def createGrandChild : ParticleOperation where
-  operationOrder := 2
-  actionParent := parentPosition
-  kind := .create grandChildPosition
-
-def completeDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createChild then some createParent
-    else if operation = createGrandChild then some createChild
-    else none
-
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  completeDependencyTarget operation = some dependencyOperation
-
-abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  CompleteDependency operation dependencyOperation ∨
-    (operation = createGrandChild ∧ dependencyOperation = createParent)
-
-def history : List ParticleOperation :=
-  [createParent, createChild, createGrandChild]
-
-def weakenedRules : RuleVariant :=
-  { completeRules with actionParentOnlyAsFallback := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
-
-theorem weakened_rules_derive_graph :
-    calculate weakenedRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (WeakenedDependency operation dependencyOperation)) := by
-  decide
-
-theorem complete_transitively_minimal :
-    TransitivelyMinimal CompleteDependency :=
-  transitivelyMinimal_of_at_most_one_dependency CompleteDependency
-    fun _ _ _ first_edge second_edge =>
-      Option.some.inj (first_edge.symm.trans second_edge)
-
-theorem weakened_not_transitively_minimal :
-    ¬TransitivelyMinimal WeakenedDependency := by
-  intro minimal
-  have edge_0 :
-      WithoutEdge WeakenedDependency createGrandChild createParent
-        createGrandChild createChild :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_1 :
-      WithoutEdge WeakenedDependency createGrandChild createParent
-        createChild createParent :=
-    ⟨Or.inl (by decide), by decide⟩
-  exact
-    minimal createGrandChild createParent (Or.inr ⟨rfl, rfl⟩)
-      (.step edge_0 (.direct edge_1))
-
-end ActionParentOnlyAsFallback
 
 end IndependenceWitnesses
 

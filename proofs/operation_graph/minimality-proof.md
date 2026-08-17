@@ -3,11 +3,11 @@
 ## Claim
 
 For every valid resolved Particle Operation history, the complete Fill, Empty,
-Move, and Action Parent Rules in
-[`define/spec/spec.md`](../../define/spec/spec.md) produce a Particle Operation
-Dependency Graph that is a directed acyclic graph and is transitively reduced.
-This includes operations reached through Action Executions, Action Requirements,
-Action Guarantees, automatic destruction, and Destruction Contracts.
+and Move Rules in [`define/spec/spec.md`](../../define/spec/spec.md) produce a
+Particle Operation Dependency Graph that is a directed acyclic graph and is
+transitively reduced. This includes operations reached through Action
+Executions, Action Requirements, Action Guarantees, automatic destruction, and
+Destruction Contracts.
 
 The dependency reachability is the transitive closure of a relation determined
 only by the operation order and operated positions. Consequently, the produced
@@ -69,7 +69,7 @@ one such position. A Move has its source and target positions.
 
 Index the occurrences as in the [shared definitions](definitions.md), and let
 `<` be the strict operation order used by the words “previous,” “most recent,”
-and “more recent” in the four rules. Each execution of an action has its own
+and “more recent” in the resolved rules. Each execution of an action has its own
 operation occurrences in this order. Resolving an Action Execution places the
 callee occurrences at that execution, and resolving a destructor places its
 occurrences at the corresponding destruction.
@@ -186,8 +186,7 @@ even when the same operation is also `F(t)`. The Move Rule then removes `F(t)`
 if it remains and a distinct remaining source-side candidate depends on it
 directly or indirectly.
 
-If the resulting set is empty, the Action Parent Rule adds at most one
-dependency. Otherwise the resulting set is `D(O)`.
+The resulting set is `D(O)`.
 
 ## Acyclicity
 
@@ -304,13 +303,6 @@ position or one of its transitive parent or child positions; the
 candidate-position invariant covers a Move that became most recent because its
 particle moved. The Move Rule is the union of those two cases.
 
-The Action Parent Rule selects an operation on the current action's parent
-position or one of that position's transitive parent positions. From the
-resolved caller's perspective, every position belonging to that Action Execution
-is a transitive child position of the action's parent position. A position that
-uses the same global position definition in a different Action Execution is a
-different position and is not selected by this Action Parent Rule calculation.
-
 Requirement and guarantee resolution preserves these relationships, as shown in
 the candidate-position invariant. The rule comparisons only delete dependencies;
 they never add an edge with different provenance. ∎
@@ -366,16 +358,7 @@ with a position related to a position of `O`.
   at least as recent as `K` on `t` or its transitive parent positions. Induction
   statement 1 and statement 3 give `O > K > A`.
 - A Move combines the Empty case for its source with the Fill case for its
-  target.
-- The Action Parent Rule is used only if the other rules leave no dependency. If
-  `A` is on the action's parent position or one of its transitive parent
-  positions, the rule selects an operation `B` at least as recent as `A`. The
-  edge `O -> B` reaches `A` directly when `B` is `A`, and induction statement 1
-  gives `B > A` otherwise. A related `A` on any other position would have
-  supplied an Empty or Fill candidate in one of the preceding cases. Thus the
-  Action Parent case adds no exception.
-
-This proves statement 1 for `O`.
+  target. This proves statement 1 for `O`.
 
 Finally prove statement 2 for entries changed by `O`. When `O` directly operates
 on a position, statement 1 makes `O` reach the previous entry and statement 2
@@ -468,21 +451,15 @@ Correction covers exactly that case.
 
 ## Each Rule Produces a Reachability Antichain
 
-The cases below are exhaustive. A Create uses the Fill Rule and, if needed, the
-Action Parent Rule. A Destroy uses the Empty Rule and, if needed, the Action
-Parent Rule. A Move uses the combined Move Rule and, if needed, the Action
-Parent Rule. Automatic and contributed Destroys are Destroy Particle Statements,
-so they use the Destroy case rather than adding another case.
+The cases below are exhaustive. A Create uses the Fill Rule. A Destroy uses the
+Empty Rule. A Move uses the combined Move Rule. Automatic and contributed
+Destroys are Destroy Particle Statements, so they use the Destroy case rather
+than adding another case.
 
 ### Fill Rule
 
 The Fill Rule supplies at most one dependency. A set with at most one member is
 a reachability antichain.
-
-### Action Parent Rule
-
-The Action Parent Rule applies only when the other rules leave no dependency and
-supplies at most one dependency. Its result is a reachability antichain.
 
 ### Empty Rule
 
@@ -522,9 +499,7 @@ child-position operations. An empty Action Requirement used by a Move resolves
 to the caller operation required for filling the target, if one exists; it
 contributes no operation when the required position was empty without a previous
 Particle Operation. An Action Guarantee resolves to the callee's final concrete
-Particle Operation on the guaranteed position. The Action Parent input resolves
-to the caller's most recent operation on the action's parent position or one of
-that position's transitive parent positions, if one exists.
+Particle Operation on the guaranteed position.
 
 For one contracted particle, resolving position names replaces the callee's
 contracted-position prefix with the caller's bound-position prefix. Within that
@@ -544,7 +519,7 @@ only remove a candidate under the exact comparisons proved above.
 ### Resolution lemma
 
 After an Action Execution's inputs are fully resolved, its concrete candidate
-set is the candidate set that the four rules select when the callee operations
+set is the candidate set that the three rules select when the callee operations
 are viewed from the caller's perspective.
 
 #### Proof
@@ -554,8 +529,7 @@ entry for the contracted position and the entries for the applicable transitive
 child positions. These are the entries in `E(s)`. For an empty target
 requirement, its caller binding supplies exactly `F(t)`, or no operation when
 `F(t)` does not exist. A guarantee supplies the final concrete operation on its
-bound position, which is the corresponding most-recent entry. An Action Parent
-input supplies exactly the operation named by the Action Parent Rule.
+bound position, which is the corresponding most-recent entry.
 
 Prefix replacement preserves every position predicate in `P`. Resolving a
 placeholder exposes the concrete operation's kind and the dependency paths
@@ -574,18 +548,18 @@ The Empty and Move comparisons are comparisons on the complete set of concrete
 dependencies. A modular compiler may perform a comparison before a caller is
 known only when the result cannot change after resolution; otherwise it must
 retain enough information to finish the same comparison afterward. An unresolved
-requirement, guarantee, or Action Parent input is not a vertex of the complete
-graph. By the resolution lemma, all preceding antichain arguments apply
-unchanged after resolution.
+requirement or guarantee is not a vertex of the complete graph. By the
+resolution lemma, all preceding antichain arguments apply unchanged after
+resolution.
 
 Automatic destruction contributes ordinary Destroy Particle Operations.
 Expanding a Destruction Contract can contribute additional ordinary Destroy
 Particle Operations on transitive child positions before the contracted Destroy.
 The specification places those operations at the moment of destruction, and each
-uses the Empty and Action Parent Rules from the same resolved caller
-perspective. Values used by a modular compiler to connect the contributions are
-not Particle Operations and are not vertices of the complete graph. Destruction
-therefore introduces no additional case in the antichain proof.
+uses the Empty Rule from the same resolved caller perspective. Values used by a
+modular compiler to connect the contributions are not Particle Operations and
+are not vertices of the complete graph. Destruction therefore introduces no
+additional case in the antichain proof.
 
 ## Whole-rule-set Theorem
 
@@ -603,10 +577,9 @@ operations is transitively reduced and consider the next operation `O`.
 - The Fill Rule produces a reachability antichain.
 - The Empty Rule produces a reachability antichain.
 - The Move Rule produces a reachability antichain.
-- When the Action Parent Rule applies, it produces a reachability antichain.
 
 Caller resolution preserves the candidate sets and comparisons used in those
-four conclusions. Thus `D(O)` is a reachability antichain in every case.
+three conclusions. Thus `D(O)` is a reachability antichain in every case.
 
 The Incremental Reduction Theorem proves that adding `O` preserves transitive
 reduction. Induction over all resolved Particle Operations proves that the
@@ -627,7 +600,7 @@ there are o in positions(O) and a in positions(A) such that o ~ a.
 ```
 
 The definition uses only the strict operation order and the operated positions.
-It does not refer to any of the four dependency rules.
+It does not refer to any dependency rule.
 
 ### Reachability is the transitive closure of R
 
@@ -680,38 +653,22 @@ therefore exactly the same as the Define graph's reachability. The third
 condition makes their graph transitively reduced, so the uniqueness result says
 that the two graphs have the same edges.
 
-The four Define rules are therefore one way to calculate a graph determined
-entirely by this reachability. Different rules may calculate it differently, but
-they cannot produce a different transitively reduced graph with the same
-semantics.
+The three resolved Define rules therefore calculate a graph determined entirely
+by this reachability. Different rules may calculate it differently, but they
+cannot produce a different transitively reduced graph with the same semantics.
 
-### The Action Parent Rule adds no distinct edge after resolution
+### Modular Action Parent resolution
 
-There is one useful consequence for the Action Parent Rule. Its candidate
-operates on the current action's parent position or a transitive parent position
-of that position. The current action's parent position is in turn a parent
-position of every position used by the current operation. The candidate is
-therefore among the positions considered by the Fill Rule or the Empty Rule.
+The Action Parent Rule is not part of the resolved graph calculation. It lets a
+compiler calculating one action without its caller's complete history record
+that dependency selection must continue in the caller. After positions and
+operations have been resolved from the caller's perspective, the Fill, Empty,
+and Move Rules select the concrete dependencies.
 
-Against the complete resolved history, the ordinary rules consequently have at
-least one candidate. Their comparisons may keep the Action Parent candidate or
-replace it with a more recent dependency that reaches it, but they leave some
-ordinary dependency. The Action Parent Rule applies only when no ordinary
-dependency remains, so it adds no distinct edge to the complete resolved graph.
-
-This does not make the rule removable. A callee-local calculation runs before
-any caller is known, so it has no caller history to scan. Without the Action
-Parent Rule, an operation with no callee-local dependency would remain without
-dependencies after resolution and could execute before the caller context that
-its positions require. The rule records the need to consult the caller; full
-resolution then performs the ordinary selection against the caller's history.
-
-The rule also does not automatically select the operation that triggered the
-action. An operation with no callee-local dependency waits for the most recent
-operation on the action's parent position chain. It may therefore logically
-execute before the triggering operation. The machine-checked statement that
-every final edge is ordinary is `dependency_isOrdinary` in
-[`completeness.lean`](completeness.lean).
+Compiler conformance must prove that resolving Action Parent information
+produces those dependencies and does not emit an additional kind of resolved
+edge. That implementation obligation is separate from the graph minimality and
+completeness arguments in this document.
 
 ## Scope
 
@@ -723,8 +680,8 @@ reachability solely from the strict operation order and operated positions.
 It does not attempt to prove every independent semantic premise of the
 concurrency system, such as the validity of Action Requirement inference or the
 runtime implementation of concurrent execution. Those are separate language
-correctness theorems. Given the Fill, Empty, Move, and Action Parent candidate
-definitions in the specification, no additional transitive-reduction pass over
-the complete graph is required. The occupancy consequences and their exact scope
-are analyzed separately in
+correctness theorems. Given the Fill, Empty, and Move candidate definitions in
+the specification, no additional transitive-reduction pass over the complete
+graph is required. The occupancy consequences and their exact scope are analyzed
+separately in
 [Particle Operation Maximum Safe Concurrency](maximum-safe-concurrency-proof.md).

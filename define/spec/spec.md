@@ -1630,6 +1630,11 @@ action’s parent position or one of that position’s transitive parent positio
 
 The operation that triggered the action is not automatically a dependency.
 
+Note that this rule is only necessary as an implementation detail for resolving
+dependencies modularly within a single action. When considering a whole program,
+the Fill Rule, Empty Rule, and Move Rule alone create a complete,
+transitively-minimal operation graph.
+
 ### Executing Particle Operations Concurrently
 
 Particle Operations are logically executed following the directed acyclic graph

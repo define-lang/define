@@ -11,10 +11,6 @@ but supply no premise to the theorem.
 `NonVacuity` matches the valid create-and-destroy operation history in the
 create_and_destroy_of_an_implied_position integration test.
 
-`ActionParentRule` demonstrates the Action Parent Rule: a local position's
-Create has no Fill Rule or Empty Rule input, so its dependency is the resolved
-Action Parent input.
-
 `VanishedChildName` demonstrates `latest_source_candidate` at a position name
 that no longer refers to a position: an operation on the child position of a
 destroyed and replaced parent particle is a keyed candidate that the Comparison
@@ -228,7 +224,6 @@ def calculation (operation : ParticleOperation) : RuleCalculation where
   operation := operation
   sourceCandidate := sourceCandidate operation
   fillCandidate := none
-  actionParentCandidate := none
 
 def dependency (operation candidate : ParticleOperation) : Prop :=
   operation = destroyOperation ∧ candidate = createOperation
@@ -249,13 +244,11 @@ theorem calculation_well_formed (operation : ParticleOperation) :
 
 theorem exact_dependency (operation candidate : ParticleOperation) :
     dependency operation candidate ↔
-      (calculation operation).FinalDependency dependency candidate := by
-  simp only [dependency, RuleCalculation.FinalDependency,
-    RuleCalculation.HasOrdinaryDependency, RuleCalculation.OrdinaryDependency,
+      (calculation operation).Dependency dependency candidate := by
+  simp only [dependency, RuleCalculation.Dependency,
     RuleCalculation.AfterMoveCorrection, RuleCalculation.MoveRuleDependency,
     RuleCalculation.AfterComparison, RuleCalculation.InCollection,
-    RuleCalculation.IsFillCandidate, RuleCalculation.IsActionParentCandidate,
-    calculation, sourceCandidate]
+    RuleCalculation.IsFillCandidate, calculation, sourceCandidate]
   cases operation_kind : operation.kind <;>
     simp [IsMove, MoreRecent, createOperation, destroyOperation]
   · intro operation_is_destroy
@@ -264,7 +257,7 @@ theorem exact_dependency (operation candidate : ParticleOperation) :
   · intro operation_is_destroy candidate_is_create
     subst operation_is_destroy
     subst candidate_is_create
-    exact Or.inl (by simp)
+    simp
   · intro operation_is_destroy
     subst operation_is_destroy
     simp at operation_kind
@@ -346,22 +339,6 @@ def graph : ResolvedDefineGraph where
   fill_candidate_operations := by
     intro operation candidate fill_candidate
     simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  action_parent_candidate_operated_position := by
-    intro operation candidate action_parent_candidate
-    simp [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-  action_parent_candidate_operations := by
-    intro operation candidate action_parent_candidate
-    simp [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-  action_parent_candidate_is_previous := by
-    intro operation candidate action_parent_candidate
-    simp [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-  action_parent_is_parent_or_same := by
-    intro operation operatedPosition operation_member _
-    rcases operation_member with operation_is_create | operation_is_destroy
-    · subst operation_is_create
-      exact List.nil_prefix
-    · subst operation_is_destroy
-      exact List.nil_prefix
 
 example : dependency destroyOperation createOperation :=
   ⟨rfl, rfl⟩
@@ -380,266 +357,6 @@ example : TransitivelyMinimal graph.dependency :=
 
 end NonVacuity
 
-namespace ActionParentRule
-
-def parentPosition : Position := [0]
-
-def localPosition : Position := [0, 1]
-
-def createParent : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create parentPosition
-
-def createLocal : ParticleOperation where
-  operationOrder := 1
-  actionParent := parentPosition
-  kind := .create localPosition
-
-def isOperation (operation : ParticleOperation) : Prop :=
-  operation = createParent ∨ operation = createLocal
-
-def operationAt : Nat → Option ParticleOperation
-  | 0 => some createParent
-  | 1 => some createLocal
-  | _ => none
-
-def occupiedBefore : Nat → Position → Prop
-  | 0, position => position = []
-  | operationOrder + 1, position =>
-      match operationAt operationOrder with
-      | some operation =>
-          OccupancyAfter operation (occupiedBefore operationOrder) position
-      | none => occupiedBefore operationOrder position
-
-theorem operationAt_tail (operationOrder : Nat) :
-    operationAt (operationOrder + 2) = none := rfl
-
-theorem occupied_zero (position : Position) :
-    occupiedBefore 0 position ↔ position = [] := Iff.rfl
-
-theorem occupied_one (position : Position) :
-    occupiedBefore 1 position ↔ position = [] ∨ position = [0] := by
-  simp [occupiedBefore, operationAt, OccupancyAfter, createParent, parentPosition,
-    or_comm]
-
-theorem occupied_two (position : Position) :
-    occupiedBefore 2 position ↔
-      position = [] ∨ position = [0] ∨ position = [0, 1] := by
-  simp [occupiedBefore, operationAt, OccupancyAfter, createParent, createLocal,
-    parentPosition, localPosition, or_comm, or_assoc]
-
-theorem occupied_tail (extra : Nat) (position : Position) :
-    occupiedBefore (extra + 2) position ↔ occupiedBefore 2 position := by
-  induction extra with
-  | zero => exact Iff.rfl
-  | succ extra induction_hypothesis =>
-      have step :
-          occupiedBefore (extra + 1 + 2) position ↔
-            occupiedBefore (extra + 2) position := by
-        show occupiedBefore (extra + 2 + 1) position ↔ _
-        simp [occupiedBefore, operationAt_tail]
-      exact step.trans induction_hypothesis
-
-def occupancy : ExactOccupancyExecution isOperation where
-  operationAt := operationAt
-  occupiedBefore := occupiedBefore
-  member_operation_at := by
-    intro operation operation_member
-    rcases operation_member with is_create_parent | is_create_local
-    · subst is_create_parent; rfl
-    · subst is_create_local; rfl
-  operation_at_is_member := by
-    intro operationOrder operation operation_at
-    rcases operationOrder with _ | _ | operationOrder
-    · exact Or.inl (Option.some.inj operation_at).symm
-    · exact Or.inr (Option.some.inj operation_at).symm
-    · simp [operationAt_tail] at operation_at
-  operation_at_has_order := by
-    intro operationOrder operation operation_at
-    rcases operationOrder with _ | _ | operationOrder
-    · rw [← Option.some.inj operation_at]; rfl
-    · rw [← Option.some.inj operation_at]; rfl
-    · simp [operationAt_tail] at operation_at
-  parent_position_is_occupied := by
-    intro operationOrder parent child parent_of_child child_occupied
-    rcases operationOrder with _ | _ | operationOrder
-    · rw [occupied_zero] at child_occupied ⊢
-      subst child_occupied
-      exact List.eq_nil_of_prefix_nil parent_of_child
-    · rw [occupied_one] at child_occupied ⊢
-      rcases child_occupied with child_nil | child_parent
-      · subst child_nil
-        exact Or.inl (List.eq_nil_of_prefix_nil parent_of_child)
-      · subst child_parent
-        exact (prefix_singleton_iff.mp parent_of_child).imp id id
-    · rw [occupied_tail] at child_occupied ⊢
-      rw [occupied_two] at child_occupied ⊢
-      rcases child_occupied with child_nil | child_parent | child_local
-      · subst child_nil
-        exact Or.inl (List.eq_nil_of_prefix_nil parent_of_child)
-      · subst child_parent
-        exact (prefix_singleton_iff.mp parent_of_child).imp id Or.inl
-      · subst child_local
-        exact prefix_pair_iff.mp parent_of_child
-  empty_position_is_occupied := by
-    intro operation source operation_member empty_position
-    rcases operation_member with is_create_parent | is_create_local
-    · subst is_create_parent
-      simp [EmptyPosition, createParent] at empty_position
-    · subst is_create_local
-      simp [EmptyPosition, createLocal] at empty_position
-  fill_position_is_empty := by
-    intro operation target operation_member fill_position
-    rcases operation_member with is_create_parent | is_create_local
-    · subst is_create_parent
-      simp [FillPosition, createParent] at fill_position
-      subst fill_position
-      simp [createParent, occupied_zero, parentPosition]
-    · subst is_create_local
-      simp [FillPosition, createLocal] at fill_position
-      subst fill_position
-      simp [createLocal, occupied_one, localPosition, parentPosition]
-  operation_transition := by
-    intro operationOrder operation operation_at position
-    show (match operationAt operationOrder with
-      | some operation =>
-          OccupancyAfter operation (occupiedBefore operationOrder) position
-      | none => occupiedBefore operationOrder position) ↔ _
-    rw [operation_at]
-  no_operation_transition := by
-    intro operationOrder no_operation position
-    show (match operationAt operationOrder with
-      | some operation =>
-          OccupancyAfter operation (occupiedBefore operationOrder) position
-      | none => occupiedBefore operationOrder position) ↔ _
-    rw [no_operation]
-
-def dependency (operation candidate : ParticleOperation) : Prop :=
-  operation = createLocal ∧ candidate = createParent
-
-def calculation (operation : ParticleOperation) : RuleCalculation where
-  operation := operation
-  sourceCandidate := fun _ => False
-  fillCandidate := none
-  actionParentCandidate :=
-    if operation = createLocal then some createParent else none
-
-theorem calculation_well_formed (operation : ParticleOperation) :
-    (calculation operation).WellFormed := by
-  cases operation_kind : operation.kind <;>
-    simp [RuleCalculation.WellFormed, calculation, operation_kind]
-
-theorem exact_dependency (operation candidate : ParticleOperation) :
-    dependency operation candidate ↔
-      (calculation operation).FinalDependency dependency candidate := by
-  constructor
-  · rintro ⟨operation_is_local, candidate_is_parent⟩
-    subst operation_is_local
-    subst candidate_is_parent
-    refine Or.inr ⟨?_, ?_⟩
-    · rintro ⟨ordinary, ordinary_dependency⟩
-      simp [RuleCalculation.OrdinaryDependency, calculation, createLocal,
-        RuleCalculation.IsFillCandidate] at ordinary_dependency
-    · simp [RuleCalculation.IsActionParentCandidate, calculation]
-  · rintro (ordinary_dependency | ⟨_, action_parent_candidate⟩)
-    · rcases operation_kind : operation.kind with target | target | source_target
-      all_goals
-        simp [RuleCalculation.OrdinaryDependency, calculation, operation_kind,
-          RuleCalculation.IsFillCandidate, RuleCalculation.AfterMoveCorrection,
-          RuleCalculation.MoveRuleDependency, RuleCalculation.AfterComparison,
-          RuleCalculation.InCollection] at ordinary_dependency
-    · simp only [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-      by_cases operation_is_local : operation = createLocal
-      · subst operation_is_local
-        rw [if_pos rfl] at action_parent_candidate
-        exact ⟨rfl, (Option.some.inj action_parent_candidate).symm⟩
-      · rw [if_neg operation_is_local] at action_parent_candidate
-        exact absurd action_parent_candidate (by simp)
-
-def graph : ResolvedDefineGraph where
-  isOperation := isOperation
-  dependency := dependency
-  calculation := calculation
-  calculation_operation := fun _ => rfl
-  calculation_well_formed := calculation_well_formed
-  exact_dependency := exact_dependency
-  occupancy := occupancy
-  sourceCandidateAt := fun _ _ _ => False
-  source_candidate_iff := by
-    intro operation candidate
-    simp [calculation]
-  source_candidate_empty_position := by intro _ _ _ absurd_candidate; exact absurd_candidate.elim
-  source_candidate_operated_position := by intro _ _ _ absurd_candidate; exact absurd_candidate.elim
-  non_move_source_candidate_operates_on_position := by
-    intro _ _ _ absurd_candidate; exact absurd_candidate.elim
-  source_candidate_is_previous := by intro _ _ _ absurd_candidate; exact absurd_candidate.elim
-  source_candidate_operations := by intro _ _ _ absurd_candidate; exact absurd_candidate.elim
-  latest_source_candidate := by
-    intro operation emptyPosition position previousOperation operation_member
-      _ empty_position _ _ _
-    rcases operation_member with is_create_parent | is_create_local
-    · subst is_create_parent
-      simp [EmptyPosition, createParent] at empty_position
-    · subst is_create_local
-      simp [EmptyPosition, createLocal] at empty_position
-  fill_candidate_operated_position := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  fill_candidate_is_previous := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  fill_candidate_operations := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  action_parent_candidate_operated_position := by
-    intro operation candidate action_parent_candidate
-    simp only [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-    by_cases operation_is_local : operation = createLocal
-    · subst operation_is_local
-      rw [if_pos rfl] at action_parent_candidate
-      rw [← Option.some.inj action_parent_candidate]
-      exact ⟨parentPosition, by simp [OperatesOn, createParent],
-        by simp only [createLocal]; exact List.prefix_rfl⟩
-    · rw [if_neg operation_is_local] at action_parent_candidate
-      exact absurd action_parent_candidate (by simp)
-  action_parent_candidate_operations := by
-    intro operation candidate action_parent_candidate
-    simp only [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-    by_cases operation_is_local : operation = createLocal
-    · subst operation_is_local
-      rw [if_pos rfl] at action_parent_candidate
-      exact ⟨Or.inr rfl, Or.inl (Option.some.inj action_parent_candidate).symm⟩
-    · rw [if_neg operation_is_local] at action_parent_candidate
-      exact absurd action_parent_candidate (by simp)
-  action_parent_candidate_is_previous := by
-    intro operation candidate action_parent_candidate
-    simp only [RuleCalculation.IsActionParentCandidate, calculation] at action_parent_candidate
-    by_cases operation_is_local : operation = createLocal
-    · subst operation_is_local
-      rw [if_pos rfl] at action_parent_candidate
-      rw [← Option.some.inj action_parent_candidate]
-      exact Nat.zero_lt_succ 0
-    · rw [if_neg operation_is_local] at action_parent_candidate
-      exact absurd action_parent_candidate (by simp)
-  action_parent_is_parent_or_same := by
-    intro operation position operation_member operates_on
-    rcases operation_member with is_create_parent | is_create_local
-    · subst is_create_parent
-      exact List.nil_prefix
-    · subst is_create_local
-      have position_is_local : position = localPosition := by
-        simpa [OperatesOn, createLocal] using operates_on
-      subst position_is_local
-      exact ⟨[1], rfl⟩
-
-example : dependency createLocal createParent := ⟨rfl, rfl⟩
-
-example : Acyclic graph.dependency := graph.acyclic
-
-example : TransitivelyMinimal graph.dependency := graph.transitivelyMinimal
-
-end ActionParentRule
 
 namespace VanishedChildName
 
@@ -906,7 +623,6 @@ def calculation (operation : ParticleOperation) : RuleCalculation where
     if operation = createChild then some createParent
     else if operation = recreateParent then some destroyParent
     else none
-  actionParentCandidate := none
 
 def dependency (operation candidate : ParticleOperation) : Prop :=
   (operation = createChild ∧ candidate = createParent) ∨
@@ -1075,53 +791,51 @@ theorem no_destroy_fill {operation candidate : ParticleOperation}
 
 theorem exact_dependency (operation candidate : ParticleOperation) :
     dependency operation candidate ↔
-      (calculation operation).FinalDependency dependency candidate := by
+      (calculation operation).Dependency dependency candidate := by
   constructor
   · rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
-    · exact Or.inl fill_create_child
-    · exact Or.inl ⟨after_comparison_create_child,
+    · exact fill_create_child
+    · exact ⟨after_comparison_create_child,
         Or.inl (not_move_of_kind_create rfl)⟩
-    · exact Or.inl ⟨after_comparison_destroy_child,
+    · exact ⟨after_comparison_destroy_child,
         Or.inl (not_move_of_kind_destroy rfl)⟩
-    · exact Or.inl fill_recreate
-    · exact Or.inl ⟨after_comparison_recreate,
+    · exact fill_recreate
+    · exact ⟨after_comparison_recreate,
         Or.inl (not_move_of_kind_create rfl)⟩
-  · rintro (ordinary | ⟨_, action_parent⟩)
-    · rcases operation_kind : operation.kind with target | target | source_target
-      · have fill : (calculation operation).IsFillCandidate candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases in_collection_shapes (Or.inr fill) with
-          ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-        · simp [destroyChild] at operation_kind
-        · simp [destroyParent] at operation_kind
-        · simp [destroyAgain] at operation_kind
-        · exact Or.inl ⟨rfl, rfl⟩
-        · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
-      · have after_correction :
+  · intro rule_dependency
+    rcases operation_kind : operation.kind with target | target | source_target
+    · have fill : (calculation operation).IsFillCandidate candidate := by
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases in_collection_shapes (Or.inr fill) with
+        ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · simp [destroyChild] at operation_kind
+      · simp [destroyParent] at operation_kind
+      · simp [destroyAgain] at operation_kind
+      · exact Or.inl ⟨rfl, rfl⟩
+      · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+    · have after_correction :
             (calculation operation).AfterMoveCorrection dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes after_correction.1 with
-          ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-        · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
-        · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
-        · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
-        · simp [createChild] at operation_kind
-        · simp [recreateParent] at operation_kind
-      · have move_rule :
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes after_correction.1 with
+        ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
+      · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
+      · simp [createChild] at operation_kind
+      · simp [recreateParent] at operation_kind
+    · have move_rule :
             (calculation operation).MoveRuleDependency dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes move_rule.1.1 with
-          ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
-        · simp [destroyChild] at operation_kind
-        · simp [destroyParent] at operation_kind
-        · simp [destroyAgain] at operation_kind
-        · simp [createChild] at operation_kind
-        · simp [recreateParent] at operation_kind
-    · exact nomatch
-        (action_parent : (none : Option ParticleOperation) = some candidate)
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes move_rule.1.1 with
+        ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+      · simp [destroyChild] at operation_kind
+      · simp [destroyParent] at operation_kind
+      · simp [destroyAgain] at operation_kind
+      · simp [createChild] at operation_kind
+      · simp [recreateParent] at operation_kind
 
 def graph : ResolvedDefineGraph where
   isOperation := isOperation
@@ -1287,22 +1001,6 @@ def graph : ResolvedDefineGraph where
     · exact (no_destroy_fill (Or.inr (Or.inr rfl)) fill_candidate).elim
     · exact ⟨by simp [isOperation], by simp [isOperation]⟩
     · exact ⟨by simp [isOperation], by simp [isOperation]⟩
-  action_parent_candidate_operated_position := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_operations := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_is_previous := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_is_parent_or_same := by
-    intro operation position operation_member operates_on
-    rcases operation_member with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      exact List.nil_prefix
 
 example : dependency destroyAgain recreateParent :=
   Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
@@ -1581,7 +1279,6 @@ def calculation (operation : ParticleOperation) : RuleCalculation where
   sourceCandidate := fun candidate =>
     ∃ candidatePosition, sourceCandidateAt operation candidate candidatePosition
   fillCandidate := if operation = createChild then some createParent else none
-  actionParentCandidate := none
 
 def dependency (operation candidate : ParticleOperation) : Prop :=
   (operation = createChild ∧ candidate = createParent) ∨
@@ -1713,14 +1410,14 @@ theorem after_comparison_destroy_child :
 
 theorem exact_dependency (operation candidate : ParticleOperation) :
     dependency operation candidate ↔
-      (calculation operation).FinalDependency dependency candidate := by
+      (calculation operation).Dependency dependency candidate := by
   constructor
   · rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
-    · exact Or.inl fill_create_child
-    · exact Or.inl ⟨⟨after_comparison_move_source,
+    · exact fill_create_child
+    · exact ⟨⟨after_comparison_move_source,
         Or.inl (not_move_of_kind_create rfl)⟩,
         fun removal => no_fill_except_create_child (by decide) removal.1⟩
-    · exact Or.inl ⟨after_comparison_masked_child,
+    · exact ⟨after_comparison_masked_child,
         Or.inr fun other other_comparison other_ne _ => by
           rcases in_collection_shapes other_comparison.1 with
             ⟨op_eq, _⟩ | ⟨_, rfl⟩ | ⟨op_eq, _⟩ | ⟨op_eq, _⟩
@@ -1728,41 +1425,39 @@ theorem exact_dependency (operation candidate : ParticleOperation) :
           · exact absurd rfl other_ne
           · exact absurd op_eq (by decide)
           · exact absurd op_eq (by decide)⟩
-    · exact Or.inl ⟨after_comparison_destroy_child,
+    · exact ⟨after_comparison_destroy_child,
         Or.inl (not_move_of_kind_destroy rfl)⟩
-  · rintro (ordinary | ⟨_, action_parent⟩)
-    · rcases operation_kind : operation.kind with target | target | source_target
-      · have fill : (calculation operation).IsFillCandidate candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases in_collection_shapes (Or.inr fill) with
-          ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, rfl⟩
-        · simp [moveParent] at operation_kind
-        · simp [destroyMovedChild] at operation_kind
-        · simp [destroyMovedParent] at operation_kind
-        · exact Or.inl ⟨rfl, rfl⟩
-      · have after_correction :
+  · intro rule_dependency
+    rcases operation_kind : operation.kind with target | target | source_target
+    · have fill : (calculation operation).IsFillCandidate candidate := by
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases in_collection_shapes (Or.inr fill) with
+        ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, rfl⟩
+      · simp [moveParent] at operation_kind
+      · simp [destroyMovedChild] at operation_kind
+      · simp [destroyMovedParent] at operation_kind
+      · exact Or.inl ⟨rfl, rfl⟩
+    · have after_correction :
             (calculation operation).AfterMoveCorrection dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes after_correction.1 with
-          ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-        · simp [moveParent] at operation_kind
-        · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
-        · exact Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))
-        · simp [createChild] at operation_kind
-      · have move_rule :
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes after_correction.1 with
+        ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · simp [moveParent] at operation_kind
+      · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))
+      · simp [createChild] at operation_kind
+    · have move_rule :
             (calculation operation).MoveRuleDependency dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes move_rule.1.1 with
-          ⟨rfl, rfl⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
-        · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
-        · simp [destroyMovedChild] at operation_kind
-        · simp [destroyMovedParent] at operation_kind
-        · simp [createChild] at operation_kind
-    · exact nomatch
-        (action_parent : (none : Option ParticleOperation) = some candidate)
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes move_rule.1.1 with
+        ⟨rfl, rfl⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+      · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
+      · simp [destroyMovedChild] at operation_kind
+      · simp [destroyMovedParent] at operation_kind
+      · simp [createChild] at operation_kind
 
 def graph : ResolvedDefineGraph where
   isOperation := isOperation
@@ -1933,22 +1628,6 @@ def graph : ResolvedDefineGraph where
       subst candidate_is_parent
       exact ⟨by simp [isOperation], by simp [isOperation]⟩
     · exact (no_fill_except_create_child is_create_child fill_candidate).elim
-  action_parent_candidate_operated_position := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_operations := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_is_previous := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_is_parent_or_same := by
-    intro operation position operation_member operates_on
-    rcases operation_member with rfl | rfl | rfl | rfl | rfl <;>
-      exact List.nil_prefix
 
 example : dependency destroyMovedChild moveParent :=
   Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
@@ -2338,7 +2017,6 @@ def calculation (operation : ParticleOperation) : RuleCalculation where
     else if operation = createSecondItem then some moveItemToPay
     else if operation = moveSecondToDeposit then some createHolder
     else none
-  actionParentCandidate := none
 
 def dependency (operation candidate : ParticleOperation) : Prop :=
   (operation = createItem ∧ candidate = createBox) ∨
@@ -2599,16 +2277,16 @@ theorem second_item_reaches_holder :
 
 theorem exact_dependency (operation candidate : ParticleOperation) :
     dependency operation candidate ↔
-      (calculation operation).FinalDependency dependency candidate := by
+      (calculation operation).Dependency dependency candidate := by
   constructor
   · rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
-    · exact Or.inl fill_item
-    · exact Or.inl ⟨⟨after_comparison_item,
+    · exact fill_item
+    · exact ⟨⟨after_comparison_item,
         Or.inl (not_move_of_kind_create rfl)⟩,
         fun removal =>
           absurd (Option.some.inj (fill_first_move.symm.trans removal.1))
             (by decide)⟩
-    · exact Or.inl ⟨⟨after_comparison_holder_first,
+    · exact ⟨⟨after_comparison_holder_first,
         Or.inl (not_move_of_kind_create rfl)⟩,
         fun removal => by
           rcases removal with
@@ -2622,51 +2300,49 @@ theorem exact_dependency (operation candidate : ParticleOperation) :
                 createBox.operationOrder < createItem.operationOrder)
               related_item_box
           · exact absurd move_eq (by decide)⟩
-    · exact Or.inl fill_second_item
-    · exact Or.inl ⟨⟨after_comparison_second_item,
+    · exact fill_second_item
+    · exact ⟨⟨after_comparison_second_item,
         Or.inl (not_move_of_kind_create rfl)⟩,
         fun removal =>
           absurd (Option.some.inj (fill_second_move.symm.trans removal.1))
             (by decide)⟩
-  · rintro (ordinary | ⟨_, action_parent⟩)
-    · rcases operation_kind : operation.kind with target | target | source_target
-      · have fill : (calculation operation).IsFillCandidate candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases fill_shapes fill with
-          ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-        · exact Or.inl ⟨rfl, rfl⟩
-        · simp [moveItemToPay] at operation_kind
-        · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
-        · simp [moveSecondToDeposit] at operation_kind
-      · have after_correction :
+  · intro rule_dependency
+    rcases operation_kind : operation.kind with target | target | source_target
+    · have fill : (calculation operation).IsFillCandidate candidate := by
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases fill_shapes fill with
+        ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · exact Or.inl ⟨rfl, rfl⟩
+      · simp [moveItemToPay] at operation_kind
+      · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+      · simp [moveSecondToDeposit] at operation_kind
+    · have after_correction :
             (calculation operation).AfterMoveCorrection dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes after_correction.1 with
-          ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
-        · simp [moveItemToPay] at operation_kind
-        · simp [moveSecondToDeposit] at operation_kind
-        · simp [createItem] at operation_kind
-        · simp [createSecondItem] at operation_kind
-      · have move_rule :
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes after_correction.1 with
+        ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+      · simp [moveItemToPay] at operation_kind
+      · simp [moveSecondToDeposit] at operation_kind
+      · simp [createItem] at operation_kind
+      · simp [createSecondItem] at operation_kind
+    · have move_rule :
             (calculation operation).MoveRuleDependency dependency candidate := by
-          simpa [RuleCalculation.OrdinaryDependency, calculation,
-            operation_kind] using ordinary
-        rcases after_comparison_shapes move_rule.1.1 with
-          ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl | rfl⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
-        · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
-        · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
-        · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
-        · exact (move_rule.2 ⟨fill_second_move, createSecondItem,
-            ⟨itemPosition, Or.inr ⟨rfl, Or.inl ⟨rfl, rfl⟩⟩⟩,
-            ⟨after_comparison_second_item,
-              Or.inl (not_move_of_kind_create rfl)⟩,
-            (by decide), second_item_reaches_holder⟩).elim
-        · simp [createItem] at operation_kind
-        · simp [createSecondItem] at operation_kind
-    · exact nomatch
-        (action_parent : (none : Option ParticleOperation) = some candidate)
+        simpa [RuleCalculation.Dependency, calculation,
+          operation_kind] using rule_dependency
+      rcases after_comparison_shapes move_rule.1.1 with
+        ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl | rfl⟩ | ⟨rfl, _⟩ | ⟨rfl, _⟩
+      · exact Or.inr (Or.inl ⟨rfl, rfl⟩)
+      · exact Or.inr (Or.inr (Or.inl ⟨rfl, rfl⟩))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩)))
+      · exact (move_rule.2 ⟨fill_second_move, createSecondItem,
+          ⟨itemPosition, Or.inr ⟨rfl, Or.inl ⟨rfl, rfl⟩⟩⟩,
+          ⟨after_comparison_second_item,
+            Or.inl (not_move_of_kind_create rfl)⟩,
+          (by decide), second_item_reaches_holder⟩).elim
+      · simp [createItem] at operation_kind
+      · simp [createSecondItem] at operation_kind
 
 def graph : ResolvedDefineGraph where
   isOperation := isOperation
@@ -2800,22 +2476,6 @@ def graph : ResolvedDefineGraph where
     rcases fill_shapes fill_candidate with
       ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
       exact ⟨by simp [isOperation], by simp [isOperation]⟩
-  action_parent_candidate_operated_position := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_operations := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_candidate_is_previous := by
-    intro operation candidate action_parent
-    exact nomatch
-      (action_parent : (none : Option ParticleOperation) = some candidate)
-  action_parent_is_parent_or_same := by
-    intro operation position operation_member operates_on
-    rcases operation_member with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      exact List.nil_prefix
 
 example : dependency moveItemToPay createItem := Or.inr (Or.inl ⟨rfl, rfl⟩)
 

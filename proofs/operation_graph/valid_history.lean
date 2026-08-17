@@ -10,7 +10,10 @@ set_option autoImplicit false
 the Particle Operation preconditions and exact occupancy transitions, while the
 theorems below derive prefix closure, the responsible operation for newly
 occupied positions, the state after a non-Move, and Move occupancy preservation.
-It is independent of every operation graph rule.
+It also records the resolved position names whose most-recent Particle
+Operation may be queried at each index. It remains independent of every
+operation graph rule; deriving that name trace from resolved Define source is a
+separate formalization boundary.
 
 `ExactOccupancyExecution` is the stronger interface consumed by the existing
 minimality and completeness modules. It remains temporarily while those modules
@@ -54,6 +57,7 @@ theorem exists_occupancy_transition (occupied : Nat → Prop)
 structure ValidResolvedHistory (isOperation : ParticleOperation → Prop) where
   operationAt : Nat → Option ParticleOperation
   occupiedBefore : Nat → Position → Prop
+  queryableBefore : Nat → Position → Prop
   member_operation_at :
     ∀ operation,
       isOperation operation →
@@ -72,6 +76,17 @@ structure ValidResolvedHistory (isOperation : ParticleOperation → Prop) where
         operationAt firstOrder = none →
         operationAt laterOrder = none
   initial_prefix_closed : PrefixClosed (occupiedBefore 0)
+  queryable_prefix_closed :
+    ∀ operationOrder, PrefixClosed (queryableBefore operationOrder)
+  occupied_position_is_queryable :
+    ∀ operationOrder position,
+      occupiedBefore operationOrder position →
+        queryableBefore operationOrder position
+  operated_position_is_queryable :
+    ∀ operation position,
+      isOperation operation →
+        OperatesOn operation position →
+        queryableBefore operation.operationOrder position
   empty_position_is_occupied :
     ∀ operation source,
       isOperation operation →
@@ -643,9 +658,13 @@ def operationAt : Nat → Option ParticleOperation
 def occupiedBefore (operationOrder : Nat) (position : Position) : Prop :=
   position = actionParent ∨ (0 < operationOrder ∧ position = target)
 
+def queryableBefore (_operationOrder : Nat) (position : Position) : Prop :=
+  position = actionParent ∨ position = target
+
 def history : ValidResolvedHistory IsOperation where
   operationAt := operationAt
   occupiedBefore := occupiedBefore
+  queryableBefore := queryableBefore
   member_operation_at := by
     intro operation operation_member
     subst operation
@@ -685,6 +704,27 @@ def history : ValidResolvedHistory IsOperation where
       simpa [actionParent, ParentOrSame] using
         List.eq_nil_of_prefix_nil parent_of_child
     exact Or.inl parent_is_action_parent
+  queryable_prefix_closed := by
+    intro operationOrder parent child parent_of_child child_queryable
+    rcases child_queryable with child_is_action_parent | child_is_target
+    · subst child
+      exact Or.inl (List.eq_nil_of_prefix_nil parent_of_child)
+    · subst child
+      have parent_shape : parent = [] ∨ parent = target := by
+        simpa [ParentOrSame, target, List.prefix_cons_iff] using parent_of_child
+      exact parent_shape.imp (fun parent_is_empty => by
+        simpa [actionParent] using parent_is_empty) id
+  occupied_position_is_queryable := by
+    intro operationOrder position position_occupied
+    rcases position_occupied with position_is_action_parent | ⟨_, position_is_target⟩
+    · exact Or.inl position_is_action_parent
+    · exact Or.inr position_is_target
+  operated_position_is_queryable := by
+    intro operation position operation_member operates_on_position
+    subst operation
+    have position_is_target : position = target := by
+      simpa [createOperation, OperatesOn] using operates_on_position
+    exact Or.inr position_is_target
   empty_position_is_occupied := by
     intro operation source operation_member empty_position
     subst operation

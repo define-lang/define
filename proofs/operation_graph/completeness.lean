@@ -40,14 +40,6 @@ Two consequences are machine-checked here beyond completeness itself:
   same reachability, is equal to the produced dependency relation. Rule sets
   with the same dependency semantics can therefore differ only in how they
   compute the graph, never in the graph itself.
-- `hasOrdinaryDependency_of_actionParentCandidate`: against the complete
-  resolved history the Action Parent Rule's condition never holds, because an
-  operation on the current action's parent position or one of that position's
-  transitive parent positions is always covered by the Fill Rule or Empty Rule,
-  which retains some ordinary dependency.
-  The rule remains necessary for modular calculation: a callee-local
-  calculation has no caller history to scan and uses the rule to defer the
-  selection to its callers.
 -/
 
 namespace Define.OperationGraph
@@ -56,8 +48,8 @@ universe u
 
 /--
 The related-and-previous relation, written `R` in the English proof. It
-mentions only the operation order and the operated positions, never the four
-rules.
+mentions only the operation order and the operated positions, never the three
+resolved rules.
 -/
 def RelatedPrevious (operation previousOperation : ParticleOperation) : Prop :=
   MoreRecent operation previousOperation ∧
@@ -576,15 +568,15 @@ theorem reaches_of_inCollection (graph : CompleteResolvedDefineGraph)
         rcases in_collection with source_candidate | fill_candidate
         · exact False.elim (well_formed candidate source_candidate)
         · exact fill_candidate
-      have ordinary :
-          (graph.calculation operation).OrdinaryDependency graph.dependency
+      have rule_dependency :
+          (graph.calculation operation).Dependency graph.dependency
             candidate := by
-        rw [RuleCalculation.OrdinaryDependency,
+        rw [RuleCalculation.Dependency,
           graph.calculation_operation operation, operation_kind]
         exact candidate_fill
       exact
         .direct ((graph.exact_dependency operation candidate).mpr
-          (Or.inl ordinary))
+          rule_dependency)
   | destroy target =>
       rcases
         (graph.calculation operation).exists_afterComparison_orEq_reaching
@@ -596,15 +588,15 @@ theorem reaches_of_inCollection (graph : CompleteResolvedDefineGraph)
           graph.dependency graph.candidates_previous reaches_is_more_recent
           comparisonSurvivor comparison_retained with
         ⟨survivor, survivor_retained, survivor_path⟩
-      have ordinary :
-          (graph.calculation operation).OrdinaryDependency graph.dependency
+      have rule_dependency :
+          (graph.calculation operation).Dependency graph.dependency
             survivor := by
-        rw [RuleCalculation.OrdinaryDependency,
+        rw [RuleCalculation.Dependency,
           graph.calculation_operation operation, operation_kind]
         exact survivor_retained
       exact
         Reaches.reaches_of_edge_of_orEq
-          ((graph.exact_dependency operation survivor).mpr (Or.inl ordinary))
+          ((graph.exact_dependency operation survivor).mpr rule_dependency)
           (Reaches.orEq_trans survivor_path comparison_path)
   | move source target =>
       rcases
@@ -622,15 +614,15 @@ theorem reaches_of_inCollection (graph : CompleteResolvedDefineGraph)
           graph.dependency graph.candidates_previous reaches_is_more_recent
           correctionSurvivor correction_retained with
         ⟨survivor, survivor_retained, survivor_path⟩
-      have ordinary :
-          (graph.calculation operation).OrdinaryDependency graph.dependency
+      have rule_dependency :
+          (graph.calculation operation).Dependency graph.dependency
             survivor := by
-        rw [RuleCalculation.OrdinaryDependency,
+        rw [RuleCalculation.Dependency,
           graph.calculation_operation operation, operation_kind]
         exact survivor_retained
       exact
         Reaches.reaches_of_edge_of_orEq
-          ((graph.exact_dependency operation survivor).mpr (Or.inl ordinary))
+          ((graph.exact_dependency operation survivor).mpr rule_dependency)
           (Reaches.orEq_trans survivor_path
             (Reaches.orEq_trans correction_path comparison_path))
 
@@ -1111,164 +1103,6 @@ theorem dependency_is_unique (graph : CompleteResolvedDefineGraph)
       graph.dependency source target ↔ otherDependency source target :=
   dependency_iff_unique graph.pointsBackward other_points_backward
     graph.transitivelyMinimal other_minimal same_reachability
-
-/-!
-## The Action Parent Rule adds no distinct resolved edge
-
-An Action Parent candidate operates on the current action's parent position or
-one of that position's transitive parent positions, and the action's parent
-position is a transitive parent position of every position the operation
-operates on. The candidate is therefore always also within the Fill Rule's or
-the Empty Rule's selection, so against the complete resolved history the
-preceding rules leave a dependency and the Action Parent Rule's condition
-never holds. The rule is how a callee-local calculation, which has no caller
-history to scan, defers the selection to its callers; these theorems prove
-that the complete resolved graph always uses an ordinary dependency instead.
--/
-
-theorem hasOrdinaryDependency_of_actionParentCandidate
-    (graph : CompleteResolvedDefineGraph)
-    {operation candidate : ParticleOperation}
-    (action_parent_candidate :
-      (graph.calculation operation).IsActionParentCandidate candidate) :
-    (graph.calculation operation).HasOrdinaryDependency graph.dependency := by
-  have members :=
-    graph.action_parent_candidate_operations operation candidate
-      action_parent_candidate
-  have candidate_previous :=
-    graph.action_parent_candidate_is_previous operation candidate
-      action_parent_candidate
-  rcases graph.action_parent_candidate_operated_position operation candidate
-      action_parent_candidate with
-    ⟨candidatePosition, candidate_operates, candidate_parent_of_action_parent⟩
-  have complete_below :
-      ∀ newer older,
-        graph.isOperation newer →
-        graph.isOperation older →
-        MoreRecent operation newer →
-        MoreRecent newer older →
-        OperationsRelated newer older →
-        Reaches graph.dependency newer older :=
-    fun newer older newer_member older_member _ newer_after_older
-        operations_related =>
-      graph.reaches_of_relatedPrevious newer older newer_member older_member
-        ⟨newer_after_older, operations_related⟩
-  have excluders_reach :
-      ∀ excluder excluded,
-        (graph.calculation operation).InCollection excluder →
-        (graph.calculation operation).InCollection excluded →
-        MoreRecent excluder excluded →
-        OperationsRelated excluder excluded →
-        Reaches graph.dependency excluder excluded := by
-    intro excluder excluded excluder_in excluded_in excluder_recent
-      excluder_related
-    exact
-      graph.reaches_of_relatedPrevious excluder excluded
-        (graph.inCollection_operations excluder_in)
-        (graph.inCollection_operations excluded_in)
-        ⟨excluder_recent, excluder_related⟩
-  have reaches_is_more_recent :
-      ∀ newer older, Reaches graph.dependency newer older →
-        MoreRecent newer older :=
-    fun _ _ reaches => graph.reaches_is_moreRecent reaches
-  cases operation_kind : operation.kind with
-  | create target =>
-      have action_parent_of_target :
-          ParentOrSame operation.actionParent target :=
-        graph.action_parent_is_parent_or_same operation target members.1
-          (by simp [OperatesOn, operation_kind])
-      rcases graph.latest_fill_candidate operation target candidatePosition
-          candidate members.1 members.2 (by simp [FillPosition, operation_kind])
-          candidate_operates
-          (candidate_parent_of_action_parent.trans action_parent_of_target)
-          candidate_previous with
-        ⟨fillCandidate, fill_candidate, _⟩
-      refine ⟨fillCandidate, ?_⟩
-      rw [RuleCalculation.OrdinaryDependency,
-        graph.calculation_operation operation, operation_kind]
-      exact fill_candidate
-  | destroy target =>
-      have action_parent_of_target :
-          ParentOrSame operation.actionParent target :=
-        graph.action_parent_is_parent_or_same operation target members.1
-          (by simp [OperatesOn, operation_kind])
-      rcases graph.latest_source_candidate operation target candidatePosition
-          candidate members.1 members.2 (by simp [EmptyPosition, operation_kind])
-          (Or.inl (candidate_parent_of_action_parent.trans
-            action_parent_of_target))
-          candidate_operates candidate_previous with
-        ⟨sourceCandidate, source_candidate_at, _⟩
-      have source_in_collection :
-          (graph.calculation operation).InCollection sourceCandidate :=
-        Or.inl ((graph.source_candidate_iff operation sourceCandidate).mpr
-          ⟨candidatePosition, source_candidate_at⟩)
-      rcases
-        (graph.calculation operation).exists_afterComparison_orEq_reaching
-          graph.dependency graph.candidates_previous excluders_reach
-          sourceCandidate source_in_collection with
-        ⟨comparisonSurvivor, comparison_retained, _⟩
-      rcases
-        (graph.calculation operation).exists_afterMoveCorrection_orEq_reaching
-          graph.dependency graph.candidates_previous reaches_is_more_recent
-          comparisonSurvivor comparison_retained with
-        ⟨survivor, survivor_retained, _⟩
-      refine ⟨survivor, ?_⟩
-      rw [RuleCalculation.OrdinaryDependency,
-        graph.calculation_operation operation, operation_kind]
-      exact survivor_retained
-  | move source target =>
-      have action_parent_of_source :
-          ParentOrSame operation.actionParent source :=
-        graph.action_parent_is_parent_or_same operation source members.1
-          (by simp [OperatesOn, operation_kind])
-      rcases graph.latest_source_candidate operation source candidatePosition
-          candidate members.1 members.2 (by simp [EmptyPosition, operation_kind])
-          (Or.inl (candidate_parent_of_action_parent.trans
-            action_parent_of_source))
-          candidate_operates candidate_previous with
-        ⟨sourceCandidate, source_candidate_at, _⟩
-      have source_in_collection :
-          (graph.calculation operation).InCollection sourceCandidate :=
-        Or.inl ((graph.source_candidate_iff operation sourceCandidate).mpr
-          ⟨candidatePosition, source_candidate_at⟩)
-      rcases
-        (graph.calculation operation).exists_afterComparison_orEq_reaching
-          graph.dependency graph.candidates_previous excluders_reach
-          sourceCandidate source_in_collection with
-        ⟨comparisonSurvivor, comparison_retained, _⟩
-      rcases
-        (graph.calculation operation).exists_afterMoveCorrection_orEq_reaching
-          graph.dependency graph.candidates_previous reaches_is_more_recent
-          comparisonSurvivor comparison_retained with
-        ⟨correctionSurvivor, correction_retained, _⟩
-      rcases
-        (graph.calculation operation).exists_moveRuleDependency_orEq_reaching
-          graph.dependency graph.candidates_previous reaches_is_more_recent
-          correctionSurvivor correction_retained with
-        ⟨survivor, survivor_retained, _⟩
-      refine ⟨survivor, ?_⟩
-      rw [RuleCalculation.OrdinaryDependency,
-        graph.calculation_operation operation, operation_kind]
-      exact survivor_retained
-
-/--
-Every edge of a complete resolved graph satisfies the Fill, Empty, or Move
-Rule's selection; the Action Parent Rule's fallback condition never holds
-against the complete history.
--/
-theorem dependency_isOrdinary (graph : CompleteResolvedDefineGraph)
-    {operation candidate : ParticleOperation}
-    (direct_dependency : graph.dependency operation candidate) :
-    (graph.calculation operation).OrdinaryDependency graph.dependency
-      candidate := by
-  rcases (graph.exact_dependency operation candidate).mp direct_dependency with
-    ordinary | ⟨no_ordinary, action_parent_candidate⟩
-  · exact ordinary
-  · exact
-      False.elim
-        (no_ordinary
-          (graph.hasOrdinaryDependency_of_actionParentCandidate
-            action_parent_candidate))
 
 end CompleteResolvedDefineGraph
 

@@ -1,4 +1,4 @@
-import valid_history
+import calculation
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -15,16 +15,15 @@ encode that argument for Lean to check.
 
 Positions are finite chained names. Graph vertices are only concrete Create,
 Destroy, and Move Particle Operations. Action Requirements, Action Guarantees,
-Action Parent inputs, and modular destruction values are resolved before they
-can participate in the dependency relation.
+and modular destruction values are resolved before they can participate in the
+dependency relation.
 
 `RuleCalculation` encodes the current rules in this order:
 
 1. the Empty Rule Collection and optional Fill Dependency;
 2. the simultaneous Comparison;
 3. the Empty Rule's Move Correction;
-4. the Move Rule's Fill Dependency removal; and
-5. the Action Parent Rule when the preceding result is empty.
+4. the Move Rule's Fill Dependency removal.
 
 `RuleGraph.exact_dependency` requires an edge exactly when this calculation
 retains the dependency. The generic graph lemmas establish that adding a vertex
@@ -45,8 +44,7 @@ derived.
   position provenance;
 - the position history supplies a candidate at least as recent as every
   applicable earlier operation;
-- Create, Destroy, and Move have their specified occupancy transitions; and
-- the Action Parent position relationship holds across an Action Execution.
+- Create, Destroy, and Move have their specified occupancy transitions.
 
 The conversion from a valid Define program to `ResolvedDefineGraph` is not
 itself machine-checked because the complete Define source and validation
@@ -61,7 +59,7 @@ the theorem does not require a finite vertex type. Caller binding preserves and
 reflects equality and transitive parent/child relationships. The occupancy state
 immediately before each occurrence supplies `ExactOccupancyExecution`. Caller
 and destruction resolution contribute only the concrete Particle Operations and
-ordinary rule calculations described by the English proof.
+resolved rule calculations described by the English proof.
 
 `latest_source_candidate` also covers a position name that no longer refers to
 a position when the emptying operation runs. A valid program satisfies it by
@@ -82,8 +80,8 @@ The non-Move source-candidate result is derived from occupancy transitions. In
 particular, after an earlier Create or Destroy on a strict parent position, an
 occupied source must have changed from empty to occupied at an intervening
 operation. The most-recent entry for that operation's position excludes the
-earlier candidate. The remaining cases cover Move dependencies, the Fill
-Dependency, and the Action Parent Rule.
+earlier candidate. The remaining cases cover Move dependencies and the Fill
+Dependency.
 
 Caller-prefix resolution is injective and preserves position relationships,
 Particle Operation kinds, operation order, and dependency paths. The final
@@ -99,79 +97,6 @@ namespace Define.OperationGraph
 
 universe u v
 
-structure RuleCalculation where
-  operation : ParticleOperation
-  sourceCandidate : ParticleOperation → Prop
-  fillCandidate : Option ParticleOperation
-  actionParentCandidate : Option ParticleOperation
-
-def RuleCalculation.WellFormed (calculation : RuleCalculation) : Prop :=
-  match calculation.operation.kind with
-  | .create _ => ∀ candidate, ¬calculation.sourceCandidate candidate
-  | .destroy _ => calculation.fillCandidate = none
-  | .move _ _ => True
-
-def RuleCalculation.IsFillCandidate (calculation : RuleCalculation)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.fillCandidate = some candidate
-
-def RuleCalculation.IsActionParentCandidate (calculation : RuleCalculation)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.actionParentCandidate = some candidate
-
-def RuleCalculation.InCollection (calculation : RuleCalculation)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.sourceCandidate candidate ∨ calculation.IsFillCandidate candidate
-
-def RuleCalculation.AfterComparison (calculation : RuleCalculation)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.InCollection candidate ∧
-    ∀ newerCandidate,
-      calculation.InCollection newerCandidate →
-      MoreRecent newerCandidate candidate →
-      OperationsRelated newerCandidate candidate →
-      False
-
-def RuleCalculation.AfterMoveCorrection (calculation : RuleCalculation)
-    (dependency : ParticleOperation → ParticleOperation → Prop)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.AfterComparison candidate ∧
-    (¬IsMove candidate ∨
-      ∀ otherCandidate,
-        calculation.AfterComparison otherCandidate →
-        otherCandidate ≠ candidate →
-        ¬Reaches dependency otherCandidate candidate)
-
-def RuleCalculation.MoveRuleDependency (calculation : RuleCalculation)
-    (dependency : ParticleOperation → ParticleOperation → Prop)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.AfterMoveCorrection dependency candidate ∧
-    ¬(calculation.IsFillCandidate candidate ∧
-      ∃ sourceCandidate,
-        calculation.sourceCandidate sourceCandidate ∧
-          calculation.AfterMoveCorrection dependency sourceCandidate ∧
-          sourceCandidate ≠ candidate ∧
-          Reaches dependency sourceCandidate candidate)
-
-def RuleCalculation.OrdinaryDependency (calculation : RuleCalculation)
-    (dependency : ParticleOperation → ParticleOperation → Prop)
-    (candidate : ParticleOperation) : Prop :=
-  match calculation.operation.kind with
-  | .create _ => calculation.IsFillCandidate candidate
-  | .destroy _ => calculation.AfterMoveCorrection dependency candidate
-  | .move _ _ => calculation.MoveRuleDependency dependency candidate
-
-def RuleCalculation.HasOrdinaryDependency (calculation : RuleCalculation)
-    (dependency : ParticleOperation → ParticleOperation → Prop) : Prop :=
-  ∃ candidate, calculation.OrdinaryDependency dependency candidate
-
-def RuleCalculation.FinalDependency (calculation : RuleCalculation)
-    (dependency : ParticleOperation → ParticleOperation → Prop)
-    (candidate : ParticleOperation) : Prop :=
-  calculation.OrdinaryDependency dependency candidate ∨
-    (¬calculation.HasOrdinaryDependency dependency ∧
-      calculation.IsActionParentCandidate candidate)
-
 def NonMoveSourceCandidatesAreIrredundant (calculation : RuleCalculation)
     (dependency : ParticleOperation → ParticleOperation → Prop) : Prop :=
   ∀ olderCandidate newerCandidate,
@@ -182,100 +107,79 @@ def NonMoveSourceCandidatesAreIrredundant (calculation : RuleCalculation)
     newerCandidate ≠ olderCandidate →
     ¬Reaches dependency newerCandidate olderCandidate
 
-theorem finalDependenciesAreAntichain (calculation : RuleCalculation)
+theorem dependenciesAreAntichain (calculation : RuleCalculation)
     (dependency : ParticleOperation → ParticleOperation → Prop)
     (well_formed : calculation.WellFormed)
     (non_move_source_candidates_are_irredundant :
       NonMoveSourceCandidatesAreIrredundant calculation dependency) :
     ∀ newerCandidate olderCandidate,
-      calculation.FinalDependency dependency newerCandidate →
-      calculation.FinalDependency dependency olderCandidate →
+      calculation.Dependency dependency newerCandidate →
+      calculation.Dependency dependency olderCandidate →
       newerCandidate ≠ olderCandidate →
       ¬Reaches dependency newerCandidate olderCandidate := by
   intro newerCandidate olderCandidate newer_final older_final distinct reaches_older
-  rcases newer_final with newer_ordinary | newer_action_parent
-  · rcases older_final with older_ordinary | older_action_parent
-    · cases operation_kind : calculation.operation.kind with
-      | create target =>
-          have newer_fill : calculation.fillCandidate = some newerCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency,
-              RuleCalculation.IsFillCandidate, operation_kind] using newer_ordinary
-          have older_fill : calculation.fillCandidate = some olderCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency,
-              RuleCalculation.IsFillCandidate, operation_kind] using older_ordinary
-          have candidates_equal : newerCandidate = olderCandidate := by
-            exact Option.some.inj (newer_fill.symm.trans older_fill)
-          exact distinct candidates_equal
-      | destroy target =>
-          have newer_empty :
-              calculation.AfterMoveCorrection dependency newerCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-              newer_ordinary
-          have older_empty :
-              calculation.AfterMoveCorrection dependency olderCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-              older_ordinary
-          rcases older_empty.2 with older_not_move | no_candidate_reaches_older
-          · have no_fill : calculation.fillCandidate = none := by
-              simpa [RuleCalculation.WellFormed, operation_kind] using well_formed
-            have older_source : calculation.sourceCandidate olderCandidate := by
-              rcases older_empty.1.1 with older_source | older_fill
-              · exact older_source
-              · simp [RuleCalculation.IsFillCandidate, no_fill] at older_fill
-            exact
-              non_move_source_candidates_are_irredundant olderCandidate
-                newerCandidate older_source older_empty.1 older_not_move
-                newer_empty.1 distinct reaches_older
-          · exact no_candidate_reaches_older newerCandidate newer_empty.1 distinct reaches_older
-      | move source target =>
-          have newer_move :
-              calculation.MoveRuleDependency dependency newerCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-              newer_ordinary
-          have older_move :
-              calculation.MoveRuleDependency dependency olderCandidate := by
-            simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-              older_ordinary
-          rcases older_move.1.2 with older_not_move | no_candidate_reaches_older
-          · rcases older_move.1.1.1 with older_source | older_fill
-            · exact
-                non_move_source_candidates_are_irredundant olderCandidate
-                  newerCandidate older_source older_move.1.1 older_not_move
-                  newer_move.1.1 distinct reaches_older
-            · rcases newer_move.1.1.1 with newer_source | newer_fill
-              · exact older_move.2 ⟨older_fill, newerCandidate, newer_source,
-                  newer_move.1, distinct, reaches_older⟩
-              · have candidates_equal : newerCandidate = olderCandidate := by
-                  exact Option.some.inj (newer_fill.symm.trans older_fill)
-                exact distinct candidates_equal
-          · exact
-              no_candidate_reaches_older newerCandidate newer_move.1.1 distinct
-                reaches_older
-    · exact older_action_parent.1 ⟨newerCandidate, newer_ordinary⟩
-  · rcases older_final with older_ordinary | older_action_parent
-    · exact newer_action_parent.1 ⟨olderCandidate, older_ordinary⟩
-    · have candidates_equal : newerCandidate = olderCandidate := by
-        exact Option.some.inj (newer_action_parent.2.symm.trans older_action_parent.2)
+  cases operation_kind : calculation.operation.kind with
+  | create target =>
+      have newer_fill : calculation.fillCandidate = some newerCandidate := by
+        simpa [RuleCalculation.Dependency,
+          RuleCalculation.IsFillCandidate, operation_kind] using newer_final
+      have older_fill : calculation.fillCandidate = some olderCandidate := by
+        simpa [RuleCalculation.Dependency,
+          RuleCalculation.IsFillCandidate, operation_kind] using older_final
+      have candidates_equal : newerCandidate = olderCandidate := by
+        exact Option.some.inj (newer_fill.symm.trans older_fill)
       exact distinct candidates_equal
-
-structure RuleGraph where
-  isOperation : ParticleOperation → Prop
-  dependency : ParticleOperation → ParticleOperation → Prop
-  calculation : ParticleOperation → RuleCalculation
-  calculation_operation :
-    ∀ operation, (calculation operation).operation = operation
-  calculation_well_formed :
-    ∀ operation, (calculation operation).WellFormed
-  exact_dependency :
-    ∀ operation candidate,
-      dependency operation candidate ↔
-        (calculation operation).FinalDependency dependency candidate
+  | destroy target =>
+      have newer_empty :
+          calculation.AfterMoveCorrection dependency newerCandidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          newer_final
+      have older_empty :
+          calculation.AfterMoveCorrection dependency olderCandidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          older_final
+      rcases older_empty.2 with older_not_move | no_candidate_reaches_older
+      · have no_fill : calculation.fillCandidate = none := by
+          simpa [RuleCalculation.WellFormed, operation_kind] using well_formed
+        have older_source : calculation.sourceCandidate olderCandidate := by
+          rcases older_empty.1.1 with older_source | older_fill
+          · exact older_source
+          · simp [RuleCalculation.IsFillCandidate, no_fill] at older_fill
+        exact
+          non_move_source_candidates_are_irredundant olderCandidate
+            newerCandidate older_source older_empty.1 older_not_move
+            newer_empty.1 distinct reaches_older
+      · exact no_candidate_reaches_older newerCandidate newer_empty.1 distinct reaches_older
+  | move source target =>
+      have newer_move :
+          calculation.MoveRuleDependency dependency newerCandidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          newer_final
+      have older_move :
+          calculation.MoveRuleDependency dependency olderCandidate := by
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          older_final
+      rcases older_move.1.2 with older_not_move | no_candidate_reaches_older
+      · rcases older_move.1.1.1 with older_source | older_fill
+        · exact
+            non_move_source_candidates_are_irredundant olderCandidate
+              newerCandidate older_source older_move.1.1 older_not_move
+              newer_move.1.1 distinct reaches_older
+        · rcases newer_move.1.1.1 with newer_source | newer_fill
+          · exact older_move.2 ⟨older_fill, newerCandidate, newer_source,
+              newer_move.1, distinct, reaches_older⟩
+          · have candidates_equal : newerCandidate = olderCandidate := by
+              exact Option.some.inj (newer_fill.symm.trans older_fill)
+            exact distinct candidates_equal
+      · exact
+          no_candidate_reaches_older newerCandidate newer_move.1.1 distinct
+            reaches_older
 
 /-
 These obligations are stated separately so the final theorem can be audited
 against the specification. None assumes that a dependency set is an antichain
 or that an edge is necessary; the only reachability property used by the key
-lemma is derived from the exact four-rule equation above.
+lemma is derived from the exact three-rule equation above.
 -/
 structure ResolvedDefineGraph extends RuleGraph where
   occupancy : ExactOccupancyExecution isOperation
@@ -337,25 +241,6 @@ structure ResolvedDefineGraph extends RuleGraph where
     ∀ operation candidate,
       (calculation operation).IsFillCandidate candidate →
         isOperation operation ∧ isOperation candidate
-  action_parent_candidate_operated_position :
-    ∀ operation candidate,
-      (calculation operation).IsActionParentCandidate candidate →
-        ∃ operatedPosition,
-          OperatesOn candidate operatedPosition ∧
-            ParentOrSame operatedPosition operation.actionParent
-  action_parent_candidate_operations :
-    ∀ operation candidate,
-      (calculation operation).IsActionParentCandidate candidate →
-        isOperation operation ∧ isOperation candidate
-  action_parent_candidate_is_previous :
-    ∀ operation candidate,
-      (calculation operation).IsActionParentCandidate candidate →
-        MoreRecent operation candidate
-  action_parent_is_parent_or_same :
-    ∀ operation position,
-      isOperation operation →
-        OperatesOn operation position →
-        ParentOrSame operation.actionParent position
 
 theorem operationsRelated_symm {first second : ParticleOperation} :
     OperationsRelated first second → OperationsRelated second first := by
@@ -376,42 +261,37 @@ theorem ResolvedDefineGraph.inCollection_is_previous
       candidate_at_position
   · exact graph.fill_candidate_is_previous operation candidate fill_candidate
 
-theorem RuleCalculation.ordinaryDependency_isInCollection
+theorem RuleCalculation.dependency_isInCollection
     {calculation : RuleCalculation}
     {dependency : ParticleOperation → ParticleOperation → Prop}
     {candidate : ParticleOperation}
-    (ordinary_dependency :
-      calculation.OrdinaryDependency dependency candidate) :
+    (rule_dependency :
+      calculation.Dependency dependency candidate) :
     calculation.InCollection candidate := by
   cases operation_kind : calculation.operation.kind with
   | create target =>
       exact Or.inr (by
-        simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-          ordinary_dependency)
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency)
   | destroy target =>
       have after_move_correction : calculation.AfterMoveCorrection dependency candidate := by
-        simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-          ordinary_dependency
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency
       exact after_move_correction.1.1
   | move source target =>
       have move_rule_dependency : calculation.MoveRuleDependency dependency candidate := by
-        simpa [RuleCalculation.OrdinaryDependency, operation_kind] using
-          ordinary_dependency
+        simpa [RuleCalculation.Dependency, operation_kind] using
+          rule_dependency
       exact move_rule_dependency.1.1.1
 
 theorem ResolvedDefineGraph.directDependency_is_previous
     (graph : ResolvedDefineGraph) {operation candidate : ParticleOperation}
     (direct_dependency : graph.dependency operation candidate) :
     MoreRecent operation candidate := by
-  rcases (graph.exact_dependency operation candidate).mp direct_dependency with
-    ordinary_dependency | action_parent_dependency
-  · exact
-      graph.inCollection_is_previous
-        (RuleCalculation.ordinaryDependency_isInCollection
-          ordinary_dependency)
-  · exact
-      graph.action_parent_candidate_is_previous operation candidate
-        action_parent_dependency.2
+  exact
+    graph.inCollection_is_previous
+      (RuleCalculation.dependency_isInCollection
+        ((graph.exact_dependency operation candidate).mp direct_dependency))
 
 theorem ResolvedDefineGraph.pointsBackward (graph : ResolvedDefineGraph) :
     PointsBackward ParticleOperation.operationOrder graph.dependency := by
@@ -422,74 +302,50 @@ theorem ResolvedDefineGraph.directDependency_operations
     (graph : ResolvedDefineGraph) {operation candidate : ParticleOperation}
     (direct_dependency : graph.dependency operation candidate) :
     graph.isOperation operation ∧ graph.isOperation candidate := by
-  rcases (graph.exact_dependency operation candidate).mp direct_dependency with
-    ordinary_dependency | action_parent_dependency
-  · rcases
-      RuleCalculation.ordinaryDependency_isInCollection ordinary_dependency with
-      source_candidate | fill_candidate
-    · rcases (graph.source_candidate_iff operation candidate).mp source_candidate with
-        ⟨position, candidate_at_position⟩
-      exact
-        graph.source_candidate_operations operation candidate position
-          candidate_at_position
-    · exact graph.fill_candidate_operations operation candidate fill_candidate
-  · exact
-      graph.action_parent_candidate_operations operation candidate
-        action_parent_dependency.2
+  rcases
+      RuleCalculation.dependency_isInCollection
+        ((graph.exact_dependency operation candidate).mp direct_dependency) with
+    source_candidate | fill_candidate
+  · rcases (graph.source_candidate_iff operation candidate).mp source_candidate with
+      ⟨position, candidate_at_position⟩
+    exact
+      graph.source_candidate_operations operation candidate position
+        candidate_at_position
+  · exact graph.fill_candidate_operations operation candidate fill_candidate
 
 theorem ResolvedDefineGraph.directDependencyPositionsRelated
     (graph : ResolvedDefineGraph) {operation candidate : ParticleOperation}
     (direct_dependency : graph.dependency operation candidate) :
     OperationsRelated operation candidate := by
-  have final_dependency :=
+  have rule_dependency :=
     (graph.exact_dependency operation candidate).mp direct_dependency
-  rcases final_dependency with ordinary_dependency | action_parent_dependency
-  · have in_collection :=
-      RuleCalculation.ordinaryDependency_isInCollection ordinary_dependency
-    rcases in_collection with source_candidate | fill_candidate
-    · rcases (graph.source_candidate_iff operation candidate).mp source_candidate with
-        ⟨candidatePosition, candidate_at_position⟩
-      rcases graph.source_candidate_empty_position operation candidate
-          candidatePosition candidate_at_position with
-        ⟨emptyPosition, empty_position, candidate_position_related⟩
-      rcases graph.source_candidate_operated_position operation candidate
-          candidatePosition candidate_at_position with
-        ⟨candidateOperatedPosition, candidate_operates,
-          candidate_operated_parent⟩
-      have candidate_operated_related_to_empty :
-          Related candidateOperatedPosition emptyPosition :=
-        parent_of_related_is_related candidate_operated_parent
-          candidate_position_related
-      exact
-        ⟨emptyPosition, candidateOperatedPosition,
-          operatesOn_emptyPosition empty_position, candidate_operates,
-          related_symm candidate_operated_related_to_empty⟩
-    · rcases graph.fill_candidate_operated_position operation candidate fill_candidate with
-        ⟨fillPosition, candidateOperatedPosition, fill_position, candidate_operates,
-          candidate_parent_of_fill⟩
-      exact
-        ⟨fillPosition, candidateOperatedPosition,
-          operatesOn_fillPosition fill_position, candidate_operates,
-          Or.inr candidate_parent_of_fill⟩
-  · rcases action_parent_dependency with
-      ⟨_, action_parent_candidate⟩
-    rcases graph.action_parent_candidate_operated_position operation candidate
-        action_parent_candidate with
+  have in_collection :=
+    RuleCalculation.dependency_isInCollection rule_dependency
+  rcases in_collection with source_candidate | fill_candidate
+  · rcases (graph.source_candidate_iff operation candidate).mp source_candidate with
+      ⟨candidatePosition, candidate_at_position⟩
+    rcases graph.source_candidate_empty_position operation candidate
+        candidatePosition candidate_at_position with
+      ⟨emptyPosition, empty_position, candidate_position_related⟩
+    rcases graph.source_candidate_operated_position operation candidate
+        candidatePosition candidate_at_position with
       ⟨candidateOperatedPosition, candidate_operates,
-        candidate_parent_of_action_parent⟩
-    rcases exists_operated_position operation with
-      ⟨operationPosition, operation_operates⟩
-    have operation_member :=
-      (graph.action_parent_candidate_operations operation candidate
-        action_parent_candidate).1
-    have candidate_parent_of_operation :
-        ParentOrSame candidateOperatedPosition operationPosition :=
-      candidate_parent_of_action_parent.trans
-        (graph.action_parent_is_parent_or_same operation operationPosition
-          operation_member operation_operates)
+        candidate_operated_parent⟩
+    have candidate_operated_related_to_empty :
+        Related candidateOperatedPosition emptyPosition :=
+      parent_of_related_is_related candidate_operated_parent
+        candidate_position_related
     exact
-      ⟨operationPosition, candidateOperatedPosition, operation_operates,
-        candidate_operates, Or.inr candidate_parent_of_operation⟩
+      ⟨emptyPosition, candidateOperatedPosition,
+        operatesOn_emptyPosition empty_position, candidate_operates,
+        related_symm candidate_operated_related_to_empty⟩
+  · rcases graph.fill_candidate_operated_position operation candidate fill_candidate with
+      ⟨fillPosition, candidateOperatedPosition, fill_position, candidate_operates,
+        candidate_parent_of_fill⟩
+    exact
+      ⟨fillPosition, candidateOperatedPosition,
+        operatesOn_fillPosition fill_position, candidate_operates,
+        Or.inr candidate_parent_of_fill⟩
 
 theorem moreRecent_trans {newest middle oldest : ParticleOperation}
     (newest_after_middle : MoreRecent newest middle)
@@ -721,7 +577,7 @@ theorem RuleGraph.directDependenciesAreAntichains
   intro operation newerCandidate olderCandidate newer_dependency older_dependency
     distinct
   apply
-    finalDependenciesAreAntichain (graph.calculation operation) graph.dependency
+    dependenciesAreAntichain (graph.calculation operation) graph.dependency
       (graph.calculation_well_formed operation)
       (non_move_source_candidates_are_irredundant operation)
       newerCandidate olderCandidate

@@ -3,9 +3,9 @@
 ## Purpose
 
 This document defines the mathematical objects shared by the operation graph
-proofs. It deliberately does not define the Fill, Empty, Move, or Action Parent
-Rules. Those rules must be applied to this model and proved correct; they may
-not be assumptions of the model.
+proofs. It deliberately does not define the Fill, Empty, or Move Rules. Those
+rules must be applied to this model and proved correct; they may not be
+assumptions of the model.
 
 The relevant specification sections are:
 
@@ -219,13 +219,18 @@ A _resolved history_ consists of:
 
 1. occurrences indexed by a finite initial segment of the natural numbers or by
    all natural numbers;
-2. a state `Sᵢ` before every `Oᵢ` and a state `Sᵢ₊₁` after it; and
-3. the Action Parent position of every occurrence.
+2. a state `Sᵢ` before every `Oᵢ` and a state `Sᵢ₊₁` after it;
+3. for each index `i`, the resolved position names whose most-recent Particle
+   Operation may be queried immediately before `Oᵢ`; and
+4. the Action Parent position of every occurrence.
 
 `Sᵢ` is the state immediately before `Oᵢ`, and `Sᵢ₊₁` is the state after it. A
 resolved history is _valid_ when:
 
 - `S₀` is prefix-closed;
+- every occupied and operated position has a resolved name that may be queried
+  at the corresponding index;
+- the set of names that may be queried is prefix-closed;
 - every `Oᵢ` satisfies its occupancy preconditions in `Sᵢ`;
 - `Sᵢ₊₁` is exactly the state produced by the operation's effect;
 - every operated position is the Action Parent position or its transitive child
@@ -234,6 +239,13 @@ resolved history is _valid_ when:
   resolved Action Executions and destructions, exactly once.
 
 This definition mentions no dependency edge and no graph rule.
+
+The set of names that may be queried is not an occupancy state. Its final
+position may be empty. Source resolution derives the set from Position
+Definitions, Action Executions, the position-reference rules, and Move name
+changes. In particular, a Move changes the names of positions already defined by
+the moved particle; it does not retroactively change a resolved position name
+first contributed by a later Action Execution.
 
 The Lean representation pads a finite history with indices containing no
 operation and requires the occupancy state to remain unchanged at those indices.
@@ -265,7 +277,7 @@ some p in positions(O) and q in positions(A) satisfy p ~ q.
 ```
 
 `R` depends only on the resolved history's previous-operation order and operated
-positions. It does not depend on the Fill, Empty, Move, or Action Parent Rules.
+positions. It does not depend on the Fill, Empty, or Move Rules.
 
 The eventual completeness theorem must prove that every `R` pair is reachable.
 The minimality theorem must independently prove that no direct edge calculated
@@ -285,15 +297,15 @@ These shared definitions leave four separate obligations visible:
 1. **Source correspondence.** Resolving valid Define source must produce a valid
    finite or infinite history whose occurrence order agrees with the
    specification's sequencing rules.
-2. **Calculation correctness.** Applying the four graph rules to any valid
-   history must produce exactly the calculation used by the graph proofs.
+2. **Calculation correctness.** Applying the three resolved graph rules to any
+   valid history must produce exactly the calculation used by the graph proofs.
 3. **Graph results.** Minimality and completeness must be proved independently
    for that calculated graph.
 4. **Compiler conformance.** Observable compiler behavior must agree with the
    specification-level calculation.
 
-The existing Lean structures begin after the first boundary: they assume
-resolved occurrences, occupancy states, and candidate-selection properties. The
-planned universal construction theorem must replace those manually supplied
-candidate properties with results derived from a valid history and the four
-rules.
+The Lean definitions, valid-history structure, and graph calculation begin after
+the first boundary. The calculation derives its candidate selections from the
+history instead of accepting them as fields. The next construction-correctness
+component must prove that the calculated graph satisfies the obligations still
+accepted as fields by the downstream minimality and completeness structures.

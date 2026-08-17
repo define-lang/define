@@ -24,8 +24,14 @@ following hold:
    positions under the source-to-target name change.
 
 These results use only Particle Operation preconditions and occupancy effects.
-They do not use dependency edges or any clause of the Fill, Empty, Move, or
-Action Parent Rules.
+They do not use dependency edges or any clause of the Fill, Empty, or Move
+Rules.
+
+A valid resolved history also records, at each index, the resolved position
+names whose most-recent Particle Operation may be queried. Every occupied or
+operated position has such a name, and these names are prefix-closed. The
+occupancy results below do not otherwise depend on that trace; the graph
+calculation does.
 
 ## Assumptions and their specification sources
 
@@ -201,6 +207,10 @@ and empty. After the Create, both the Action Parent position and `p` are
 occupied, and that state remains unchanged. This is a nonempty valid resolved
 history and assumes nothing about a dependency graph.
 
+At every index in this witness, the Action Parent position and `p` are the two
+resolved position names whose most-recent Particle Operation may be queried.
+That set is prefix-closed and includes every occupied and operated position.
+
 This witness shows that the history premises are mutually consistent. It does
 not replace the source-to-history construction needed to show that every valid
 Define program execution produces such a history.
@@ -261,11 +271,14 @@ proofs can conclude “for every valid Define program execution”:
    represented exactly once;
 2. the specification's caller, callee, constructor, destructor, and destruction
    sequencing rules assign every occurrence a natural-number index and give
-   “previous” the meaning used by all four graph rules;
+   “previous” the meaning used by all three resolved graph rules;
 3. the states at Action Requirement, Action Guarantee, and Destruction Contract
    boundaries agree with the resolved operation transitions; and
 4. prefix replacement gives distinct resolved positions to distinct Action
-   Executions while preserving every parent and child relationship.
+   Executions while preserving every parent and child relationship; and
+5. the resolved position names that may be queried at each index are exactly
+   those supplied by Position Definitions, Action Executions, valid position
+   references, and Move name changes.
 
 These are lemmas to derive from the specification's existing rules, not missing
 specification requirements. They are not consequences of graph minimality or

@@ -5,6 +5,9 @@
 - [Valid Resolved Histories](valid-history.md) proves the occupancy invariants
   used by the graph arguments and identifies the remaining source-resolution
   obligations.
+- [Particle Operation Dependency Graph Calculation](calculation.md) defines the
+  Fill, Empty, and Move Rules for a valid resolved history and constructs the
+  graph one occurrence at a time.
 - [Particle Operation Dependency Graph Minimality](minimality-proof.md) proves
   that the graph the rules produce is a transitively reduced directed acyclic
   graph, and that it is the unique such graph whose reachability is determined
@@ -19,8 +22,7 @@ Lean formalizations and witness models sit beside the documents:
 
 - `minimality.lean` checks transitive minimality, with a non-vacuity model in
   `minimality_witnesses.lean`.
-- `completeness.lean` checks completeness, the uniqueness of the graph, and that
-  the Action Parent Rule determines no edge after full resolution.
+- `completeness.lean` checks completeness and the uniqueness of the graph.
 - `independence_witnesses.lean` checks the required-ordering or redundant-edge
   property of concrete witness graphs for the rule clauses covered there. The
   comments derive each graph from the full and weakened rules.

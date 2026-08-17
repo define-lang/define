@@ -6,6 +6,7 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 filegroup(
     name = "all_proofs",
     srcs = [
+        ":calculation",
         ":completeness",
         ":definitions",
         ":independence_witnesses",
@@ -14,6 +15,35 @@ filegroup(
         ":minimality_witnesses",
         ":valid_history",
     ],
+)
+
+lean_library(
+    name = "calculation",
+    srcs = ["calculation.lean"],
+    deps = [":valid_history"],
+)
+
+lean_axiom_test(
+    name = "calculation_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculation"],
+    theorems = [
+        "Define.OperationGraph.IsEntryBefore.unique",
+        "Define.OperationGraph.calculatedDependencyBefore_add_operation_iff",
+        "Define.OperationGraph.calculatedDependencyBefore_source_order_lt",
+        "Define.OperationGraph.calculationFor_fillCandidate_iff",
+        "Define.OperationGraph.calculationFor_sourceCandidate_iff",
+        "Define.OperationGraph.calculationFor_wellFormed",
+        "Define.OperationGraph.exists_isFillCandidateFor_iff",
+        "Define.OperationGraph.isEntryBefore_after_operation_iff",
+        "Define.OperationGraph.not_isEntryBefore_zero",
+    ],
+    deps = [":calculation"],
 )
 
 lean_library(
@@ -38,7 +68,6 @@ lean_axiom_test(
         "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_of_relatedPrevious",
         "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_iff_reaches_relatedPrevious",
         "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_is_unique",
-        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_isOrdinary",
     ],
     deps = [":completeness"],
 )
@@ -80,7 +109,6 @@ lean_axiom_test(
         "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.MoveCorrection.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
-        "Define.OperationGraph.IndependenceWitnesses.ActionParentOnlyAsFallback.weakened_not_transitively_minimal",
     ],
     deps = [":independence_witnesses"],
 )
@@ -107,7 +135,7 @@ lean_axiom_test(
 lean_library(
     name = "minimality",
     srcs = ["minimality.lean"],
-    deps = [":valid_history"],
+    deps = [":calculation"],
 )
 
 lean_axiom_test(
@@ -140,7 +168,6 @@ lean_axiom_test(
     imports = ["minimality_witnesses"],
     theorems = [
         "Define.OperationGraph.NonVacuity.exact_dependency",
-        "Define.OperationGraph.ActionParentRule.exact_dependency",
         "Define.OperationGraph.VanishedChildName.exact_dependency",
         "Define.OperationGraph.MovedChildEntry.exact_dependency",
         "Define.OperationGraph.FillDependencyRemoval.exact_dependency",

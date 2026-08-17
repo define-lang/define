@@ -323,10 +323,10 @@ fewest-edge result. ∎
 
 By “Characterization by Operation Order and Operated Positions” in
 [Particle Operation Dependency Graph Minimality](minimality-proof.md#characterization-by-operation-order-and-operated-positions),
-the Fill, Empty, Move, and Action Parent Rules produce this transitive
-reduction. The graph therefore allows every reordering obtained by commuting
-operations on unrelated positions, and no constraint in its reachability can be
-removed while keeping every allowed order occupancy-safe.
+the Fill, Empty, and Move Rules produce this transitive reduction. The graph
+therefore allows every reordering obtained by commuting operations on unrelated
+positions, and no constraint in its reachability can be removed while keeping
+every allowed order occupancy-safe.
 
 ## Scope
 
