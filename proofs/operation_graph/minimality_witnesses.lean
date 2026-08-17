@@ -1,15 +1,18 @@
-import create_destroy_history
 import minimality
+import non_vacuity_witness
+import witness_support
 
 set_option warningAsError true
 set_option autoImplicit false
 
 /-!
-This file keeps concrete valid models separate from the minimality theorem
-because they demonstrate that its semantic obligations are jointly satisfiable
-but supply no premise to the theorem.
+This file contains the three concrete models that still use the legacy
+`ResolvedDefineGraph` interface. They demonstrate selected semantic obligations
+but supply no premise to the minimality theorem. Each will move to its own module
+as it is migrated to the actual resolved-history calculation.
 
-`NonVacuity` matches the valid create-and-destroy operation history in the
+`NonVacuity`, imported from `non_vacuity_witness.lean`, applies the actual
+calculation to the Create-and-Destroy history matching the
 create_and_destroy_of_an_implied_position integration test.
 
 `VanishedChildName` demonstrates `latest_source_candidate` at a position name
@@ -28,272 +31,12 @@ remaining Empty Dependency reaches it. This is the redundancy family covered by
 the move_excludes_create_fill_dependency_reached_through_source_dependency
 integration test.
 
-`NonVacuity` reuses the create-and-destroy `ValidResolvedHistory` from
-`valid_history.lean`, and
-`NonVacuity.calculated_dependency` derives its nonempty graph through the
-universal `CalculatedDependency`. The three larger namespaces still construct
-the older `ResolvedDefineGraph` interface directly; they remain to be migrated
-to the same end-to-end path.
+The three namespaces below still construct the older `ResolvedDefineGraph`
+interface directly; they remain to be migrated to the same end-to-end path as
+`NonVacuity`.
 -/
 
 namespace Define.OperationGraph
-
-theorem not_move_of_kind_create {operation : ParticleOperation} {target : Position}
-    (kind_eq : operation.kind = .create target) : ¬IsMove operation := by
-  rintro ⟨moveSource, moveTarget, move_kind⟩
-  rw [kind_eq] at move_kind
-  exact ParticleOperationKind.noConfusion move_kind
-
-theorem not_move_of_kind_destroy {operation : ParticleOperation} {target : Position}
-    (kind_eq : operation.kind = .destroy target) : ¬IsMove operation := by
-  rintro ⟨moveSource, moveTarget, move_kind⟩
-  rw [kind_eq] at move_kind
-  exact ParticleOperationKind.noConfusion move_kind
-
-theorem not_more_recent_of_le {newer older : ParticleOperation}
-    (le : newer.operationOrder ≤ older.operationOrder) : ¬MoreRecent newer older :=
-  fun more_recent => absurd more_recent (Nat.not_lt.mpr le)
-
-theorem no_reaches_of_no_dependency {Vertex : Type} {dep : Vertex → Vertex → Prop}
-    {source : Vertex} (no_edge : ∀ target, ¬dep source target) {target : Vertex} :
-    ¬Reaches dep source target := by
-  intro path
-  cases path with
-  | direct edge => exact no_edge _ edge
-  | step edge _ => exact no_edge _ edge
-
-theorem prefix_singleton_iff {head : Nat} {name : List Nat} :
-    name <+: [head] ↔ name = [] ∨ name = [head] := by
-  constructor
-  · intro name_prefix
-    rcases List.prefix_cons_iff.mp name_prefix with name_nil | ⟨tail, name_eq, tail_prefix⟩
-    · exact Or.inl name_nil
-    · have tail_nil := List.eq_nil_of_prefix_nil tail_prefix
-      subst tail_nil
-      exact Or.inr name_eq
-  · rintro (rfl | rfl)
-    · exact List.nil_prefix
-    · exact List.prefix_rfl
-
-theorem prefix_pair_iff {first second : Nat} {name : List Nat} :
-    name <+: [first, second] ↔
-      name = [] ∨ name = [first] ∨ name = [first, second] := by
-  constructor
-  · intro name_prefix
-    rcases List.prefix_cons_iff.mp name_prefix with name_nil | ⟨tail, name_eq, tail_prefix⟩
-    · exact Or.inl name_nil
-    · rcases prefix_singleton_iff.mp tail_prefix with tail_nil | tail_single
-      · subst tail_nil
-        exact Or.inr (Or.inl name_eq)
-      · subst tail_single
-        exact Or.inr (Or.inr name_eq)
-  · rintro (rfl | rfl | rfl)
-    · exact List.nil_prefix
-    · exact ⟨[second], rfl⟩
-    · exact List.prefix_rfl
-
-namespace NonVacuity
-
-open CreateDestroyHistory
-
-abbrev position : Position :=
-  CreateDestroyHistory.target
-
-abbrev isOperation (operation : ParticleOperation) : Prop :=
-  CreateDestroyHistory.IsOperation operation
-
-abbrev occupancy : ExactOccupancyExecution isOperation :=
-  CreateDestroyHistory.history.toExactOccupancyExecution
-
-abbrev history : ValidResolvedHistory isOperation :=
-  CreateDestroyHistory.history
-
-theorem calculated_source_candidate :
-    IsSourceCandidate history destroyOperation createOperation := by
-  refine ⟨position, Or.inr rfl, position, rfl, Or.inr rfl,
-    related_refl position, ?_⟩
-  refine ⟨Or.inl rfl, by decide, ?_, ?_⟩
-  · simp [WritesEntry, createOperation]
-  · intro newerCandidate newer_member newer_than_create newer_before_destroy
-      newer_writes
-    rcases newer_member with newer_is_create | newer_is_destroy
-    · subst newer_is_create
-      exact (Nat.lt_irrefl _ newer_than_create)
-    · subst newer_is_destroy
-      exact (Nat.lt_irrefl _ newer_before_destroy)
-
-theorem calculated_dependency :
-    CalculatedDependency history destroyOperation createOperation := by
-  apply
-    (calculatedDependency_exact history destroyOperation createOperation).mpr
-  change
-    (calculationFor history destroyOperation).AfterMoveCorrection
-      (CalculatedDependency history) createOperation
-  refine ⟨⟨Or.inl calculated_source_candidate, ?_⟩, Or.inl ?_⟩
-  · intro newerCandidate newer_in_collection newer_than_create
-      operations_related
-    rcases newer_in_collection with newer_source | newer_fill
-    · rcases newer_source with
-        ⟨candidatePosition, newer_operation_member, source, empty_position,
-          candidate_queryable, candidate_related, entry⟩
-      rcases entry.candidate_is_operation with
-        newer_is_create | newer_is_destroy
-      · subst newer_is_create
-        exact Nat.lt_irrefl _ newer_than_create
-      · subst newer_is_destroy
-        exact Nat.lt_irrefl _ entry.candidate_is_previous
-    · rcases
-        ((calculationFor_fillCandidate_iff history destroyOperation
-          newerCandidate).mp newer_fill).1 with
-        ⟨operation_member, target, candidatePosition, fill_position,
-          candidate_queryable, candidate_parent, entry⟩
-      simp [FillPosition, destroyOperation] at fill_position
-  · exact not_move_of_kind_create rfl
-
-def sourceCandidate (operation candidate : ParticleOperation) : Prop :=
-  operation = destroyOperation ∧ candidate = createOperation
-
-def sourceCandidateAt (operation candidate : ParticleOperation)
-    (candidatePosition : Position) : Prop :=
-  sourceCandidate operation candidate ∧ candidatePosition = position
-
-def calculation (operation : ParticleOperation) : RuleCalculation where
-  operation := operation
-  sourceCandidate := sourceCandidate operation
-  fillCandidate := none
-
-def dependency (operation candidate : ParticleOperation) : Prop :=
-  operation = destroyOperation ∧ candidate = createOperation
-
-theorem calculation_well_formed (operation : ParticleOperation) :
-    (calculation operation).WellFormed := by
-  cases operation_kind : operation.kind with
-  | create target =>
-      simp only [RuleCalculation.WellFormed, calculation, operation_kind]
-      intro candidate source_candidate
-      have operation_is_destroy := source_candidate.1
-      subst operation_is_destroy
-      simp [destroyOperation] at operation_kind
-  | destroy target =>
-      simp [RuleCalculation.WellFormed, calculation, operation_kind]
-  | move source target =>
-      simp [RuleCalculation.WellFormed, calculation, operation_kind]
-
-theorem exact_dependency (operation candidate : ParticleOperation) :
-    dependency operation candidate ↔
-      (calculation operation).Dependency dependency candidate := by
-  simp only [dependency, RuleCalculation.Dependency,
-    RuleCalculation.AfterMoveCorrection, RuleCalculation.MoveRuleDependency,
-    RuleCalculation.AfterComparison, RuleCalculation.InCollection,
-    RuleCalculation.IsFillCandidate, calculation, sourceCandidate]
-  cases operation_kind : operation.kind <;>
-    simp [IsMove, MoreRecent, createOperation, destroyOperation]
-  · intro operation_is_destroy
-    subst operation_is_destroy
-    simp at operation_kind
-  · intro operation_is_destroy candidate_is_create
-    subst operation_is_destroy
-    subst candidate_is_create
-    simp
-  · intro operation_is_destroy
-    subst operation_is_destroy
-    simp at operation_kind
-
-def graph : ResolvedDefineGraph where
-  isOperation := isOperation
-  dependency := dependency
-  calculation := calculation
-  calculation_operation := by
-    intro operation
-    rfl
-  calculation_well_formed := calculation_well_formed
-  exact_dependency := exact_dependency
-  occupancy := occupancy
-  sourceCandidateAt := sourceCandidateAt
-  source_candidate_iff := by
-    intro operation candidate
-    constructor
-    · intro source_candidate
-      exact ⟨position, source_candidate, rfl⟩
-    · rintro ⟨candidatePosition, source_candidate, _⟩
-      exact source_candidate
-  source_candidate_empty_position := by
-    intro operation candidate candidatePosition candidate_at_position
-    rcases candidate_at_position with
-      ⟨⟨operation_is_destroy, candidate_is_create⟩, position_is_position⟩
-    subst operation_is_destroy
-    subst candidate_is_create
-    subst position_is_position
-    exact ⟨position, rfl, related_refl position⟩
-  source_candidate_operated_position := by
-    intro operation candidate candidatePosition candidate_at_position
-    rcases candidate_at_position with
-      ⟨⟨operation_is_destroy, candidate_is_create⟩, position_is_position⟩
-    subst operation_is_destroy
-    subst candidate_is_create
-    subst position_is_position
-    exact ⟨position, by simp [OperatesOn, createOperation], List.prefix_rfl⟩
-  non_move_source_candidate_operates_on_position := by
-    intro operation candidate candidatePosition candidate_at_position _
-    rcases candidate_at_position with
-      ⟨⟨operation_is_destroy, candidate_is_create⟩, position_is_position⟩
-    subst operation_is_destroy
-    subst candidate_is_create
-    subst position_is_position
-    simp [OperatesOn, createOperation]
-  source_candidate_is_previous := by
-    intro operation candidate candidatePosition candidate_at_position
-    rcases candidate_at_position with
-      ⟨⟨operation_is_destroy, candidate_is_create⟩, _⟩
-    subst operation_is_destroy
-    subst candidate_is_create
-    exact Nat.zero_lt_succ 0
-  source_candidate_operations := by
-    intro operation candidate candidatePosition candidate_at_position
-    exact ⟨Or.inr candidate_at_position.1.1, Or.inl candidate_at_position.1.2⟩
-  latest_source_candidate := by
-    intro operation emptyPosition candidatePosition previousOperation operation_member
-      previous_member empty_position position_related previous_operates
-      operation_after_previous
-    rcases operation_member with operation_is_create | operation_is_destroy
-    · subst operation_is_create
-      simp [EmptyPosition, createOperation] at empty_position
-    · subst operation_is_destroy
-      rcases previous_member with previous_is_create | previous_is_destroy
-      · subst previous_is_create
-        have candidate_position_is_position : candidatePosition = position := by
-          simpa [OperatesOn, createOperation] using previous_operates
-        subst candidate_position_is_position
-        exact ⟨createOperation, ⟨⟨rfl, rfl⟩, rfl⟩, Or.inl rfl⟩
-      · subst previous_is_destroy
-        exact False.elim (Nat.lt_irrefl _ operation_after_previous)
-  fill_candidate_operated_position := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  fill_candidate_is_previous := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-  fill_candidate_operations := by
-    intro operation candidate fill_candidate
-    simp [RuleCalculation.IsFillCandidate, calculation] at fill_candidate
-
-example : dependency destroyOperation createOperation :=
-  ⟨rfl, rfl⟩
-
-example : Reaches (CalculatedDependency history) destroyOperation createOperation :=
-  .direct calculated_dependency
-
-example : ∃ operation candidate, CalculatedDependency history operation candidate :=
-  ⟨destroyOperation, createOperation, calculated_dependency⟩
-
-example : Acyclic (CalculatedDependency history) :=
-  (calculatedDependency_isMinimalDAG history).1
-
-example : TransitivelyMinimal (CalculatedDependency history) :=
-  (calculatedDependency_isMinimalDAG history).2
-
-end NonVacuity
-
 
 namespace VanishedChildName
 

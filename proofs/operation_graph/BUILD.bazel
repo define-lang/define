@@ -16,7 +16,9 @@ filegroup(
         ":maximum_safe_concurrency",
         ":minimality",
         ":minimality_witnesses",
+        ":non_vacuity_witness",
         ":valid_history",
+        ":witness_support",
     ],
 )
 
@@ -240,8 +242,9 @@ lean_library(
     name = "minimality_witnesses",
     srcs = ["minimality_witnesses.lean"],
     deps = [
-        ":create_destroy_history",
         ":minimality",
+        ":non_vacuity_witness",
+        ":witness_support",
     ],
 )
 
@@ -255,13 +258,37 @@ lean_axiom_test(
     ],
     imports = ["minimality_witnesses"],
     theorems = [
-        "Define.OperationGraph.NonVacuity.calculated_dependency",
-        "Define.OperationGraph.NonVacuity.exact_dependency",
         "Define.OperationGraph.VanishedChildName.exact_dependency",
         "Define.OperationGraph.MovedChildEntry.exact_dependency",
         "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
     ],
     deps = [":minimality_witnesses"],
+)
+
+lean_library(
+    name = "non_vacuity_witness",
+    srcs = ["non_vacuity_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":create_destroy_history",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "non_vacuity_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["non_vacuity_witness"],
+    theorems = [
+        "Define.OperationGraph.NonVacuity.calculated_dependency",
+        "Define.OperationGraph.NonVacuity.exact_dependency",
+    ],
+    deps = [":non_vacuity_witness"],
 )
 
 lean_library(
@@ -290,6 +317,31 @@ lean_axiom_test(
         "Define.OperationGraph.exists_occupancy_transition",
     ],
     deps = [":valid_history"],
+)
+
+lean_library(
+    name = "witness_support",
+    srcs = ["witness_support.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "witness_support_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["witness_support"],
+    theorems = [
+        "Define.OperationGraph.no_reaches_of_no_dependency",
+        "Define.OperationGraph.not_more_recent_of_le",
+        "Define.OperationGraph.not_move_of_kind_create",
+        "Define.OperationGraph.not_move_of_kind_destroy",
+        "Define.OperationGraph.prefix_pair_iff",
+        "Define.OperationGraph.prefix_singleton_iff",
+    ],
+    deps = [":witness_support"],
 )
 
 py_binary(

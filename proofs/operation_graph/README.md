@@ -74,8 +74,10 @@ modules each expose a theorem stated directly for an arbitrary
 
 The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without
-assuming a graph property. `minimality_witnesses.lean` demonstrates that
-selected rule cases and graph interfaces are satisfiable.
+assuming a graph property; `non_vacuity_witness.lean` applies the actual
+calculation to that history. Witness-only general lemmas flow through
+`witness_support.lean`. `minimality_witnesses.lean` contains the larger concrete
+models that remain to be migrated to the actual calculation.
 `independence_witnesses.lean` compares the full rules with variants changing one
 clause. Their explanations live beside the executable models in those modules.
 `minimality_checker.py` searches bounded concrete histories for counterexamples.
