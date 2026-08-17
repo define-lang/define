@@ -13,7 +13,6 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.reference_graph import (
     action_contract,
-    operation_graph_action_resolver,
     operation_graph_model,
 )
 
@@ -210,13 +209,13 @@ def _action_names(
 
 
 def _input_method_names(
-    *resolved_inputs: operation_graph_action_resolver.CallerInput,
-) -> dict[operation_graph_action_resolver.CallerInput, str]:
+    *resolved_inputs: operation_graph_model.AbstractDependencyOrOperationNode,
+) -> dict[operation_graph_model.AbstractDependencyOrOperationNode, str]:
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
         caller_inputs=[
-            action_plan.CallerInputPlan(resolved_input)
+            action_plan.CallerDependencyFanout(resolved_input)
             for resolved_input in resolved_inputs
         ],
         action_executions=[],

@@ -60,13 +60,10 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
-type _CallerInputNode = (
+type _RequirementOrActionParentNode = (
     operation_graph_model.ActionParentLastOperationNode
     | operation_graph_model.RequirementNode
 )
-# TODO: Remove this alias and have every user reference
-# operation_graph_model.CallerInput directly.
-type CallerInput = operation_graph_model.CallerInput
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,7 +75,7 @@ class ActionDependencies:
 
     def concrete_nodes(
         self,
-    ) -> Iterable[operation_graph_model.PrecedingChildOperationNode]:
+    ) -> Iterable[operation_graph_model.ConcreteOperationNode]:
         """Iterate over the operation-graph nodes represented by these relationships."""
         yield from self.local_operations
         for guarantee in self.guarantee_dependencies:
@@ -91,8 +88,8 @@ class ResolvedActionOperation:
 
     operation: operation_graph_model.PositionOperationNode
     dependencies: ActionDependencies
-    caller_inputs: list[CallerInput]
-    triggered_inputs: list[ResolvedActionExecutionInput]
+    caller_inputs: list[operation_graph_model.AbstractDependencyOrOperationNode]
+    triggered_inputs: list[CalleeBinding]
     action_executions: list[ResolvedActionExecution]
 
 
@@ -107,7 +104,7 @@ class ResolvedDestructionOperation(ResolvedActionOperation):
 def _append_action_dependency(
     node: operation_graph_model.OperationNode,
     dependencies: ActionDependencies,
-    caller_inputs: list[CallerInput],
+    caller_inputs: list[operation_graph_model.AbstractDependencyOrOperationNode],
     operation_graphs: operation_graph.OperationGraphs,
 ):
     """Add one ordinary dependency to its resolved action relationship."""
@@ -132,22 +129,26 @@ def _append_action_dependency(
 def _partition_caller_dependencies(
     nodes: Iterable[operation_graph_model.OperationNode],
     operation_graphs: operation_graph.OperationGraphs,
-) -> tuple[ActionDependencies, list[CallerInput]]:
+) -> tuple[
+    ActionDependencies, list[operation_graph_model.AbstractDependencyOrOperationNode]
+]:
     """Separate local Particle Operations and guarantees from caller inputs."""
     dependencies = ActionDependencies([], [])
-    caller_inputs: list[CallerInput] = []
+    caller_inputs: list[operation_graph_model.AbstractDependencyOrOperationNode] = []
     for node in nodes:
         _append_action_dependency(node, dependencies, caller_inputs, operation_graphs)
     return dependencies, caller_inputs
 
 
 @dataclass(slots=True, eq=False)
-class ResolvedActionExecutionInput:
-    """One direct callee input resolved from the caller's perspective."""
+class CalleeBinding:
+    """One callee-to-caller binding across a direct Action Execution."""
 
-    callee_input: CallerInput
+    callee_input: operation_graph_model.AbstractDependencyOrOperationNode
     caller_dependencies: ActionDependencies
-    caller_input_dependencies: list[CallerInput]
+    caller_input_dependencies: list[
+        operation_graph_model.AbstractDependencyOrOperationNode
+    ]
     contributed_destruction_operations: list[
         operation_graph_model.DestructionFragmentDestroyNode
     ] = field(default_factory=list)
@@ -158,10 +159,8 @@ class ResolvedActionExecutionInput:
         caller_graph: operation_graph.OperationGraph,
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
-        callee_input: CallerInput,
-        callee_node_bindings_needed_for_empty_rule_completion: list[
-            ResolvedActionExecutionInput
-        ],
+        callee_input: operation_graph_model.AbstractDependencyOrOperationNode,
+        callee_node_bindings_needed_for_empty_rule_completion: list[CalleeBinding],
     ) -> typing.Self:
         """Resolve one callee input from the direct caller's perspective."""
         match callee_input:
@@ -232,7 +231,9 @@ class ResolvedActionExecutionInput:
             caller_dependency
         )
         dependencies = ActionDependencies([], [])
-        caller_inputs: list[CallerInput] = []
+        caller_inputs: list[
+            operation_graph_model.AbstractDependencyOrOperationNode
+        ] = []
         if isinstance(substitution, operation_graph_model.CallerMoveRuleFillDependency):
             caller_inputs.append(substitution)
         elif substitution is not None:
@@ -255,9 +256,7 @@ class ResolvedActionExecutionInput:
             | operation_graph_model.CallerEmptyRuleDependencies
         ),
         caller_dependencies: operation_graph_model.CallerEmptyRuleDependencies,
-        callee_node_bindings_needed_for_empty_rule_completion: list[
-            ResolvedActionExecutionInput
-        ],
+        callee_node_bindings_needed_for_empty_rule_completion: list[CalleeBinding],
     ) -> typing.Self:
         """Resolve one set of Empty Rule dependencies from the caller's perspective."""
         direct_caller_state_for_empty_rule = (
@@ -286,7 +285,7 @@ class ResolvedActionExecutionInput:
         cls,
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
-        callee_input: _CallerInputNode,
+        callee_input: _RequirementOrActionParentNode,
     ) -> typing.Self:
         """Resolve one Action Parent or requirement input from the caller's perspective."""
         dependencies, caller_inputs = _partition_caller_dependencies(
@@ -297,8 +296,8 @@ class ResolvedActionExecutionInput:
 
 
 def callee_nodes_needed_for_empty_rule_completion(
-    callee_node: CallerInput,
-) -> tuple[CallerInput, ...]:
+    callee_node: operation_graph_model.AbstractDependencyOrOperationNode,
+) -> tuple[operation_graph_model.AbstractDependencyOrOperationNode, ...]:
     """Identify callee nodes whose bindings are needed to complete the Empty Rule."""
     match callee_node:
         case operation_graph_model.CallerEmptyRuleDependenciesNode(
@@ -312,8 +311,8 @@ def callee_nodes_needed_for_empty_rule_completion(
 
 
 def _callee_nodes_in_binding_order(
-    callee_nodes: Iterable[CallerInput],
-) -> list[CallerInput]:
+    callee_nodes: Iterable[operation_graph_model.AbstractDependencyOrOperationNode],
+) -> list[operation_graph_model.AbstractDependencyOrOperationNode]:
     """Order callee nodes so an Empty Rule completion follows its required bindings.
 
     CallerEmptyRuleDependencies names the other callee nodes whose bindings must
@@ -321,8 +320,10 @@ def _callee_nodes_in_binding_order(
     first. ResolvedAction.caller_inputs stores this order so every caller uses
     it when resolving an Action Execution of the action.
     """
-    ordered_nodes: list[CallerInput] = []
-    ordered_node_set: set[CallerInput] = set()
+    ordered_nodes: list[operation_graph_model.AbstractDependencyOrOperationNode] = []
+    ordered_node_set: set[operation_graph_model.AbstractDependencyOrOperationNode] = (
+        set()
+    )
     for callee_node in callee_nodes:
         nodes_to_order = [(callee_node, False)]
         while nodes_to_order:
@@ -342,12 +343,14 @@ def _callee_nodes_in_binding_order(
 
 
 @typing.final
-class ResolvedActionExecutionInputs:
-    """The inputs of one Action Execution resolved from the caller's perspective."""
+class CalleeBindings:
+    """The ordered callee-to-caller bindings of one Action Execution."""
 
     def __init__(
         self,
-        direct_inputs: dict[CallerInput, ResolvedActionExecutionInput],
+        direct_inputs: dict[
+            operation_graph_model.AbstractDependencyOrOperationNode, CalleeBinding
+        ],
     ):
         """Initialize with the Action Execution's direct callee inputs."""
         self._direct_inputs = direct_inputs
@@ -358,7 +361,7 @@ class ResolvedActionExecutionInputs:
         caller_graph: operation_graph.OperationGraph,
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
-        callee_inputs: list[CallerInput],
+        callee_inputs: list[operation_graph_model.AbstractDependencyOrOperationNode],
         destruction_fragments: Iterable[
             operation_graph_model.ContributedDestructionFragment
         ],
@@ -369,10 +372,12 @@ class ResolvedActionExecutionInputs:
         an empty rule completion comes after the callee nodes needed to complete
         its Empty Rule.
         """
-        direct_inputs: dict[CallerInput, ResolvedActionExecutionInput] = {}
+        direct_inputs: dict[
+            operation_graph_model.AbstractDependencyOrOperationNode, CalleeBinding
+        ] = {}
         for callee_input in callee_inputs:
             callee_node_bindings_needed_for_empty_rule_completion: list[
-                ResolvedActionExecutionInput
+                CalleeBinding
             ] = []
             for callee_node in callee_nodes_needed_for_empty_rule_completion(
                 callee_input
@@ -380,7 +385,7 @@ class ResolvedActionExecutionInputs:
                 callee_node_bindings_needed_for_empty_rule_completion.append(
                     direct_inputs[callee_node]
                 )
-            direct_inputs[callee_input] = ResolvedActionExecutionInput.resolve(
+            direct_inputs[callee_input] = CalleeBinding.resolve(
                 caller_graph,
                 execution,
                 operation_graphs,
@@ -394,15 +399,19 @@ class ResolvedActionExecutionInputs:
         )
         return inputs
 
-    def values(self) -> Iterable[ResolvedActionExecutionInput]:
+    def values(self) -> Iterable[CalleeBinding]:
         """Return the direct callee inputs in their established order."""
         return self._direct_inputs.values()
 
-    def __getitem__(self, callee_input: CallerInput) -> ResolvedActionExecutionInput:
+    def __getitem__(
+        self, callee_input: operation_graph_model.AbstractDependencyOrOperationNode
+    ) -> CalleeBinding:
         """Return one direct resolved callee input."""
         return self._direct_inputs[callee_input]
 
-    def get(self, callee_input: CallerInput) -> ResolvedActionExecutionInput | None:
+    def get(
+        self, callee_input: operation_graph_model.AbstractDependencyOrOperationNode
+    ) -> CalleeBinding | None:
         """Return one direct resolved callee input, if present."""
         return self._direct_inputs.get(callee_input)
 
@@ -417,21 +426,21 @@ class ResolvedActionExecutionInputs:
         # callee nodes by those resolved dependencies, then associate each fragment
         # with the earliest matching callee node. Choosing the earliest preserves
         # callee-node order when one dependency satisfies more than one callee node.
-        input_indexes: dict[ResolvedActionExecutionInput, int] = {}
+        input_indexes: dict[CalleeBinding, int] = {}
         inputs_by_local_operation: dict[
             operation_graph_model.PositionOperationNode,
-            ResolvedActionExecutionInput,
+            CalleeBinding,
         ] = {}
         inputs_by_guarantee: dict[
             tuple[
                 tuple[operation_graph_model.ActionExecution, ...],
                 operation_graph_model.PositionOperationNode,
             ],
-            ResolvedActionExecutionInput,
+            CalleeBinding,
         ] = {}
         inputs_by_caller_input: dict[
-            CallerInput,
-            ResolvedActionExecutionInput,
+            operation_graph_model.AbstractDependencyOrOperationNode,
+            CalleeBinding,
         ] = {}
         for input_index, resolved_input in enumerate(self._direct_inputs.values()):
             input_indexes[resolved_input] = input_index
@@ -463,7 +472,7 @@ class ResolvedActionExecutionInputs:
                 fragment.contribution_dependencies,
                 operation_graphs,
             )
-            candidate_inputs: list[ResolvedActionExecutionInput] = []
+            candidate_inputs: list[CalleeBinding] = []
             # A contributed Destroy that follows a caller Particle Operation
             # belongs with the callee node resolved to that Particle Operation.
             for operation in dependencies.local_operations:
@@ -497,7 +506,7 @@ class ResolvedActionExecution:
     execution: operation_graph_model.ActionExecution
     guarantee_dependency: operation_graph.GuaranteePath | None
     forwards_destruction_connections: bool
-    inputs: ResolvedActionExecutionInputs
+    inputs: CalleeBindings
 
     @classmethod
     def resolve(
@@ -515,7 +524,7 @@ class ResolvedActionExecution:
         guarantee_dependency = None
         if isinstance(trigger_operation, operation_graph_model.GuaranteeNode):
             guarantee_dependency = operation_graphs.resolve_guarantee(trigger_operation)
-        inputs = ResolvedActionExecutionInputs.resolve(
+        inputs = CalleeBindings.resolve(
             caller_graph,
             execution,
             operation_graphs,
@@ -537,7 +546,7 @@ class _ActionExecutionResolution:
     action_executions: list[ResolvedActionExecution]
     triggered_inputs_by_operation: dict[
         operation_graph_model.PositionOperationNode,
-        list[ResolvedActionExecutionInput],
+        list[CalleeBinding],
     ]
     action_executions_by_operation: dict[
         operation_graph_model.PositionOperationNode,
@@ -558,7 +567,7 @@ class ResolvedAction:
     operations: dict[
         operation_graph_model.PositionOperationNode, ResolvedActionOperation
     ]
-    caller_inputs: list[CallerInput]
+    caller_inputs: list[operation_graph_model.AbstractDependencyOrOperationNode]
     action_executions: list[ResolvedActionExecution]
     destruction_contributions: dict[
         operation_graph_model.DestructionDependency,
@@ -604,8 +613,10 @@ class _ActionResolver:
             operation_graph_model.PositionOperationNode, ResolvedActionOperation
         ],
         action_execution_resolution: _ActionExecutionResolution,
-    ) -> list[CallerInput]:
-        caller_inputs: dict[CallerInput, None] = {}
+    ) -> list[operation_graph_model.AbstractDependencyOrOperationNode]:
+        caller_inputs: dict[
+            operation_graph_model.AbstractDependencyOrOperationNode, None
+        ] = {}
         for resolved_operation in operations.values():
             for caller_input in resolved_operation.caller_inputs:
                 caller_inputs[caller_input] = None
@@ -674,7 +685,7 @@ class _ActionResolver:
         action_executions: list[ResolvedActionExecution] = []
         triggered_inputs_by_operation: dict[
             operation_graph_model.PositionOperationNode,
-            list[ResolvedActionExecutionInput],
+            list[CalleeBinding],
         ] = {}
         action_executions_by_operation: dict[
             operation_graph_model.PositionOperationNode,
@@ -717,11 +728,13 @@ class _ActionResolver:
         dependency_nodes: Iterable[operation_graph_model.OperationNode],
     ) -> tuple[
         ActionDependencies,
-        list[CallerInput],
+        list[operation_graph_model.AbstractDependencyOrOperationNode],
         list[operation_graph_model.DestructionDependency],
     ]:
         dependencies = ActionDependencies([], [])
-        caller_inputs: list[CallerInput] = []
+        caller_inputs: list[
+            operation_graph_model.AbstractDependencyOrOperationNode
+        ] = []
         destruction_dependencies: list[operation_graph_model.DestructionDependency] = []
         for dependency in dependency_nodes:
             if isinstance(

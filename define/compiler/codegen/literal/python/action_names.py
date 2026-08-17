@@ -10,7 +10,6 @@ from define.compiler.codegen.literal.python import action_context, naming
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     action_contract,
-    operation_graph_action_resolver,
     operation_graph_model,
 )
 
@@ -64,12 +63,12 @@ class ActionNames:
     # The execution member for each local position source name.
     local_positions: dict[str, str]
     # The execution method for each caller input.
-    caller_inputs: dict[operation_graph_action_resolver.CallerInput, str]
+    caller_inputs: dict[operation_graph_model.AbstractDependencyOrOperationNode, str]
     # The canonical name, initializer method, and execution member for each
     # Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
     # The execution method for each triggered action input.
-    triggered_inputs: dict[action_plan.TriggeredActionInput, str]
+    triggered_inputs: dict[action_plan.CalleeDependencyJoin, str]
     # The execution method for each action fragment.
     fragments: dict[action_plan.ActionFragment, str]
     continue_destroy_methods: dict[action_plan.ActionFragment, str]
@@ -143,8 +142,10 @@ class ActionNameGenerator:
 
     def _caller_input_method_names(
         self,
-    ) -> dict[operation_graph_action_resolver.CallerInput, str]:
-        method_names: dict[operation_graph_action_resolver.CallerInput, str] = {}
+    ) -> dict[operation_graph_model.AbstractDependencyOrOperationNode, str]:
+        method_names: dict[
+            operation_graph_model.AbstractDependencyOrOperationNode, str
+        ] = {}
         for caller_input in self._plan.caller_inputs:
             method_names[caller_input.caller_input] = (
                 self._execution_allocator.allocate(
@@ -155,7 +156,7 @@ class ActionNameGenerator:
 
     def _caller_input_name(
         self,
-        resolved_input: operation_graph_action_resolver.CallerInput,
+        resolved_input: operation_graph_model.AbstractDependencyOrOperationNode,
     ) -> str:
         """Return the method name for a caller input."""
         match resolved_input:
@@ -220,8 +221,8 @@ class ActionNameGenerator:
         triggered_action_names: dict[
             operation_graph_model.ActionExecution, TriggeredActionNames
         ],
-    ) -> dict[action_plan.TriggeredActionInput, str]:
-        method_names: dict[action_plan.TriggeredActionInput, str] = {}
+    ) -> dict[action_plan.CalleeDependencyJoin, str]:
+        method_names: dict[action_plan.CalleeDependencyJoin, str] = {}
         for triggered_input in self._plan.triggered_action_inputs:
             action_execution = triggered_input.execution
             callee_input_method_name = self._generated_actions[

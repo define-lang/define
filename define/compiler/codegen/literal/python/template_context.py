@@ -195,8 +195,8 @@ class GuaranteesContext:
 
 
 @dataclass
-class TriggeredActionInputContext:
-    """One generated method that delivers a dependency to a direct callee."""
+class CalleeDependencyJoinContext:
+    """A generated method that joins dependencies before invoking a direct callee."""
 
     triggered_action_execution_name: str
     callee_input_method_name: str
@@ -206,8 +206,8 @@ class TriggeredActionInputContext:
 
 
 @dataclass
-class CallerInputContext:
-    """Work released by one input from an action's caller."""
+class CallerDependencyFanoutContext:
+    """A generated method that fans a caller-side dependency out to its consumers."""
 
     input_method_name: str
     fragment_method_names: list[str]
@@ -231,12 +231,12 @@ class ActionExecutionContext:
     execution_class_name: str
     local_position_statements: list[ActionStatementContext]
     fragments: list[ActionFragmentContext]
-    caller_inputs: list[CallerInputContext]
+    caller_inputs: list[CallerDependencyFanoutContext]
     action_executions: list[TriggeredActionExecutionContext]
     triggers_for_destroyed_callee_guarantee_particles: list[
         TriggerForDestroyedCalleeGuaranteeParticleContext
     ]
-    triggered_action_inputs: list[TriggeredActionInputContext]
+    triggered_action_inputs: list[CalleeDependencyJoinContext]
     guarantees: GuaranteesContext | None
     accepts_destruction_connections: bool
     trace_operations: bool = False

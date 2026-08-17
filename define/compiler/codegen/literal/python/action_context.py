@@ -8,10 +8,7 @@ from dataclasses import dataclass
 
 if typing.TYPE_CHECKING:
     from define.compiler.codegen.literal.python import naming, template_context
-    from define.compiler.validator.reference_graph import (
-        operation_graph_action_resolver,
-        operation_graph_model,
-    )
+    from define.compiler.validator.reference_graph import operation_graph_model
 
 
 class ActionRole(enum.Enum):
@@ -102,7 +99,9 @@ class GeneratedAction:
     """Generated context and caller-facing interface of one action."""
 
     context: ActionDefinitionContext
-    input_method_names: dict[operation_graph_action_resolver.CallerInput, str]
+    input_method_names: dict[
+        operation_graph_model.AbstractDependencyOrOperationNode, str
+    ]
     guarantee_interface: GuaranteeInterface | None
     destruction_continuations: dict[
         operation_graph_model.DestructionFactDestroyNode,

@@ -16,7 +16,6 @@ from define.compiler.codegen.literal.python import (
 )
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
-    operation_graph_action_resolver,
     operation_graph_labeler,
     operation_graph_model,
 )
@@ -27,7 +26,9 @@ class GeneratedExecution:
     """Generated execution context and caller-facing interface."""
 
     context: template_context.ActionExecutionContext
-    input_method_names: dict[operation_graph_action_resolver.CallerInput, str]
+    input_method_names: dict[
+        operation_graph_model.AbstractDependencyOrOperationNode, str
+    ]
     guarantee_interface: action_context.GuaranteeInterface | None
     execute_method_names: list[str]
     destruction_continuations: dict[
@@ -215,9 +216,9 @@ class ActionExecutionGenerator:
 
     def _generate_caller_inputs(
         self, names: action_names.ActionNames
-    ) -> list[template_context.CallerInputContext]:
+    ) -> list[template_context.CallerDependencyFanoutContext]:
         return [
-            template_context.CallerInputContext(
+            template_context.CallerDependencyFanoutContext(
                 input_method_name=names.caller_inputs[caller_input.caller_input],
                 fragment_method_names=[
                     names.fragments[fragment] for fragment in caller_input.fragments
@@ -238,12 +239,12 @@ class ActionExecutionGenerator:
         self,
         names: action_names.ActionNames,
         statement_generator: action_statements.ActionStatementsGenerator,
-    ) -> list[template_context.TriggeredActionInputContext]:
-        triggered_action_inputs: list[template_context.TriggeredActionInputContext] = []
+    ) -> list[template_context.CalleeDependencyJoinContext]:
+        triggered_action_inputs: list[template_context.CalleeDependencyJoinContext] = []
         for triggered_input in self._plan.triggered_action_inputs:
             execution = triggered_input.execution
             triggered_action_inputs.append(
-                template_context.TriggeredActionInputContext(
+                template_context.CalleeDependencyJoinContext(
                     triggered_action_execution_name=(
                         names.triggered_actions[execution].execution_name
                     ),

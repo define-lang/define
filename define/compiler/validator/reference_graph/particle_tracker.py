@@ -79,7 +79,7 @@ class _NodeState:
     # so child-operation snapshots only need to be built when an operation uses one.
     # TODO: Reconsider the boundary between particle tracking and operation-graph
     # construction; this is operation-graph metadata stored here for reparenting.
-    operation_node: operation_graph_model.PrecedingChildOperationNode | None = None
+    operation_node: operation_graph_model.ConcreteOperationNode | None = None
 
 
 @dataclass
@@ -897,9 +897,7 @@ class ParticleTracker:
 
     def _preceding_child_operations(
         self, key: tuple[str, ...]
-    ) -> Iterator[
-        tuple[tuple[str, ...], operation_graph_model.PrecedingChildOperationNode]
-    ]:
+    ) -> Iterator[tuple[tuple[str, ...], operation_graph_model.ConcreteOperationNode]]:
         # Valid wall profiles of the August 2026 focused operation-graph
         # full-compiler workload with 10,000 children made allocating this lambda
         # per snapshot and calling it per descendant look costly. Replacing it with

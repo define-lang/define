@@ -77,9 +77,9 @@ class ResolvedOperationGraphBuilder:
         self._callee_node_bindings_for_destruction_before_caller_contribution: dict[
             tuple[
                 operation_graph_action_resolver.ResolvedActionExecution,
-                operation_graph_action_resolver.CallerInput,
+                operation_graph_model.AbstractDependencyOrOperationNode,
             ],
-            operation_graph_action_resolver.ResolvedActionExecutionInput,
+            operation_graph_action_resolver.CalleeBinding,
         ] = {}
 
     def build(self) -> ResolvedOperationGraph:
@@ -359,7 +359,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_action_resolver.CallerInput,
+        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
         stop_execution: ActionExecution,
     ) -> bool:
         """Add caller-input dependencies before reaching one caller execution."""
@@ -398,8 +398,8 @@ class ResolvedOperationGraphBuilder:
     def _callee_node_binding_for_destruction_before_caller_contribution(
         self,
         triggered_by: TriggeredBy,
-        callee_node: operation_graph_action_resolver.CallerInput,
-    ) -> operation_graph_action_resolver.ResolvedActionExecutionInput:
+        callee_node: operation_graph_model.AbstractDependencyOrOperationNode,
+    ) -> operation_graph_action_resolver.CalleeBinding:
         """Resolve one callee node used before a caller's destruction contribution."""
         resolved_execution = triggered_by.direct_execution
         callee_node_binding = resolved_execution.inputs.get(callee_node)
@@ -435,7 +435,7 @@ class ResolvedOperationGraphBuilder:
                     callee_nodes_to_bind.append((needed_callee_node, False))
                 continue
             needed_callee_node_bindings: list[
-                operation_graph_action_resolver.ResolvedActionExecutionInput
+                operation_graph_action_resolver.CalleeBinding
             ] = []
             for needed_callee_node in needed_callee_nodes:
                 needed_binding = resolved_execution.inputs.get(needed_callee_node)
@@ -446,7 +446,7 @@ class ResolvedOperationGraphBuilder:
                 needed_callee_node_bindings.append(needed_binding)
             self._callee_node_bindings_for_destruction_before_caller_contribution[
                 binding_key
-            ] = operation_graph_action_resolver.ResolvedActionExecutionInput.resolve(
+            ] = operation_graph_action_resolver.CalleeBinding.resolve(
                 self._graphs[triggered_by.caller.action],
                 resolved_execution.execution,
                 self._graphs,
@@ -461,7 +461,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_action_resolver.CallerInput,
+        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
@@ -555,7 +555,7 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_action_resolver.CallerInput,
+        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:

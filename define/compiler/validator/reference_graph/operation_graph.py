@@ -142,7 +142,7 @@ class OperationGraph:
     def last_operation_on_position(
         self, key: tuple[str, ...]
     ) -> (
-        operation_graph_model.PrecedingChildOperationNode
+        operation_graph_model.ConcreteOperationNode
         | operation_graph_model.RequirementNode
     ):
         """Return the last operation recorded on exactly ``key``."""
@@ -151,7 +151,7 @@ class OperationGraph:
     def last_operation_on_position_or_parents(
         self, key: tuple[str, ...]
     ) -> (
-        operation_graph_model.PrecedingChildOperationNode
+        operation_graph_model.ConcreteOperationNode
         | operation_graph_model.RequirementNode
     ):
         """Return the last operation on ``key`` or one of its parent names."""
@@ -236,7 +236,9 @@ class OperationGraph:
         else:
             firing_operation = self.last_operation_on_position(acting_on_position_key)
         callee_action_key = callee.canonical_chained_name_tuple
-        bindings: dict[tuple[str, ...], operation_graph_model.RequirementBinding] = {}
+        bindings: dict[
+            tuple[str, ...], operation_graph_model.RequirementSatisfaction
+        ] = {}
         # Trigger positions are direct children of the callee chain.
         acting_on_is_trigger_position = (
             len(acting_on_position_key) == len(callee_action_key) + 1
@@ -299,7 +301,7 @@ class OperationGraph:
         self,
         child_operations: operation_graph_model.ParticleChildOperations,
         operation: operation_graph_model.LastOperationNode,
-    ) -> operation_graph_model.RequirementBinding:
+    ) -> operation_graph_model.RequirementSatisfaction:
         """Return the caller dependencies that satisfy a callee requirement."""
         # A move that brought the whole particle here already depends on every
         # older child operation, so retaining them would add redundant edges.
@@ -307,7 +309,9 @@ class OperationGraph:
             operation, operation_graph_model.MoveNode
         ) and child_operations.all_precede(operation):
             child_operations = operation_graph_model.ParticleChildOperations()
-        return operation_graph_model.RequirementBinding(operation, child_operations)
+        return operation_graph_model.RequirementSatisfaction(
+            operation, child_operations
+        )
 
     @property
     def executions(self) -> Sequence[operation_graph_model.ActionExecution]:
@@ -620,7 +624,7 @@ class OperationGraph:
         empty_position: tuple[str, ...] | None = None,
         child_operations: operation_graph_model.ParticleChildOperations | None = None,
     ) -> tuple[
-        operation_graph_model.EmptyingOperationDependencyNode
+        operation_graph_model.EmptyOrMoveRuleDependencyNode
         | operation_graph_model.ActionParentLastOperationNode,
         ...,
     ]:
@@ -674,7 +678,7 @@ class OperationGraph:
         fill_dependency: operation_graph_model.LastOperationNode | None,
         *,
         emptied_ancestor: operation_graph_model.LastOperationNode,
-    ) -> tuple[operation_graph_model.EmptyingOperationDependencyNode, ...]:
+    ) -> tuple[operation_graph_model.EmptyOrMoveRuleDependencyNode, ...]:
         """Apply the Move Rule with the known Fill and Empty dependencies."""
         # If only the Fill dependency comes from the caller, defer the Move Rule
         # comparison until caller substitution.
@@ -707,8 +711,8 @@ class OperationGraph:
         empty_position: tuple[str, ...],
         child_operations: operation_graph_model.ParticleChildOperations,
         fill_dependency: operation_graph_model.RequirementNode,
-        emptied_ancestor: operation_graph_model.PrecedingChildOperationNode,
-    ) -> tuple[operation_graph_model.EmptyingOperationDependencyNode, ...]:
+        emptied_ancestor: operation_graph_model.ConcreteOperationNode,
+    ) -> tuple[operation_graph_model.EmptyOrMoveRuleDependencyNode, ...]:
         """Return Move dependencies when the Fill dependency awaits its caller."""
         rule_result = child_operations.determine_move_rule_dependencies(
             empty_position,
@@ -792,14 +796,17 @@ class OperationGraph:
     def _caller_state_needed_for_empty_rule_completion(
         self,
         nodes: Iterable[operation_graph_model.OperationNode],
-        unresolved_caller_state: Iterable[operation_graph_model.CallerInput] = (),
-    ) -> tuple[operation_graph_model.CallerInput, ...]:
+        unresolved_caller_state: Iterable[
+            operation_graph_model.AbstractDependencyOrOperationNode
+        ] = (),
+    ) -> tuple[operation_graph_model.AbstractDependencyOrOperationNode, ...]:
         """Return unresolved caller state and the first depended-on Abstract Nodes."""
         caller_state = list(unresolved_caller_state)
         # A caller node supplied by resolving a callee node can also be reached
         # through a concrete caller node, so mark directly supplied state visited.
         visited: set[
-            operation_graph_model.OperationNode | operation_graph_model.CallerInput
+            operation_graph_model.OperationNode
+            | operation_graph_model.AbstractDependencyOrOperationNode
         ] = set(caller_state)
         nodes_to_visit: list[operation_graph_model.OperationNode] = []
         for node in nodes:
@@ -828,7 +835,7 @@ class OperationGraph:
         execution: operation_graph_model.ActionExecution,
         caller_empty_rule_state: operation_graph_model.CallerEmptyRuleDependencies,
         direct_caller_state_for_empty_rule: operation_graph_model.DirectCallerStateForEmptyRule,
-    ) -> operation_graph_model.CallerEmptyRuleSubstitution:
+    ) -> operation_graph_model.EmptyRuleApplicationResult:
         """Apply the callee's unfinished Empty Rule in one direct caller."""
         callee_requirement_binding = execution.bindings[
             caller_empty_rule_state.requirement_position
@@ -885,7 +892,7 @@ class OperationGraph:
             direct_caller_state_for_empty_rule.concrete_caller_nodes,
         )
         if requirement_position_in_caller is None:
-            return operation_graph_model.CallerEmptyRuleSubstitution(
+            return operation_graph_model.EmptyRuleApplicationResult(
                 caller_nodes,
                 None,
             )
@@ -929,7 +936,7 @@ class OperationGraph:
                 direct_caller_state_for_empty_rule.unresolved_caller_state,
             )
         )
-        return operation_graph_model.CallerEmptyRuleSubstitution(
+        return operation_graph_model.EmptyRuleApplicationResult(
             caller_nodes_for_next_substitution,
             operation_graph_model.CallerEmptyRuleDependencies(
                 requirement_position=requirement_position_in_caller,
@@ -948,7 +955,7 @@ class OperationGraph:
 
     @staticmethod
     def _occupied_requirement_position(
-        binding: operation_graph_model.RequirementBinding,
+        binding: operation_graph_model.RequirementSatisfaction,
     ) -> tuple[str, ...] | None:
         if not isinstance(binding.operation, operation_graph_model.RequirementNode):
             return None
@@ -957,7 +964,7 @@ class OperationGraph:
     @staticmethod
     def _add_positions_relative_to_particle(
         relative_positions: set[tuple[str, ...]],
-        node: operation_graph_model.PrecedingChildOperationNode,
+        node: operation_graph_model.ConcreteOperationNode,
         particle_position: tuple[str, ...],
     ):
         for position in node.operated_positions:

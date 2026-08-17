@@ -45,31 +45,26 @@ class DestructionFact:
     destroying_action: ast.GlobalTypedName
 
 
-type PrecedingChildOperationNode = PositionOperationNode | GuaranteeNode
-type LastOperationNode = PrecedingChildOperationNode | RequirementNode
+type ConcreteOperationNode = PositionOperationNode | GuaranteeNode
+type LastOperationNode = ConcreteOperationNode | RequirementNode
 type ActionParentOperationNode = ActionParentLastOperationNode | LastOperationNode
 type EmptyRuleDependencyNode = LastOperationNode | CallerEmptyRuleDependenciesNode
-type EmptyingOperationDependencyNode = (
+type EmptyOrMoveRuleDependencyNode = (
     EmptyRuleDependencyNode | CallerMoveRuleFillDependencyNode
 )
-# TODO: Replace "input" terminology and make the documented Concrete Node and
-# Abstract Node roles explicit in type names such as ConcreteOperationNode and
-# AbstractOperationNode. CallerInput additionally includes propagated Empty and
-# Move Rule state, which should be modeled and named separately. Rename the
-# related resolved objects and variables as callee nodes, caller nodes, or node
-# bindings according to their actual role.
-type CallerInputNode = (
+# TODO: Replace the remaining "input" terminology in consumers with names for
+# callee nodes, caller nodes, node bindings, Dependency Fanouts, or Dependency
+# Joins according to their actual role.
+type AbstractOperationNode = (
     ActionParentLastOperationNode
     | RequirementNode
     | CallerEmptyRuleDependenciesNode
     | CallerMoveRuleFillDependencyNode
 )
-type CallerInput = (
-    CallerInputNode | CallerEmptyRuleDependencies | CallerMoveRuleFillDependency
+type AbstractDependencyOrOperationNode = (
+    AbstractOperationNode | CallerEmptyRuleDependencies | CallerMoveRuleFillDependency
 )
-type PrecedingChildOperations = Iterable[
-    tuple[tuple[str, ...], PrecedingChildOperationNode]
-]
+type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], ConcreteOperationNode]]
 
 
 def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
@@ -138,7 +133,7 @@ def _apply_move_correction_and_fill_dependency_removal[
 ](
     nodes_remaining_after_comparison: list[DependencyNodeT],
     fill_dependency: DependencyNodeT | None,
-    concrete_caller_nodes: Collection[PrecedingChildOperationNode] = (),
+    concrete_caller_nodes: Collection[ConcreteOperationNode] = (),
 ) -> list[DependencyNodeT]:
     """Apply the Empty Rule's Move Correction and the Move Rule's optional Fill Dependency removal.
 
@@ -204,7 +199,7 @@ def _apply_move_correction_and_fill_dependency_removal[
 def apply_empty_rule_to_caller_collection[DependencyNodeT: LastOperationNode](
     collected_nodes: set[DependencyNodeT],
     callee_collected_operation_positions: Iterable[tuple[str, ...]],
-    concrete_caller_nodes: Collection[PrecedingChildOperationNode],
+    concrete_caller_nodes: Collection[ConcreteOperationNode],
 ) -> list[DependencyNodeT]:
     """Compare caller-collected nodes with the callee's Collection, then apply Move Correction."""
     nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
@@ -278,7 +273,7 @@ class ChildOperation:
     # The child position relative to the required position.
     child_position: tuple[str, ...]
     # The operation node in the caller's graph.
-    operation: PrecedingChildOperationNode
+    operation: ConcreteOperationNode
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,7 +324,7 @@ class ParticleChildOperations:
         """Return surviving operations independent of the supplied paths."""
         if not relative_positions:
             return list(self.operations)
-        excluded_operations: set[PrecedingChildOperationNode] = set()
+        excluded_operations: set[ConcreteOperationNode] = set()
         for child_operation in self.operations:
             shares_dependency_path = any(
                 _shares_path(child_operation.child_position, dependency)
@@ -372,10 +367,10 @@ class ParticleChildOperations:
 
     def empty_rule_dependencies_for(
         self, relative_position: tuple[str, ...]
-    ) -> tuple[PrecedingChildOperationNode, ...]:
+    ) -> tuple[ConcreteOperationNode, ...]:
         """Return Empty Rule dependencies on the supplied position's path."""
-        matching_operations: list[PrecedingChildOperationNode] = []
-        seen_operations: set[PrecedingChildOperationNode] = set()
+        matching_operations: list[ConcreteOperationNode] = []
+        seen_operations: set[ConcreteOperationNode] = set()
         for child_operation in self.operations:
             operation = child_operation.operation
             if operation in seen_operations or not _shares_path(
@@ -532,13 +527,17 @@ class CallerEmptyRuleDependencies(CallerEmptyRuleCollection):
     nodes whose caller bindings are required to complete the Empty Rule.
     """
 
-    callee_nodes_to_bind_for_empty_rule_completion: tuple[CallerInput, ...]
+    callee_nodes_to_bind_for_empty_rule_completion: tuple[
+        AbstractDependencyOrOperationNode, ...
+    ]
 
     @classmethod
     def from_collection(
         cls,
         collection: CallerEmptyRuleCollection,
-        callee_nodes_to_bind_for_empty_rule_completion: tuple[CallerInput, ...],
+        callee_nodes_to_bind_for_empty_rule_completion: tuple[
+            AbstractDependencyOrOperationNode, ...
+        ],
     ) -> typing.Self:
         """Complete caller Collection state with the required callee nodes."""
         return cls(
@@ -560,15 +559,15 @@ class CallerEmptyRuleDependencies(CallerEmptyRuleCollection):
 class DirectCallerStateForEmptyRule:
     """Concrete Nodes and unresolved state supplied by one direct caller."""
 
-    concrete_caller_nodes: list[PrecedingChildOperationNode] = field(
+    concrete_caller_nodes: list[ConcreteOperationNode] = field(default_factory=list)
+    unresolved_caller_state: list[AbstractDependencyOrOperationNode] = field(
         default_factory=list
     )
-    unresolved_caller_state: list[CallerInput] = field(default_factory=list)
 
     def add_callee_node_resolution(
         self,
-        concrete_caller_nodes: Iterable[PrecedingChildOperationNode],
-        unresolved_caller_state: Iterable[CallerInput],
+        concrete_caller_nodes: Iterable[ConcreteOperationNode],
+        unresolved_caller_state: Iterable[AbstractDependencyOrOperationNode],
     ):
         """Add the caller-side result of resolving one callee node."""
         self.concrete_caller_nodes.extend(concrete_caller_nodes)
@@ -584,8 +583,8 @@ class _EmptyOrMoveRuleResult:
 
 
 @dataclass(frozen=True, slots=True)
-class CallerEmptyRuleSubstitution:
-    """The result of substituting caller bindings into CallerEmptyRuleDependencies."""
+class EmptyRuleApplicationResult:
+    """The result of applying caller bindings to CallerEmptyRuleDependencies."""
 
     # TODO: Move caller_empty_rule_dependencies to a
     # PartialCallerEmptyRuleSubstitution subclass where it is non-optional. The base
@@ -610,7 +609,7 @@ class CallerMoveRuleFillDependency:
 
 
 @dataclass(frozen=True, slots=True)
-class RequirementBinding:
+class RequirementSatisfaction:
     """The caller dependencies that satisfy one requirement of a triggered callee."""
 
     # The operation or RequirementNode that put the position in its required
@@ -633,7 +632,7 @@ class ActionExecution:
     trigger_operation: LastOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
-    bindings: dict[tuple[str, ...], RequirementBinding]
+    bindings: dict[tuple[str, ...], RequirementSatisfaction]
     # The last operation on the callee action's parent position or one of that
     # position's transitive parent positions.
     action_parent_last_operation: ActionParentOperationNode = field(kw_only=True)
@@ -677,7 +676,7 @@ class ActionExecution:
     def substitute_caller_move_rule_fill_dependency(
         self,
         caller_dependency: CallerMoveRuleFillDependency,
-    ) -> PrecedingChildOperationNode | CallerMoveRuleFillDependency | None:
+    ) -> ConcreteOperationNode | CallerMoveRuleFillDependency | None:
         """Substitute the Fill dependency and apply the Move Rule comparison."""
         fill_dependency = self.caller_dependency_for_input(
             caller_dependency.fill_dependency
@@ -793,7 +792,7 @@ class DestructionFactDestroyNode(DestroyNode):
     destruction_fact: DestructionFact
     destruction_position: tuple[str, ...]
     dependencies_before_caller_contribution: tuple[EmptyRuleDependencyNode, ...]
-    dependencies_after_caller_contribution: tuple[PrecedingChildOperationNode, ...]
+    dependencies_after_caller_contribution: tuple[ConcreteOperationNode, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)

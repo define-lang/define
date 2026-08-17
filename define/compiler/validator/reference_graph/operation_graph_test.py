@@ -357,7 +357,7 @@ def test_particle_child_operations_scales_to_wide_particles():
 )
 def test_particle_child_operations_keeps_only_newest_comparable_operations(
     preceding_operations: tuple[
-        tuple[tuple[str, ...], operation_graph_model.PrecedingChildOperationNode], ...
+        tuple[tuple[str, ...], operation_graph_model.ConcreteOperationNode], ...
     ],
     expected_operations: set[operation_graph_model.ChildOperation],
 ):
