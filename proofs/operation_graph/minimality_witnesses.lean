@@ -1,4 +1,4 @@
-import proofs.operation_graph.minimality
+import minimality
 
 set_option autoImplicit false
 

@@ -8,6 +8,12 @@ lean_library(
     srcs = ["minimality.lean"],
 )
 
+lean_library(
+    name = "minimality_witnesses",
+    srcs = ["minimality_witnesses.lean"],
+    deps = [":minimality"],
+)
+
 py_binary(
     name = "minimality_checker",
     srcs = ["minimality_checker.py"],
