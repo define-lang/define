@@ -71,11 +71,10 @@ class ResolvedOperationGraphBuilder:
             list[tuple[operation_graph_model.ActionExecution, ActionExecution]],
         ] = {}
         self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
-        # Only full-operation-graph resolution expands callee inputs that are not
-        # direct inputs of the reusable action. Keep their resolutions at this
-        # layer so reusable action resolution does not compute or retain
-        # relationships that codegen never consumes.
-        self._destruction_dependency_inputs: dict[
+        # Only full-operation-graph resolution binds callee nodes used exclusively
+        # before caller destruction contributions. Keep those bindings at this
+        # layer because codegen never consumes them.
+        self._callee_node_bindings_for_destruction_before_caller_contribution: dict[
             tuple[
                 operation_graph_action_resolver.ResolvedActionExecution,
                 operation_graph_action_resolver.CallerInput,
@@ -371,9 +370,11 @@ class ResolvedOperationGraphBuilder:
             triggered_by = typing.cast("TriggeredBy", current_execution.triggered_by)
             if triggered_by.caller is stop_execution:
                 continue
-            resolved_input = self._destruction_dependency_input_for(
-                triggered_by.direct_execution,
-                current_input,
+            resolved_input = (
+                self._callee_node_binding_for_destruction_before_caller_contribution(
+                    triggered_by,
+                    current_input,
+                )
             )
             self._add_action_dependencies(
                 dependency_keys,
@@ -394,27 +395,67 @@ class ResolvedOperationGraphBuilder:
                 )
         return has_dependency
 
-    def _destruction_dependency_input_for(
+    def _callee_node_binding_for_destruction_before_caller_contribution(
         self,
-        resolved_execution: operation_graph_action_resolver.ResolvedActionExecution,
-        callee_input: operation_graph_action_resolver.CallerInput,
+        triggered_by: TriggeredBy,
+        callee_node: operation_graph_action_resolver.CallerInput,
     ) -> operation_graph_action_resolver.ResolvedActionExecutionInput:
-        """Resolve an input used only before caller-contributed destruction."""
-        resolved_input = resolved_execution.inputs.get(callee_input)
-        if resolved_input is not None:
-            return resolved_input
-        key = resolved_execution, callee_input
-        resolved_input = self._destruction_dependency_inputs.get(key)
-        if resolved_input is None:
-            resolved_input = (
-                operation_graph_action_resolver.ResolvedActionExecutionInput.resolve(
-                    resolved_execution.execution,
-                    self._graphs,
-                    callee_input,
-                )
+        """Resolve one callee node used before a caller's destruction contribution."""
+        resolved_execution = triggered_by.direct_execution
+        callee_node_binding = resolved_execution.inputs.get(callee_node)
+        if callee_node_binding is not None:
+            return callee_node_binding
+        requested_binding_key = resolved_execution, callee_node
+        callee_node_binding = (
+            self._callee_node_bindings_for_destruction_before_caller_contribution.get(
+                requested_binding_key
             )
-            self._destruction_dependency_inputs[key] = resolved_input
-        return resolved_input
+        )
+        if callee_node_binding is not None:
+            return callee_node_binding
+
+        callee_nodes_to_bind = [(callee_node, False)]
+        while callee_nodes_to_bind:
+            node_to_bind, needed_nodes_are_bound = callee_nodes_to_bind.pop()
+            callee_node_binding = resolved_execution.inputs.get(node_to_bind)
+            if callee_node_binding is not None:
+                continue
+            binding_key = resolved_execution, node_to_bind
+            if (
+                binding_key
+                in self._callee_node_bindings_for_destruction_before_caller_contribution
+            ):
+                continue
+            needed_callee_nodes = operation_graph_action_resolver.callee_nodes_needed_for_empty_rule_completion(
+                node_to_bind
+            )
+            if not needed_nodes_are_bound:
+                callee_nodes_to_bind.append((node_to_bind, True))
+                for needed_callee_node in reversed(needed_callee_nodes):
+                    callee_nodes_to_bind.append((needed_callee_node, False))
+                continue
+            needed_callee_node_bindings: list[
+                operation_graph_action_resolver.ResolvedActionExecutionInput
+            ] = []
+            for needed_callee_node in needed_callee_nodes:
+                needed_binding = resolved_execution.inputs.get(needed_callee_node)
+                if needed_binding is None:
+                    needed_binding = self._callee_node_bindings_for_destruction_before_caller_contribution[
+                        resolved_execution, needed_callee_node
+                    ]
+                needed_callee_node_bindings.append(needed_binding)
+            self._callee_node_bindings_for_destruction_before_caller_contribution[
+                binding_key
+            ] = operation_graph_action_resolver.ResolvedActionExecutionInput.resolve(
+                self._graphs[triggered_by.caller.action],
+                resolved_execution.execution,
+                self._graphs,
+                node_to_bind,
+                needed_callee_node_bindings,
+            )
+        return self._callee_node_bindings_for_destruction_before_caller_contribution[
+            requested_binding_key
+        ]
 
     def _add_destruction_dependency_input(
         self,
@@ -425,9 +466,11 @@ class ResolvedOperationGraphBuilder:
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
             return
-        resolved_input = self._destruction_dependency_input_for(
-            triggered_by.direct_execution,
-            caller_input,
+        resolved_input = (
+            self._callee_node_binding_for_destruction_before_caller_contribution(
+                triggered_by,
+                caller_input,
+            )
         )
         self._add_action_dependencies(
             dependency_keys,

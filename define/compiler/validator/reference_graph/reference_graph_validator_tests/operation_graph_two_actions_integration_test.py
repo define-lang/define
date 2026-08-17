@@ -8,9 +8,8 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
-_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER = (
-    "CallerEmptyRuleDependencies does not preserve caller inputs reached by "
-    "remaining concrete dependencies"
+_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS = (
+    "CallerEmptyRuleDependencies does not preserve dependencies of remaining operations"
 )
 
 _GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION = (
@@ -231,7 +230,7 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
 
 @pytest.mark.xfail(
     strict=True,
-    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCY_FRONTIER,
+    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS,
 )
 def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -249,7 +248,7 @@ def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
             "test.move(/holder, /intermediate)",
         ],
         "other.move(/input::/b, sink)": ["other.move(/intermediate, /input::/b)"],
-        # The remaining operation on child b reaches the caller's Move on child a
+        # The remaining operation on child b depends on the caller's Move on child a
         # through the particle in the separate intermediate position.
         "other.destroy(/input)": ["other.move(/input::/b, sink)"],
         "other.destroy(sink)": ["other.move(/input::/b, sink)"],

@@ -15,10 +15,6 @@ _GUARANTEE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS = (
     "Action Guarantee resolution does not preserve caller inputs reached by the "
     "guaranteed operation"
 )
-_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS = (
-    "Caller Empty Rule substitution does not preserve caller inputs reached by "
-    "remaining dependencies"
-)
 
 
 def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
@@ -357,10 +353,6 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS,
-)
 def test_caller_empty_rule_preserves_reached_input_through_intermediate_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

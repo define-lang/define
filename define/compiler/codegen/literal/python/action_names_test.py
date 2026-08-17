@@ -158,8 +158,10 @@ def _empty_rule_input(
 ) -> operation_graph_model.CallerEmptyRuleDependencies:
     return operation_graph_model.CallerEmptyRuleDependencies(
         requirement_position=(f"position<{position_name}>",),
-        dependency_child_positions=frozenset(),
-        dependency_requirements=(),
+        collected_child_operation_positions=frozenset(),
+        fill_dependency_requirement_position=None,
+        collected_operation_positions=(),
+        callee_nodes_to_bind_for_empty_rule_completion=(),
     )
 
 

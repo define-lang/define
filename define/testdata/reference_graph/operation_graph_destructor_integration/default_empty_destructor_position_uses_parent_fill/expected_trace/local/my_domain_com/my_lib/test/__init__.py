@@ -59,8 +59,8 @@ class TestExecution:
         )
         self.guarantees = guarantees
         self.execution_trigger_position_carrier__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = literal.Join(2)
         self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src = literal.Join(2)
+        self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = literal.Join(2)
 
     def create_position_carrier(self):
         self.action.get_interface_position(
@@ -87,8 +87,8 @@ class TestExecution:
             "carrier::/callee::src",
             1,
         )
-        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
-        self.trigger_position_carrier__action_callee__when_occupied_position_src()
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_occupied_position_src)
+        self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker()
 
     def create_position_carrier__action_callee__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -104,9 +104,9 @@ class TestExecution:
             1,
         )
         self.init_execution_trigger_position_carrier__action_callee()
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_occupied_position_src)
         self.scheduler.submit(self.trigger_position_carrier__action_callee__for_empty_rule_position_src)
-        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
-        self.trigger_position_carrier__action_callee__when_occupied_position_src()
+        self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker()
 
     def init_execution_trigger_position_carrier__action_callee(self):
         action = self.action.get_interface_position(
@@ -122,6 +122,11 @@ class TestExecution:
             self.guarantees.trigger_position_carrier__action_callee,
         )
 
+    def trigger_position_carrier__action_callee__when_occupied_position_src(self):
+        if not self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src.arrive():
+            return
+        self.execution_trigger_position_carrier__action_callee.accept_when_occupied_position_src()
+
     def trigger_position_carrier__action_callee__for_empty_rule_position_src(self):
         self.execution_trigger_position_carrier__action_callee.accept_for_empty_rule_position_src()
 
@@ -129,8 +134,3 @@ class TestExecution:
         if not self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker.arrive():
             return
         self.execution_trigger_position_carrier__action_callee.accept_when_empty_position_src__global_position_marker()
-
-    def trigger_position_carrier__action_callee__when_occupied_position_src(self):
-        if not self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src.arrive():
-            return
-        self.execution_trigger_position_carrier__action_callee.accept_when_occupied_position_src()
