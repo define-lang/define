@@ -517,4 +517,21 @@ theorem ResolvedDefineGraph.isMinimalDAG (graph : ResolvedDefineGraph) :
     Acyclic graph.dependency ∧ TransitivelyMinimal graph.dependency :=
   ⟨graph.acyclic, graph.transitivelyMinimal⟩
 
+theorem calculatedDependency_isMinimalDAG
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation) :
+    Acyclic (CalculatedDependency history) ∧
+      TransitivelyMinimal (CalculatedDependency history) :=
+  (calculatedResolvedDefineGraph history).isMinimalDAG
+
+section TypeContracts
+
+example {isOperation : ParticleOperation → Prop} :
+    ∀ history : ValidResolvedHistory isOperation,
+      Acyclic (CalculatedDependency history) ∧
+        TransitivelyMinimal (CalculatedDependency history) :=
+  calculatedDependency_isMinimalDAG
+
+end TypeContracts
+
 end Define.OperationGraph

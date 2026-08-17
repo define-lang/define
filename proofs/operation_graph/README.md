@@ -13,8 +13,7 @@
   consumed by the graph results.
 - [Particle Operation Dependency Graph Minimality](minimality-proof.md) proves
   that the graph the rules produce is a transitively reduced directed acyclic
-  graph, and that it is the unique such graph whose reachability is determined
-  by the operation order and operated positions alone.
+  graph, independently of completeness.
 - [Particle Operation Maximum Safe Concurrency](maximum-safe-concurrency-proof.md)
   proves that every execution order consistent with that reachability has the
   same occupancy behavior, and that no program-oriented ordering constraint can

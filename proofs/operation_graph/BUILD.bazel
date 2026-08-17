@@ -178,7 +178,10 @@ lean_axiom_test(
         "Quot.sound",
     ],
     imports = ["minimality"],
-    theorems = ["Define.OperationGraph.ResolvedDefineGraph.isMinimalDAG"],
+    theorems = [
+        "Define.OperationGraph.ResolvedDefineGraph.isMinimalDAG",
+        "Define.OperationGraph.calculatedDependency_isMinimalDAG",
+    ],
     deps = [":minimality"],
 )
 

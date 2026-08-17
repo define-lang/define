@@ -7,13 +7,12 @@ set_option autoImplicit false
 /-!
 # Particle Operation Dependency Graph Completeness
 
-This file formalizes the completeness half of the characterization in
-`minimality-proof.md`: every previous
-Particle Operation whose operated positions are related to an operation's
-positions is reachable through the dependency graph. Together with the
-minimality theorem, dependency reachability is exactly the transitive closure
-of the related-and-previous relation, and the produced graph is the unique
-transitively minimal graph with that reachability.
+This file formalizes completeness: every previous Particle Operation whose
+operated positions are related to an operation's positions is reachable through
+the dependency graph. Together with the independent minimality theorem,
+dependency reachability is exactly the transitive closure of the
+related-and-previous relation, and the produced graph is the unique transitively
+minimal graph with that reachability.
 
 ## Formalization boundary
 

@@ -2,686 +2,245 @@
 
 ## Claim
 
-For every valid resolved Particle Operation history, the complete Fill, Empty,
-and Move Rules in [`define/spec/spec.md`](../../define/spec/spec.md) produce a
-Particle Operation Dependency Graph that is a directed acyclic graph and is
-transitively reduced. This includes operations reached through Action
-Executions, Action Requirements, Action Guarantees, automatic destruction, and
-Destruction Contracts.
+For every valid resolved Particle Operation history, the graph calculated by the
+Fill, Empty, and Move Rules is a directed acyclic graph and is transitively
+minimal: removing any direct dependency changes reachability.
 
-The dependency reachability is the transitive closure of a relation determined
-only by the operation order and operated positions. Consequently, the produced
-graph is canonical: any transitively reduced graph with that reachability has
-the same edges.
+This proof does not assume or prove completeness. In particular, it never
+assumes that every related previous operation is reachable. Completeness is a
+separate theorem.
 
-The proof is about the complete graph of concrete Particle Operations. Every
-Action Execution is expanded separately, every Action Requirement and Action
-Guarantee is resolved to its concrete contribution, if any, and every automatic
-or contributed Destroy Particle Statement is included before the graph is
-considered complete.
+## Inputs from the preceding proof components
 
-A Lean formalization of this proof exists in
-[`minimality.lean`](minimality.lean).
+The shared definitions represent an occurrence by its kind, operated positions,
+Action Parent position, and natural-number occurrence index. Write `B > A` when
+`B` reaches `A` through one or more dependency edges.
 
-## Definitions
+For one operation `O`, the calculation supplies:
 
-### Resolved Particle Operations
+- a Collection containing source-side entries and at most one Fill Dependency;
+- the simultaneous Comparison result;
+- the Move Correction result; and
+- for a Move, the result after the possible Fill Dependency removal.
 
-Each execution of a Particle Operation statement is a separate vertex, even when
-two vertices execute the same statement through two Action Executions.
+[Particle Operation Dependency Graph Calculation Correctness](calculation-correctness-proof.md)
+proves the following facts for every valid resolved history:
 
-Let `V` be the set of these vertices. For `O` and `D` in `V`, an edge
+1. every candidate is a previous Particle Operation;
+2. an entry selected at position `p` operates on `p` or a parent position of
+   `p`;
+3. a non-Move entry selected at `p` operates on `p` itself;
+4. a name operated on by a previous operation remains queryable, and the entry
+   at that name is that operation or a more recent one;
+5. every direct dependency is exactly a candidate retained by the applicable
+   rule stages; and
+6. Create, Destroy, and Move have their exact occupancy transitions.
 
-```text
-O -> D
-```
+None of those facts assumes acyclicity, transitive minimality, completeness, or
+the desired reachability relation.
 
-means that `O` directly depends on `D`.
+## Backward edges and acyclicity
 
-Write `O > D` when there is a nonempty directed path from `O` to `D`. Write
+Every direct dependency of `O` is a member of `O`'s Collection. Every Collection
+member is a previous occurrence, so every edge points from a greater occurrence
+index to a smaller one.
 
-```text
-D(O) = {D | O -> D}
-```
+A dependency path therefore has strictly decreasing occurrence indices. It
+cannot return to its source, so the calculated graph is acyclic. This argument
+does not require the complete occurrence set to be finite.
 
-for the direct dependency set of `O`.
+## The antichain criterion
 
-The graph is _transitively reduced_ when removing any edge changes `>`. In a
-directed acyclic graph, an edge `O -> D` is redundant exactly when some other
-member `X` of `D(O)` satisfies `X > D`.
+The direct dependencies of `O` form a _reachability antichain_ when no distinct
+direct dependencies `X` and `Y` satisfy `X > Y`.
 
-A set of vertices is a _reachability antichain_ when no two distinct members are
-related by `>` in either direction.
-
-### Position Relationships
-
-Write `p <= q` when `p` is the same position as `q` or a transitive parent
-position of `q`. Write `p ~ q` when either `p <= q` or `q <= p`.
-
-The relation `~` is symmetric but not transitive. Two different child positions
-can each have the same parent position without being related to each other by
-`~`.
-
-Let `positions(O)` be the positions operated on by `O`. A Create or Destroy has
-one such position. A Move has its source and target positions.
-
-### Previous Operations
-
-Index the occurrences as in the [shared definitions](definitions.md), and let
-`<` be the strict operation order used by the words “previous,” “most recent,”
-and “more recent” in the resolved rules. Each execution of an action has its own
-operation occurrences in this order. Resolving an Action Execution places the
-callee occurrences at that execution, and resolving a destructor places its
-occurrences at the corresponding destruction.
-
-The rules select only previous Particle Operations. Action Requirement
-resolution selects an operation in the caller that precedes the callee's use of
-the required state. Action Guarantee resolution selects the callee's final
-operation on the guaranteed position, which precedes a caller operation waiting
-for that guarantee. A Destroy contributed through a Destruction Contract
-precedes the Destroy to which it contributes.
-
-Consequently, `<` is well-founded on the resolved Particle Operations and
-
-```text
-O -> D implies D < O.
-```
-
-### Facts supplied by program validity
-
-The proof uses three occupancy facts from the definitions of the Particle
-Operations:
-
-1. A position is filled only while it is empty and emptied only while it is
-   occupied.
-2. A transitive child position is available only while every transitive parent
-   position needed to name it is occupied.
-3. Moving a particle preserves that particle and its transitive child positions;
-   destroying and later replacing a particle does not preserve that particle's
-   occupancy.
-
-These facts are premises of the graph rules for a valid program, rather than
-claims about transitive reduction. They are used below only to identify the
-operation that must occur between an earlier child-position operation and a
-later fill of an empty parent position.
-
-### Most-recent entries
-
-For proof purposes, call the operation remembered as most recent on a position
-its _most-recent entry_. A Create or Destroy written on `q` can be the
-most-recent entry for `q`. A Move written with `q` as its source or target can
-also be that entry. Under the Empty Rule, moving a particle additionally makes
-that Move the most-recent entry for the moved particle's transitive child
-positions. A later applicable Particle Operation replaces the entry in the
-ordinary way.
-
-This is only shorthand for the position history queried by the rules; it does
-not add a graph vertex or a dependency. As the Empty Rule specifies, the Move's
-additional entries on transitive child positions are used by later Empty Rule
-calculations. The Fill Rule continues to select among operations actually on the
-filled position and its transitive parent positions.
-
-A resolved position name can stop referring to a valid position before a later
-operation runs, if a transitive parent particle of that position is destroyed,
-moved, or replaced. The rules query only the positions that exist when an
-operation runs, so an earlier operation's position may have no entry to collect.
-The Collection completeness lemma below identifies the collected candidate that
-stands in for such an operation.
-
-### Collection
-
-The word _candidate_ is used only in this proof as shorthand for a Particle
-Operation in the Empty Rule's Collection or the Fill dependency combined with
-that Collection by the Move Rule.
-
-For an operation that fills `t`, let `F(t)` be the single most recent previous
-Particle Operation among the operations on `t` and its transitive parent
-positions, if one exists.
-
-For an operation that empties `s`, let `E(s)` contain the most-recent entry for
-`s` and for each transitive parent and child position of `s`, wherever one
-exists.
-
-Duplicate selections of the same Particle Operation denote one candidate.
-Although the complete history need not be finite, each candidate set is finite
-because an occurrence with index `i` has only `i` previous occurrences.
-
-### Comparison
-
-For a finite candidate set `C`, define its Comparison result as
-
-```text
-P(C) = {
-    A in C
-    | there is no B in C more recent than A
-      with some a in positions(A), b in positions(B), and a ~ b
-}.
-```
-
-This is the simultaneous meaning of “only the more recent Particle Operation
-remains.” A more recent candidate participates in this comparison even when an
-even more recent candidate also excludes it.
-
-### Move Correction
-
-Define the Empty Rule's Move Correction result as
-
-```text
-M(C) = {
-    A in P(C)
-    | A is not a Move, or no B in P(C) distinct from A satisfies B > A
-}.
-```
-
-An Empty operation collects `E(s)` and finishes with `M(E(s))`. A Move initially
-uses
-
-```text
-C(s, t) = E(s) union {F(t)},
-```
-
-omitting `F(t)` when it does not exist, and applies the Comparison and Move
-Correction to produce `M(C(s, t))`. A member of `E(s)` is called _source-side_
-even when the same operation is also `F(t)`. The Move Rule then removes `F(t)`
-if it remains and a distinct remaining source-side candidate depends on it
-directly or indirectly.
-
-The resulting set is `D(O)`.
-
-## Acyclicity
-
-Every direct dependency is earlier in `<`. Along any directed path, `<`
-therefore decreases strictly. A directed cycle would make one operation both
-earlier and later than itself, which is impossible.
-
-Thus the complete Particle Operation Dependency Graph is directed and acyclic.
-This argument does not require the vertex set to be finite.
-
-## The Incremental Reduction Theorem
-
-Suppose `G` is a transitively reduced directed acyclic graph. Add a new vertex
-`O`, add edges from `O` to every member of a set `S` of existing vertices, and
-add no edge from an existing vertex to `O`.
-
-The new graph is transitively reduced if and only if `S` is a reachability
-antichain.
+If every operation's direct dependencies form a reachability antichain, the
+whole graph is transitively minimal.
 
 ### Proof
 
-No edge already in `G` can become redundant. A path containing `O` must start at
-`O`, because no existing vertex has an edge to `O`. Any newly redundant edge
-must therefore be one of the edges `O -> D` for `D` in `S`.
+Suppose the direct edge `O -> Y` could be removed without changing reachability.
+A replacement path from `O` to `Y` cannot use that edge. Its first edge is
+therefore `O -> X` for a distinct direct dependency `X`, and the rest of the
+path shows `X > Y`. This contradicts the antichain property. ∎
 
-If distinct `X` and `D` in `S` satisfy `X > D`, then
+The remainder of the proof establishes this antichain property for the exact
+dependency set produced by each operation kind.
 
-```text
-O -> X -> ... -> D
-```
-
-is an alternate path for `O -> D`, so that edge is redundant.
-
-Conversely, if `O -> D` is redundant, an alternate path from `O` to `D` must
-start with `O -> X` for some `X` in `S` distinct from `D`. The remainder of the
-path proves `X > D`.
-
-Therefore the new graph is transitively reduced exactly when `S` is a
-reachability antichain. ∎
-
-## Structural Invariants of Define Operation Graphs
-
-The antichain proofs use properties that a generic directed acyclic graph does
-not have.
-
-### Candidate-position invariant
-
-Suppose the Empty Rule selects an operation `A` as the most-recent entry for a
-position `q`.
-
-- If `A` is a Create or Destroy, its only operated position is `q` from the
-  resolved caller's perspective.
-- If `A` is a Move, at least one of its source and target positions is `q` or a
-  transitive parent position of `q` from that perspective.
-
-#### Proof
-
-Consider the last event that determines the most-recent entry for `q`.
-
-A Create or Destroy written on `q` records that statement on `q`. A Move written
-with `q` as its source or target records a Move with `q` as one of its
-positions.
-
-If the particle defining `q` subsequently moves, the Empty Rule makes that Move
-the most-recent entry for `q`. One of the Move's positions is the moved
-particle's position and is therefore `q` or a transitive parent position of `q`.
-The same selection applies again after every later Move. A later applicable
-statement replaces that entry in the ordinary way.
-
-Resolving a caller binding replaces the callee's position prefix with the bound
-caller position prefix. This preserves same-position and parent/child
-relationships. Resolving a guarantee exposes the concrete Create, Move, or
-Destroy that produced the guarantee. Repeating the argument through every caller
-proves the invariant for the complete graph. ∎
-
-### Collection completeness lemma
-
-Let an operation `O` empty `s`, and let a previous operation `Z` operate on a
-position `z` with `z ~ s`. Then `E(s)` contains a candidate that is `Z` or more
-recent than `Z` and that operates on `z` or a transitive parent position of `z`.
-
-#### Proof
-
-Among the previous operations that operate on `z` or a transitive parent
-position of `z`, let `W` be the most recent, and let `w` be its operated
-position on that chain. `Z` is such an operation, so `W` is `Z` or more recent
-than `Z`.
-
-The position `w` still exists when `O` runs. A position stops existing only when
-a particle needed to name it is removed, and the operation that removes that
-particle is a Destroy on, or a Move away from, a transitive parent position of
-`w`. That operation would be more recent than `W` and operate on the same chain,
-contrary to the choice of `W`.
-
-Because a transitive parent position of `z` is related to every position related
-to `z`, the position `w` satisfies `w ~ s`. The position `w` therefore is `s`, a
-transitive parent position of `s`, or a transitive child position of `s`, and
-`E(s)` contains the most-recent entry for `w`. That entry is `W` or more recent,
-because `W` operates on `w` and only later applicable operations replace
-entries. By the candidate-position invariant, the entry operates on `w` or a
-transitive parent position of `w`, and that position is also `z` or a transitive
-parent position of `z`. ∎
+## Candidate geometry
 
 ### Direct-dependency position lemma
 
-For every direct dependency `O -> D`, some position operated on by `O` has a
-parent/child relationship with some position operated on by `D`.
+If `O -> D` is a direct dependency, some position operated on by `O` is related
+to some position operated on by `D`.
 
 #### Proof
 
-The Fill Rule selects an operation on the filled position or one of its
-transitive parent positions. The Empty Rule selects an operation for the emptied
-position or one of its transitive parent or child positions; the
-candidate-position invariant covers a Move that became most recent because its
-particle moved. The Move Rule is the union of those two cases.
+A Fill candidate has an operated position that is a parent position of the
+filled position. A source candidate selected at `p` has an operated position
+that is a parent position of `p`, and `p` is related to the emptied position.
+The parent position remains related to the emptied position. A Move combines
+those two candidate sets. Later rule stages only remove candidates. ∎
 
-Requirement and guarantee resolution preserves these relationships, as shown in
-the candidate-position invariant. The rule comparisons only delete dependencies;
-they never add an edge with different provenance. ∎
+### Later-related-operation exclusion lemma
 
-### Ordering, comparison, and replacement invariants
+Let `O` empty `s`. Suppose a Create or Destroy candidate `Y`, selected at name
+`y`, remains after the Comparison. There cannot be an operation `Z` satisfying
+all of the following:
 
-The following statements hold after every Particle Operation:
-
-1. If `B` is more recent than `A` and a position operated on by `B` has a
-   parent/child relationship with a position operated on by `A`, then `B > A`.
-2. The operation in a most-recent entry reaches every earlier operation that the
-   entry replaced.
-3. After all applicable rule stages for an operation `O`, `O` reaches every
-   candidate in the Collection.
+- `Y` is previous to `Z`, and `Z` is previous to `O`;
+- `Z` operates on `z`;
+- `z` is related to `y`; and
+- `z` is related to `s`.
 
 #### Proof
 
-Proceed by induction over Particle Operations in `<` order. The statements are
-vacuous before the first operation. Assume they hold for all previous operations
-and consider a new operation `O`.
+Calculation correctness supplies the entry `B` at `z`. It is `Z` or is more
+recent than `Z`, so it is more recent than `Y`. The Empty Collection contains
+`B` because `z` is related to `s`.
 
-First prove statement 3 for `O`. Every candidate of `O` is a previous operation,
-so statement 1 is already available for every pair of candidates. If the
-Comparison excludes `A` in favor of a more recent related candidate `B`, then
-`B > A`. If `B` is also excluded, follow the excluding candidates. Recency
-increases strictly, so the finite chain ends at a retained candidate that
-reaches `A`.
+The position operated on by `B` is `z` or a parent position of `z`, and is
+therefore related to `y`. Because `Y` is not a Move, it operates on `y` itself.
+Thus `B` and `Y` participate in the Comparison, and the more recent `B` excludes
+`Y`. This contradicts the premise that `Y` remains. The argument uses the
+simultaneous Comparison, so it is unaffected if another candidate also excludes
+`B`. ∎
 
-For the Move Correction, consider any excluded Move `A` in `P(C)`. Among the
-members of `P(C)` that reach `A`, choose one that no other member of `P(C)`
-reaches. It is not removed by the Move Correction and it reaches `A`. The Move
-Rule's Fill Dependency removal removes only `F(t)`, and only when a remaining
-source-side candidate reaches `F(t)`. Thus each stage leaves some final
-dependency reaching every candidate it removed. Since `O` depends on every final
-dependency, statement 3 holds for `O`.
+### Occupied-source bridge lemma
 
-Next prove statement 1 for pairs containing `O`. Let `A` be an earlier operation
-with a position related to a position of `O`.
+Let `O` empty the occupied position `s`. Suppose a Create or Destroy candidate
+`Y`, selected at `y`, remains after the Comparison, with `y` a strict parent
+position of `s`. Then there is an intervening operation `K` such that:
 
-- If `O` empties `s`, the Collection completeness lemma supplies a candidate
-  that is `A` or more recent than `A` and that operates on the applicable
-  position of `A` or one of its transitive parent positions. That candidate is
-  `A` or, by induction statement 1, reaches `A`; by the newly proved statement
-  3, `O` reaches the candidate.
-- If `O` fills `t` and `A` operates on `t` or a transitive parent position of
-  `t`, the Fill Rule selects an operation `B` at least as recent as `A` on that
-  parent/child chain. If `B` is distinct from `A`, induction statement 1 gives
-  `B > A`; statement 3 then gives `O > A` in either case.
-- If `O` fills `t` and `A` operates on a strict child position of `t`, validity
-  requires an intervening operation `K` that empties `t` or a transitive parent
-  position of `t`; otherwise `t` could not be empty before `O`. The Empty Rule
-  for `K` gives `K > A` by induction. The Fill Rule for `O` selects an operation
-  at least as recent as `K` on `t` or its transitive parent positions. Induction
-  statement 1 and statement 3 give `O > K > A`.
-- A Move combines the Empty case for its source with the Fill case for its
-  target. This proves statement 1 for `O`.
-
-Finally prove statement 2 for entries changed by `O`. When `O` directly operates
-on a position, statement 1 makes `O` reach the previous entry and statement 2
-for that entry supplies all earlier replacements. When `O` is a Move, the Empty
-Rule selects the previous entry for every transitive child position of the moved
-particle. Statement 3 makes `O` reach those entries, and the induction
-hypothesis makes those entries reach everything they replaced. It is therefore
-valid to make `O` the most-recent entry for all those transitive child
-positions.
-
-All three statements hold after `O`. ∎
-
-### Moved-child replacement lemma
-
-It is correct for a Move to become the most recent operation on the moved
-particle's transitive child positions.
+- `Y` is previous to `K`, and `K` is previous to `O`;
+- `K` operates on a position related to `s`; and
+- that operated position is also related to `y`.
 
 #### Proof
 
-This is the Move case in the final paragraph of the invariant proof. A later
-operation may depend on the Move instead of repeating an earlier child-position
-dependency because every such dependency remains reachable through the Move. ∎
+Because `Y` is a Create or Destroy on the strict parent position `y`, the exact
+non-Move occupancy transition leaves `s` empty immediately after `Y`. The source
+`s` is occupied immediately before `O`. Among the finitely many transitions
+between those two occurrence indices, choose the first at which `s` becomes
+occupied. The valid-history transition theorem supplies an operation `K` at that
+transition whose operated position is related to `s`. Since `y` is a parent
+position of `s`, that operated position is also related to `y`. ∎
 
-### Later-related-entry lemma
+This lemma is only an occupancy statement. It does not assert any dependency
+path to or from `K`.
 
-Let a Create or Destroy `Y` be selected as the most-recent entry for `y` while
-calculating `E(s)`. If a later previous operation `Z` operates on a position `z`
-such that both `z ~ y` and `z ~ s`, the Comparison excludes `Y`.
+## Non-Move source candidates are irredundant
 
-#### Proof
-
-Because `z ~ s`, the Collection completeness lemma supplies a candidate `B` in
-`E(s)` that is `Z` or more recent than `Z`, and is therefore more recent than
-`Y`, and that operates on `z` or a transitive parent position of `z`. Since
-`z ~ y`, that operated position is also related to `y`. Thus `B` and `Y`
-participate in the Comparison and `B` excludes `Y`. The comparison is
-simultaneous, so this conclusion still holds if a third candidate excludes `B`.
-∎
-
-## The Key Empty-candidate Lemma
-
-Let `O` empty an occupied source position `s`. After the Empty Rule's
-Comparison, suppose a remaining source-side candidate `Y` is a Create or
-Destroy. No other remaining candidate `X` can satisfy `X > Y`.
-
-This statement also allows `X` to be the dependency required for filling a
-Move's target position.
+Let `O` empty `s`. Suppose distinct candidates `X` and `Y` remain after the
+Comparison, `Y` is a source-side Create or Destroy candidate selected at `y`,
+and `X > Y`. This is impossible.
 
 ### Proof
 
-By the candidate-position invariant, the sole position `y` operated on by `Y` is
-the position for which the Empty Rule selected `Y`, so `y ~ s`.
-
-First suppose `s <= y`. Let
-
-```text
-X -> ... -> Z -> Y
-```
-
-be a dependency path, where `Z -> Y` is the final edge. By the direct-dependency
-position lemma, `Z` operates on some position `z` related to `y`. Because `y` is
-`s` or a child position of `s`, `z` is also related to `s`.
-
-The later-related-entry lemma therefore says that the Comparison excludes `Y`,
-contrary to the premise.
-
-Now suppose `y < s`, so `y` is a strict parent position of the occupied source.
-
-If `X` is another source-side candidate, the candidate-position invariant gives
-`X` a position related to `s`. Every such position is also related to the parent
-position `y`. Because `X > Y`, `X` is more recent, so the Comparison would
-exclude `Y`.
-
-The remaining possibility is that `X` is only the Fill Dependency of a Move. A
-Destroy on `y` leaves `s` unavailable. A Create on `y` creates a new particle
-for which the strict child position `s` is empty. In either case, a later
-Particle Operation must fill `s` or move a particle that supplies `s` and its
-required transitive parent positions. If that operation operated on `y`, or
-moved a particle whose transitive child positions include `y`, it would have
-become the most-recent entry for `y` in place of `Y`. That operation therefore
-has a position `z` on the parent/child chain from `y` to `s`, below `y`. The
-later-related-entry lemma again says that the Comparison excludes `Y`.
-
-Every case contradicts the premise that `Y` remains. ∎
-
-This lemma is the Define-specific reason the Empty Rule does not need a generic
-reachability comparison for every dependency. After the Comparison, a reachable
-source-side dependency can remain only when that dependency is a Move; the Move
-Correction covers exactly that case.
-
-## Each Rule Produces a Reachability Antichain
-
-The cases below are exhaustive. A Create uses the Fill Rule. A Destroy uses the
-Empty Rule. A Move uses the combined Move Rule. Automatic and contributed
-Destroys are Destroy Particle Statements, so they use the Destroy case rather
-than adding another case.
-
-### Fill Rule
-
-The Fill Rule supplies at most one dependency. A set with at most one member is
-a reachability antichain.
-
-### Empty Rule
-
-Suppose distinct remaining dependencies `X` and `Y` satisfy `X > Y` after the
-Empty Rule's Comparison and Move Correction.
-
-If `Y` is a Move, the Move Correction removes it. If `Y` is a Create or Destroy,
-the key Empty-candidate lemma says it could not have remained after the
-Comparison. Both possibilities are contradictions.
-
-Therefore the Empty Rule's final dependency set is a reachability antichain.
-
-### Move Rule
-
-Suppose distinct dependencies `X` and `Y` remain after applying the Move Rule
-and satisfy `X > Y`.
-
-If `Y` is a Move, the Move Correction removes it because the Move Rule applies
-the Empty Rule's Comparison and Move Correction to the combined set.
-
-Suppose `Y` is a Create or Destroy. If `Y` is a source-side candidate, the key
-Empty-candidate lemma says it could not remain, whether `X` is another
-source-side candidate or the Fill Dependency. If `Y` is the Fill Dependency, `X`
-must be a source-side candidate, and the Move Rule removes `Y` because `X`
-depends on it directly or indirectly.
-
-These cases cover every member of the combined set. Therefore the Move Rule's
-final dependency set is a reachability antichain.
-
-## Caller Resolution Preserves the Proof
-
-Action boundaries introduce no additional kind of concrete dependency.
-
-An occupied Action Requirement resolves to the caller operation that most
-recently supplied that particle and the caller's applicable transitive
-child-position operations. An empty Action Requirement used by a Move resolves
-to the caller operation required for filling the target, if one exists; it
-contributes no operation when the required position was empty without a previous
-Particle Operation. An Action Guarantee resolves to the callee's final concrete
-Particle Operation on the guaranteed position.
-
-For one contracted particle, resolving position names replaces the callee's
-contracted-position prefix with the caller's bound-position prefix. Within that
-binding, prefix replacement preserves and reflects equality and every transitive
-parent/child relationship. It also preserves Particle Operation kind and `<`.
-Resolving every edge of a dependency path preserves that path. The final Empty
-Rule selection considers the Move from the caller's perspective in which the
-moved particle and its transitive child positions are known, so the
-candidate-position invariant also survives resolution.
-
-Bindings of different contracted positions can make two concrete positions
-related even when their unresolved callee positions were not related. Caller
-resolution therefore applies the comparisons to the complete concrete candidate
-set; it does not assume that every unresolved survivor must remain. This can
-only remove a candidate under the exact comparisons proved above.
-
-### Resolution lemma
-
-After an Action Execution's inputs are fully resolved, its concrete candidate
-set is the candidate set that the three rules select when the callee operations
-are viewed from the caller's perspective.
-
-#### Proof
-
-For an occupied requirement, the caller binding supplies exactly the most-recent
-entry for the contracted position and the entries for the applicable transitive
-child positions. These are the entries in `E(s)`. For an empty target
-requirement, its caller binding supplies exactly `F(t)`, or no operation when
-`F(t)` does not exist. A guarantee supplies the final concrete operation on its
-bound position, which is the corresponding most-recent entry.
-
-Prefix replacement preserves every position predicate in `P`. Resolving a
-placeholder exposes the concrete operation's kind and the dependency paths
-between concrete candidates, so the predicates in `M` and the Move Rule's target
-Fill comparison are evaluated using the final `>` relation. Duplicate
-resolutions of the same operation denote one candidate, as in the candidate-set
-definition.
-
-Resolve outward by induction on the finite resolution derivation of this
-particular occurrence. This is local to the occurrence and does not require the
-complete history to stop. After the final resolution, every placeholder has
-become the exact concrete candidate selected by the rules or has contributed no
-operation. ∎
-
-The Empty and Move comparisons are comparisons on the complete set of concrete
-dependencies. A modular compiler may perform a comparison before a caller is
-known only when the result cannot change after resolution; otherwise it must
-retain enough information to finish the same comparison afterward. An unresolved
-requirement or guarantee is not a vertex of the complete graph. By the
-resolution lemma, all preceding antichain arguments apply unchanged after
-resolution.
-
-Automatic destruction contributes ordinary Destroy Particle Operations.
-Expanding a Destruction Contract can contribute additional ordinary Destroy
-Particle Operations on transitive child positions before the contracted Destroy.
-The specification places those operations at the moment of destruction, and each
-uses the Empty Rule from the same resolved caller perspective. Values used by a
-modular compiler to connect the contributions are not Particle Operations and
-are not vertices of the complete graph. Destruction therefore introduces no
-additional case in the antichain proof.
-
-## Whole-rule-set Theorem
-
-The Particle Operation Dependency Graph produced by the specified rules is a
-transitively reduced directed acyclic graph.
-
-### Proof
-
-Acyclicity was proved above. Choose any linear extension of the precedence order
-and add the resolved Particle Operations in that order.
-
-The empty graph is transitively reduced. Assume the graph of preceding
-operations is transitively reduced and consider the next operation `O`.
-
-- The Fill Rule produces a reachability antichain.
-- The Empty Rule produces a reachability antichain.
-- The Move Rule produces a reachability antichain.
-
-Caller resolution preserves the candidate sets and comparisons used in those
-three conclusions. Thus `D(O)` is a reachability antichain in every case.
-
-The Incremental Reduction Theorem proves that adding `O` preserves transitive
-reduction. Induction over all resolved Particle Operations proves that the
-complete graph is transitively reduced. ∎
-
-## Characterization by Operation Order and Operated Positions
-
-A Lean formalization of this section's completeness half and uniqueness result
-exists in [`completeness.lean`](completeness.lean). Lean models showing why the
-rule clauses covered by those models are needed for this characterization exist
-in [`independence_witnesses.lean`](independence_witnesses.lean).
-
-Define a relation `R` on the resolved Particle Operations by
-
-```text
-(O, A) is in R exactly when A < O and
-there are o in positions(O) and a in positions(A) such that o ~ a.
-```
-
-The definition uses only the strict operation order and the operated positions.
-It does not refer to any dependency rule.
-
-### Reachability is the transitive closure of R
-
-The produced graph reaches exactly the pairs in the transitive closure of `R`.
-
-#### Proof
-
-First consider a direct dependency `O -> D`. By the “Direct-dependency position
-lemma,” `O` and `D` operate on related positions. The dependency rules select
-only previous operations, so `D < O`. Therefore `(O, D)` is in `R`. Replacing
-each edge of a dependency path in this way turns it into an `R` path. Thus every
-pair reachable in the graph belongs to the transitive closure of `R`.
-
-For the other direction, statement 1 of “Ordering, comparison, and replacement
-invariants” proves that `(O, A)` in `R` implies `O > A`. Apply that statement to
-each edge of an `R` path and join the resulting dependency paths. Therefore
-every pair in the transitive closure of `R` is reachable in the graph.
-
-The two directions prove the claim. ∎
-
-### Uniqueness of the graph with this reachability
-
-Two transitively reduced graphs on the same resolved Particle Operations with
-this reachability have the same edges.
-
-#### Proof
-
-For any reachability relation, call `O > D` a _cover pair_ when there is no
-operation `X` with both `O > X` and `X > D`.
-
-In a transitively reduced directed acyclic graph, the edges are exactly the
-cover pairs. To prove this, first take an edge `O -> D`. If some `X` satisfied
-`O > X > D`, joining those two paths would give another path from `O` to `D`.
-Neither path can use `O -> D`, because doing so would create a cycle. The edge
-would therefore be redundant, which is impossible in a transitively reduced
-graph.
-
-Conversely, suppose `O > D` is a cover pair. Any path from `O` to `D` with two
-or more edges would contain an operation strictly between them. Every path must
-therefore consist of the single edge `O -> D`.
-
-The cover pairs depend only on reachability. Two transitively reduced graphs
-with the same reachability consequently have exactly the same edges. ∎
-
-Now consider any other dependency rules that make every pair in `R` reachable,
-use only edges in `R`, and produce no redundant edge. The first condition makes
-their reachability contain the transitive closure of `R`. The second condition
-makes their reachability a subrelation of that closure. Their reachability is
-therefore exactly the same as the Define graph's reachability. The third
-condition makes their graph transitively reduced, so the uniqueness result says
-that the two graphs have the same edges.
-
-The three resolved Define rules therefore calculate a graph determined entirely
-by this reachability. Different rules may calculate it differently, but they
-cannot produce a different transitively reduced graph with the same semantics.
-
-### Modular Action Parent resolution
-
-The Action Parent Rule is not part of the resolved graph calculation. It lets a
-compiler calculating one action without its caller's complete history record
-that dependency selection must continue in the caller. After positions and
-operations have been resolved from the caller's perspective, the Fill, Empty,
-and Move Rules select the concrete dependencies.
-
-Compiler conformance must prove that resolving Action Parent information
-produces those dependencies and does not emit an additional kind of resolved
-edge. That implementation obligation is separate from the graph minimality and
-completeness arguments in this document.
+The selected name `y` is related to `s`, so there are two cases.
+
+First suppose `s ≼ y`. Take the final edge `Z -> Y` of a path from `X` to `Y`.
+The direct-dependency position lemma gives related positions operated on by `Z`
+and `Y`. Because `Y` is not a Move, its only operated position is `y`; call the
+related position operated on by `Z` `z`. The positions `z` and `s` are both
+comparable with `y`, and `s ≼ y`; expanding the two possible directions of
+`z ~ y` shows that `z ~ s`. Every edge points backward, so `Y` is previous to
+`Z`; and because `X` is a candidate of `O`, the entire path occurs before `O`.
+The later-related-operation exclusion lemma contradicts the survival of `Y`.
+
+Now suppose `y` is a strict parent position of `s`.
+
+- If `X` is source-side, its operated-position provenance and its selected
+  name's relationship with `s` make its operated position and `y` prefixes of
+  one common position, so they are related. Since `X > Y`, backward edges make
+  `X` more recent than `Y`. The simultaneous Comparison would therefore exclude
+  `Y`.
+- If `X` is only the Fill Dependency of a Move, the occupied-source bridge lemma
+  supplies an intervening operation `K` related to both `y` and `s`. The
+  later-related-operation exclusion lemma again contradicts the survival of `Y`.
+
+Every case is contradictory. ∎
+
+Notice that this proof uses only candidate provenance, backward edges, exact
+occupancy transitions, and the Comparison. It does not use the completeness
+claim that every related previous pair is reachable.
+
+## Each operation kind produces an antichain
+
+Fix distinct final dependencies `X` and `Y` of one operation and suppose
+`X > Y`.
+
+### Create
+
+A Create has at most one dependency: its Fill Dependency. It cannot have two
+distinct final dependencies.
+
+### Destroy
+
+A Destroy has no Fill Dependency, so both final dependencies are source-side
+candidates that survived the Comparison and Move Correction.
+
+If `Y` is a Move, the Move Correction would remove it because the other
+remaining candidate `X` reaches it. If `Y` is a Create or Destroy, the non-Move
+source-candidate theorem gives a contradiction. Thus a Destroy's dependencies
+form an antichain.
+
+### Move
+
+A Move applies the Comparison and Move Correction once to the combined source
+Collection and optional Fill Dependency.
+
+If `Y` is a Move, the Move Correction removes it. Suppose instead that `Y` is a
+Create or Destroy.
+
+- If `Y` is source-side, the non-Move source-candidate theorem gives a
+  contradiction.
+- If `Y` is the Fill Dependency and `X` is source-side, the Move Rule's final
+  removal removes `Y` because the distinct remaining source candidate `X`
+  reaches it.
+- If both `X` and `Y` are the Fill Dependency, uniqueness of that dependency
+  gives `X = Y`, contradicting distinctness.
+
+These cases are exhaustive, so a Move's dependencies also form an antichain.
+
+## Coverage of resolved operation forms
+
+The valid resolved history contains every concrete Particle Operation
+occurrence. An automatic Destroy Particle Statement and a Destroy Particle
+Statement contributed by a destructor or Destruction Contract are therefore
+ordinary Destroy occurrences and use the Destroy case above.
+
+An entry for a moved particle's transitive child name may be the Move on a
+parent position of that name. The operated-position provenance used throughout
+the proof permits exactly this case, and the Move Correction handles a surviving
+Move candidate. No step assumes that an entry operates directly on its selected
+name unless calculation correctness also establishes that the entry is not a
+Move.
+
+Action Requirements, Action Guarantees, and requirements or guarantees on
+implied positions contribute resolved names and concrete occurrences before this
+theorem begins; they are not graph vertices. Their resulting Create, Destroy,
+and Move occurrences are covered by the same three cases. The Action Parent
+position constrains which resolved names an occurrence may operate on, but the
+antichain proof needs only the resulting position relationships.
+
+## Minimality theorem
+
+For every valid resolved history, calculation correctness constructs its exact
+resolved dependency graph. The backward-edge argument proves that graph acyclic.
+The three operation-kind cases prove that every direct dependency set is a
+reachability antichain. The antichain criterion therefore proves that the graph
+is transitively minimal. ∎
+
+For an unbounded history, the same proof applies. Every edge and every proposed
+replacement path belongs to a finite prefix, and all dependency paths are finite
+by definition. No final occurrence or finite complete vertex set is required.
 
 ## Scope
 
-This document proves the complete transitive-minimality claim for the Particle
-Operation Dependency Graph and proves that the rule comparisons preserve
-reachability to the candidates they remove. It also characterizes that
-reachability solely from the strict operation order and operated positions.
-
-It does not attempt to prove every independent semantic premise of the
-concurrency system, such as the validity of Action Requirement inference or the
-runtime implementation of concurrent execution. Those are separate language
-correctness theorems. Given the Fill, Empty, and Move candidate definitions in
-the specification, no additional transitive-reduction pass over the complete
-graph is required. The occupancy consequences and their exact scope are analyzed
-separately in
-[Particle Operation Maximum Safe Concurrency](maximum-safe-concurrency-proof.md).
+This theorem begins with a valid resolved history. The separate
+source-to-history proof must still establish that resolving valid Define source
+produces that history. Compiler conformance must separately establish that the
+implemented operation graph equals the calculated graph, including modular
+Action Parent resolution. Neither obligation is assumed by the antichain
+argument above.
