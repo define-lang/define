@@ -236,7 +236,7 @@ class OperationGraph:
         else:
             firing_operation = self.last_operation_on_position(acting_on_position_key)
         callee_action_key = callee.canonical_chained_name_tuple
-        bindings: dict[
+        requirement_satisfactions: dict[
             tuple[str, ...], operation_graph_model.RequirementSatisfaction
         ] = {}
         # Trigger positions are direct children of the callee chain.
@@ -253,11 +253,13 @@ class OperationGraph:
             # We are firing a constructor or destructor, and this node needs
             # to be in the graph in order for it to fire.
             trigger_position_key = ()
-        bindings[trigger_position_key] = self._requirement_binding(
-            operation_graph_model.ParticleChildOperations.from_preceding_operations(
-                acting_on_preceding_child_operations
-            ),
-            firing_operation,
+        requirement_satisfactions[trigger_position_key] = (
+            self._requirement_satisfaction(
+                operation_graph_model.ParticleChildOperations.from_preceding_operations(
+                    acting_on_preceding_child_operations
+                ),
+                firing_operation,
+            )
         )
         for requirement_in_caller, preceding_child_operations in zip(
             requirements_in_caller,
@@ -268,13 +270,17 @@ class OperationGraph:
             caller_position = requirement_in_caller.caller_position
             caller_position_key = caller_position.canonical_chained_name_tuple
             requirement_key = requirement.position.canonical_chained_name_tuple
-            binding_operation = self._requirement_binding_operation(caller_position_key)
-            if binding_operation is not None:
-                bindings[requirement_key] = self._requirement_binding(
-                    operation_graph_model.ParticleChildOperations.from_preceding_operations(
-                        preceding_child_operations
-                    ),
-                    binding_operation,
+            satisfying_operation = self._operation_satisfying_requirement(
+                caller_position_key
+            )
+            if satisfying_operation is not None:
+                requirement_satisfactions[requirement_key] = (
+                    self._requirement_satisfaction(
+                        operation_graph_model.ParticleChildOperations.from_preceding_operations(
+                            preceding_child_operations
+                        ),
+                        satisfying_operation,
+                    )
                 )
         action_parent_position = callee.parent_position()
         if action_parent_position is None:
@@ -291,13 +297,13 @@ class OperationGraph:
         execution = operation_graph_model.ActionExecution(
             callee=callee,
             trigger_operation=firing_operation,
-            bindings=bindings,
+            requirement_satisfactions=requirement_satisfactions,
             action_parent_last_operation=action_parent_last_operation,
         )
         self._executions.append(execution)
         return execution
 
-    def _requirement_binding(
+    def _requirement_satisfaction(
         self,
         child_operations: operation_graph_model.ParticleChildOperations,
         operation: operation_graph_model.LastOperationNode,
@@ -440,11 +446,11 @@ class OperationGraph:
         destruction_fact = newly_occupied_children.destruction_fact
         # By the Empty Rule, a caller-contributed Destroy depends on the caller's
         # earlier operations on relevant child positions of the destroyed particle.
-        # The Action Execution binding records those operations.
+        # The Action Requirement satisfaction records those operations.
         destroyed_particle_position_in_callee = ast.chain_in_callee(
             execution.action_chain, destroyed_particle_key
         )
-        child_operations = execution.bindings[
+        child_operations = execution.requirement_satisfactions[
             destroyed_particle_position_in_callee
         ].child_operations
         contribution_positions: set[tuple[str, ...]] = set()
@@ -602,7 +608,7 @@ class OperationGraph:
             self._destructions[destruction_fact] = destruction
         return destruction
 
-    def _requirement_binding_operation(
+    def _operation_satisfying_requirement(
         self, caller_position_key: tuple[str, ...]
     ) -> operation_graph_model.LastOperationNode | None:
         """Return the operation on ``caller_position_key`` that satisfies a callee requirement, or None."""
@@ -837,13 +843,11 @@ class OperationGraph:
         direct_caller_state_for_empty_rule: operation_graph_model.DirectCallerStateForEmptyRule,
     ) -> operation_graph_model.EmptyRuleApplicationResult:
         """Apply the callee's unfinished Empty Rule in one direct caller."""
-        callee_requirement_binding = execution.bindings[
+        callee_requirement_satisfaction = execution.requirement_satisfactions[
             caller_empty_rule_state.requirement_position
         ]
-        child_operations = (
-            callee_requirement_binding.child_operations.operations_not_on_same_paths_as(
-                caller_empty_rule_state.collected_child_operation_positions
-            )
+        child_operations = callee_requirement_satisfaction.child_operations.operations_not_on_same_paths_as(
+            caller_empty_rule_state.collected_child_operation_positions
         )
         collected_nodes: set[operation_graph_model.LastOperationNode] = {
             child_operation.operation for child_operation in child_operations
@@ -854,9 +858,11 @@ class OperationGraph:
             # operation on any parent position. Search the required position
             # and its parent-position prefixes for that operation.
             for depth in range(len(requirement), 0, -1):
-                binding_position = requirement[:depth]
-                requirement_binding = execution.bindings.get(binding_position)
-                if requirement_binding is None:
+                callee_requirement_position = requirement[:depth]
+                requirement_satisfaction = execution.requirement_satisfactions.get(
+                    callee_requirement_position
+                )
+                if requirement_satisfaction is None:
                     continue
                 # The Move Rule combines the Empty Dependencies for the source
                 # position with the Fill Dependency for the target position, then
@@ -865,14 +871,14 @@ class OperationGraph:
                 # Operation on the source or one of its transitive child positions
                 # remains after Comparison.
                 if not ast.is_prefix(
-                    binding_position,
+                    callee_requirement_position,
                     caller_empty_rule_state.requirement_position,
                 ):
-                    collected_nodes.add(requirement_binding.operation)
+                    collected_nodes.add(requirement_satisfaction.operation)
                 break
 
         requirement_position_in_caller = self._occupied_requirement_position(
-            callee_requirement_binding
+            callee_requirement_satisfaction
         )
         # The particle is not from an earlier caller, so Collection is complete
         # after adding the operation that supplied it when no child operation did.
@@ -880,7 +886,7 @@ class OperationGraph:
             not child_operations
             and not caller_empty_rule_state.collected_child_operation_positions
         ):
-            collected_nodes.add(callee_requirement_binding.operation)
+            collected_nodes.add(callee_requirement_satisfaction.operation)
 
         collected_operation_positions = [
             ast.chain_in_caller(execution.action_chain, position)
@@ -902,7 +908,7 @@ class OperationGraph:
         ] = []
         fill_dependency_requirement_position: tuple[str, ...] | None = None
         collected_child_operation_positions = set(
-            callee_requirement_binding.child_operations.child_position_set()
+            callee_requirement_satisfaction.child_operations.child_position_set()
         )
         collected_child_operation_positions.update(
             caller_empty_rule_state.collected_child_operation_positions
@@ -955,11 +961,14 @@ class OperationGraph:
 
     @staticmethod
     def _occupied_requirement_position(
-        binding: operation_graph_model.RequirementSatisfaction,
+        requirement_satisfaction: operation_graph_model.RequirementSatisfaction,
     ) -> tuple[str, ...] | None:
-        if not isinstance(binding.operation, operation_graph_model.RequirementNode):
+        if not isinstance(
+            requirement_satisfaction.operation,
+            operation_graph_model.RequirementNode,
+        ):
             return None
-        return binding.operation.requirement.requirement_position
+        return requirement_satisfaction.operation.requirement.requirement_position
 
     @staticmethod
     def _add_positions_relative_to_particle(

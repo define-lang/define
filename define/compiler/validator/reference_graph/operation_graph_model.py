@@ -632,7 +632,7 @@ class ActionExecution:
     trigger_operation: LastOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
-    bindings: dict[tuple[str, ...], RequirementSatisfaction]
+    requirement_satisfactions: dict[tuple[str, ...], RequirementSatisfaction]
     # The last operation on the callee action's parent position or one of that
     # position's transitive parent positions.
     action_parent_last_operation: ActionParentOperationNode = field(kw_only=True)
@@ -661,9 +661,11 @@ class ActionExecution:
         """Return the caller operation satisfying one direct callee input."""
         if isinstance(callee_input, ActionParentLastOperationNode):
             return self.action_parent_last_operation
-        binding = self.bindings.get(callee_input.requirement.requirement_position)
-        if binding is not None:
-            return binding.operation
+        requirement_satisfaction = self.requirement_satisfactions.get(
+            callee_input.requirement.requirement_position
+        )
+        if requirement_satisfaction is not None:
+            return requirement_satisfaction.operation
 
         # Position Requirements form a chain through parent names, so this node has
         # exactly one direct input: the nearest parent-name requirement, or the
@@ -671,7 +673,9 @@ class ActionExecution:
         (parent_input,) = callee_input.depends_on
         if isinstance(parent_input, ActionParentLastOperationNode):
             return self.action_parent_last_operation
-        return self.bindings[parent_input.requirement.requirement_position].operation
+        return self.requirement_satisfactions[
+            parent_input.requirement.requirement_position
+        ].operation
 
     def substitute_caller_move_rule_fill_dependency(
         self,
@@ -952,7 +956,7 @@ class CallerEmptyRuleDependenciesNode(OperationNode):
     """Caller dependencies needed when an action empties a required particle.
 
     ``caller_empty_rule_dependencies`` preserves the unresolved Empty Rule state
-    while caller requirement bindings are substituted.
+    while caller Action Requirement satisfactions are applied.
     """
 
     depends_on: tuple[()] = ()
