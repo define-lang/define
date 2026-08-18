@@ -210,18 +210,27 @@ lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
     deps = [
+        ":calculation_correctness",
         ":definitions",
         ":fill_dependency_removal_witness",
         ":minimality",
+        ":witness_support",
     ],
 )
 
 lean_axiom_test(
     name = "independence_witnesses_axioms_test",
     size = "small",
-    allowed_axioms = [],
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
     imports = ["independence_witnesses"],
     theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_dependency_iff",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.validHistory",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.weakened_misses_required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_misses_required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.weakened_misses_required_ordering",
