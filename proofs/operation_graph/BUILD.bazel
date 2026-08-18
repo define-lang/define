@@ -6,6 +6,7 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 filegroup(
     name = "all_proofs",
     srcs = [
+        ":calculated_cover_graph",
         ":calculated_schedule_execution",
         ":calculation",
         ":calculation_correctness",
@@ -13,6 +14,7 @@ filegroup(
         ":comparison_simultaneity_independence_witness",
         ":comparison_simultaneity_witness",
         ":completeness",
+        ":cover_graph",
         ":cover_order",
         ":cover_schedule_necessity",
         ":cover_schedule_order",
@@ -24,6 +26,7 @@ filegroup(
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
         ":finite_history_schedule",
+        ":finite_relation_edge_count",
         ":finite_schedule_order",
         ":finite_scheduling",
         ":independence_witness_support",
@@ -40,6 +43,7 @@ filegroup(
         ":occupancy_exchange",
         ":occupancy_noncommutation",
         ":occupancy_semantics",
+        ":stopped_dependency_edge_count",
         ":unbounded_history_schedule",
         ":unbounded_schedule_order",
         ":unbounded_scheduling",
@@ -106,6 +110,34 @@ lean_axiom_test(
         "Define.OperationGraph.exists_isEntryBefore_at_least_as_recent",
     ],
     deps = [":calculation_correctness"],
+)
+
+lean_library(
+    name = "calculated_cover_graph",
+    srcs = ["calculated_cover_graph.lean"],
+    deps = [
+        ":characterization",
+        ":cover_graph",
+    ],
+)
+
+lean_axiom_test(
+    name = "calculated_cover_graph_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculated_cover_graph"],
+    theorems = [
+        "Define.OperationGraph.calculatedDependency_contained_in_sameReachability",
+        "Define.OperationGraph.calculatedDependency_iff_coverPair",
+        "Define.OperationGraph.calculatedDependency_inclusionMinimal",
+        "Define.OperationGraph.calculatedDependency_is_unique_inclusionMinimal",
+        "Define.OperationGraph.calculatedDependency_reaches_operations",
+    ],
+    deps = [":calculated_cover_graph"],
 )
 
 lean_library(
@@ -242,6 +274,32 @@ lean_axiom_test(
         "Define.OperationGraph.calculatedDependency_reaches_of_relatedPrevious",
     ],
     deps = [":completeness"],
+)
+
+lean_library(
+    name = "cover_graph",
+    srcs = ["cover_graph.lean"],
+    deps = [":cover_order"],
+)
+
+lean_axiom_test(
+    name = "cover_graph_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_graph"],
+    theorems = [
+        "Define.OperationGraph.Reaches.collapse",
+        "Define.OperationGraph.coverPair_pointsBackward",
+        "Define.OperationGraph.coverPair_required",
+        "Define.OperationGraph.coverPair_transitivelyMinimal",
+        "Define.OperationGraph.precedence_reaches_coverPair",
+        "Define.OperationGraph.reaches_coverPair_iff",
+    ],
+    deps = [":cover_graph"],
 )
 
 lean_library(
@@ -550,6 +608,27 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "finite_relation_edge_count",
+    srcs = ["finite_relation_edge_count.lean"],
+)
+
+lean_axiom_test(
+    name = "finite_relation_edge_count_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_relation_edge_count"],
+    theorems = [
+        "Define.OperationGraph.relationEdgeCount_le",
+        "Define.OperationGraph.relationEdgeCount_lt",
+    ],
+    deps = [":finite_relation_edge_count"],
+)
+
+lean_library(
     name = "finite_schedule_order",
     srcs = ["finite_schedule_order.lean"],
 )
@@ -668,8 +747,10 @@ lean_library(
     name = "maximum_safe_concurrency",
     srcs = ["maximum_safe_concurrency.lean"],
     deps = [
+        ":calculated_cover_graph",
         ":calculated_schedule_execution",
         ":cover_schedule_necessity",
+        ":stopped_dependency_edge_count",
     ],
 )
 
@@ -935,6 +1016,33 @@ lean_axiom_test(
         "Define.OperationGraph.operationEnabled_move_source_not_parent_of_target",
     ],
     deps = [":occupancy_semantics"],
+)
+
+lean_library(
+    name = "stopped_dependency_edge_count",
+    srcs = ["stopped_dependency_edge_count.lean"],
+    deps = [
+        ":calculated_cover_graph",
+        ":finite_history_schedule",
+        ":finite_relation_edge_count",
+    ],
+)
+
+lean_axiom_test(
+    name = "stopped_dependency_edge_count_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["stopped_dependency_edge_count"],
+    theorems = [
+        "Define.OperationGraph.calculatedDependency_has_least_edgeCountBefore",
+        "Define.OperationGraph.stopped_calculatedDependency_equal_edgeCount_iff",
+        "Define.OperationGraph.stopped_calculatedDependency_has_fewerEdges_of_different",
+    ],
+    deps = [":stopped_dependency_edge_count"],
 )
 
 lean_library(

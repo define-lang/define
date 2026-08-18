@@ -68,7 +68,7 @@ The Lean modules with matching names mirror the dependency diagram:
 `definitions.lean` through `calculation_correctness.lean` form the foundation;
 `minimality.lean` and `completeness.lean` independently import that foundation;
 `characterization.lean` imports both. The maximum-safe-concurrency proof then
-divides into two branches. `calculated_schedule_execution.lean` combines
+divides into three branches. `calculated_schedule_execution.lean` combines
 characterization with finite and unbounded scheduling to prove sufficiency.
 `cover_order.lean` supplies generic cover theory; `cover_schedule_order.lean`
 constructs adjacent calculated cover schedules; and
@@ -77,8 +77,12 @@ constructs adjacent calculated cover schedules; and
 counterexample to complete stopped and unbounded schedules. For the latter,
 `unbounded_history_schedule.lean` splices the reversed finite prefix into the
 history's natural-number-indexed operation sequence while preserving both
-schedule completeness and the weaker precedence relation.
-`maximum_safe_concurrency.lean` is the aggregate entry point for the two
+schedule completeness and the weaker precedence relation. The order-theoretic
+branch begins with the generic results in `cover_graph.lean`;
+`calculated_cover_graph.lean` then identifies the calculated relation with that
+cover graph, and `stopped_dependency_edge_count.lean` derives the finite
+fewest-edge result using `finite_relation_edge_count.lean`.
+`maximum_safe_concurrency.lean` is the aggregate entry point for all three
 branches. The minimality, completeness, and characterization modules each expose
 a theorem stated directly for an arbitrary `ValidResolvedHistory`, and every
 theorem-bearing Lean module has a Bazel axiom audit.

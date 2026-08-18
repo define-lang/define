@@ -17,8 +17,8 @@ order and have the same reachability must have the same edges.
 
 Neither result requires the complete vertex set to be finite. The occurrence
 order bounds each path and each alternate-path argument locally. The
-fewest-edge corollary for histories that stop is stated only in the English
-proof and is not formalized here.
+cover-graph and fewest-edge corollaries are formalized separately in downstream
+modules rather than assumed here.
 -/
 
 namespace Define.OperationGraph

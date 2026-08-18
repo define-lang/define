@@ -69,7 +69,16 @@ a schedule of every Particle Operation in a stopped history. The theorem
 the unbounded splice and its bijection and precedence obligations.
 `unbounded_proper_transitive_subrelation_allows_undefined_schedule` extends the
 same counterexample to a complete natural-number-indexed schedule for an
-unbounded history.
+unbounded history. The generic reachability, necessity, and transitive
+minimality results for cover graphs are in
+[`cover_graph.lean`](cover_graph.lean).
+[`calculated_cover_graph.lean`](calculated_cover_graph.lean) applies them to the
+calculated dependency relation, proving that it is exactly the cover graph and
+is contained in every relation with the same reachability. Finally,
+[`finite_relation_edge_count.lean`](finite_relation_edge_count.lean) proves the
+generic finite counting lemmas, and
+[`stopped_dependency_edge_count.lean`](stopped_dependency_edge_count.lean) uses
+them to formalize the unique fewest-edge result for stopped histories.
 
 ## Definitions
 
@@ -422,17 +431,26 @@ Without that edge, a path between the pair would have an intermediate operation,
 contrary to the definition of a cover pair.
 
 Conversely, the graph consisting of the cover-pair edges has reachability `>R`.
-For any `(O,A)` in `>R`, only finitely many natural-number indices lie strictly
-between the indices of `A` and `O`. As above, this refines `(O,A)` into a finite
-chain of cover pairs. No cover edge is redundant, because an alternate path
-would put an intermediate operation between its endpoints.
+Prove this for each `(O,A)` in `>R` by induction on the difference between their
+natural-number indices. If `(O,A)` is a cover pair, its edge is the required
+one-edge path. Otherwise, the negation of the cover condition supplies an
+operation `X` such that `(O,X)` and `(X,A)` are both in `>R`. The index of `X`
+is strictly between the endpoint indices, so both differences are smaller. Apply
+the induction hypothesis to the two pairs and join their finite cover paths.
+This argument uses only the finite index difference of the chosen pair; it does
+not require `V` itself to be finite.
+
+No cover edge is redundant. An alternate path containing two or more edges would
+put its first intermediate operation strictly between the cover pair's
+endpoints, contradicting the cover condition. A different one-edge path with the
+same endpoints is the same relation entry, not an alternate edge.
 
 The transitive reduction therefore consists of exactly the cover-pair edges.
 Every graph with the same reachability contains those edges; any different such
 graph also has at least one additional edge. The cover graph is therefore the
 unique inclusion-minimal graph with that reachability. If `V` is finite, adding
-an edge strictly increases the number of edges, giving the stated unique
-fewest-edge result. ∎
+an edge to the finite cover-edge set strictly increases its cardinality, giving
+the stated unique fewest-edge result. ∎
 
 By
 [Particle Operation Dependency Graph Characterization](characterization-proof.md),

@@ -140,15 +140,14 @@ applicable occupancy commutation and scheduling results. It also states the
 limits of the claim for particle identity, qualities, Action triggering,
 destructor effects, and other observations.
 
-When a valid resolved history stops after finitely many occurrences, the unique
-inclusion-minimal relation is also the unique relation with the fewest direct
-dependencies. Starting from any other finite relation with the same
-reachability, repeatedly remove one redundant edge until none remains. The
-result still points backward, has the same reachability, and is transitively
-minimal, so the uniqueness theorem identifies it with `G`. Thus the original
-relation contains all edges of `G`, and any different relation has at least one
-additional edge. For an unbounded history, the theorem claims uniqueness under
-inclusion and does not compare infinite edge counts.
+The separate maximum-safe-concurrency proof identifies this relation with the
+cover-pair graph and proves that every relation with the same reachability
+contains all of its edges. Thus the calculated relation is the unique
+inclusion-minimal relation even for an unbounded history. When a valid resolved
+history stops after finitely many occurrences, any different relation with the
+same reachability has the finite cover-edge set plus at least one additional
+edge, so the calculated relation is also the unique relation with the fewest
+direct dependencies. Infinite edge counts are not compared.
 
 ## Coverage and scope
 
