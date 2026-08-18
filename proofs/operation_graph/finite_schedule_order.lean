@@ -67,6 +67,110 @@ theorem RespectsPrecedence.snoc
               earlier_does_not_follow_final earlierOccurrence
                 (by simp [earlier_member])))
 
+theorem RespectsPrecedence.sublist
+    {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
+    {shorterSchedule schedule : List Occurrence}
+    (shorter_is_sublist : List.Sublist shorterSchedule schedule)
+    (respects : RespectsPrecedence precedence schedule) :
+    RespectsPrecedence precedence shorterSchedule := by
+  induction shorter_is_sublist with
+  | slnil => exact .nil
+  | cons _ _ induction_hypothesis =>
+      cases respects with
+      | cons _ remaining_respects =>
+          exact induction_hypothesis remaining_respects
+  | cons_cons _ shorter_remaining_is_sublist induction_hypothesis =>
+      cases respects with
+      | cons occurrence_does_not_follow_remaining remaining_respects =>
+          exact
+            .cons
+              (fun laterOccurrence later_member =>
+                occurrence_does_not_follow_remaining laterOccurrence
+                  (shorter_remaining_is_sublist.subset later_member))
+              (induction_hypothesis remaining_respects)
+
+theorem RespectsPrecedence.append
+    {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
+    {firstSchedule secondSchedule : List Occurrence}
+    (first_respects : RespectsPrecedence precedence firstSchedule)
+    (second_respects : RespectsPrecedence precedence secondSchedule)
+    (first_does_not_follow_second :
+      ∀ firstOccurrence,
+        firstOccurrence ∈ firstSchedule →
+          ∀ secondOccurrence,
+            secondOccurrence ∈ secondSchedule →
+              ¬precedence firstOccurrence secondOccurrence) :
+    RespectsPrecedence precedence (firstSchedule ++ secondSchedule) := by
+  induction first_respects with
+  | nil => simpa
+  | cons occurrence_does_not_follow_remaining remaining_respects
+      induction_hypothesis =>
+      simp only [List.cons_append]
+      exact
+        .cons
+          (by
+            intro laterOccurrence later_member
+            simp only [List.mem_append] at later_member
+            rcases later_member with remaining_member | second_member
+            · exact
+                occurrence_does_not_follow_remaining laterOccurrence
+                  remaining_member
+            · exact
+                first_does_not_follow_second _ (by simp) laterOccurrence
+                  second_member)
+          (induction_hypothesis
+            (fun firstOccurrence first_member =>
+              first_does_not_follow_second firstOccurrence
+                (by simp [first_member])))
+
+/--
+A duplicate-free subcollection of a finite list can be moved to the front while
+the relative order of every other occurrence is preserved.
+-/
+theorem exists_order_preserving_complement
+    {Occurrence : Type u} {schedulePrefix referenceSchedule : List Occurrence}
+    (prefix_nodup : schedulePrefix.Nodup)
+    (prefix_subset :
+      ∀ occurrence,
+        occurrence ∈ schedulePrefix → occurrence ∈ referenceSchedule) :
+    ∃ remaining,
+      List.Sublist remaining referenceSchedule ∧
+        referenceSchedule.Perm (schedulePrefix ++ remaining) := by
+  induction schedulePrefix generalizing referenceSchedule with
+  | nil =>
+      exact ⟨referenceSchedule, .refl _, by simp⟩
+  | cons occurrence schedulePrefix induction_hypothesis =>
+      have occurrence_member :=
+        prefix_subset occurrence (by simp)
+      obtain ⟨before, after, rfl⟩ := List.append_of_mem occurrence_member
+      have prefix_nodup_parts := List.nodup_cons.mp prefix_nodup
+      have prefix_subset_without_occurrence :
+          ∀ remainingOccurrence,
+            remainingOccurrence ∈ schedulePrefix →
+              remainingOccurrence ∈ before ++ after := by
+        intro remainingOccurrence remaining_member
+        have remaining_ne_occurrence : remainingOccurrence ≠ occurrence := by
+          intro occurrences_equal
+          subst remainingOccurrence
+          exact prefix_nodup_parts.1 remaining_member
+        have remaining_in_reference :=
+          prefix_subset remainingOccurrence (by simp [remaining_member])
+        simpa [remaining_ne_occurrence] using remaining_in_reference
+      rcases
+          induction_hypothesis prefix_nodup_parts.2
+            prefix_subset_without_occurrence with
+        ⟨remaining, remaining_is_sublist, schedules_permuted⟩
+      have reference_without_occurrence_is_sublist :
+          List.Sublist (before ++ after) (before ++ occurrence :: after) :=
+        (List.Sublist.refl before).append
+          ((List.Sublist.refl after).cons occurrence)
+      refine
+        ⟨remaining,
+          remaining_is_sublist.trans reference_without_occurrence_is_sublist,
+          ?_⟩
+      simpa only [List.cons_append] using
+        List.perm_middle.trans (schedules_permuted.cons occurrence)
+
 /--
 One schedule is obtained from another by exchanging two adjacent occurrences
 that are incomparable in the precedence relation.

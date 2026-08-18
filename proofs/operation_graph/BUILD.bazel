@@ -34,6 +34,8 @@ filegroup(
         ":moved_child_entry_witness",
         ":non_vacuity_witness",
         ":occupancy_exchange",
+        ":unbounded_schedule_order",
+        ":unbounded_scheduling",
         ":valid_history",
         ":vanished_child_name_witness",
         ":witness_support",
@@ -422,6 +424,7 @@ lean_axiom_test(
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_iff_of_stopped",
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_nodup",
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_respects_calculatedDependency",
+        "Define.OperationGraph.operationOrder_lt_operationOrderBound",
     ],
     deps = [":finite_history_schedule"],
 )
@@ -444,7 +447,10 @@ lean_axiom_test(
         "Define.OperationGraph.AdjacentIncomparableSwap.preserves_respect",
         "Define.OperationGraph.IncomparableSwapSequence.perm",
         "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
+        "Define.OperationGraph.RespectsPrecedence.append",
         "Define.OperationGraph.RespectsPrecedence.snoc",
+        "Define.OperationGraph.RespectsPrecedence.sublist",
+        "Define.OperationGraph.exists_order_preserving_complement",
         "Define.OperationGraph.respecting_permutations_connected",
     ],
     deps = [":finite_schedule_order"],
@@ -466,6 +472,7 @@ lean_axiom_test(
     ],
     imports = ["finite_scheduling"],
     theorems = [
+        "Define.OperationGraph.ScheduleExecution.prefix_execution",
         "Define.OperationGraph.ScheduleExecution.snoc",
         "Define.OperationGraph.ScheduleExecution.swap_adjacent_unrelated",
         "Define.OperationGraph.ScheduleExecution.swap_head_unrelated",
@@ -537,6 +544,7 @@ lean_library(
         ":finite_history_schedule",
         ":finite_schedule_order",
         ":finite_scheduling",
+        ":unbounded_scheduling",
     ],
 )
 
@@ -554,6 +562,7 @@ lean_axiom_test(
         "Define.OperationGraph.finite_respecting_schedule_execution",
         "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
         "Define.OperationGraph.stopped_history_finite_schedule_execution",
+        "Define.OperationGraph.unbounded_respecting_schedule_execution",
     ],
     deps = [":maximum_safe_concurrency"],
 )
@@ -771,6 +780,39 @@ lean_axiom_test(
         "Define.OperationGraph.operationObservation_occupancyAfter_of_not_related",
     ],
     deps = [":occupancy_exchange"],
+)
+
+lean_library(
+    name = "unbounded_schedule_order",
+    srcs = ["unbounded_schedule_order.lean"],
+    deps = [":finite_schedule_order"],
+)
+
+lean_axiom_test(
+    name = "unbounded_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["unbounded_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.UnboundedSchedule.exists_respecting_completion",
+        "Define.OperationGraph.UnboundedSchedule.mem_occurrencesBefore_iff",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_are_members",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_nodup",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_respects",
+    ],
+    deps = [":unbounded_schedule_order"],
+)
+
+lean_library(
+    name = "unbounded_scheduling",
+    srcs = ["unbounded_scheduling.lean"],
+    deps = [
+        ":finite_scheduling",
+        ":unbounded_schedule_order",
+    ],
 )
 
 lean_library(

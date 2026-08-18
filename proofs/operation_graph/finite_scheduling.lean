@@ -66,6 +66,31 @@ theorem ScheduleExecution.snoc
         .cons first_enabled first_observed
           (induction_hypothesis enabled observed)
 
+/--
+Every list prefix of a defined finite schedule is itself defined with the same
+observations.
+-/
+theorem ScheduleExecution.prefix_execution
+    {observation : ParticleOperation → Position → Prop}
+    {schedulePrefix scheduleSuffix : List ParticleOperation}
+    {occupiedBefore occupiedAfter : Position → Prop}
+    (execution :
+      ScheduleExecution observation (schedulePrefix ++ scheduleSuffix)
+        occupiedBefore occupiedAfter) :
+    ∃ occupiedAfterPrefix,
+      ScheduleExecution observation schedulePrefix occupiedBefore
+        occupiedAfterPrefix := by
+  induction schedulePrefix generalizing occupiedBefore with
+  | nil => exact ⟨occupiedBefore, .nil _⟩
+  | cons operation schedulePrefix induction_hypothesis =>
+      cases execution with
+      | cons enabled observed remaining_execution =>
+          rcases induction_hypothesis remaining_execution with
+            ⟨occupiedAfterPrefix, prefix_execution⟩
+          exact
+            ⟨occupiedAfterPrefix,
+              .cons enabled observed prefix_execution⟩
+
 theorem ScheduleExecution.swap_head_unrelated
     {observation : ParticleOperation → Position → Prop}
     {firstOperation secondOperation : ParticleOperation}

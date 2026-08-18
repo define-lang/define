@@ -21,6 +21,30 @@ in the history.
 
 namespace Define.OperationGraph
 
+def operationOrderBound : List ParticleOperation → Nat
+  | [] => 0
+  | operation :: remaining =>
+      Nat.max (operation.operationOrder + 1)
+        (operationOrderBound remaining)
+
+theorem operationOrder_lt_operationOrderBound
+    {schedule : List ParticleOperation} {operation : ParticleOperation}
+    (operation_member : operation ∈ schedule) :
+    operation.operationOrder < operationOrderBound schedule := by
+  induction schedule with
+  | nil => simp at operation_member
+  | cons firstOperation remaining induction_hypothesis =>
+      simp only [List.mem_cons] at operation_member
+      rcases operation_member with operation_is_first | operation_in_remaining
+      · subst operation
+        exact
+          Nat.lt_of_lt_of_le (Nat.lt_succ_self firstOperation.operationOrder)
+            (Nat.le_max_left _ _)
+      · exact
+          Nat.lt_of_lt_of_le
+            (induction_hypothesis operation_in_remaining)
+            (Nat.le_max_right _ _)
+
 namespace ValidResolvedHistory
 
 def operationsBefore {isOperation : ParticleOperation → Prop}

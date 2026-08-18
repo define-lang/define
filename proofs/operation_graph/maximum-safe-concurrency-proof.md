@@ -46,8 +46,12 @@ stopping index makes this exactly the history's complete operation set, and
 proves that the schedule is duplicate-free, respects calculated reachability,
 and executes with the history's observations and final occupancy.
 `stopped_history_finite_schedule_execution` combines these results, formalizing
-the stopped-history case of the theorem below. The unbounded-history extension
-and the necessity result remain proved in this document rather than in Lean.
+the stopped-history case of the theorem below. The natural-number schedule and
+finite-prefix completion theorem in
+[`unbounded_schedule_order.lean`](unbounded_schedule_order.lean), together with
+`unbounded_respecting_schedule_execution`, formalize the unbounded-history case
+one finite prefix at a time. The necessity result remains proved in this
+document rather than in Lean.
 
 ## Definitions
 
@@ -199,16 +203,27 @@ over the sequence of exchanges proves that the desired schedule is defined,
 gives every operation the same occupancy observation, and leaves the same final
 occupancy.
 
-Now suppose the history is unbounded. Construct the desired schedule one finite
-prefix at a time. At stage `i`, the operation desired at index `i` has some
-finite index in the current schedule. Move it left to index `i` across the
-finitely many intervening operations. As in the finite case, every crossed
-operation is incomparable with it, so every exchange preserves definedness and
-occupancy observations. After finitely many stages, any chosen finite prefix of
-the desired schedule has been established and will never change again. Therefore
-every operation in the desired schedule is defined and observes the same
-occupancy as it does in the previous-operation order. An unbounded history has
-no final occupancy claim. ∎
+Now suppose the history is unbounded. Fix any finite prefix `P` of the desired
+schedule. Let `k` be greater than the previous-operation index of every
+operation in `P`, and let `L` be the finite list of history operations whose
+indices are less than `k`. Thus `P` is a duplicate-free subcollection of `L`.
+
+Remove the operations of `P` from `L` without changing the order of the
+remaining operations, obtaining `T`. Then `P` followed by `T` contains exactly
+the operations of `L`. It also respects `>R`. The prefix `P` respects `>R` by
+hypothesis, and `T` respects `>R` because it retains the relative order from
+`L`. For the remaining cross case, suppose an operation `p` in `P` were required
+to follow an operation `t` in `T`. The complete desired schedule contains `t`
+and respects `>R`, so it places `t` before `p`. Because `p` occurs in the fixed
+prefix `P`, `t` would then also occur in `P`, contradicting its membership in
+`T`.
+
+The finite case applied to `L` and `P` followed by `T` proves that this
+completed finite schedule is defined with the history's observations. Its prefix
+`P` is therefore defined with those observations. Since the choice of finite
+prefix was arbitrary, every operation in the desired schedule is defined and
+observes the same occupancy as it does in the previous-operation order. An
+unbounded history has no final occupancy claim. ∎
 
 ## Theorem: Every Cover Ordering Is Necessary
 
