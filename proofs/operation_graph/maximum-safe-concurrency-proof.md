@@ -35,9 +35,13 @@ any finite schedule prefix and suffix. The theorem
 [`finite_schedule_order.lean`](finite_schedule_order.lean) proves that any two
 duplicate-free finite schedules containing the same occurrences and respecting
 the same precedence relation are connected by such adjacent incomparable
-exchanges. Applying those components to a complete valid resolved history, the
-unbounded-history extension, and the necessity result remain proved in this
-document rather than in Lean.
+exchanges. `finite_respecting_schedule_execution` in
+[`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) combines those
+components for the calculated graph: every dependency-respecting permutation of
+a defined finite schedule of distinct operations from one valid resolved history
+has the same observations and final occupancy. Deriving that finite reference
+schedule directly from the history interface, the unbounded-history extension,
+and the necessity result remain proved in this document rather than in Lean.
 
 ## Definitions
 

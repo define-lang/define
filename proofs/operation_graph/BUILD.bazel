@@ -398,7 +398,6 @@ lean_axiom_test(
 lean_library(
     name = "finite_schedule_order",
     srcs = ["finite_schedule_order.lean"],
-    deps = [":definitions"],
 )
 
 lean_axiom_test(
@@ -516,7 +515,11 @@ lean_axiom_test(
         "Quot.sound",
     ],
     imports = ["maximum_safe_concurrency"],
-    theorems = ["Define.OperationGraph.incomparable_calculated_operations_are_unrelated"],
+    theorems = [
+        "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
+        "Define.OperationGraph.finite_respecting_schedule_execution",
+        "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
+    ],
     deps = [":maximum_safe_concurrency"],
 )
 

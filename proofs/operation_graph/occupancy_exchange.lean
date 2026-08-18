@@ -16,10 +16,9 @@ schedule consistent with the transitive closure of the related-and-previous
 relation can be constructed prefix by prefix through adjacent exchanges of
 exactly such pairs.
 
-The scheduling argument, its extension to unbounded histories, and the necessity
-half (every cover pair of the closure is a mandatory ordering) remain in the
-English document. Formalizing them requires a valid-schedule model that this
-module does not yet encode.
+Finite schedule execution and its order-theoretic exchange argument are
+formalized in separate modules that import this one. The unbounded-history
+extension and the necessity half remain in the English document.
 
 An operation can change occupancy only at its operated positions and their
 transitive child positions, and it reads occupancy only at the queried
