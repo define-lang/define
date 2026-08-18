@@ -9,6 +9,18 @@
   "pre-commit": {
     enabled: true,
   },
+  customManagers: [
+    {
+      customType: "regex",
+      managerFilePatterns: ["/(^|/)MODULE\\.bazel$/"],
+      matchStrings: [
+        'interpreters\\.configure\\(releases = \\["(?<currentValue>\\d{8})"\\]\\)',
+      ],
+      depNameTemplate: "astral-sh/python-build-standalone",
+      datasourceTemplate: "github-releases",
+      versioningTemplate: "regex:^(?<major>\\d{4})(?<minor>\\d{2})(?<patch>\\d{2})$",
+    },
+  ],
   packageRules: [
     {
       matchManagers: ["bazel-module"],

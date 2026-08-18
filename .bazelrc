@@ -48,8 +48,8 @@ common --experimental_bzl_visibility
 build --@pypi//dep_group=dev
 
 # Use free-threaded Python 3.14t
+common --@aspect_rules_py//py:python_version=3.14
 build --@aspect_rules_py//py/private/interpreter:freethreaded=true
-build --@rules_python//python/config_settings:py_freethreaded=yes
 
 # Ruff linting via aspect_rules_lint
 build --aspects=//tools/bzl:linters.bzl%ruff
