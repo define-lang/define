@@ -61,6 +61,63 @@ theorem RespectsPrecedence.mono
                 (weaker_is_subrelation _ _ weaker_precedence))
           induction_hypothesis
 
+/--
+Related occurrences in a finite respecting schedule appear in the order
+required by an irreflexive precedence relation.
+-/
+theorem RespectsPrecedence.index_lt
+    {Occurrence : Type u}
+    {precedence : Occurrence → Occurrence → Prop}
+    {schedule : List Occurrence}
+    (respects : RespectsPrecedence precedence schedule)
+    (precedence_irreflexive : ∀ occurrence, ¬precedence occurrence occurrence)
+    {followingOrder previousOrder : Nat} {following previous : Occurrence}
+    (following_at : schedule[followingOrder]? = some following)
+    (previous_at : schedule[previousOrder]? = some previous)
+    (following_precedence_previous : precedence following previous) :
+    previousOrder < followingOrder := by
+  induction schedule generalizing followingOrder previousOrder following
+    previous with
+  | nil => simp at following_at
+  | cons firstOccurrence remaining induction_hypothesis =>
+      cases respects with
+      | cons first_does_not_follow_remaining remaining_respects =>
+          cases followingOrder with
+          | zero =>
+              have first_is_following : firstOccurrence = following :=
+                Option.some.inj
+                  (by
+                    simpa only [List.getElem?_cons_zero] using following_at)
+              subst following
+              cases previousOrder with
+              | zero =>
+                  have first_is_previous : firstOccurrence = previous :=
+                    Option.some.inj
+                      (by
+                        simpa only [List.getElem?_cons_zero] using previous_at)
+                  subst previous
+                  exact
+                    False.elim
+                      (precedence_irreflexive firstOccurrence
+                        following_precedence_previous)
+              | succ previousOrder =>
+                  simp only [List.getElem?_cons_succ] at previous_at
+                  have previous_member : previous ∈ remaining :=
+                    List.mem_iff_getElem?.mpr ⟨previousOrder, previous_at⟩
+                  exact
+                    False.elim
+                      (first_does_not_follow_remaining previous previous_member
+                        following_precedence_previous)
+          | succ followingOrder =>
+              cases previousOrder with
+              | zero => omega
+              | succ previousOrder =>
+                  simp only [List.getElem?_cons_succ] at following_at previous_at
+                  have previous_before_following :=
+                    induction_hypothesis remaining_respects
+                      following_at previous_at following_precedence_previous
+                  omega
+
 theorem RespectsPrecedence.snoc
     {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
     {schedule : List Occurrence} {finalOccurrence : Occurrence}

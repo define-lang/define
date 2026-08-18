@@ -63,8 +63,13 @@ results for every calculated cover pair.
 `proper_transitive_subrelation_allows_undefined_historyPrefix` formalizes the
 finite-prefix counterexample for every proper transitive subrelation, and
 `stopped_proper_transitive_subrelation_allows_undefined_schedule` extends it to
-a schedule of every Particle Operation in a stopped history. The corresponding
-unbounded extension remains proved in this document rather than in Lean.
+a schedule of every Particle Operation in a stopped history. The theorem
+`exists_unboundedSchedule_with_prefix` in
+[`unbounded_history_schedule.lean`](unbounded_history_schedule.lean) formalizes
+the unbounded splice and its bijection and precedence obligations.
+`unbounded_proper_transitive_subrelation_allows_undefined_schedule` extends the
+same counterexample to a complete natural-number-indexed schedule for an
+unbounded history.
 
 ## Definitions
 
@@ -265,11 +270,20 @@ operation in the new prefix, transitivity would make it a predecessor of `O`, so
 it would already have been placed before `A`.
 
 Let `b` be one greater than the index of `O`. The adjacent permutation contains
-exactly the operations with indices below `b`. If the history stops at index
-`N`, append the operations with indices from `b` through `N - 1` in history
-order. If the history is unbounded, append the infinite sequence of operations
-with indices `b`, `b + 1`, and so on. These are respectively a complete finite
-schedule and a schedule indexed by all natural numbers.
+exactly the operations with indices below `b`, once each, and therefore has
+length `b`. If the history stops at index `N`, append the operations with
+indices from `b` through `N - 1` in history order. If the history is unbounded,
+define the operation at each schedule index below `b` from the corresponding
+entry of the adjacent permutation, and define the operation at every schedule
+index `n` at least `b` to be the history operation with index `n`.
+
+In the unbounded case this is a bijection. Two entries in the permuted prefix
+are distinct; a prefix entry has history index below `b`, whereas a suffix entry
+has history index at least `b`; and two suffix entries have their distinct
+history indices. Every history operation appears either in the permuted prefix
+when its index is below `b`, or at its own schedule index otherwise. Thus these
+constructions are respectively a complete finite schedule and a schedule indexed
+by all natural numbers.
 
 The appended operations retain their history order. No operation in the permuted
 prefix is required to follow an appended operation: reachability would give the

@@ -1,6 +1,7 @@
 import calculated_schedule_execution
 import cover_schedule_order
 import occupancy_noncommutation
+import unbounded_history_schedule
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -14,7 +15,8 @@ adjacent execution whose reverse is not enabled. Consequently, every proper
 transitive subrelation of calculated reachability permits a finite
 history-prefix schedule that becomes undefined at a reversed cover pair. For a
 stopped history, the counterexample extends to a schedule of every Particle
-Operation in the history.
+Operation in the history. For an unbounded history, it extends to a complete
+natural-number-indexed schedule.
 -/
 
 namespace Define.OperationGraph
@@ -250,6 +252,57 @@ theorem stopped_proper_transitive_subrelation_allows_undefined_schedule
   · simpa [List.append_assoc] using full_permuted
   · simpa [List.append_assoc] using full_respects
 
+/--
+Every proper transitive subrelation of calculated reachability permits a
+complete schedule of an unbounded history that becomes undefined at a reversed
+cover pair.
+-/
+theorem unbounded_proper_transitive_subrelation_allows_undefined_schedule
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    (history_is_unbounded :
+      ∀ operationOrder, history.operationAt operationOrder ≠ none)
+    {weaker : ParticleOperation → ParticleOperation → Prop}
+    (weaker_transitive :
+      ∀ {following intermediate previous},
+        weaker following intermediate →
+          weaker intermediate previous → weaker following previous)
+    (weaker_is_subrelation :
+      ∀ following previous,
+        weaker following previous →
+          Reaches (CalculatedDependency history) following previous)
+    (subrelation_is_proper :
+      ∃ following previous,
+        Reaches (CalculatedDependency history) following previous ∧
+          ¬weaker following previous) :
+    ∃ following previous preceding remaining occupiedBeforePair,
+      ∃ schedule : UnboundedSchedule isOperation,
+        CoverPair (Reaches (CalculatedDependency history)) following previous ∧
+          ¬weaker following previous ∧
+            schedule.occurrencesBefore (following.operationOrder + 1) =
+                preceding ++ following :: previous :: remaining ∧
+              schedule.RespectsPrecedence weaker ∧
+                ScheduleExecution history.observation preceding
+                    (history.occupiedBefore 0) occupiedBeforePair ∧
+                  ¬(OperationEnabled following occupiedBeforePair ∧
+                    OperationEnabled previous
+                      (OccupancyAfter following occupiedBeforePair)) := by
+  rcases
+      proper_transitive_subrelation_allows_undefined_historyPrefix history
+        (weaker := weaker) weaker_transitive weaker_is_subrelation
+        subrelation_is_proper with
+    ⟨following, previous, preceding, remaining, occupiedBeforePair, cover_pair,
+      pair_omitted, prefix_permuted, prefix_respects, preceding_execution,
+      reverse_not_enabled⟩
+  rcases
+      history.exists_unboundedSchedule_with_prefix history_is_unbounded
+        prefix_permuted weaker_is_subrelation prefix_respects with
+    ⟨schedule, schedule_prefix, schedule_respects⟩
+  exact
+    ⟨following, previous, preceding, remaining, occupiedBeforePair, schedule,
+      cover_pair, pair_omitted, schedule_prefix, schedule_respects,
+      preceding_execution, reverse_not_enabled⟩
+
 section TypeContracts
 
 example {isOperation : ParticleOperation → Prop} :
@@ -350,6 +403,36 @@ example {isOperation : ParticleOperation → Prop} :
                                 (OccupancyAfter following
                                   occupiedBeforePair)) :=
   stopped_proper_transitive_subrelation_allows_undefined_schedule
+
+example {isOperation : ParticleOperation → Prop} :
+    ∀ (history : ValidResolvedHistory isOperation),
+      (∀ operationOrder, history.operationAt operationOrder ≠ none) →
+        ∀ (weaker : ParticleOperation → ParticleOperation → Prop),
+          (∀ {following intermediate previous},
+              weaker following intermediate →
+                weaker intermediate previous → weaker following previous) →
+            (∀ following previous,
+                weaker following previous →
+                  Reaches (CalculatedDependency history) following previous) →
+              (∃ following previous,
+                  Reaches (CalculatedDependency history) following previous ∧
+                    ¬weaker following previous) →
+                ∃ following previous preceding remaining occupiedBeforePair,
+                  ∃ schedule : UnboundedSchedule isOperation,
+                    CoverPair (Reaches (CalculatedDependency history)) following
+                          previous ∧
+                      ¬weaker following previous ∧
+                        schedule.occurrencesBefore
+                              (following.operationOrder + 1) =
+                            preceding ++ following :: previous :: remaining ∧
+                          schedule.RespectsPrecedence weaker ∧
+                            ScheduleExecution history.observation preceding
+                                (history.occupiedBefore 0) occupiedBeforePair ∧
+                              ¬(OperationEnabled following occupiedBeforePair ∧
+                                OperationEnabled previous
+                                  (OccupancyAfter following
+                                    occupiedBeforePair)) :=
+  unbounded_proper_transitive_subrelation_allows_undefined_schedule
 
 end TypeContracts
 

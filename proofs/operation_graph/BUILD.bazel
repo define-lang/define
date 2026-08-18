@@ -40,6 +40,7 @@ filegroup(
         ":occupancy_exchange",
         ":occupancy_noncommutation",
         ":occupancy_semantics",
+        ":unbounded_history_schedule",
         ":unbounded_schedule_order",
         ":unbounded_scheduling",
         ":valid_history",
@@ -271,6 +272,7 @@ lean_library(
         ":calculated_schedule_execution",
         ":cover_schedule_order",
         ":occupancy_noncommutation",
+        ":unbounded_history_schedule",
     ],
 )
 
@@ -289,6 +291,7 @@ lean_axiom_test(
         "Define.OperationGraph.calculated_coverPair_reverse_not_enabled",
         "Define.OperationGraph.proper_transitive_subrelation_allows_undefined_historyPrefix",
         "Define.OperationGraph.stopped_proper_transitive_subrelation_allows_undefined_schedule",
+        "Define.OperationGraph.unbounded_proper_transitive_subrelation_allows_undefined_schedule",
     ],
     deps = [":cover_schedule_necessity"],
 )
@@ -565,6 +568,7 @@ lean_axiom_test(
         "Define.OperationGraph.IncomparableSwapSequence.perm",
         "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
         "Define.OperationGraph.RespectsPrecedence.append",
+        "Define.OperationGraph.RespectsPrecedence.index_lt",
         "Define.OperationGraph.RespectsPrecedence.mono",
         "Define.OperationGraph.RespectsPrecedence.right_of_append",
         "Define.OperationGraph.RespectsPrecedence.snoc",
@@ -931,6 +935,30 @@ lean_axiom_test(
         "Define.OperationGraph.operationEnabled_move_source_not_parent_of_target",
     ],
     deps = [":occupancy_semantics"],
+)
+
+lean_library(
+    name = "unbounded_history_schedule",
+    srcs = ["unbounded_history_schedule.lean"],
+    deps = [
+        ":finite_history_schedule",
+        ":unbounded_schedule_order",
+    ],
+)
+
+lean_axiom_test(
+    name = "unbounded_history_schedule_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["unbounded_history_schedule"],
+    theorems = [
+        "Define.OperationGraph.ValidResolvedHistory.exists_unboundedSchedule_with_prefix",
+    ],
+    deps = [":unbounded_history_schedule"],
 )
 
 lean_library(
