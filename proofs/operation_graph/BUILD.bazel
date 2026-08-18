@@ -18,6 +18,7 @@ filegroup(
         ":minimality_witnesses",
         ":non_vacuity_witness",
         ":valid_history",
+        ":vanished_child_name_witness",
         ":witness_support",
     ],
 )
@@ -244,6 +245,7 @@ lean_library(
     deps = [
         ":minimality",
         ":non_vacuity_witness",
+        ":vanished_child_name_witness",
         ":witness_support",
     ],
 )
@@ -258,7 +260,6 @@ lean_axiom_test(
     ],
     imports = ["minimality_witnesses"],
     theorems = [
-        "Define.OperationGraph.VanishedChildName.exact_dependency",
         "Define.OperationGraph.MovedChildEntry.exact_dependency",
         "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
     ],
@@ -317,6 +318,34 @@ lean_axiom_test(
         "Define.OperationGraph.exists_occupancy_transition",
     ],
     deps = [":valid_history"],
+)
+
+lean_library(
+    name = "vanished_child_name_witness",
+    srcs = ["vanished_child_name_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "vanished_child_name_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["vanished_child_name_witness"],
+    theorems = [
+        "Define.OperationGraph.VanishedChildName.calculated_dependency",
+        "Define.OperationGraph.VanishedChildName.exact_dependency",
+        "Define.OperationGraph.VanishedChildName.history",
+        "Define.OperationGraph.VanishedChildName.vanished_child_excluded",
+        "Define.OperationGraph.VanishedChildName.vanished_child_source_candidate",
+    ],
+    deps = [":vanished_child_name_witness"],
 )
 
 lean_library(
