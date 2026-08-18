@@ -204,7 +204,7 @@ dev = [
     # Directly declared so uv uses the Bazel-provided virtual package.
     "google-re2",
     # TODO: Remove this pin when aspect_rules_py supports the abi3t wheel tag.
-    "hypothesis==6.165.3",
+    "hypothesis==6.165.10",
     "j2lint",
     "lark",
     "mutmut",
