@@ -1,4 +1,5 @@
 import definitions
+import empty_rule_child_positions_independence_witness
 import fill_dependency_removal_witness
 import fill_rule_most_recent_independence_witness
 import fill_rule_parent_positions_independence_witness
@@ -21,11 +22,11 @@ exactly one clause.
 - A *redundant dependency* is a direct edge whose removal leaves reachability
   unchanged, exhibited by a path that avoids the edge.
 
-The extracted Fill Rule parent-position and most-recent witnesses use the
-universal calculation for their complete side. The Fill Dependency removal
-section below does the same by reusing its fully resolved witness. The remaining
-sections still use the executable support model for both sides and are migrated
-in subsequent increments.
+The extracted Fill Rule parent-position and most-recent witnesses and the Empty
+Rule child-position witness use the universal calculation for their complete
+side. The Fill Dependency removal section below does the same by reusing its
+fully resolved witness. The remaining sections still use the executable support
+model for both sides and are migrated in subsequent increments.
 
 This proof makes no independence claim for the Empty Rule's transitive-parent
 collection. An earlier proposed witness destroyed a child position that had
@@ -37,123 +38,7 @@ namespace Define.OperationGraph
 
 namespace IndependenceWitnesses
 
-/-!
-## The Empty Rule's transitive child positions
 
-History: `create parent`, `create child`, `destroy child`, `destroy parent`.
-
-Complete Empty Rule: the Collection for the parent Destroy includes the most
-recent previous operation on each transitive child position, the child
-Destroy. The Comparison then excludes the parent Create in its favor, so the
-parent Destroy depends exactly on the child Destroy.
-
-Weakened rule (collect only the emptied position and its parent positions):
-the parent Destroy sees only the parent Create and depends on it, so it never
-reaches the child Destroy, and destroying the parent is not ordered after the
-operation that emptied its child position.
--/
-
-namespace EmptyRuleChildPositions
-
-def parentPosition : Position := [0]
-
-def childPosition : Position := [0, 0]
-
-def createParent : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create parentPosition
-
-def createChild : ParticleOperation where
-  operationOrder := 1
-  actionParent := []
-  kind := .create childPosition
-
-def destroyChild : ParticleOperation where
-  operationOrder := 2
-  actionParent := []
-  kind := .destroy childPosition
-
-def destroyParent : ParticleOperation where
-  operationOrder := 3
-  actionParent := []
-  kind := .destroy parentPosition
-
-def completeDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createChild then some createParent
-    else if operation = destroyChild then some createChild
-    else if operation = destroyParent then some destroyChild
-    else none
-
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  completeDependencyTarget operation = some dependencyOperation
-
-def weakenedDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createChild then some createParent
-    else if operation = destroyChild then some createChild
-    else if operation = destroyParent then some createParent
-    else none
-
-abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  weakenedDependencyTarget operation = some dependencyOperation
-
-def history : List ParticleOperation :=
-  [createParent, createChild, destroyChild, destroyParent]
-
-def weakenedRules : RuleVariant :=
-  { completeRules with emptyChildPositions := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
-
-theorem weakened_rules_derive_graph :
-    calculate weakenedRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (WeakenedDependency operation dependencyOperation)) := by
-  decide
-
-theorem complete_transitively_minimal :
-    TransitivelyMinimal CompleteDependency :=
-  transitivelyMinimal_of_at_most_one_dependency CompleteDependency
-    fun _ _ _ first_edge second_edge =>
-      Option.some.inj (first_edge.symm.trans second_edge)
-
-theorem required_ordering : RelatedPrevious destroyParent destroyChild :=
-  ⟨moreRecent_of_order_lt (by decide),
-    parentPosition, childPosition, rfl, rfl, Or.inl ⟨[0], rfl⟩⟩
-
-example : Reaches CompleteDependency destroyParent destroyChild :=
-  .direct (by decide)
-
-theorem weakened_misses_required_ordering :
-    ¬Reaches WeakenedDependency destroyParent destroyChild := by
-  have from_create_parent :
-      ∀ target, ¬Reaches WeakenedDependency createParent target := by
-    intro target path
-    have no_edge : weakenedDependencyTarget createParent = none := by decide
-    cases path with
-    | direct edge => exact nomatch (no_edge.symm.trans edge)
-    | step edge _ => exact nomatch (no_edge.symm.trans edge)
-  intro path
-  have only_edge :
-      weakenedDependencyTarget destroyParent = some createParent := by decide
-  cases path with
-  | direct edge =>
-      exact absurd (Option.some.inj (edge.symm.trans only_edge)) (by decide)
-  | @step _ next _ edge remaining_path =>
-      have next_is_parent : next = createParent :=
-        Option.some.inj (edge.symm.trans only_edge)
-      subst next_is_parent
-      exact from_create_parent destroyChild remaining_path
-
-end EmptyRuleChildPositions
 
 /-!
 ## The Move as an operation on the moved particle's transitive child positions
