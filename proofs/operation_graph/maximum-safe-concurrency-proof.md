@@ -61,9 +61,10 @@ in both orders.
 [`cover_schedule_necessity.lean`](cover_schedule_necessity.lean) combines those
 results for every calculated cover pair.
 `proper_transitive_subrelation_allows_undefined_historyPrefix` formalizes the
-finite-prefix counterexample for every proper transitive subrelation. Extending
-that counterexample to a full stopped or unbounded schedule remains proved in
-this document rather than in Lean.
+finite-prefix counterexample for every proper transitive subrelation, and
+`stopped_proper_transitive_subrelation_allows_undefined_schedule` extends it to
+a schedule of every Particle Operation in a stopped history. The corresponding
+unbounded extension remains proved in this document rather than in Lean.
 
 ## Definitions
 
@@ -263,11 +264,18 @@ smaller index. Finally, if an operation moved after `O` were required before any
 operation in the new prefix, transitivity would make it a predecessor of `O`, so
 it would already have been placed before `A`.
 
-If the history continues after `O`, append its later operations in history
-order. No earlier operation is required to follow one of those later operations,
-again because reachability moves to a smaller index. The resulting complete
-schedule therefore respects `>R`, and the preceding theorem makes it a defined
-execution with `A` immediately before `O`.
+Let `b` be one greater than the index of `O`. The adjacent permutation contains
+exactly the operations with indices below `b`. If the history stops at index
+`N`, append the operations with indices from `b` through `N - 1` in history
+order. If the history is unbounded, append the infinite sequence of operations
+with indices `b`, `b + 1`, and so on. These are respectively a complete finite
+schedule and a schedule indexed by all natural numbers.
+
+The appended operations retain their history order. No operation in the permuted
+prefix is required to follow an appended operation: reachability would give the
+appended operation a smaller index, which would put it in the prefix already.
+Thus both completed schedules respect `>R`, and the preceding theorem makes the
+original adjacent order a defined execution with `A` immediately before `O`.
 
 Because `(O, A)` is in `R`, choose an operated position `p` of `A` and an
 operated position `q` of `O` such that `p <= q` or `q <= p`. Every operated

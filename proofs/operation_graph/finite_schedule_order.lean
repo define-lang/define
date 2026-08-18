@@ -115,6 +115,24 @@ theorem RespectsPrecedence.sublist
                   (shorter_remaining_is_sublist.subset later_member))
               (induction_hypothesis remaining_respects)
 
+/--
+The second part of a precedence-respecting appended schedule also respects the
+relation.
+-/
+theorem RespectsPrecedence.right_of_append
+    {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
+    {firstSchedule secondSchedule : List Occurrence}
+    (respects :
+      RespectsPrecedence precedence (firstSchedule ++ secondSchedule)) :
+    RespectsPrecedence precedence secondSchedule := by
+  induction firstSchedule with
+  | nil => simpa using respects
+  | cons firstOccurrence firstSchedule induction_hypothesis =>
+      simp only [List.cons_append] at respects
+      cases respects with
+      | cons _ remaining_respects =>
+          exact induction_hypothesis remaining_respects
+
 theorem RespectsPrecedence.append
     {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
     {firstSchedule secondSchedule : List Occurrence}

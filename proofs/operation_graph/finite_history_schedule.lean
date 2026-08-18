@@ -165,6 +165,45 @@ theorem operationsBefore_nodup
             history.operationsBefore_operationOrder_lt earlier_member
           omega
 
+/--
+Every earlier history schedule is a list prefix of every later history
+schedule.
+-/
+theorem operationsBefore_append_of_le
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation) :
+    ∀ {earlierCount laterCount},
+      earlierCount ≤ laterCount →
+        ∃ remaining,
+          history.operationsBefore laterCount =
+            history.operationsBefore earlierCount ++ remaining := by
+  intro earlierCount laterCount earlier_le_later
+  induction laterCount with
+  | zero =>
+      have earlier_is_zero : earlierCount = 0 := by omega
+      subst earlierCount
+      exact ⟨[], by simp⟩
+  | succ laterCount induction_hypothesis =>
+      by_cases earlier_is_later : earlierCount = laterCount + 1
+      · subst earlierCount
+        exact ⟨[], by simp⟩
+      · have earlier_le_previous : earlierCount ≤ laterCount := by omega
+        rcases induction_hypothesis earlier_le_previous with
+          ⟨remaining, previous_schedule⟩
+        cases operation_at : history.operationAt laterCount with
+        | none =>
+            exact
+              ⟨remaining,
+                by
+                  simpa [operationsBefore, operation_at] using
+                    previous_schedule⟩
+        | some operation =>
+            exact
+              ⟨remaining ++ [operation],
+                by
+                  simp [operationsBefore, operation_at, previous_schedule,
+                    List.append_assoc]⟩
+
 theorem operationsBefore_execution
     {isOperation : ParticleOperation → Prop}
     (history : ValidResolvedHistory isOperation)
@@ -240,6 +279,86 @@ theorem operationsBefore_respects_calculatedDependency
               (calculatedDependency_pointsBackward history)
               earlier_reaches_operation
           omega
+
+/--
+A precedence-respecting permutation of one history prefix can be followed by
+the later operations to form a respecting permutation of any longer prefix.
+-/
+theorem exists_respecting_operationsBefore_extension
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {weaker : ParticleOperation → ParticleOperation → Prop}
+    (weaker_is_subrelation :
+      ∀ following previous,
+        weaker following previous →
+          Reaches (CalculatedDependency history) following previous)
+    {prefixBound fullBound : Nat}
+    (prefix_before_full : prefixBound ≤ fullBound)
+    {candidatePrefix : List ParticleOperation}
+    (candidate_permuted :
+      (history.operationsBefore prefixBound).Perm candidatePrefix)
+    (candidate_respects : RespectsPrecedence weaker candidatePrefix) :
+    ∃ remaining,
+      (history.operationsBefore fullBound).Perm
+          (candidatePrefix ++ remaining) ∧
+        RespectsPrecedence weaker (candidatePrefix ++ remaining) := by
+  rcases history.operationsBefore_append_of_le prefix_before_full with
+    ⟨remaining, full_schedule⟩
+  have full_nodup_parts :
+      (history.operationsBefore prefixBound).Nodup ∧
+        remaining.Nodup ∧
+          ∀ prefixOperation,
+            prefixOperation ∈ history.operationsBefore prefixBound →
+              ∀ remainingOperation,
+                remainingOperation ∈ remaining →
+                  prefixOperation ≠ remainingOperation := by
+    have full_nodup := history.operationsBefore_nodup fullBound
+    rw [full_schedule] at full_nodup
+    exact List.nodup_append.mp full_nodup
+  have full_respects_weaker :
+      RespectsPrecedence weaker (history.operationsBefore fullBound) :=
+    (history.operationsBefore_respects_calculatedDependency fullBound).mono
+      weaker_is_subrelation
+  have remaining_respects : RespectsPrecedence weaker remaining := by
+    rw [full_schedule] at full_respects_weaker
+    exact full_respects_weaker.right_of_append
+  have candidate_does_not_follow_remaining :
+      ∀ prefixOperation,
+        prefixOperation ∈ candidatePrefix →
+          ∀ remainingOperation,
+            remainingOperation ∈ remaining →
+              ¬weaker prefixOperation remainingOperation := by
+    intro prefixOperation prefix_member remainingOperation remaining_member
+    intro prefix_follows_remaining
+    have prefix_reference_member :
+        prefixOperation ∈ history.operationsBefore prefixBound :=
+      candidate_permuted.mem_iff.mpr prefix_member
+    have prefix_order_before_bound :=
+      history.operationsBefore_operationOrder_lt prefix_reference_member
+    have remaining_reference_member :
+        remainingOperation ∈ history.operationsBefore fullBound := by
+      rw [full_schedule]
+      simp [remaining_member]
+    have remaining_is_operation :=
+      history.operationsBefore_operation_is_member remaining_reference_member
+    have remaining_before_prefix :=
+      reaches_decreases_order
+        (calculatedDependency_pointsBackward history)
+        (weaker_is_subrelation _ _ prefix_follows_remaining)
+    have remaining_prefix_member :
+        remainingOperation ∈ history.operationsBefore prefixBound :=
+      history.operationAt_mem_operationsBefore
+        (history.member_operation_at remainingOperation remaining_is_operation)
+        (Nat.lt_trans remaining_before_prefix prefix_order_before_bound)
+    exact
+      (full_nodup_parts.2.2 remainingOperation remaining_prefix_member
+        remainingOperation remaining_member) rfl
+  refine ⟨remaining, ?_, ?_⟩
+  · rw [full_schedule]
+    exact candidate_permuted.append_right remaining
+  · exact
+      candidate_respects.append remaining_respects
+        candidate_does_not_follow_remaining
 
 theorem operationOrder_lt_of_stopped
     {isOperation : ParticleOperation → Prop}

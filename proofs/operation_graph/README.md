@@ -73,7 +73,9 @@ characterization with finite and unbounded scheduling to prove sufficiency.
 `cover_order.lean` supplies generic cover theory; `cover_schedule_order.lean`
 constructs adjacent calculated cover schedules; and
 `cover_schedule_necessity.lean` combines that order construction with
-`occupancy_noncommutation.lean` to prove finite-prefix necessity.
+`occupancy_noncommutation.lean` to prove finite-prefix necessity and extend the
+counterexample to every Particle Operation in a stopped history. The analogous
+unbounded extension is the remaining formalization boundary.
 `maximum_safe_concurrency.lean` is the aggregate entry point for the two
 branches. The minimality, completeness, and characterization modules each expose
 a theorem stated directly for an arbitrary `ValidResolvedHistory`, and every

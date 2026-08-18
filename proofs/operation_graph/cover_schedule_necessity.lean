@@ -12,10 +12,9 @@ This module combines the cover-pair schedule construction with Particle
 Operation occupancy semantics. Every calculated cover pair has a defined
 adjacent execution whose reverse is not enabled. Consequently, every proper
 transitive subrelation of calculated reachability permits a finite
-history-prefix schedule that becomes undefined at a reversed cover pair.
-
-Extending that finite counterexample to a full stopped or unbounded schedule is
-the remaining formalization boundary.
+history-prefix schedule that becomes undefined at a reversed cover pair. For a
+stopped history, the counterexample extends to a schedule of every Particle
+Operation in the history.
 -/
 
 namespace Define.OperationGraph
@@ -191,6 +190,66 @@ theorem proper_transitive_subrelation_allows_undefined_historyPrefix
       calculated_coverPair_reverse_not_enabled history cover_pair
         preceding_execution pair_execution⟩
 
+/--
+Every proper transitive subrelation of calculated reachability permits a
+schedule of every Particle Operation in a stopped history that becomes
+undefined at a reversed cover pair.
+-/
+theorem stopped_proper_transitive_subrelation_allows_undefined_schedule
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {operationCount : Nat}
+    (history_stopped : history.operationAt operationCount = none)
+    {weaker : ParticleOperation → ParticleOperation → Prop}
+    (weaker_transitive :
+      ∀ {following intermediate previous},
+        weaker following intermediate →
+          weaker intermediate previous → weaker following previous)
+    (weaker_is_subrelation :
+      ∀ following previous,
+        weaker following previous →
+          Reaches (CalculatedDependency history) following previous)
+    (subrelation_is_proper :
+      ∃ following previous,
+        Reaches (CalculatedDependency history) following previous ∧
+          ¬weaker following previous) :
+    ∃ following previous preceding remaining occupiedBeforePair,
+      CoverPair (Reaches (CalculatedDependency history)) following previous ∧
+        ¬weaker following previous ∧
+          (history.operationsBefore operationCount).Perm
+              (preceding ++ following :: previous :: remaining) ∧
+            RespectsPrecedence weaker
+                (preceding ++ following :: previous :: remaining) ∧
+              ScheduleExecution history.observation preceding
+                  (history.occupiedBefore 0) occupiedBeforePair ∧
+                ¬(OperationEnabled following occupiedBeforePair ∧
+                  OperationEnabled previous
+                    (OccupancyAfter following occupiedBeforePair)) := by
+  rcases
+      proper_transitive_subrelation_allows_undefined_historyPrefix history
+        (weaker := weaker) weaker_transitive weaker_is_subrelation
+        subrelation_is_proper with
+    ⟨following, previous, preceding, prefixRemaining, occupiedBeforePair,
+      cover_pair, pair_omitted, prefix_permuted, prefix_respects,
+      preceding_execution, reverse_not_enabled⟩
+  have following_is_operation : isOperation following :=
+    (calculated_coverPair_is_relatedPrevious history cover_pair).1
+  have prefix_before_full : following.operationOrder + 1 ≤ operationCount := by
+    exact
+      history.operationOrder_lt_of_stopped history_stopped
+        following_is_operation
+  rcases
+      history.exists_respecting_operationsBefore_extension
+        weaker_is_subrelation prefix_before_full prefix_permuted
+        prefix_respects with
+    ⟨laterOperations, full_permuted, full_respects⟩
+  refine
+    ⟨following, previous, preceding, prefixRemaining ++ laterOperations,
+      occupiedBeforePair, cover_pair, pair_omitted, ?_, ?_,
+      preceding_execution, reverse_not_enabled⟩
+  · simpa [List.append_assoc] using full_permuted
+  · simpa [List.append_assoc] using full_respects
+
 section TypeContracts
 
 example {isOperation : ParticleOperation → Prop} :
@@ -262,6 +321,35 @@ example {isOperation : ParticleOperation → Prop} :
                           OperationEnabled previous
                             (OccupancyAfter following occupiedBeforePair)) :=
   proper_transitive_subrelation_allows_undefined_historyPrefix
+
+example {isOperation : ParticleOperation → Prop} :
+    ∀ (history : ValidResolvedHistory isOperation) (operationCount : Nat),
+      history.operationAt operationCount = none →
+        ∀ (weaker : ParticleOperation → ParticleOperation → Prop),
+          (∀ {following intermediate previous},
+              weaker following intermediate →
+                weaker intermediate previous → weaker following previous) →
+            (∀ following previous,
+                weaker following previous →
+                  Reaches (CalculatedDependency history) following previous) →
+              (∃ following previous,
+                  Reaches (CalculatedDependency history) following previous ∧
+                    ¬weaker following previous) →
+                ∃ following previous preceding remaining occupiedBeforePair,
+                  CoverPair (Reaches (CalculatedDependency history)) following
+                        previous ∧
+                    ¬weaker following previous ∧
+                      (history.operationsBefore operationCount).Perm
+                          (preceding ++ following :: previous :: remaining) ∧
+                        RespectsPrecedence weaker
+                            (preceding ++ following :: previous :: remaining) ∧
+                          ScheduleExecution history.observation preceding
+                              (history.occupiedBefore 0) occupiedBeforePair ∧
+                            ¬(OperationEnabled following occupiedBeforePair ∧
+                              OperationEnabled previous
+                                (OccupancyAfter following
+                                  occupiedBeforePair)) :=
+  stopped_proper_transitive_subrelation_allows_undefined_schedule
 
 end TypeContracts
 

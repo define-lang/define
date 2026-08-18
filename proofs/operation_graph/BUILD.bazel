@@ -288,6 +288,7 @@ lean_axiom_test(
         "Define.OperationGraph.calculated_coverPair_has_irreversible_adjacent_finite_execution",
         "Define.OperationGraph.calculated_coverPair_reverse_not_enabled",
         "Define.OperationGraph.proper_transitive_subrelation_allows_undefined_historyPrefix",
+        "Define.OperationGraph.stopped_proper_transitive_subrelation_allows_undefined_schedule",
     ],
     deps = [":cover_schedule_necessity"],
 )
@@ -532,8 +533,10 @@ lean_axiom_test(
     ],
     imports = ["finite_history_schedule"],
     theorems = [
+        "Define.OperationGraph.ValidResolvedHistory.exists_respecting_operationsBefore_extension",
         "Define.OperationGraph.ValidResolvedHistory.operationAt_mem_operationsBefore",
         "Define.OperationGraph.ValidResolvedHistory.operationOrder_lt_of_stopped",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_append_of_le",
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_execution",
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_iff_of_stopped",
         "Define.OperationGraph.ValidResolvedHistory.operationsBefore_nodup",
@@ -563,6 +566,7 @@ lean_axiom_test(
         "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
         "Define.OperationGraph.RespectsPrecedence.append",
         "Define.OperationGraph.RespectsPrecedence.mono",
+        "Define.OperationGraph.RespectsPrecedence.right_of_append",
         "Define.OperationGraph.RespectsPrecedence.snoc",
         "Define.OperationGraph.RespectsPrecedence.sublist",
         "Define.OperationGraph.exists_order_preserving_complement",
