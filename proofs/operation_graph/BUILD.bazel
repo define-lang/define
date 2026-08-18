@@ -461,7 +461,13 @@ lean_axiom_test(
         "Quot.sound",
     ],
     imports = ["maximum_safe_concurrency"],
-    theorems = ["Define.OperationGraph.occupancyAfter_comm"],
+    theorems = [
+        "Define.OperationGraph.available_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.exchange_unrelated_enabled_operations",
+        "Define.OperationGraph.occupancyAfter_comm",
+        "Define.OperationGraph.operationEnabled_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.operationObservation_occupancyAfter_of_not_related",
+    ],
     deps = [":maximum_safe_concurrency"],
 )
 

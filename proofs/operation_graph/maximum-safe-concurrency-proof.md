@@ -24,11 +24,12 @@ follow that every occupancy-equivalent total order is allowed. The
 counterexample in “Why the Result Is Not a Global Maximum” shows why that
 stronger claim is false.
 
-The Lean theorem `occupancyAfter_comm` in
-[`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) checks the
-central state-transition fact: operations on pairwise unrelated positions
-commute. The preservation of operation preconditions, the argument about linear
-orders, and the necessity result are proved in this document rather than in
+The Lean theorem `exchange_unrelated_enabled_operations` in
+[`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) formalizes the
+central adjacent-exchange result: exchanging enabled operations on pairwise
+unrelated positions preserves their preconditions, their occupancy observations,
+and the occupancy state after the pair. The argument about complete execution
+schedules and the necessity result are proved in this document rather than in
 Lean.
 
 ## Definitions

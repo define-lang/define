@@ -4,16 +4,17 @@ set_option warningAsError true
 set_option autoImplicit false
 
 /-!
-# Commutation of Unrelated Particle Operations
+# Adjacent Exchange of Unrelated Particle Operations
 
-This file formalizes the commutation lemma of
-`maximum-safe-concurrency-proof.md`: two adjacent Particle
-Operations whose operated positions are pairwise unrelated produce the same
-occupancy state after either composition of their state transformations. That
-lemma is the semantic core of the sufficiency half of the occupancy-concurrency
-proof: any finite or natural-number-indexed execution schedule consistent with
-the transitive closure of the related-and-previous relation can be constructed
-prefix by prefix through adjacent exchanges of exactly such pairs.
+This file formalizes the adjacent-exchange lemma of
+`maximum-safe-concurrency-proof.md`: two adjacent enabled Particle Operations
+whose operated positions are pairwise unrelated can execute in either order,
+observe the same occupancy, and produce the same occupancy state after the
+pair. That lemma is the semantic core of the sufficiency half of the
+occupancy-concurrency proof: any finite or natural-number-indexed execution
+schedule consistent with the transitive closure of the related-and-previous
+relation can be constructed prefix by prefix through adjacent exchanges of
+exactly such pairs.
 
 The scheduling argument, its extension to unbounded histories, and the necessity
 half (every cover pair of the closure is a mandatory ordering) remain in the
@@ -28,6 +29,51 @@ occupancy state.
 -/
 
 namespace Define.OperationGraph
+
+/--
+The occupancy preconditions of one resolved Particle Operation.
+-/
+def OperationEnabled (operation : ParticleOperation)
+    (occupied : Position → Prop) : Prop :=
+  match operation.kind with
+  | .create target => Available occupied target ∧ ¬occupied target
+  | .destroy target => occupied target
+  | .move source target =>
+      occupied source ∧
+        Available occupied target ∧
+          ¬occupied target ∧ ¬ParentOrSame source target
+
+/--
+The occupancy values observed at the positions on which the operation acts.
+-/
+def OperationObservation (operation : ParticleOperation)
+    (occupied : Position → Prop) : Position → Prop :=
+  fun position => OperatesOn operation position ∧ occupied position
+
+/--
+The facts preserved when two adjacent operations exchange places.
+-/
+structure OccupancyEquivalentExchange
+    (firstOperation secondOperation : ParticleOperation)
+    (occupiedBefore : Position → Prop) : Prop where
+  exchanged_first_enabled : OperationEnabled secondOperation occupiedBefore
+  exchanged_second_enabled :
+    OperationEnabled firstOperation
+      (OccupancyAfter secondOperation occupiedBefore)
+  first_observation_preserved :
+    OperationObservation firstOperation occupiedBefore =
+      OperationObservation firstOperation
+        (OccupancyAfter secondOperation occupiedBefore)
+  second_observation_preserved :
+    OperationObservation secondOperation
+        (OccupancyAfter firstOperation occupiedBefore) =
+      OperationObservation secondOperation occupiedBefore
+  final_occupancy_equal :
+    ∀ position,
+      OccupancyAfter secondOperation
+          (OccupancyAfter firstOperation occupiedBefore) position ↔
+        OccupancyAfter firstOperation
+          (OccupancyAfter secondOperation occupiedBefore) position
 
 /--
 The operation has an operated position that is the same as this position or a
@@ -148,6 +194,110 @@ theorem not_affects_of_affects_of_not_related
       ⟨firstOperated, secondOperated, first_operates, second_operates,
         related_of_parentOrSame_of_parentOrSame first_parent second_parent⟩
 
+/--
+An unrelated operation cannot affect a parent position needed to make an
+operated position available.
+-/
+theorem not_affects_parent_of_operated_of_not_related
+    {firstOperation secondOperation : ParticleOperation}
+    {operatedPosition parentPosition : Position}
+    (not_related : ¬OperationsRelated firstOperation secondOperation)
+    (first_operates : OperatesOn firstOperation operatedPosition)
+    (parent_of_operated : ParentOrSame parentPosition operatedPosition) :
+    ¬AffectsPosition secondOperation parentPosition := by
+  rintro ⟨secondOperated, second_operates, second_parent⟩
+  exact
+    not_related
+      ⟨operatedPosition, secondOperated, first_operates, second_operates,
+        Or.inr (second_parent.trans parent_of_operated)⟩
+
+theorem available_occupancyAfter_iff_of_not_related
+    {firstOperation secondOperation : ParticleOperation}
+    {occupiedBefore : Position → Prop} {position : Position}
+    (not_related : ¬OperationsRelated firstOperation secondOperation)
+    (first_operates : OperatesOn firstOperation position) :
+    (Available (OccupancyAfter secondOperation occupiedBefore) position ↔
+      Available occupiedBefore position) := by
+  constructor
+  · intro available_after parent parent_of_position parent_is_not_position
+    exact
+      (occupancyAfter_of_not_affects
+        (not_affects_parent_of_operated_of_not_related not_related
+          first_operates parent_of_position)).mp
+        (available_after parent parent_of_position parent_is_not_position)
+  · intro available_before parent parent_of_position parent_is_not_position
+    exact
+      (occupancyAfter_of_not_affects
+        (not_affects_parent_of_operated_of_not_related not_related
+          first_operates parent_of_position)).mpr
+        (available_before parent parent_of_position parent_is_not_position)
+
+/--
+An unrelated operation preserves all occupancy preconditions of the other
+operation.
+-/
+theorem operationEnabled_occupancyAfter_iff_of_not_related
+    {firstOperation secondOperation : ParticleOperation}
+    {occupiedBefore : Position → Prop}
+    (not_related : ¬OperationsRelated firstOperation secondOperation) :
+    (OperationEnabled firstOperation
+        (OccupancyAfter secondOperation occupiedBefore) ↔
+      OperationEnabled firstOperation occupiedBefore) := by
+  cases operation_kind : firstOperation.kind with
+  | create target =>
+      have first_operates : OperatesOn firstOperation target := by
+        simp [OperatesOn, operation_kind]
+      have second_clear : ¬AffectsPosition secondOperation target :=
+        not_affects_of_affects_of_not_related not_related
+          ⟨target, first_operates, List.prefix_rfl⟩
+      simp only [OperationEnabled, operation_kind]
+      rw [available_occupancyAfter_iff_of_not_related not_related first_operates,
+        occupancyAfter_of_not_affects second_clear]
+  | destroy target =>
+      have first_operates : OperatesOn firstOperation target := by
+        simp [OperatesOn, operation_kind]
+      have second_clear : ¬AffectsPosition secondOperation target :=
+        not_affects_of_affects_of_not_related not_related
+          ⟨target, first_operates, List.prefix_rfl⟩
+      simp only [OperationEnabled, operation_kind]
+      exact occupancyAfter_of_not_affects second_clear
+  | move source target =>
+      have first_operates_source : OperatesOn firstOperation source := by
+        simp [OperatesOn, operation_kind]
+      have first_operates_target : OperatesOn firstOperation target := by
+        simp [OperatesOn, operation_kind]
+      have second_clear_source : ¬AffectsPosition secondOperation source :=
+        not_affects_of_affects_of_not_related not_related
+          ⟨source, first_operates_source, List.prefix_rfl⟩
+      have second_clear_target : ¬AffectsPosition secondOperation target :=
+        not_affects_of_affects_of_not_related not_related
+          ⟨target, first_operates_target, List.prefix_rfl⟩
+      simp only [OperationEnabled, operation_kind]
+      rw [occupancyAfter_of_not_affects second_clear_source,
+        available_occupancyAfter_iff_of_not_related not_related
+          first_operates_target,
+        occupancyAfter_of_not_affects second_clear_target]
+
+/--
+An unrelated operation preserves the occupancy observation of the other
+operation.
+-/
+theorem operationObservation_occupancyAfter_of_not_related
+    {firstOperation secondOperation : ParticleOperation}
+    {occupiedBefore : Position → Prop}
+    (not_related : ¬OperationsRelated firstOperation secondOperation) :
+    OperationObservation firstOperation
+        (OccupancyAfter secondOperation occupiedBefore) =
+      OperationObservation firstOperation occupiedBefore := by
+  funext position
+  apply propext
+  simp only [OperationObservation, and_congr_right_iff]
+  intro first_operates
+  exact
+    occupancyAfter_of_not_affects
+      (not_affects_of_affects_of_not_related not_related
+        ⟨position, first_operates, List.prefix_rfl⟩)
+
 theorem occupancyAfter_comm_of_not_affects
     {firstOperation secondOperation : ParticleOperation}
     {occupiedBefore : Position → Prop} {position : Position}
@@ -192,5 +342,34 @@ theorem occupancyAfter_comm
         (fun related => not_related (operationsRelated_symm related))
         first_clear).symm
   · exact occupancyAfter_comm_of_not_affects not_related second_affects
+
+/--
+Exchanging adjacent enabled operations on unrelated positions preserves
+definedness, both occupancy observations, and the occupancy state after the
+pair.
+-/
+theorem exchange_unrelated_enabled_operations
+    {firstOperation secondOperation : ParticleOperation}
+    {occupiedBefore : Position → Prop}
+    (not_related : ¬OperationsRelated firstOperation secondOperation)
+    (first_enabled : OperationEnabled firstOperation occupiedBefore)
+    (second_enabled :
+      OperationEnabled secondOperation
+        (OccupancyAfter firstOperation occupiedBefore)) :
+    OccupancyEquivalentExchange firstOperation secondOperation
+      occupiedBefore where
+  exchanged_first_enabled :=
+    (operationEnabled_occupancyAfter_iff_of_not_related
+      (fun related => not_related (operationsRelated_symm related))).mp
+      second_enabled
+  exchanged_second_enabled :=
+    (operationEnabled_occupancyAfter_iff_of_not_related not_related).mpr
+      first_enabled
+  first_observation_preserved :=
+    (operationObservation_occupancyAfter_of_not_related not_related).symm
+  second_observation_preserved :=
+    operationObservation_occupancyAfter_of_not_related
+      (fun related => not_related (operationsRelated_symm related))
+  final_occupancy_equal := occupancyAfter_comm not_related
 
 end Define.OperationGraph
