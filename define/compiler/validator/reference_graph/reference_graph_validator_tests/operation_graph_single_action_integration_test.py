@@ -218,6 +218,33 @@ def test_destroy_reduces_its_own_position_create_edge(
     }
 
 
+def test_comparison_excluded_candidate_still_excludes_older_candidate(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert operation_dependencies(result.operation_graphs) == {
+        "test.create(parent)": [],
+        "test.create(parent::/child)": ["test.create(parent)"],
+        "test.create(parent::/child::/grandchild_x)": ["test.create(parent::/child)"],
+        "test.destroy(parent::/child::/grandchild_x)": [
+            "test.create(parent::/child::/grandchild_x)"
+        ],
+        "test.destroy(parent::/child)": ["test.destroy(parent::/child::/grandchild_x)"],
+        "test.create(parent::/child)#2": ["test.destroy(parent::/child)"],
+        "test.create(parent::/child::/grandchild_y)": ["test.create(parent::/child)#2"],
+        "test.destroy(parent::/child::/grandchild_y)": [
+            "test.create(parent::/child::/grandchild_y)"
+        ],
+        # The recreated child is excluded by the later grandchild_y Destroy, but
+        # still excludes the older grandchild_x Destroy during Comparison.
+        "test.destroy(parent::/child)#2": [
+            "test.destroy(parent::/child::/grandchild_y)"
+        ],
+        "test.destroy(parent)": ["test.destroy(parent::/child)#2"],
+    }
+
+
 def test_destroy_excludes_an_earlier_move_reached_through_a_child_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
