@@ -448,8 +448,10 @@ lean_axiom_test(
     theorems = [
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.complete_dependency_iff",
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.validHistory",
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.weakened_rules_derive_graph",
     ],
     deps = [":empty_rule_child_positions_independence_witness"],
 )
@@ -521,8 +523,6 @@ lean_library(
         ":calculation_correctness",
         ":independence_witness_support",
         ":minimality",
-        ":move_child_entries_independence_witness",
-        ":move_correction_independence_witness",
         ":witness_support",
     ],
 )
@@ -539,8 +539,10 @@ lean_axiom_test(
     theorems = [
         "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.complete_dependency_iff",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.validHistory",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_rules_derive_graph",
     ],
     deps = [":fill_rule_most_recent_independence_witness"],
 )
@@ -568,8 +570,10 @@ lean_axiom_test(
     theorems = [
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_dependency_iff",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.validHistory",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.weakened_misses_required_ordering",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.weakened_rules_derive_graph",
     ],
     deps = [":fill_rule_parent_positions_independence_witness"],
 )

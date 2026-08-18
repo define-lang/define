@@ -261,7 +261,7 @@ resolved rules. ∎
 ## What this theorem does not establish
 
 The theorem defines the graph and proves that the definition is not circular. It
-does not yet prove:
+does not prove:
 
 - that the direct dependency set is a reachability antichain;
 - that every direct dependency is necessary;

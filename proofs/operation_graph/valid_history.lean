@@ -15,11 +15,12 @@ Operation may be queried at each index. It remains independent of every
 operation graph rule; deriving that name trace from resolved Define source is a
 separate formalization boundary.
 
-`ExactOccupancyExecution` is the stronger interface consumed by the existing
-minimality and completeness modules. It remains temporarily while those modules
-are migrated to the universal calculation-correctness construction; unlike
-`ValidResolvedHistory`, it assumes prefix closure at every index. No new theorem
-should use that field as a substitute for the derived prefix-closure theorem.
+`ExactOccupancyExecution` is the smaller derived interface consumed by the
+minimality and completeness arguments through the universal
+calculation-correctness construction. Unlike `ValidResolvedHistory`, it exposes
+prefix closure at every index as a field. Every calculated graph obtains that
+interface from the derived prefix-closure theorem rather than assuming it in a
+public result.
 -/
 
 namespace Define.OperationGraph

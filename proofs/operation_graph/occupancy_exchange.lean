@@ -17,8 +17,9 @@ relation can be constructed prefix by prefix through adjacent exchanges of
 exactly such pairs.
 
 Finite schedule execution and its order-theoretic exchange argument are
-formalized in separate modules that import this one. The unbounded-history
-extension and the necessity half remain in the English document.
+formalized in separate modules that import this one. Those modules also extend
+the result to unbounded histories and prove the necessity half of maximum safe
+concurrency.
 
 An operation can change occupancy only at its operated positions and their
 transitive child positions, and it reads occupancy only at the queried
