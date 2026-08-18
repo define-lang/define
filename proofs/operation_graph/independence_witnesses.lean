@@ -7,6 +7,7 @@ import fill_rule_parent_positions_independence_witness
 import independence_witness_support
 import minimality
 import move_child_entries_independence_witness
+import move_correction_independence_witness
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -25,11 +26,10 @@ exactly one clause.
   unchanged, exhibited by a path that avoids the edge.
 
 The extracted Fill Rule parent-position and most-recent witnesses, Empty Rule
-child-position witness, Move child-entry witness, and Comparison simultaneity
-witness use the universal calculation for their complete side. The Fill
-Dependency removal section below does the same by reusing its fully resolved
-witness. The remaining sections still use the executable support model for both
-sides and are migrated in subsequent increments.
+child-position witness, Move child-entry witness, Move Correction witness, and
+Comparison simultaneity witness use the universal calculation for their
+complete side. The Fill Dependency removal section below does the same by
+reusing its fully resolved witness.
 
 This proof makes no independence claim for the Empty Rule's transitive-parent
 collection. An earlier proposed witness destroyed a child position that had
@@ -40,144 +40,6 @@ child operation also supplies a path to the parent operation.
 namespace Define.OperationGraph
 
 namespace IndependenceWitnesses
-
-/-!
-## The Move Correction
-
-History: `create box`, `create box::origin`, `move box::origin holder_a`,
-`move holder_a box::middle`, `move box::middle box::target`,
-`move box::target holder_c`, `destroy box`. This is the history of
-`test_destroy_excludes_earlier_child_move_reached_through_later_child_move`.
-
-Complete Empty Rule at the box Destroy: after the Comparison, the remaining
-candidates are the final Move (entry for `box::target`) and the first Move
-(entry for `box::origin`, whose positions are unrelated to the final Move's
-positions). The first Move is a Move Particle Statement that the final Move
-depends on through the chain, so the Move Correction removes it and the
-Destroy depends exactly on the final Move.
-
-Weakened rule (no Move Correction): the Destroy keeps a second dependency on
-the first Move. That edge is redundant: the final Move's chain already
-reaches the first Move.
--/
-
-namespace MoveCorrection
-
-def boxPosition : Position := [0]
-
-def originPosition : Position := [0, 0]
-
-def middlePosition : Position := [0, 1]
-
-def targetPosition : Position := [0, 2]
-
-def holderAPosition : Position := [1]
-
-def holderCPosition : Position := [2]
-
-def createBox : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create boxPosition
-
-def createOrigin : ParticleOperation where
-  operationOrder := 1
-  actionParent := []
-  kind := .create originPosition
-
-def moveOriginToHolderA : ParticleOperation where
-  operationOrder := 2
-  actionParent := []
-  kind := .move originPosition holderAPosition
-
-def moveHolderAToMiddle : ParticleOperation where
-  operationOrder := 3
-  actionParent := []
-  kind := .move holderAPosition middlePosition
-
-def moveMiddleToTarget : ParticleOperation where
-  operationOrder := 4
-  actionParent := []
-  kind := .move middlePosition targetPosition
-
-def moveTargetToHolderC : ParticleOperation where
-  operationOrder := 5
-  actionParent := []
-  kind := .move targetPosition holderCPosition
-
-def destroyBox : ParticleOperation where
-  operationOrder := 6
-  actionParent := []
-  kind := .destroy boxPosition
-
-def completeDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createOrigin then some createBox
-    else if operation = moveOriginToHolderA then some createOrigin
-    else if operation = moveHolderAToMiddle then some moveOriginToHolderA
-    else if operation = moveMiddleToTarget then some moveHolderAToMiddle
-    else if operation = moveTargetToHolderC then some moveMiddleToTarget
-    else if operation = destroyBox then some moveTargetToHolderC
-    else none
-
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  completeDependencyTarget operation = some dependencyOperation
-
-abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  CompleteDependency operation dependencyOperation ∨
-    (operation = destroyBox ∧ dependencyOperation = moveOriginToHolderA)
-
-def history : List ParticleOperation :=
-  [createBox, createOrigin, moveOriginToHolderA, moveHolderAToMiddle,
-    moveMiddleToTarget, moveTargetToHolderC, destroyBox]
-
-def weakenedRules : RuleVariant :=
-  { completeRules with moveCorrection := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
-
-theorem weakened_rules_derive_graph :
-    calculate weakenedRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (WeakenedDependency operation dependencyOperation)) := by
-  decide
-
-theorem complete_transitively_minimal :
-    TransitivelyMinimal CompleteDependency :=
-  transitivelyMinimal_of_at_most_one_dependency CompleteDependency
-    fun _ _ _ first_edge second_edge =>
-      Option.some.inj (first_edge.symm.trans second_edge)
-
-theorem weakened_not_transitively_minimal :
-    ¬TransitivelyMinimal WeakenedDependency := by
-  intro minimal
-  have edge_0 :
-      WithoutEdge WeakenedDependency destroyBox moveOriginToHolderA
-        destroyBox moveTargetToHolderC :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_1 :
-      WithoutEdge WeakenedDependency destroyBox moveOriginToHolderA
-        moveTargetToHolderC moveMiddleToTarget :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_2 :
-      WithoutEdge WeakenedDependency destroyBox moveOriginToHolderA
-        moveMiddleToTarget moveHolderAToMiddle :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_3 :
-      WithoutEdge WeakenedDependency destroyBox moveOriginToHolderA
-        moveHolderAToMiddle moveOriginToHolderA :=
-    ⟨Or.inl (by decide), by decide⟩
-  exact
-    minimal destroyBox moveOriginToHolderA (Or.inr ⟨rfl, rfl⟩)
-      (.step edge_0 (.step edge_1 (.step edge_2 (.direct edge_3))))
-
-end MoveCorrection
 
 /-!
 ## The Move Rule's Fill Dependency removal

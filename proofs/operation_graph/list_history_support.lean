@@ -111,12 +111,34 @@ structure Conditions (operations : List ParticleOperation) where
         OperatesOn operation position →
           ParentOrSame operation.actionParent position
 
-def validHistory (operations : List ParticleOperation)
-    (conditions : Conditions operations) :
+structure QueryableConditions (operations : List ParticleOperation)
+    (queryableBefore : Nat → Position → Prop) where
+  queryable_prefix_closed :
+    ∀ operationOrder, PrefixClosed (queryableBefore operationOrder)
+  occupied_position_is_queryable :
+    ∀ operationOrder position,
+      occupiedBefore operations operationOrder position →
+        queryableBefore operationOrder position
+  operated_position_is_queryable :
+    ∀ operation position,
+      IsOperation operations operation →
+        OperatesOn operation position →
+          queryableBefore operation.operationOrder position
+  operated_position_remains_queryable :
+    ∀ operationOrder operation position,
+      IsOperation operations operation →
+        operation.operationOrder < operationOrder →
+          OperatesOn operation position →
+            queryableBefore operationOrder position
+
+def validHistoryWithQueryable (operations : List ParticleOperation)
+    (conditions : Conditions operations)
+    (queryableBefore : Nat → Position → Prop)
+    (queryableConditions : QueryableConditions operations queryableBefore) :
     ValidResolvedHistory (IsOperation operations) where
   operationAt := operationAt operations
   occupiedBefore := occupiedBefore operations
-  queryableBefore := fun _ _ => True
+  queryableBefore := queryableBefore
   member_operation_at := conditions.member_operation_at
   operation_at_is_member := by
     intro operationOrder operation operation_at
@@ -128,19 +150,13 @@ def validHistory (operations : List ParticleOperation)
   initial_prefix_closed := by
     intro parent child parent_of_child child_occupied
     exact List.eq_nil_of_prefix_nil (child_occupied ▸ parent_of_child)
-  queryable_prefix_closed := by
-    intro operationOrder parent child parent_of_child child_queryable
-    trivial
-  occupied_position_is_queryable := by
-    intro operationOrder position position_occupied
-    trivial
-  operated_position_is_queryable := by
-    intro operation position operation_member operates_on_position
-    trivial
-  operated_position_remains_queryable := by
-    intro operationOrder operation position operation_member operation_before
-      operates_on_position
-    trivial
+  queryable_prefix_closed := queryableConditions.queryable_prefix_closed
+  occupied_position_is_queryable :=
+    queryableConditions.occupied_position_is_queryable
+  operated_position_is_queryable :=
+    queryableConditions.operated_position_is_queryable
+  operated_position_remains_queryable :=
+    queryableConditions.operated_position_remains_queryable
   empty_position_is_occupied := conditions.empty_position_is_occupied
   fill_position_is_available := conditions.fill_position_is_available
   fill_position_is_empty := conditions.fill_position_is_empty
@@ -164,6 +180,28 @@ def validHistory (operations : List ParticleOperation)
             (occupiedBefore operations operationOrder) position
       | none => occupiedBefore operations operationOrder position) ↔ _
     rw [no_operation]
+
+theorem universally_queryable_conditions (operations : List ParticleOperation) :
+    QueryableConditions operations (fun _ _ => True) where
+  queryable_prefix_closed := by
+    intro operationOrder parent child parent_of_child child_queryable
+    trivial
+  occupied_position_is_queryable := by
+    intro operationOrder position position_occupied
+    trivial
+  operated_position_is_queryable := by
+    intro operation position operation_member operates_on_position
+    trivial
+  operated_position_remains_queryable := by
+    intro operationOrder operation position operation_member operation_before
+      operates_on_position
+    trivial
+
+def validHistory (operations : List ParticleOperation)
+    (conditions : Conditions operations) :
+    ValidResolvedHistory (IsOperation operations) :=
+  validHistoryWithQueryable operations conditions (fun _ _ => True)
+    (universally_queryable_conditions operations)
 
 end ListHistory
 
