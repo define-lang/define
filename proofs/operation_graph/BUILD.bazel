@@ -21,6 +21,7 @@ filegroup(
         ":maximum_safe_concurrency",
         ":minimality",
         ":minimality_witnesses",
+        ":move_child_entries_independence_witness",
         ":moved_child_entry_witness",
         ":non_vacuity_witness",
         ":valid_history",
@@ -246,6 +247,7 @@ lean_library(
         ":calculation_correctness",
         ":independence_witness_support",
         ":minimality",
+        ":move_child_entries_independence_witness",
         ":witness_support",
     ],
 )
@@ -326,6 +328,7 @@ lean_library(
         ":fill_rule_parent_positions_independence_witness",
         ":independence_witness_support",
         ":minimality",
+        ":move_child_entries_independence_witness",
     ],
 )
 
@@ -335,7 +338,6 @@ lean_axiom_test(
     allowed_axioms = [],
     imports = ["independence_witnesses"],
     theorems = [
-        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.MoveCorrection.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
@@ -411,6 +413,34 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "move_child_entries_independence_witness",
+    srcs = ["move_child_entries_independence_witness.lean"],
+    deps = [
+        ":independence_witness_support",
+        ":minimality",
+        ":moved_child_entry_witness",
+    ],
+)
+
+lean_axiom_test(
+    name = "move_child_entries_independence_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["move_child_entries_independence_witness"],
+    theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.complete_destroy_dependency",
+        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.weakened_rules_derive_graph",
+    ],
+    deps = [":move_child_entries_independence_witness"],
+)
+
+lean_library(
     name = "moved_child_entry_witness",
     srcs = ["moved_child_entry_witness.lean"],
     deps = [
@@ -432,6 +462,7 @@ lean_axiom_test(
         "Define.OperationGraph.MovedChildEntry.calculated_dependency",
         "Define.OperationGraph.MovedChildEntry.exact_dependency",
         "Define.OperationGraph.MovedChildEntry.history",
+        "Define.OperationGraph.MovedChildEntry.move_again_writes_final_child",
         "Define.OperationGraph.MovedChildEntry.move_parent_after_comparison",
         "Define.OperationGraph.MovedChildEntry.move_writes_target_child",
         "Define.OperationGraph.MovedChildEntry.moved_child_source_candidate",

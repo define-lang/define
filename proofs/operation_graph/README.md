@@ -77,14 +77,14 @@ The other files are supporting evidence, not links in the universal proof chain.
 assuming a graph property; `non_vacuity_witness.lean` applies the actual
 calculation to that history. `vanished_child_name_witness.lean` applies the same
 path to a history retaining a queryable name after its particle vanishes, and
-`moved_child_entry_witness.lean` proves the corresponding transitive-child entry
-for a Move. Witness-only general lemmas flow through `witness_support.lean`.
-`fill_dependency_removal_witness.lean` derives both sides of the Move Rule's
-reachability check, and `minimality_witnesses.lean` aggregates these concrete
-models. Clause-specific independence witness modules apply the complete
-calculation to a valid history and share an executable evaluator for variants
-changing one clause; `independence_witnesses.lean` aggregates them. Their
-explanations live beside the executable models in those modules.
-`minimality_checker.py` searches bounded concrete histories for counterexamples.
-None of these witnesses or bounded searches substitutes for the universal
-English and Lean proofs above.
+`moved_child_entry_witness.lean` proves the corresponding transitive-child
+entries across consecutive Moves. Witness-only general lemmas flow through
+`witness_support.lean`. `fill_dependency_removal_witness.lean` derives both
+sides of the Move Rule's reachability check, and `minimality_witnesses.lean`
+aggregates these concrete models. Clause-specific independence witness modules
+apply the complete calculation to a valid history and share an executable
+evaluator for variants changing one clause; `independence_witnesses.lean`
+aggregates them. Their explanations live beside the executable models in those
+modules. `minimality_checker.py` searches bounded concrete histories for
+counterexamples. None of these witnesses or bounded searches substitutes for the
+universal English and Lean proofs above.

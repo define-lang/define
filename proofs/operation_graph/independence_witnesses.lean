@@ -5,6 +5,7 @@ import fill_rule_most_recent_independence_witness
 import fill_rule_parent_positions_independence_witness
 import independence_witness_support
 import minimality
+import move_child_entries_independence_witness
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -22,11 +23,12 @@ exactly one clause.
 - A *redundant dependency* is a direct edge whose removal leaves reachability
   unchanged, exhibited by a path that avoids the edge.
 
-The extracted Fill Rule parent-position and most-recent witnesses and the Empty
-Rule child-position witness use the universal calculation for their complete
-side. The Fill Dependency removal section below does the same by reusing its
-fully resolved witness. The remaining sections still use the executable support
-model for both sides and are migrated in subsequent increments.
+The extracted Fill Rule parent-position and most-recent witnesses, Empty Rule
+child-position witness, and Move child-entry witness use the universal
+calculation for their complete side. The Fill Dependency removal section below
+does the same by reusing its fully resolved witness. The remaining sections
+still use the executable support model for both sides and are migrated in
+subsequent increments.
 
 This proof makes no independence claim for the Empty Rule's transitive-parent
 collection. An earlier proposed witness destroyed a child position that had
@@ -37,126 +39,6 @@ child operation also supplies a path to the parent operation.
 namespace Define.OperationGraph
 
 namespace IndependenceWitnesses
-
-
-
-/-!
-## The Move as an operation on the moved particle's transitive child positions
-
-History: `create box`, `create box::item`, `move box holder_a`,
-`move holder_a holder_b`, `destroy holder_b::item`. This is the history of
-`test_move_excludes_create_on_child_reached_through_parent_move_chain`.
-
-Complete Empty Rule: each Move is also a Particle Operation on the moved
-particle's transitive child positions, so the entry for the item's position is
-the latest parent Move, and the item Destroy depends exactly on it.
-
-Weakened rule (a Move is an operation only on its source and target
-positions): the entry for the item remains the original Create under its
-first name, whose position is unrelated to the Moves' positions, so the
-Comparison cannot exclude it and the Destroy keeps a second dependency on the
-Create. That edge is redundant: the Move chain already reaches the Create.
--/
-
-namespace MoveChildEntries
-
-def boxPosition : Position := [0]
-
-def itemPosition : Position := [0, 0]
-
-def holderAPosition : Position := [1]
-
-def holderBPosition : Position := [2]
-
-def movedItemPosition : Position := [2, 0]
-
-def createBox : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create boxPosition
-
-def createItem : ParticleOperation where
-  operationOrder := 1
-  actionParent := []
-  kind := .create itemPosition
-
-def moveBoxToHolderA : ParticleOperation where
-  operationOrder := 2
-  actionParent := []
-  kind := .move boxPosition holderAPosition
-
-def moveHolderAToHolderB : ParticleOperation where
-  operationOrder := 3
-  actionParent := []
-  kind := .move holderAPosition holderBPosition
-
-def destroyMovedItem : ParticleOperation where
-  operationOrder := 4
-  actionParent := []
-  kind := .destroy movedItemPosition
-
-def completeDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createItem then some createBox
-    else if operation = moveBoxToHolderA then some createItem
-    else if operation = moveHolderAToHolderB then some moveBoxToHolderA
-    else if operation = destroyMovedItem then some moveHolderAToHolderB
-    else none
-
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  completeDependencyTarget operation = some dependencyOperation
-
-abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  CompleteDependency operation dependencyOperation ∨
-    (operation = destroyMovedItem ∧ dependencyOperation = createItem)
-
-def history : List ParticleOperation :=
-  [createBox, createItem, moveBoxToHolderA, moveHolderAToHolderB,
-    destroyMovedItem]
-
-def weakenedRules : RuleVariant :=
-  { completeRules with moveChildEntries := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
-
-theorem weakened_rules_derive_graph :
-    calculate weakenedRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (WeakenedDependency operation dependencyOperation)) := by
-  decide
-
-theorem complete_transitively_minimal :
-    TransitivelyMinimal CompleteDependency :=
-  transitivelyMinimal_of_at_most_one_dependency CompleteDependency
-    fun _ _ _ first_edge second_edge =>
-      Option.some.inj (first_edge.symm.trans second_edge)
-
-theorem weakened_not_transitively_minimal :
-    ¬TransitivelyMinimal WeakenedDependency := by
-  intro minimal
-  have edge_0 :
-      WithoutEdge WeakenedDependency destroyMovedItem createItem
-        destroyMovedItem moveHolderAToHolderB :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_1 :
-      WithoutEdge WeakenedDependency destroyMovedItem createItem
-        moveHolderAToHolderB moveBoxToHolderA :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_2 :
-      WithoutEdge WeakenedDependency destroyMovedItem createItem
-        moveBoxToHolderA createItem :=
-    ⟨Or.inl (by decide), by decide⟩
-  exact
-    minimal destroyMovedItem createItem (Or.inr ⟨rfl, rfl⟩)
-      (.step edge_0 (.step edge_1 (.direct edge_2)))
-
-end MoveChildEntries
 
 /-!
 ## The Comparison's simultaneity
