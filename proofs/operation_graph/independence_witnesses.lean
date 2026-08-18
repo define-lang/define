@@ -1,3 +1,4 @@
+import comparison_simultaneity_independence_witness
 import definitions
 import empty_rule_child_positions_independence_witness
 import fill_dependency_removal_witness
@@ -24,11 +25,11 @@ exactly one clause.
   unchanged, exhibited by a path that avoids the edge.
 
 The extracted Fill Rule parent-position and most-recent witnesses, Empty Rule
-child-position witness, and Move child-entry witness use the universal
-calculation for their complete side. The Fill Dependency removal section below
-does the same by reusing its fully resolved witness. The remaining sections
-still use the executable support model for both sides and are migrated in
-subsequent increments.
+child-position witness, Move child-entry witness, and Comparison simultaneity
+witness use the universal calculation for their complete side. The Fill
+Dependency removal section below does the same by reusing its fully resolved
+witness. The remaining sections still use the executable support model for both
+sides and are migrated in subsequent increments.
 
 This proof makes no independence claim for the Empty Rule's transitive-parent
 collection. An earlier proposed witness destroyed a child position that had
@@ -39,159 +40,6 @@ child operation also supplies a path to the parent operation.
 namespace Define.OperationGraph
 
 namespace IndependenceWitnesses
-
-/-!
-## The Comparison's simultaneity
-
-History: `create parent`, `create childA`, `create childA::x`,
-`destroy childA::x`, `destroy childA`, `create childA` again,
-`create childA::y`, `destroy childA::y`, `destroy childA` again.
-
-Complete Comparison at the final childA Destroy: the Collection holds the
-entries for `parent` (its Create), `childA` (the second Create), `childA::x`
-(its Destroy), and `childA::y` (its Destroy). The `childA::y` Destroy excludes
-the `childA` Create, and the `childA` Create — although itself excluded — still
-excludes the `childA::x` Destroy, whose position is unrelated to
-`childA::y`. Only the `childA::y` Destroy remains.
-
-Weakened rule (only surviving candidates exclude): the `childA::x` Destroy's
-only excluder is itself excluded, so the Destroy survives, and the final
-childA Destroy keeps a second dependency on it. That edge is redundant: the
-`childA::y` Destroy's chain already reaches the `childA::x` Destroy.
--/
-
-namespace ComparisonSimultaneity
-
-def parentPosition : Position := [0]
-
-def childAPosition : Position := [0, 0]
-
-def grandChildXPosition : Position := [0, 0, 0]
-
-def grandChildYPosition : Position := [0, 0, 1]
-
-def createParent : ParticleOperation where
-  operationOrder := 0
-  actionParent := []
-  kind := .create parentPosition
-
-def createChildA : ParticleOperation where
-  operationOrder := 1
-  actionParent := []
-  kind := .create childAPosition
-
-def createGrandChildX : ParticleOperation where
-  operationOrder := 2
-  actionParent := []
-  kind := .create grandChildXPosition
-
-def destroyGrandChildX : ParticleOperation where
-  operationOrder := 3
-  actionParent := []
-  kind := .destroy grandChildXPosition
-
-def destroyChildA : ParticleOperation where
-  operationOrder := 4
-  actionParent := []
-  kind := .destroy childAPosition
-
-def recreateChildA : ParticleOperation where
-  operationOrder := 5
-  actionParent := []
-  kind := .create childAPosition
-
-def createGrandChildY : ParticleOperation where
-  operationOrder := 6
-  actionParent := []
-  kind := .create grandChildYPosition
-
-def destroyGrandChildY : ParticleOperation where
-  operationOrder := 7
-  actionParent := []
-  kind := .destroy grandChildYPosition
-
-def destroyRecreatedChildA : ParticleOperation where
-  operationOrder := 8
-  actionParent := []
-  kind := .destroy childAPosition
-
-def completeDependencyTarget : ParticleOperation → Option ParticleOperation :=
-  fun operation =>
-    if operation = createChildA then some createParent
-    else if operation = createGrandChildX then some createChildA
-    else if operation = destroyGrandChildX then some createGrandChildX
-    else if operation = destroyChildA then some destroyGrandChildX
-    else if operation = recreateChildA then some destroyChildA
-    else if operation = createGrandChildY then some recreateChildA
-    else if operation = destroyGrandChildY then some createGrandChildY
-    else if operation = destroyRecreatedChildA then some destroyGrandChildY
-    else none
-
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  completeDependencyTarget operation = some dependencyOperation
-
-abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  CompleteDependency operation dependencyOperation ∨
-    (operation = destroyRecreatedChildA ∧
-      dependencyOperation = destroyGrandChildX)
-
-def history : List ParticleOperation :=
-  [createParent, createChildA, createGrandChildX, destroyGrandChildX,
-    destroyChildA, recreateChildA, createGrandChildY, destroyGrandChildY,
-    destroyRecreatedChildA]
-
-def weakenedRules : RuleVariant :=
-  { completeRules with simultaneousComparison := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
-
-theorem weakened_rules_derive_graph :
-    calculate weakenedRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (WeakenedDependency operation dependencyOperation)) := by
-  decide
-
-theorem complete_transitively_minimal :
-    TransitivelyMinimal CompleteDependency :=
-  transitivelyMinimal_of_at_most_one_dependency CompleteDependency
-    fun _ _ _ first_edge second_edge =>
-      Option.some.inj (first_edge.symm.trans second_edge)
-
-theorem weakened_not_transitively_minimal :
-    ¬TransitivelyMinimal WeakenedDependency := by
-  intro minimal
-  have edge_0 :
-      WithoutEdge WeakenedDependency destroyRecreatedChildA destroyGrandChildX
-        destroyRecreatedChildA destroyGrandChildY :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_1 :
-      WithoutEdge WeakenedDependency destroyRecreatedChildA destroyGrandChildX
-        destroyGrandChildY createGrandChildY :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_2 :
-      WithoutEdge WeakenedDependency destroyRecreatedChildA destroyGrandChildX
-        createGrandChildY recreateChildA :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_3 :
-      WithoutEdge WeakenedDependency destroyRecreatedChildA destroyGrandChildX
-        recreateChildA destroyChildA :=
-    ⟨Or.inl (by decide), by decide⟩
-  have edge_4 :
-      WithoutEdge WeakenedDependency destroyRecreatedChildA destroyGrandChildX
-        destroyChildA destroyGrandChildX :=
-    ⟨Or.inl (by decide), by decide⟩
-  exact
-    minimal destroyRecreatedChildA destroyGrandChildX (Or.inr ⟨rfl, rfl⟩)
-      (.step edge_0
-        (.step edge_1 (.step edge_2 (.step edge_3 (.direct edge_4)))))
-
-end ComparisonSimultaneity
 
 /-!
 ## The Move Correction

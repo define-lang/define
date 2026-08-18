@@ -66,4 +66,27 @@ theorem prefix_pair_iff {first second : Nat} {name : List Nat} :
     · exact ⟨[second], rfl⟩
     · exact List.prefix_rfl
 
+theorem prefix_triple_iff {first second third : Nat} {name : List Nat} :
+    name <+: [first, second, third] ↔
+      name = [] ∨ name = [first] ∨ name = [first, second] ∨
+        name = [first, second, third] := by
+  constructor
+  · intro name_prefix
+    rcases List.prefix_cons_iff.mp name_prefix with
+      name_nil | ⟨tail, name_eq, tail_prefix⟩
+    · exact Or.inl name_nil
+    · rcases prefix_pair_iff.mp tail_prefix with
+        tail_nil | tail_single | tail_pair
+      · subst tail_nil
+        exact Or.inr (Or.inl name_eq)
+      · subst tail_single
+        exact Or.inr (Or.inr (Or.inl name_eq))
+      · subst tail_pair
+        exact Or.inr (Or.inr (Or.inr name_eq))
+  · rintro (rfl | rfl | rfl | rfl)
+    · exact List.nil_prefix
+    · exact ⟨[second, third], rfl⟩
+    · exact ⟨[third], rfl⟩
+    · exact List.prefix_rfl
+
 end Define.OperationGraph

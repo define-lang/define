@@ -9,6 +9,8 @@ filegroup(
         ":calculation",
         ":calculation_correctness",
         ":characterization",
+        ":comparison_simultaneity_independence_witness",
+        ":comparison_simultaneity_witness",
         ":completeness",
         ":create_destroy_history",
         ":definitions",
@@ -18,6 +20,7 @@ filegroup(
         ":fill_rule_parent_positions_independence_witness",
         ":independence_witness_support",
         ":independence_witnesses",
+        ":list_history_support",
         ":maximum_safe_concurrency",
         ":minimality",
         ":minimality_witnesses",
@@ -114,6 +117,62 @@ lean_axiom_test(
         "Define.OperationGraph.calculatedDependency_reaches_iff_reaches_relatedPrevious",
     ],
     deps = [":characterization"],
+)
+
+lean_library(
+    name = "comparison_simultaneity_independence_witness",
+    srcs = ["comparison_simultaneity_independence_witness.lean"],
+    deps = [
+        ":comparison_simultaneity_witness",
+        ":independence_witness_support",
+        ":minimality",
+    ],
+)
+
+lean_axiom_test(
+    name = "comparison_simultaneity_independence_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["comparison_simultaneity_independence_witness"],
+    theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.complete_final_dependency",
+        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_rules_derive_graph",
+    ],
+    deps = [":comparison_simultaneity_independence_witness"],
+)
+
+lean_library(
+    name = "comparison_simultaneity_witness",
+    srcs = ["comparison_simultaneity_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":list_history_support",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "comparison_simultaneity_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["comparison_simultaneity_witness"],
+    theorems = [
+        "Define.OperationGraph.ComparisonSimultaneityHistory.calculated_dependency",
+        "Define.OperationGraph.ComparisonSimultaneityHistory.grand_child_y_after_comparison",
+        "Define.OperationGraph.ComparisonSimultaneityHistory.grand_child_y_source_candidate",
+        "Define.OperationGraph.ComparisonSimultaneityHistory.history",
+    ],
+    deps = [":comparison_simultaneity_witness"],
 )
 
 lean_library(
@@ -321,6 +380,7 @@ lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
     deps = [
+        ":comparison_simultaneity_independence_witness",
         ":definitions",
         ":empty_rule_child_positions_independence_witness",
         ":fill_dependency_removal_witness",
@@ -338,11 +398,32 @@ lean_axiom_test(
     allowed_axioms = [],
     imports = ["independence_witnesses"],
     theorems = [
-        "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.MoveCorrection.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
     ],
     deps = [":independence_witnesses"],
+)
+
+lean_library(
+    name = "list_history_support",
+    srcs = ["list_history_support.lean"],
+    deps = [":valid_history"],
+)
+
+lean_axiom_test(
+    name = "list_history_support_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["list_history_support"],
+    theorems = [
+        "Define.OperationGraph.ListHistory.operationAt_is_member",
+        "Define.OperationGraph.ListHistory.operationAt_none_of_le",
+        "Define.OperationGraph.ListHistory.validHistory",
+    ],
+    deps = [":list_history_support"],
 )
 
 lean_library(
@@ -573,6 +654,7 @@ lean_axiom_test(
         "Define.OperationGraph.not_move_of_kind_destroy",
         "Define.OperationGraph.prefix_pair_iff",
         "Define.OperationGraph.prefix_singleton_iff",
+        "Define.OperationGraph.prefix_triple_iff",
     ],
     deps = [":witness_support"],
 )
