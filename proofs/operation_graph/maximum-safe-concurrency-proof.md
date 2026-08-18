@@ -50,8 +50,11 @@ the stopped-history case of the theorem below. The natural-number schedule and
 finite-prefix completion theorem in
 [`unbounded_schedule_order.lean`](unbounded_schedule_order.lean), together with
 `unbounded_respecting_schedule_execution`, formalize the unbounded-history case
-one finite prefix at a time. The necessity result remains proved in this
-document rather than in Lean.
+one finite prefix at a time.
+`calculated_coverPair_has_adjacent_finite_execution` formalizes the
+dependency-respecting finite construction that makes each cover pair adjacent.
+Proving that reversing the adjacent pair is undefined, and deriving the final
+necessity result, remain proved in this document rather than in Lean.
 
 ## Definitions
 
@@ -237,14 +240,25 @@ First, `(O, A)` must itself be in `R`. If every `R` path from `O` to `A` had at
 least two edges, any intermediate operation on such a path would lie strictly
 between `A` and `O`, contrary to the definition of a cover pair.
 
-Next, a cover pair can be adjacent in a schedule that respects `>R`. Every
-predecessor of `O` has a smaller natural-number index than `O`, so there are
-only finitely many. Place all predecessors of `O` other than `A` first, in an
-order consistent with `>R`; then place `A` and `O`; then place the remaining
-operations in an order consistent with `>R`. Every predecessor of `A` is in the
-first group. No other predecessor of `O` is required to follow `A`, because that
-would put it strictly between the cover pair. Thus the construction respects
-`>R`. By the preceding theorem, this schedule is a defined execution.
+Next, a cover pair can be adjacent in a schedule that respects `>R`. Let `L` be
+the finite history prefix ending with `O`. Every predecessor of `O` belongs to
+`L`, because reachability always moves to a smaller previous-operation index.
+From `L`, take the other predecessors of `O` in their history order, then place
+`A` and `O`, and finally place the other members of `L` in their history order.
+
+This permutation of `L` respects `>R`. The other predecessors retain their
+relative history order. None is required to follow `A`, because together with
+its path from `O` that would put it strictly between the cover pair. Nothing
+placed before `O` is required to follow `O`, because reachability moves to a
+smaller index. Finally, if an operation moved after `O` were required before any
+operation in the new prefix, transitivity would make it a predecessor of `O`, so
+it would already have been placed before `A`.
+
+If the history continues after `O`, append its later operations in history
+order. No earlier operation is required to follow one of those later operations,
+again because reachability moves to a smaller index. The resulting complete
+schedule therefore respects `>R`, and the preceding theorem makes it a defined
+execution with `A` immediately before `O`.
 
 Because `(O, A)` is in `R`, the two operations have related operated positions.
 There are three cases.

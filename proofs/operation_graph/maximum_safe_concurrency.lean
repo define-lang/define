@@ -1,4 +1,5 @@
 import characterization
+import cover_schedule_order
 import finite_history_schedule
 import finite_schedule_order
 import finite_scheduling
@@ -19,7 +20,9 @@ The stopped-history theorem constructs the finite reference execution from the
 history itself, then transfers it to every dependency-respecting schedule of
 exactly the same operation occurrences. The unbounded-history theorem completes
 each finite candidate prefix to a finite reference permutation and applies the
-same result. Necessity remains to be formalized.
+same result. The cover-pair theorem constructs a defined finite history-prefix
+execution with the covered operations adjacent. Proving that the reverse pair
+is undefined, and deriving the full necessity result, remain to be formalized.
 -/
 
 namespace Define.OperationGraph
@@ -233,6 +236,37 @@ theorem unbounded_respecting_schedule_execution
     · exact history.operationsBefore_execution referenceBound
   exact completed_execution.prefix_execution
 
+/--
+Every calculated cover pair occurs adjacently in a defined finite execution of
+the history prefix ending with the later operation.
+-/
+theorem calculated_coverPair_has_adjacent_finite_execution
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {following previous : ParticleOperation}
+    (cover_pair :
+      CoverPair (Reaches (CalculatedDependency history)) following previous) :
+    ∃ preceding remaining,
+      ScheduleExecution history.observation
+        (preceding ++ previous :: following :: remaining)
+        (history.occupiedBefore 0)
+        (history.occupiedBefore (following.operationOrder + 1)) := by
+  rcases
+      calculated_coverPair_has_adjacent_respecting_historyPrefix history
+        cover_pair with
+    ⟨preceding, remaining, schedules_permuted, candidate_respects⟩
+  refine ⟨preceding, remaining, ?_⟩
+  apply
+    finite_respecting_schedule_execution history schedules_permuted
+      (history.operationsBefore_nodup (following.operationOrder + 1))
+  · exact fun _ operation_member =>
+      history.operationsBefore_operation_is_member operation_member
+  · exact
+      history.operationsBefore_respects_calculatedDependency
+        (following.operationOrder + 1)
+  · exact candidate_respects
+  · exact history.operationsBefore_execution (following.operationOrder + 1)
+
 section TypeContracts
 
 example {isOperation : ParticleOperation → Prop} :
@@ -256,6 +290,17 @@ example {isOperation : ParticleOperation → Prop} :
         UnboundedScheduleExecution history.observation schedule
           (history.occupiedBefore 0) :=
   unbounded_respecting_schedule_execution
+
+example {isOperation : ParticleOperation → Prop} :
+    ∀ (history : ValidResolvedHistory isOperation)
+      (following previous : ParticleOperation),
+      CoverPair (Reaches (CalculatedDependency history)) following previous →
+        ∃ preceding remaining,
+          ScheduleExecution history.observation
+            (preceding ++ previous :: following :: remaining)
+            (history.occupiedBefore 0)
+            (history.occupiedBefore (following.operationOrder + 1)) :=
+  calculated_coverPair_has_adjacent_finite_execution
 
 end TypeContracts
 

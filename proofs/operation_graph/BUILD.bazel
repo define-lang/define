@@ -12,6 +12,7 @@ filegroup(
         ":comparison_simultaneity_independence_witness",
         ":comparison_simultaneity_witness",
         ":completeness",
+        ":cover_schedule_order",
         ":create_destroy_history",
         ":definitions",
         ":empty_rule_child_positions_independence_witness",
@@ -204,6 +205,32 @@ lean_axiom_test(
         "Define.OperationGraph.calculatedDependency_reaches_of_relatedPrevious",
     ],
     deps = [":completeness"],
+)
+
+lean_library(
+    name = "cover_schedule_order",
+    srcs = ["cover_schedule_order.lean"],
+    deps = [
+        ":characterization",
+        ":finite_history_schedule",
+        ":finite_schedule_order",
+    ],
+)
+
+lean_axiom_test(
+    name = "cover_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.calculated_coverPair_has_adjacent_respecting_historyPrefix",
+        "Define.OperationGraph.calculated_coverPair_is_relatedPrevious",
+    ],
+    deps = [":cover_schedule_order"],
 )
 
 lean_library(
@@ -541,6 +568,7 @@ lean_library(
     srcs = ["maximum_safe_concurrency.lean"],
     deps = [
         ":characterization",
+        ":cover_schedule_order",
         ":finite_history_schedule",
         ":finite_schedule_order",
         ":finite_scheduling",
@@ -558,6 +586,7 @@ lean_axiom_test(
     ],
     imports = ["maximum_safe_concurrency"],
     theorems = [
+        "Define.OperationGraph.calculated_coverPair_has_adjacent_finite_execution",
         "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
         "Define.OperationGraph.finite_respecting_schedule_execution",
         "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
