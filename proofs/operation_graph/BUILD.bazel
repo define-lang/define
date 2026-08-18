@@ -13,6 +13,9 @@ filegroup(
         ":create_destroy_history",
         ":definitions",
         ":fill_dependency_removal_witness",
+        ":fill_rule_most_recent_independence_witness",
+        ":fill_rule_parent_positions_independence_witness",
+        ":independence_witness_support",
         ":independence_witnesses",
         ":maximum_safe_concurrency",
         ":minimality",
@@ -207,32 +210,100 @@ lean_axiom_test(
 )
 
 lean_library(
-    name = "independence_witnesses",
-    srcs = ["independence_witnesses.lean"],
+    name = "fill_rule_most_recent_independence_witness",
+    srcs = ["fill_rule_most_recent_independence_witness.lean"],
     deps = [
         ":calculation_correctness",
-        ":definitions",
-        ":fill_dependency_removal_witness",
+        ":independence_witness_support",
         ":minimality",
         ":witness_support",
     ],
 )
 
 lean_axiom_test(
-    name = "independence_witnesses_axioms_test",
+    name = "fill_rule_most_recent_independence_witness_axioms_test",
     size = "small",
     allowed_axioms = [
         "propext",
         "Classical.choice",
         "Quot.sound",
     ],
-    imports = ["independence_witnesses"],
+    imports = ["fill_rule_most_recent_independence_witness"],
+    theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.complete_dependency_iff",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.validHistory",
+        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_misses_required_ordering",
+    ],
+    deps = [":fill_rule_most_recent_independence_witness"],
+)
+
+lean_library(
+    name = "fill_rule_parent_positions_independence_witness",
+    srcs = ["fill_rule_parent_positions_independence_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":independence_witness_support",
+        ":minimality",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "fill_rule_parent_positions_independence_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["fill_rule_parent_positions_independence_witness"],
     theorems = [
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_dependency_iff",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.complete_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.validHistory",
         "Define.OperationGraph.IndependenceWitnesses.FillRuleParentPositions.weakened_misses_required_ordering",
-        "Define.OperationGraph.IndependenceWitnesses.FillRuleMostRecent.weakened_misses_required_ordering",
+    ],
+    deps = [":fill_rule_parent_positions_independence_witness"],
+)
+
+lean_library(
+    name = "independence_witness_support",
+    srcs = ["independence_witness_support.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "independence_witness_support_axioms_test",
+    size = "small",
+    allowed_axioms = [],
+    imports = ["independence_witness_support"],
+    theorems = [
+        "Define.OperationGraph.moreRecent_of_order_lt",
+        "Define.OperationGraph.transitivelyMinimal_of_at_most_one_dependency",
+    ],
+    deps = [":independence_witness_support"],
+)
+
+lean_library(
+    name = "independence_witnesses",
+    srcs = ["independence_witnesses.lean"],
+    deps = [
+        ":definitions",
+        ":fill_dependency_removal_witness",
+        ":fill_rule_most_recent_independence_witness",
+        ":fill_rule_parent_positions_independence_witness",
+        ":independence_witness_support",
+        ":minimality",
+    ],
+)
+
+lean_axiom_test(
+    name = "independence_witnesses_axioms_test",
+    size = "small",
+    allowed_axioms = [],
+    imports = ["independence_witnesses"],
+    theorems = [
         "Define.OperationGraph.IndependenceWitnesses.EmptyRuleChildPositions.weakened_misses_required_ordering",
         "Define.OperationGraph.IndependenceWitnesses.MoveChildEntries.weakened_not_transitively_minimal",
         "Define.OperationGraph.IndependenceWitnesses.ComparisonSimultaneity.weakened_not_transitively_minimal",

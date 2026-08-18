@@ -81,8 +81,10 @@ path to a history retaining a queryable name after its particle vanishes, and
 for a Move. Witness-only general lemmas flow through `witness_support.lean`.
 `fill_dependency_removal_witness.lean` derives both sides of the Move Rule's
 reachability check, and `minimality_witnesses.lean` aggregates these concrete
-models. `independence_witnesses.lean` compares the full rules with variants
-changing one clause. Their explanations live beside the executable models in
-those modules. `minimality_checker.py` searches bounded concrete histories for
-counterexamples. None of these witnesses or bounded searches substitutes for the
-universal English and Lean proofs above.
+models. Clause-specific independence witness modules apply the complete
+calculation to a valid history and share an executable evaluator for variants
+changing one clause; `independence_witnesses.lean` aggregates them. Their
+explanations live beside the executable models in those modules.
+`minimality_checker.py` searches bounded concrete histories for counterexamples.
+None of these witnesses or bounded searches substitutes for the universal
+English and Lean proofs above.
