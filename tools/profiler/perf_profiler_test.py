@@ -135,6 +135,63 @@ def test_leaves_non_bazel_command_unchanged(tmp_path: Path):
     )
 
 
+def test_adds_perf_option_to_native_bazel_python_launcher(tmp_path: Path):
+    launcher_path = tmp_path / "bazel-bin/tools/compiler"
+    launcher_path.parent.mkdir(parents=True)
+    _ = launcher_path.write_bytes(b"\xff")
+    runfiles_path = launcher_path.with_name("compiler.runfiles")
+    interpreter_path = runfiles_path / "_main/tools/._compiler.venv/bin/python"
+    interpreter_path.parent.mkdir(parents=True)
+    _ = interpreter_path.write_bytes(b"")
+    main_path = runfiles_path / "_main/tools/compiler.py"
+    main_path.parent.mkdir(parents=True, exist_ok=True)
+    _ = main_path.write_text("", encoding="utf-8")
+
+    command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
+        (str(launcher_path), "compile"),
+        tmp_path,
+        {},
+    )
+
+    assert command == (
+        str(interpreter_path),
+        "-X",
+        "perf",
+        "-B",
+        "-I",
+        str(main_path),
+        "compile",
+    )
+
+
+def test_leaves_unresolved_native_launcher_unchanged(tmp_path: Path):
+    launcher_path = tmp_path / "compiler"
+    _ = launcher_path.write_bytes(b"\xff")
+
+    command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
+        (str(launcher_path), "compile"),
+        tmp_path,
+        {"RUNFILES_DIR": str(tmp_path / "other.runfiles")},
+    )
+
+    assert command == (str(launcher_path), "compile")
+
+
+def test_leaves_native_launcher_without_environment_files_unchanged(tmp_path: Path):
+    runfiles_path = tmp_path / "compiler.runfiles"
+    launcher_path = runfiles_path / "_main/tools/compiler"
+    launcher_path.parent.mkdir(parents=True)
+    _ = launcher_path.write_bytes(b"\xff")
+
+    command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
+        (str(launcher_path), "compile"),
+        tmp_path,
+        {"RUNFILES_DIR": str(runfiles_path)},
+    )
+
+    assert command == (str(launcher_path), "compile")
+
+
 def test_finds_recorded_python_map_and_existing_native_objects(tmp_path: Path):
     runtime_map_path = perf_profiler.runtime_python_map_path(123)
     existing_object_path = tmp_path / "existing.so"

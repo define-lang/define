@@ -1,11 +1,14 @@
 """Basedpyright type-checking test macro."""
 
-load("@aspect_rules_py//py:defs.bzl", _py_test = "py_test")
-load("@rules_python//python:py_info.bzl", "PyInfo")
+load("@aspect_rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
+load("@rules_python//python:py_info.bzl", LegacyPyInfo = "PyInfo")
 
-# aspect_rules_py doesn't propagate transitive_pyi_files through py_test
-# and py_binary targets, so an aspect is needed to walk the dep graph and
-# collect .pyi stubs directly from each target.
+# rules_py includes declared .pyi sources in transitive_sources, so they need no
+# special handling here. Protobuf's py_proto_library instead returns
+# rules_python's PyInfo and keeps generated stubs only in transitive_pyi_files.
+# When a rules_py target consumes that library, it propagates transitive_sources
+# and imports but not the rules_python-only stub field, so this aspect preserves
+# those generated protobuf stubs for basedpyright.
 
 _PyiCollectorInfo = provider(
     "Collects .pyi type stub files from transitive dependencies.",
@@ -13,25 +16,30 @@ _PyiCollectorInfo = provider(
 )
 
 def _pyi_collector_aspect_impl(target, ctx):
-    pyi = []
-    if PyInfo in target:
-        pyi.append(target[PyInfo].transitive_pyi_files)
+    transitive_pyi_files = []
+    if LegacyPyInfo in target:
+        transitive_pyi_files.append(target[LegacyPyInfo].transitive_pyi_files)
     for dep in getattr(ctx.rule.attr, "deps", []):
         if _PyiCollectorInfo in dep:
-            pyi.append(dep[_PyiCollectorInfo].transitive_pyi_files)
+            transitive_pyi_files.append(dep[_PyiCollectorInfo].transitive_pyi_files)
+
+    # rules_py puts py_binary and py_test dependencies on a hidden sibling venv
+    # target, so following only deps would miss protobuf libraries below them.
+    venv = getattr(ctx.rule.attr, "venv", None)
+    if venv and _PyiCollectorInfo in venv:
+        transitive_pyi_files.append(venv[_PyiCollectorInfo].transitive_pyi_files)
     return [_PyiCollectorInfo(
-        transitive_pyi_files = depset(transitive = pyi),
+        transitive_pyi_files = depset(transitive = transitive_pyi_files),
     )]
 
 _pyi_collector_aspect = aspect(
     implementation = _pyi_collector_aspect_impl,
-    attr_aspects = ["deps"],
+    attr_aspects = ["deps", "venv"],
 )
 
-# The other PyInfo fields (transitive_sources, imports,
-# direct_original_sources) propagate fine through py_test/py_binary, so
-# we read them directly from deps. This rule also avoids the performance
-# cost of each dep creating its own runfiles tree.
+# RulesPyInfo fields propagate through Python targets, so this rule reads them
+# directly from deps and avoids the cost of each dep creating its own runfiles
+# tree.
 def _pyright_deps_impl(ctx):
     transitive_sources = depset(
         transitive = [dep[PyInfo].transitive_sources for dep in ctx.attr.deps],
@@ -39,8 +47,11 @@ def _pyright_deps_impl(ctx):
     imports = depset(
         transitive = [dep[PyInfo].imports for dep in ctx.attr.deps],
     )
-    direct_original_sources = depset(
-        transitive = [dep[PyInfo].direct_original_sources for dep in ctx.attr.deps],
+    virtual_dependencies = depset(
+        transitive = [dep[PyInfo].virtual_dependencies for dep in ctx.attr.deps],
+    )
+    virtual_resolutions = depset(
+        transitive = [dep[PyInfo].virtual_resolutions for dep in ctx.attr.deps],
     )
     transitive_pyi_files = depset(
         transitive = [
@@ -57,8 +68,8 @@ def _pyright_deps_impl(ctx):
         PyInfo(
             transitive_sources = transitive_sources,
             imports = imports,
-            direct_original_sources = direct_original_sources,
-            transitive_pyi_files = transitive_pyi_files,
+            virtual_dependencies = virtual_dependencies,
+            virtual_resolutions = virtual_resolutions,
         ),
     ]
 

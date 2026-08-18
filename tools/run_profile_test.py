@@ -41,12 +41,24 @@ def _runfile(variable: str) -> Path:
 def _capture(arguments: list[str]) -> click.testing.Result:
     # PRF-012: Orchestration boundary. PRF-041: Realistic tests.
     compiler_path = _runfile("COMPILER_BINARY")
-    with mock.patch.object(
-        run_profile,
-        "_build_compiler",
-        autospec=True,
-        return_value=compiler_path,
-    ) as build_compiler:
+    runfiles_resolver = runfiles.Runfiles.Create()
+    assert runfiles_resolver is not None
+    target_environment = run_profile._target_environment()  # pyright: ignore[reportPrivateUsage]
+    target_environment.update(runfiles_resolver.EnvVars())
+    with (
+        mock.patch.object(
+            run_profile,
+            "_build_compiler",
+            autospec=True,
+            return_value=compiler_path,
+        ) as build_compiler,
+        mock.patch.object(
+            run_profile,
+            "_target_environment",
+            autospec=True,
+            return_value=target_environment,
+        ),
+    ):
         result = click.testing.CliRunner().invoke(run_profile.main, arguments)
     build_compiler.assert_called_once()
     return result

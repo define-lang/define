@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -82,6 +83,39 @@ def _profiled_command(
     try:
         launcher = launcher_path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
+        runfiles_directory = environment.get("RUNFILES_DIR")
+        launcher_runfile: pathlib.Path | None = None
+        if runfiles_directory is None:
+            runfiles_path = launcher_path.with_name(launcher_path.name + ".runfiles")
+            try:
+                bazel_bin_index = launcher_path.parts.index("bazel-bin")
+            except ValueError:
+                pass
+            else:
+                launcher_runfile = pathlib.Path("_main").joinpath(
+                    *launcher_path.parts[bazel_bin_index + 1 :]
+                )
+        else:
+            runfiles_path = pathlib.Path(runfiles_directory)
+            with contextlib.suppress(ValueError):
+                launcher_runfile = launcher_path.relative_to(runfiles_path)
+        if launcher_runfile is not None:
+            interpreter = (
+                runfiles_path
+                / launcher_runfile.parent
+                / f"._{launcher_path.name}.venv/bin/python"
+            )
+            main = runfiles_path / launcher_runfile.with_suffix(".py")
+            if interpreter.is_file() and main.is_file():
+                return (
+                    os.fspath(interpreter),
+                    "-X",
+                    "perf",
+                    "-B",
+                    "-I",
+                    os.fspath(main),
+                    *command[1:],
+                )
         return command
     if (
         _BAZEL_PYTHON_ENTRYPOINT_MARKER not in launcher

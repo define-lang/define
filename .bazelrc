@@ -44,8 +44,8 @@ common --experimental_bzl_visibility
 # https://gitlab.arm.com/bazel/ape/-/issues/17
 # common --experimental_strict_repo_env
 
-# Set default uv venv for aspect_rules_py package resolution
-build --@pypi//venv=dev
+# Set the default dependency group for aspect_rules_py package resolution.
+build --@pypi//dep_group=dev
 
 # Use free-threaded Python 3.14t
 build --@aspect_rules_py//py/private/interpreter:freethreaded=true

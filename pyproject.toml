@@ -165,6 +165,7 @@ exclude = [
     "experimental",
     "vendored",
     ".venv",
+    "**/.*.venv",
     "bazel-*",
     "**/*.pytest_main.py",
     "defcl/python/lark",
