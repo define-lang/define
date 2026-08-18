@@ -6,3 +6,7 @@ Dead guarantees---ones the caller never interacts with.
 
 An implied position that is only referenced by a single action must be an
 interface position.
+
+Useless trigger positions: never interacted with and there are other interface
+positions that _are_ interacted with. Especially important when there is only
+one other interface position.
