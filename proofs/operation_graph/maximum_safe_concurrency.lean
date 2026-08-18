@@ -3,6 +3,7 @@ import cover_schedule_order
 import finite_history_schedule
 import finite_schedule_order
 import finite_scheduling
+import occupancy_noncommutation
 import unbounded_scheduling
 
 set_option warningAsError true
@@ -20,9 +21,9 @@ The stopped-history theorem constructs the finite reference execution from the
 history itself, then transfers it to every dependency-respecting schedule of
 exactly the same operation occurrences. The unbounded-history theorem completes
 each finite candidate prefix to a finite reference permutation and applies the
-same result. The cover-pair theorem constructs a defined finite history-prefix
-execution with the covered operations adjacent. Proving that the reverse pair
-is undefined, and deriving the full necessity result, remain to be formalized.
+same result. The cover-pair theorems construct a defined finite history-prefix
+execution with the covered operations adjacent and prove that the reverse pair
+is not enabled. Deriving the full necessity result remains to be formalized.
 -/
 
 namespace Define.OperationGraph
@@ -267,6 +268,52 @@ theorem calculated_coverPair_has_adjacent_finite_execution
   · exact candidate_respects
   · exact history.operationsBefore_execution (following.operationOrder + 1)
 
+/--
+Every calculated cover pair occurs adjacently in a defined finite execution,
+but both operations cannot execute in the reverse order from the occupancy
+before that pair.
+-/
+theorem calculated_coverPair_has_irreversible_adjacent_finite_execution
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {following previous : ParticleOperation}
+    (cover_pair :
+      CoverPair (Reaches (CalculatedDependency history)) following previous) :
+    ∃ preceding remaining occupiedBeforePair,
+      ScheduleExecution history.observation preceding
+          (history.occupiedBefore 0) occupiedBeforePair ∧
+        ScheduleExecution history.observation
+            (previous :: following :: remaining) occupiedBeforePair
+            (history.occupiedBefore (following.operationOrder + 1)) ∧
+          ¬(OperationEnabled following occupiedBeforePair ∧
+            OperationEnabled previous
+              (OccupancyAfter following occupiedBeforePair)) := by
+  rcases
+      calculated_coverPair_has_adjacent_finite_execution history cover_pair with
+    ⟨preceding, remaining, execution⟩
+  rcases
+      ScheduleExecution.split (schedulePrefix := preceding)
+        (scheduleSuffix := previous :: following :: remaining) execution with
+    ⟨occupiedBeforePair, preceding_execution, pair_execution⟩
+  have prefix_closed : PrefixClosed occupiedBeforePair :=
+    preceding_execution.preserves_prefixClosure history.initial_prefix_closed
+  cases pair_execution with
+  | cons previous_enabled previous_observed following_execution =>
+      cases following_execution with
+      | cons following_enabled following_observed remaining_execution =>
+          have operations_related : OperationsRelated previous following :=
+            operationsRelated_symm
+              (calculated_coverPair_is_relatedPrevious history cover_pair).2.2.2
+          refine
+            ⟨preceding, remaining, occupiedBeforePair, preceding_execution,
+              .cons previous_enabled previous_observed
+                (.cons following_enabled following_observed
+                  remaining_execution),
+              ?_⟩
+          exact
+            related_enabled_operations_not_reversible prefix_closed
+              previous_enabled following_enabled operations_related
+
 section TypeContracts
 
 example {isOperation : ParticleOperation → Prop} :
@@ -301,6 +348,21 @@ example {isOperation : ParticleOperation → Prop} :
             (history.occupiedBefore 0)
             (history.occupiedBefore (following.operationOrder + 1)) :=
   calculated_coverPair_has_adjacent_finite_execution
+
+example {isOperation : ParticleOperation → Prop} :
+    ∀ (history : ValidResolvedHistory isOperation)
+      (following previous : ParticleOperation),
+      CoverPair (Reaches (CalculatedDependency history)) following previous →
+        ∃ preceding remaining occupiedBeforePair,
+          ScheduleExecution history.observation preceding
+              (history.occupiedBefore 0) occupiedBeforePair ∧
+            ScheduleExecution history.observation
+                (previous :: following :: remaining) occupiedBeforePair
+                (history.occupiedBefore (following.operationOrder + 1)) ∧
+              ¬(OperationEnabled following occupiedBeforePair ∧
+                OperationEnabled previous
+                  (OccupancyAfter following occupiedBeforePair)) :=
+  calculated_coverPair_has_irreversible_adjacent_finite_execution
 
 end TypeContracts
 

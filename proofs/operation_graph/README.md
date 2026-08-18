@@ -71,11 +71,12 @@ The Lean modules with matching names mirror the dependency diagram:
 imports characterization together with the cover-pair ordering, local exchange,
 finite-history, and finite-schedule semantics from `cover_schedule_order.lean`,
 `occupancy_exchange.lean`, `finite_history_schedule.lean`,
-`finite_schedule_order.lean`, and `finite_scheduling.lean`, plus the
-natural-number schedule semantics from the corresponding unbounded-schedule
-modules. The minimality, completeness, and characterization modules each expose
-a theorem stated directly for an arbitrary `ValidResolvedHistory`, and every
-theorem-bearing Lean module has a Bazel axiom audit.
+`occupancy_noncommutation.lean`, `finite_schedule_order.lean`, and
+`finite_scheduling.lean`, plus the natural-number schedule semantics from the
+corresponding unbounded-schedule modules. The minimality, completeness, and
+characterization modules each expose a theorem stated directly for an arbitrary
+`ValidResolvedHistory`, and every theorem-bearing Lean module has a Bazel axiom
+audit.
 
 The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without

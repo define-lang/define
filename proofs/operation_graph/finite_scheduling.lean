@@ -91,6 +91,35 @@ theorem ScheduleExecution.prefix_execution
             ⟨occupiedAfterPrefix,
               .cons enabled observed prefix_execution⟩
 
+/--
+A finite execution can be divided at any list prefix, retaining the occupancy
+at the division and the executions on both sides.
+-/
+theorem ScheduleExecution.split
+    {observation : ParticleOperation → Position → Prop}
+    {schedulePrefix scheduleSuffix : List ParticleOperation}
+    {occupiedBefore occupiedAfter : Position → Prop}
+    (execution :
+      ScheduleExecution observation (schedulePrefix ++ scheduleSuffix)
+        occupiedBefore occupiedAfter) :
+    ∃ occupiedAfterPrefix,
+      ScheduleExecution observation schedulePrefix occupiedBefore
+          occupiedAfterPrefix ∧
+        ScheduleExecution observation scheduleSuffix occupiedAfterPrefix
+          occupiedAfter := by
+  induction schedulePrefix generalizing occupiedBefore with
+  | nil =>
+      exact ⟨occupiedBefore, .nil _, by simpa using execution⟩
+  | cons operation schedulePrefix induction_hypothesis =>
+      simp only [List.cons_append] at execution
+      cases execution with
+      | cons enabled observed remaining_execution =>
+          rcases induction_hypothesis remaining_execution with
+            ⟨occupiedAfterPrefix, prefix_execution, suffix_execution⟩
+          exact
+            ⟨occupiedAfterPrefix, .cons enabled observed prefix_execution,
+              suffix_execution⟩
+
 theorem ScheduleExecution.swap_head_unrelated
     {observation : ParticleOperation → Position → Prop}
     {firstOperation secondOperation : ParticleOperation}

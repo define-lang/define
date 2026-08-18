@@ -53,8 +53,12 @@ finite-prefix completion theorem in
 one finite prefix at a time.
 `calculated_coverPair_has_adjacent_finite_execution` formalizes the
 dependency-respecting finite construction that makes each cover pair adjacent.
-Proving that reversing the adjacent pair is undefined, and deriving the final
-necessity result, remain proved in this document rather than in Lean.
+`related_enabled_operations_not_reversible` formalizes the four occupancy cases
+showing that two related operations cannot execute consecutively in both orders.
+`calculated_coverPair_has_irreversible_adjacent_finite_execution` combines those
+results for every calculated cover pair. Deriving the final necessity result
+from an arbitrary proper subrelation remains proved in this document rather than
+in Lean.
 
 ## Definitions
 
@@ -260,29 +264,58 @@ again because reachability moves to a smaller index. The resulting complete
 schedule therefore respects `>R`, and the preceding theorem makes it a defined
 execution with `A` immediately before `O`.
 
-Because `(O, A)` is in `R`, the two operations have related operated positions.
-There are three cases.
+Because `(O, A)` is in `R`, choose an operated position `p` of `A` and an
+operated position `q` of `O` such that `p <= q` or `q <= p`. Every operated
+position is one of two kinds for its operation:
 
-1. If they operate on a common position `p`, each operation either fills or
-   empties `p`. Two adjacent defined operations cannot both fill it or both
-   empty it, so one fills `p` and the other empties it. After the exchange, the
-   filling operation encounters an occupied position or the emptying operation
-   encounters an empty position.
-2. Otherwise, suppose a position `p` of `A` is a strict transitive parent
-   position of a position `q` of `O`. Since `O` is defined immediately after
-   `A`, `q` is available then, so `p` is occupied. Because `A` operates on `p`,
-   `A` must have filled it; emptying it would make `q` unavailable. Thus `p` was
-   empty before `A`, and executing `O` first makes `q` unavailable.
-3. In the remaining case, a position `p` of `A` is a strict transitive child
-   position of a position `q` of `O`, and no position of `A` is `q` or a parent
-   position of `q`. The availability of `p` requires `q` to be occupied when `A`
-   executes, and `A` does not change `q`. For `O` to operate on occupied `q`
-   immediately afterward, `O` must empty it. If `O` is a Destroy, executing it
-   first removes `p`. If `O` is a Move from `q`, executing it first replaces the
-   source child-position name `p`. Either way, `A` cannot then use `p`.
+- its _Empty Position_, which must be occupied before the operation; or
+- its _Fill Position_, which must be available and empty before the operation.
 
-Same position, parent position, and child position exhaust the ways in which two
-positions can be related. In every case the adjacent exchange is undefined. ∎
+A Move's source is its Empty Position and its target is its Fill Position. A
+Create has only a Fill Position, and a Destroy has only an Empty Position.
+
+After an enabled operation, its Fill Position is occupied. Its Empty Position
+and every child position of that Empty Position are empty. The latter statement
+also holds for a Move. The Move precondition says that its source is not a
+parent position of its target. Its target cannot be a parent position of its
+source either: prefix closure and the occupied source would then make the target
+occupied, contrary to the Move precondition. The source and target are therefore
+unrelated, so moving particles to target-based names cannot restore an old
+source-based name.
+
+The history's initial occupancy is prefix-closed. The proof of
+[valid-history Lemma 1](valid-history.md#lemma-1-valid-operations-preserve-prefix-closure)
+shows that each enabled Create, Destroy, or Move preserves prefix closure.
+Applying that lemma successively to the finite schedule prefix before `A` proves
+that the occupancy immediately before the adjacent pair is prefix-closed. We can
+now consider the four possible roles of `p` and `q`.
+
+1. Suppose both are Empty Positions. If `p <= q`, executing `A` empties `q`, so
+   `O` cannot be enabled next. The original order is defined, so this direction
+   is impossible. We must have `q <= p`; executing `O` first then empties `p`,
+   so `A` is not enabled.
+2. Suppose `p` is an Empty Position and `q` is a Fill Position. If `q <= p`,
+   prefix closure makes `q` occupied before `A`, whereas executing `O` first
+   requires `q` to be empty. Otherwise, relatedness makes `p` a strict parent
+   position of `q`. Then `O` requires `p` to be occupied after `A` so that `q`
+   is available, but `A` empties `p`. Thus either the reversed order is
+   undefined or the assumed original order was already undefined.
+3. Suppose `p` is a Fill Position and `q` is an Empty Position. If `p <= q`,
+   executing `O` first requires `q` to be occupied, so prefix closure makes `p`
+   occupied, whereas `A` requires `p` to be empty. Otherwise, relatedness makes
+   `q` a strict parent position of `p`. Executing `O` first then empties `q`, so
+   `p` is unavailable when `A` attempts to fill it.
+4. Suppose both are Fill Positions. If `p = q`, executing `A` fills the position
+   that `O` requires to be empty, contradicting the assumed original execution.
+   If `p` is a strict parent position of `q`, executing `O` first requires `p`
+   to be occupied, whereas `A` requires it to be empty. If `q` is a strict
+   parent position of `p`, `A` requires `q` to be occupied so that `p` is
+   available, whereas executing `O` first requires `q` to be empty.
+
+The four cases exhaust the possible roles of the selected operated positions. In
+every case, `A` followed by `O` and `O` followed by `A` cannot both be defined
+from the same occupancy. Because the original adjacent order is defined, the
+exchanged order is undefined. ∎
 
 ### Consequence: no program-oriented constraint can be removed
 
