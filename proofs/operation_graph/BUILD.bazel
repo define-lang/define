@@ -39,6 +39,7 @@ filegroup(
         ":non_vacuity_witness",
         ":occupancy_exchange",
         ":occupancy_noncommutation",
+        ":occupancy_semantics",
         ":unbounded_schedule_order",
         ":unbounded_scheduling",
         ":valid_history",
@@ -573,7 +574,10 @@ lean_axiom_test(
 lean_library(
     name = "finite_scheduling",
     srcs = ["finite_scheduling.lean"],
-    deps = [":occupancy_exchange"],
+    deps = [
+        ":occupancy_exchange",
+        ":occupancy_semantics",
+    ],
 )
 
 lean_axiom_test(
@@ -586,6 +590,7 @@ lean_axiom_test(
     ],
     imports = ["finite_scheduling"],
     theorems = [
+        "Define.OperationGraph.ScheduleExecution.preserves_prefixClosure",
         "Define.OperationGraph.ScheduleExecution.prefix_execution",
         "Define.OperationGraph.ScheduleExecution.split",
         "Define.OperationGraph.ScheduleExecution.snoc",
@@ -878,10 +883,7 @@ lean_axiom_test(
 lean_library(
     name = "occupancy_noncommutation",
     srcs = ["occupancy_noncommutation.lean"],
-    deps = [
-        ":finite_scheduling",
-        ":valid_history",
-    ],
+    deps = [":occupancy_semantics"],
 )
 
 lean_axiom_test(
@@ -894,17 +896,37 @@ lean_axiom_test(
     ],
     imports = ["occupancy_noncommutation"],
     theorems = [
-        "Define.OperationGraph.ScheduleExecution.preserves_prefixClosure",
+        "Define.OperationGraph.related_enabled_operations_not_reversible",
+    ],
+    deps = [":occupancy_noncommutation"],
+)
+
+lean_library(
+    name = "occupancy_semantics",
+    srcs = ["occupancy_semantics.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "occupancy_semantics_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["occupancy_semantics"],
+    theorems = [
         "Define.OperationGraph.not_occupancyAfter_of_emptyPosition_parent",
+        "Define.OperationGraph.occupancyAfter_preserves_prefixClosure",
         "Define.OperationGraph.operatesOn_iff_emptyPosition_or_fillPosition",
         "Define.OperationGraph.operationEnabled_emptyPosition_occupied",
         "Define.OperationGraph.operationEnabled_fillPosition_available",
         "Define.OperationGraph.operationEnabled_fillPosition_empty",
         "Define.OperationGraph.operationEnabled_fillPosition_occupiedAfter",
         "Define.OperationGraph.operationEnabled_move_source_not_parent_of_target",
-        "Define.OperationGraph.related_enabled_operations_not_reversible",
     ],
-    deps = [":occupancy_noncommutation"],
+    deps = [":occupancy_semantics"],
 )
 
 lean_library(
@@ -943,7 +965,7 @@ lean_library(
 lean_library(
     name = "valid_history",
     srcs = ["valid_history.lean"],
-    deps = [":definitions"],
+    deps = [":occupancy_semantics"],
 )
 
 lean_axiom_test(

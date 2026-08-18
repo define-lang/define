@@ -1,4 +1,4 @@
-import definitions
+import occupancy_semantics
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -162,89 +162,6 @@ theorem ValidResolvedHistory.operation_enabled
             (by simp [FillPosition, operation_kind]),
           history.move_source_not_parent_of_target operation source target
             operation_member operation_kind⟩
-
-theorem occupancyAfter_preserves_prefixClosure
-    {operation : ParticleOperation} {occupiedBefore : Position → Prop}
-    (prefix_closed : PrefixClosed occupiedBefore)
-    (fill_available :
-      ∀ target,
-        FillPosition operation = some target → Available occupiedBefore target)
-    (move_source_not_parent_of_target :
-      ∀ source target,
-        operation.kind = .move source target →
-          ¬ParentOrSame source target) :
-    PrefixClosed (OccupancyAfter operation occupiedBefore) := by
-  intro parent child parent_of_child child_occupied
-  cases operation_kind : operation.kind with
-  | create target =>
-      simp only [OccupancyAfter, operation_kind] at child_occupied ⊢
-      rcases child_occupied with child_is_target | child_occupied
-      · subst child
-        by_cases parent_is_target : parent = target
-        · exact Or.inl parent_is_target
-        · exact
-            Or.inr
-              (fill_available target (by simp [FillPosition, operation_kind])
-                parent parent_of_child parent_is_target)
-      · exact Or.inr (prefix_closed parent child parent_of_child child_occupied)
-  | destroy target =>
-      simp only [OccupancyAfter, operation_kind] at child_occupied ⊢
-      exact
-        ⟨fun target_parent =>
-          child_occupied.1 (target_parent.trans parent_of_child),
-          prefix_closed parent child parent_of_child child_occupied.2⟩
-  | move source target =>
-      simp only [OccupancyAfter, operation_kind] at child_occupied ⊢
-      rcases child_occupied with
-        ⟨relativePosition, child_is_target_child, source_child_occupied⟩ |
-        ⟨source_not_parent, target_not_parent, child_occupied⟩
-      · have target_of_child : ParentOrSame target child :=
-          ⟨relativePosition, child_is_target_child.symm⟩
-        rcases
-            List.prefix_or_prefix_of_prefix parent_of_child target_of_child with
-          parent_of_target | target_of_parent
-        · by_cases parent_is_target : parent = target
-          · subst parent_is_target
-            exact
-              Or.inl
-                ⟨[], by simp,
-                  by
-                    simpa using
-                      prefix_closed source (source ++ relativePosition)
-                        ⟨relativePosition, rfl⟩ source_child_occupied⟩
-          · refine Or.inr ⟨?_, ?_, ?_⟩
-            · intro source_of_parent
-              exact
-                move_source_not_parent_of_target source target operation_kind
-                  (source_of_parent.trans parent_of_target)
-            · intro target_of_parent_again
-              exact
-                parent_is_target
-                  (parentOrSame_antisymm parent_of_target
-                    target_of_parent_again)
-            · exact
-                fill_available target (by simp [FillPosition, operation_kind])
-                  parent parent_of_target parent_is_target
-        · rcases target_of_parent with ⟨parentRelative, parent_is_target_child⟩
-          subst parent_is_target_child
-          subst child_is_target_child
-          have relative_parent :
-              ParentOrSame parentRelative relativePosition :=
-            parentOrSame_resolve_iff.mp parent_of_child
-          exact
-            Or.inl
-              ⟨parentRelative, rfl,
-                prefix_closed (source ++ parentRelative)
-                  (source ++ relativePosition)
-                  (parentOrSame_resolve_iff.mpr relative_parent)
-                  source_child_occupied⟩
-      · exact
-          Or.inr
-            ⟨fun source_of_parent =>
-              source_not_parent (source_of_parent.trans parent_of_child),
-              fun target_of_parent =>
-                target_not_parent (target_of_parent.trans parent_of_child),
-              prefix_closed parent child parent_of_child child_occupied⟩
 
 theorem ValidResolvedHistory.prefix_closed
     {isOperation : ParticleOperation → Prop}

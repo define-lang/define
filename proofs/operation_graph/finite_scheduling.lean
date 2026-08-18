@@ -1,4 +1,5 @@
 import occupancy_exchange
+import occupancy_semantics
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -119,6 +120,30 @@ theorem ScheduleExecution.split
           exact
             ⟨occupiedAfterPrefix, .cons enabled observed prefix_execution,
               suffix_execution⟩
+
+/--
+Executing an enabled finite schedule from a prefix-closed occupancy preserves
+prefix closure.
+-/
+theorem ScheduleExecution.preserves_prefixClosure
+    {observation : ParticleOperation → Position → Prop}
+    {schedule : List ParticleOperation}
+    {occupiedBefore occupiedAfter : Position → Prop}
+    (execution :
+      ScheduleExecution observation schedule occupiedBefore occupiedAfter)
+    (prefix_closed : PrefixClosed occupiedBefore) :
+    PrefixClosed occupiedAfter := by
+  induction execution with
+  | nil => exact prefix_closed
+  | cons enabled observed remaining_execution induction_hypothesis =>
+      apply induction_hypothesis
+      apply occupancyAfter_preserves_prefixClosure prefix_closed
+      · intro target fill_position
+        exact
+          operationEnabled_fillPosition_available enabled fill_position
+      · intro source target move_kind
+        exact
+          operationEnabled_move_source_not_parent_of_target enabled move_kind
 
 theorem ScheduleExecution.swap_head_unrelated
     {observation : ParticleOperation → Position → Prop}
