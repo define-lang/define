@@ -35,6 +35,38 @@ inductive RespectsPrecedence {Occurrence : Type u}
       (remaining_respects : RespectsPrecedence precedence remaining) :
       RespectsPrecedence precedence (occurrence :: remaining)
 
+theorem RespectsPrecedence.snoc
+    {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
+    {schedule : List Occurrence} {finalOccurrence : Occurrence}
+    (respects : RespectsPrecedence precedence schedule)
+    (earlier_does_not_follow_final :
+      ∀ earlierOccurrence,
+        earlierOccurrence ∈ schedule →
+          ¬precedence earlierOccurrence finalOccurrence) :
+    RespectsPrecedence precedence (schedule ++ [finalOccurrence]) := by
+  induction respects with
+  | nil =>
+      exact .cons (by simp) .nil
+  | cons occurrence_does_not_follow_remaining remaining_respects
+      induction_hypothesis =>
+      simp only [List.cons_append]
+      exact
+        .cons
+          (by
+            intro laterOccurrence later_member
+            simp only [List.mem_append, List.mem_singleton] at later_member
+            rcases later_member with remaining_member | later_is_final
+            · exact
+                occurrence_does_not_follow_remaining laterOccurrence
+                  remaining_member
+            · subst laterOccurrence
+              exact
+                earlier_does_not_follow_final _ (by simp))
+          (induction_hypothesis
+            (fun earlierOccurrence earlier_member =>
+              earlier_does_not_follow_final earlierOccurrence
+                (by simp [earlier_member])))
+
 /--
 One schedule is obtained from another by exchanging two adjacent occurrences
 that are incomparable in the precedence relation.

@@ -131,6 +131,38 @@ structure ValidResolvedHistory (isOperation : ParticleOperation → Prop) where
           occupiedBefore (operationOrder + 1) position ↔
             occupiedBefore operationOrder position
 
+theorem ValidResolvedHistory.operation_enabled
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {operation : ParticleOperation}
+    (operation_member : isOperation operation) :
+    OperationEnabled operation
+      (history.occupiedBefore operation.operationOrder) := by
+  cases operation_kind : operation.kind with
+  | create target =>
+      simp only [OperationEnabled, operation_kind]
+      exact
+        ⟨history.fill_position_is_available operation target operation_member
+            (by simp [FillPosition, operation_kind]),
+          history.fill_position_is_empty operation target operation_member
+            (by simp [FillPosition, operation_kind])⟩
+  | destroy target =>
+      simp only [OperationEnabled, operation_kind]
+      exact
+        history.empty_position_is_occupied operation target operation_member
+          (by simp [EmptyPosition, operation_kind])
+  | move source target =>
+      simp only [OperationEnabled, operation_kind]
+      exact
+        ⟨history.empty_position_is_occupied operation source operation_member
+            (by simp [EmptyPosition, operation_kind]),
+          history.fill_position_is_available operation target operation_member
+            (by simp [FillPosition, operation_kind]),
+          history.fill_position_is_empty operation target operation_member
+            (by simp [FillPosition, operation_kind]),
+          history.move_source_not_parent_of_target operation source target
+            operation_member operation_kind⟩
+
 theorem occupancyAfter_preserves_prefixClosure
     {operation : ParticleOperation} {occupiedBefore : Position → Prop}
     (prefix_closed : PrefixClosed occupiedBefore)

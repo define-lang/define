@@ -30,26 +30,6 @@ occupancy state.
 namespace Define.OperationGraph
 
 /--
-The occupancy preconditions of one resolved Particle Operation.
--/
-def OperationEnabled (operation : ParticleOperation)
-    (occupied : Position → Prop) : Prop :=
-  match operation.kind with
-  | .create target => Available occupied target ∧ ¬occupied target
-  | .destroy target => occupied target
-  | .move source target =>
-      occupied source ∧
-        Available occupied target ∧
-          ¬occupied target ∧ ¬ParentOrSame source target
-
-/--
-The occupancy values observed at the positions on which the operation acts.
--/
-def OperationObservation (operation : ParticleOperation)
-    (occupied : Position → Prop) : Position → Prop :=
-  fun position => OperatesOn operation position ∧ occupied position
-
-/--
 The facts preserved when two adjacent operations exchange places.
 -/
 structure OccupancyEquivalentExchange

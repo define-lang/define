@@ -19,6 +19,7 @@ filegroup(
         ":fill_dependency_removal_witness",
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
+        ":finite_history_schedule",
         ":finite_schedule_order",
         ":finite_scheduling",
         ":independence_witness_support",
@@ -396,6 +397,36 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "finite_history_schedule",
+    srcs = ["finite_history_schedule.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":finite_schedule_order",
+        ":finite_scheduling",
+    ],
+)
+
+lean_axiom_test(
+    name = "finite_history_schedule_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_history_schedule"],
+    theorems = [
+        "Define.OperationGraph.ValidResolvedHistory.operationAt_mem_operationsBefore",
+        "Define.OperationGraph.ValidResolvedHistory.operationOrder_lt_of_stopped",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_execution",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_iff_of_stopped",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_nodup",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_respects_calculatedDependency",
+    ],
+    deps = [":finite_history_schedule"],
+)
+
+lean_library(
     name = "finite_schedule_order",
     srcs = ["finite_schedule_order.lean"],
 )
@@ -413,6 +444,7 @@ lean_axiom_test(
         "Define.OperationGraph.AdjacentIncomparableSwap.preserves_respect",
         "Define.OperationGraph.IncomparableSwapSequence.perm",
         "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
+        "Define.OperationGraph.RespectsPrecedence.snoc",
         "Define.OperationGraph.respecting_permutations_connected",
     ],
     deps = [":finite_schedule_order"],
@@ -434,6 +466,7 @@ lean_axiom_test(
     ],
     imports = ["finite_scheduling"],
     theorems = [
+        "Define.OperationGraph.ScheduleExecution.snoc",
         "Define.OperationGraph.ScheduleExecution.swap_adjacent_unrelated",
         "Define.OperationGraph.ScheduleExecution.swap_head_unrelated",
     ],
@@ -501,6 +534,7 @@ lean_library(
     srcs = ["maximum_safe_concurrency.lean"],
     deps = [
         ":characterization",
+        ":finite_history_schedule",
         ":finite_schedule_order",
         ":finite_scheduling",
     ],
@@ -519,6 +553,7 @@ lean_axiom_test(
         "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
         "Define.OperationGraph.finite_respecting_schedule_execution",
         "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
+        "Define.OperationGraph.stopped_history_finite_schedule_execution",
     ],
     deps = [":maximum_safe_concurrency"],
 )
@@ -759,6 +794,7 @@ lean_axiom_test(
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_operation",
         "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_responsible_operation",
         "Define.OperationGraph.ValidResolvedHistory.non_move_strict_child_unoccupied_after",
+        "Define.OperationGraph.ValidResolvedHistory.operation_enabled",
         "Define.OperationGraph.ValidResolvedHistory.prefix_closed",
         "Define.OperationGraph.ValidResolvedHistory.toExactOccupancyExecution",
         "Define.OperationGraph.exists_occupancy_transition",

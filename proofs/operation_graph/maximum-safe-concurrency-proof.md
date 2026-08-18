@@ -39,8 +39,14 @@ exchanges. `finite_respecting_schedule_execution` in
 [`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) combines those
 components for the calculated graph: every dependency-respecting permutation of
 a defined finite schedule of distinct operations from one valid resolved history
-has the same observations and final occupancy. Deriving that finite reference
-schedule directly from the history interface, the unbounded-history extension,
+has the same observations and final occupancy. The canonical schedule in
+[`finite_history_schedule.lean`](finite_history_schedule.lean) lists the
+occurrences before a stopping index directly from the history, proves that a
+stopping index makes this exactly the history's complete operation set, and
+proves that the schedule is duplicate-free, respects calculated reachability,
+and executes with the history's observations and final occupancy.
+`stopped_history_finite_schedule_execution` combines these results, formalizing
+the stopped-history case of the theorem below. The unbounded-history extension
 and the necessity result remain proved in this document rather than in Lean.
 
 ## Definitions

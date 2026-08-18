@@ -1,4 +1,5 @@
 import characterization
+import finite_history_schedule
 import finite_schedule_order
 import finite_scheduling
 
@@ -13,10 +14,10 @@ occupancy scheduling semantics. The completeness component of the graph
 characterization makes two distinct graph-incomparable operations unrelated,
 which is exactly the premise required by the adjacent schedule-exchange theorem.
 
-The finite theorem transfers a known reference execution to every
-dependency-respecting permutation. Constructing that reference execution from a
-stopped valid resolved history, the unbounded-history extension, and necessity
-remain to be formalized.
+The stopped-history theorem constructs the finite reference execution from the
+history itself, then transfers it to every dependency-respecting schedule of
+exactly the same operation occurrences. The unbounded-history extension and
+necessity remain to be formalized.
 -/
 
 namespace Define.OperationGraph
@@ -147,5 +148,35 @@ theorem finite_respecting_schedule_execution
   exact
     exchanges.preserves_calculated_schedule_execution history all_operations
       reference_nodup reference_execution
+
+/--
+Every dependency-respecting schedule containing exactly the operations of a
+stopped valid resolved history executes with the history's observations and
+final occupancy.
+-/
+theorem stopped_history_finite_schedule_execution
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {operationCount : Nat}
+    (history_stopped : history.operationAt operationCount = none)
+    {candidateSchedule : List ParticleOperation}
+    (candidate_permuted :
+      (history.operationsBefore operationCount).Perm candidateSchedule)
+    (candidate_respects :
+      RespectsPrecedence (Reaches (CalculatedDependency history))
+        candidateSchedule) :
+    ScheduleExecution history.observation candidateSchedule
+      (history.occupiedBefore 0) (history.occupiedBefore operationCount) := by
+  apply
+    finite_respecting_schedule_execution history candidate_permuted
+      (history.operationsBefore_nodup operationCount)
+  · intro operation operation_member
+    exact
+      (history.operationsBefore_iff_of_stopped history_stopped).mp
+        operation_member
+  · exact
+      history.operationsBefore_respects_calculatedDependency operationCount
+  · exact candidate_respects
+  · exact history.operationsBefore_execution operationCount
 
 end Define.OperationGraph

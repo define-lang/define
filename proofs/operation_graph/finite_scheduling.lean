@@ -40,6 +40,32 @@ inductive ScheduleExecution
       ScheduleExecution observation (operation :: remaining) occupiedBefore
         occupiedAfter
 
+/--
+An enabled operation with its specified observation can be appended to a finite
+schedule execution.
+-/
+theorem ScheduleExecution.snoc
+    {observation : ParticleOperation → Position → Prop}
+    {schedule : List ParticleOperation}
+    {occupiedBefore occupiedAtEnd : Position → Prop}
+    (execution :
+      ScheduleExecution observation schedule occupiedBefore occupiedAtEnd)
+    {operation : ParticleOperation}
+    (enabled : OperationEnabled operation occupiedAtEnd)
+    (observed :
+      OperationObservation operation occupiedAtEnd = observation operation) :
+    ScheduleExecution observation (schedule ++ [operation]) occupiedBefore
+      (OccupancyAfter operation occupiedAtEnd) := by
+  induction execution with
+  | nil =>
+      exact .cons enabled observed (.nil _)
+  | cons first_enabled first_observed remaining_execution
+      induction_hypothesis =>
+      simp only [List.cons_append]
+      exact
+        .cons first_enabled first_observed
+          (induction_hypothesis enabled observed)
+
 theorem ScheduleExecution.swap_head_unrelated
     {observation : ParticleOperation → Position → Prop}
     {firstOperation secondOperation : ParticleOperation}
