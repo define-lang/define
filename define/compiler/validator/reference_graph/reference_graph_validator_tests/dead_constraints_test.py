@@ -118,7 +118,7 @@ def test_constraint_on_interface_position_filled_by_moving_caller_particle_is_al
     assert_no_errors(result.program_result)
 
 
-def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_create(
+def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_create(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -132,7 +132,7 @@ def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_crea
     assert all_diags[0].location.column == 24
 
 
-def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_move_from_local(
+def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_local(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -146,7 +146,7 @@ def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_move
     assert all_diags[0].location.column == 24
 
 
-def test_unused_constraint_on_inferred_occupied_input_interface_is_dead_via_move_from_interface(
+def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_interface(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

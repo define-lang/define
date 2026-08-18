@@ -134,7 +134,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert execution.destructor_trigger_requirement is None
 
 
-def test_requirement_input_fires_destructor():
+def test_requirement_binding_hole_fires_destructor():
     destructor_action = _action("/destructor")
     caller_action = _action("/caller")
     caller_graph = operation_graph.OperationGraph(caller_action)

@@ -58,9 +58,6 @@ type EmptyRuleDependencyNode = LastOperationNode | EmptyRuleBindingHoleNode
 type EmptyOrMoveRuleDependencyNode = (
     EmptyRuleDependencyNode | CallerMoveRuleFillDependencyNode
 )
-# TODO: Replace the remaining "input" terminology in consumers with names for
-# callee nodes, caller nodes, node bindings, Dependency Fanouts, or Dependency
-# Joins according to their actual role.
 type AbstractOperationNode = (
     ActionParentLastOperationNode
     | RequirementNode
@@ -508,8 +505,9 @@ class ParticleChildOperations:
         return frozenset(operation.child_position for operation in self.operations)
 
 
-# Separate propagation paths can require distinct caller inputs with identical
-# dependency data, so these values use identity when codegen keys input methods.
+# Separate propagation paths can require distinct Binding Holes with identical
+# Empty Rule Collection data, so these values use identity when codegen keys
+# Binding Hole methods.
 @dataclass(frozen=True, slots=True, eq=False)
 class CallerEmptyRuleCollection:
     """The Empty Rule's Collection awaiting an earlier caller.
@@ -665,8 +663,9 @@ class ActionExecution:
             return requirement_satisfaction.operation
 
         # Position Requirements form a chain through parent names, so this node has
-        # exactly one direct input: the nearest parent-name requirement, or the
-        # action parent's last operation when there is no parent-name requirement.
+        # exactly one direct dependency: the nearest parent-name requirement, or
+        # the action parent's last operation when there is no parent-name
+        # requirement.
         (parent_binding_hole,) = callee_binding_hole.depends_on
         if isinstance(parent_binding_hole, ActionParentLastOperationNode):
             return self.action_parent_last_operation

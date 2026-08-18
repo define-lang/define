@@ -320,7 +320,8 @@ def test_destructor_on_particle_from_callee_guarantee(
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(result)": ["test.create(box)"],
-        # The guarantee both fires the destructor and supplies its Action Parent input.
+        # The Guarantee both fires the destructor and is the caller operation bound
+        # to the destructor's Action Parent Binding Hole.
         "destructor.create(_noop)": ["maker.create(result)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
         "test.destroy(box::/maker::result)": ["maker.create(result)"],
@@ -389,8 +390,8 @@ def test_destructor_on_particle_from_transitive_callee_guarantee(
         "middle.create(box::/inner::run)": ["middle.create(box)"],
         "inner.create(result)": ["middle.create(box)"],
         "inner.create(result::/marker)": ["inner.create(result)"],
-        # The transitive result guarantee fires the destructor and supplies its
-        # Action Parent input.
+        # The transitive result Guarantee fires the destructor and is the caller
+        # operation bound to the destructor's Action Parent Binding Hole.
         "destructor.create(_noop)": ["inner.create(result)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
         # The child guarantee supplies the destructor's occupied requirement.

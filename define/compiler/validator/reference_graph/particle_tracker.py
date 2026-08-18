@@ -1782,9 +1782,10 @@ class ParticleTracker:
             self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
 
-        # The caller never filled the input interface position. The callee moves the particle to
-        # another position. Thus, the origin_state _exists_ but the position got EmptyGuarantee
-        # instead of being filled by something (and there's nothing in saved_state).
+        # The caller never filled the Interface Position. The callee moves the
+        # particle to another position. Thus, the origin_state _exists_ but the
+        # position got EmptyGuarantee instead of being filled by something (and
+        # there's nothing in saved_state).
         if origin_state.particle_info is None:
             self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return

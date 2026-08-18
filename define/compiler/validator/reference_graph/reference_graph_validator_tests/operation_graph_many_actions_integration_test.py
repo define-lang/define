@@ -205,7 +205,7 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     }
 
 
-def test_child_guarantee_with_distinct_occupied_and_empty_rule_inputs(
+def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -353,7 +353,7 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
     }
 
 
-def test_caller_empty_rule_preserves_reached_input_through_intermediate_action(
+def test_caller_empty_rule_preserves_indirect_caller_move_through_intermediate_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -549,7 +549,7 @@ def test_caller_fill_dependency_is_removed_through_callee_guarantee(
     }
 
 
-def test_pending_move_rule_input_shares_caller_operation_with_another_input(
+def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -949,7 +949,7 @@ def test_deep_diamond_operations_on_the_same_implied_position(
     }
 
 
-def test_triggered_action_input_depends_on_multiple_guarantees(
+def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

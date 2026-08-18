@@ -232,7 +232,7 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
     strict=True,
     reason=_EMPTY_RULE_BINDING_HOLE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS,
 )
-def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
+def test_caller_empty_rule_excludes_sibling_move_depended_on_via_another_callee_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -255,7 +255,7 @@ def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
     }
 
 
-def test_caller_empty_rule_remaining_move_reaches_one_input_through_two_dependencies(
+def test_caller_empty_rule_remaining_move_has_two_paths_to_one_caller_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -784,7 +784,7 @@ def test_triggered_action_with_no_guarantees_still_runs(
     }
 
 
-def test_triggered_action_input_releases_two_parallel_local_operation_chains(
+def test_parallel_callee_local_operation_chains_wait_on_action_parent_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

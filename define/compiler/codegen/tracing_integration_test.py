@@ -104,9 +104,10 @@ def _assert_trace_respects_resolved_operation_dependencies(
     result: driver.DriverResult,
 ):
     # TODO: Derive the generated runtime's operation partial order independently
-    # from the Action Plan, including joins, Action Execution inputs, guarantees, and
-    # destruction connections. Project its synchronization events to Position
-    # Operations and compare its transitive closure with the Operation Graph
+    # from the Action Plan, including Action Fragment joins, Binding Hole Fanouts,
+    # Callee Binding Joins, guarantees, and destruction connections. Project its
+    # synchronization events to Position Operations and compare its transitive
+    # closure with the Operation Graph
     # Resolver's closure. Checking one observed trace only proves that execution
     # respected the resolver; it cannot detect extra serialization, and scheduling
     # can conceal a missing generated dependency.

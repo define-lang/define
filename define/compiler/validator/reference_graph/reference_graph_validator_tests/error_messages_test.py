@@ -569,7 +569,7 @@ def test_requirement_carried_through_actions_on_locals_format(
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     # action</inner> and action</middle> exist only on body-local positions (gw
     # and mid_holder); the particle with its /marker child is passed down
-    # through each action's input interface position. The missing child is
+    # through each action's Interface Position named input. The missing child is
     # reported on the path /test can act on, with the locals never appearing.
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 19, column 30

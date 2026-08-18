@@ -93,7 +93,7 @@ class ActionNameGenerator:
             ast.GlobalTypedName, action_context.GeneratedAction
         ],
     ):
-        """Initialize with the execution namespace and its naming inputs."""
+        """Initialize from the Action Definition, Action Plan, and generated actions."""
         self._definition = definition
         self._plan = plan
         self._current_fqun = definition.typed_name.name_content.fqun.canonical
