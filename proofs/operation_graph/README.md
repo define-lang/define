@@ -70,7 +70,8 @@ The Lean modules with matching names mirror the dependency diagram:
 `characterization.lean` imports both; and `maximum_safe_concurrency.lean`
 imports characterization. The minimality, completeness, and characterization
 modules each expose a theorem stated directly for an arbitrary
-`ValidResolvedHistory`, and every Lean module has a Bazel axiom audit.
+`ValidResolvedHistory`, and every theorem-bearing Lean module has a Bazel axiom
+audit.
 
 The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without

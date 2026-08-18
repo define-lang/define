@@ -15,6 +15,7 @@ filegroup(
         ":create_destroy_history",
         ":definitions",
         ":empty_rule_child_positions_independence_witness",
+        ":fill_dependency_removal_independence_witness",
         ":fill_dependency_removal_witness",
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
@@ -270,6 +271,34 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "fill_dependency_removal_independence_witness",
+    srcs = ["fill_dependency_removal_independence_witness.lean"],
+    deps = [
+        ":fill_dependency_removal_witness",
+        ":independence_witness_support",
+        ":minimality",
+    ],
+)
+
+lean_axiom_test(
+    name = "fill_dependency_removal_independence_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["fill_dependency_removal_independence_witness"],
+    theorems = [
+        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.complete_final_dependency",
+        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.complete_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
+        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_rules_derive_graph",
+    ],
+    deps = [":fill_dependency_removal_independence_witness"],
+)
+
+lean_library(
     name = "fill_dependency_removal_witness",
     srcs = ["fill_dependency_removal_witness.lean"],
     deps = [
@@ -384,27 +413,13 @@ lean_library(
     srcs = ["independence_witnesses.lean"],
     deps = [
         ":comparison_simultaneity_independence_witness",
-        ":definitions",
         ":empty_rule_child_positions_independence_witness",
-        ":fill_dependency_removal_witness",
+        ":fill_dependency_removal_independence_witness",
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
-        ":independence_witness_support",
-        ":minimality",
         ":move_child_entries_independence_witness",
         ":move_correction_independence_witness",
     ],
-)
-
-lean_axiom_test(
-    name = "independence_witnesses_axioms_test",
-    size = "small",
-    allowed_axioms = [],
-    imports = ["independence_witnesses"],
-    theorems = [
-        "Define.OperationGraph.IndependenceWitnesses.FillDependencyRemoval.weakened_not_transitively_minimal",
-    ],
-    deps = [":independence_witnesses"],
 )
 
 lean_library(
