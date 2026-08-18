@@ -6,21 +6,21 @@
         self.{{ init_method_name }}()
         {% endfor %}
         {% for successor_method_name in fragment.successor_fragment_method_names %}
-            {% set has_later = not loop.last or fragment.triggered_input_successor_method_names or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names or fragment.destruction_connection_names_to_complete %}
+            {% set has_later = not loop.last or fragment.callee_binding_join_method_names_that_depend_on_fragment or fragment.guarantee_publication_names or fragment.triggered_action_execution_callee_binding_join_method_names or fragment.destruction_connection_names_to_complete %}
         {{ invoke_method(successor_method_name, submit=has_later) }}
         {% endfor %}
-        {% for method_name in fragment.triggered_input_successor_method_names %}
-            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.execution_input_successor_method_names or fragment.destruction_connection_names_to_complete %}
+        {% for method_name in fragment.callee_binding_join_method_names_that_depend_on_fragment %}
+            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.triggered_action_execution_callee_binding_join_method_names or fragment.destruction_connection_names_to_complete %}
         {{ invoke_method(method_name, submit=has_later) }}
         {% endfor %}
         {% for publication_name in fragment.guarantee_publication_names %}
-            {% if loop.last and not fragment.execution_input_successor_method_names and not fragment.destruction_connection_names_to_complete %}
+            {% if loop.last and not fragment.triggered_action_execution_callee_binding_join_method_names and not fragment.destruction_connection_names_to_complete %}
         self.scheduler.continue_with(self.guarantees.{{ publication_name }})
             {% else %}
         self.scheduler.submit_all(self.guarantees.{{ publication_name }})
             {% endif %}
         {% endfor %}
-        {% for method_name in fragment.execution_input_successor_method_names %}
+        {% for method_name in fragment.triggered_action_execution_callee_binding_join_method_names %}
         {{ invoke_method(method_name, submit=not loop.last or fragment.destruction_connection_names_to_complete) }}
         {% endfor %}
         {% for connection_name in fragment.destruction_connection_names_to_complete %}

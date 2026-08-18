@@ -1,17 +1,17 @@
 {% from "action_execution_init.j2" import action_execution_init %}
 {% from "action_fragments.j2" import action_fragment_methods %}
 {% from "triggered_action_execution.j2" import triggered_action_execution_methods %}
-{% from "caller_inputs.j2" import caller_input_methods %}
-{% from "action_triggered_action_input.j2" import triggered_action_input_methods %}
+{% from "binding_hole_fanouts.j2" import binding_hole_fanout_methods %}
+{% from "callee_binding_joins.j2" import callee_binding_join_methods %}
 {% from "trigger_for_destroyed_callee_guarantee_particle.j2" import trigger_methods_for_destroyed_callee_guarantee_particles %}
 {% macro action_execution(action_class_name, execution) %}
 
 @final
 class {{ execution.execution_class_name }}:
 {{ action_execution_init(action_class_name, execution) -}}
-{{ caller_input_methods(execution.caller_inputs) -}}
+{{ binding_hole_fanout_methods(execution.binding_hole_fanouts) -}}
 {{ action_fragment_methods(execution.fragments) -}}
 {{ triggered_action_execution_methods(execution.action_executions, execution.trace_operations) -}}
 {{ trigger_methods_for_destroyed_callee_guarantee_particles(execution.triggers_for_destroyed_callee_guarantee_particles) -}}
-{{ triggered_action_input_methods(execution.triggered_action_inputs) -}}
+{{ callee_binding_join_methods(execution.callee_binding_joins) -}}
 {% endmacro %}

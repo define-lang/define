@@ -4,7 +4,7 @@
 
     def {{ action_execution.method_name }}(self):
         self.{{ action_execution.action_execution_init_method_name }}()
-        {% for method_name in action_execution.triggered_input_method_names %}
+        {% for method_name in action_execution.callee_binding_join_method_names %}
         {{ invoke_method(method_name, submit=not loop.last) }}
         {% endfor %}
     {% endfor %}

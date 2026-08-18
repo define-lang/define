@@ -81,8 +81,8 @@ class ActionGuaranteesGenerator:
         return (
             any(fragment.guarantee_dependencies for fragment in self._plan.fragments)
             or any(
-                triggered_input.guarantee_dependencies
-                for triggered_input in self._plan.callee_binding_joins
+                callee_binding_join.guarantee_dependencies
+                for callee_binding_join in self._plan.callee_binding_joins
             )
             or bool(self._plan.triggers_for_destroyed_callee_guarantee_particles)
         )
@@ -156,8 +156,8 @@ class ActionGuaranteesGenerator:
                         method_name=self._names.fragments[fragment],
                     )
                 )
-        for triggered_input in self._plan.callee_binding_joins:
-            for dependency in triggered_input.guarantee_dependencies:
+        for callee_binding_join in self._plan.callee_binding_joins:
+            for dependency in callee_binding_join.guarantee_dependencies:
                 child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
                     interface, dependency
                 )
@@ -165,7 +165,9 @@ class ActionGuaranteesGenerator:
                     template_context.GuaranteeRegistrationContext(
                         child_guarantees_names=child_guarantees_names,
                         guarantee_name=guarantee_name,
-                        method_name=self._names.triggered_inputs[triggered_input],
+                        method_name=self._names.callee_binding_join_method_names[
+                            callee_binding_join
+                        ],
                     )
                 )
         for (

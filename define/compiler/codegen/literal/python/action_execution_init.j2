@@ -58,8 +58,8 @@
         self.{{ action_execution.destruction_connections_member_name }}: literal.DestructionConnections
         {% endif %}
     {% endfor %}
-    {% for triggered_input in execution.triggered_action_inputs %}
-        {% for destruction_position in triggered_input.destruction_positions %}
+    {% for callee_binding_join in execution.callee_binding_joins %}
+        {% for destruction_position in callee_binding_join.destruction_positions %}
         self.{{ destruction_position.member_name }}: literal.Position
         {% endfor %}
     {% endfor %}
@@ -68,9 +68,9 @@
         self.join_for_{{ fragment.method_name }} = literal.Join({{ fragment.dependency_count }})
         {% endif %}
     {% endfor %}
-    {% for triggered_input in execution.triggered_action_inputs %}
-        {% if triggered_input.dependency_count > 1 %}
-        self.join_for_{{ triggered_input.method_name }} = literal.Join({{ triggered_input.dependency_count }})
+    {% for callee_binding_join in execution.callee_binding_joins %}
+        {% if callee_binding_join.dependency_count > 1 %}
+        self.join_for_{{ callee_binding_join.method_name }} = literal.Join({{ callee_binding_join.dependency_count }})
         {% endif %}
     {% endfor %}
 {% endmacro %}

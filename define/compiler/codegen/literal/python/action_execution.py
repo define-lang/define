@@ -26,7 +26,7 @@ class GeneratedExecution:
     """Generated execution context and caller-facing interface."""
 
     context: template_context.ActionExecutionContext
-    input_method_names: dict[operation_graph_model.BindingHole, str]
+    binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
     guarantee_interface: action_context.GuaranteeInterface | None
     execute_method_names: list[str]
     destruction_continuations: dict[
@@ -96,7 +96,7 @@ class ActionExecutionGenerator:
                 statement_generator,
             ).generate()
         )
-        triggered_action_input_contexts = self._generate_triggered_action_inputs(
+        callee_binding_join_contexts = self._generate_callee_binding_joins(
             names,
             statement_generator,
         )
@@ -113,12 +113,12 @@ class ActionExecutionGenerator:
                 names,
                 statement_generator,
             ),
-            caller_inputs=self._generate_caller_inputs(names),
+            binding_hole_fanouts=self._generate_binding_hole_fanouts(names),
             action_executions=action_execution_contexts,
             triggers_for_destroyed_callee_guarantee_particles=(
                 triggers_for_destroyed_callee_guarantee_particle_contexts
             ),
-            triggered_action_inputs=triggered_action_input_contexts,
+            callee_binding_joins=callee_binding_join_contexts,
             guarantees=guarantees.context,
             accepts_destruction_connections=(
                 self._plan.accepts_destruction_connections
@@ -127,7 +127,7 @@ class ActionExecutionGenerator:
         )
         return GeneratedExecution(
             context=context,
-            input_method_names=names.caller_inputs,
+            binding_hole_method_names=names.binding_hole_method_names,
             guarantee_interface=guarantees.interface,
             execute_method_names=[
                 names.fragments[fragment] for fragment in self._plan.execute_fragments
@@ -188,9 +188,9 @@ class ActionExecutionGenerator:
                         names.fragments[successor]
                         for successor in fragment.successor_fragments
                     ],
-                    triggered_input_successor_method_names=[
-                        names.triggered_inputs[triggered_input]
-                        for triggered_input in (
+                    callee_binding_join_method_names_that_depend_on_fragment=[
+                        names.callee_binding_join_method_names[callee_binding_join]
+                        for callee_binding_join in (
                             fragment.callee_binding_joins_that_depend_on_fragment
                         )
                     ],
@@ -198,9 +198,9 @@ class ActionExecutionGenerator:
                         names.triggered_actions[action_execution].initializer_name
                         for action_execution in fragment.action_execution_successors
                     ],
-                    execution_input_successor_method_names=[
-                        names.triggered_inputs[triggered_input]
-                        for triggered_input in (
+                    triggered_action_execution_callee_binding_join_method_names=[
+                        names.callee_binding_join_method_names[callee_binding_join]
+                        for callee_binding_join in (
                             fragment.triggered_action_execution_callee_binding_joins
                         )
                     ],
@@ -216,45 +216,56 @@ class ActionExecutionGenerator:
             )
         return fragments
 
-    def _generate_caller_inputs(
+    def _generate_binding_hole_fanouts(
         self, names: action_names.ActionNames
-    ) -> list[template_context.CallerDependencyFanoutContext]:
+    ) -> list[template_context.BindingHoleFanoutContext]:
         return [
-            template_context.CallerDependencyFanoutContext(
-                input_method_name=names.caller_inputs[caller_input.binding_hole],
-                fragment_method_names=[
-                    names.fragments[fragment] for fragment in caller_input.fragments
+            template_context.BindingHoleFanoutContext(
+                binding_hole_method_name=names.binding_hole_method_names[
+                    binding_hole_fanout.binding_hole
                 ],
-                triggered_input_method_names=[
-                    names.triggered_inputs[triggered_input]
-                    for triggered_input in caller_input.callee_binding_joins
+                fragment_method_names=[
+                    names.fragments[fragment]
+                    for fragment in binding_hole_fanout.fragments
+                ],
+                callee_binding_join_method_names=[
+                    names.callee_binding_join_method_names[callee_binding_join]
+                    for callee_binding_join in binding_hole_fanout.callee_binding_joins
                 ],
                 destructor_execution_init_methods=[
                     names.triggered_actions[destructor_execution].initializer_name
-                    for destructor_execution in caller_input.destructor_executions
+                    for destructor_execution in (
+                        binding_hole_fanout.destructor_executions
+                    )
                 ],
             )
-            for caller_input in self._plan.binding_hole_fanouts
+            for binding_hole_fanout in self._plan.binding_hole_fanouts
         ]
 
-    def _generate_triggered_action_inputs(
+    def _generate_callee_binding_joins(
         self,
         names: action_names.ActionNames,
         statement_generator: action_statements.ActionStatementsGenerator,
-    ) -> list[template_context.CalleeDependencyJoinContext]:
-        triggered_action_inputs: list[template_context.CalleeDependencyJoinContext] = []
-        for triggered_input in self._plan.callee_binding_joins:
-            execution = triggered_input.execution
-            triggered_action_inputs.append(
-                template_context.CalleeDependencyJoinContext(
+    ) -> list[template_context.CalleeBindingJoinContext]:
+        callee_binding_join_contexts: list[
+            template_context.CalleeBindingJoinContext
+        ] = []
+        for callee_binding_join in self._plan.callee_binding_joins:
+            execution = callee_binding_join.execution
+            callee_binding_join_contexts.append(
+                template_context.CalleeBindingJoinContext(
                     triggered_action_execution_name=(
                         names.triggered_actions[execution].execution_name
                     ),
-                    callee_input_method_name=self._generated_actions[
+                    callee_binding_hole_method_name=self._generated_actions[
                         execution.callee_action_name
-                    ].input_method_names[triggered_input.callee_binding_hole],
-                    method_name=names.triggered_inputs[triggered_input],
-                    dependency_count=triggered_input.dependency_count,
+                    ].binding_hole_method_names[
+                        callee_binding_join.callee_binding_hole
+                    ],
+                    method_name=names.callee_binding_join_method_names[
+                        callee_binding_join
+                    ],
+                    dependency_count=callee_binding_join.dependency_count,
                     destruction_positions=[
                         template_context.DestructionPositionContext(
                             member_name=names.destruction_positions[operation],
@@ -262,11 +273,13 @@ class ActionExecutionGenerator:
                                 operation.target
                             ),
                         )
-                        for operation in triggered_input.contributed_destruction_operations
+                        for operation in (
+                            callee_binding_join.contributed_destruction_operations
+                        )
                     ],
                 )
             )
-        return triggered_action_inputs
+        return callee_binding_join_contexts
 
     def _generate_triggers_for_destroyed_callee_guarantee_particles(
         self,
@@ -281,12 +294,12 @@ class ActionExecutionGenerator:
             triggered_action_names = names.triggered_actions[
                 trigger_for_destroyed_callee_guarantee_particle.execution
             ]
-            triggered_input_method_names: list[str] = []
+            callee_binding_join_method_names: list[str] = []
             for (
-                triggered_input
+                callee_binding_join
             ) in trigger_for_destroyed_callee_guarantee_particle.callee_binding_joins:
-                triggered_input_method_names.append(
-                    names.triggered_inputs[triggered_input]
+                callee_binding_join_method_names.append(
+                    names.callee_binding_join_method_names[callee_binding_join]
                 )
             contexts.append(
                 template_context.TriggerForDestroyedCalleeGuaranteeParticleContext(
@@ -294,7 +307,7 @@ class ActionExecutionGenerator:
                     action_execution_init_method_name=(
                         triggered_action_names.initializer_name
                     ),
-                    triggered_input_method_names=triggered_input_method_names,
+                    callee_binding_join_method_names=callee_binding_join_method_names,
                 )
             )
         return contexts

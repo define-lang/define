@@ -1,0 +1,17 @@
+{% from "method_invocation.j2" import invoke_method %}
+{% macro binding_hole_fanout_methods(binding_hole_fanouts) %}
+    {% for binding_hole_fanout in binding_hole_fanouts %}
+
+    def {{ binding_hole_fanout.binding_hole_method_name }}(self):
+        {% for destructor_execution_init_method in binding_hole_fanout.destructor_execution_init_methods %}
+        self.{{ destructor_execution_init_method }}()
+        {% endfor %}
+        {% for fragment_method_name in binding_hole_fanout.fragment_method_names %}
+            {% set has_later = not loop.last or binding_hole_fanout.callee_binding_join_method_names %}
+        {{ invoke_method(fragment_method_name, submit=has_later) }}
+        {% endfor %}
+        {% for method_name in binding_hole_fanout.callee_binding_join_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}

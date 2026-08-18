@@ -85,7 +85,7 @@ class ActionDefinitionGenerator:
         )
         return action_context.GeneratedAction(
             context,
-            generated_execution.input_method_names,
+            generated_execution.binding_hole_method_names,
             generated_execution.guarantee_interface,
             generated_execution.destruction_continuations,
         )

@@ -11,13 +11,13 @@ _TRANSITIVELY_REDUNDANT_DEPENDENCY = (
     "The Move Rule retains a Fill dependency already reachable through Moves on "
     "unrelated positions"
 )
-_GUARANTEE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS = (
-    "Action Guarantee resolution does not preserve caller inputs reached by the "
-    "guaranteed operation"
+_GUARANTEE_DOES_NOT_PRESERVE_BINDING_HOLES_DEPENDED_ON_BY_GUARANTEED_OPERATION = (
+    "Action Guarantee resolution does not preserve Binding Holes depended on by "
+    "the guaranteed operation"
 )
 
 
-def test_caller_input_feeds_local_fragment_and_multiple_triggered_inputs(
+def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -527,7 +527,9 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
 
 @pytest.mark.xfail(
     strict=True,
-    reason=_GUARANTEE_DOES_NOT_PRESERVE_REACHED_CALLER_INPUTS,
+    reason=(
+        _GUARANTEE_DOES_NOT_PRESERVE_BINDING_HOLES_DEPENDED_ON_BY_GUARANTEED_OPERATION
+    ),
 )
 def test_caller_fill_dependency_is_removed_through_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,

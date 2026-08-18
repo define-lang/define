@@ -115,9 +115,9 @@ class ActionFragmentContext:
     method_name: str
     statements: list[ActionStatementContext]
     successor_fragment_method_names: list[str]
-    triggered_input_successor_method_names: list[str]
+    callee_binding_join_method_names_that_depend_on_fragment: list[str]
     triggered_action_successor_init_method_names: list[str]
-    execution_input_successor_method_names: list[str]
+    triggered_action_execution_callee_binding_join_method_names: list[str]
     guarantee_publication_names: list[str]
     dependency_count: int
     continue_destroy_method_name: str | None
@@ -195,23 +195,23 @@ class GuaranteesContext:
 
 
 @dataclass
-class CalleeDependencyJoinContext:
-    """A generated method that joins dependencies before invoking a direct callee."""
+class CalleeBindingJoinContext:
+    """The generated join for one direct callee binding."""
 
     triggered_action_execution_name: str
-    callee_input_method_name: str
+    callee_binding_hole_method_name: str
     method_name: str
     dependency_count: int
     destruction_positions: list[DestructionPositionContext]
 
 
 @dataclass
-class CallerDependencyFanoutContext:
-    """A generated method that fans a caller-side dependency out to its consumers."""
+class BindingHoleFanoutContext:
+    """A generated method that notifies every consumer of one Binding Hole."""
 
-    input_method_name: str
+    binding_hole_method_name: str
     fragment_method_names: list[str]
-    triggered_input_method_names: list[str]
+    callee_binding_join_method_names: list[str]
     destructor_execution_init_methods: list[str]
 
 
@@ -221,7 +221,7 @@ class TriggerForDestroyedCalleeGuaranteeParticleContext:
 
     method_name: str
     action_execution_init_method_name: str
-    triggered_input_method_names: list[str]
+    callee_binding_join_method_names: list[str]
 
 
 @dataclass
@@ -231,12 +231,12 @@ class ActionExecutionContext:
     execution_class_name: str
     local_position_statements: list[ActionStatementContext]
     fragments: list[ActionFragmentContext]
-    caller_inputs: list[CallerDependencyFanoutContext]
+    binding_hole_fanouts: list[BindingHoleFanoutContext]
     action_executions: list[TriggeredActionExecutionContext]
     triggers_for_destroyed_callee_guarantee_particles: list[
         TriggerForDestroyedCalleeGuaranteeParticleContext
     ]
-    triggered_action_inputs: list[CalleeDependencyJoinContext]
+    callee_binding_joins: list[CalleeBindingJoinContext]
     guarantees: GuaranteesContext | None
     accepts_destruction_connections: bool
     trace_operations: bool = False

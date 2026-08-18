@@ -13,14 +13,14 @@ from define.compiler.validator.reference_graph import (
     operation_graph_model,
 )
 
-_ACCEPT_CALLER_INPUT_PREFIX = "accept_"
-_ACTION_PARENT_CALLER_INPUT_NAME = "accept_action_parent"
+_BINDING_HOLE_METHOD_PREFIX = "accept_"
+_ACTION_PARENT_BINDING_HOLE_METHOD_NAME = "accept_action_parent"
 _CREATE_FRAGMENT_PREFIX = "create_"
 _DESTROY_FRAGMENT_PREFIX = "destroy_"
 _DESTRUCTION_CONNECTION_PREFIX = "destruction_connection_"
 _DESTRUCTION_CONNECTIONS_SUFFIX = "_destruction_connections"
 _DESTRUCTION_POSITION_PREFIX = "destruction_position_"
-_EMPTY_RULE_CALLER_INPUT_PREFIX = "accept_for_empty_rule_"
+_EMPTY_RULE_BINDING_HOLE_METHOD_PREFIX = "accept_for_empty_rule_"
 _EXECUTION_PREFIX = "execution_"
 _GLOBAL_NAME_PREFIX = "global_"
 _GUARANTEE_MOVE_SEPARATOR = "__move__"
@@ -31,12 +31,12 @@ _CONTINUE_DESTROY_PREFIX = "continue_"
 _LOCAL_POSITION_PREFIX = "local_position_"
 _MOVE_FRAGMENT_PREFIX = "move_"
 _MOVE_TARGET_SEPARATOR = "_to_"
-_REQUIREMENT_CALLER_INPUT_PREFIXES = {
+_REQUIREMENT_BINDING_HOLE_METHOD_PREFIXES = {
     action_contract.PositionOccupancyState.EMPTY: "accept_when_empty_",
     action_contract.PositionOccupancyState.OCCUPIED: "accept_when_occupied_",
 }
 _TRIGGERED_ACTION_PREFIX = "trigger_"
-_TRIGGERED_INPUT_SEPARATOR = "__"
+_CALLEE_BINDING_JOIN_METHOD_SEPARATOR = "__"
 _TYPED_CHAIN_SEPARATOR = "__"
 _UNSAFE_IDENTIFIER_CHARACTERS = re.compile(r"[\W_]+")
 
@@ -62,13 +62,13 @@ class ActionNames:
 
     # The execution member for each local position source name.
     local_positions: dict[str, str]
-    # The execution method for each caller input.
-    caller_inputs: dict[operation_graph_model.BindingHole, str]
+    # The execution method for each Binding Hole.
+    binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
     # The canonical name, initializer method, and execution member for each
     # Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
-    # The execution method for each triggered action input.
-    triggered_inputs: dict[action_plan.CalleeBindingJoin, str]
+    # The execution method for each Callee Binding Join.
+    callee_binding_join_method_names: dict[action_plan.CalleeBindingJoin, str]
     # The execution method for each action fragment.
     fragments: dict[action_plan.ActionFragment, str]
     continue_destroy_methods: dict[action_plan.ActionFragment, str]
@@ -106,9 +106,11 @@ class ActionNameGenerator:
         # Allocating every name before building template contexts prevents
         # context-generation order from changing name-collision resolution.
         local_positions = self._local_position_names()
-        caller_inputs = self._caller_input_method_names()
+        binding_hole_method_names = self._binding_hole_method_names()
         triggered_actions = self._triggered_action_names()
-        triggered_inputs = self._triggered_input_method_names(triggered_actions)
+        callee_binding_join_method_names = self._callee_binding_join_method_names(
+            triggered_actions
+        )
         fragments = self._fragment_method_names()
         continue_destroy_methods = self._continue_destroy_method_names(fragments)
         destruction_connections = self._destruction_connection_names(triggered_actions)
@@ -119,9 +121,9 @@ class ActionNameGenerator:
         guarantee_publications = self._guarantee_publication_names()
         return ActionNames(
             local_positions=local_positions,
-            caller_inputs=caller_inputs,
+            binding_hole_method_names=binding_hole_method_names,
             triggered_actions=triggered_actions,
-            triggered_inputs=triggered_inputs,
+            callee_binding_join_method_names=callee_binding_join_method_names,
             fragments=fragments,
             continue_destroy_methods=continue_destroy_methods,
             destruction_connections=destruction_connections,
@@ -140,56 +142,61 @@ class ActionNameGenerator:
                 )
         return names
 
-    def _caller_input_method_names(
+    def _binding_hole_method_names(
         self,
     ) -> dict[operation_graph_model.BindingHole, str]:
         method_names: dict[operation_graph_model.BindingHole, str] = {}
-        for caller_input in self._plan.binding_hole_fanouts:
-            method_names[caller_input.binding_hole] = (
+        for binding_hole_fanout in self._plan.binding_hole_fanouts:
+            method_names[binding_hole_fanout.binding_hole] = (
                 self._execution_allocator.allocate(
-                    self._caller_input_name(caller_input.binding_hole)
+                    self._binding_hole_method_name(binding_hole_fanout.binding_hole)
                 )
             )
         return method_names
 
-    def _caller_input_name(
+    def _binding_hole_method_name(
         self,
-        resolved_input: operation_graph_model.BindingHole,
+        binding_hole: operation_graph_model.BindingHole,
     ) -> str:
-        """Return the method name for a caller input."""
-        match resolved_input:
+        """Return the execution method name for one Binding Hole."""
+        match binding_hole:
             case operation_graph_model.CallerMoveRuleFillDependencyNode():
-                return self._requirement_caller_input_name(
-                    resolved_input.caller_move_rule_fill_dependency.requirement
+                return self._requirement_binding_hole_method_name(
+                    binding_hole.caller_move_rule_fill_dependency.requirement
                 )
             case operation_graph_model.CallerMoveRuleFillDependency():
-                return self._requirement_caller_input_name(resolved_input.requirement)
+                return self._requirement_binding_hole_method_name(
+                    binding_hole.requirement
+                )
             case operation_graph_model.CallerEmptyRuleDependenciesNode():
-                return self._empty_rule_caller_input_name(
-                    resolved_input.caller_empty_rule_dependencies
+                return self._empty_rule_binding_hole_method_name(
+                    binding_hole.caller_empty_rule_dependencies
                 )
             case operation_graph_model.CallerEmptyRuleDependencies():
-                return self._empty_rule_caller_input_name(resolved_input)
+                return self._empty_rule_binding_hole_method_name(binding_hole)
             case operation_graph_model.ActionParentLastOperationNode():
-                return _ACTION_PARENT_CALLER_INPUT_NAME
+                return _ACTION_PARENT_BINDING_HOLE_METHOD_NAME
             case operation_graph_model.RequirementNode():
-                return self._requirement_caller_input_name(resolved_input.requirement)
-        typing.assert_never(resolved_input)
+                return self._requirement_binding_hole_method_name(
+                    binding_hole.requirement
+                )
+        typing.assert_never(binding_hole)
 
-    def _empty_rule_caller_input_name(
+    def _empty_rule_binding_hole_method_name(
         self,
         dependencies: operation_graph_model.CallerEmptyRuleDependencies,
     ) -> str:
         identifier = self._typed_chain_identifier(dependencies.requirement_position)
-        return _EMPTY_RULE_CALLER_INPUT_PREFIX + identifier
+        return _EMPTY_RULE_BINDING_HOLE_METHOD_PREFIX + identifier
 
-    def _requirement_caller_input_name(
+    def _requirement_binding_hole_method_name(
         self,
         requirement: operation_graph_model.OperationGraphRequirement,
     ) -> str:
         identifier = self._typed_chain_identifier(requirement.requirement_position)
         return (
-            _REQUIREMENT_CALLER_INPUT_PREFIXES[requirement.required_state] + identifier
+            _REQUIREMENT_BINDING_HOLE_METHOD_PREFIXES[requirement.required_state]
+            + identifier
         )
 
     def _triggered_action_names(
@@ -214,22 +221,24 @@ class ActionNameGenerator:
             )
         return names
 
-    def _triggered_input_method_names(
+    def _callee_binding_join_method_names(
         self,
         triggered_action_names: dict[
             operation_graph_model.ActionExecution, TriggeredActionNames
         ],
     ) -> dict[action_plan.CalleeBindingJoin, str]:
         method_names: dict[action_plan.CalleeBindingJoin, str] = {}
-        for triggered_input in self._plan.callee_binding_joins:
-            action_execution = triggered_input.execution
-            callee_input_method_name = self._generated_actions[
+        for callee_binding_join in self._plan.callee_binding_joins:
+            action_execution = callee_binding_join.execution
+            callee_binding_hole_method_name = self._generated_actions[
                 action_execution.callee_action_name
-            ].input_method_names[triggered_input.callee_binding_hole]
-            method_names[triggered_input] = self._execution_allocator.allocate(
+            ].binding_hole_method_names[callee_binding_join.callee_binding_hole]
+            method_names[callee_binding_join] = self._execution_allocator.allocate(
                 triggered_action_names[action_execution].canonical_name
-                + _TRIGGERED_INPUT_SEPARATOR
-                + callee_input_method_name.removeprefix(_ACCEPT_CALLER_INPUT_PREFIX)
+                + _CALLEE_BINDING_JOIN_METHOD_SEPARATOR
+                + callee_binding_hole_method_name.removeprefix(
+                    _BINDING_HOLE_METHOD_PREFIX
+                )
             )
         return method_names
 
@@ -373,8 +382,8 @@ class ActionNameGenerator:
         self,
     ) -> dict[operation_graph_model.DestructionFragmentDestroyNode, str]:
         names: dict[operation_graph_model.DestructionFragmentDestroyNode, str] = {}
-        for triggered_input in self._plan.callee_binding_joins:
-            for operation in triggered_input.contributed_destruction_operations:
+        for callee_binding_join in self._plan.callee_binding_joins:
+            for operation in callee_binding_join.contributed_destruction_operations:
                 target = self._typed_chain_identifier(
                     operation.target.canonical_chained_name_tuple
                 )

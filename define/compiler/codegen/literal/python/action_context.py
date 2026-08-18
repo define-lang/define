@@ -67,8 +67,8 @@ class ActionDefinitionContext:
             if action_execution.action is not None:
                 class_references.extend(action_execution.action.class_references)
             class_references.append(action_execution.execution_class)
-        for triggered_input in self.execution.triggered_action_inputs:
-            for destruction_position in triggered_input.destruction_positions:
+        for callee_binding_join in self.execution.callee_binding_joins:
+            for destruction_position in callee_binding_join.destruction_positions:
                 class_references.extend(destruction_position.position.class_references)
         return sorted(
             {class_reference.module_name for class_reference in class_references}
@@ -99,7 +99,7 @@ class GeneratedAction:
     """Generated context and caller-facing interface of one action."""
 
     context: ActionDefinitionContext
-    input_method_names: dict[operation_graph_model.BindingHole, str]
+    binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
     guarantee_interface: GuaranteeInterface | None
     destruction_continuations: dict[
         operation_graph_model.DestructionFactDestroyNode,

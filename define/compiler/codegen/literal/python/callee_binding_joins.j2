@@ -1,0 +1,15 @@
+{% from "position_expression.j2" import position_expression %}
+{% macro callee_binding_join_methods(callee_binding_joins) %}
+    {% for callee_binding_join in callee_binding_joins %}
+
+    def {{ callee_binding_join.method_name }}(self):
+        {% if callee_binding_join.dependency_count > 1 %}
+        if not self.join_for_{{ callee_binding_join.method_name }}.arrive():
+            return
+        {% endif %}
+        {% for destruction_position in callee_binding_join.destruction_positions %}
+        self.{{ destruction_position.member_name }} = {{ position_expression(destruction_position.position) }}
+        {% endfor %}
+        self.{{ callee_binding_join.triggered_action_execution_name }}.{{ callee_binding_join.callee_binding_hole_method_name }}()
+    {% endfor %}
+{% endmacro %}

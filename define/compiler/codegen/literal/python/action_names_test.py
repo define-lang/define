@@ -137,14 +137,16 @@ def _create_fragment(position_name: str) -> action_plan.ActionFragment:
     )
 
 
-def _requirement_input(
+def _requirement_binding_hole(
     position_name: str,
     required_state: action_contract.PositionOccupancyState,
 ) -> operation_graph_model.RequirementNode:
-    action_parent_input = operation_graph_model.ActionParentLastOperationNode(node_id=0)
+    action_parent_binding_hole = operation_graph_model.ActionParentLastOperationNode(
+        node_id=0
+    )
     return operation_graph_model.RequirementNode(
         node_id=1,
-        depends_on=(action_parent_input,),
+        depends_on=(action_parent_binding_hole,),
         requirement=operation_graph_model.OperationGraphRequirement(
             requirement_position=(f"position<{position_name}>",),
             required_state=required_state,
@@ -152,7 +154,7 @@ def _requirement_input(
     )
 
 
-def _empty_rule_input(
+def _empty_rule_binding_hole(
     position_name: str,
 ) -> operation_graph_model.CallerEmptyRuleDependencies:
     return operation_graph_model.CallerEmptyRuleDependencies(
@@ -171,10 +173,10 @@ def _generated_action(
         execution_class_name="CalleeExecution",
         local_position_statements=[],
         fragments=[],
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         guarantees=None,
         accepts_destruction_connections=False,
     )
@@ -208,15 +210,15 @@ def _action_names(
     ).generate()
 
 
-def _input_method_names(
-    *resolved_inputs: operation_graph_model.BindingHole,
+def _binding_hole_method_names(
+    *binding_holes: operation_graph_model.BindingHole,
 ) -> dict[operation_graph_model.BindingHole, str]:
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
         binding_hole_fanouts=[
-            action_plan.BindingHoleFanout(resolved_input)
-            for resolved_input in resolved_inputs
+            action_plan.BindingHoleFanout(binding_hole)
+            for binding_hole in binding_holes
         ],
         action_executions=[],
         callee_binding_joins=[],
@@ -225,7 +227,7 @@ def _input_method_names(
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
     )
-    return _action_names(plan).caller_inputs
+    return _action_names(plan).binding_hole_method_names
 
 
 def test_local_position_names():
@@ -248,43 +250,47 @@ def test_local_position_names():
     }
 
 
-def test_action_parent_input_name():
+def test_action_parent_binding_hole_method_name():
     action_parent = operation_graph_model.ActionParentLastOperationNode(node_id=0)
 
-    assert _input_method_names(action_parent) == {action_parent: "accept_action_parent"}
+    assert _binding_hole_method_names(action_parent) == {
+        action_parent: "accept_action_parent"
+    }
 
 
-def test_requirement_input_names_include_required_state():
-    empty = _requirement_input("empty", action_contract.PositionOccupancyState.EMPTY)
-    occupied = _requirement_input(
+def test_requirement_binding_hole_method_names_include_required_state():
+    empty = _requirement_binding_hole(
+        "empty", action_contract.PositionOccupancyState.EMPTY
+    )
+    occupied = _requirement_binding_hole(
         "occupied", action_contract.PositionOccupancyState.OCCUPIED
     )
 
-    assert _input_method_names(empty, occupied) == {
+    assert _binding_hole_method_names(empty, occupied) == {
         empty: "accept_when_empty_position_empty",
         occupied: "accept_when_occupied_position_occupied",
     }
 
 
 def test_semantic_prefixes_do_not_conflict_with_position_names():
-    empty_rule = _empty_rule_input("source")
-    empty_requirement = _requirement_input(
+    empty_rule = _empty_rule_binding_hole("source")
+    empty_requirement = _requirement_binding_hole(
         "empty", action_contract.PositionOccupancyState.EMPTY
     )
-    occupied_requirement = _requirement_input(
+    occupied_requirement = _requirement_binding_hole(
         "source", action_contract.PositionOccupancyState.OCCUPIED
     )
-    named_for_empty_rule = _requirement_input(
+    named_for_empty_rule = _requirement_binding_hole(
         "source_for_empty_rule", action_contract.PositionOccupancyState.OCCUPIED
     )
-    named_when_empty = _requirement_input(
+    named_when_empty = _requirement_binding_hole(
         "source_when_empty", action_contract.PositionOccupancyState.OCCUPIED
     )
-    named_when_occupied = _requirement_input(
+    named_when_occupied = _requirement_binding_hole(
         "source_when_occupied", action_contract.PositionOccupancyState.OCCUPIED
     )
 
-    assert _input_method_names(
+    assert _binding_hole_method_names(
         empty_rule,
         empty_requirement,
         occupied_requirement,
