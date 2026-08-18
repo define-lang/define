@@ -26,9 +26,7 @@ class GeneratedExecution:
     """Generated execution context and caller-facing interface."""
 
     context: template_context.ActionExecutionContext
-    input_method_names: dict[
-        operation_graph_model.AbstractDependencyOrOperationNode, str
-    ]
+    input_method_names: dict[operation_graph_model.BindingHole, str]
     guarantee_interface: action_context.GuaranteeInterface | None
     execute_method_names: list[str]
     destruction_continuations: dict[

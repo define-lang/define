@@ -4,8 +4,14 @@ There are two general types of nodes in an operation graph:
 
 * Concrete Nodes: these represent actual particle operations executed within
   an action. This is any create, move, destroy, or guarantee.
-* Abstract Nodes: These represent binding locations when we resolve dependencies
-  between actions. For example: RequirementNode or ActionParentLastOperationNode.
+* Abstract Nodes: These are Binding Holes represented by Operation Nodes. For
+  example: RequirementNode or ActionParentLastOperationNode.
+
+There is also a broader type of abstract "node" that includes bundles of resolved
+and unresolved dependencies for propagation during action resolution, such as
+CallerEmptyRuleDependencies. Broadly, we call these (including the Abstract Nodes)
+"Binding Holes" because they would be "filled in" by concrete nodes in the caller
+if we built a whole-program operation graph.
 """
 
 from __future__ import annotations
@@ -61,7 +67,7 @@ type AbstractOperationNode = (
     | CallerEmptyRuleDependenciesNode
     | CallerMoveRuleFillDependencyNode
 )
-type AbstractDependencyOrOperationNode = (
+type BindingHole = (
     AbstractOperationNode | CallerEmptyRuleDependencies | CallerMoveRuleFillDependency
 )
 type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], ConcreteOperationNode]]
@@ -527,17 +533,13 @@ class CallerEmptyRuleDependencies(CallerEmptyRuleCollection):
     nodes whose caller bindings are required to complete the Empty Rule.
     """
 
-    callee_nodes_to_bind_for_empty_rule_completion: tuple[
-        AbstractDependencyOrOperationNode, ...
-    ]
+    callee_nodes_to_bind_for_empty_rule_completion: tuple[BindingHole, ...]
 
     @classmethod
     def from_collection(
         cls,
         collection: CallerEmptyRuleCollection,
-        callee_nodes_to_bind_for_empty_rule_completion: tuple[
-            AbstractDependencyOrOperationNode, ...
-        ],
+        callee_nodes_to_bind_for_empty_rule_completion: tuple[BindingHole, ...],
     ) -> typing.Self:
         """Complete caller Collection state with the required callee nodes."""
         return cls(
@@ -560,14 +562,12 @@ class DirectCallerStateForEmptyRule:
     """Concrete Nodes and unresolved state supplied by one direct caller."""
 
     concrete_caller_nodes: list[ConcreteOperationNode] = field(default_factory=list)
-    unresolved_caller_state: list[AbstractDependencyOrOperationNode] = field(
-        default_factory=list
-    )
+    unresolved_caller_state: list[BindingHole] = field(default_factory=list)
 
     def add_callee_node_resolution(
         self,
         concrete_caller_nodes: Iterable[ConcreteOperationNode],
-        unresolved_caller_state: Iterable[AbstractDependencyOrOperationNode],
+        unresolved_caller_state: Iterable[BindingHole],
     ):
         """Add the caller-side result of resolving one callee node."""
         self.concrete_caller_nodes.extend(concrete_caller_nodes)
@@ -648,21 +648,21 @@ class ActionExecution:
         return self.callee.canonical_chained_name_tuple
 
     @property
-    def caller_input_dependency(self) -> RequirementNode | None:
-        """Return the caller input that triggers a destructor Action Execution."""
+    def destructor_trigger_requirement(self) -> RequirementNode | None:
+        """Return the Requirement that triggers a destructor Action Execution."""
         if isinstance(self.trigger_operation, RequirementNode):
             return self.trigger_operation
         return None
 
-    def caller_dependency_for_input(
+    def caller_operation_for_callee_binding_hole(
         self,
-        callee_input: ActionParentLastOperationNode | RequirementNode,
+        callee_binding_hole: ActionParentLastOperationNode | RequirementNode,
     ) -> ActionParentOperationNode:
-        """Return the caller operation satisfying one direct callee input."""
-        if isinstance(callee_input, ActionParentLastOperationNode):
+        """Return the caller operation for one direct callee Binding Hole."""
+        if isinstance(callee_binding_hole, ActionParentLastOperationNode):
             return self.action_parent_last_operation
         requirement_satisfaction = self.requirement_satisfactions.get(
-            callee_input.requirement.requirement_position
+            callee_binding_hole.requirement.requirement_position
         )
         if requirement_satisfaction is not None:
             return requirement_satisfaction.operation
@@ -670,11 +670,11 @@ class ActionExecution:
         # Position Requirements form a chain through parent names, so this node has
         # exactly one direct input: the nearest parent-name requirement, or the
         # action parent's last operation when there is no parent-name requirement.
-        (parent_input,) = callee_input.depends_on
-        if isinstance(parent_input, ActionParentLastOperationNode):
+        (parent_binding_hole,) = callee_binding_hole.depends_on
+        if isinstance(parent_binding_hole, ActionParentLastOperationNode):
             return self.action_parent_last_operation
         return self.requirement_satisfactions[
-            parent_input.requirement.requirement_position
+            parent_binding_hole.requirement.requirement_position
         ].operation
 
     def substitute_caller_move_rule_fill_dependency(
@@ -682,7 +682,7 @@ class ActionExecution:
         caller_dependency: CallerMoveRuleFillDependency,
     ) -> ConcreteOperationNode | CallerMoveRuleFillDependency | None:
         """Substitute the Fill dependency and apply the Move Rule comparison."""
-        fill_dependency = self.caller_dependency_for_input(
+        fill_dependency = self.caller_operation_for_callee_binding_hole(
             caller_dependency.fill_dependency
         )
         move_rule_comparison_positions = tuple(

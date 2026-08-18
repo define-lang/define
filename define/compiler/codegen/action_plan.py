@@ -118,7 +118,7 @@ class ActionExecutionPlan:
 class CallerDependencyFanout:
     """The consumers reached from one caller-side ``depends_on`` relationship."""
 
-    caller_input: operation_graph_model.AbstractDependencyOrOperationNode
+    caller_input: operation_graph_model.BindingHole
     fragments: list[ActionFragment] = field(init=False, default_factory=list)
     triggered_inputs: list[CalleeDependencyJoin] = field(
         init=False, default_factory=list
@@ -133,7 +133,7 @@ class CalleeDependencyJoin:
     """Caller-side dependencies joined before invoking one direct callee method."""
 
     execution: operation_graph_model.ActionExecution
-    callee_input: operation_graph_model.AbstractDependencyOrOperationNode
+    callee_input: operation_graph_model.BindingHole
     contributed_destruction_operations: list[
         operation_graph_model.DestructionFragmentDestroyNode
     ]
@@ -298,7 +298,7 @@ class _FragmentTopologyBuilder:
         if len(predecessors) != 1:
             return False
         if (
-            (self._uses_caller_inputs and resolved_operation.caller_inputs)
+            (self._uses_caller_inputs and resolved_operation.binding_holes_depended_on)
             or self._is_propagated_destruction_operation(operation)
             or (
                 isinstance(
@@ -339,7 +339,7 @@ class _FragmentTopologyBuilder:
                 and operation
                 in self._resolved_action.graph.guaranteed_positions_by_operation
             )
-            or resolved_operation.triggered_inputs
+            or resolved_operation.dependent_callee_bindings
             or resolved_operation.action_executions
         )
 
@@ -366,16 +366,14 @@ class _ActionPlanBuilder:
     def build_triggered_action(self) -> ActionPlan:
         """Build the reusable caller-input plan for Action Executions of this action."""
         return self._build(
-            self._resolved_action.caller_inputs,
+            self._resolved_action.binding_holes,
             publishes_guarantees=True,
             start_directly=False,
         )
 
     def _build(
         self,
-        caller_inputs: Sequence[
-            operation_graph_model.AbstractDependencyOrOperationNode
-        ],
+        caller_inputs: Sequence[operation_graph_model.BindingHole],
         *,
         publishes_guarantees: bool,
         start_directly: bool,
@@ -489,15 +487,13 @@ class _ActionPlanBuilder:
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
-        caller_inputs: Sequence[
-            operation_graph_model.AbstractDependencyOrOperationNode
-        ],
+        caller_inputs: Sequence[operation_graph_model.BindingHole],
     ) -> _CalleeDependencyJoinsByBinding:
         triggered_inputs_by_resolved_input: _CalleeDependencyJoinsByBinding = {}
         for resolved_action_execution in self._resolved_action.action_executions:
             action_execution = resolved_action_execution.execution
-            for resolved_input in resolved_action_execution.inputs.values():
-                dependencies = resolved_input.caller_dependencies
+            for callee_binding in resolved_action_execution.callee_bindings.values():
+                dependencies = callee_binding.caller_dependencies
                 dependency_count = (
                     len(dependencies.local_operations)
                     + len(dependencies.guarantee_dependencies)
@@ -505,30 +501,30 @@ class _ActionPlanBuilder:
                 )
                 # caller_inputs is empty for the entry point action.
                 if caller_inputs:
-                    dependency_count += len(resolved_input.caller_input_dependencies)
+                    dependency_count += len(callee_binding.caller_binding_holes)
                 triggered_input = CalleeDependencyJoin(
                     execution=action_execution,
-                    callee_input=resolved_input.callee_input,
+                    callee_input=callee_binding.callee_binding_hole,
                     contributed_destruction_operations=(
-                        resolved_input.contributed_destruction_operations
+                        callee_binding.contributed_destruction_operations
                     ),
                     guarantee_dependencies=dependencies.guarantee_dependencies,
                     dependency_count=dependency_count,
                 )
-                triggered_inputs_by_resolved_input[resolved_input] = triggered_input
+                triggered_inputs_by_resolved_input[callee_binding] = triggered_input
         for resolved_operation in self._resolved_action.operations.values():
             fragment = fragment_for_operation[resolved_operation.operation]
-            for resolved_input in resolved_operation.triggered_inputs:
+            for callee_binding in resolved_operation.dependent_callee_bindings:
                 fragment.triggered_input_successors.append(
-                    triggered_inputs_by_resolved_input[resolved_input]
+                    triggered_inputs_by_resolved_input[callee_binding]
                 )
             for resolved_action_execution in resolved_operation.action_executions:
                 fragment.action_execution_successors.append(
                     resolved_action_execution.execution
                 )
                 fragment.execution_input_successors.extend(
-                    triggered_inputs_by_resolved_input[resolved_input]
-                    for resolved_input in resolved_action_execution.inputs.values()
+                    triggered_inputs_by_resolved_input[callee_binding]
+                    for callee_binding in resolved_action_execution.callee_bindings.values()
                 )
         return triggered_inputs_by_resolved_input
 
@@ -542,9 +538,9 @@ class _ActionPlanBuilder:
             if guarantee_dependency is None:
                 continue
             triggered_inputs: list[CalleeDependencyJoin] = []
-            for resolved_input in resolved_action_execution.inputs.values():
+            for callee_binding in resolved_action_execution.callee_bindings.values():
                 triggered_inputs.append(
-                    triggered_inputs_by_resolved_input[resolved_input]
+                    triggered_inputs_by_resolved_input[callee_binding]
                 )
             triggers.append(
                 TriggerForDestroyedCalleeGuaranteeParticle(
@@ -608,9 +604,7 @@ class _ActionPlanBuilder:
 
     def _plan_caller_inputs(
         self,
-        resolved_caller_inputs: Sequence[
-            operation_graph_model.AbstractDependencyOrOperationNode
-        ],
+        resolved_caller_inputs: Sequence[operation_graph_model.BindingHole],
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
@@ -626,33 +620,31 @@ class _ActionPlanBuilder:
         }
         for resolved_operation in self._resolved_action.operations.values():
             fragment = fragment_for_operation[resolved_operation.operation]
-            for resolved_input in resolved_operation.caller_inputs:
+            for resolved_input in resolved_operation.binding_holes_depended_on:
                 caller_input_by_resolved_input[resolved_input].fragments.append(
                     fragment
                 )
                 fragment.dependency_count += 1
         for resolved_action_execution in self._resolved_action.action_executions:
-            for resolved_execution_input in resolved_action_execution.inputs.values():
-                triggered_input = triggered_inputs_by_resolved_input[
-                    resolved_execution_input
-                ]
-                for (
-                    resolved_input
-                ) in resolved_execution_input.caller_input_dependencies:
+            for callee_binding in resolved_action_execution.callee_bindings.values():
+                triggered_input = triggered_inputs_by_resolved_input[callee_binding]
+                for resolved_input in callee_binding.caller_binding_holes:
                     caller_input_by_resolved_input[
                         resolved_input
                     ].triggered_inputs.append(triggered_input)
-            caller_input_dependency = (
-                resolved_action_execution.execution.caller_input_dependency
+            destructor_trigger_requirement = (
+                resolved_action_execution.execution.destructor_trigger_requirement
             )
-            if caller_input_dependency is not None:
-                caller_input = caller_input_by_resolved_input[caller_input_dependency]
+            if destructor_trigger_requirement is not None:
+                caller_input = caller_input_by_resolved_input[
+                    destructor_trigger_requirement
+                ]
                 caller_input.destructor_executions.append(
                     resolved_action_execution.execution
                 )
                 caller_input.triggered_inputs.extend(
-                    triggered_inputs_by_resolved_input[resolved_input]
-                    for resolved_input in resolved_action_execution.inputs.values()
+                    triggered_inputs_by_resolved_input[callee_binding]
+                    for callee_binding in resolved_action_execution.callee_bindings.values()
                 )
         return caller_inputs
 

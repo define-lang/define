@@ -68,7 +68,7 @@ def test_resolved_actions_reuses_resolved_action():
     assert resolved_actions.resolve(action) is resolved
 
 
-def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
+def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():
     action = _action("/test")
     graph = operation_graph.OperationGraph(action)
     work = _position("work")
@@ -78,9 +78,9 @@ def test_resolved_action_keeps_local_operations_and_caller_inputs_distinct():
     graphs[action] = graph
     resolved = operation_graph_action_resolver.ResolvedActions(graphs).resolve(action)
 
-    (caller_input,) = resolved.caller_inputs
-    assert caller_input is graph.nodes[0]
-    assert resolved.operations[create].caller_inputs == [caller_input]
+    (binding_hole,) = resolved.binding_holes
+    assert binding_hole is graph.nodes[0]
+    assert resolved.operations[create].binding_holes_depended_on == [binding_hole]
     assert resolved.operations[
         destroy
     ].dependencies == operation_graph_action_resolver.ActionDependencies([create], [])
@@ -119,17 +119,19 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert resolved.operations[trigger_position_create].action_executions == [
         resolved_execution
     ]
-    (resolved_input,) = resolved_execution.inputs.values()
-    assert resolved_input.callee_input is resolved_callee.caller_inputs[0]
+    (callee_binding,) = resolved_execution.callee_bindings.values()
+    assert callee_binding.callee_binding_hole is resolved_callee.binding_holes[0]
     assert (
-        resolved_input.caller_dependencies
+        callee_binding.caller_dependencies
         == operation_graph_action_resolver.ActionDependencies([], [])
     )
-    (caller_input,) = resolved.caller_inputs
-    assert caller_input is action_parent
-    assert resolved_input.caller_input_dependencies == [caller_input]
-    assert resolved.operations[trigger_position_create].caller_inputs == [caller_input]
-    assert execution.caller_input_dependency is None
+    (binding_hole,) = resolved.binding_holes
+    assert binding_hole is action_parent
+    assert callee_binding.caller_binding_holes == [binding_hole]
+    assert resolved.operations[trigger_position_create].binding_holes_depended_on == [
+        binding_hole
+    ]
+    assert execution.destructor_trigger_requirement is None
 
 
 def test_requirement_input_fires_destructor():
@@ -165,11 +167,13 @@ def test_requirement_input_fires_destructor():
         operation_graph_model.RequirementNode,
     )
     (resolved_destructor_execution,) = resolved.action_executions
-    (resolved_destructor_input,) = resolved_destructor_execution.inputs.values()
-    (caller_input,) = resolved.caller_inputs
-    assert caller_input is destructor_execution.trigger_operation
-    assert resolved_destructor_input.caller_input_dependencies == [caller_input]
-    assert destructor_execution.caller_input_dependency is caller_input
+    (destructor_callee_binding,) = (
+        resolved_destructor_execution.callee_bindings.values()
+    )
+    (binding_hole,) = resolved.binding_holes
+    assert binding_hole is destructor_execution.trigger_operation
+    assert destructor_callee_binding.caller_binding_holes == [binding_hole]
+    assert destructor_execution.destructor_trigger_requirement is binding_hole
     assert all(
         not operation.action_executions for operation in resolved.operations.values()
     )

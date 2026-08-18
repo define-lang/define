@@ -209,8 +209,8 @@ def _action_names(
 
 
 def _input_method_names(
-    *resolved_inputs: operation_graph_model.AbstractDependencyOrOperationNode,
-) -> dict[operation_graph_model.AbstractDependencyOrOperationNode, str]:
+    *resolved_inputs: operation_graph_model.BindingHole,
+) -> dict[operation_graph_model.BindingHole, str]:
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],

@@ -74,10 +74,10 @@ class ResolvedOperationGraphBuilder:
         # Only full-operation-graph resolution binds callee nodes used exclusively
         # before caller destruction contributions. Keep those bindings at this
         # layer because codegen never consumes them.
-        self._callee_node_bindings_for_destruction_before_caller_contribution: dict[
+        self._callee_bindings_for_destruction_before_caller_contribution: dict[
             tuple[
                 operation_graph_action_resolver.ResolvedActionExecution,
-                operation_graph_model.AbstractDependencyOrOperationNode,
+                operation_graph_model.BindingHole,
             ],
             operation_graph_action_resolver.CalleeBinding,
         ] = {}
@@ -189,11 +189,11 @@ class ResolvedOperationGraphBuilder:
                     action_execution,
                     destruction_operation,
                 )
-            for caller_input in resolved_action_operation.caller_inputs:
-                self._add_caller_input(
+            for binding_hole in resolved_action_operation.binding_holes_depended_on:
+                self._add_dependencies_for_binding_hole(
                     dependency_keys,
                     action_execution,
-                    caller_input,
+                    binding_hole,
                 )
         logical_action_execution = action_execution
         if isinstance(
@@ -271,7 +271,7 @@ class ResolvedOperationGraphBuilder:
                     operation_graph_model.RequirementNode()
                     | operation_graph_model.CallerEmptyRuleDependenciesNode()
                 ):
-                    self._add_destruction_dependency_input(
+                    self._add_destruction_dependencies_for_binding_hole(
                         dependency_keys,
                         action_execution,
                         dependency,
@@ -347,141 +347,159 @@ class ResolvedOperationGraphBuilder:
                     operation_graph_model.RequirementNode()
                     | operation_graph_model.CallerEmptyRuleDependenciesNode()
                 ):
-                    has_dependency |= self._add_caller_input_before_execution(
-                        dependency_keys,
-                        action_execution,
-                        dependency,
-                        caller_execution,
+                    has_dependency |= (
+                        self._add_dependencies_for_binding_hole_before_execution(
+                            dependency_keys,
+                            action_execution,
+                            dependency,
+                            caller_execution,
+                        )
                     )
         return has_dependency
 
-    def _add_caller_input_before_execution(
+    def _add_dependencies_for_binding_hole_before_execution(
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
+        binding_hole: operation_graph_model.BindingHole,
         stop_execution: ActionExecution,
     ) -> bool:
-        """Add caller-input dependencies before reaching one caller execution."""
+        """Add a Binding Hole's dependencies before reaching one caller execution."""
         has_dependency = False
-        work = [(action_execution, caller_input)]
+        work = [(action_execution, binding_hole)]
         while work:
-            current_execution, current_input = work.pop()
+            current_execution, current_binding_hole = work.pop()
             triggered_by = typing.cast("TriggeredBy", current_execution.triggered_by)
             if triggered_by.caller is stop_execution:
                 continue
-            resolved_input = (
-                self._callee_node_binding_for_destruction_before_caller_contribution(
+            callee_binding = (
+                self._callee_binding_for_destruction_before_caller_contribution(
                     triggered_by,
-                    current_input,
+                    current_binding_hole,
                 )
             )
             self._add_action_dependencies(
                 dependency_keys,
                 triggered_by.caller,
-                resolved_input.caller_dependencies,
+                callee_binding.caller_dependencies,
             )
             if (
-                resolved_input.caller_dependencies.local_operations
-                or resolved_input.caller_dependencies.guarantee_dependencies
+                callee_binding.caller_dependencies.local_operations
+                or callee_binding.caller_dependencies.guarantee_dependencies
             ):
                 has_dependency = True
-            for dependency in resolved_input.caller_input_dependencies:
+            for caller_binding_hole in callee_binding.caller_binding_holes:
                 work.append(
                     (
                         triggered_by.caller,
-                        dependency,
+                        caller_binding_hole,
                     )
                 )
         return has_dependency
 
-    def _callee_node_binding_for_destruction_before_caller_contribution(
+    def _callee_binding_for_destruction_before_caller_contribution(
         self,
         triggered_by: TriggeredBy,
-        callee_node: operation_graph_model.AbstractDependencyOrOperationNode,
+        callee_binding_hole: operation_graph_model.BindingHole,
     ) -> operation_graph_action_resolver.CalleeBinding:
-        """Resolve one callee node used before a caller's destruction contribution."""
+        """Return one binding used before a caller's destruction contribution."""
         resolved_execution = triggered_by.direct_execution
-        callee_node_binding = resolved_execution.inputs.get(callee_node)
-        if callee_node_binding is not None:
-            return callee_node_binding
-        requested_binding_key = resolved_execution, callee_node
-        callee_node_binding = (
-            self._callee_node_bindings_for_destruction_before_caller_contribution.get(
-                requested_binding_key
+        callee_binding = resolved_execution.callee_bindings.get(callee_binding_hole)
+        if callee_binding is not None:
+            return callee_binding
+        requested_execution_and_binding_hole = (
+            resolved_execution,
+            callee_binding_hole,
+        )
+        callee_binding = (
+            self._callee_bindings_for_destruction_before_caller_contribution.get(
+                requested_execution_and_binding_hole
             )
         )
-        if callee_node_binding is not None:
-            return callee_node_binding
+        if callee_binding is not None:
+            return callee_binding
 
-        callee_nodes_to_bind = [(callee_node, False)]
-        while callee_nodes_to_bind:
-            node_to_bind, needed_nodes_are_bound = callee_nodes_to_bind.pop()
-            callee_node_binding = resolved_execution.inputs.get(node_to_bind)
-            if callee_node_binding is not None:
+        callee_binding_holes_to_bind = [(callee_binding_hole, False)]
+        while callee_binding_holes_to_bind:
+            callee_binding_hole_to_bind, prerequisite_holes_are_bound = (
+                callee_binding_holes_to_bind.pop()
+            )
+            callee_binding = resolved_execution.callee_bindings.get(
+                callee_binding_hole_to_bind
+            )
+            if callee_binding is not None:
                 continue
-            binding_key = resolved_execution, node_to_bind
+            execution_and_binding_hole = (
+                resolved_execution,
+                callee_binding_hole_to_bind,
+            )
             if (
-                binding_key
-                in self._callee_node_bindings_for_destruction_before_caller_contribution
+                execution_and_binding_hole
+                in self._callee_bindings_for_destruction_before_caller_contribution
             ):
                 continue
-            needed_callee_nodes = operation_graph_action_resolver.callee_nodes_needed_for_empty_rule_completion(
-                node_to_bind
+            prerequisite_callee_binding_holes = operation_graph_action_resolver.callee_nodes_needed_for_empty_rule_completion(
+                callee_binding_hole_to_bind
             )
-            if not needed_nodes_are_bound:
-                callee_nodes_to_bind.append((node_to_bind, True))
-                for needed_callee_node in reversed(needed_callee_nodes):
-                    callee_nodes_to_bind.append((needed_callee_node, False))
+            if not prerequisite_holes_are_bound:
+                callee_binding_holes_to_bind.append((callee_binding_hole_to_bind, True))
+                for prerequisite_callee_binding_hole in reversed(
+                    prerequisite_callee_binding_holes
+                ):
+                    callee_binding_holes_to_bind.append(
+                        (prerequisite_callee_binding_hole, False)
+                    )
                 continue
-            needed_callee_node_bindings: list[
+            prerequisite_callee_bindings: list[
                 operation_graph_action_resolver.CalleeBinding
             ] = []
-            for needed_callee_node in needed_callee_nodes:
-                needed_binding = resolved_execution.inputs.get(needed_callee_node)
-                if needed_binding is None:
-                    needed_binding = self._callee_node_bindings_for_destruction_before_caller_contribution[
-                        resolved_execution, needed_callee_node
+            for prerequisite_callee_binding_hole in prerequisite_callee_binding_holes:
+                prerequisite_callee_binding = resolved_execution.callee_bindings.get(
+                    prerequisite_callee_binding_hole
+                )
+                if prerequisite_callee_binding is None:
+                    prerequisite_callee_binding = self._callee_bindings_for_destruction_before_caller_contribution[
+                        resolved_execution, prerequisite_callee_binding_hole
                     ]
-                needed_callee_node_bindings.append(needed_binding)
-            self._callee_node_bindings_for_destruction_before_caller_contribution[
-                binding_key
-            ] = operation_graph_action_resolver.CalleeBinding.resolve(
+                prerequisite_callee_bindings.append(prerequisite_callee_binding)
+            self._callee_bindings_for_destruction_before_caller_contribution[
+                execution_and_binding_hole
+            ] = operation_graph_action_resolver.CalleeBinding.for_callee_binding_hole(
                 self._graphs[triggered_by.caller.action],
                 resolved_execution.execution,
                 self._graphs,
-                node_to_bind,
-                needed_callee_node_bindings,
+                callee_binding_hole_to_bind,
+                prerequisite_callee_bindings,
             )
-        return self._callee_node_bindings_for_destruction_before_caller_contribution[
-            requested_binding_key
+        return self._callee_bindings_for_destruction_before_caller_contribution[
+            requested_execution_and_binding_hole
         ]
 
-    def _add_destruction_dependency_input(
+    def _add_destruction_dependencies_for_binding_hole(
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
+        binding_hole: operation_graph_model.BindingHole,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
             return
-        resolved_input = (
-            self._callee_node_binding_for_destruction_before_caller_contribution(
+        callee_binding = (
+            self._callee_binding_for_destruction_before_caller_contribution(
                 triggered_by,
-                caller_input,
+                binding_hole,
             )
         )
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
-            resolved_input.caller_dependencies,
+            callee_binding.caller_dependencies,
         )
-        for caller_input_dependency in resolved_input.caller_input_dependencies:
-            self._add_destruction_dependency_input(
+        for caller_binding_hole in callee_binding.caller_binding_holes:
+            self._add_destruction_dependencies_for_binding_hole(
                 dependency_keys,
                 triggered_by.caller,
-                caller_input_dependency,
+                caller_binding_hole,
             )
 
     def _add_contributed_destruction_dependencies(
@@ -551,26 +569,26 @@ class ResolvedOperationGraphBuilder:
             if candidate_execution is execution
         )
 
-    def _add_caller_input(
+    def _add_dependencies_for_binding_hole(
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        caller_input: operation_graph_model.AbstractDependencyOrOperationNode,
+        binding_hole: operation_graph_model.BindingHole,
     ):
         triggered_by = action_execution.triggered_by
         if triggered_by is None:
             return
-        resolved_input = triggered_by.direct_execution.inputs[caller_input]
+        callee_binding = triggered_by.direct_execution.callee_bindings[binding_hole]
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
-            resolved_input.caller_dependencies,
+            callee_binding.caller_dependencies,
         )
-        for caller_input_dependency in resolved_input.caller_input_dependencies:
-            self._add_caller_input(
+        for caller_binding_hole in callee_binding.caller_binding_holes:
+            self._add_dependencies_for_binding_hole(
                 dependency_keys,
                 triggered_by.caller,
-                caller_input_dependency,
+                caller_binding_hole,
             )
 
     def _add_guarantee(

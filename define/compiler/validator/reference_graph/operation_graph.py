@@ -802,17 +802,14 @@ class OperationGraph:
     def _caller_state_needed_for_empty_rule_completion(
         self,
         nodes: Iterable[operation_graph_model.OperationNode],
-        unresolved_caller_state: Iterable[
-            operation_graph_model.AbstractDependencyOrOperationNode
-        ] = (),
-    ) -> tuple[operation_graph_model.AbstractDependencyOrOperationNode, ...]:
+        unresolved_caller_state: Iterable[operation_graph_model.BindingHole] = (),
+    ) -> tuple[operation_graph_model.BindingHole, ...]:
         """Return unresolved caller state and the first depended-on Abstract Nodes."""
         caller_state = list(unresolved_caller_state)
         # A caller node supplied by resolving a callee node can also be reached
         # through a concrete caller node, so mark directly supplied state visited.
         visited: set[
-            operation_graph_model.OperationNode
-            | operation_graph_model.AbstractDependencyOrOperationNode
+            operation_graph_model.OperationNode | operation_graph_model.BindingHole
         ] = set(caller_state)
         nodes_to_visit: list[operation_graph_model.OperationNode] = []
         for node in nodes:

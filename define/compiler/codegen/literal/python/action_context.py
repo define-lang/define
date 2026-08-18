@@ -99,9 +99,7 @@ class GeneratedAction:
     """Generated context and caller-facing interface of one action."""
 
     context: ActionDefinitionContext
-    input_method_names: dict[
-        operation_graph_model.AbstractDependencyOrOperationNode, str
-    ]
+    input_method_names: dict[operation_graph_model.BindingHole, str]
     guarantee_interface: GuaranteeInterface | None
     destruction_continuations: dict[
         operation_graph_model.DestructionFactDestroyNode,

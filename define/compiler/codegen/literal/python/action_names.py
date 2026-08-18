@@ -63,7 +63,7 @@ class ActionNames:
     # The execution member for each local position source name.
     local_positions: dict[str, str]
     # The execution method for each caller input.
-    caller_inputs: dict[operation_graph_model.AbstractDependencyOrOperationNode, str]
+    caller_inputs: dict[operation_graph_model.BindingHole, str]
     # The canonical name, initializer method, and execution member for each
     # Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
@@ -142,10 +142,8 @@ class ActionNameGenerator:
 
     def _caller_input_method_names(
         self,
-    ) -> dict[operation_graph_model.AbstractDependencyOrOperationNode, str]:
-        method_names: dict[
-            operation_graph_model.AbstractDependencyOrOperationNode, str
-        ] = {}
+    ) -> dict[operation_graph_model.BindingHole, str]:
+        method_names: dict[operation_graph_model.BindingHole, str] = {}
         for caller_input in self._plan.caller_inputs:
             method_names[caller_input.caller_input] = (
                 self._execution_allocator.allocate(
@@ -156,7 +154,7 @@ class ActionNameGenerator:
 
     def _caller_input_name(
         self,
-        resolved_input: operation_graph_model.AbstractDependencyOrOperationNode,
+        resolved_input: operation_graph_model.BindingHole,
     ) -> str:
         """Return the method name for a caller input."""
         match resolved_input:
