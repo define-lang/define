@@ -1,5 +1,6 @@
 import definitions
-import minimality_witnesses
+import fill_dependency_removal_witness
+import minimality
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -19,18 +20,19 @@ removed produce a graph that violates one of the two defining properties.
   unchanged, exhibited by a path that avoids the edge. The weakened rules are
   not transitively minimal.
 
-For each witness, an executable model checks that the history is valid and
-derives the dependencies selected by the complete rules and by the rules with
-one clause changed. The resulting concrete relations are then used to prove
-the property contrast between the two graphs. Comments name the integration
-test that pins the same history where one exists. Joint satisfiability of the
-resolved-graph obligations is demonstrated separately in
-`minimality_witnesses.lean`.
+For the first six witnesses, an executable model checks that the history is
+valid and derives the dependencies selected by the complete rules and by the
+rules with one clause changed. The Fill Dependency removal witness instead uses
+the universal calculation for its complete side and the executable model only
+for the deliberately weakened side. The resulting concrete relations are used
+to prove the property contrast between the two graphs. Comments name the
+integration test that pins the same history where one exists.
 
-`calculate` returns `none` when an operation's order or occupancy transition
-is invalid. Thus each `complete_rules_derive_graph` and
-`weakened_rules_derive_graph` equality to `some ...` also proves that its
-history is valid under both rule variants.
+`calculate` returns `none` when an operation's order or occupancy transition is
+invalid. Thus each equality to `some ...` also proves that its history is valid
+under the modeled rule variant. The Fill Dependency removal witness additionally
+supplies the same history as a `ValidResolvedHistory` to the universal
+calculation.
 
 This file makes no independence claim for the Empty Rule's transitive-parent
 collection. An earlier proposed witness destroyed a child position that had
@@ -1190,7 +1192,8 @@ def moveSecondToDeposit : ParticleOperation where
   actionParent := []
   kind := .move itemPosition depositPosition
 
-abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
+abbrev ExpectedCompleteDependency
+    (operation dependencyOperation : ParticleOperation) :
     Prop :=
   (operation = createItem ∧ dependencyOperation = createBox) ∨
     (operation = moveItemToPay ∧ dependencyOperation = createItem) ∨
@@ -1200,9 +1203,12 @@ abbrev CompleteDependency (operation dependencyOperation : ParticleOperation) :
       dependencyOperation = createSecondItem)
 
 abbrev WeakenedDependency (operation dependencyOperation : ParticleOperation) :
-    Prop :=
-  CompleteDependency operation dependencyOperation ∨
+  Prop :=
+  ExpectedCompleteDependency operation dependencyOperation ∨
     (operation = moveSecondToDeposit ∧ dependencyOperation = createHolder)
+
+abbrev CompleteDependency : ParticleOperation → ParticleOperation → Prop :=
+  Define.OperationGraph.FillDependencyRemoval.dependency
 
 def history : List ParticleOperation :=
   [createBox, createItem, createHolder, moveItemToPay, createSecondItem,
@@ -1210,12 +1216,6 @@ def history : List ParticleOperation :=
 
 def weakenedRules : RuleVariant :=
   { completeRules with fillDependencyRemoval := false }
-
-theorem complete_rules_derive_graph :
-    calculate completeRules history =
-      some (graphForDependency history fun operation dependencyOperation =>
-        decide (CompleteDependency operation dependencyOperation)) := by
-  decide
 
 theorem weakened_rules_derive_graph :
     calculate weakenedRules history =

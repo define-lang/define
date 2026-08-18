@@ -12,6 +12,7 @@ filegroup(
         ":completeness",
         ":create_destroy_history",
         ":definitions",
+        ":fill_dependency_removal_witness",
         ":independence_witnesses",
         ":maximum_safe_concurrency",
         ":minimality",
@@ -174,11 +175,44 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "fill_dependency_removal_witness",
+    srcs = ["fill_dependency_removal_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "fill_dependency_removal_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["fill_dependency_removal_witness"],
+    theorems = [
+        "Define.OperationGraph.FillDependencyRemoval.calculated_first_move_holder",
+        "Define.OperationGraph.FillDependencyRemoval.calculated_first_move_item",
+        "Define.OperationGraph.FillDependencyRemoval.calculated_second_item_first_move",
+        "Define.OperationGraph.FillDependencyRemoval.calculated_second_move_item",
+        "Define.OperationGraph.FillDependencyRemoval.create_item_does_not_reach_holder",
+        "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
+        "Define.OperationGraph.FillDependencyRemoval.history",
+        "Define.OperationGraph.FillDependencyRemoval.second_item_reaches_holder",
+        "Define.OperationGraph.FillDependencyRemoval.second_move_fill_dependency_removed",
+    ],
+    deps = [":fill_dependency_removal_witness"],
+)
+
+lean_library(
     name = "independence_witnesses",
     srcs = ["independence_witnesses.lean"],
     deps = [
         ":definitions",
-        ":minimality_witnesses",
+        ":fill_dependency_removal_witness",
+        ":minimality",
     ],
 )
 
@@ -244,11 +278,10 @@ lean_library(
     name = "minimality_witnesses",
     srcs = ["minimality_witnesses.lean"],
     deps = [
-        ":minimality",
+        ":fill_dependency_removal_witness",
         ":moved_child_entry_witness",
         ":non_vacuity_witness",
         ":vanished_child_name_witness",
-        ":witness_support",
     ],
 )
 

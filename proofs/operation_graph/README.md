@@ -79,9 +79,10 @@ calculation to that history. `vanished_child_name_witness.lean` applies the same
 path to a history retaining a queryable name after its particle vanishes, and
 `moved_child_entry_witness.lean` proves the corresponding transitive-child entry
 for a Move. Witness-only general lemmas flow through `witness_support.lean`.
-`minimality_witnesses.lean` contains the remaining concrete model to be migrated
-to the actual calculation. `independence_witnesses.lean` compares the full rules
-with variants changing one clause. Their explanations live beside the executable
-models in those modules. `minimality_checker.py` searches bounded concrete
-histories for counterexamples. None of these witnesses or bounded searches
-substitutes for the universal English and Lean proofs above.
+`fill_dependency_removal_witness.lean` derives both sides of the Move Rule's
+reachability check, and `minimality_witnesses.lean` aggregates these concrete
+models. `independence_witnesses.lean` compares the full rules with variants
+changing one clause. Their explanations live beside the executable models in
+those modules. `minimality_checker.py` searches bounded concrete histories for
+counterexamples. None of these witnesses or bounded searches substitutes for the
+universal English and Lean proofs above.
