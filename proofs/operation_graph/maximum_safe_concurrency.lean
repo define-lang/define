@@ -1,4 +1,5 @@
 import characterization
+import finite_schedule_order
 import finite_scheduling
 
 set_option warningAsError true

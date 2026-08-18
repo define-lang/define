@@ -19,6 +19,7 @@ filegroup(
         ":fill_dependency_removal_witness",
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
+        ":finite_schedule_order",
         ":finite_scheduling",
         ":independence_witness_support",
         ":independence_witnesses",
@@ -395,6 +396,30 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "finite_schedule_order",
+    srcs = ["finite_schedule_order.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "finite_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["finite_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.AdjacentIncomparableSwap.perm",
+        "Define.OperationGraph.AdjacentIncomparableSwap.preserves_respect",
+        "Define.OperationGraph.IncomparableSwapSequence.perm",
+        "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
+        "Define.OperationGraph.respecting_permutations_connected",
+    ],
+    deps = [":finite_schedule_order"],
+)
+
+lean_library(
     name = "finite_scheduling",
     srcs = ["finite_scheduling.lean"],
     deps = [":occupancy_exchange"],
@@ -477,6 +502,7 @@ lean_library(
     srcs = ["maximum_safe_concurrency.lean"],
     deps = [
         ":characterization",
+        ":finite_schedule_order",
         ":finite_scheduling",
     ],
 )

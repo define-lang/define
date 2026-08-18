@@ -30,9 +30,14 @@ adjacent-exchange result: exchanging enabled operations on pairwise unrelated
 positions preserves their preconditions, their occupancy observations, and the
 occupancy state after the pair. `ScheduleExecution.swap_adjacent_unrelated` in
 [`finite_scheduling.lean`](finite_scheduling.lean) lifts that exchange through
-any finite schedule prefix and suffix. The connection between arbitrary
-consistent schedules and the necessity result are proved in this document rather
-than in Lean.
+any finite schedule prefix and suffix. The theorem
+`respecting_permutations_connected` in
+[`finite_schedule_order.lean`](finite_schedule_order.lean) proves that any two
+duplicate-free finite schedules containing the same occurrences and respecting
+the same precedence relation are connected by such adjacent incomparable
+exchanges. Applying those components to a complete valid resolved history, the
+unbounded-history extension, and the necessity result remain proved in this
+document rather than in Lean.
 
 ## Definitions
 
