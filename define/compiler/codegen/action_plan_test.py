@@ -96,7 +96,7 @@ def test_serial_operations_form_one_fragment():
     assert _fragment_operations(plan.fragments[0]) == (create, destroy)
     assert plan.fragments[0].dependency_count == 0
     assert plan.execute_fragments == [plan.fragments[0]]
-    assert plan.triggered_action_inputs == []
+    assert plan.callee_binding_joins == []
 
 
 def test_triggered_action_has_no_execute_fragments():
@@ -123,7 +123,7 @@ def test_fan_out_forms_parallel_serial_fragments():
         (first_create, first_destroy),
         (second_create, second_destroy),
     ]
-    assert plan.caller_inputs == []
+    assert plan.binding_hole_fanouts == []
 
 
 def test_join_starts_a_new_fragment():
@@ -161,7 +161,7 @@ def test_entry_action_resolves_independent_empty_requirement_away():
     ]
 
 
-def test_triggered_action_preserves_independent_caller_input():
+def test_triggered_action_preserves_independent_binding_hole():
     item = _position("item")
     destination = _position("destination")
     graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
@@ -177,7 +177,7 @@ def test_triggered_action_preserves_independent_caller_input():
     ]
     assert plan.fragments[1].dependency_count == 2
     assert plan.fragments[0].successor_fragments == [plan.fragments[1]]
-    assert [caller_input.fragments for caller_input in plan.caller_inputs] == [
+    assert [fanout.fragments for fanout in plan.binding_hole_fanouts] == [
         [plan.fragments[0]],
         [plan.fragments[1]],
     ]
@@ -220,14 +220,18 @@ def test_callee_continuation_ends_a_direct_call_chain():
     assert plan.execute_fragments == [plan.fragments[0]]
     (execution_plan,) = plan.action_executions
     assert execution_plan.execution is execution
-    (triggered_input,) = plan.triggered_action_inputs
+    (callee_binding_join,) = plan.callee_binding_joins
     assert plan.fragments[0].action_execution_successors == [execution]
-    assert plan.fragments[0].triggered_input_successors == [triggered_input]
-    assert plan.fragments[0].execution_input_successors == [triggered_input]
-    assert triggered_input.dependency_count == 2
+    assert plan.fragments[0].callee_binding_joins_that_depend_on_fragment == [
+        callee_binding_join
+    ]
+    assert plan.fragments[0].triggered_action_execution_callee_binding_joins == [
+        callee_binding_join
+    ]
+    assert callee_binding_join.dependency_count == 2
 
 
-def test_triggered_action_input_uses_its_resolved_caller_dependency():
+def test_callee_binding_join_uses_its_caller_operation():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
     caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
@@ -267,13 +271,17 @@ def test_triggered_action_input_uses_its_resolved_caller_dependency():
     ]
     (execution_plan,) = caller_plan.action_executions
     assert execution_plan.execution is execution
-    (triggered_input,) = caller_plan.triggered_action_inputs
-    assert caller_plan.fragments[0].triggered_input_successors == [triggered_input]
+    (callee_binding_join,) = caller_plan.callee_binding_joins
+    assert caller_plan.fragments[0].callee_binding_joins_that_depend_on_fragment == [
+        callee_binding_join
+    ]
     assert caller_plan.fragments[1].action_execution_successors == [execution]
-    assert caller_plan.fragments[1].execution_input_successors == [triggered_input]
+    assert caller_plan.fragments[1].triggered_action_execution_callee_binding_joins == [
+        callee_binding_join
+    ]
 
 
-def test_caller_input_fires_destructor():
+def test_binding_hole_fanout_fires_destructor():
     caller_definition = _DUMMY_ACTION
     destructor_definition = _action_definition("/destructor")
     caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
@@ -306,13 +314,16 @@ def test_caller_input_fires_destructor():
 
     (planned_destructor_execution,) = plan.action_executions
     assert planned_destructor_execution.execution is destructor_execution
-    (destructor_input,) = plan.triggered_action_inputs
-    (caller_input,) = plan.caller_inputs
-    assert caller_input.destructor_executions == [destructor_execution]
-    # The same caller input supplies both the destructor's Action Execution and
-    # its occupied requirement, so both dependency arrivals must be retained.
-    assert caller_input.triggered_inputs == [destructor_input, destructor_input]
-    assert destructor_input.dependency_count == 2
+    (destructor_callee_binding_join,) = plan.callee_binding_joins
+    (binding_hole_fanout,) = plan.binding_hole_fanouts
+    assert binding_hole_fanout.destructor_executions == [destructor_execution]
+    # The same Binding Hole supplies both the destructor's Action Execution and
+    # its occupied requirement, so the join must receive both notifications.
+    assert binding_hole_fanout.callee_binding_joins == [
+        destructor_callee_binding_join,
+        destructor_callee_binding_join,
+    ]
+    assert destructor_callee_binding_join.dependency_count == 2
 
 
 def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():

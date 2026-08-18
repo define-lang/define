@@ -68,7 +68,7 @@ class ActionNames:
     # Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
     # The execution method for each triggered action input.
-    triggered_inputs: dict[action_plan.CalleeDependencyJoin, str]
+    triggered_inputs: dict[action_plan.CalleeBindingJoin, str]
     # The execution method for each action fragment.
     fragments: dict[action_plan.ActionFragment, str]
     continue_destroy_methods: dict[action_plan.ActionFragment, str]
@@ -144,10 +144,10 @@ class ActionNameGenerator:
         self,
     ) -> dict[operation_graph_model.BindingHole, str]:
         method_names: dict[operation_graph_model.BindingHole, str] = {}
-        for caller_input in self._plan.caller_inputs:
-            method_names[caller_input.caller_input] = (
+        for caller_input in self._plan.binding_hole_fanouts:
+            method_names[caller_input.binding_hole] = (
                 self._execution_allocator.allocate(
-                    self._caller_input_name(caller_input.caller_input)
+                    self._caller_input_name(caller_input.binding_hole)
                 )
             )
         return method_names
@@ -219,13 +219,13 @@ class ActionNameGenerator:
         triggered_action_names: dict[
             operation_graph_model.ActionExecution, TriggeredActionNames
         ],
-    ) -> dict[action_plan.CalleeDependencyJoin, str]:
-        method_names: dict[action_plan.CalleeDependencyJoin, str] = {}
-        for triggered_input in self._plan.triggered_action_inputs:
+    ) -> dict[action_plan.CalleeBindingJoin, str]:
+        method_names: dict[action_plan.CalleeBindingJoin, str] = {}
+        for triggered_input in self._plan.callee_binding_joins:
             action_execution = triggered_input.execution
             callee_input_method_name = self._generated_actions[
                 action_execution.callee_action_name
-            ].input_method_names[triggered_input.callee_input]
+            ].input_method_names[triggered_input.callee_binding_hole]
             method_names[triggered_input] = self._execution_allocator.allocate(
                 triggered_action_names[action_execution].canonical_name
                 + _TRIGGERED_INPUT_SEPARATOR
@@ -373,7 +373,7 @@ class ActionNameGenerator:
         self,
     ) -> dict[operation_graph_model.DestructionFragmentDestroyNode, str]:
         names: dict[operation_graph_model.DestructionFragmentDestroyNode, str] = {}
-        for triggered_input in self._plan.triggered_action_inputs:
+        for triggered_input in self._plan.callee_binding_joins:
             for operation in triggered_input.contributed_destruction_operations:
                 target = self._typed_chain_identifier(
                     operation.target.canonical_chained_name_tuple

@@ -214,12 +214,12 @@ def _input_method_names(
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
-        caller_inputs=[
-            action_plan.CallerDependencyFanout(resolved_input)
+        binding_hole_fanouts=[
+            action_plan.BindingHoleFanout(resolved_input)
             for resolved_input in resolved_inputs
         ],
         action_executions=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -232,9 +232,9 @@ def test_local_position_names():
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -309,9 +309,9 @@ def test_fragments_skip_a_normalized_source_suffix():
     plan = action_plan.ActionPlan(
         fragments=fragments,
         execute_fragments=fragments,
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -335,9 +335,9 @@ def test_fragment_names_preserve_external_universes_and_multiverse():
     plan = action_plan.ActionPlan(
         fragments=fragments,
         execute_fragments=fragments,
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -361,7 +361,7 @@ def test_repeated_action_execution_skips_a_source_suffix(
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[
             action_plan.ActionExecutionPlan(
                 execution=action_execution,
@@ -370,7 +370,7 @@ def test_repeated_action_execution_skips_a_source_suffix(
             )
             for action_execution in action_executions
         ],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -450,7 +450,7 @@ def test_destruction_connection_names_use_action_execution(
     plan = action_plan.ActionPlan(
         fragments=[],
         execute_fragments=[],
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[
             action_plan.ActionExecutionPlan(
                 execution=execution,
@@ -461,7 +461,7 @@ def test_destruction_connection_names_use_action_execution(
                 forwards_destruction_connections=False,
             )
         ],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,
@@ -500,9 +500,9 @@ def test_continue_destroy_method_uses_destroy_fragment_name():
     plan = action_plan.ActionPlan(
         fragments=[fragment],
         execute_fragments=[],
-        caller_inputs=[],
+        binding_hole_fanouts=[],
         action_executions=[],
-        triggered_action_inputs=[],
+        callee_binding_joins=[],
         triggers_for_destroyed_callee_guarantee_particles=[],
         guarantee_publications=[],
         accepts_destruction_connections=False,

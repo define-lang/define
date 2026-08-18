@@ -190,7 +190,9 @@ class ActionExecutionGenerator:
                     ],
                     triggered_input_successor_method_names=[
                         names.triggered_inputs[triggered_input]
-                        for triggered_input in fragment.triggered_input_successors
+                        for triggered_input in (
+                            fragment.callee_binding_joins_that_depend_on_fragment
+                        )
                     ],
                     triggered_action_successor_init_method_names=[
                         names.triggered_actions[action_execution].initializer_name
@@ -198,7 +200,9 @@ class ActionExecutionGenerator:
                     ],
                     execution_input_successor_method_names=[
                         names.triggered_inputs[triggered_input]
-                        for triggered_input in fragment.execution_input_successors
+                        for triggered_input in (
+                            fragment.triggered_action_execution_callee_binding_joins
+                        )
                     ],
                     guarantee_publication_names=guarantee_publication_names,
                     dependency_count=fragment.dependency_count,
@@ -217,20 +221,20 @@ class ActionExecutionGenerator:
     ) -> list[template_context.CallerDependencyFanoutContext]:
         return [
             template_context.CallerDependencyFanoutContext(
-                input_method_name=names.caller_inputs[caller_input.caller_input],
+                input_method_name=names.caller_inputs[caller_input.binding_hole],
                 fragment_method_names=[
                     names.fragments[fragment] for fragment in caller_input.fragments
                 ],
                 triggered_input_method_names=[
                     names.triggered_inputs[triggered_input]
-                    for triggered_input in caller_input.triggered_inputs
+                    for triggered_input in caller_input.callee_binding_joins
                 ],
                 destructor_execution_init_methods=[
                     names.triggered_actions[destructor_execution].initializer_name
                     for destructor_execution in caller_input.destructor_executions
                 ],
             )
-            for caller_input in self._plan.caller_inputs
+            for caller_input in self._plan.binding_hole_fanouts
         ]
 
     def _generate_triggered_action_inputs(
@@ -239,7 +243,7 @@ class ActionExecutionGenerator:
         statement_generator: action_statements.ActionStatementsGenerator,
     ) -> list[template_context.CalleeDependencyJoinContext]:
         triggered_action_inputs: list[template_context.CalleeDependencyJoinContext] = []
-        for triggered_input in self._plan.triggered_action_inputs:
+        for triggered_input in self._plan.callee_binding_joins:
             execution = triggered_input.execution
             triggered_action_inputs.append(
                 template_context.CalleeDependencyJoinContext(
@@ -248,7 +252,7 @@ class ActionExecutionGenerator:
                     ),
                     callee_input_method_name=self._generated_actions[
                         execution.callee_action_name
-                    ].input_method_names[triggered_input.callee_input],
+                    ].input_method_names[triggered_input.callee_binding_hole],
                     method_name=names.triggered_inputs[triggered_input],
                     dependency_count=triggered_input.dependency_count,
                     destruction_positions=[
@@ -280,7 +284,7 @@ class ActionExecutionGenerator:
             triggered_input_method_names: list[str] = []
             for (
                 triggered_input
-            ) in trigger_for_destroyed_callee_guarantee_particle.triggered_inputs:
+            ) in trigger_for_destroyed_callee_guarantee_particle.callee_binding_joins:
                 triggered_input_method_names.append(
                     names.triggered_inputs[triggered_input]
                 )

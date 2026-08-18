@@ -61,13 +61,13 @@ class ActionFragment:
         init=False, default_factory=list
     )
     successor_fragments: list[ActionFragment] = field(init=False, default_factory=list)
-    triggered_input_successors: list[CalleeDependencyJoin] = field(
+    callee_binding_joins_that_depend_on_fragment: list[CalleeBindingJoin] = field(
         init=False, default_factory=list
     )
     action_execution_successors: list[operation_graph_model.ActionExecution] = field(
         init=False, default_factory=list
     )
-    execution_input_successors: list[CalleeDependencyJoin] = field(
+    triggered_action_execution_callee_binding_joins: list[CalleeBindingJoin] = field(
         init=False, default_factory=list
     )
     destruction_connections_to_complete: list[DestructionConnection] = field(
@@ -115,12 +115,12 @@ class ActionExecutionPlan:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class CallerDependencyFanout:
-    """The consumers reached from one caller-side ``depends_on`` relationship."""
+class BindingHoleFanout:
+    """The Action Plan consumers for one Binding Hole."""
 
-    caller_input: operation_graph_model.BindingHole
+    binding_hole: operation_graph_model.BindingHole
     fragments: list[ActionFragment] = field(init=False, default_factory=list)
-    triggered_inputs: list[CalleeDependencyJoin] = field(
+    callee_binding_joins: list[CalleeBindingJoin] = field(
         init=False, default_factory=list
     )
     destructor_executions: list[operation_graph_model.ActionExecution] = field(
@@ -129,11 +129,11 @@ class CallerDependencyFanout:
 
 
 @dataclass(slots=True, eq=False)
-class CalleeDependencyJoin:
-    """Caller-side dependencies joined before invoking one direct callee method."""
+class CalleeBindingJoin:
+    """The join that completes one direct callee binding."""
 
     execution: operation_graph_model.ActionExecution
-    callee_input: operation_graph_model.BindingHole
+    callee_binding_hole: operation_graph_model.BindingHole
     contributed_destruction_operations: list[
         operation_graph_model.DestructionFragmentDestroyNode
     ]
@@ -141,9 +141,9 @@ class CalleeDependencyJoin:
     dependency_count: int
 
 
-type _CalleeDependencyJoinsByBinding = dict[
+type _CalleeBindingJoinsByCalleeBinding = dict[
     operation_graph_action_resolver.CalleeBinding,
-    CalleeDependencyJoin,
+    CalleeBindingJoin,
 ]
 
 
@@ -162,7 +162,7 @@ class TriggerForDestroyedCalleeGuaranteeParticle:
 
     execution: operation_graph_model.ActionExecution
     guarantee_dependency: operation_graph.GuaranteePath
-    triggered_inputs: list[CalleeDependencyJoin]
+    callee_binding_joins: list[CalleeBindingJoin]
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,9 +171,9 @@ class ActionPlan:
 
     fragments: list[ActionFragment]
     execute_fragments: list[ActionFragment]
-    caller_inputs: list[CallerDependencyFanout]
+    binding_hole_fanouts: list[BindingHoleFanout]
     action_executions: list[ActionExecutionPlan]
-    triggered_action_inputs: list[CalleeDependencyJoin]
+    callee_binding_joins: list[CalleeBindingJoin]
     triggers_for_destroyed_callee_guarantee_particles: list[
         TriggerForDestroyedCalleeGuaranteeParticle
     ]
@@ -214,12 +214,12 @@ class _FragmentTopologyBuilder:
         resolved_action: operation_graph_action_resolver.ResolvedAction,
         *,
         publishes_guarantees: bool,
-        uses_caller_inputs: bool,
+        uses_binding_hole_fanouts: bool,
     ):
         self._resolved_action = resolved_action
         self._operations = resolved_action.operations
         self._publishes_guarantees = publishes_guarantees
-        self._uses_caller_inputs = uses_caller_inputs
+        self._uses_binding_hole_fanouts = uses_binding_hole_fanouts
 
     def build(self) -> _FragmentTopology:
         local_successors = self._build_local_successors()
@@ -298,7 +298,10 @@ class _FragmentTopologyBuilder:
         if len(predecessors) != 1:
             return False
         if (
-            (self._uses_caller_inputs and resolved_operation.binding_holes_depended_on)
+            (
+                self._uses_binding_hole_fanouts
+                and resolved_operation.binding_holes_depended_on
+            )
             or self._is_propagated_destruction_operation(operation)
             or (
                 isinstance(
@@ -364,7 +367,7 @@ class _ActionPlanBuilder:
         )
 
     def build_triggered_action(self) -> ActionPlan:
-        """Build the reusable caller-input plan for Action Executions of this action."""
+        """Build the reusable Binding Hole plan for this action's callers."""
         return self._build(
             self._resolved_action.binding_holes,
             publishes_guarantees=True,
@@ -373,7 +376,7 @@ class _ActionPlanBuilder:
 
     def _build(
         self,
-        caller_inputs: Sequence[operation_graph_model.BindingHole],
+        binding_holes: Sequence[operation_graph_model.BindingHole],
         *,
         publishes_guarantees: bool,
         start_directly: bool,
@@ -381,25 +384,25 @@ class _ActionPlanBuilder:
         topology = _FragmentTopologyBuilder(
             self._resolved_action,
             publishes_guarantees=publishes_guarantees,
-            uses_caller_inputs=not start_directly,
+            uses_binding_hole_fanouts=not start_directly,
         ).build()
         (
             action_executions,
             destruction_connection_by_operation,
         ) = self._plan_action_executions(topology)
-        triggered_inputs_by_resolved_input = self._plan_triggered_actions(
+        callee_binding_join_by_callee_binding = self._plan_callee_binding_joins(
             topology.fragment_for_operation,
-            caller_inputs,
+            binding_holes,
         )
         guarantee_publications = self._plan_guarantee_publications(
             topology.fragment_for_operation,
             publishes_guarantees=publishes_guarantees,
         )
         self._plan_fragments(topology)
-        planned_caller_inputs = self._plan_caller_inputs(
-            caller_inputs,
+        binding_hole_fanouts = self._plan_binding_hole_fanouts(
+            binding_holes,
             topology.fragment_for_operation,
-            triggered_inputs_by_resolved_input,
+            callee_binding_join_by_callee_binding,
         )
         execute_fragments: list[ActionFragment] = []
         if start_directly:
@@ -409,12 +412,12 @@ class _ActionPlanBuilder:
         return ActionPlan(
             fragments=topology.fragments,
             execute_fragments=execute_fragments,
-            caller_inputs=planned_caller_inputs,
+            binding_hole_fanouts=binding_hole_fanouts,
             action_executions=action_executions,
-            triggered_action_inputs=list(triggered_inputs_by_resolved_input.values()),
+            callee_binding_joins=list(callee_binding_join_by_callee_binding.values()),
             triggers_for_destroyed_callee_guarantee_particles=(
                 self._plan_triggers_for_destroyed_callee_guarantee_particles(
-                    triggered_inputs_by_resolved_input
+                    callee_binding_join_by_callee_binding
                 )
             ),
             guarantee_publications=guarantee_publications,
@@ -482,14 +485,14 @@ class _ActionPlanBuilder:
                 destruction_connection_by_operation[operation] = connection
         return action_executions, destruction_connection_by_operation
 
-    def _plan_triggered_actions(
+    def _plan_callee_binding_joins(
         self,
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
-        caller_inputs: Sequence[operation_graph_model.BindingHole],
-    ) -> _CalleeDependencyJoinsByBinding:
-        triggered_inputs_by_resolved_input: _CalleeDependencyJoinsByBinding = {}
+        binding_holes: Sequence[operation_graph_model.BindingHole],
+    ) -> _CalleeBindingJoinsByCalleeBinding:
+        callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding = {}
         for resolved_action_execution in self._resolved_action.action_executions:
             action_execution = resolved_action_execution.execution
             for callee_binding in resolved_action_execution.callee_bindings.values():
@@ -499,54 +502,56 @@ class _ActionPlanBuilder:
                     + len(dependencies.guarantee_dependencies)
                     + 1
                 )
-                # caller_inputs is empty for the entry point action.
-                if caller_inputs:
+                # The entry point action has no Binding Holes to contribute.
+                if binding_holes:
                     dependency_count += len(callee_binding.caller_binding_holes)
-                triggered_input = CalleeDependencyJoin(
+                callee_binding_join = CalleeBindingJoin(
                     execution=action_execution,
-                    callee_input=callee_binding.callee_binding_hole,
+                    callee_binding_hole=callee_binding.callee_binding_hole,
                     contributed_destruction_operations=(
                         callee_binding.contributed_destruction_operations
                     ),
                     guarantee_dependencies=dependencies.guarantee_dependencies,
                     dependency_count=dependency_count,
                 )
-                triggered_inputs_by_resolved_input[callee_binding] = triggered_input
+                callee_binding_join_by_callee_binding[callee_binding] = (
+                    callee_binding_join
+                )
         for resolved_operation in self._resolved_action.operations.values():
             fragment = fragment_for_operation[resolved_operation.operation]
             for callee_binding in resolved_operation.dependent_callee_bindings:
-                fragment.triggered_input_successors.append(
-                    triggered_inputs_by_resolved_input[callee_binding]
+                fragment.callee_binding_joins_that_depend_on_fragment.append(
+                    callee_binding_join_by_callee_binding[callee_binding]
                 )
             for resolved_action_execution in resolved_operation.action_executions:
                 fragment.action_execution_successors.append(
                     resolved_action_execution.execution
                 )
-                fragment.execution_input_successors.extend(
-                    triggered_inputs_by_resolved_input[callee_binding]
+                fragment.triggered_action_execution_callee_binding_joins.extend(
+                    callee_binding_join_by_callee_binding[callee_binding]
                     for callee_binding in resolved_action_execution.callee_bindings.values()
                 )
-        return triggered_inputs_by_resolved_input
+        return callee_binding_join_by_callee_binding
 
     def _plan_triggers_for_destroyed_callee_guarantee_particles(
         self,
-        triggered_inputs_by_resolved_input: _CalleeDependencyJoinsByBinding,
+        callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding,
     ) -> list[TriggerForDestroyedCalleeGuaranteeParticle]:
         triggers: list[TriggerForDestroyedCalleeGuaranteeParticle] = []
         for resolved_action_execution in self._resolved_action.action_executions:
             guarantee_dependency = resolved_action_execution.guarantee_dependency
             if guarantee_dependency is None:
                 continue
-            triggered_inputs: list[CalleeDependencyJoin] = []
+            callee_binding_joins: list[CalleeBindingJoin] = []
             for callee_binding in resolved_action_execution.callee_bindings.values():
-                triggered_inputs.append(
-                    triggered_inputs_by_resolved_input[callee_binding]
+                callee_binding_joins.append(
+                    callee_binding_join_by_callee_binding[callee_binding]
                 )
             triggers.append(
                 TriggerForDestroyedCalleeGuaranteeParticle(
                     execution=resolved_action_execution.execution,
                     guarantee_dependency=guarantee_dependency,
-                    triggered_inputs=triggered_inputs,
+                    callee_binding_joins=callee_binding_joins,
                 )
             )
         return triggers
@@ -602,51 +607,54 @@ class _ActionPlanBuilder:
                 + destruction_dependency_count
             )
 
-    def _plan_caller_inputs(
+    def _plan_binding_hole_fanouts(
         self,
-        resolved_caller_inputs: Sequence[operation_graph_model.BindingHole],
+        binding_holes: Sequence[operation_graph_model.BindingHole],
         fragment_for_operation: dict[
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
-        triggered_inputs_by_resolved_input: _CalleeDependencyJoinsByBinding,
-    ) -> list[CallerDependencyFanout]:
-        if not resolved_caller_inputs:
+        callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding,
+    ) -> list[BindingHoleFanout]:
+        if not binding_holes:
             return []
-        caller_inputs: list[CallerDependencyFanout] = []
-        for resolved_input in resolved_caller_inputs:
-            caller_inputs.append(CallerDependencyFanout(resolved_input))
-        caller_input_by_resolved_input = {
-            caller_input.caller_input: caller_input for caller_input in caller_inputs
+        binding_hole_fanouts: list[BindingHoleFanout] = []
+        for binding_hole in binding_holes:
+            binding_hole_fanouts.append(BindingHoleFanout(binding_hole))
+        binding_hole_fanout_by_binding_hole = {
+            binding_hole_fanout.binding_hole: binding_hole_fanout
+            for binding_hole_fanout in binding_hole_fanouts
         }
         for resolved_operation in self._resolved_action.operations.values():
             fragment = fragment_for_operation[resolved_operation.operation]
-            for resolved_input in resolved_operation.binding_holes_depended_on:
-                caller_input_by_resolved_input[resolved_input].fragments.append(
+            for binding_hole in resolved_operation.binding_holes_depended_on:
+                binding_hole_fanout_by_binding_hole[binding_hole].fragments.append(
                     fragment
                 )
                 fragment.dependency_count += 1
         for resolved_action_execution in self._resolved_action.action_executions:
             for callee_binding in resolved_action_execution.callee_bindings.values():
-                triggered_input = triggered_inputs_by_resolved_input[callee_binding]
-                for resolved_input in callee_binding.caller_binding_holes:
-                    caller_input_by_resolved_input[
-                        resolved_input
-                    ].triggered_inputs.append(triggered_input)
+                callee_binding_join = callee_binding_join_by_callee_binding[
+                    callee_binding
+                ]
+                for binding_hole in callee_binding.caller_binding_holes:
+                    binding_hole_fanout_by_binding_hole[
+                        binding_hole
+                    ].callee_binding_joins.append(callee_binding_join)
             destructor_trigger_requirement = (
                 resolved_action_execution.execution.destructor_trigger_requirement
             )
             if destructor_trigger_requirement is not None:
-                caller_input = caller_input_by_resolved_input[
+                binding_hole_fanout = binding_hole_fanout_by_binding_hole[
                     destructor_trigger_requirement
                 ]
-                caller_input.destructor_executions.append(
+                binding_hole_fanout.destructor_executions.append(
                     resolved_action_execution.execution
                 )
-                caller_input.triggered_inputs.extend(
-                    triggered_inputs_by_resolved_input[callee_binding]
+                binding_hole_fanout.callee_binding_joins.extend(
+                    callee_binding_join_by_callee_binding[callee_binding]
                     for callee_binding in resolved_action_execution.callee_bindings.values()
                 )
-        return caller_inputs
+        return binding_hole_fanouts
 
 
 @typing.final
