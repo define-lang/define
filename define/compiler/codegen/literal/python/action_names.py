@@ -168,11 +168,11 @@ class ActionNameGenerator:
                 return self._requirement_binding_hole_method_name(
                     binding_hole.requirement
                 )
-            case operation_graph_model.CallerEmptyRuleDependenciesNode():
+            case operation_graph_model.EmptyRuleBindingHoleNode():
                 return self._empty_rule_binding_hole_method_name(
-                    binding_hole.caller_empty_rule_dependencies
+                    binding_hole.empty_rule_binding_hole
                 )
-            case operation_graph_model.CallerEmptyRuleDependencies():
+            case operation_graph_model.EmptyRuleBindingHole():
                 return self._empty_rule_binding_hole_method_name(binding_hole)
             case operation_graph_model.ActionParentLastOperationNode():
                 return _ACTION_PARENT_BINDING_HOLE_METHOD_NAME
@@ -184,9 +184,11 @@ class ActionNameGenerator:
 
     def _empty_rule_binding_hole_method_name(
         self,
-        dependencies: operation_graph_model.CallerEmptyRuleDependencies,
+        empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
     ) -> str:
-        identifier = self._typed_chain_identifier(dependencies.requirement_position)
+        identifier = self._typed_chain_identifier(
+            empty_rule_binding_hole.requirement_position
+        )
         return _EMPTY_RULE_BINDING_HOLE_METHOD_PREFIX + identifier
 
     def _requirement_binding_hole_method_name(

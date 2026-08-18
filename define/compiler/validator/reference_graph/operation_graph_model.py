@@ -9,7 +9,7 @@ There are two general types of nodes in an operation graph:
 
 There is also a broader type of abstract "node" that includes bundles of resolved
 and unresolved dependencies for propagation during action resolution, such as
-CallerEmptyRuleDependencies. Broadly, we call these (including the Abstract Nodes)
+EmptyRuleBindingHole. Broadly, we call these (including the Abstract Nodes)
 "Binding Holes" because they would be "filled in" by concrete nodes in the caller
 if we built a whole-program operation graph.
 """
@@ -54,7 +54,7 @@ class DestructionFact:
 type ConcreteOperationNode = PositionOperationNode | GuaranteeNode
 type LastOperationNode = ConcreteOperationNode | RequirementNode
 type ActionParentOperationNode = ActionParentLastOperationNode | LastOperationNode
-type EmptyRuleDependencyNode = LastOperationNode | CallerEmptyRuleDependenciesNode
+type EmptyRuleDependencyNode = LastOperationNode | EmptyRuleBindingHoleNode
 type EmptyOrMoveRuleDependencyNode = (
     EmptyRuleDependencyNode | CallerMoveRuleFillDependencyNode
 )
@@ -64,11 +64,11 @@ type EmptyOrMoveRuleDependencyNode = (
 type AbstractOperationNode = (
     ActionParentLastOperationNode
     | RequirementNode
-    | CallerEmptyRuleDependenciesNode
+    | EmptyRuleBindingHoleNode
     | CallerMoveRuleFillDependencyNode
 )
 type BindingHole = (
-    AbstractOperationNode | CallerEmptyRuleDependencies | CallerMoveRuleFillDependency
+    AbstractOperationNode | EmptyRuleBindingHole | CallerMoveRuleFillDependency
 )
 type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], ConcreteOperationNode]]
 
@@ -512,7 +512,7 @@ class ParticleChildOperations:
 # dependency data, so these values use identity when codegen keys input methods.
 @dataclass(frozen=True, slots=True, eq=False)
 class CallerEmptyRuleCollection:
-    """The Empty Rule Collection state awaiting an earlier caller.
+    """The Empty Rule's Collection awaiting an earlier caller.
 
     ``collected_child_operation_positions`` are relative to the required particle.
     ``fill_dependency_requirement_position`` identifies a Fill Dependency that
@@ -526,22 +526,22 @@ class CallerEmptyRuleCollection:
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class CallerEmptyRuleDependencies(CallerEmptyRuleCollection):
-    """Empty Rule dependencies awaiting an earlier caller.
+class EmptyRuleBindingHole(CallerEmptyRuleCollection):
+    """An unfinished Empty Rule application awaiting an earlier caller.
 
-    ``callee_nodes_to_bind_for_empty_rule_completion`` identifies the callee
-    nodes whose caller bindings are required to complete the Empty Rule.
+    ``prerequisite_binding_holes`` identifies the callee Binding Holes that must
+    be bound before this Binding Hole.
     """
 
-    callee_nodes_to_bind_for_empty_rule_completion: tuple[BindingHole, ...]
+    prerequisite_binding_holes: tuple[BindingHole, ...]
 
     @classmethod
     def from_collection(
         cls,
         collection: CallerEmptyRuleCollection,
-        callee_nodes_to_bind_for_empty_rule_completion: tuple[BindingHole, ...],
+        prerequisite_binding_holes: tuple[BindingHole, ...],
     ) -> typing.Self:
-        """Complete caller Collection state with the required callee nodes."""
+        """Create a Binding Hole with its prerequisite Binding Holes."""
         return cls(
             requirement_position=collection.requirement_position,
             collected_child_operation_positions=(
@@ -551,32 +551,30 @@ class CallerEmptyRuleDependencies(CallerEmptyRuleCollection):
                 collection.fill_dependency_requirement_position
             ),
             collected_operation_positions=collection.collected_operation_positions,
-            callee_nodes_to_bind_for_empty_rule_completion=(
-                callee_nodes_to_bind_for_empty_rule_completion
-            ),
+            prerequisite_binding_holes=prerequisite_binding_holes,
         )
 
 
 @dataclass(slots=True)
-class DirectCallerStateForEmptyRule:
-    """Concrete Nodes and unresolved state supplied by one direct caller."""
+class EmptyRuleBindingInputs:
+    """Caller-side values needed to bind one Empty Rule Binding Hole."""
 
     concrete_caller_nodes: list[ConcreteOperationNode] = field(default_factory=list)
-    unresolved_caller_state: list[BindingHole] = field(default_factory=list)
+    caller_binding_holes: list[BindingHole] = field(default_factory=list)
 
-    def add_callee_node_resolution(
+    def add_inputs(
         self,
         concrete_caller_nodes: Iterable[ConcreteOperationNode],
-        unresolved_caller_state: Iterable[BindingHole],
+        caller_binding_holes: Iterable[BindingHole],
     ):
-        """Add the caller-side result of resolving one callee node."""
+        """Add caller-side values from one prerequisite binding."""
         self.concrete_caller_nodes.extend(concrete_caller_nodes)
-        self.unresolved_caller_state.extend(unresolved_caller_state)
+        self.caller_binding_holes.extend(caller_binding_holes)
 
 
 @dataclass(frozen=True, slots=True)
 class _EmptyOrMoveRuleResult:
-    """Locally selected nodes and Collection state awaiting a caller."""
+    """Locally selected nodes and a Collection awaiting a caller."""
 
     local_nodes: list[LastOperationNode]
     caller_collection: CallerEmptyRuleCollection | None
@@ -584,16 +582,15 @@ class _EmptyOrMoveRuleResult:
 
 @dataclass(frozen=True, slots=True)
 class EmptyRuleApplicationResult:
-    """The result of applying caller bindings to CallerEmptyRuleDependencies."""
+    """The result of binding an Empty Rule Binding Hole in one caller."""
 
-    # TODO: Move caller_empty_rule_dependencies to a
-    # PartialCallerEmptyRuleSubstitution subclass where it is non-optional. The base
-    # class should retain caller_nodes because every substitution produces them;
-    # a base instance means resolution is complete, while the subclass means one
-    # caller supplied concrete nodes and resolution must continue through an earlier
+    # TODO: Move empty_rule_binding_hole to a subclass where it is non-optional.
+    # The base class should retain caller_nodes because every application produces
+    # them; a base instance means binding is complete, while the subclass means one
+    # caller supplied concrete nodes and binding must continue through an earlier
     # caller.
     caller_nodes: list[LastOperationNode]
-    caller_empty_rule_dependencies: CallerEmptyRuleDependencies | None
+    empty_rule_binding_hole: EmptyRuleBindingHole | None
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -952,15 +949,15 @@ class RequirementNode(OperationNode):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
-class CallerEmptyRuleDependenciesNode(OperationNode):
-    """Caller dependencies needed when an action empties a required particle.
+class EmptyRuleBindingHoleNode(OperationNode):
+    """An Empty Rule Binding Hole represented in an Operation Graph.
 
-    ``caller_empty_rule_dependencies`` preserves the unresolved Empty Rule state
+    ``empty_rule_binding_hole`` preserves the unfinished Empty Rule application
     while caller Action Requirement satisfactions are applied.
     """
 
     depends_on: tuple[()] = ()
-    caller_empty_rule_dependencies: CallerEmptyRuleDependencies
+    empty_rule_binding_hole: EmptyRuleBindingHole
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)

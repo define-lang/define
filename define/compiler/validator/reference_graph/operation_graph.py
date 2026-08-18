@@ -671,7 +671,7 @@ class OperationGraph:
             return tuple(rule_result.local_nodes)
         return (
             *rule_result.local_nodes,
-            self._add_caller_empty_rule_dependencies(
+            self._add_empty_rule_binding_hole(
                 rule_result.caller_collection,
                 rule_result.local_nodes,
             ),
@@ -705,7 +705,7 @@ class OperationGraph:
         if rule_result.caller_collection is not None:
             return (
                 *rule_result.local_nodes,
-                self._add_caller_empty_rule_dependencies(
+                self._add_empty_rule_binding_hole(
                     rule_result.caller_collection,
                     rule_result.local_nodes,
                 ),
@@ -780,37 +780,37 @@ class OperationGraph:
             operation,
         )
 
-    def _add_caller_empty_rule_dependencies(
+    def _add_empty_rule_binding_hole(
         self,
-        caller_empty_rule_collection: operation_graph_model.CallerEmptyRuleCollection,
+        empty_rule_collection: operation_graph_model.CallerEmptyRuleCollection,
         local_nodes: list[operation_graph_model.LastOperationNode],
-    ) -> operation_graph_model.CallerEmptyRuleDependenciesNode:
-        """Add and return the caller contribution for emptying a required particle."""
-        caller_empty_rule_dependencies = (
-            operation_graph_model.CallerEmptyRuleDependencies.from_collection(
-                caller_empty_rule_collection,
-                self._caller_state_needed_for_empty_rule_completion(local_nodes),
+    ) -> operation_graph_model.EmptyRuleBindingHoleNode:
+        """Add and return the Binding Hole for an unfinished Empty Rule."""
+        empty_rule_binding_hole = (
+            operation_graph_model.EmptyRuleBindingHole.from_collection(
+                empty_rule_collection,
+                self._empty_rule_prerequisite_binding_holes(local_nodes),
             )
         )
-        node = operation_graph_model.CallerEmptyRuleDependenciesNode(
+        node = operation_graph_model.EmptyRuleBindingHoleNode(
             node_id=len(self._nodes),
-            caller_empty_rule_dependencies=caller_empty_rule_dependencies,
+            empty_rule_binding_hole=empty_rule_binding_hole,
         )
         self._nodes.append(node)
         return node
 
-    def _caller_state_needed_for_empty_rule_completion(
+    def _empty_rule_prerequisite_binding_holes(
         self,
         nodes: Iterable[operation_graph_model.OperationNode],
-        unresolved_caller_state: Iterable[operation_graph_model.BindingHole] = (),
+        caller_binding_holes: Iterable[operation_graph_model.BindingHole] = (),
     ) -> tuple[operation_graph_model.BindingHole, ...]:
-        """Return unresolved caller state and the first depended-on Abstract Nodes."""
-        caller_state = list(unresolved_caller_state)
-        # A caller node supplied by resolving a callee node can also be reached
-        # through a concrete caller node, so mark directly supplied state visited.
+        """Return the Binding Holes needed before binding an Empty Rule hole."""
+        prerequisite_binding_holes = list(caller_binding_holes)
+        # A prerequisite binding can supply the same Binding Hole that a concrete
+        # caller node depends on, so mark directly supplied holes visited.
         visited: set[
             operation_graph_model.OperationNode | operation_graph_model.BindingHole
-        ] = set(caller_state)
+        ] = set(prerequisite_binding_holes)
         nodes_to_visit: list[operation_graph_model.OperationNode] = []
         for node in nodes:
             nodes_to_visit.append(node)
@@ -824,32 +824,32 @@ class OperationGraph:
                     (
                         operation_graph_model.ActionParentLastOperationNode,
                         operation_graph_model.RequirementNode,
-                        operation_graph_model.CallerEmptyRuleDependenciesNode,
+                        operation_graph_model.EmptyRuleBindingHoleNode,
                         operation_graph_model.CallerMoveRuleFillDependencyNode,
                     ),
                 ):
-                    caller_state.append(current_node)
+                    prerequisite_binding_holes.append(current_node)
                     continue
                 nodes_to_visit.extend(reversed(current_node.depends_on))
-        return tuple(caller_state)
+        return tuple(prerequisite_binding_holes)
 
-    def apply_callee_empty_rule_in_caller(
+    def apply_empty_rule_binding_hole_in_caller(
         self,
         execution: operation_graph_model.ActionExecution,
-        caller_empty_rule_state: operation_graph_model.CallerEmptyRuleDependencies,
-        direct_caller_state_for_empty_rule: operation_graph_model.DirectCallerStateForEmptyRule,
+        empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
+        empty_rule_binding_inputs: operation_graph_model.EmptyRuleBindingInputs,
     ) -> operation_graph_model.EmptyRuleApplicationResult:
-        """Apply the callee's unfinished Empty Rule in one direct caller."""
+        """Bind the callee's Empty Rule Binding Hole in one direct caller."""
         callee_requirement_satisfaction = execution.requirement_satisfactions[
-            caller_empty_rule_state.requirement_position
+            empty_rule_binding_hole.requirement_position
         ]
         child_operations = callee_requirement_satisfaction.child_operations.operations_not_on_same_paths_as(
-            caller_empty_rule_state.collected_child_operation_positions
+            empty_rule_binding_hole.collected_child_operation_positions
         )
         collected_nodes: set[operation_graph_model.LastOperationNode] = {
             child_operation.operation for child_operation in child_operations
         }
-        requirement = caller_empty_rule_state.fill_dependency_requirement_position
+        requirement = empty_rule_binding_hole.fill_dependency_requirement_position
         if requirement is not None:
             # The Fill Rule allows an EMPTY requirement to depend on an
             # operation on any parent position. Search the required position
@@ -869,7 +869,7 @@ class OperationGraph:
                 # remains after Comparison.
                 if not ast.is_prefix(
                     callee_requirement_position,
-                    caller_empty_rule_state.requirement_position,
+                    empty_rule_binding_hole.requirement_position,
                 ):
                     collected_nodes.add(requirement_satisfaction.operation)
                 break
@@ -881,18 +881,18 @@ class OperationGraph:
         # after adding the operation that supplied it when no child operation did.
         if requirement_position_in_caller is None and (
             not child_operations
-            and not caller_empty_rule_state.collected_child_operation_positions
+            and not empty_rule_binding_hole.collected_child_operation_positions
         ):
             collected_nodes.add(callee_requirement_satisfaction.operation)
 
         collected_operation_positions = [
             ast.chain_in_caller(execution.action_chain, position)
-            for position in caller_empty_rule_state.collected_operation_positions
+            for position in empty_rule_binding_hole.collected_operation_positions
         ]
         caller_nodes = operation_graph_model.apply_empty_rule_to_caller_collection(
             collected_nodes,
             collected_operation_positions,
-            direct_caller_state_for_empty_rule.concrete_caller_nodes,
+            empty_rule_binding_inputs.concrete_caller_nodes,
         )
         if requirement_position_in_caller is None:
             return operation_graph_model.EmptyRuleApplicationResult(
@@ -908,7 +908,7 @@ class OperationGraph:
             callee_requirement_satisfaction.child_operations.child_position_set()
         )
         collected_child_operation_positions.update(
-            caller_empty_rule_state.collected_child_operation_positions
+            empty_rule_binding_hole.collected_child_operation_positions
         )
         for node in caller_nodes:
             if isinstance(node, operation_graph_model.RequirementNode):
@@ -930,18 +930,16 @@ class OperationGraph:
             key=lambda item: item.operation_order,
         ):
             collected_operation_positions.extend(node.operated_positions)
-        callee_nodes_to_bind_for_empty_rule_completion = (
-            self._caller_state_needed_for_empty_rule_completion(
-                (
-                    *direct_caller_state_for_empty_rule.concrete_caller_nodes,
-                    *caller_nodes_for_next_substitution,
-                ),
-                direct_caller_state_for_empty_rule.unresolved_caller_state,
-            )
+        prerequisite_binding_holes = self._empty_rule_prerequisite_binding_holes(
+            (
+                *empty_rule_binding_inputs.concrete_caller_nodes,
+                *caller_nodes_for_next_substitution,
+            ),
+            empty_rule_binding_inputs.caller_binding_holes,
         )
         return operation_graph_model.EmptyRuleApplicationResult(
             caller_nodes_for_next_substitution,
-            operation_graph_model.CallerEmptyRuleDependencies(
+            operation_graph_model.EmptyRuleBindingHole(
                 requirement_position=requirement_position_in_caller,
                 collected_child_operation_positions=frozenset(
                     collected_child_operation_positions
@@ -950,9 +948,7 @@ class OperationGraph:
                     fill_dependency_requirement_position
                 ),
                 collected_operation_positions=tuple(collected_operation_positions),
-                callee_nodes_to_bind_for_empty_rule_completion=(
-                    callee_nodes_to_bind_for_empty_rule_completion
-                ),
+                prerequisite_binding_holes=prerequisite_binding_holes,
             ),
         )
 

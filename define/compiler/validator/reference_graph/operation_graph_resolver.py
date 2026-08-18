@@ -269,7 +269,7 @@ class ResolvedOperationGraphBuilder:
                     )
                 case (
                     operation_graph_model.RequirementNode()
-                    | operation_graph_model.CallerEmptyRuleDependenciesNode()
+                    | operation_graph_model.EmptyRuleBindingHoleNode()
                 ):
                     self._add_destruction_dependencies_for_binding_hole(
                         dependency_keys,
@@ -345,7 +345,7 @@ class ResolvedOperationGraphBuilder:
                     has_dependency = True
                 case (
                     operation_graph_model.RequirementNode()
-                    | operation_graph_model.CallerEmptyRuleDependenciesNode()
+                    | operation_graph_model.EmptyRuleBindingHoleNode()
                 ):
                     has_dependency |= (
                         self._add_dependencies_for_binding_hole_before_execution(
@@ -438,8 +438,10 @@ class ResolvedOperationGraphBuilder:
                 in self._callee_bindings_for_destruction_before_caller_contribution
             ):
                 continue
-            prerequisite_callee_binding_holes = operation_graph_action_resolver.callee_nodes_needed_for_empty_rule_completion(
-                callee_binding_hole_to_bind
+            prerequisite_callee_binding_holes = (
+                operation_graph_action_resolver.empty_rule_prerequisite_binding_holes(
+                    callee_binding_hole_to_bind
+                )
             )
             if not prerequisite_holes_are_bound:
                 callee_binding_holes_to_bind.append((callee_binding_hole_to_bind, True))

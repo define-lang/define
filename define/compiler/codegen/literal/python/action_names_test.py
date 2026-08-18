@@ -156,13 +156,13 @@ def _requirement_binding_hole(
 
 def _empty_rule_binding_hole(
     position_name: str,
-) -> operation_graph_model.CallerEmptyRuleDependencies:
-    return operation_graph_model.CallerEmptyRuleDependencies(
+) -> operation_graph_model.EmptyRuleBindingHole:
+    return operation_graph_model.EmptyRuleBindingHole(
         requirement_position=(f"position<{position_name}>",),
         collected_child_operation_positions=frozenset(),
         fill_dependency_requirement_position=None,
         collected_operation_positions=(),
-        callee_nodes_to_bind_for_empty_rule_completion=(),
+        prerequisite_binding_holes=(),
     )
 
 

@@ -8,8 +8,8 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
-_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS = (
-    "CallerEmptyRuleDependencies does not preserve dependencies of remaining operations"
+_EMPTY_RULE_BINDING_HOLE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS = (
+    "EmptyRuleBindingHole does not preserve dependencies of remaining operations"
 )
 
 _GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION = (
@@ -230,7 +230,7 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
 
 @pytest.mark.xfail(
     strict=True,
-    reason=_CALLER_EMPTY_RULE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS,
+    reason=_EMPTY_RULE_BINDING_HOLE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS,
 )
 def test_caller_empty_rule_excludes_sibling_move_reached_through_another_input(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,

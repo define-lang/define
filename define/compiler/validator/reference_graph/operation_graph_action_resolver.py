@@ -114,7 +114,7 @@ def _append_action_dependency(
         case (
             operation_graph_model.ActionParentLastOperationNode()
             | operation_graph_model.RequirementNode()
-            | operation_graph_model.CallerEmptyRuleDependenciesNode()
+            | operation_graph_model.EmptyRuleBindingHoleNode()
             | operation_graph_model.CallerMoveRuleFillDependencyNode()
         ):
             binding_holes.append(node)
@@ -156,7 +156,7 @@ class CalleeBinding:
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
         callee_binding_hole: operation_graph_model.BindingHole,
-        callee_node_bindings_needed_for_empty_rule_completion: list[CalleeBinding],
+        prerequisite_callee_bindings: list[CalleeBinding],
     ) -> typing.Self:
         """Bind one callee Binding Hole from the direct caller's perspective."""
         match callee_binding_hole:
@@ -178,27 +178,27 @@ class CalleeBinding:
                     callee_binding_hole,
                     caller_dependency,
                 )
-            case operation_graph_model.CallerEmptyRuleDependenciesNode(
-                caller_empty_rule_dependencies=caller_dependencies
+            case operation_graph_model.EmptyRuleBindingHoleNode(
+                empty_rule_binding_hole=empty_rule_binding_hole
             ):
-                return cls._resolve_caller_empty_rule_dependencies(
+                return cls._for_empty_rule_binding_hole(
                     execution,
                     caller_graph,
                     operation_graphs,
                     callee_binding_hole,
-                    caller_dependencies,
-                    callee_node_bindings_needed_for_empty_rule_completion,
+                    empty_rule_binding_hole,
+                    prerequisite_callee_bindings,
                 )
             case (
-                operation_graph_model.CallerEmptyRuleDependencies() as caller_dependencies
+                operation_graph_model.EmptyRuleBindingHole() as empty_rule_binding_hole
             ):
-                return cls._resolve_caller_empty_rule_dependencies(
+                return cls._for_empty_rule_binding_hole(
                     execution,
                     caller_graph,
                     operation_graphs,
                     callee_binding_hole,
-                    caller_dependencies,
-                    callee_node_bindings_needed_for_empty_rule_completion,
+                    empty_rule_binding_hole,
+                    prerequisite_callee_bindings,
                 )
             case (
                 operation_graph_model.ActionParentLastOperationNode()
@@ -240,38 +240,40 @@ class CalleeBinding:
         return cls(callee_binding_hole, dependencies, caller_binding_holes)
 
     @classmethod
-    def _resolve_caller_empty_rule_dependencies(
+    def _for_empty_rule_binding_hole(
         cls,
         execution: operation_graph_model.ActionExecution,
         caller_graph: operation_graph.OperationGraph,
         operation_graphs: operation_graph.OperationGraphs,
         callee_binding_hole: (
-            operation_graph_model.CallerEmptyRuleDependenciesNode
-            | operation_graph_model.CallerEmptyRuleDependencies
+            operation_graph_model.EmptyRuleBindingHoleNode
+            | operation_graph_model.EmptyRuleBindingHole
         ),
-        caller_dependencies: operation_graph_model.CallerEmptyRuleDependencies,
-        callee_node_bindings_needed_for_empty_rule_completion: list[CalleeBinding],
+        empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
+        prerequisite_callee_bindings: list[CalleeBinding],
     ) -> typing.Self:
-        """Resolve one set of Empty Rule dependencies from the caller's perspective."""
-        direct_caller_state_for_empty_rule = (
-            operation_graph_model.DirectCallerStateForEmptyRule()
-        )
-        for node_binding in callee_node_bindings_needed_for_empty_rule_completion:
-            direct_caller_state_for_empty_rule.add_callee_node_resolution(
-                node_binding.caller_dependencies.concrete_nodes(),
-                node_binding.caller_binding_holes,
+        """Bind one Empty Rule Binding Hole from the caller's perspective."""
+        empty_rule_binding_inputs = operation_graph_model.EmptyRuleBindingInputs()
+        for prerequisite_callee_binding in prerequisite_callee_bindings:
+            empty_rule_binding_inputs.add_inputs(
+                prerequisite_callee_binding.caller_dependencies.concrete_nodes(),
+                prerequisite_callee_binding.caller_binding_holes,
             )
-        substitution = caller_graph.apply_callee_empty_rule_in_caller(
-            execution,
-            caller_dependencies,
-            direct_caller_state_for_empty_rule,
+        empty_rule_application_result = (
+            caller_graph.apply_empty_rule_binding_hole_in_caller(
+                execution,
+                empty_rule_binding_hole,
+                empty_rule_binding_inputs,
+            )
         )
         dependencies, caller_binding_holes = _partition_caller_dependencies(
-            substitution.caller_nodes,
+            empty_rule_application_result.caller_nodes,
             operation_graphs,
         )
-        if substitution.caller_empty_rule_dependencies is not None:
-            caller_binding_holes.append(substitution.caller_empty_rule_dependencies)
+        if empty_rule_application_result.empty_rule_binding_hole is not None:
+            caller_binding_holes.append(
+                empty_rule_application_result.empty_rule_binding_hole
+            )
         return cls(callee_binding_hole, dependencies, caller_binding_holes)
 
     @classmethod
@@ -289,17 +291,17 @@ class CalleeBinding:
         return cls(callee_binding_hole, dependencies, caller_binding_holes)
 
 
-def callee_nodes_needed_for_empty_rule_completion(
-    callee_node: operation_graph_model.BindingHole,
+def empty_rule_prerequisite_binding_holes(
+    binding_hole: operation_graph_model.BindingHole,
 ) -> tuple[operation_graph_model.BindingHole, ...]:
-    """Identify callee nodes whose bindings are needed to complete the Empty Rule."""
-    match callee_node:
-        case operation_graph_model.CallerEmptyRuleDependenciesNode(
-            caller_empty_rule_dependencies=dependencies
+    """Return the prerequisites for binding one Empty Rule Binding Hole."""
+    match binding_hole:
+        case operation_graph_model.EmptyRuleBindingHoleNode(
+            empty_rule_binding_hole=empty_rule_binding_hole
         ):
-            return dependencies.callee_nodes_to_bind_for_empty_rule_completion
-        case operation_graph_model.CallerEmptyRuleDependencies() as dependencies:
-            return dependencies.callee_nodes_to_bind_for_empty_rule_completion
+            return empty_rule_binding_hole.prerequisite_binding_holes
+        case operation_graph_model.EmptyRuleBindingHole() as empty_rule_binding_hole:
+            return empty_rule_binding_hole.prerequisite_binding_holes
         case _:
             return ()
 
@@ -309,10 +311,9 @@ def _callee_binding_holes_in_binding_order(
 ) -> list[operation_graph_model.BindingHole]:
     """Order callee Binding Holes so Empty Rule prerequisites come first.
 
-    CallerEmptyRuleDependencies names the other callee nodes whose bindings must
-    be substituted into its Empty Rule. Those nodes must therefore be resolved
-    first. ResolvedAction.binding_holes stores this order so every caller uses
-    it when resolving an Action Execution of the action.
+    An EmptyRuleBindingHole names the other callee Binding Holes that must be
+    bound first. ResolvedAction.binding_holes stores this order so every caller
+    uses it when resolving an Action Execution of the action.
     """
     ordered_binding_holes: list[operation_graph_model.BindingHole] = []
     ordered_binding_hole_set: set[operation_graph_model.BindingHole] = set()
@@ -328,7 +329,7 @@ def _callee_binding_holes_in_binding_order(
                 continue
             nodes_to_order.append((binding_hole_to_order, True))
             for prerequisite_binding_hole in reversed(
-                callee_nodes_needed_for_empty_rule_completion(binding_hole_to_order)
+                empty_rule_prerequisite_binding_holes(binding_hole_to_order)
             ):
                 nodes_to_order.append((prerequisite_binding_hole, False))
     return ordered_binding_holes
@@ -361,21 +362,18 @@ class CalleeBindings:
         """Create the bindings and associate caller-contributed destruction fragments.
 
         ``callee_binding_holes`` must be ordered such that every callee Binding
-        Hole involved in an Empty Rule completion comes after the callee Binding
-        Holes needed to complete its Empty Rule.
+        Hole comes after its Empty Rule prerequisite Binding Holes.
         """
         bindings_by_callee_binding_hole: dict[
             operation_graph_model.BindingHole, CalleeBinding
         ] = {}
         for callee_binding_hole in callee_binding_holes:
-            callee_node_bindings_needed_for_empty_rule_completion: list[
-                CalleeBinding
-            ] = []
-            for callee_node in callee_nodes_needed_for_empty_rule_completion(
+            prerequisite_callee_bindings: list[CalleeBinding] = []
+            for prerequisite_binding_hole in empty_rule_prerequisite_binding_holes(
                 callee_binding_hole
             ):
-                callee_node_bindings_needed_for_empty_rule_completion.append(
-                    bindings_by_callee_binding_hole[callee_node]
+                prerequisite_callee_bindings.append(
+                    bindings_by_callee_binding_hole[prerequisite_binding_hole]
                 )
             bindings_by_callee_binding_hole[callee_binding_hole] = (
                 CalleeBinding.for_callee_binding_hole(
@@ -383,7 +381,7 @@ class CalleeBindings:
                     execution,
                     operation_graphs,
                     callee_binding_hole,
-                    callee_node_bindings_needed_for_empty_rule_completion,
+                    prerequisite_callee_bindings,
                 )
             )
         callee_bindings = cls(bindings_by_callee_binding_hole)
