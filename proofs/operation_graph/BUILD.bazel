@@ -16,6 +16,7 @@ filegroup(
         ":maximum_safe_concurrency",
         ":minimality",
         ":minimality_witnesses",
+        ":moved_child_entry_witness",
         ":non_vacuity_witness",
         ":valid_history",
         ":vanished_child_name_witness",
@@ -244,6 +245,7 @@ lean_library(
     srcs = ["minimality_witnesses.lean"],
     deps = [
         ":minimality",
+        ":moved_child_entry_witness",
         ":non_vacuity_witness",
         ":vanished_child_name_witness",
         ":witness_support",
@@ -260,10 +262,38 @@ lean_axiom_test(
     ],
     imports = ["minimality_witnesses"],
     theorems = [
-        "Define.OperationGraph.MovedChildEntry.exact_dependency",
         "Define.OperationGraph.FillDependencyRemoval.exact_dependency",
     ],
     deps = [":minimality_witnesses"],
+)
+
+lean_library(
+    name = "moved_child_entry_witness",
+    srcs = ["moved_child_entry_witness.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":witness_support",
+    ],
+)
+
+lean_axiom_test(
+    name = "moved_child_entry_witness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["moved_child_entry_witness"],
+    theorems = [
+        "Define.OperationGraph.MovedChildEntry.calculated_dependency",
+        "Define.OperationGraph.MovedChildEntry.exact_dependency",
+        "Define.OperationGraph.MovedChildEntry.history",
+        "Define.OperationGraph.MovedChildEntry.move_parent_after_comparison",
+        "Define.OperationGraph.MovedChildEntry.move_writes_target_child",
+        "Define.OperationGraph.MovedChildEntry.moved_child_source_candidate",
+    ],
+    deps = [":moved_child_entry_witness"],
 )
 
 lean_library(

@@ -76,11 +76,12 @@ The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without
 assuming a graph property; `non_vacuity_witness.lean` applies the actual
 calculation to that history. `vanished_child_name_witness.lean` applies the same
-path to a history retaining a queryable name after its particle vanishes.
-Witness-only general lemmas flow through `witness_support.lean`.
-`minimality_witnesses.lean` contains the larger concrete models that remain to
-be migrated to the actual calculation. `independence_witnesses.lean` compares
-the full rules with variants changing one clause. Their explanations live beside
-the executable models in those modules. `minimality_checker.py` searches bounded
-concrete histories for counterexamples. None of these witnesses or bounded
-searches substitutes for the universal English and Lean proofs above.
+path to a history retaining a queryable name after its particle vanishes, and
+`moved_child_entry_witness.lean` proves the corresponding transitive-child entry
+for a Move. Witness-only general lemmas flow through `witness_support.lean`.
+`minimality_witnesses.lean` contains the remaining concrete model to be migrated
+to the actual calculation. `independence_witnesses.lean` compares the full rules
+with variants changing one clause. Their explanations live beside the executable
+models in those modules. `minimality_checker.py` searches bounded concrete
+histories for counterexamples. None of these witnesses or bounded searches
+substitutes for the universal English and Lean proofs above.
