@@ -19,6 +19,7 @@ filegroup(
         ":fill_dependency_removal_witness",
         ":fill_rule_most_recent_independence_witness",
         ":fill_rule_parent_positions_independence_witness",
+        ":finite_scheduling",
         ":independence_witness_support",
         ":independence_witnesses",
         ":list_history_support",
@@ -30,6 +31,7 @@ filegroup(
         ":move_correction_witness",
         ":moved_child_entry_witness",
         ":non_vacuity_witness",
+        ":occupancy_exchange",
         ":valid_history",
         ":vanished_child_name_witness",
         ":witness_support",
@@ -235,7 +237,9 @@ lean_axiom_test(
     imports = ["definitions"],
     theorems = [
         "Define.OperationGraph.acyclic_of_pointsBackward",
+        "Define.OperationGraph.operationsRelated_symm",
         "Define.OperationGraph.parentOrSame_antisymm",
+        "Define.OperationGraph.related_of_parentOrSame_of_parentOrSame",
         "Define.OperationGraph.transitivelyMinimal_of_directDependenciesAreAntichains",
     ],
     deps = [":definitions"],
@@ -391,6 +395,28 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "finite_scheduling",
+    srcs = ["finite_scheduling.lean"],
+    deps = [":occupancy_exchange"],
+)
+
+lean_axiom_test(
+    name = "finite_scheduling_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_scheduling"],
+    theorems = [
+        "Define.OperationGraph.ScheduleExecution.swap_adjacent_unrelated",
+        "Define.OperationGraph.ScheduleExecution.swap_head_unrelated",
+    ],
+    deps = [":finite_scheduling"],
+)
+
+lean_library(
     name = "independence_witness_support",
     srcs = ["independence_witness_support.lean"],
     deps = [":definitions"],
@@ -449,7 +475,10 @@ lean_axiom_test(
 lean_library(
     name = "maximum_safe_concurrency",
     srcs = ["maximum_safe_concurrency.lean"],
-    deps = [":characterization"],
+    deps = [
+        ":characterization",
+        ":finite_scheduling",
+    ],
 )
 
 lean_axiom_test(
@@ -461,13 +490,7 @@ lean_axiom_test(
         "Quot.sound",
     ],
     imports = ["maximum_safe_concurrency"],
-    theorems = [
-        "Define.OperationGraph.available_occupancyAfter_iff_of_not_related",
-        "Define.OperationGraph.exchange_unrelated_enabled_operations",
-        "Define.OperationGraph.occupancyAfter_comm",
-        "Define.OperationGraph.operationEnabled_occupancyAfter_iff_of_not_related",
-        "Define.OperationGraph.operationObservation_occupancyAfter_of_not_related",
-    ],
+    theorems = ["Define.OperationGraph.incomparable_calculated_operations_are_unrelated"],
     deps = [":maximum_safe_concurrency"],
 )
 
@@ -659,6 +682,31 @@ lean_axiom_test(
         "Define.OperationGraph.NonVacuity.exact_dependency",
     ],
     deps = [":non_vacuity_witness"],
+)
+
+lean_library(
+    name = "occupancy_exchange",
+    srcs = ["occupancy_exchange.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "occupancy_exchange_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["occupancy_exchange"],
+    theorems = [
+        "Define.OperationGraph.available_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.exchange_unrelated_enabled_operations",
+        "Define.OperationGraph.occupancyAfter_comm",
+        "Define.OperationGraph.operationEnabled_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.operationObservation_occupancyAfter_of_not_related",
+    ],
+    deps = [":occupancy_exchange"],
 )
 
 lean_library(

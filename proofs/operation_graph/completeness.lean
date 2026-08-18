@@ -37,13 +37,6 @@ namespace Define.OperationGraph
 
 universe u
 
-theorem related_of_parentOrSame_of_parentOrSame
-    {first second sharedChild : Position}
-    (first_parent : ParentOrSame first sharedChild)
-    (second_parent : ParentOrSame second sharedChild) :
-    Related first second :=
-  List.prefix_or_prefix_of_prefix first_parent second_parent
-
 namespace Reaches
 
 theorem orEq_trans {Vertex : Type u} {dependency : Vertex → Vertex → Prop}

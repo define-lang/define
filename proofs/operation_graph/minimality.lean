@@ -172,13 +172,6 @@ theorem dependenciesAreAntichain (calculation : RuleCalculation)
           no_candidate_reaches_older newerCandidate newer_move.1.1 distinct
             reaches_older
 
-theorem operationsRelated_symm {first second : ParticleOperation} :
-    OperationsRelated first second → OperationsRelated second first := by
-  rintro ⟨firstPosition, secondPosition, first_operates, second_operates,
-    positions_related⟩
-  exact ⟨secondPosition, firstPosition, second_operates, first_operates,
-    related_symm positions_related⟩
-
 theorem ResolvedDefineGraph.inCollection_is_previous
     (graph : ResolvedDefineGraph) {operation candidate : ParticleOperation}
     (in_collection :

@@ -43,6 +43,13 @@ theorem related_symm {first second : Position} :
 theorem related_refl (position : Position) : Related position position :=
   Or.inl List.prefix_rfl
 
+theorem related_of_parentOrSame_of_parentOrSame
+    {first second sharedChild : Position}
+    (first_parent : ParentOrSame first sharedChild)
+    (second_parent : ParentOrSame second sharedChild) :
+    Related first second :=
+  List.prefix_or_prefix_of_prefix first_parent second_parent
+
 theorem parentOrSame_antisymm {first second : Position}
     (first_parent : ParentOrSame first second)
     (second_parent : ParentOrSame second first) : first = second :=
@@ -101,6 +108,13 @@ def OperationsRelated (first second : ParticleOperation) : Prop :=
     OperatesOn first firstPosition ∧
       OperatesOn second secondPosition ∧
       Related firstPosition secondPosition
+
+theorem operationsRelated_symm {first second : ParticleOperation} :
+    OperationsRelated first second → OperationsRelated second first := by
+  rintro ⟨firstPosition, secondPosition, first_operates, second_operates,
+    positions_related⟩
+  exact ⟨secondPosition, firstPosition, second_operates, first_operates,
+    related_symm positions_related⟩
 
 def MoreRecent (newer older : ParticleOperation) : Prop :=
   older.operationOrder < newer.operationOrder

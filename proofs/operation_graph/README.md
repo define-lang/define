@@ -68,10 +68,11 @@ The Lean modules with matching names mirror the dependency diagram:
 `definitions.lean` through `calculation_correctness.lean` form the foundation;
 `minimality.lean` and `completeness.lean` independently import that foundation;
 `characterization.lean` imports both; and `maximum_safe_concurrency.lean`
-imports characterization. The minimality, completeness, and characterization
-modules each expose a theorem stated directly for an arbitrary
-`ValidResolvedHistory`, and every theorem-bearing Lean module has a Bazel axiom
-audit.
+imports characterization together with the local exchange and finite-schedule
+semantics from `occupancy_exchange.lean` and `finite_scheduling.lean`. The
+minimality, completeness, and characterization modules each expose a theorem
+stated directly for an arbitrary `ValidResolvedHistory`, and every
+theorem-bearing Lean module has a Bazel axiom audit.
 
 The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without

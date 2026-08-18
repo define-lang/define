@@ -25,12 +25,14 @@ counterexample in “Why the Result Is Not a Global Maximum” shows why that
 stronger claim is false.
 
 The Lean theorem `exchange_unrelated_enabled_operations` in
-[`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) formalizes the
-central adjacent-exchange result: exchanging enabled operations on pairwise
-unrelated positions preserves their preconditions, their occupancy observations,
-and the occupancy state after the pair. The argument about complete execution
-schedules and the necessity result are proved in this document rather than in
-Lean.
+[`occupancy_exchange.lean`](occupancy_exchange.lean) formalizes the central
+adjacent-exchange result: exchanging enabled operations on pairwise unrelated
+positions preserves their preconditions, their occupancy observations, and the
+occupancy state after the pair. `ScheduleExecution.swap_adjacent_unrelated` in
+[`finite_scheduling.lean`](finite_scheduling.lean) lifts that exchange through
+any finite schedule prefix and suffix. The connection between arbitrary
+consistent schedules and the necessity result are proved in this document rather
+than in Lean.
 
 ## Definitions
 
