@@ -6,12 +6,15 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 filegroup(
     name = "all_proofs",
     srcs = [
+        ":calculated_schedule_execution",
         ":calculation",
         ":calculation_correctness",
         ":characterization",
         ":comparison_simultaneity_independence_witness",
         ":comparison_simultaneity_witness",
         ":completeness",
+        ":cover_order",
+        ":cover_schedule_necessity",
         ":cover_schedule_order",
         ":create_destroy_history",
         ":definitions",
@@ -101,6 +104,37 @@ lean_axiom_test(
         "Define.OperationGraph.exists_isEntryBefore_at_least_as_recent",
     ],
     deps = [":calculation_correctness"],
+)
+
+lean_library(
+    name = "calculated_schedule_execution",
+    srcs = ["calculated_schedule_execution.lean"],
+    deps = [
+        ":characterization",
+        ":finite_history_schedule",
+        ":finite_schedule_order",
+        ":finite_scheduling",
+        ":unbounded_scheduling",
+    ],
+)
+
+lean_axiom_test(
+    name = "calculated_schedule_execution_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculated_schedule_execution"],
+    theorems = [
+        "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
+        "Define.OperationGraph.finite_respecting_schedule_execution",
+        "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
+        "Define.OperationGraph.stopped_history_finite_schedule_execution",
+        "Define.OperationGraph.unbounded_respecting_schedule_execution",
+    ],
+    deps = [":calculated_schedule_execution"],
 )
 
 lean_library(
@@ -209,10 +243,60 @@ lean_axiom_test(
 )
 
 lean_library(
+    name = "cover_order",
+    srcs = ["cover_order.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "cover_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_order"],
+    theorems = [
+        "Define.OperationGraph.omitted_pair_contains_omitted_coverPair",
+    ],
+    deps = [":cover_order"],
+)
+
+lean_library(
+    name = "cover_schedule_necessity",
+    srcs = ["cover_schedule_necessity.lean"],
+    deps = [
+        ":calculated_schedule_execution",
+        ":cover_schedule_order",
+        ":occupancy_noncommutation",
+    ],
+)
+
+lean_axiom_test(
+    name = "cover_schedule_necessity_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_schedule_necessity"],
+    theorems = [
+        "Define.OperationGraph.calculated_coverPair_has_adjacent_finite_execution",
+        "Define.OperationGraph.calculated_coverPair_has_irreversible_adjacent_finite_execution",
+        "Define.OperationGraph.calculated_coverPair_reverse_not_enabled",
+        "Define.OperationGraph.proper_transitive_subrelation_allows_undefined_historyPrefix",
+    ],
+    deps = [":cover_schedule_necessity"],
+)
+
+lean_library(
     name = "cover_schedule_order",
     srcs = ["cover_schedule_order.lean"],
     deps = [
         ":characterization",
+        ":cover_order",
         ":finite_history_schedule",
         ":finite_schedule_order",
     ],
@@ -230,6 +314,7 @@ lean_axiom_test(
     theorems = [
         "Define.OperationGraph.calculated_coverPair_has_adjacent_respecting_historyPrefix",
         "Define.OperationGraph.calculated_coverPair_is_relatedPrevious",
+        "Define.OperationGraph.calculated_proper_subrelation_has_reversed_cover_schedule",
     ],
     deps = [":cover_schedule_order"],
 )
@@ -476,6 +561,7 @@ lean_axiom_test(
         "Define.OperationGraph.IncomparableSwapSequence.perm",
         "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
         "Define.OperationGraph.RespectsPrecedence.append",
+        "Define.OperationGraph.RespectsPrecedence.mono",
         "Define.OperationGraph.RespectsPrecedence.snoc",
         "Define.OperationGraph.RespectsPrecedence.sublist",
         "Define.OperationGraph.exists_order_preserving_complement",
@@ -569,35 +655,9 @@ lean_library(
     name = "maximum_safe_concurrency",
     srcs = ["maximum_safe_concurrency.lean"],
     deps = [
-        ":characterization",
-        ":cover_schedule_order",
-        ":finite_history_schedule",
-        ":finite_schedule_order",
-        ":finite_scheduling",
-        ":occupancy_noncommutation",
-        ":unbounded_scheduling",
+        ":calculated_schedule_execution",
+        ":cover_schedule_necessity",
     ],
-)
-
-lean_axiom_test(
-    name = "maximum_safe_concurrency_axioms_test",
-    size = "small",
-    allowed_axioms = [
-        "propext",
-        "Classical.choice",
-        "Quot.sound",
-    ],
-    imports = ["maximum_safe_concurrency"],
-    theorems = [
-        "Define.OperationGraph.calculated_coverPair_has_adjacent_finite_execution",
-        "Define.OperationGraph.calculated_coverPair_has_irreversible_adjacent_finite_execution",
-        "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
-        "Define.OperationGraph.finite_respecting_schedule_execution",
-        "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
-        "Define.OperationGraph.stopped_history_finite_schedule_execution",
-        "Define.OperationGraph.unbounded_respecting_schedule_execution",
-    ],
-    deps = [":maximum_safe_concurrency"],
 )
 
 lean_library(

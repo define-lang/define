@@ -67,16 +67,17 @@ uses the graph result for a separate behavioral theorem.
 The Lean modules with matching names mirror the dependency diagram:
 `definitions.lean` through `calculation_correctness.lean` form the foundation;
 `minimality.lean` and `completeness.lean` independently import that foundation;
-`characterization.lean` imports both; and `maximum_safe_concurrency.lean`
-imports characterization together with the cover-pair ordering, local exchange,
-finite-history, and finite-schedule semantics from `cover_schedule_order.lean`,
-`occupancy_exchange.lean`, `finite_history_schedule.lean`,
-`occupancy_noncommutation.lean`, `finite_schedule_order.lean`, and
-`finite_scheduling.lean`, plus the natural-number schedule semantics from the
-corresponding unbounded-schedule modules. The minimality, completeness, and
-characterization modules each expose a theorem stated directly for an arbitrary
-`ValidResolvedHistory`, and every theorem-bearing Lean module has a Bazel axiom
-audit.
+`characterization.lean` imports both. The maximum-safe-concurrency proof then
+divides into two branches. `calculated_schedule_execution.lean` combines
+characterization with finite and unbounded scheduling to prove sufficiency.
+`cover_order.lean` supplies generic cover theory; `cover_schedule_order.lean`
+constructs adjacent calculated cover schedules; and
+`cover_schedule_necessity.lean` combines that order construction with
+`occupancy_noncommutation.lean` to prove finite-prefix necessity.
+`maximum_safe_concurrency.lean` is the aggregate entry point for the two
+branches. The minimality, completeness, and characterization modules each expose
+a theorem stated directly for an arbitrary `ValidResolvedHistory`, and every
+theorem-bearing Lean module has a Bazel axiom audit.
 
 The other files are supporting evidence, not links in the universal proof chain.
 `create_destroy_history.lean` gives a concrete valid resolved history without

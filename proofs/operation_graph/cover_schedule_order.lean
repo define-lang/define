@@ -1,4 +1,5 @@
 import characterization
+import cover_order
 import finite_history_schedule
 import finite_schedule_order
 
@@ -10,26 +11,19 @@ set_option autoImplicit false
 
 This module formalizes the order-theoretic part of the necessity argument for
 maximum safe concurrency. A cover pair is a reachable pair with no occurrence
-strictly between its endpoints. For the calculated dependency relation, every
+strictly between its endpoints. The generic definition and omitted-cover-pair
+theorem are in `cover_order`. For the calculated dependency relation, every
 cover pair is a related-and-previous pair.
 
-The main theorem constructs a finite dependency-respecting permutation of the
-history prefix ending with the later operation. Every other predecessor of that
-operation appears first, followed immediately by the covered pair. All other
-operations retain their relative history order.
+The schedule theorem constructs a finite dependency-respecting permutation of
+the history prefix ending with the later operation. Every other predecessor of
+that operation appears first, followed immediately by the covered pair. All
+other operations retain their relative history order. The necessity theorem
+then proves that every proper transitive subrelation omits some cover pair and
+allows the schedule obtained by reversing that adjacent pair.
 -/
 
 namespace Define.OperationGraph
-
-universe u
-
-def CoverPair {Occurrence : Type u}
-    (precedence : Occurrence → Occurrence → Prop)
-    (following previous : Occurrence) : Prop :=
-  precedence following previous ∧
-    ∀ intermediate,
-      precedence following intermediate →
-        precedence intermediate previous → False
 
 theorem calculated_coverPair_is_relatedPrevious
     {isOperation : ParticleOperation → Prop}
@@ -259,5 +253,68 @@ theorem calculated_coverPair_has_adjacent_respecting_historyPrefix
     ⟨otherPredecessors, remaining,
       by simpa [List.append_assoc] using schedules_permuted,
       by simpa [List.append_assoc] using completed_respects⟩
+
+/--
+Every proper transitive subrelation of calculated reachability allows a finite
+history-prefix schedule obtained by reversing an adjacent cover pair that the
+subrelation omits.
+-/
+theorem calculated_proper_subrelation_has_reversed_cover_schedule
+    {isOperation : ParticleOperation → Prop}
+    (history : ValidResolvedHistory isOperation)
+    {weaker : ParticleOperation → ParticleOperation → Prop}
+    (weaker_transitive :
+      ∀ {following intermediate previous},
+        weaker following intermediate →
+          weaker intermediate previous → weaker following previous)
+    (weaker_is_subrelation :
+      ∀ following previous,
+        weaker following previous →
+          Reaches (CalculatedDependency history) following previous)
+    (subrelation_is_proper :
+      ∃ following previous,
+        Reaches (CalculatedDependency history) following previous ∧
+          ¬weaker following previous) :
+    ∃ following previous preceding remaining,
+      CoverPair (Reaches (CalculatedDependency history)) following previous ∧
+        ¬weaker following previous ∧
+          (history.operationsBefore (following.operationOrder + 1)).Perm
+            (preceding ++ previous :: following :: remaining) ∧
+            RespectsPrecedence (Reaches (CalculatedDependency history))
+                (preceding ++ previous :: following :: remaining) ∧
+              RespectsPrecedence weaker
+                (preceding ++ following :: previous :: remaining) := by
+  rcases subrelation_is_proper with
+    ⟨omittedFollowing, omittedPrevious, omitted_pair⟩
+  have calculated_reachability_points_backward :
+      PointsBackward ParticleOperation.operationOrder
+        (Reaches (CalculatedDependency history)) := by
+    intro following previous reachable
+    exact
+      reaches_decreases_order
+        (calculatedDependency_pointsBackward history) reachable
+  rcases
+      omitted_pair_contains_omitted_coverPair
+        ParticleOperation.operationOrder
+        (precedence := Reaches (CalculatedDependency history))
+        (weaker := weaker) calculated_reachability_points_backward
+        weaker_transitive (following := omittedFollowing)
+        (previous := omittedPrevious) omitted_pair with
+    ⟨following, previous, cover_pair, pair_omitted⟩
+  rcases
+      calculated_coverPair_has_adjacent_respecting_historyPrefix history
+        cover_pair with
+    ⟨preceding, remaining, schedules_permuted, original_respects⟩
+  have original_respects_weaker :
+      RespectsPrecedence weaker
+        (preceding ++ previous :: following :: remaining) :=
+    original_respects.mono weaker_is_subrelation
+  have reversed_respects_weaker :
+      RespectsPrecedence weaker
+        (preceding ++ following :: previous :: remaining) :=
+    original_respects_weaker.swap_adjacent preceding pair_omitted
+  exact
+    ⟨following, previous, preceding, remaining, cover_pair, pair_omitted,
+      schedules_permuted, original_respects, reversed_respects_weaker⟩
 
 end Define.OperationGraph

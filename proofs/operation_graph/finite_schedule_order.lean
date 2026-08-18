@@ -35,6 +35,32 @@ inductive RespectsPrecedence {Occurrence : Type u}
       (remaining_respects : RespectsPrecedence precedence remaining) :
       RespectsPrecedence precedence (occurrence :: remaining)
 
+/--
+A schedule that respects a relation also respects every subrelation of it.
+-/
+theorem RespectsPrecedence.mono
+    {Occurrence : Type u}
+    {precedence weaker : Occurrence → Occurrence → Prop}
+    {schedule : List Occurrence}
+    (respects : RespectsPrecedence precedence schedule)
+    (weaker_is_subrelation :
+      ∀ following previous,
+        weaker following previous → precedence following previous) :
+    RespectsPrecedence weaker schedule := by
+  induction respects with
+  | nil => exact .nil
+  | cons occurrence_does_not_follow_remaining remaining_respects
+      induction_hypothesis =>
+      exact
+        .cons
+          (by
+            intro laterOccurrence later_member weaker_precedence
+            exact
+              occurrence_does_not_follow_remaining laterOccurrence
+                later_member
+                (weaker_is_subrelation _ _ weaker_precedence))
+          induction_hypothesis
+
 theorem RespectsPrecedence.snoc
     {Occurrence : Type u} {precedence : Occurrence → Occurrence → Prop}
     {schedule : List Occurrence} {finalOccurrence : Occurrence}

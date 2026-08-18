@@ -36,12 +36,12 @@ any finite schedule prefix and suffix. The theorem
 duplicate-free finite schedules containing the same occurrences and respecting
 the same precedence relation are connected by such adjacent incomparable
 exchanges. `finite_respecting_schedule_execution` in
-[`maximum_safe_concurrency.lean`](maximum_safe_concurrency.lean) combines those
-components for the calculated graph: every dependency-respecting permutation of
-a defined finite schedule of distinct operations from one valid resolved history
-has the same observations and final occupancy. The canonical schedule in
-[`finite_history_schedule.lean`](finite_history_schedule.lean) lists the
-occurrences before a stopping index directly from the history, proves that a
+[`calculated_schedule_execution.lean`](calculated_schedule_execution.lean)
+combines those components for the calculated graph: every dependency-respecting
+permutation of a defined finite schedule of distinct operations from one valid
+resolved history has the same observations and final occupancy. The canonical
+schedule in [`finite_history_schedule.lean`](finite_history_schedule.lean) lists
+the occurrences before a stopping index directly from the history, proves that a
 stopping index makes this exactly the history's complete operation set, and
 proves that the schedule is duplicate-free, respects calculated reachability,
 and executes with the history's observations and final occupancy.
@@ -50,15 +50,20 @@ the stopped-history case of the theorem below. The natural-number schedule and
 finite-prefix completion theorem in
 [`unbounded_schedule_order.lean`](unbounded_schedule_order.lean), together with
 `unbounded_respecting_schedule_execution`, formalize the unbounded-history case
-one finite prefix at a time.
-`calculated_coverPair_has_adjacent_finite_execution` formalizes the
-dependency-respecting finite construction that makes each cover pair adjacent.
-`related_enabled_operations_not_reversible` formalizes the four occupancy cases
-showing that two related operations cannot execute consecutively in both orders.
-`calculated_coverPair_has_irreversible_adjacent_finite_execution` combines those
-results for every calculated cover pair. Deriving the final necessity result
-from an arbitrary proper subrelation remains proved in this document rather than
-in Lean.
+one finite prefix at a time. The generic cover definition and omitted-cover-pair
+theorem are in [`cover_order.lean`](cover_order.lean), while
+[`cover_schedule_order.lean`](cover_schedule_order.lean) formalizes the
+dependency-respecting finite construction that makes each calculated cover pair
+adjacent. `related_enabled_operations_not_reversible` formalizes the four
+occupancy cases showing that two related operations cannot execute consecutively
+in both orders.
+`calculated_coverPair_has_irreversible_adjacent_finite_execution` in
+[`cover_schedule_necessity.lean`](cover_schedule_necessity.lean) combines those
+results for every calculated cover pair.
+`proper_transitive_subrelation_allows_undefined_historyPrefix` formalizes the
+finite-prefix counterexample for every proper transitive subrelation. Extending
+that counterexample to a full stopped or unbounded schedule remains proved in
+this document rather than in Lean.
 
 ## Definitions
 
@@ -321,17 +326,23 @@ exchanged order is undefined. ∎
 
 Let `P` be the precedence relation represented by `>R`, and let `Q` be a strict
 partial order that is a proper subrelation of `P`. Choose `(O,A)` in `P` but not
-in `Q`. Every operation strictly between `A` and `O` in `P` has a natural-number
-index strictly between their indices, so there are only finitely many.
-Repeatedly inserting an intermediate operation therefore produces a finite chain
-of cover pairs from `A` to `O`. If `Q` contained every pair in that chain,
-transitivity would put `(O,A)` in `Q`. Thus `Q` omits at least one cover pair.
+in `Q` for which the natural-number difference between the indices of `O` and
+`A` is as small as possible. Such a choice exists because `Q` is a proper
+subrelation and the natural numbers are well ordered.
+
+This minimal omitted pair is a cover pair. Otherwise, some `X` would satisfy
+both `(O,X)` in `P` and `(X,A)` in `P`. If both pairs were in `Q`, transitivity
+would put `(O,A)` in `Q`. At least one is therefore omitted by `Q`. Reachability
+always moves to a smaller index, so both the `O`-to-`X` and `X`-to-`A` index
+differences are smaller than the chosen `O`-to-`A` difference. Either omitted
+pair would contradict the minimal choice. Thus `Q` omits a cover pair.
 
 Take the `P`-consistent order in which that pair is adjacent and exchange the
-pair. The exchanged order violates no relation of `P` except the omitted cover
-pair, so it respects `Q`; the theorem above says that it is undefined. Thus no
-proper subrelation of `P` guarantees a defined execution for all of its linear
-orders.
+pair. Before the exchange the order respects `Q` because `Q` is a subrelation of
+`P`. The exchange changes only the relative order of the adjacent pair, and that
+pair is not in `Q`, so the exchanged order still respects `Q`. The theorem above
+says that it is undefined. Thus no proper subrelation of `P` guarantees a
+defined execution for all of its linear orders.
 
 This is the necessity result used by the “maximum safe concurrency” claim.
 
