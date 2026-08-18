@@ -424,7 +424,7 @@ dev = [
     { name = "coverage" },
     { name = "define" },
     { name = "google-re2", virtual = "vendored/re2/python" },
-    { name = "hypothesis" },
+    { name = "hypothesis", specifier = "==6.165.3" },
     { name = "j2lint" },
     { name = "lark" },
     { name = "mutmut" },
