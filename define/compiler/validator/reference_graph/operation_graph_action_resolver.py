@@ -709,7 +709,7 @@ class ResolvedAction:
     """The dependency interface of one reusable action."""
 
     graph: operation_graph.OperationGraph
-    operations: dict[
+    _operations: dict[
         operation_graph_model.PositionOperationNode, ResolvedActionOperation
     ]
     binding_holes: ActionBindingHoles
@@ -718,6 +718,60 @@ class ResolvedAction:
         operation_graph_model.DestructionDependency,
         operation_graph_model.DestructionContribution,
     ]
+
+    @property
+    def particle_operations(
+        self,
+    ) -> Iterable[operation_graph_model.PositionOperationNode]:
+        """Iterate over every Particle Operation in Operation Graph order."""
+        for node in self.graph.nodes:
+            if isinstance(node, operation_graph_model.PositionOperationNode):
+                yield node
+
+    def local_operations_depended_on_by(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> Sequence[operation_graph_model.PositionOperationNode]:
+        """Return the local Particle Operations on which an operation depends."""
+        return self._operations[operation].dependencies.local_operations
+
+    def guarantee_dependencies_for(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> Sequence[operation_graph.GuaranteePath]:
+        """Return one Particle Operation's Guarantee Dependencies."""
+        return self._operations[operation].dependencies.guarantee_dependencies
+
+    def binding_holes_depended_on_by(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> Sequence[operation_graph_model.BindingHole]:
+        """Return the Binding Holes on which one Particle Operation depends."""
+        return self._operations[operation].binding_holes_depended_on
+
+    def callee_bindings_depending_on(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> Sequence[CalleeBinding]:
+        """Return the Callee Bindings that depend on one Particle Operation."""
+        return self._operations[operation].dependent_callee_bindings
+
+    def action_executions_triggered_by(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> Sequence[ResolvedActionExecution]:
+        """Return the Action Executions triggered by one Particle Operation."""
+        return self._operations[operation].action_executions
+
+    def destruction_dependencies_for(
+        self,
+        operation: operation_graph_model.DestructionFactDestroyNode,
+    ) -> Sequence[operation_graph_model.DestructionDependency]:
+        """Return the Destruction Dependencies of one Destruction Fact Destroy."""
+        resolved_operation = typing.cast(
+            "ResolvedDestructionOperation", self._operations[operation]
+        )
+        return resolved_operation.destruction_dependencies
 
 
 @typing.final
@@ -1204,7 +1258,7 @@ class _ActionResolver:
         )
         return ResolvedAction(
             graph=self._graph,
-            operations=operations,
+            _operations=operations,
             binding_holes=binding_holes,
             action_executions=action_executions,
             destruction_contributions=self._operation_graphs.destruction_contributions(

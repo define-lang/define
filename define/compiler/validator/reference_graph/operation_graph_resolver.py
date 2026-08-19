@@ -12,6 +12,8 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import ast
 
 
@@ -139,25 +141,22 @@ class ResolvedOperationGraphBuilder:
 
         action_execution, operation = operation_key
         resolved_action = self._resolved_actions[action_execution.action]
-        resolved_action_operation = resolved_action.operations[operation]
         dependency_keys: dict[_ResolvedOperationKey, None] = {}
-        destruction_operation = None
-        if isinstance(
-            resolved_action_operation,
-            operation_graph_action_resolver.ResolvedDestructionOperation,
-        ):
-            destruction_operation = resolved_action_operation
+        is_destruction_operation = isinstance(
+            operation,
+            operation_graph_model.DestructionFactDestroyNode,
+        )
         has_contributed_dependency = False
-        if destruction_operation is not None:
+        if is_destruction_operation:
             destruction = resolved_action.graph.destruction_for_fact(
-                destruction_operation.operation.destruction_fact
+                operation.destruction_fact
             )
             if destruction.is_propagated_to_caller:
                 has_contributed_dependency = (
                     self._add_contributed_destruction_dependencies(
                         dependency_keys,
                         action_execution,
-                        destruction_operation.operation,
+                        operation,
                     )
                 )
         # The dependencies on either side of a caller contribution matter only
@@ -165,10 +164,8 @@ class ResolvedOperationGraphBuilder:
         # Codegen uses the Destruction Dependencies and Destruction Contributions
         # directly, so resolving these nodes in the action resolver would add
         # relationships and work that none of its production consumers need.
-        if destruction_operation is not None and has_contributed_dependency:
-            for (
-                dependency
-            ) in destruction_operation.operation.dependencies_after_caller_contribution:
+        if is_destruction_operation and has_contributed_dependency:
+            for dependency in operation.dependencies_after_caller_contribution:
                 if isinstance(dependency, operation_graph_model.PositionOperationNode):
                     dependency_keys[action_execution, dependency] = None
                 else:
@@ -181,15 +178,17 @@ class ResolvedOperationGraphBuilder:
             self._add_action_dependencies(
                 dependency_keys,
                 action_execution,
-                resolved_action_operation.dependencies,
+                resolved_action.local_operations_depended_on_by(operation),
+                resolved_action.guarantee_dependencies_for(operation),
             )
-            if destruction_operation is not None:
+            if is_destruction_operation:
                 self._add_destruction_dependencies(
                     dependency_keys,
                     action_execution,
-                    destruction_operation,
+                    operation,
+                    resolved_action.destruction_dependencies_for(operation),
                 )
-            for binding_hole in resolved_action_operation.binding_holes_depended_on:
+            for binding_hole in resolved_action.binding_holes_depended_on_by(operation):
                 self._add_dependencies_for_binding_hole(
                     dependency_keys,
                     action_execution,
@@ -244,11 +243,12 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        dependencies: operation_graph_action_resolver.ActionDependencies,
+        local_operations: Sequence[operation_graph_model.PositionOperationNode],
+        guarantee_dependencies: Sequence[operation_graph.GuaranteePath],
     ):
-        for operation in dependencies.local_operations:
+        for operation in local_operations:
             dependency_keys[action_execution, operation] = None
-        for guarantee in dependencies.guarantee_dependencies:
+        for guarantee in guarantee_dependencies:
             self._add_guarantee(dependency_keys, action_execution, guarantee)
 
     def _add_dependencies_before_caller_contribution(
@@ -281,9 +281,10 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        resolved_operation: operation_graph_action_resolver.ResolvedDestructionOperation,
+        operation: operation_graph_model.DestructionFactDestroyNode,
+        destruction_dependencies: Sequence[operation_graph_model.DestructionDependency],
     ):
-        for destruction_dependency in resolved_operation.destruction_dependencies:
+        for destruction_dependency in destruction_dependencies:
             callee_destroy = destruction_dependency.callee_destroy
             direct_callee_execution = self._callee_execution(
                 action_execution,
@@ -307,19 +308,19 @@ class ResolvedOperationGraphBuilder:
             self._add_caller_destruction_start(
                 dependency_keys,
                 action_execution,
-                resolved_operation,
+                operation,
             )
 
     def _add_caller_destruction_start(
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        resolved_operation: operation_graph_action_resolver.ResolvedDestructionOperation,
+        operation: operation_graph_model.DestructionFactDestroyNode,
     ):
         self._add_dependencies_before_caller_contribution(
             dependency_keys,
             action_execution,
-            resolved_operation.operation.dependencies_before_caller_contribution,
+            operation.dependencies_before_caller_contribution,
         )
 
     def _add_destruction_start_before_caller(
@@ -381,7 +382,8 @@ class ResolvedOperationGraphBuilder:
             self._add_action_dependencies(
                 dependency_keys,
                 triggered_by.caller,
-                callee_binding.caller_dependencies,
+                callee_binding.caller_dependencies.local_operations,
+                callee_binding.caller_dependencies.guarantee_dependencies,
             )
             if (
                 callee_binding.caller_dependencies.local_operations
@@ -529,7 +531,8 @@ class ResolvedOperationGraphBuilder:
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
-            callee_binding.caller_dependencies,
+            callee_binding.caller_dependencies.local_operations,
+            callee_binding.caller_dependencies.guarantee_dependencies,
         )
         for caller_binding_hole in callee_binding.caller_binding_holes:
             self._add_destruction_dependencies_for_binding_hole(
@@ -618,7 +621,8 @@ class ResolvedOperationGraphBuilder:
         self._add_action_dependencies(
             dependency_keys,
             triggered_by.caller,
-            callee_binding.caller_dependencies,
+            callee_binding.caller_dependencies.local_operations,
+            callee_binding.caller_dependencies.guarantee_dependencies,
         )
         for caller_binding_hole in callee_binding.caller_binding_holes:
             self._add_dependencies_for_binding_hole(

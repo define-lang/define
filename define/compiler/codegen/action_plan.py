@@ -54,8 +54,8 @@ class ActionFragment:
     """A maximal direct-call chain of Particle Operations."""
 
     operations: list[operation_graph_model.PositionOperationNode]
-    guarantee_dependencies: list[operation_graph.GuaranteePath] = field(
-        init=False, default_factory=list
+    guarantee_dependencies: Sequence[operation_graph.GuaranteePath] = field(
+        init=False, default=()
     )
     guarantee_publications: list[GuaranteePublication] = field(
         init=False, default_factory=list
@@ -217,7 +217,6 @@ class _FragmentTopologyBuilder:
         uses_binding_hole_fanouts: bool,
     ):
         self._resolved_action = resolved_action
-        self._operations = resolved_action.operations
         self._publishes_guarantees = publishes_guarantees
         self._uses_binding_hole_fanouts = uses_binding_hole_fanouts
 
@@ -249,9 +248,11 @@ class _FragmentTopologyBuilder:
         local_successors: dict[
             operation_graph_model.PositionOperationNode,
             list[operation_graph_model.PositionOperationNode],
-        ] = {operation: [] for operation in self._operations}
-        for operation, resolved_operation in self._operations.items():
-            for predecessor in resolved_operation.dependencies.local_operations:
+        ] = {operation: [] for operation in self._resolved_action.particle_operations}
+        for operation in self._resolved_action.particle_operations:
+            for predecessor in self._resolved_action.local_operations_depended_on_by(
+                operation
+            ):
                 local_successors[predecessor].append(operation)
         return local_successors
 
@@ -270,7 +271,7 @@ class _FragmentTopologyBuilder:
         ],
     ) -> list[ActionFragment]:
         fragments: list[ActionFragment] = []
-        for head in self._operations:
+        for head in self._resolved_action.particle_operations:
             if self._can_follow_predecessor(head, local_successors):
                 continue
             chain = [head]
@@ -293,24 +294,20 @@ class _FragmentTopologyBuilder:
             list[operation_graph_model.PositionOperationNode],
         ],
     ) -> bool:
-        resolved_operation = self._operations[operation]
-        predecessors = resolved_operation.dependencies.local_operations
+        predecessors = self._resolved_action.local_operations_depended_on_by(operation)
         if len(predecessors) != 1:
             return False
         if (
             (
                 self._uses_binding_hole_fanouts
-                and resolved_operation.binding_holes_depended_on
+                and self._resolved_action.binding_holes_depended_on_by(operation)
             )
             or self._is_propagated_destruction_operation(operation)
             or (
-                isinstance(
-                    resolved_operation,
-                    operation_graph_action_resolver.ResolvedDestructionOperation,
-                )
-                and resolved_operation.destruction_dependencies
+                isinstance(operation, operation_graph_model.DestructionFactDestroyNode)
+                and self._resolved_action.destruction_dependencies_for(operation)
             )
-            or resolved_operation.dependencies.guarantee_dependencies
+            or self._resolved_action.guarantee_dependencies_for(operation)
         ):
             return False
         predecessor = predecessors[0]
@@ -321,29 +318,27 @@ class _FragmentTopologyBuilder:
     def _is_propagated_destruction_operation(
         self, operation: operation_graph_model.PositionOperationNode
     ) -> bool:
-        resolved_operation = self._operations[operation]
         if not isinstance(
-            resolved_operation,
-            operation_graph_action_resolver.ResolvedDestructionOperation,
+            operation,
+            operation_graph_model.DestructionFactDestroyNode,
         ):
             return False
         destruction = self._resolved_action.graph.destruction_for_fact(
-            resolved_operation.operation.destruction_fact
+            operation.destruction_fact
         )
         return destruction.is_propagated_to_caller
 
     def _must_end_fragment(
         self, operation: operation_graph_model.PositionOperationNode
     ) -> bool:
-        resolved_operation = self._operations[operation]
         return bool(
             (
                 self._publishes_guarantees
                 and operation
                 in self._resolved_action.graph.guaranteed_positions_by_operation
             )
-            or resolved_operation.dependent_callee_bindings
-            or resolved_operation.action_executions
+            or self._resolved_action.callee_bindings_depending_on(operation)
+            or self._resolved_action.action_executions_triggered_by(operation)
         )
 
 
@@ -519,13 +514,17 @@ class _ActionPlanBuilder:
                 callee_binding_join_by_callee_binding[callee_binding] = (
                     callee_binding_join
                 )
-        for resolved_operation in self._resolved_action.operations.values():
-            fragment = fragment_for_operation[resolved_operation.operation]
-            for callee_binding in resolved_operation.dependent_callee_bindings:
+        for operation in self._resolved_action.particle_operations:
+            fragment = fragment_for_operation[operation]
+            for callee_binding in self._resolved_action.callee_bindings_depending_on(
+                operation
+            ):
                 fragment.callee_binding_joins_that_depend_on_fragment.append(
                     callee_binding_join_by_callee_binding[callee_binding]
                 )
-            for resolved_action_execution in resolved_operation.action_executions:
+            for (
+                resolved_action_execution
+            ) in self._resolved_action.action_executions_triggered_by(operation):
                 fragment.action_execution_successors.append(
                     resolved_action_execution.execution
                 )
@@ -596,21 +595,23 @@ class _ActionPlanBuilder:
 
     def _plan_fragments(self, topology: _FragmentTopology):
         for fragment in topology.fragments:
-            first_resolved_operation = self._resolved_action.operations[
-                fragment.operations[0]
-            ]
-            first_dependencies = first_resolved_operation.dependencies
-            fragment.guarantee_dependencies = first_dependencies.guarantee_dependencies
+            first_operation = fragment.operations[0]
+            local_dependencies = self._resolved_action.local_operations_depended_on_by(
+                first_operation
+            )
+            fragment.guarantee_dependencies = (
+                self._resolved_action.guarantee_dependencies_for(first_operation)
+            )
             destruction_dependency_count = 0
             if isinstance(
-                first_resolved_operation,
-                operation_graph_action_resolver.ResolvedDestructionOperation,
+                first_operation,
+                operation_graph_model.DestructionFactDestroyNode,
             ):
                 destruction_dependency_count = len(
-                    first_resolved_operation.destruction_dependencies
+                    self._resolved_action.destruction_dependencies_for(first_operation)
                 )
             fragment.dependency_count = (
-                len(first_dependencies.local_operations)
+                len(local_dependencies)
                 + len(fragment.guarantee_dependencies)
                 + destruction_dependency_count
             )
@@ -632,9 +633,11 @@ class _ActionPlanBuilder:
             binding_hole_fanout.binding_hole: binding_hole_fanout
             for binding_hole_fanout in binding_hole_fanouts
         }
-        for resolved_operation in self._resolved_action.operations.values():
-            fragment = fragment_for_operation[resolved_operation.operation]
-            for binding_hole in resolved_operation.binding_holes_depended_on:
+        for operation in self._resolved_action.particle_operations:
+            fragment = fragment_for_operation[operation]
+            for binding_hole in self._resolved_action.binding_holes_depended_on_by(
+                operation
+            ):
                 binding_hole_fanout_by_binding_hole[binding_hole].fragments.append(
                     fragment
                 )

@@ -80,10 +80,9 @@ def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():
 
     (binding_hole,) = resolved.binding_holes.in_binding_order
     assert binding_hole is graph.nodes[0]
-    assert resolved.operations[create].binding_holes_depended_on == [binding_hole]
-    assert resolved.operations[
-        destroy
-    ].dependencies == operation_graph_action_resolver.ActionDependencies([create], [])
+    assert resolved.binding_holes_depended_on_by(create) == [binding_hole]
+    assert resolved.local_operations_depended_on_by(destroy) == [create]
+    assert resolved.guarantee_dependencies_for(destroy) == []
 
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
@@ -116,7 +115,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
 
     assert resolved_execution.execution is execution
     assert len(resolved.action_executions) == 1
-    assert resolved.operations[trigger_position_create].action_executions == [
+    assert resolved.action_executions_triggered_by(trigger_position_create) == [
         resolved_execution
     ]
     (callee_binding,) = resolved_execution.callee_bindings.values()
@@ -131,7 +130,7 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     (binding_hole,) = resolved.binding_holes.in_binding_order
     assert binding_hole is action_parent
     assert callee_binding.caller_binding_holes == [binding_hole]
-    assert resolved.operations[trigger_position_create].binding_holes_depended_on == [
+    assert resolved.binding_holes_depended_on_by(trigger_position_create) == [
         binding_hole
     ]
     assert execution.destructor_trigger_requirement is None
@@ -178,5 +177,6 @@ def test_requirement_binding_hole_fires_destructor():
     assert destructor_callee_binding.caller_binding_holes == [binding_hole]
     assert destructor_execution.destructor_trigger_requirement is binding_hole
     assert all(
-        not operation.action_executions for operation in resolved.operations.values()
+        not resolved.action_executions_triggered_by(operation)
+        for operation in resolved.particle_operations
     )
