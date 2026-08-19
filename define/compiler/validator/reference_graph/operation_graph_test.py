@@ -258,57 +258,6 @@ def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent()
     )
 
 
-def test_particle_child_operations_excludes_operations_on_the_same_paths():
-    child_operations = (
-        operation_graph_model.ParticleChildOperations.from_preceding_operations(
-            (
-                (("position<a>",), _operation_node(2)),
-                (("position<b>",), _operation_node(3)),
-            )
-        )
-    )
-
-    assert child_operations.operations_not_on_same_paths_as(
-        frozenset({("position<a>", "position<deep>")})
-    ) == [operation_graph_model.ChildOperation(("position<b>",), _operation_node(3))]
-
-
-def test_particle_child_operations_excludes_one_operation_known_on_multiple_positions():
-    operation = _operation_node(2)
-    remaining_operation = _operation_node(3)
-    child_operations = operation_graph_model.ParticleChildOperations(
-        (
-            operation_graph_model.ChildOperation(("position<b>",), operation),
-            operation_graph_model.ChildOperation(("position<a>",), operation),
-            operation_graph_model.ChildOperation(("position<c>",), remaining_operation),
-        )
-    )
-
-    assert child_operations.operations_not_on_same_paths_as(
-        frozenset({("position<a>", "position<deep>")})
-    ) == [operation_graph_model.ChildOperation(("position<c>",), remaining_operation)]
-
-
-def test_particle_child_operations_scales_to_wide_particles():
-    child_count = 10_000
-    child_operations = (
-        operation_graph_model.ParticleChildOperations.from_preceding_operations(
-            ((f"position<c{index}>",), _operation_node(index))
-            for index in range(child_count)
-        )
-    )
-
-    operations = child_operations.operations_not_on_same_paths_as(frozenset())
-
-    assert len(operations) == child_count
-    assert operations[0] == operation_graph_model.ChildOperation(
-        ("position<c9999>",), _operation_node(9999)
-    )
-    assert operations[-1] == operation_graph_model.ChildOperation(
-        ("position<c0>",), _operation_node(0)
-    )
-
-
 @pytest.mark.parametrize(
     ("preceding_operations", "expected_operations"),
     [
@@ -367,88 +316,7 @@ def test_particle_child_operations_keeps_only_newest_comparable_operations(
         )
     )
 
-    assert (
-        set(child_operations.operations_not_on_same_paths_as(frozenset()))
-        == expected_operations
-    )
-
-
-def test_particle_child_operations_matches_parent_and_child_paths():
-    operation_a = operation_graph_model.ChildOperation(
-        ("position<a>",), _operation_node(1)
-    )
-    operation_b_deep = operation_graph_model.ChildOperation(
-        ("position<b>", "position<deep>"), _operation_node(2)
-    )
-    operation_c_first = operation_graph_model.ChildOperation(
-        ("position<c>", "position<first>"), _operation_node(3)
-    )
-    operation_c_second = operation_graph_model.ChildOperation(
-        ("position<c>", "position<second>"), _operation_node(4)
-    )
-    child_operations = operation_graph_model.ParticleChildOperations(
-        (
-            operation_c_second,
-            operation_c_first,
-            operation_b_deep,
-            operation_a,
-        )
-    )
-
-    assert child_operations.empty_rule_dependencies_for(
-        ("position<a>", "position<child>")
-    ) == (operation_a.operation,)
-    assert child_operations.empty_rule_dependencies_for(("position<b>",)) == (
-        operation_b_deep.operation,
-    )
-    assert set(child_operations.empty_rule_dependencies_for(("position<c>",))) == {
-        operation_c_first.operation,
-        operation_c_second.operation,
-    }
-    assert child_operations.empty_rule_dependencies_for(("position<missing>",)) == ()
-
-
-def test_particle_child_operations_reduces_matching_dependencies():
-    older_operation = operation_graph_model.MoveNode(
-        node_id=1,
-        source=_ref("box", "a", "child"),
-        target=_ref("older_target"),
-        depends_on=(),
-    )
-    newer_operation = operation_graph_model.MoveNode(
-        node_id=2,
-        source=_ref("box", "a"),
-        target=_ref("newer_target"),
-        depends_on=(),
-    )
-    child_operations = operation_graph_model.ParticleChildOperations(
-        (
-            operation_graph_model.ChildOperation(("position<a>",), newer_operation),
-            operation_graph_model.ChildOperation(
-                ("position<a>", "position<child>"), older_operation
-            ),
-        )
-    )
-
-    assert child_operations.empty_rule_dependencies_for(("position<a>",)) == (
-        newer_operation,
-    )
-
-
-def test_particle_child_operations_returns_a_shared_dependency_once():
-    operation = _operation_node(1)
-    child_operations = operation_graph_model.ParticleChildOperations(
-        (
-            operation_graph_model.ChildOperation(("position<a>",), operation),
-            operation_graph_model.ChildOperation(
-                ("position<a>", "position<child>"), operation
-            ),
-        )
-    )
-
-    assert child_operations.empty_rule_dependencies_for(("position<a>",)) == (
-        operation,
-    )
+    assert set(child_operations.operations) == expected_operations
 
 
 def test_particle_child_operations_all_precede():

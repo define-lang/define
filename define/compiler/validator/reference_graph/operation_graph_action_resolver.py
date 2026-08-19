@@ -44,6 +44,7 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_model,
+    operation_graph_rules,
 )
 
 # Resolution must be limited to substitutions that codegen can perform while
@@ -1441,7 +1442,7 @@ class _ActionResolver:
                     pass
         empty_dependencies.sort(key=lambda node: node.operation_order)
         remaining_empty_dependencies = (
-            operation_graph_model.apply_move_correction_and_fill_dependency_removal(
+            operation_graph_rules.apply_move_correction_and_fill_dependency_removal(
                 empty_dependencies,
                 None,
                 replacement_depends_on_targets_by_node=(

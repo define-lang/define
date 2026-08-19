@@ -100,6 +100,7 @@ py_library(
     deps = [
         ":action_contract",
         ":operation_graph_model",
+        ":operation_graph_rules",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -112,6 +113,7 @@ py_library(
     deps = [
         ":operation_graph",
         ":operation_graph_model",
+        ":operation_graph_rules",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -160,6 +162,24 @@ py_library(
     srcs = ["operation_graph_model.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = ["//define/compiler:ast"],
+)
+
+py_library(
+    name = "operation_graph_rules",
+    srcs = ["operation_graph_rules.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [":operation_graph_model"],
+)
+
+py_test(
+    name = "operation_graph_rules_test",
+    size = "small",
+    srcs = ["operation_graph_rules_test.py"],
+    deps = [
+        ":operation_graph_model",
+        ":operation_graph_rules",
+        "//define/compiler:ast",
+    ],
 )
 
 py_library(
@@ -395,6 +415,8 @@ pyright_test(
         ":operation_graph_renderer_test",
         ":operation_graph_resolver",
         ":operation_graph_resolver_test",
+        ":operation_graph_rules",
+        ":operation_graph_rules_test",
         ":operation_graph_test",
         ":particle_operation",
         ":particle_tracker",

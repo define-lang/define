@@ -35,6 +35,7 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph_model,
+    operation_graph_rules,
 )
 
 if typing.TYPE_CHECKING:
@@ -408,7 +409,7 @@ class OperationGraph:
             # Preserve its child-operation dependencies so inserting caller-contributed
             # Destroys does not replace dependencies on the callee's child operations.
             dependencies_after_caller_contribution=(
-                child_operations.empty_rule_dependencies_for(())
+                operation_graph_rules.empty_rule_dependencies_for(child_operations, ())
             ),
         )
         self._record_destroy_node(node)
@@ -660,7 +661,8 @@ class OperationGraph:
     ) -> tuple[operation_graph_model.EmptyRuleDependencyNode, ...]:
         """Return dependencies required before destroying one particle."""
         key = target.canonical_chained_name_tuple
-        rule_result = child_operations.determine_empty_rule_dependencies(
+        rule_result = operation_graph_rules.determine_empty_rule_dependencies(
+            child_operations,
             key,
             emptied_ancestor,
         )
@@ -685,7 +687,8 @@ class OperationGraph:
         operation_graph_model.PartialMoveRuleResult | None,
     ]:
         """Apply the Move Rule with the known Fill and Empty dependencies."""
-        rule_result = child_operations.determine_move_rule_dependencies(
+        rule_result = operation_graph_rules.determine_move_rule_dependencies(
+            child_operations,
             empty_position,
             fill_dependency,
             emptied_ancestor,
@@ -868,7 +871,7 @@ class OperationGraph:
 
         nodes_remaining_after_comparison = move.depends_on
         nodes_remaining_after_correction = (
-            operation_graph_model.apply_move_correction_and_fill_dependency_removal(
+            operation_graph_rules.apply_move_correction_and_fill_dependency_removal(
                 nodes_remaining_after_comparison,
                 concrete_fill_dependency,
                 fill_dependency_is_also_empty_dependency=(
@@ -971,8 +974,9 @@ class OperationGraph:
         particle_requirement_satisfaction = execution.requirement_satisfactions[
             caller_empty_rule_collection.requirement_position
         ]
-        child_operations = particle_requirement_satisfaction.child_operations.operations_not_on_same_paths_as(
-            caller_empty_rule_collection.collected_child_operation_positions
+        child_operations = operation_graph_rules.operations_not_on_same_paths_as(
+            particle_requirement_satisfaction.child_operations,
+            caller_empty_rule_collection.collected_child_operation_positions,
         )
         collected_nodes: set[operation_graph_model.LastOperationNode] = {
             child_operation.operation for child_operation in child_operations
@@ -1064,7 +1068,7 @@ class OperationGraph:
         (
             caller_nodes,
             collected_nodes_most_recent_first,
-        ) = operation_graph_model.apply_empty_rule_to_caller_collection(
+        ) = operation_graph_rules.apply_empty_rule_to_caller_collection(
             collected_nodes,
             collected_operation_positions,
             empty_rule_binding_inputs.concrete_caller_nodes,
@@ -1183,7 +1187,7 @@ class OperationGraph:
         (
             concrete_caller_nodes,
             collected_nodes_most_recent_first,
-        ) = operation_graph_model.apply_move_rule_to_caller_collection(
+        ) = operation_graph_rules.apply_move_rule_to_caller_collection(
             collected_nodes,
             comparison_positions,
             concrete_fill_dependency,
