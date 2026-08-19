@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from define.compiler import ast
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Sequence
+    from collections.abc import Collection, Iterable, Mapping, Sequence
 
 
 class PositionOccupancyState(enum.Enum):
@@ -55,21 +55,25 @@ type ConcreteOperationNode = PositionOperationNode | GuaranteeNode
 type LastOperationNode = ConcreteOperationNode | RequirementNode
 type ActionParentOperationNode = ActionParentLastOperationNode | LastOperationNode
 type EmptyRuleDependencyNode = LastOperationNode | EmptyRuleBindingHoleNode
-type EmptyOrMoveRuleDependencyNode = (
-    EmptyRuleDependencyNode | CallerMoveRuleFillDependencyNode
-)
 type AbstractOperationNode = (
+    ActionParentLastOperationNode | RequirementNode | EmptyRuleBindingHoleNode
+)
+type BindingHole = AbstractOperationNode | EmptyRuleBindingHole | MoveRuleBindingHole
+type PositionOperationDependsOnNode = (
     ActionParentLastOperationNode
+    | PositionOperationNode
+    | DestructionContributionNode
+    | GuaranteeNode
     | RequirementNode
     | EmptyRuleBindingHoleNode
-    | CallerMoveRuleFillDependencyNode
-)
-type BindingHole = (
-    AbstractOperationNode | EmptyRuleBindingHole | CallerMoveRuleFillDependency
 )
 type PrecedingChildOperations = Iterable[tuple[tuple[str, ...], ConcreteOperationNode]]
 
 
+# TODO: Move the Empty and Move Rule algorithms out of operation_graph_model into
+# a dedicated rule-calculation module. This module should retain their data types,
+# while Collection, Comparison, Move Correction, Fill Dependency removal, and
+# caller-Collection application move with the code that applies those rules.
 def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
     """Return whether either child position is a prefix of the other."""
     shared_depth = min(len(one), len(other))
@@ -124,20 +128,31 @@ def _apply_empty_rule_comparison_most_recent_first[DependencyNodeT: LastOperatio
 
 def apply_empty_rule_comparison[DependencyNodeT: LastOperationNode](
     collected_nodes: set[DependencyNodeT],
+    callee_collected_operation_positions: Iterable[tuple[str, ...]] = (),
 ) -> list[DependencyNodeT]:
     """Apply Comparison and return nodes from least to most recent."""
     return _apply_empty_rule_comparison_most_recent_first(
-        sorted(collected_nodes, key=lambda item: item.operation_order, reverse=True)
+        sorted(collected_nodes, key=lambda item: item.operation_order, reverse=True),
+        callee_collected_operation_positions,
     )
 
 
-def _apply_move_correction_and_fill_dependency_removal[
+# TODO: Refactor this into smaller units for selecting removal targets, traversing
+# depends_on paths, and filtering the result. Preserve one shared traversal so Move
+# Correction and Fill Dependency removal remain linear together.
+def apply_move_correction_and_fill_dependency_removal[
     DependencyNodeT: LastOperationNode
 ](
-    nodes_remaining_after_comparison: list[DependencyNodeT],
+    nodes_remaining_after_comparison: Sequence[DependencyNodeT],
     fill_dependency: DependencyNodeT | None,
     concrete_caller_nodes: Collection[ConcreteOperationNode] = (),
-) -> list[DependencyNodeT]:
+    *,
+    fill_dependency_is_also_empty_dependency: bool = False,
+    replacement_depends_on_targets_by_node: Mapping[
+        OperationNode, Collection[ConcreteOperationNode | BindingHole]
+    ]
+    | None = None,
+) -> Sequence[DependencyNodeT]:
     """Apply the Empty Rule's Move Correction and the Move Rule's optional Fill Dependency removal.
 
     ``nodes_remaining_after_comparison`` must be ordered from least to most recent.
@@ -149,7 +164,7 @@ def _apply_move_correction_and_fill_dependency_removal[
         len(nodes_remaining_after_comparison) < 2 and not concrete_caller_nodes
     ):
         return nodes_remaining_after_comparison
-    removable_nodes: set[OperationNode] = set()
+    removable_nodes_by_canonical_node: dict[OperationNode, list[OperationNode]] = {}
     least_recent_removable_node: OperationNode | None = None
     nodes_to_consider_for_removal_count = len(nodes_remaining_after_comparison)
     if not concrete_caller_nodes:
@@ -160,9 +175,23 @@ def _apply_move_correction_and_fill_dependency_removal[
         nodes_to_consider_for_removal_count -= 1
     for node_index in range(nodes_to_consider_for_removal_count):
         node = nodes_remaining_after_comparison[node_index]
-        if not isinstance(node, MoveNode) and node is not fill_dependency:
+        is_fill_dependency_removal_target = (
+            node is fill_dependency and not fill_dependency_is_also_empty_dependency
+        )
+        if (
+            not isinstance(node, MoveNode)
+            and not (
+                isinstance(node, GuaranteeNode) and node.guaranteed_operation_is_move
+            )
+            and not is_fill_dependency_removal_target
+        ):
             continue
-        removable_nodes.add(node)
+        canonical_node = (
+            node.canonical_node_for_particle_operation
+            if isinstance(node, GuaranteeNode)
+            else node
+        )
+        removable_nodes_by_canonical_node.setdefault(canonical_node, []).append(node)
         if least_recent_removable_node is None:
             least_recent_removable_node = node
     if least_recent_removable_node is None:
@@ -173,24 +202,56 @@ def _apply_move_correction_and_fill_dependency_removal[
         if node.operation_order <= least_recent_removable_node.operation_order:
             continue
         # A node cannot remove itself, so begin from the nodes it directly depends on.
-        nodes_to_visit.extend(node.depends_on)
+        replacement_depends_on_targets = None
+        if replacement_depends_on_targets_by_node is not None:
+            replacement_depends_on_targets = replacement_depends_on_targets_by_node.get(
+                node
+            )
+        if replacement_depends_on_targets is None:
+            nodes_to_visit.extend(node.depends_on)
+        else:
+            nodes_to_visit.extend(
+                dependency
+                for dependency in replacement_depends_on_targets
+                if isinstance(dependency, OperationNode)
+            )
     visited: set[OperationNode] = set()
     nodes_to_remove: set[OperationNode] = set()
-    while nodes_to_visit and removable_nodes:
+    while nodes_to_visit and removable_nodes_by_canonical_node:
         node = nodes_to_visit.pop()
         if node in visited:
             continue
         visited.add(node)
-        if node in removable_nodes:
-            removable_nodes.remove(node)
-            nodes_to_remove.add(node)
+        canonical_node = (
+            node.canonical_node_for_particle_operation
+            if isinstance(node, GuaranteeNode)
+            else node
+        )
+        matching_removal_targets = removable_nodes_by_canonical_node.pop(
+            canonical_node,
+            None,
+        )
+        if matching_removal_targets is not None:
+            nodes_to_remove.update(matching_removal_targets)
         # Every depends_on edge leads to an earlier operation, so continuing past
         # the least recent removable node cannot reach another removable node.
         if node.operation_order <= least_recent_removable_node.operation_order:
             continue
         # A removable node can depend on an earlier removable node, so the nodes it
         # depends on must participate in the same traversal.
-        nodes_to_visit.extend(node.depends_on)
+        replacement_depends_on_targets = None
+        if replacement_depends_on_targets_by_node is not None:
+            replacement_depends_on_targets = replacement_depends_on_targets_by_node.get(
+                node
+            )
+        if replacement_depends_on_targets is None:
+            nodes_to_visit.extend(node.depends_on)
+        else:
+            nodes_to_visit.extend(
+                dependency
+                for dependency in replacement_depends_on_targets
+                if isinstance(dependency, OperationNode)
+            )
 
     if not nodes_to_remove:
         return nodes_remaining_after_comparison
@@ -203,21 +264,84 @@ def apply_empty_rule_to_caller_collection[DependencyNodeT: LastOperationNode](
     collected_nodes: set[DependencyNodeT],
     callee_collected_operation_positions: Iterable[tuple[str, ...]],
     concrete_caller_nodes: Collection[ConcreteOperationNode],
-) -> list[DependencyNodeT]:
-    """Compare caller-collected nodes with the callee's Collection, then apply Move Correction."""
+    *,
+    replacement_depends_on_targets_by_node: Mapping[
+        OperationNode, Collection[ConcreteOperationNode | BindingHole]
+    ]
+    | None = None,
+) -> tuple[list[DependencyNodeT], list[DependencyNodeT]]:
+    """Apply the Empty Rule using Collection from one direct caller.
+
+    The first list is ordered least to most recent. The second contains every
+    collected node from most to least recent.
+    """
+    collected_nodes_most_recent_first = sorted(
+        collected_nodes,
+        key=lambda item: item.operation_order,
+        reverse=True,
+    )
     nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
-        sorted(
-            collected_nodes,
-            key=lambda item: item.operation_order,
-            reverse=True,
-        ),
+        collected_nodes_most_recent_first,
         callee_collected_operation_positions,
     )
-    return _apply_move_correction_and_fill_dependency_removal(
-        nodes_remaining_after_comparison,
-        None,
-        concrete_caller_nodes,
+    nodes_remaining_after_rule = typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            None,
+            concrete_caller_nodes,
+            replacement_depends_on_targets_by_node=(
+                replacement_depends_on_targets_by_node
+            ),
+        ),
     )
+    return nodes_remaining_after_rule, collected_nodes_most_recent_first
+
+
+def apply_move_rule_to_caller_collection[DependencyNodeT: LastOperationNode](
+    collected_nodes: set[DependencyNodeT],
+    callee_collected_operation_positions: Iterable[tuple[str, ...]],
+    concrete_fill_dependency: DependencyNodeT | None,
+    concrete_nodes_from_prerequisite_bindings: Collection[ConcreteOperationNode],
+    *,
+    fill_dependency_is_also_empty_dependency: bool,
+    replacement_depends_on_targets_by_node: Mapping[
+        OperationNode, Collection[ConcreteOperationNode | BindingHole]
+    ],
+) -> tuple[list[DependencyNodeT], list[DependencyNodeT]]:
+    """Apply the Move Rule using Collection from one direct caller.
+
+    The first list is ordered least to most recent. The second contains every
+    collected node from most to least recent.
+    """
+    fill_dependency_was_collected = concrete_fill_dependency in collected_nodes
+    if concrete_fill_dependency is not None:
+        collected_nodes.add(concrete_fill_dependency)
+    collected_nodes_most_recent_first = sorted(
+        collected_nodes,
+        key=lambda item: item.operation_order,
+        reverse=True,
+    )
+    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
+        collected_nodes_most_recent_first,
+        callee_collected_operation_positions,
+    )
+    nodes_remaining_after_rule = typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            concrete_fill_dependency,
+            concrete_nodes_from_prerequisite_bindings,
+            fill_dependency_is_also_empty_dependency=(
+                fill_dependency_is_also_empty_dependency
+                or fill_dependency_was_collected
+            ),
+            replacement_depends_on_targets_by_node=(
+                replacement_depends_on_targets_by_node
+            ),
+        ),
+    )
+    return nodes_remaining_after_rule, collected_nodes_most_recent_first
 
 
 def _apply_empty_rule_comparison_and_move_correction_most_recent_first[
@@ -232,9 +356,12 @@ def _apply_empty_rule_comparison_and_move_correction_most_recent_first[
     nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
         collected_nodes
     )
-    return _apply_move_correction_and_fill_dependency_removal(
-        nodes_remaining_after_comparison,
-        None,
+    return typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            None,
+        ),
     )
 
 
@@ -245,12 +372,19 @@ def _apply_full_move_rule_to_collected_empty_dependencies[
     fill_dependency: DependencyNodeT | None,
 ) -> list[DependencyNodeT]:
     """Apply the Move Rule to collected Empty Dependencies."""
+    fill_dependency_is_also_empty_dependency = fill_dependency in empty_dependencies
     if fill_dependency is not None:
         empty_dependencies.add(fill_dependency)
     nodes_remaining_after_comparison = apply_empty_rule_comparison(empty_dependencies)
-    return _apply_move_correction_and_fill_dependency_removal(
-        nodes_remaining_after_comparison,
-        fill_dependency,
+    return typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            fill_dependency,
+            fill_dependency_is_also_empty_dependency=(
+                fill_dependency_is_also_empty_dependency
+            ),
+        ),
     )
 
 
@@ -369,7 +503,8 @@ class ParticleChildOperations:
         return snapshots
 
     def empty_rule_dependencies_for(
-        self, relative_position: tuple[str, ...]
+        self,
+        relative_position: tuple[str, ...],
     ) -> tuple[ConcreteOperationNode, ...]:
         """Return Empty Rule dependencies on the supplied position's path."""
         matching_operations: list[ConcreteOperationNode] = []
@@ -384,7 +519,7 @@ class ParticleChildOperations:
             matching_operations.append(operation)
         return tuple(
             _apply_empty_rule_comparison_and_move_correction_most_recent_first(
-                matching_operations
+                matching_operations,
             )
         )
 
@@ -423,19 +558,12 @@ class ParticleChildOperations:
         *,
         is_move_rule: bool,
     ) -> _EmptyOrMoveRuleResult:
-        collected_nodes: set[LastOperationNode] = set()
+        collected_nodes: set[ConcreteOperationNode] = set()
         caller_requirement_position: tuple[str, ...] | None = None
-        fill_dependency_requirement_position: tuple[str, ...] | None = None
         # The action received the particle in the state declared by a position
         # requirement rather than putting it in that state itself.
         if isinstance(emptied_ancestor, RequirementNode):
             caller_requirement_position = empty_position
-            # A move empties this position and fills a position whose required
-            # empty state was also supplied by the caller.
-            if isinstance(fill_dependency, RequirementNode):
-                fill_dependency_requirement_position = (
-                    fill_dependency.requirement.requirement_position
-                )
         # An earlier Particle Operation in this action supplied the particle
         # being emptied, directly or by operating on one of its parent names.
         else:
@@ -443,6 +571,7 @@ class ParticleChildOperations:
         collected_nodes.update(
             child_operation.operation for child_operation in self.operations
         )
+        fill_dependency_is_also_empty_dependency = fill_dependency in collected_nodes
         # Caller substitution can add collected nodes that affect Move Correction
         # or the Move Rule's Fill Dependency removal, so neither the Empty Rule nor
         # Move Rule can run while a caller-controlled node remains unresolved.
@@ -461,7 +590,7 @@ class ParticleChildOperations:
                             collected_nodes,
                             key=lambda item: item.operation_order,
                             reverse=True,
-                        )
+                        ),
                     )
                 )
         else:
@@ -473,25 +602,51 @@ class ParticleChildOperations:
             ):
                 collected_nodes.add(fill_dependency)
             local_nodes = apply_empty_rule_comparison(collected_nodes)
+        partial_move_rule_comparison_positions = None
         caller_collection = None
-        if caller_requirement_position is not None:
+        # Caller substitution can add operations to Comparison, while action
+        # resolution can change the paths used by Move Correction and Fill
+        # Dependency removal. Either case can leave the rule unfinished here.
+        unresolved_rule_application_needs_comparison_positions = (
+            caller_requirement_position is not None
+            or (
+                is_move_rule
+                and (
+                    isinstance(fill_dependency, RequirementNode)
+                    or any(
+                        node.depends_on_path_contains_guarantee_or_partial_move_rule
+                        for node in local_nodes
+                    )
+                )
+            )
+        )
+        # Avoid retaining every operated position when the rule completed locally.
+        # An unfinished rule needs them in either the caller Collection or the
+        # partial Move Rule result used after action resolution.
+        if unresolved_rule_application_needs_comparison_positions:
             collected_operation_positions: list[tuple[str, ...]] = []
             for node in sorted(
                 collected_nodes,
                 key=lambda item: item.operation_order,
             ):
                 collected_operation_positions.extend(node.operated_positions)
-            caller_collection = CallerEmptyRuleCollection(
-                requirement_position=caller_requirement_position,
-                collected_child_operation_positions=self.child_position_set(),
-                fill_dependency_requirement_position=(
-                    fill_dependency_requirement_position
-                ),
-                collected_operation_positions=tuple(collected_operation_positions),
-            )
+            comparison_positions = tuple(collected_operation_positions)
+            # The action's caller supplied the particle being emptied, so
+            # Collection must continue in the caller before Comparison can finish.
+            if caller_requirement_position is not None:
+                caller_collection = CallerEmptyRuleCollection(
+                    requirement_position=caller_requirement_position,
+                    collected_child_operation_positions=self.child_position_set(),
+                    fill_dependency_requirement_position=None,
+                    collected_operation_positions=comparison_positions,
+                )
+            else:
+                partial_move_rule_comparison_positions = comparison_positions
         return _EmptyOrMoveRuleResult(
             local_nodes,
             caller_collection,
+            partial_move_rule_comparison_positions,
+            fill_dependency_is_also_empty_dependency,
         )
 
     def all_precede(self, operation: MoveNode) -> bool:
@@ -574,8 +729,10 @@ class EmptyRuleBindingInputs:
 class _EmptyOrMoveRuleResult:
     """Locally selected nodes and a Collection awaiting a caller."""
 
-    local_nodes: list[LastOperationNode]
+    local_nodes: list[ConcreteOperationNode]
     caller_collection: CallerEmptyRuleCollection | None
+    partial_move_rule_comparison_positions: tuple[tuple[str, ...], ...] | None
+    fill_dependency_is_also_empty_dependency: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -591,16 +748,121 @@ class EmptyRuleApplicationResult:
     empty_rule_binding_hole: EmptyRuleBindingHole | None
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class CallerMoveRuleFillDependency:
-    """A Fill dependency awaiting the Move Rule comparison in a caller."""
+@dataclass(frozen=True, slots=True)
+class PartialMoveRuleResult(abc.ABC):
+    """Facts retained after applying every locally decidable part of a Move Rule."""
 
-    fill_dependency: ActionParentLastOperationNode | RequirementNode
+    fill_dependency: LastOperationNode | None
+    fill_dependency_is_also_empty_dependency: bool
+
+    @property
+    def caller_empty_rule_collection(self) -> CallerEmptyRuleCollection | None:
+        """Return the unresolved Empty Rule Collection, when one remains."""
+        return None
+
+    @property
+    @abc.abstractmethod
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+
+
+@dataclass(frozen=True, slots=True)
+class PartialMoveRuleResultWithCallerEmptyRuleCollection(PartialMoveRuleResult):
+    """A partial Move Rule whose Empty Rule Collection requires a caller."""
+
+    empty_rule_collection: CallerEmptyRuleCollection
+
+    @property
+    @typing.override
+    def caller_empty_rule_collection(self) -> CallerEmptyRuleCollection:
+        """Return the unresolved Empty Rule Collection."""
+        return self.empty_rule_collection
+
+    @property
+    @typing.override
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+        return self.empty_rule_collection.collected_operation_positions
+
+
+@dataclass(frozen=True, slots=True)
+class PartialMoveRuleResultWithCompleteEmptyRuleCollection(PartialMoveRuleResult):
+    """A partial Move Rule whose Empty Rule Collection is complete."""
+
+    collected_operation_positions: tuple[tuple[str, ...], ...]
+
+    @property
+    @typing.override
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+        return self.collected_operation_positions
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CallerFillDependency:
+    """A Fill Dependency whose Particle Operation must be supplied by a caller."""
+
+    callee_binding_hole: ActionParentLastOperationNode | RequirementNode
     requirement: OperationGraphRequirement
-    # Retained across caller substitutions because the Move Rule cannot apply the
-    # Empty Rule comparison until the caller's Fill dependency becomes a Particle
-    # Operation with known operated positions.
-    move_rule_comparison_positions: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MoveRuleBindingHole(abc.ABC):
+    """An unfinished Move Rule application awaiting one direct caller."""
+
+    caller_fill_dependency: CallerFillDependency | None
+    fill_dependency_is_also_empty_dependency: bool
+    prerequisite_binding_holes: tuple[BindingHole, ...]
+
+    @property
+    def caller_empty_rule_collection(self) -> CallerEmptyRuleCollection | None:
+        """Return the unresolved Empty Rule Collection, when one remains."""
+        return None
+
+    @property
+    @abc.abstractmethod
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MoveRuleBindingHoleWithCallerEmptyRuleCollection(MoveRuleBindingHole):
+    """A Move Rule Binding Hole whose Empty Rule Collection remains unfinished."""
+
+    empty_rule_collection: CallerEmptyRuleCollection
+
+    @property
+    @typing.override
+    def caller_empty_rule_collection(self) -> CallerEmptyRuleCollection:
+        """Return the unresolved Empty Rule Collection."""
+        return self.empty_rule_collection
+
+    @property
+    @typing.override
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+        return self.empty_rule_collection.collected_operation_positions
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MoveRuleBindingHoleWithCompleteEmptyRuleCollection(MoveRuleBindingHole):
+    """A Move Rule Binding Hole whose Empty Rule Collection is complete."""
+
+    collected_operation_positions: tuple[tuple[str, ...], ...]
+
+    @property
+    @typing.override
+    def comparison_positions(self) -> tuple[tuple[str, ...], ...]:
+        """Return every position already established for Comparison."""
+        return self.collected_operation_positions
+
+
+@dataclass(frozen=True, slots=True)
+class MoveRuleApplicationResult:
+    """The result of binding one Move Rule Binding Hole in a direct caller."""
+
+    concrete_caller_nodes: Sequence[ConcreteOperationNode]
+    move_rule_binding_hole: MoveRuleBindingHole | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -673,42 +935,25 @@ class ActionExecution:
             parent_binding_hole.requirement.requirement_position
         ].operation
 
-    def substitute_caller_move_rule_fill_dependency(
+    def resolve_move_rule_fill_dependency(
         self,
-        caller_dependency: CallerMoveRuleFillDependency,
-    ) -> ConcreteOperationNode | CallerMoveRuleFillDependency | None:
-        """Substitute the Fill dependency and apply the Move Rule comparison."""
+        caller_fill_dependency: CallerFillDependency,
+    ) -> ConcreteOperationNode | CallerFillDependency:
+        """Resolve a Fill Dependency through one direct Action Execution."""
         fill_dependency = self.caller_operation_for_callee_binding_hole(
-            caller_dependency.fill_dependency
-        )
-        move_rule_comparison_positions = tuple(
-            ast.chain_in_caller(self.action_chain, position)
-            for position in caller_dependency.move_rule_comparison_positions
+            caller_fill_dependency.callee_binding_hole
         )
         if isinstance(fill_dependency, (PositionOperationNode, GuaranteeNode)):
-            for fill_position in fill_dependency.operated_positions:
-                if any(
-                    _shares_path(fill_position, comparison_position)
-                    for comparison_position in move_rule_comparison_positions
-                ):
-                    # The Fill dependency is concrete and the Empty Rule excludes it
-                    # in favor of a more recent related dependency.
-                    return None
-            # The Fill dependency is concrete and remains a direct dependency because
-            # no more recent dependency operates on a related position.
             return fill_dependency
-        # The Fill dependency is still caller-controlled, so carry the comparison
-        # state to the next caller substitution.
-        return CallerMoveRuleFillDependency(
-            fill_dependency=fill_dependency,
+        return CallerFillDependency(
+            callee_binding_hole=fill_dependency,
             requirement=OperationGraphRequirement(
                 requirement_position=ast.chain_in_caller(
                     self.action_chain,
-                    caller_dependency.requirement.requirement_position,
+                    caller_fill_dependency.requirement.requirement_position,
                 ),
-                required_state=caller_dependency.requirement.required_state,
+                required_state=caller_fill_dependency.requirement.required_state,
             ),
-            move_rule_comparison_positions=move_rule_comparison_positions,
         )
 
 
@@ -722,15 +967,30 @@ class ActionExecution:
 class OperationNode(abc.ABC):
     """One operation in an action's dependency graph."""
 
+    _is_guarantee_or_has_partial_move_rule_result: typing.ClassVar[bool] = False
+
     node_id: int
     # The operations this node directly depends on (the operations that must
     # complete before it).
     depends_on: tuple[OperationNode, ...]
     operation_order: tuple[int, int, int] = field(init=False, repr=False)
+    depends_on_path_contains_guarantee_or_partial_move_rule: bool = field(
+        init=False,
+        repr=False,
+    )
 
     def __post_init__(self):
-        """Set the operation's order within its action."""
+        """Set fields derived from the node's identity and ``depends_on`` paths."""
         object.__setattr__(self, "operation_order", (self.node_id, 1, 0))
+        object.__setattr__(
+            self,
+            "depends_on_path_contains_guarantee_or_partial_move_rule",
+            self._is_guarantee_or_has_partial_move_rule_result
+            or any(
+                dependency.depends_on_path_contains_guarantee_or_partial_move_rule
+                for dependency in self.depends_on
+            ),
+        )
 
     @property
     def operated_positions(self) -> tuple[tuple[str, ...], ...]:
@@ -749,6 +1009,7 @@ class ActionParentLastOperationNode(OperationNode):
 class PositionOperationNode(OperationNode):
     """An operation the body performs on a written position."""
 
+    depends_on: tuple[PositionOperationDependsOnNode, ...]
     # The position reference as written (the statement target).
     target: ast.PositionReference
 
@@ -778,6 +1039,16 @@ class MoveNode(PositionOperationNode):
             self.source.canonical_chained_name_tuple,
             self.target.canonical_chained_name_tuple,
         )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class MoveNodeWithPartialMoveRuleResult(MoveNode):
+    """A Move whose rule still requires facts from a direct callee or caller."""
+
+    _is_guarantee_or_has_partial_move_rule_result: typing.ClassVar[bool] = True
+
+    depends_on: tuple[ConcreteOperationNode, ...]
+    partial_move_rule_result: PartialMoveRuleResult
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
@@ -908,6 +1179,8 @@ class GuaranteeNode(OperationNode):
     position depend on this node with ordinary edges.
     """
 
+    _is_guarantee_or_has_partial_move_rule_result: typing.ClassVar[bool] = True
+
     depends_on: tuple[LastOperationNode, ...]
     # The Action Execution of the action that guarantees the position.
     execution: ActionExecution
@@ -918,6 +1191,20 @@ class GuaranteeNode(OperationNode):
     guaranteed_position: tuple[str, ...]
     # Every caller position operated on by the guaranteed Particle Operation.
     operation_positions: tuple[tuple[str, ...], ...]
+    # TODO: Introduce MoveGuaranteeNode as a GuaranteeNode subclass and keep this
+    # relationship only on it. In a valid Operation Graph, only a Move can make
+    # Guarantee Nodes for multiple positions represent one Particle Operation.
+    _canonical_node_for_particle_operation: GuaranteeNode | None = field(repr=False)
+
+    @property
+    def canonical_node_for_particle_operation(self) -> GuaranteeNode:
+        """Return the shared representative for the guaranteed Particle Operation."""
+        return self._canonical_node_for_particle_operation or self
+
+    @property
+    def guaranteed_operation_is_move(self) -> bool:
+        """Return whether this node's guaranteed Particle Operation is a Move."""
+        return len(self.operation_positions) == 2
 
     @property
     @typing.override
@@ -957,11 +1244,4 @@ class EmptyRuleBindingHoleNode(OperationNode):
 
     depends_on: tuple[()] = ()
     empty_rule_binding_hole: EmptyRuleBindingHole
-
-
-@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
-class CallerMoveRuleFillDependencyNode(OperationNode):
-    """A Move Rule Fill dependency that must be compared after caller substitution."""
-
-    depends_on: tuple[()] = ()
-    caller_move_rule_fill_dependency: CallerMoveRuleFillDependency
+    remaining_concrete_nodes: tuple[ConcreteOperationNode, ...]

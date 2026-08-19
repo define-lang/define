@@ -61,8 +61,8 @@ class TestExecution:
         )
         self.execution_trigger_position_box__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos = literal.Join(2)
         self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out = literal.Join(2)
+        self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos = literal.Join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -94,8 +94,8 @@ class TestExecution:
         ).get_interface_position(
             "position<igw>"
         ).create_particle()
-        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos)
-        self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out()
+        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out)
+        self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos()
 
     def create_position_box__action_outer__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -107,8 +107,8 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_position_box__action_outer()
         self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos)
-        self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out()
+        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out)
+        self.trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos()
 
     def move_position_box__action_outer__position_gw__action_middle__position_igw__action_inner__position_out_to_position_result(self):
         self.action.get_interface_position(
@@ -148,12 +148,12 @@ class TestExecution:
             return
         self.execution_trigger_position_box__action_outer.accept_when_empty_position_gw__action_middle__position_trigger_pos()
 
-    def trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos(self):
-        if not self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_box__action_outer.accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos()
-
     def trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out(self):
         if not self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_out.arrive():
             return
         self.execution_trigger_position_box__action_outer.accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_out()
+
+    def trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos(self):
+        if not self.join_for_trigger_position_box__action_outer__when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos.arrive():
+            return
+        self.execution_trigger_position_box__action_outer.accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos()

@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,15 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-
-_EMPTY_RULE_BINDING_HOLE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS = (
-    "EmptyRuleBindingHole does not preserve dependencies of remaining operations"
-)
-
-_GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION = (
-    "Action Guarantee resolution does not expose a guaranteed Move to the Empty "
-    "Rule's Move Correction"
-)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -228,10 +217,6 @@ def test_caller_empty_rule_excludes_caller_child_move_reached_by_local_child_mov
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_EMPTY_RULE_BINDING_HOLE_DOES_NOT_PRESERVE_DEPENDENCIES_OF_REMAINING_OPERATIONS,
-)
 def test_caller_empty_rule_excludes_sibling_move_depended_on_via_another_callee_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -244,7 +229,6 @@ def test_caller_empty_rule_excludes_sibling_move_depended_on_via_another_callee_
         "test.move(/holder, /intermediate)": ["test.move(/input::/a, /holder)"],
         "test.create(/other::trigger_pos)": [],
         "other.move(/intermediate, /input::/b)": [
-            "test.create(/input)",
             "test.move(/holder, /intermediate)",
         ],
         "other.move(/input::/b, sink)": ["other.move(/intermediate, /input::/b)"],
@@ -280,10 +264,6 @@ def test_caller_empty_rule_remaining_move_has_two_paths_to_one_caller_operation(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=_GUARANTEE_DOES_NOT_EXPOSE_MOVE_TO_EMPTY_RULE_CORRECTION,
-)
 def test_empty_rule_excludes_guaranteed_move_reached_through_sibling_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -296,9 +276,10 @@ def test_empty_rule_excludes_guaranteed_move_reached_through_sibling_move(
         "producer.move(/input::/a, /holder)": ["test.create(/input::/a)"],
         "test.move(/holder, /intermediate)": ["producer.move(/input::/a, /holder)"],
         "test.move(/intermediate, /input::/b)": ["test.move(/holder, /intermediate)"],
+        "test.destroy(/input::/b)": ["test.move(/intermediate, /input::/b)"],
         # The sibling Move reaches the guaranteed Move through the particle's
         # intermediate positions, so Move Correction excludes the guaranteed Move.
-        "test.destroy(/input)": ["test.move(/intermediate, /input::/b)"],
+        "test.destroy(/input)": ["test.destroy(/input::/b)"],
     }
 
 

@@ -82,8 +82,8 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_action_destroyer()
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_parent)
-        self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result()
+        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result)
+        self.trigger_action_destroyer__for_empty_rule_position_parent()
 
     def destroy_action_destroyer__position_parent__global_position_sibling(self):
         self.destruction_position_action_destroyer__position_parent__global_position_sibling.destroy_particle()
@@ -121,10 +121,10 @@ class TestExecution:
         )
         self.execution_trigger_action_destroyer.accept_when_empty_position_parent__action_maker__position_trigger_pos()
 
-    def trigger_action_destroyer__for_empty_rule_position_parent(self):
-        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_parent()
-
     def trigger_action_destroyer__when_empty_position_parent__action_maker__position_result(self):
         if not self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result.arrive():
             return
         self.execution_trigger_action_destroyer.accept_when_empty_position_parent__action_maker__position_result()
+
+    def trigger_action_destroyer__for_empty_rule_position_parent(self):
+        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_parent()

@@ -1,5 +1,3 @@
-import pytest
-
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     operation_dependencies,
@@ -7,14 +5,6 @@ from define.compiler.validator.reference_graph.operation_graph_renderer import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_TRANSITIVELY_REDUNDANT_DEPENDENCY = (
-    "The Move Rule retains a Fill dependency already reachable through Moves on "
-    "unrelated positions"
-)
-_GUARANTEE_DOES_NOT_PRESERVE_BINDING_HOLES_DEPENDED_ON_BY_GUARANTEED_OPERATION = (
-    "Action Guarantee resolution does not preserve Binding Holes depended on by "
-    "the guaranteed operation"
-)
 
 
 def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
@@ -525,12 +515,6 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        _GUARANTEE_DOES_NOT_PRESERVE_BINDING_HOLES_DEPENDED_ON_BY_GUARANTEED_OPERATION
-    ),
-)
 def test_caller_fill_dependency_is_removed_through_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -780,7 +764,6 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     }
 
 
-@pytest.mark.xfail(strict=True, reason=_TRANSITIVELY_REDUNDANT_DEPENDENCY)
 def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -804,7 +787,6 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
         "test.create(gw_b::/helper::trigger_pos)": ["test.create(gw_b)"],
         "helper.move(slot, out)": ["test.move(temp, gw_b::/helper::slot)"],
         "test.move(gw_b::/helper::out, gw_a::/worker::slot)": [
-            "test.move(gw_a::/worker::slot, temp)",
             "helper.move(slot, out)",
         ],
         "test.create(gw_a::/worker::trigger_pos)": ["test.create(gw_a)"],

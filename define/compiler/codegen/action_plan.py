@@ -369,7 +369,7 @@ class _ActionPlanBuilder:
     def build_triggered_action(self) -> ActionPlan:
         """Build the reusable Binding Hole plan for this action's callers."""
         return self._build(
-            self._resolved_action.binding_holes,
+            self._resolved_action.binding_holes.with_runtime_consumers,
             publishes_guarantees=True,
             start_directly=False,
         )
@@ -495,7 +495,9 @@ class _ActionPlanBuilder:
         callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding = {}
         for resolved_action_execution in self._resolved_action.action_executions:
             action_execution = resolved_action_execution.execution
-            for callee_binding in resolved_action_execution.callee_bindings.values():
+            for (
+                callee_binding
+            ) in resolved_action_execution.callee_bindings.with_runtime_consumers:
                 dependencies = callee_binding.caller_dependencies
                 dependency_count = (
                     len(dependencies.local_operations)
@@ -529,7 +531,9 @@ class _ActionPlanBuilder:
                 )
                 fragment.triggered_action_execution_callee_binding_joins.extend(
                     callee_binding_join_by_callee_binding[callee_binding]
-                    for callee_binding in resolved_action_execution.callee_bindings.values()
+                    for callee_binding in (
+                        resolved_action_execution.callee_bindings.with_runtime_consumers
+                    )
                 )
         return callee_binding_join_by_callee_binding
 
@@ -543,7 +547,9 @@ class _ActionPlanBuilder:
             if guarantee_dependency is None:
                 continue
             callee_binding_joins: list[CalleeBindingJoin] = []
-            for callee_binding in resolved_action_execution.callee_bindings.values():
+            for (
+                callee_binding
+            ) in resolved_action_execution.callee_bindings.with_runtime_consumers:
                 callee_binding_joins.append(
                     callee_binding_join_by_callee_binding[callee_binding]
                 )
@@ -571,6 +577,8 @@ class _ActionPlanBuilder:
             operation,
             publication_positions,
         ) in self._resolved_action.graph.guaranteed_positions_by_operation.items():
+            if isinstance(operation, operation_graph_model.GuaranteeNode):
+                continue
             guaranteed_source = None
             if isinstance(operation, operation_graph_model.MoveNode):
                 source = operation.source.canonical_chained_name_tuple
@@ -632,7 +640,9 @@ class _ActionPlanBuilder:
                 )
                 fragment.dependency_count += 1
         for resolved_action_execution in self._resolved_action.action_executions:
-            for callee_binding in resolved_action_execution.callee_bindings.values():
+            for (
+                callee_binding
+            ) in resolved_action_execution.callee_bindings.with_runtime_consumers:
                 callee_binding_join = callee_binding_join_by_callee_binding[
                     callee_binding
                 ]
@@ -652,7 +662,9 @@ class _ActionPlanBuilder:
                 )
                 binding_hole_fanout.callee_binding_joins.extend(
                     callee_binding_join_by_callee_binding[callee_binding]
-                    for callee_binding in resolved_action_execution.callee_bindings.values()
+                    for callee_binding in (
+                        resolved_action_execution.callee_bindings.with_runtime_consumers
+                    )
                 )
         return binding_hole_fanouts
 

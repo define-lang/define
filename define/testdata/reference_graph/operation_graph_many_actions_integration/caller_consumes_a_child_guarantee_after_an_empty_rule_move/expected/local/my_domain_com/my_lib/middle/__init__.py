@@ -66,11 +66,11 @@ class MiddleExecution:
     def accept_when_empty_position_source__action_child__position_trigger_pos(self):
         self.create_position_source__action_child__position_trigger_pos()
 
-    def accept_for_empty_rule_position_source(self):
-        self.move_position_source_to_position_holder()
-
     def accept_when_empty_position_source__action_child__position_result(self):
         self.trigger_position_source__action_child__when_empty_position_result()
+
+    def accept_for_empty_rule_position_source(self):
+        self.move_position_source_to_position_holder()
 
     def create_position_source__action_child__position_trigger_pos(self):
         self.action.get_interface_position(

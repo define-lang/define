@@ -404,7 +404,10 @@ class ResolvedOperationGraphBuilder:
     ) -> operation_graph_action_resolver.CalleeBinding:
         """Return one binding used before a caller's destruction contribution."""
         resolved_execution = triggered_by.direct_execution
-        callee_binding = resolved_execution.callee_bindings.get(callee_binding_hole)
+        callee_binding = self._existing_callee_binding_for_destruction(
+            resolved_execution,
+            callee_binding_hole,
+        )
         if callee_binding is not None:
             return callee_binding
         requested_execution_and_binding_hole = (
@@ -424,8 +427,9 @@ class ResolvedOperationGraphBuilder:
             callee_binding_hole_to_bind, prerequisite_holes_are_bound = (
                 callee_binding_holes_to_bind.pop()
             )
-            callee_binding = resolved_execution.callee_bindings.get(
-                callee_binding_hole_to_bind
+            callee_binding = self._existing_callee_binding_for_destruction(
+                resolved_execution,
+                callee_binding_hole_to_bind,
             )
             if callee_binding is not None:
                 continue
@@ -439,7 +443,7 @@ class ResolvedOperationGraphBuilder:
             ):
                 continue
             prerequisite_callee_binding_holes = (
-                operation_graph_action_resolver.empty_rule_prerequisite_binding_holes(
+                operation_graph_action_resolver.prerequisite_binding_holes(
                     callee_binding_hole_to_bind
                 )
             )
@@ -456,8 +460,11 @@ class ResolvedOperationGraphBuilder:
                 operation_graph_action_resolver.CalleeBinding
             ] = []
             for prerequisite_callee_binding_hole in prerequisite_callee_binding_holes:
-                prerequisite_callee_binding = resolved_execution.callee_bindings.get(
-                    prerequisite_callee_binding_hole
+                prerequisite_callee_binding = (
+                    self._existing_callee_binding_for_destruction(
+                        resolved_execution,
+                        prerequisite_callee_binding_hole,
+                    )
                 )
                 if prerequisite_callee_binding is None:
                     prerequisite_callee_binding = self._callee_bindings_for_destruction_before_caller_contribution[
@@ -472,10 +479,37 @@ class ResolvedOperationGraphBuilder:
                 self._graphs,
                 callee_binding_hole_to_bind,
                 prerequisite_callee_bindings,
+                replacement_depends_on_targets_by_node={},
             )
         return self._callee_bindings_for_destruction_before_caller_contribution[
             requested_execution_and_binding_hole
         ]
+
+    def _existing_callee_binding_for_destruction(
+        self,
+        resolved_execution: operation_graph_action_resolver.ResolvedActionExecution,
+        callee_binding_hole: operation_graph_model.BindingHole,
+    ) -> operation_graph_action_resolver.CalleeBinding | None:
+        """Return an ordinary callee binding reusable by destruction resolution.
+
+        Destruction relationships recorded before a caller contribution retain
+        Operation Graph nodes. The ordinary callee bindings instead use the
+        resolved Binding Holes represented by those nodes.
+        """
+        binding_hole_with_callee_binding = callee_binding_hole
+        if isinstance(
+            callee_binding_hole,
+            operation_graph_model.EmptyRuleBindingHoleNode,
+        ):
+            resolved_callee = self._resolved_actions[
+                resolved_execution.execution.callee_action_name
+            ]
+            binding_hole_with_callee_binding = (
+                resolved_callee.binding_holes.binding_hole_for_operation_node(
+                    callee_binding_hole
+                )
+            )
+        return resolved_execution.callee_bindings.get(binding_hole_with_callee_binding)
 
     def _add_destruction_dependencies_for_binding_hole(
         self,

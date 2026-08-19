@@ -61,8 +61,8 @@ class TestExecution:
         )
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = literal.Join(2)
         self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = literal.Join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -105,8 +105,8 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_position_gateway__action_middle()
         self.scheduler.submit(self.trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__for_empty_rule_position_source)
-        self.trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result()
+        self.scheduler.submit(self.trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result)
+        self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
 
     def move_position_gateway__action_middle__position_holder__action_child__position_result_to_position_result(self):
         self.action.get_interface_position(
@@ -142,12 +142,12 @@ class TestExecution:
             return
         self.execution_trigger_position_gateway__action_middle.accept_when_empty_position_source__action_child__position_trigger_pos()
 
-    def trigger_position_gateway__action_middle__for_empty_rule_position_source(self):
-        if not self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source.arrive():
-            return
-        self.execution_trigger_position_gateway__action_middle.accept_for_empty_rule_position_source()
-
     def trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result(self):
         if not self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_result.arrive():
             return
         self.execution_trigger_position_gateway__action_middle.accept_when_empty_position_source__action_child__position_result()
+
+    def trigger_position_gateway__action_middle__for_empty_rule_position_source(self):
+        if not self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source.arrive():
+            return
+        self.execution_trigger_position_gateway__action_middle.accept_for_empty_rule_position_source()

@@ -53,11 +53,11 @@ class OuterExecution:
     def accept_when_empty_position_gw__action_middle__position_trigger_pos(self):
         self.create_position_gw__action_middle__position_trigger_pos()
 
-    def accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos(self):
-        self.trigger_position_gw__action_middle__when_empty_position_igw__action_inner__position_trigger_pos()
-
     def accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_out(self):
         self.trigger_position_gw__action_middle__when_empty_position_igw__action_inner__position_out()
+
+    def accept_when_empty_position_gw__action_middle__position_igw__action_inner__position_trigger_pos(self):
+        self.trigger_position_gw__action_middle__when_empty_position_igw__action_inner__position_trigger_pos()
 
     def create_position_gw__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(

@@ -51,22 +51,13 @@ class TestExecution:
         guarantees.trigger_action_producer.guarantee_global_position_input__global_position_a__move__global_position_holder.append(
             self.move_global_position_holder_to_global_position_intermediate
         )
-        guarantees.trigger_action_producer.guarantee_global_position_input__global_position_a__move__global_position_holder.append(
-            self.destroy_global_position_input
-        )
         self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b = literal.Join(2)
-        self.join_for_destroy_global_position_input = literal.Join(2)
         self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a = literal.Join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_input__global_position_a)
-        self.move_global_position_intermediate_to_global_position_input__global_position_b()
-
-    def create_global_position_input__global_position_a(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
@@ -91,11 +82,6 @@ class TestExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.move_global_position_intermediate_to_global_position_input__global_position_b()
-
-    def move_global_position_intermediate_to_global_position_input__global_position_b(self):
-        if not self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b.arrive():
-            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.intermediate.Intermediate
         ).move_particle_to(
@@ -110,11 +96,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).destroy_particle()
-        self.destroy_global_position_input()
-
-    def destroy_global_position_input(self):
-        if not self.join_for_destroy_global_position_input.arrive():
-            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()

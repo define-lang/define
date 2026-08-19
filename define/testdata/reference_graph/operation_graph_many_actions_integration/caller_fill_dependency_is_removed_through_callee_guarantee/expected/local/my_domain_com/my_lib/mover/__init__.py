@@ -57,11 +57,11 @@ class MoverExecution:
     def accept_when_empty_action_helper__position_trigger_pos(self):
         self.create_action_helper__position_trigger_pos()
 
-    def accept_when_empty_global_position_destination(self):
-        self.move_global_position_out_to_global_position_destination()
-
     def accept_for_empty_rule_global_position_slot(self):
         self.trigger_action_helper__for_empty_rule_global_position_slot()
+
+    def accept_when_empty_global_position_destination(self):
+        self.move_global_position_out_to_global_position_destination()
 
     def create_action_helper__position_trigger_pos(self):
         self.action.on_particle.get_action(

@@ -57,8 +57,8 @@ class RunnerExecution:
         self.execution_trigger_position_wrapper__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied = literal.Join(2)
         self.join_for_trigger_position_wrapper__action_middle__when_empty_position_box__action_inner__position_run = literal.Join(2)
-        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final = literal.Join(2)
         self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input = literal.Join(2)
+        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final = literal.Join(2)
 
     def accept_when_empty_position_wrapper__action_middle__position_box(self):
         self.create_position_wrapper__action_middle__position_box()
@@ -108,8 +108,8 @@ class RunnerExecution:
         self.init_execution_trigger_position_wrapper__action_middle()
         self.scheduler.submit_all(self.guarantees.guarantee_position_wrapper__action_middle__position_run)
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__when_empty_position_box__action_inner__position_run)
-        self.scheduler.submit(self.trigger_position_wrapper__action_middle__when_empty_position_final)
-        self.trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input()
+        self.scheduler.submit(self.trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input)
+        self.trigger_position_wrapper__action_middle__when_empty_position_final()
 
     def init_execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier(self):
         action = self.action.get_interface_position(
@@ -153,12 +153,12 @@ class RunnerExecution:
             return
         self.execution_trigger_position_wrapper__action_middle.accept_when_empty_position_box__action_inner__position_run()
 
-    def trigger_position_wrapper__action_middle__when_empty_position_final(self):
-        if not self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final.arrive():
-            return
-        self.execution_trigger_position_wrapper__action_middle.accept_when_empty_position_final()
-
     def trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input(self):
         if not self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input.arrive():
             return
         self.execution_trigger_position_wrapper__action_middle.accept_for_empty_rule_position_box__action_inner__position_input()
+
+    def trigger_position_wrapper__action_middle__when_empty_position_final(self):
+        if not self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final.arrive():
+            return
+        self.execution_trigger_position_wrapper__action_middle.accept_when_empty_position_final()

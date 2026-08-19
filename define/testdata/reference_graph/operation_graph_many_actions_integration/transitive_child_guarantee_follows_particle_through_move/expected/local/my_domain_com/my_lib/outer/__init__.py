@@ -67,14 +67,14 @@ class OuterExecution:
     def accept_when_empty_position_source__action_middle__position_trigger_pos(self):
         self.create_position_source__action_middle__position_trigger_pos()
 
-    def accept_for_empty_rule_position_source(self):
-        self.move_position_source_to_position_destination()
-
     def accept_when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos(self):
         self.trigger_position_source__action_middle__when_empty_position_inner_parent__action_inner__position_trigger_pos()
 
     def accept_when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result(self):
         self.trigger_position_source__action_middle__when_empty_position_inner_parent__action_inner__position_result()
+
+    def accept_for_empty_rule_position_source(self):
+        self.move_position_source_to_position_destination()
 
     def create_position_source__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(

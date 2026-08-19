@@ -79,13 +79,13 @@ class DestroyerExecution:
     def accept_when_empty_position_run__global_position_maybe_empty(self):
         self.create_position_run__global_position_maybe_empty()
 
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
+
     def accept_when_occupied_position_run(self):
         self.init_execution_trigger_position_run__action_destruct()
         self.scheduler.submit(self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a)
         self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b()
-
-    def accept_for_empty_rule_position_run(self):
-        self.destroy_position_run()
 
     def move_position_run__global_position_marker_a_to_position_holder_a(self):
         self.action.get_interface_position(

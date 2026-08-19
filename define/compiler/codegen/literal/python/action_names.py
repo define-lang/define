@@ -160,13 +160,17 @@ class ActionNameGenerator:
     ) -> str:
         """Return the execution method name for one Binding Hole."""
         match binding_hole:
-            case operation_graph_model.CallerMoveRuleFillDependencyNode():
-                return self._requirement_binding_hole_method_name(
-                    binding_hole.caller_move_rule_fill_dependency.requirement
+            case operation_graph_model.MoveRuleBindingHole():
+                if binding_hole.caller_empty_rule_collection is not None:
+                    return self._empty_rule_binding_hole_method_name(
+                        binding_hole.caller_empty_rule_collection
+                    )
+                caller_fill_dependency = typing.cast(
+                    "operation_graph_model.CallerFillDependency",
+                    binding_hole.caller_fill_dependency,
                 )
-            case operation_graph_model.CallerMoveRuleFillDependency():
                 return self._requirement_binding_hole_method_name(
-                    binding_hole.requirement
+                    caller_fill_dependency.requirement
                 )
             case operation_graph_model.EmptyRuleBindingHoleNode():
                 return self._empty_rule_binding_hole_method_name(
@@ -184,7 +188,7 @@ class ActionNameGenerator:
 
     def _empty_rule_binding_hole_method_name(
         self,
-        empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
+        empty_rule_binding_hole: operation_graph_model.CallerEmptyRuleCollection,
     ) -> str:
         identifier = self._typed_chain_identifier(
             empty_rule_binding_hole.requirement_position

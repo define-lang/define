@@ -55,8 +55,8 @@ class TestExecution:
         self.init_execution_trigger_action_run_both()
         self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_run_both__when_empty_global_position_item)
+        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos)
         self.trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos()
 
     def create_global_position_item(self):
@@ -80,11 +80,11 @@ class TestExecution:
     def trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos(self):
         self.execution_trigger_action_run_both.accept_when_empty_action_call_empty__position_trigger_pos()
 
-    def trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos(self):
-        self.execution_trigger_action_run_both.accept_when_empty_action_fill_item__position_trigger_pos()
-
     def trigger_action_run_both__when_empty_global_position_item(self):
         self.execution_trigger_action_run_both.accept_when_empty_global_position_item()
+
+    def trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos(self):
+        self.execution_trigger_action_run_both.accept_when_empty_action_fill_item__position_trigger_pos()
 
     def trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos(self):
         self.execution_trigger_action_run_both.accept_when_empty_action_empty_item__position_trigger_pos()

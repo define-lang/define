@@ -56,7 +56,6 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
-        self.join_for_trigger_action_mover__when_empty_global_position_destination = literal.Join(2)
         self.join_for_trigger_action_mover__for_empty_rule_global_position_slot = literal.Join(2)
 
     def create_global_position_destination(self):
@@ -70,10 +69,6 @@ class TestExecution:
                 "position<temp>"
             )
         )
-        self.scheduler.submit(self.move_position_temp_to_global_position_slot)
-        self.trigger_action_mover__when_empty_global_position_destination()
-
-    def move_position_temp_to_global_position_slot(self):
         self.action.get_interface_position(
             "position<temp>"
         ).move_particle_to(
@@ -91,8 +86,8 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_action_mover()
         self.scheduler.submit(self.trigger_action_mover__when_empty_action_helper__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_mover__when_empty_global_position_destination)
-        self.trigger_action_mover__for_empty_rule_global_position_slot()
+        self.scheduler.submit(self.trigger_action_mover__for_empty_rule_global_position_slot)
+        self.trigger_action_mover__when_empty_global_position_destination()
 
     def init_execution_trigger_action_mover(self):
         action = self.action.on_particle.get_action(
@@ -107,12 +102,10 @@ class TestExecution:
     def trigger_action_mover__when_empty_action_helper__position_trigger_pos(self):
         self.execution_trigger_action_mover.accept_when_empty_action_helper__position_trigger_pos()
 
-    def trigger_action_mover__when_empty_global_position_destination(self):
-        if not self.join_for_trigger_action_mover__when_empty_global_position_destination.arrive():
-            return
-        self.execution_trigger_action_mover.accept_when_empty_global_position_destination()
-
     def trigger_action_mover__for_empty_rule_global_position_slot(self):
         if not self.join_for_trigger_action_mover__for_empty_rule_global_position_slot.arrive():
             return
         self.execution_trigger_action_mover.accept_for_empty_rule_global_position_slot()
+
+    def trigger_action_mover__when_empty_global_position_destination(self):
+        self.execution_trigger_action_mover.accept_when_empty_global_position_destination()

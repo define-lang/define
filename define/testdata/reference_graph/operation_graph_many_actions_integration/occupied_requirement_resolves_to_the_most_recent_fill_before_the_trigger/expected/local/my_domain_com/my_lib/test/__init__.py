@@ -76,7 +76,6 @@ class TestExecution:
         self.execution_trigger_position_gw_a__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_move_position_source_to_position_gw_a__action_worker__position_slot = literal.Join(2)
         self.join_for_move_position_temp_to_position_gw_b__action_helper__position_slot = literal.Join(2)
-        self.join_for_move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot = literal.Join(2)
         self.join_for_trigger_position_gw_b__action_helper__for_empty_rule_position_slot = literal.Join(2)
         self.join_for_trigger_position_gw_a__action_worker__for_empty_rule_position_slot = literal.Join(2)
 
@@ -125,8 +124,7 @@ class TestExecution:
                 "position<temp>"
             )
         )
-        self.scheduler.submit(self.move_position_temp_to_position_gw_b__action_helper__position_slot)
-        self.move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot()
+        self.move_position_temp_to_position_gw_b__action_helper__position_slot()
 
     def move_position_temp_to_position_gw_b__action_helper__position_slot(self):
         if not self.join_for_move_position_temp_to_position_gw_b__action_helper__position_slot.arrive():
@@ -156,8 +154,6 @@ class TestExecution:
         self.trigger_position_gw_b__action_helper__for_empty_rule_position_slot()
 
     def move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot(self):
-        if not self.join_for_move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot.arrive():
-            return
         self.action.get_interface_position(
             "position<gw_b>"
         ).particle.get_action(

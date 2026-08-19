@@ -56,14 +56,14 @@ class CalleeExecution:
         self.join_for_destroy_position_src = literal.Join(2)
         self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker = literal.Join(2)
 
-    def accept_when_occupied_position_src(self):
-        self.init_execution_trigger_position_src__action_destructor()
+    def accept_when_empty_position_src__global_position_marker(self):
         self.trigger_position_src__action_destructor__when_empty_global_position_marker()
 
     def accept_for_empty_rule_position_src(self):
         self.destroy_position_src()
 
-    def accept_when_empty_position_src__global_position_marker(self):
+    def accept_when_occupied_position_src(self):
+        self.init_execution_trigger_position_src__action_destructor()
         self.trigger_position_src__action_destructor__when_empty_global_position_marker()
 
     def destroy_position_src(self):

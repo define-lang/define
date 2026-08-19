@@ -107,9 +107,9 @@ class TestExecution:
         ).create_particle()
         self.init_execution_trigger_position_gateway__action_outer()
         self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_outer__for_empty_rule_position_source)
         self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos)
-        self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result()
+        self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result)
+        self.trigger_position_gateway__action_outer__for_empty_rule_position_source()
 
     def move_position_gateway__action_outer__position_destination__action_middle__position_inner_parent__action_inner__position_result_to_position_result(self):
         self.action.get_interface_position(
@@ -149,9 +149,6 @@ class TestExecution:
             return
         self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_source__action_middle__position_trigger_pos()
 
-    def trigger_position_gateway__action_outer__for_empty_rule_position_source(self):
-        self.execution_trigger_position_gateway__action_outer.accept_for_empty_rule_position_source()
-
     def trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos(self):
         if not self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos.arrive():
             return
@@ -161,3 +158,6 @@ class TestExecution:
         if not self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result.arrive():
             return
         self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result()
+
+    def trigger_position_gateway__action_outer__for_empty_rule_position_source(self):
+        self.execution_trigger_position_gateway__action_outer.accept_for_empty_rule_position_source()

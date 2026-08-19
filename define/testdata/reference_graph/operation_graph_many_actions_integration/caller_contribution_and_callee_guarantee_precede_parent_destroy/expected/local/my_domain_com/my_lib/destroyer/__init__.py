@@ -59,11 +59,11 @@ class DestroyerExecution:
     def accept_when_empty_position_parent__action_maker__position_trigger_pos(self):
         self.create_position_parent__action_maker__position_trigger_pos()
 
-    def accept_for_empty_rule_position_parent(self):
-        self.destroy_position_parent()
-
     def accept_when_empty_position_parent__action_maker__position_result(self):
         self.trigger_position_parent__action_maker__when_empty_position_result()
+
+    def accept_for_empty_rule_position_parent(self):
+        self.destroy_position_parent()
 
     def create_position_parent__action_maker__position_trigger_pos(self):
         self.action.get_interface_position(

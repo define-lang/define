@@ -55,11 +55,11 @@ class OuterExecution:
     def accept_when_empty_action_caller__position_run(self):
         self.create_action_caller__position_run()
 
-    def accept_when_empty_action_callee__position_run(self):
-        self.trigger_action_caller__when_empty_action_callee__position_run()
-
     def accept_when_empty_global_position_implied(self):
         self.trigger_action_caller__when_empty_global_position_implied()
+
+    def accept_when_empty_action_callee__position_run(self):
+        self.trigger_action_caller__when_empty_action_callee__position_run()
 
     def create_action_caller__position_run(self):
         self.action.on_particle.get_action(

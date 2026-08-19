@@ -65,11 +65,11 @@ class MiddleExecution:
     def accept_when_empty_position_box__action_inner__position_run(self):
         self.create_position_box__action_inner__position_run()
 
-    def accept_when_empty_position_final(self):
-        self.move_position_box__action_inner__position_output_to_position_final()
-
     def accept_for_empty_rule_position_box__action_inner__position_input(self):
         self.trigger_position_box__action_inner__for_empty_rule_position_input()
+
+    def accept_when_empty_position_final(self):
+        self.move_position_box__action_inner__position_output_to_position_final()
 
     def create_position_box__action_inner__position_run(self):
         self.action.get_interface_position(
