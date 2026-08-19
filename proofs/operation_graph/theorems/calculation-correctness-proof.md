@@ -3,9 +3,10 @@
 ## Claim
 
 For every valid resolved Particle Operation history, the recursive calculation
-in [Particle Operation Dependency Graph Calculation](calculation.md) produces a
-graph that satisfies all of the history, candidate, and exact-dependency facts
-used by the minimality and completeness proofs.
+in
+[Particle Operation Dependency Graph Calculation](../definitions/calculation.md)
+produces a graph that satisfies all of the history, candidate, and
+exact-dependency facts used by the minimality and completeness proofs.
 
 This theorem is a bridge. It does not assume or prove that the calculated graph
 is complete or transitively minimal. Instead, it replaces the manually supplied

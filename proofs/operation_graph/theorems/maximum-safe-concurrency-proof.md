@@ -85,11 +85,11 @@ them to formalize the unique fewest-edge result for stopped histories.
 ### Operations and positions
 
 Let `V` be the set of resolved Particle Operation occurrences in a
-[valid resolved history](definitions.md#resolved-histories). Each execution of a
-Particle Operation statement is a separate member of `V`. As in the
-[shared definitions](definitions.md), index the occurrences by a finite initial
-segment of the natural numbers or by all natural numbers. Assume that executing
-the operations in index order is defined.
+[valid resolved history](../definitions/definitions.md#resolved-histories). Each
+execution of a Particle Operation statement is a separate member of `V`. As in
+the [shared definitions](../definitions/definitions.md), index the occurrences
+by a finite initial segment of the natural numbers or by all natural numbers.
+Assume that executing the operations in index order is defined.
 
 Let `<` be that strict linear order. For an operation `O`, let `positions(O)` be
 the positions it operates on. A Create or Destroy operates on one position. A
@@ -320,7 +320,7 @@ unrelated, so moving particles to target-based names cannot restore an old
 source-based name.
 
 The history's initial occupancy is prefix-closed. The proof of
-[valid-history Lemma 1](valid-history.md#lemma-1-valid-operations-preserve-prefix-closure)
+[valid-history Lemma 1](../definitions/valid-history.md#lemma-1-valid-operations-preserve-prefix-closure)
 shows that each enabled Create, Destroy, or Move preserves prefix closure.
 Applying that lemma successively to the finite schedule prefix before `A` proves
 that the occupancy immediately before the adjacent pair is prefix-closed. We can

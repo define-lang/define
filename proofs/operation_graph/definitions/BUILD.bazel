@@ -1,0 +1,120 @@
+load("@rules_lean//lean:lean.bzl", "lean_axiom_test", "lean_library")
+
+package(default_visibility = ["//proofs/operation_graph:__subpackages__"])
+
+filegroup(
+    name = "all_proofs",
+    srcs = [
+        ":calculation",
+        ":definitions",
+        ":occupancy_semantics",
+        ":valid_history",
+    ],
+)
+
+lean_library(
+    name = "calculation",
+    srcs = ["calculation.lean"],
+    deps = [":valid_history"],
+)
+
+lean_axiom_test(
+    name = "calculation_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculation"],
+    theorems = [
+        "Define.OperationGraph.IsEntryBefore.unique",
+        "Define.OperationGraph.RuleCalculation.dependency_isInCollection",
+        "Define.OperationGraph.calculatedDependencyBefore_add_operation_iff",
+        "Define.OperationGraph.calculatedDependencyBefore_source_order_lt",
+        "Define.OperationGraph.calculationFor_fillCandidate_iff",
+        "Define.OperationGraph.calculationFor_sourceCandidate_iff",
+        "Define.OperationGraph.calculationFor_wellFormed",
+        "Define.OperationGraph.exists_isFillCandidateFor_iff",
+        "Define.OperationGraph.isEntryBefore_after_operation_iff",
+        "Define.OperationGraph.not_isEntryBefore_zero",
+    ],
+    deps = [":calculation"],
+)
+
+lean_library(
+    name = "definitions",
+    srcs = ["definitions.lean"],
+)
+
+lean_axiom_test(
+    name = "definitions_axioms_test",
+    size = "small",
+    allowed_axioms = [],
+    imports = ["definitions"],
+    theorems = [
+        "Define.OperationGraph.acyclic_of_pointsBackward",
+        "Define.OperationGraph.operationsRelated_symm",
+        "Define.OperationGraph.parentOrSame_antisymm",
+        "Define.OperationGraph.related_of_parentOrSame_of_parentOrSame",
+        "Define.OperationGraph.transitivelyMinimal_of_directDependenciesAreAntichains",
+    ],
+    deps = [":definitions"],
+)
+
+lean_library(
+    name = "occupancy_semantics",
+    srcs = ["occupancy_semantics.lean"],
+    deps = [":definitions"],
+)
+
+lean_axiom_test(
+    name = "occupancy_semantics_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["occupancy_semantics"],
+    theorems = [
+        "Define.OperationGraph.not_occupancyAfter_of_emptyPosition_parent",
+        "Define.OperationGraph.occupancyAfter_preserves_prefixClosure",
+        "Define.OperationGraph.operatesOn_iff_emptyPosition_or_fillPosition",
+        "Define.OperationGraph.operationEnabled_emptyPosition_occupied",
+        "Define.OperationGraph.operationEnabled_fillPosition_available",
+        "Define.OperationGraph.operationEnabled_fillPosition_empty",
+        "Define.OperationGraph.operationEnabled_fillPosition_occupiedAfter",
+        "Define.OperationGraph.operationEnabled_move_source_not_parent_of_target",
+    ],
+    deps = [":occupancy_semantics"],
+)
+
+lean_library(
+    name = "valid_history",
+    srcs = ["valid_history.lean"],
+    deps = [":occupancy_semantics"],
+)
+
+lean_axiom_test(
+    name = "valid_history_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["valid_history"],
+    theorems = [
+        "Define.OperationGraph.ExactOccupancyExecution.toValidOccupancyTrace",
+        "Define.OperationGraph.ValidResolvedHistory.move_preserves_occupancy",
+        "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_operation",
+        "Define.OperationGraph.ValidResolvedHistory.newly_occupied_has_responsible_operation",
+        "Define.OperationGraph.ValidResolvedHistory.non_move_strict_child_unoccupied_after",
+        "Define.OperationGraph.ValidResolvedHistory.operation_enabled",
+        "Define.OperationGraph.ValidResolvedHistory.prefix_closed",
+        "Define.OperationGraph.ValidResolvedHistory.toExactOccupancyExecution",
+        "Define.OperationGraph.exists_occupancy_transition",
+    ],
+    deps = [":valid_history"],
+)

@@ -1,0 +1,549 @@
+load("@rules_lean//lean:lean.bzl", "lean_axiom_test", "lean_library")
+
+package(default_visibility = ["//proofs/operation_graph:__subpackages__"])
+
+filegroup(
+    name = "all_proofs",
+    srcs = [
+        ":calculated_cover_graph",
+        ":calculated_schedule_execution",
+        ":calculation_correctness",
+        ":characterization",
+        ":completeness",
+        ":cover_graph",
+        ":cover_order",
+        ":cover_schedule_necessity",
+        ":cover_schedule_order",
+        ":finite_history_schedule",
+        ":finite_relation_edge_count",
+        ":finite_schedule_order",
+        ":finite_scheduling",
+        ":maximum_safe_concurrency",
+        ":minimality",
+        ":occupancy_exchange",
+        ":occupancy_noncommutation",
+        ":stopped_dependency_edge_count",
+        ":unbounded_history_schedule",
+        ":unbounded_schedule_order",
+        ":unbounded_scheduling",
+    ],
+)
+
+lean_library(
+    name = "calculated_cover_graph",
+    srcs = ["calculated_cover_graph.lean"],
+    deps = [
+        ":characterization",
+        ":cover_graph",
+    ],
+)
+
+lean_axiom_test(
+    name = "calculated_cover_graph_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculated_cover_graph"],
+    theorems = [
+        "Define.OperationGraph.calculatedDependency_contained_in_sameReachability",
+        "Define.OperationGraph.calculatedDependency_iff_coverPair",
+        "Define.OperationGraph.calculatedDependency_inclusionMinimal",
+        "Define.OperationGraph.calculatedDependency_is_unique_inclusionMinimal",
+        "Define.OperationGraph.calculatedDependency_reaches_operations",
+    ],
+    deps = [":calculated_cover_graph"],
+)
+
+lean_library(
+    name = "calculated_schedule_execution",
+    srcs = ["calculated_schedule_execution.lean"],
+    deps = [
+        ":characterization",
+        ":finite_history_schedule",
+        ":finite_schedule_order",
+        ":finite_scheduling",
+        ":unbounded_scheduling",
+    ],
+)
+
+lean_axiom_test(
+    name = "calculated_schedule_execution_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculated_schedule_execution"],
+    theorems = [
+        "Define.OperationGraph.IncomparableSwapSequence.preserves_calculated_schedule_execution",
+        "Define.OperationGraph.finite_respecting_schedule_execution",
+        "Define.OperationGraph.incomparable_calculated_operations_are_unrelated",
+        "Define.OperationGraph.stopped_history_finite_schedule_execution",
+        "Define.OperationGraph.unbounded_respecting_schedule_execution",
+    ],
+    deps = [":calculated_schedule_execution"],
+)
+
+lean_library(
+    name = "calculation_correctness",
+    srcs = ["calculation_correctness.lean"],
+    deps = ["//proofs/operation_graph/definitions:calculation"],
+)
+
+lean_axiom_test(
+    name = "calculation_correctness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["calculation_correctness"],
+    theorems = [
+        "Define.OperationGraph.calculatedCompleteResolvedDefineGraph",
+        "Define.OperationGraph.calculatedDependencyBefore_pointsBackward",
+        "Define.OperationGraph.calculatedDependencyBefore_reaches_iff",
+        "Define.OperationGraph.calculatedDependencyBefore_stable",
+        "Define.OperationGraph.calculatedDependency_exact",
+        "Define.OperationGraph.calculatedDependency_operations",
+        "Define.OperationGraph.calculationFor_latest_fill_candidate",
+        "Define.OperationGraph.calculationFor_latest_source_candidate",
+        "Define.OperationGraph.exists_isEntryBefore_at_least_as_recent",
+    ],
+    deps = [":calculation_correctness"],
+)
+
+lean_library(
+    name = "characterization",
+    srcs = ["characterization.lean"],
+    deps = [
+        ":completeness",
+        ":minimality",
+    ],
+)
+
+lean_axiom_test(
+    name = "characterization_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["characterization"],
+    theorems = [
+        "Define.OperationGraph.CompleteResolvedDefineGraph.dependency_is_unique",
+        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_iff_reaches_relatedPrevious",
+        "Define.OperationGraph.calculatedDependency_is_unique",
+        "Define.OperationGraph.calculatedDependency_reaches_iff_reaches_relatedPrevious",
+    ],
+    deps = [":characterization"],
+)
+
+lean_library(
+    name = "completeness",
+    srcs = ["completeness.lean"],
+    deps = [":calculation_correctness"],
+)
+
+lean_axiom_test(
+    name = "completeness_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["completeness"],
+    theorems = [
+        "Define.OperationGraph.CompleteResolvedDefineGraph.reaches_of_relatedPrevious",
+        "Define.OperationGraph.calculatedDependency_reaches_of_relatedPrevious",
+    ],
+    deps = [":completeness"],
+)
+
+lean_library(
+    name = "cover_graph",
+    srcs = ["cover_graph.lean"],
+    deps = [":cover_order"],
+)
+
+lean_axiom_test(
+    name = "cover_graph_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_graph"],
+    theorems = [
+        "Define.OperationGraph.Reaches.collapse",
+        "Define.OperationGraph.coverPair_pointsBackward",
+        "Define.OperationGraph.coverPair_required",
+        "Define.OperationGraph.coverPair_transitivelyMinimal",
+        "Define.OperationGraph.precedence_reaches_coverPair",
+        "Define.OperationGraph.reaches_coverPair_iff",
+    ],
+    deps = [":cover_graph"],
+)
+
+lean_library(
+    name = "cover_order",
+    srcs = ["cover_order.lean"],
+    deps = ["//proofs/operation_graph/definitions"],
+)
+
+lean_axiom_test(
+    name = "cover_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_order"],
+    theorems = [
+        "Define.OperationGraph.omitted_pair_contains_omitted_coverPair",
+    ],
+    deps = [":cover_order"],
+)
+
+lean_library(
+    name = "cover_schedule_necessity",
+    srcs = ["cover_schedule_necessity.lean"],
+    deps = [
+        ":calculated_schedule_execution",
+        ":cover_schedule_order",
+        ":occupancy_noncommutation",
+        ":unbounded_history_schedule",
+    ],
+)
+
+lean_axiom_test(
+    name = "cover_schedule_necessity_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_schedule_necessity"],
+    theorems = [
+        "Define.OperationGraph.calculated_coverPair_has_adjacent_finite_execution",
+        "Define.OperationGraph.calculated_coverPair_has_irreversible_adjacent_finite_execution",
+        "Define.OperationGraph.calculated_coverPair_reverse_not_enabled",
+        "Define.OperationGraph.proper_transitive_subrelation_allows_undefined_historyPrefix",
+        "Define.OperationGraph.stopped_proper_transitive_subrelation_allows_undefined_schedule",
+        "Define.OperationGraph.unbounded_proper_transitive_subrelation_allows_undefined_schedule",
+    ],
+    deps = [":cover_schedule_necessity"],
+)
+
+lean_library(
+    name = "cover_schedule_order",
+    srcs = ["cover_schedule_order.lean"],
+    deps = [
+        ":characterization",
+        ":cover_order",
+        ":finite_history_schedule",
+        ":finite_schedule_order",
+    ],
+)
+
+lean_axiom_test(
+    name = "cover_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["cover_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.calculated_coverPair_has_adjacent_respecting_historyPrefix",
+        "Define.OperationGraph.calculated_coverPair_is_relatedPrevious",
+        "Define.OperationGraph.calculated_proper_subrelation_has_reversed_cover_schedule",
+    ],
+    deps = [":cover_schedule_order"],
+)
+
+lean_library(
+    name = "finite_history_schedule",
+    srcs = ["finite_history_schedule.lean"],
+    deps = [
+        ":calculation_correctness",
+        ":finite_schedule_order",
+        ":finite_scheduling",
+    ],
+)
+
+lean_axiom_test(
+    name = "finite_history_schedule_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_history_schedule"],
+    theorems = [
+        "Define.OperationGraph.ValidResolvedHistory.exists_respecting_operationsBefore_extension",
+        "Define.OperationGraph.ValidResolvedHistory.operationAt_mem_operationsBefore",
+        "Define.OperationGraph.ValidResolvedHistory.operationOrder_lt_of_stopped",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_append_of_le",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_execution",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_iff_of_stopped",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_nodup",
+        "Define.OperationGraph.ValidResolvedHistory.operationsBefore_respects_calculatedDependency",
+        "Define.OperationGraph.operationOrder_lt_operationOrderBound",
+    ],
+    deps = [":finite_history_schedule"],
+)
+
+lean_library(
+    name = "finite_relation_edge_count",
+    srcs = ["finite_relation_edge_count.lean"],
+)
+
+lean_axiom_test(
+    name = "finite_relation_edge_count_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_relation_edge_count"],
+    theorems = [
+        "Define.OperationGraph.relationEdgeCount_le",
+        "Define.OperationGraph.relationEdgeCount_lt",
+    ],
+    deps = [":finite_relation_edge_count"],
+)
+
+lean_library(
+    name = "finite_schedule_order",
+    srcs = ["finite_schedule_order.lean"],
+)
+
+lean_axiom_test(
+    name = "finite_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["finite_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.AdjacentIncomparableSwap.perm",
+        "Define.OperationGraph.AdjacentIncomparableSwap.preserves_respect",
+        "Define.OperationGraph.IncomparableSwapSequence.perm",
+        "Define.OperationGraph.IncomparableSwapSequence.preserves_respect",
+        "Define.OperationGraph.RespectsPrecedence.append",
+        "Define.OperationGraph.RespectsPrecedence.index_lt",
+        "Define.OperationGraph.RespectsPrecedence.mono",
+        "Define.OperationGraph.RespectsPrecedence.right_of_append",
+        "Define.OperationGraph.RespectsPrecedence.snoc",
+        "Define.OperationGraph.RespectsPrecedence.sublist",
+        "Define.OperationGraph.exists_order_preserving_complement",
+        "Define.OperationGraph.respecting_permutations_connected",
+    ],
+    deps = [":finite_schedule_order"],
+)
+
+lean_library(
+    name = "finite_scheduling",
+    srcs = ["finite_scheduling.lean"],
+    deps = [
+        ":occupancy_exchange",
+        "//proofs/operation_graph/definitions:occupancy_semantics",
+    ],
+)
+
+lean_axiom_test(
+    name = "finite_scheduling_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["finite_scheduling"],
+    theorems = [
+        "Define.OperationGraph.ScheduleExecution.preserves_prefixClosure",
+        "Define.OperationGraph.ScheduleExecution.prefix_execution",
+        "Define.OperationGraph.ScheduleExecution.split",
+        "Define.OperationGraph.ScheduleExecution.snoc",
+        "Define.OperationGraph.ScheduleExecution.swap_adjacent_unrelated",
+        "Define.OperationGraph.ScheduleExecution.swap_head_unrelated",
+    ],
+    deps = [":finite_scheduling"],
+)
+
+lean_library(
+    name = "maximum_safe_concurrency",
+    srcs = ["maximum_safe_concurrency.lean"],
+    deps = [
+        ":calculated_cover_graph",
+        ":calculated_schedule_execution",
+        ":cover_schedule_necessity",
+        ":stopped_dependency_edge_count",
+    ],
+)
+
+lean_library(
+    name = "minimality",
+    srcs = ["minimality.lean"],
+    deps = [":calculation_correctness"],
+)
+
+lean_axiom_test(
+    name = "minimality_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["minimality"],
+    theorems = [
+        "Define.OperationGraph.ResolvedDefineGraph.isMinimalDAG",
+        "Define.OperationGraph.calculatedDependency_isMinimalDAG",
+    ],
+    deps = [":minimality"],
+)
+
+lean_library(
+    name = "occupancy_exchange",
+    srcs = ["occupancy_exchange.lean"],
+    deps = ["//proofs/operation_graph/definitions"],
+)
+
+lean_axiom_test(
+    name = "occupancy_exchange_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["occupancy_exchange"],
+    theorems = [
+        "Define.OperationGraph.available_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.exchange_unrelated_enabled_operations",
+        "Define.OperationGraph.occupancyAfter_comm",
+        "Define.OperationGraph.operationEnabled_occupancyAfter_iff_of_not_related",
+        "Define.OperationGraph.operationObservation_occupancyAfter_of_not_related",
+    ],
+    deps = [":occupancy_exchange"],
+)
+
+lean_library(
+    name = "occupancy_noncommutation",
+    srcs = ["occupancy_noncommutation.lean"],
+    deps = ["//proofs/operation_graph/definitions:occupancy_semantics"],
+)
+
+lean_axiom_test(
+    name = "occupancy_noncommutation_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["occupancy_noncommutation"],
+    theorems = [
+        "Define.OperationGraph.related_enabled_operations_not_reversible",
+    ],
+    deps = [":occupancy_noncommutation"],
+)
+
+lean_library(
+    name = "stopped_dependency_edge_count",
+    srcs = ["stopped_dependency_edge_count.lean"],
+    deps = [
+        ":calculated_cover_graph",
+        ":finite_history_schedule",
+        ":finite_relation_edge_count",
+    ],
+)
+
+lean_axiom_test(
+    name = "stopped_dependency_edge_count_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["stopped_dependency_edge_count"],
+    theorems = [
+        "Define.OperationGraph.calculatedDependency_has_least_edgeCountBefore",
+        "Define.OperationGraph.stopped_calculatedDependency_equal_edgeCount_iff",
+        "Define.OperationGraph.stopped_calculatedDependency_has_fewerEdges_of_different",
+    ],
+    deps = [":stopped_dependency_edge_count"],
+)
+
+lean_library(
+    name = "unbounded_history_schedule",
+    srcs = ["unbounded_history_schedule.lean"],
+    deps = [
+        ":finite_history_schedule",
+        ":unbounded_schedule_order",
+    ],
+)
+
+lean_axiom_test(
+    name = "unbounded_history_schedule_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["unbounded_history_schedule"],
+    theorems = [
+        "Define.OperationGraph.ValidResolvedHistory.exists_unboundedSchedule_with_prefix",
+    ],
+    deps = [":unbounded_history_schedule"],
+)
+
+lean_library(
+    name = "unbounded_schedule_order",
+    srcs = ["unbounded_schedule_order.lean"],
+    deps = [":finite_schedule_order"],
+)
+
+lean_axiom_test(
+    name = "unbounded_schedule_order_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Quot.sound",
+    ],
+    imports = ["unbounded_schedule_order"],
+    theorems = [
+        "Define.OperationGraph.UnboundedSchedule.exists_respecting_completion",
+        "Define.OperationGraph.UnboundedSchedule.mem_occurrencesBefore_iff",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_are_members",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_nodup",
+        "Define.OperationGraph.UnboundedSchedule.occurrencesBefore_respects",
+    ],
+    deps = [":unbounded_schedule_order"],
+)
+
+lean_library(
+    name = "unbounded_scheduling",
+    srcs = ["unbounded_scheduling.lean"],
+    deps = [
+        ":finite_scheduling",
+        ":unbounded_schedule_order",
+    ],
+)

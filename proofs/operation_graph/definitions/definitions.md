@@ -9,11 +9,11 @@ assumptions of the model.
 
 The relevant specification sections are:
 
-- [Position References](../../define/spec/spec.md#position-references);
-- [Moving Particles](../../define/spec/spec.md#moving-particles);
-- [Destroying Particles](../../define/spec/spec.md#destroying-particles);
-- [Action Contracts](../../define/spec/spec.md#action-contracts); and
-- [Deterministic Automatic Concurrency](../../define/spec/spec.md#deterministic-automatic-concurrency).
+- [Position References](../../../define/spec/spec.md#position-references);
+- [Moving Particles](../../../define/spec/spec.md#moving-particles);
+- [Destroying Particles](../../../define/spec/spec.md#destroying-particles);
+- [Action Contracts](../../../define/spec/spec.md#action-contracts); and
+- [Deterministic Automatic Concurrency](../../../define/spec/spec.md#deterministic-automatic-concurrency).
 
 ## Scope
 

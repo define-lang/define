@@ -39,14 +39,15 @@ results below do not otherwise depend on that trace; the graph calculation does.
 
 The proof uses the following parts of the specification:
 
-- A [position reference](../../define/spec/spec.md#position-references) requires
-  every intermediate position in its chained name to be occupied.
-- A [Create Particle Statement](../../define/spec/spec.md#creating-particles)
+- A [position reference](../../../define/spec/spec.md#position-references)
+  requires every intermediate position in its chained name to be occupied.
+- A [Create Particle Statement](../../../define/spec/spec.md#creating-particles)
   fills its target, whose position reference must be empty.
-- A [Destroy Particle Statement](../../define/spec/spec.md#destroying-particles)
+- A
+  [Destroy Particle Statement](../../../define/spec/spec.md#destroying-particles)
   requires an existing particle, and Cascading Destruction also destroys the
   particles at transitive child positions.
-- A [Move Particle Statement](../../define/spec/spec.md#moving-particles)
+- A [Move Particle Statement](../../../define/spec/spec.md#moving-particles)
   requires an occupied source and an empty target, preserves the moved particle,
   and may not move it to a position it defines.
 - Automatic Destruction behaves as though the compiler had written Destroy
