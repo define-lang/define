@@ -1,6 +1,6 @@
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
+    assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -12,10 +12,11 @@ def test_constructor_trigger_inlines_constructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct.create(/marker)": ["test.create(box)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multi_level_constructor_chain(
@@ -23,11 +24,12 @@ def test_multi_level_constructor_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_b.create(/inner)": ["test.create(box)"],
         "construct_c.create(/leaf)": ["construct_b.create(/inner)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_constructors_all_fire_on_one_create(
@@ -35,11 +37,12 @@ def test_multiple_constructors_all_fire_on_one_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_a.create(/marker_a)": ["test.create(box)"],
         "construct_b.create(/marker_b)": ["test.create(box)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_three_constructors_all_fire_on_one_create(
@@ -47,12 +50,13 @@ def test_three_constructors_all_fire_on_one_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_a.create(/marker_a)": ["test.create(box)"],
         "construct_b.create(/marker_b)": ["test.create(box)"],
         "construct_c.create(/marker_c)": ["test.create(box)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_constructors_run_in_parallel_with_destroy(
@@ -60,7 +64,7 @@ def test_multiple_constructors_run_in_parallel_with_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_a.create(scratch)": ["test.create(box)"],
         "construct_a.destroy(scratch)": ["construct_a.create(scratch)"],
@@ -68,3 +72,4 @@ def test_multiple_constructors_run_in_parallel_with_destroy(
         "construct_b.destroy(scratch)": ["construct_b.create(scratch)"],
         "test.destroy(box)": ["test.create(box)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)

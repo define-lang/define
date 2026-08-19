@@ -1,6 +1,6 @@
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
+    assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -12,13 +12,14 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
         "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroying_action_reused_with_known_child_empty_then_occupied(
@@ -26,7 +27,7 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(first)": [],
         "test.move(first, /destroyer::run)": ["test.create(first)"],
         "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
@@ -44,6 +45,7 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
         "destroyer#2.destroy(/target::/child)": ["destroyer#2.move(run, /target)"],
         "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_reused_callee_receives_distinct_destruction_connections_per_execution(
@@ -51,7 +53,7 @@ def test_reused_callee_receives_distinct_destruction_connections_per_execution(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(first)": [],
         "test.create(first::/first_child)": ["test.create(first)"],
         "test.move(first, /destroyer::run)": ["test.create(first::/first_child)"],
@@ -76,6 +78,7 @@ def test_reused_callee_receives_distinct_destruction_connections_per_execution(
         ],
         "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/second_child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_repeated_destroying_action_invocations_include_caller_dependent_children(
@@ -83,7 +86,7 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(first)": [],
         "test.create(first::/child)": ["test.create(first)"],
         "test.move(first, /destroyer::run)": ["test.create(first::/child)"],
@@ -102,6 +105,7 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
             "destroyer#2.destroy(run::/child)#2",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
@@ -109,7 +113,7 @@ def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/child)": ["test.create(source)"],
         "test.move(source, /middle::run)": ["test.create(source::/child)"],
@@ -126,6 +130,7 @@ def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
         # depends directly on the second Action Execution's Move.
         "destroyer#2.destroy(run)": ["middle.move(local, /destroyer::run)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_retriggered_action_resolves_requirements_within_each_invocation(
@@ -133,7 +138,7 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gw)": [],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
         "maker.create(out)": ["test.create(gw)"],
@@ -147,6 +152,7 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
         "maker#2.create(out)": ["test.move(gw::/maker::out, first_result)"],
         "test.move(gw::/maker::out, second_result)": ["maker#2.create(out)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
@@ -154,7 +160,7 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gw)": [],
         "test.create(gw::/maker::held)": ["test.create(gw)"],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
@@ -168,6 +174,7 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
         ],
         "maker#2.create(held::/c)": ["test.destroy(gw::/maker::held::/c)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
@@ -175,7 +182,7 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gw)": [],
         "test.create(gw::/worker::trigger_pos)": ["test.create(gw)"],
         "test.destroy(gw::/worker::trigger_pos)": [
@@ -189,6 +196,7 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
         "worker#2.create(scratch)": ["test.create(gw)"],
         "worker#2.destroy(scratch)": ["worker#2.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_two_actions_each_triggering_one_action_twice_number_its_invocations_across_the_program(
@@ -196,7 +204,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(holder_first)": [],
         "test.create(holder_first::/first::trigger_pos)": ["test.create(holder_first)"],
         "test.create(holder_second)": [],
@@ -236,6 +244,7 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "second:worker#2.create(scratch)": ["second.create(gw)"],
         "second:worker#2.destroy(scratch)": ["second:worker#2.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invocation(
@@ -243,7 +252,7 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(holder)": [],
         "test.create(holder::/middle::trigger_pos)": ["test.create(holder)"],
         "test.destroy(holder::/middle::trigger_pos)": [
@@ -285,3 +294,4 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
         "middle#2:worker#2.create(scratch)": ["middle#2.create(gw)"],
         "middle#2:worker#2.destroy(scratch)": ["middle#2:worker#2.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)

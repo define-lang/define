@@ -1,5 +1,7 @@
 """Render operation graphs as readable maps for tests."""
 
+import pprint
+
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_labeler,
@@ -10,9 +12,7 @@ from define.compiler.validator.reference_graph import (
 _ENTRY_POINT_ACTION_PATH = "/test"
 
 
-# TODO: After fixing the existing non-minimal Operation Graphs, switch the
-# integration tests to an assert_operation_dependencies helper.
-def operation_dependencies(
+def _operation_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> dict[str, list[str]]:
     """Return a label for each operation the entry-point action performs or triggers, mapped to the labels it depends on."""
@@ -24,13 +24,25 @@ def operation_dependencies(
             labels = operation_graph_labeler.OperationGraphLabeler(
                 operation_graphs
             ).resolved_operation_labels(resolved)
-            dependencies = {
+            return {
                 label: [labels[dependency] for dependency in operation.dependencies]
                 for operation, label in labels.items()
             }
-            assert_transitively_minimal_dependencies(dependencies)
-            return dependencies
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
+
+
+def assert_operation_dependencies(
+    operation_graphs: operation_graph.OperationGraphs,
+    expected: dict[str, list[str]],
+):
+    """Assert the complete, transitively minimal dependencies of the test action."""
+    actual = _operation_dependencies(operation_graphs)
+    assert_transitively_minimal_dependencies(actual)
+    if actual != expected:
+        message = "operation dependency mismatch:\n"
+        message += f"actual:\n{pprint.pformat(actual)}\n"
+        message += f"expected:\n{pprint.pformat(expected)}"
+        raise AssertionError(message)
 
 
 def assert_transitively_minimal_dependencies(

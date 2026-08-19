@@ -2,7 +2,7 @@ import pytest
 
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
+    assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -17,7 +17,7 @@ def test_destructor_independent_chains_and_operation_after_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.destroy(box)": ["test.create(box)"],
         "test.create(box)#2": ["test.destroy(box)"],
@@ -26,6 +26,7 @@ def test_destructor_independent_chains_and_operation_after_destroy(
         "destructor.destroy(first)": ["destructor.create(first)"],
         "destructor.destroy(second)": ["destructor.create(second)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
@@ -33,7 +34,7 @@ def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/left::trigger_pos)": [],
         "test.create(/right::trigger_pos)": [],
         "left.create(/left_child::trigger_pos)": [],
@@ -45,6 +46,7 @@ def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
         "destructor.create(_noop)": ["left_child.create(/marker)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_on_child_carried_by_parent_move(
@@ -52,7 +54,7 @@ def test_destructor_on_child_carried_by_parent_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(staging)": [],
         "test.create(staging::/child)": ["test.create(staging)"],
         "test.move(staging, box)": ["test.create(staging::/child)"],
@@ -63,6 +65,7 @@ def test_destructor_on_child_carried_by_parent_move(
         "test.destroy(box::/child)": ["test.move(staging, box)"],
         "test.destroy(box)": ["test.destroy(box::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_and_known_children_with_caller_known_occupancy(
@@ -70,7 +73,7 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/marker_a)": ["test.create(source)"],
         "test.create(source::/marker_b)": ["test.create(source)"],
@@ -109,6 +112,7 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
             "destroyer.destroy(run::/marker_a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_fragments_finish_before_cascade_frees_positions(
@@ -116,7 +120,7 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/marker_a)": ["test.create(box)"],
         "test.create(box::/marker_b)": ["test.create(box)"],
@@ -133,6 +137,7 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
             "test.destroy(box::/marker_a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
@@ -141,7 +146,7 @@ def test_auto_destruction_of_child_with_caller_known_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/extra)": ["test.create(source)"],
         "test.move(source, /destroyer::run)": ["test.create(source::/extra)"],
@@ -155,6 +160,7 @@ def test_auto_destruction_of_child_with_caller_known_destructor(
         # empties the local position.
         "destroyer.destroy(local)": ["destroyer.destroy(local::/extra)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
@@ -163,7 +169,7 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/sibling)": ["test.create(source)"],
         "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
@@ -201,6 +207,7 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
             "destroyer.destroy(parent::/sibling)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
@@ -209,7 +216,7 @@ def test_destructor_known_only_two_callers_up(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/marker_a)": ["test.create(source)"],
         "test.create(source::/marker_b)": ["test.create(source)"],
@@ -245,6 +252,7 @@ def test_destructor_known_only_two_callers_up(
             "destroyer.destroy(run::/marker_a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_default_empty_destructor_position_uses_parent_fill(
@@ -252,7 +260,7 @@ def test_default_empty_destructor_position_uses_parent_fill(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(carrier)": [],
         "test.create(carrier::/callee::src)": ["test.create(carrier)"],
         "test.create(carrier::/callee::trigger_pos)": ["test.create(carrier)"],
@@ -262,6 +270,7 @@ def test_default_empty_destructor_position_uses_parent_fill(
         "destructor.create(/marker)": ["test.create(carrier::/callee::src)"],
         "destructor.destroy(/marker)": ["destructor.create(/marker)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_emptied_destructor_position_uses_child_destroy(
@@ -269,7 +278,7 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(carrier)": [],
         "test.create(source)": [],
         "test.create(source::/marker)": ["test.create(source)"],
@@ -285,6 +294,7 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
         "destructor.create(/marker)": ["test.move(source, carrier::/callee::src)"],
         "destructor.destroy(/marker)": ["destructor.create(/marker)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_moves_callee_guaranteed_particle_before_destroying(
@@ -292,7 +302,7 @@ def test_caller_moves_callee_guaranteed_particle_before_destroying(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(temp)": ["test.create(box)"],
@@ -309,6 +319,7 @@ def test_caller_moves_callee_guaranteed_particle_before_destroying(
             "test.destroy(box::/maker::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_on_particle_from_callee_guarantee(
@@ -316,7 +327,7 @@ def test_destructor_on_particle_from_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(result)": ["test.create(box)"],
@@ -331,6 +342,7 @@ def test_destructor_on_particle_from_callee_guarantee(
             "test.destroy(box::/maker::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
@@ -338,7 +350,7 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/make_thing::run)": ["test.create(box)"],
         "make_thing.create(temp)": ["test.create(box)"],
@@ -353,6 +365,7 @@ def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
             "test.destroy(box::/make_thing::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_attached_in_callee_on_implied_position_guarantee(
@@ -360,7 +373,7 @@ def test_destructor_attached_in_callee_on_implied_position_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(temp)": ["test.create(box)"],
@@ -376,6 +389,7 @@ def test_destructor_attached_in_callee_on_implied_position_guarantee(
             "test.destroy(box::/maker::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_on_particle_from_transitive_callee_guarantee(
@@ -383,7 +397,7 @@ def test_destructor_on_particle_from_transitive_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::run)": ["test.create(gateway)"],
         "middle.create(box)": ["test.create(gateway)"],
@@ -416,6 +430,7 @@ def test_destructor_on_particle_from_transitive_callee_guarantee(
             "test.destroy(gateway::/middle::box)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destructor_on_implied_position_from_transitive_callee_guarantee(
@@ -423,7 +438,7 @@ def test_destructor_on_implied_position_from_transitive_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::run)": ["test.create(box)"],
         "middle.create(/inner::run)": ["test.create(box)"],
@@ -440,6 +455,7 @@ def test_destructor_on_implied_position_from_transitive_callee_guarantee(
             "test.destroy(box::/inner::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
@@ -448,7 +464,7 @@ def test_destructor_with_children_known_only_two_callers_up(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/extra)": ["test.create(source)"],
         "test.create(source::/extra::/marker_a)": ["test.create(source::/extra)"],
@@ -483,6 +499,7 @@ def test_destructor_with_children_known_only_two_callers_up(
         ],
         "destroyer.destroy(run)": ["destroyer.destroy(run::/extra)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_destructors_all_fire_on_destroy(
@@ -490,7 +507,7 @@ def test_multiple_destructors_all_fire_on_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.destroy(box)": ["test.create(box)"],
         "destruct_a.create(_noop)": ["test.create(box)"],
@@ -498,6 +515,7 @@ def test_multiple_destructors_all_fire_on_destroy(
         "destruct_b.create(_noop)": ["test.create(box)"],
         "destruct_b.destroy(_noop)": ["destruct_b.create(_noop)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_destructors_on_particle_from_callee_guarantee(
@@ -505,7 +523,7 @@ def test_multiple_destructors_on_particle_from_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/maker::run)": ["test.create(box)"],
         "maker.create(result)": ["test.create(box)"],
@@ -521,6 +539,7 @@ def test_multiple_destructors_on_particle_from_callee_guarantee(
             "test.destroy(box::/maker::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 @pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
@@ -529,7 +548,7 @@ def test_caller_added_destructor_fires_in_callee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(carrier)": [],
         "test.move(carrier, box::/callee::target)": [
@@ -545,6 +564,7 @@ def test_caller_added_destructor_fires_in_callee(
             "callee.destroy(target)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_constructors_and_destructors_modify_same_implied_position(
@@ -552,7 +572,7 @@ def test_multiple_constructors_and_destructors_modify_same_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_a.create(/marker)": ["test.create(box)"],
         "construct_b.move(/marker, holder)": ["construct_a.create(/marker)"],
@@ -564,6 +584,7 @@ def test_multiple_constructors_and_destructors_modify_same_implied_position(
         "test.destroy(box::/marker)": ["destruct_a.move(holder, /marker)"],
         "test.destroy(box)": ["test.destroy(box::/marker)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiple_constructors_run_in_parallel_with_destroy_and_destructors(
@@ -571,7 +592,7 @@ def test_multiple_constructors_run_in_parallel_with_destroy_and_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "construct_a.create(scratch)": ["test.create(box)"],
         "construct_a.destroy(scratch)": ["construct_a.create(scratch)"],
@@ -583,3 +604,4 @@ def test_multiple_constructors_run_in_parallel_with_destroy_and_destructors(
         "destruct_b.create(_noop)": ["test.create(box)"],
         "destruct_b.destroy(_noop)": ["destruct_b.create(_noop)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)

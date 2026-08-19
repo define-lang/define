@@ -1,6 +1,6 @@
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
+    assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -10,9 +10,10 @@ def test_single_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected: dict[str, list[str]] = {
         "test.create(item)": [],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_two_dependent_operations(
@@ -20,10 +21,11 @@ def test_two_dependent_operations(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(item)": [],
         "test.move(item, dest)": ["test.create(item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_three_operation_chain(
@@ -31,11 +33,12 @@ def test_three_operation_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(item)": [],
         "test.move(item, dest)": ["test.create(item)"],
         "test.destroy(dest)": ["test.move(item, dest)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_chain_returning_to_first_position_has_minimal_dependencies(
@@ -43,7 +46,7 @@ def test_move_chain_returning_to_first_position_has_minimal_dependencies(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(a)": [],
         "test.move(a, b)": ["test.create(a)"],
         "test.move(b, c)": ["test.move(a, b)"],
@@ -51,6 +54,7 @@ def test_move_chain_returning_to_first_position_has_minimal_dependencies(
         "test.move(d, a)": ["test.move(c, d)"],
         "test.destroy(a)": ["test.move(d, a)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
@@ -58,7 +62,7 @@ def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.move(box::/item, holder)": ["test.create(box::/item)"],
@@ -68,6 +72,7 @@ def test_move_excludes_create_fill_dependency_reached_through_source_dependency(
             "test.create(holder::/payload)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_fill_dependency_reached_through_replaced_source_operation(
@@ -75,7 +80,7 @@ def test_move_excludes_fill_dependency_reached_through_replaced_source_operation
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.move(box::/item, holder)": ["test.create(box::/item)"],
@@ -84,6 +89,7 @@ def test_move_excludes_fill_dependency_reached_through_replaced_source_operation
         # The source Create already reaches the operation required to fill the target.
         "test.move(holder, box::/destination)": ["test.create(holder)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_create_fill_dependency_reached_through_source_destroy(
@@ -91,7 +97,7 @@ def test_move_excludes_create_fill_dependency_reached_through_source_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.create(box::/item::/payload)": ["test.create(box::/item)"],
@@ -100,6 +106,7 @@ def test_move_excludes_create_fill_dependency_reached_through_source_destroy(
         # The source Destroy already reaches the operation required to fill the target.
         "test.move(holder, box::/destination)": ["test.destroy(holder::/payload)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_repeated_operation_on_same_position(
@@ -107,11 +114,12 @@ def test_repeated_operation_on_same_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(item)": [],
         "test.destroy(item)": ["test.create(item)"],
         "test.create(item)#2": ["test.destroy(item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_two_parallel_operations(
@@ -119,12 +127,13 @@ def test_two_parallel_operations(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(a)": [],
         "test.create(b)": [],
         "test.destroy(a)": ["test.create(a)"],
         "test.destroy(b)": ["test.create(b)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_three_parallel_operations(
@@ -132,7 +141,7 @@ def test_three_parallel_operations(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(a)": [],
         "test.create(b)": [],
         "test.create(c)": [],
@@ -140,6 +149,7 @@ def test_three_parallel_operations(
         "test.destroy(b)": ["test.create(b)"],
         "test.destroy(c)": ["test.create(c)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_join_operation_waits_on_two_predecessors(
@@ -147,12 +157,13 @@ def test_join_operation_waits_on_two_predecessors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(a)": [],
         "test.create(b)": [],
         "test.destroy(b)": ["test.create(b)"],
         "test.move(a, b)": ["test.create(a)", "test.destroy(b)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_fan_out_two_operations_depend_on_one(
@@ -160,12 +171,13 @@ def test_fan_out_two_operations_depend_on_one(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(a)": [],
         "test.move(a, b)": ["test.create(a)"],
         "test.create(a)#2": ["test.move(a, b)"],
         "test.destroy(b)": ["test.move(a, b)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_multiway_join_and_fan_out(
@@ -173,7 +185,7 @@ def test_multiway_join_and_fan_out(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/a)": ["test.create(box)"],
         "test.create(box::/b)": ["test.create(box)"],
@@ -184,6 +196,7 @@ def test_multiway_join_and_fan_out(
             "test.destroy(box::/a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_reduces_to_the_deepest_touched_descendant(
@@ -191,7 +204,7 @@ def test_destroy_reduces_to_the_deepest_touched_descendant(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
@@ -203,6 +216,7 @@ def test_destroy_reduces_to_the_deepest_touched_descendant(
         ],
         "test.destroy(box)": ["test.destroy(box::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_reduces_its_own_position_create_edge(
@@ -210,12 +224,13 @@ def test_destroy_reduces_its_own_position_create_edge(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box::/child)": ["test.create(box::/child)"],
         "test.destroy(box)": ["test.destroy(box::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_comparison_excluded_candidate_still_excludes_older_candidate(
@@ -223,7 +238,7 @@ def test_comparison_excluded_candidate_still_excludes_older_candidate(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(parent)": [],
         "test.create(parent::/child)": ["test.create(parent)"],
         "test.create(parent::/child::/grandchild_x)": ["test.create(parent::/child)"],
@@ -243,6 +258,7 @@ def test_comparison_excluded_candidate_still_excludes_older_candidate(
         ],
         "test.destroy(parent)": ["test.destroy(parent::/child)#2"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_excludes_an_earlier_move_reached_through_a_child_destroy(
@@ -250,13 +266,14 @@ def test_destroy_excludes_an_earlier_move_reached_through_a_child_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, box::/target)": ["test.create(box::/origin)"],
         "test.destroy(box::/target)": ["test.move(box::/origin, box::/target)"],
         "test.destroy(box)": ["test.destroy(box::/target)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_an_earlier_move_reached_through_a_child_destroy(
@@ -264,7 +281,7 @@ def test_move_excludes_an_earlier_move_reached_through_a_child_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, box::/target)": ["test.create(box::/origin)"],
@@ -272,6 +289,7 @@ def test_move_excludes_an_earlier_move_reached_through_a_child_destroy(
         "test.move(box, holder)": ["test.destroy(box::/target)"],
         "test.destroy(holder)": ["test.move(box, holder)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
@@ -279,7 +297,7 @@ def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, box::/target)": ["test.create(box::/origin)"],
@@ -287,6 +305,7 @@ def test_destroy_excludes_an_earlier_move_reached_through_a_child_move(
         "test.destroy(box)": ["test.move(box::/target, holder)"],
         "test.destroy(holder)": ["test.move(box::/target, holder)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_excludes_earlier_child_move_reached_through_later_child_move(
@@ -294,7 +313,7 @@ def test_destroy_excludes_earlier_child_move_reached_through_later_child_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, holder_a)": ["test.create(box::/origin)"],
@@ -306,6 +325,7 @@ def test_destroy_excludes_earlier_child_move_reached_through_later_child_move(
         "test.destroy(box)": ["test.move(box::/target, holder_c)"],
         "test.destroy(holder_c)": ["test.move(box::/target, holder_c)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_create_on_child_reached_through_parent_move_chain(
@@ -313,7 +333,7 @@ def test_move_excludes_create_on_child_reached_through_parent_move_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.move(box, holder_a)": ["test.create(box::/item)"],
@@ -323,6 +343,7 @@ def test_move_excludes_create_on_child_reached_through_parent_move_chain(
         "test.destroy(holder_c::/item)": ["test.move(holder_b, holder_c)"],
         "test.destroy(holder_c)": ["test.destroy(holder_c::/item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_transitive_child_create_reached_through_parent_move_chain(
@@ -330,7 +351,7 @@ def test_move_excludes_transitive_child_create_reached_through_parent_move_chain
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.create(box::/item::/deep)": ["test.create(box::/item)"],
@@ -342,6 +363,7 @@ def test_move_excludes_transitive_child_create_reached_through_parent_move_chain
         "test.destroy(holder_c::/item)": ["test.destroy(holder_c::/item::/deep)"],
         "test.destroy(holder_c)": ["test.destroy(holder_c::/item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_excludes_child_destroy_reached_through_parent_move_chain(
@@ -349,7 +371,7 @@ def test_destroy_excludes_child_destroy_reached_through_parent_move_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/item)": ["test.create(box)"],
         "test.destroy(box::/item)": ["test.create(box::/item)"],
@@ -358,6 +380,7 @@ def test_destroy_excludes_child_destroy_reached_through_parent_move_chain(
         # The final parent Move already reaches the earlier child Destroy.
         "test.destroy(holder_b)": ["test.move(holder_a, holder_b)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_an_earlier_move_reached_through_a_child_move(
@@ -365,7 +388,7 @@ def test_move_excludes_an_earlier_move_reached_through_a_child_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, box::/middle)": ["test.create(box::/origin)"],
@@ -376,6 +399,7 @@ def test_move_excludes_an_earlier_move_reached_through_a_child_move(
         "test.destroy(holder::/target)": ["test.move(box, holder)"],
         "test.destroy(holder)": ["test.destroy(holder::/target)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_newer_parent_operation_supersedes_an_older_child_operation(
@@ -383,7 +407,7 @@ def test_newer_parent_operation_supersedes_an_older_child_operation(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.create(box::/origin::/deep)": ["test.create(box::/origin)"],
@@ -393,6 +417,7 @@ def test_newer_parent_operation_supersedes_an_older_child_operation(
         "test.destroy(holder::/target)": ["test.destroy(holder::/target::/deep)"],
         "test.destroy(holder)": ["test.destroy(holder::/target)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_refill_does_not_repeat_the_ancestor_edge(
@@ -400,12 +425,13 @@ def test_refill_does_not_repeat_the_ancestor_edge(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(parent)": [],
         "test.create(parent::/child)": ["test.create(parent)"],
         "test.destroy(parent::/child)": ["test.create(parent::/child)"],
         "test.create(parent::/child)#2": ["test.destroy(parent::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_after_ancestor_move_refill_waits_on_the_move(
@@ -413,7 +439,7 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.destroy(box::/child)": ["test.create(box::/child)"],
@@ -427,6 +453,7 @@ def test_empty_after_ancestor_move_refill_waits_on_the_move(
         "test.destroy(box::/child)#2": ["test.move(source, box)"],
         "test.destroy(box)#2": ["test.destroy(box::/child)#2"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_second_move_of_a_carried_child_waits_on_the_first_move(
@@ -434,12 +461,13 @@ def test_second_move_of_a_carried_child_waits_on_the_first_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.move(box, basket)": ["test.create(box::/child)"],
         "test.move(basket, crate)": ["test.move(box, basket)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
@@ -447,7 +475,7 @@ def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/mid)": ["test.create(box)"],
         "test.create(box::/mid::/leaf)": ["test.create(box::/mid)"],
@@ -465,6 +493,7 @@ def test_deep_ancestor_move_refill_reduces_the_whole_stale_chain(
         "test.destroy(box::/mid)#2": ["test.destroy(box::/mid::/leaf)#2"],
         "test.destroy(box)#2": ["test.destroy(box::/mid)#2"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_parent_waits_on_touched_descendants(
@@ -472,12 +501,13 @@ def test_move_parent_waits_on_touched_descendants(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(src)": [],
         "test.create(src::/child)": ["test.create(src)"],
         "test.move(src, dest)": ["test.create(src::/child)"],
         "test.destroy(dest::/child)": ["test.move(src, dest)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_between_child_positions_does_not_repeat_parent_create(
@@ -485,11 +515,12 @@ def test_move_between_child_positions_does_not_repeat_parent_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.move(box::/origin, box::/destination)": ["test.create(box::/origin)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_between_child_positions_uses_source_child_operation(
@@ -497,7 +528,7 @@ def test_move_between_child_positions_uses_source_child_operation(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.create(box::/origin::/child)": ["test.create(box::/origin)"],
@@ -505,6 +536,7 @@ def test_move_between_child_positions_uses_source_child_operation(
             "test.create(box::/origin::/child)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_between_child_positions_uses_independent_source_child_operations(
@@ -512,7 +544,7 @@ def test_move_between_child_positions_uses_independent_source_child_operations(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/origin)": ["test.create(box)"],
         "test.create(box::/origin::/first)": ["test.create(box::/origin)"],
@@ -522,6 +554,7 @@ def test_move_between_child_positions_uses_independent_source_child_operations(
             "test.create(box::/origin::/second)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_between_child_positions_does_not_repeat_move_that_filled_parent(
@@ -529,12 +562,13 @@ def test_move_between_child_positions_does_not_repeat_move_that_filled_parent(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(incoming)": [],
         "test.move(incoming, box)": ["test.create(incoming)"],
         "test.create(box::/origin)": ["test.move(incoming, box)"],
         "test.move(box::/origin, box::/destination)": ["test.create(box::/origin)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_into_emptied_target_waits_on_the_target_destroy(
@@ -542,7 +576,7 @@ def test_move_into_emptied_target_waits_on_the_target_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(dest)": [],
         "test.create(dest::/child)": ["test.create(dest)"],
         "test.destroy(dest::/child)": ["test.create(dest::/child)"],
@@ -554,6 +588,7 @@ def test_move_into_emptied_target_waits_on_the_target_destroy(
             "test.create(src::/child)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_auto_destruction_records_destroy_operations(
@@ -561,12 +596,13 @@ def test_auto_destruction_records_destroy_operations(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(first)": [],
         "test.create(second)": [],
         "test.destroy(second)": ["test.create(second)"],
         "test.destroy(first)": ["test.create(first)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_create_and_destroy_of_an_implied_position(
@@ -574,10 +610,11 @@ def test_create_and_destroy_of_an_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/implied)": [],
         "test.destroy(/implied)": ["test.create(/implied)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_operations_on_a_child_of_an_implied_position(
@@ -585,12 +622,13 @@ def test_operations_on_a_child_of_an_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/implied)": [],
         "test.create(/implied::/child)": ["test.create(/implied)"],
         "test.destroy(/implied::/child)": ["test.create(/implied::/child)"],
         "test.destroy(/implied)": ["test.destroy(/implied::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_from_an_interface_position_to_an_implied_position(
@@ -598,10 +636,11 @@ def test_move_from_an_interface_position_to_an_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.move(source, /implied)": ["test.create(source)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_auto_destruction_leaves_the_implied_position_alone(
@@ -609,11 +648,12 @@ def test_auto_destruction_leaves_the_implied_position_alone(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(temporary)": [],
         "test.create(/implied)": [],
         "test.destroy(temporary)": ["test.create(temporary)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_branches_at_siblings_and_joins_at_parent(
@@ -621,7 +661,7 @@ def test_destruction_cascade_branches_at_siblings_and_joins_at_parent(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
@@ -638,6 +678,7 @@ def test_destruction_cascade_branches_at_siblings_and_joins_at_parent(
             "test.destroy(box::/child)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_routes_prior_empty_descendant_to_its_particle(
@@ -645,7 +686,7 @@ def test_destruction_cascade_routes_prior_empty_descendant_to_its_particle(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/child)": ["test.create(box)"],
         "test.create(box::/child::/grandchild)": ["test.create(box::/child)"],
@@ -657,6 +698,7 @@ def test_destruction_cascade_routes_prior_empty_descendant_to_its_particle(
         ],
         "test.destroy(box)": ["test.destroy(box::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_omits_known_empty_interface_child(
@@ -664,12 +706,13 @@ def test_destruction_cascade_omits_known_empty_interface_child(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(parent)": [],
         "test.create(parent::/child)": ["test.create(parent)"],
         "test.move(parent::/child, destination)": ["test.create(parent::/child)"],
         "test.destroy(parent)": ["test.move(parent::/child, destination)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_omits_known_empty_implied_child(
@@ -677,12 +720,13 @@ def test_destruction_cascade_omits_known_empty_implied_child(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.move(/parent::/child, destination)": ["test.create(/parent::/child)"],
         "test.destroy(/parent)": ["test.move(/parent::/child, destination)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_branches_from_one_preceding_move(
@@ -690,7 +734,7 @@ def test_destruction_cascade_branches_from_one_preceding_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/a)": ["test.create(source)"],
         "test.create(source::/b)": ["test.create(source)"],
@@ -705,6 +749,7 @@ def test_destruction_cascade_branches_from_one_preceding_move(
             "test.destroy(destination::/a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_independent_child_moves_with_shared_move_chain_remain_dependencies(
@@ -712,7 +757,7 @@ def test_independent_child_moves_with_shared_move_chain_remain_dependencies(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.move(source, stage_a)": ["test.create(source)"],
         "test.move(stage_a, stage_b)": ["test.move(source, stage_a)"],
@@ -767,3 +812,4 @@ def test_independent_child_moves_with_shared_move_chain_remain_dependencies(
         ],
         "test.destroy(moved_marker)": ["test.move(workspace, moved_marker)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)

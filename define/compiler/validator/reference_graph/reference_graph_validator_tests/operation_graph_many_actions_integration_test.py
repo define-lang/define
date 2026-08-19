@@ -1,6 +1,6 @@
 from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    operation_dependencies,
+    assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -12,7 +12,7 @@ def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/shared)": [],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/shared::/marker)": ["test.create(/shared)"],
@@ -23,6 +23,7 @@ def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
         "child_b.create(scratch)": ["test.create(/shared)"],
         "child_b.destroy(scratch)": ["child_b.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_two_child_actions_trigger_in_parallel(
@@ -30,7 +31,7 @@ def test_two_child_actions_trigger_in_parallel(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/first::trigger_pos)": ["test.create(box)"],
         "test.create(box::/second::trigger_pos)": ["test.create(box)"],
@@ -41,6 +42,7 @@ def test_two_child_actions_trigger_in_parallel(
             "second.destroy(trigger_pos)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_action_execution_and_empty_rule_use_the_same_position(
@@ -48,7 +50,7 @@ def test_action_execution_and_empty_rule_use_the_same_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
@@ -59,6 +61,7 @@ def test_action_execution_and_empty_rule_use_the_same_position(
         "child.destroy(scratch)": ["child.create(scratch)"],
         "middle.move(source, holder)": ["middle.create(source::/child::trigger_pos)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_rule_adds_a_caller_child_operation_to_a_move(
@@ -66,7 +69,7 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::source::/marker)": [
@@ -83,6 +86,7 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
             "test.create(gateway::/middle::source::/marker)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
@@ -90,7 +94,7 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::source::/marker)": [
@@ -110,6 +114,7 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
             "middle.move(source, holder)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
@@ -117,7 +122,7 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::source::/inner::item)": [
@@ -136,6 +141,7 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
         "middle.destroy(source::/inner::item)": ["middle.create(source::/inner::item)"],
         "middle.destroy(source)": ["middle.destroy(source::/inner::item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_middle_child_operation_reaches_inner_move_and_destroy(
@@ -143,7 +149,7 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gateway)": ["test.create(box)"],
         "test.create(box::/middle::gateway::/inner::source)": [
@@ -165,6 +171,7 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
         ],
         "inner.destroy(destination::/child)": ["inner.move(source, destination)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
@@ -172,7 +179,7 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::source::/marker)": [
@@ -193,6 +200,7 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
             "middle.move(intermediate, holder)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
@@ -200,7 +208,7 @@ def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_bin
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
         "test.create(gateway::/middle::source::/marker)": [
@@ -222,6 +230,7 @@ def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_bin
             "middle.move(source, holder)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_actions_with_identically_named_child_actions_have_distinct_instances(
@@ -229,7 +238,7 @@ def test_actions_with_identically_named_child_actions_have_distinct_instances(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/first::trigger_pos)": [],
         "test.create(/second::trigger_pos)": [],
         "first.create(box)": [],
@@ -249,6 +258,7 @@ def test_actions_with_identically_named_child_actions_have_distinct_instances(
         "second:inner.create(scratch)": ["second.create(box)"],
         "second:inner.destroy(scratch)": ["second:inner.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
@@ -256,7 +266,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -266,6 +276,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.destroy(slot)": ["test.create(box::/middle::gw::/inner::slot)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
@@ -273,7 +284,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
@@ -285,6 +296,7 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.destroy(slot)": ["test.move(source, box::/middle::gw::/inner::slot)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
@@ -292,7 +304,7 @@ def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/input)": [],
         "test.create(/destination)": [],
         "test.create(/middle::trigger_pos)": [],
@@ -305,6 +317,7 @@ def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
             "middle.move(/destination, /input::/marker)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitutions(
@@ -312,7 +325,7 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/input)": [],
         "test.create(/input::/origin)": ["test.create(/input)"],
         "test.move(/input::/origin, holder_a)": ["test.create(/input::/origin)"],
@@ -341,6 +354,7 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
         ],
         "inner.destroy(holder)": ["inner.move(/input, holder)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_empty_rule_preserves_indirect_caller_move_through_intermediate_action(
@@ -348,7 +362,7 @@ def test_caller_empty_rule_preserves_indirect_caller_move_through_intermediate_a
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/input)": [],
         "test.create(/input::/a)": ["test.create(/input)"],
         "test.move(/input::/a, /holder)": ["test.create(/input::/a)"],
@@ -366,6 +380,7 @@ def test_caller_empty_rule_preserves_indirect_caller_move_through_intermediate_a
         # still unresolved while the Empty Rule passes through middle_action.
         "inner.destroy(/input)": ["inner.move(/input::/b, /intermediate)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_it(
@@ -373,7 +388,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::slot)": [
@@ -386,6 +401,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.create(slot)": ["middle.destroy(gw::/inner::slot)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interface_child(
@@ -393,7 +409,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [
@@ -409,6 +425,7 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.create(holder::/a)": ["middle.destroy(gw::/inner::holder::/a)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill(
@@ -416,7 +433,7 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::holder)": [
@@ -426,6 +443,7 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.create(holder::/a)": ["test.create(box::/middle::gw::/inner::holder)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_it(
@@ -433,7 +451,7 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
@@ -450,6 +468,7 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
         ],
         "inner.create(slot)": ["outer.destroy(mw::/middle::gw::/inner::slot)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_does_not_trigger_it(
@@ -457,7 +476,7 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/outer::mw)": ["test.create(box)"],
         "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
@@ -479,6 +498,7 @@ def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_
             "outer.destroy(mw::/middle::gw::/inner::holder::/a)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
@@ -486,7 +506,7 @@ def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/box)": [],
         "test.create(/box::/producer::input)": ["test.create(/box)"],
         "producer.move(input, result)": ["test.create(/box::/producer::input)"],
@@ -494,6 +514,7 @@ def test_move_excludes_parent_dependency_when_source_dependency_is_a_guarantee(
             "producer.move(input, result)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_move_excludes_non_action_parent_guarantee_fill_dependency(
@@ -501,7 +522,7 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/input)": [],
         "test.create(/producer::trigger_pos)": [],
         "producer.move(/input, /box)": ["test.create(/input)"],
@@ -513,6 +534,7 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
             "consumer.create(/box::/item)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_fill_dependency_is_removed_through_callee_guarantee(
@@ -520,7 +542,7 @@ def test_caller_fill_dependency_is_removed_through_callee_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/destination)": [],
         "test.move(/destination, temp)": ["test.create(/destination)"],
         "test.move(temp, /slot)": ["test.move(/destination, temp)"],
@@ -531,6 +553,7 @@ def test_caller_fill_dependency_is_removed_through_callee_guarantee(
         # Dependency, so the final Move does not depend on it directly.
         "mover.move(/out, /destination)": ["helper.move(/slot, /out)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_operation(
@@ -538,7 +561,7 @@ def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_op
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/worker::target)": ["test.create(gateway)"],
         "test.move(gateway::/worker::target, gateway::/worker::occupied)": [
@@ -556,6 +579,7 @@ def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_op
             "test.create(gateway::/worker::source)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_callee_operation_without_position_dependencies_waits_on_action_parent(
@@ -563,11 +587,12 @@ def test_callee_operation_without_position_dependencies_waits_on_action_parent(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/box)": [],
         "test.create(/box::/worker::trigger_pos)": ["test.create(/box)"],
         "worker.create(result)": ["test.create(/box)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destroy_excludes_callee_operations_superseded_on_child_positions(
@@ -575,13 +600,14 @@ def test_destroy_excludes_callee_operations_superseded_on_child_positions(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/worker::input)": ["test.create(box)"],
         "worker.move(input, result)": ["test.create(box::/worker::input)"],
         "test.destroy(box::/worker::result)": ["worker.move(input, result)"],
         "test.destroy(box)": ["test.destroy(box::/worker::result)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_espresso_operation_graph(
@@ -589,7 +615,7 @@ def test_espresso_operation_graph(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(station)": [],
         "test.create(station::/grind::beans)": ["test.create(station)"],
         "test.create(station::/heat::cold_water)": ["test.create(station)"],
@@ -616,6 +642,7 @@ def test_espresso_operation_graph(
             "brew.destroy(water)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
@@ -623,13 +650,14 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/inner::trigger_pos)": [],
         "inner.create(/parent::/child1)": ["test.create(/parent)"],
         "inner.create(/parent::/child2)": ["test.create(/parent)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_implied_action_inherits_the_current_actions_parent_position(
@@ -637,7 +665,7 @@ def test_implied_action_inherits_the_current_actions_parent_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(local)": [],
         "test.create(local::/parent)": ["test.create(local)"],
         "test.create(local::/parent::/middle::trigger_pos)": [
@@ -647,6 +675,7 @@ def test_implied_action_inherits_the_current_actions_parent_position(
         "inner.create(scratch)": ["test.create(local::/parent)"],
         "inner.destroy(scratch)": ["inner.create(scratch)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
@@ -654,7 +683,7 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],
@@ -662,6 +691,7 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
         "inner.create(/parent::/child::/grandchild1)": ["test.create(/parent::/child)"],
         "inner.create(/parent::/child::/grandchild2)": ["test.create(/parent::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_intermediate_callee_operation_suppresses_only_its_caller_path(
@@ -669,7 +699,7 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/parent::/child::/grandchild)": ["test.create(/parent::/child)"],
@@ -696,6 +726,7 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
             "inner.destroy(/parent::/sibling)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_moved_in_parent_children_branch_from_the_carrying_move(
@@ -703,7 +734,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(mw)": [],
         "test.create(mw::/middle::iface)": ["test.create(mw)"],
         "test.create(mw::/middle::iface::/parent)": ["test.create(mw::/middle::iface)"],
@@ -735,6 +766,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
             "middle.destroy(gw::/inner::run)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_input_carried_through_two_moves_reaches_the_triggered_inner(
@@ -742,7 +774,7 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/inner::input)": ["test.create(box)"],
         "test.create(outer_holder)": [],
@@ -762,6 +794,7 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
         ],
         "inner.destroy(input)": ["outer.move(input, middle_holder::/middle::input)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigger(
@@ -769,7 +802,7 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(gw_a)": [],
         "test.create(gw_b)": [],
@@ -792,6 +825,7 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
         "test.create(gw_a::/worker::trigger_pos)": ["test.create(gw_a)"],
         "worker.destroy(slot)": ["test.move(gw_b::/helper::out, gw_a::/worker::slot)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_consumes_a_nested_guarantee(
@@ -799,7 +833,7 @@ def test_caller_consumes_a_nested_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
@@ -807,6 +841,7 @@ def test_caller_consumes_a_nested_guarantee(
         "inner.create(out)": ["test.create(box::/middle::gw)"],
         "test.move(box::/middle::gw::/inner::out, result)": ["inner.create(out)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_child_fill(
@@ -814,7 +849,7 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
         "test.create(box::/middle::gw::/inner::source)": [
@@ -829,6 +864,7 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
             "test.create(box::/middle::gw::/inner::source::/a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
@@ -836,7 +872,7 @@ def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/filler::trigger_pos)": [],
@@ -844,6 +880,7 @@ def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
         "filler.create(/parent::/child::/gc)": ["test.create(/parent::/child)"],
         "mover.move(/parent::/child, dest)": ["filler.create(/parent::/child::/gc)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_consumes_a_guarantee_from_two_triggers_down(
@@ -851,7 +888,7 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(box)": [],
         "test.create(box::/outer::gw)": ["test.create(box)"],
         "test.create(box::/outer::gw::/middle::igw)": ["test.create(box::/outer::gw)"],
@@ -865,6 +902,7 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
             "inner.create(out)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_transitive_child_guarantee_follows_particle_through_move(
@@ -872,7 +910,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/outer::source)": ["test.create(gateway)"],
         "test.create(gateway::/outer::source::/middle::inner_parent)": [
@@ -897,6 +935,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
             "outer.move(source, destination)"
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_later_transitive_guarantee_wins_between_sibling_calls(
@@ -904,7 +943,7 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/run_both::trigger_pos)": [],
         "test.create(/item)": ["empty_item.destroy(/item)"],
         "run_both.create(/call_fill::trigger_pos)": [],
@@ -914,6 +953,7 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
         "call_empty.create(/empty_item::trigger_pos)": [],
         "empty_item.destroy(/item)": ["fill_item.create(/item)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_deep_diamond_operations_on_the_same_implied_position(
@@ -921,7 +961,7 @@ def test_deep_diamond_operations_on_the_same_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/left::trigger_pos)": [],
         "test.create(/right::trigger_pos)": [],
         "left.create(/left_child::trigger_pos)": [],
@@ -929,6 +969,7 @@ def test_deep_diamond_operations_on_the_same_implied_position(
         "right.create(/right_child::trigger_pos)": [],
         "right_child.destroy(/marker)": ["left_child.create(/marker)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
@@ -936,7 +977,7 @@ def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/parent)": [],
         "test.create(/parent::/child_a)": ["test.create(/parent)"],
         "test.create(/parent::/child_b)": ["test.create(/parent)"],
@@ -949,6 +990,7 @@ def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
             "filler.create(/parent::/child_b::/gc)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_child_state_crosses_two_actions(
@@ -956,7 +998,7 @@ def test_destruction_cascade_child_state_crosses_two_actions(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/a)": ["test.create(source)"],
         "test.create(source::/b)": ["test.create(source)"],
@@ -972,6 +1014,7 @@ def test_destruction_cascade_child_state_crosses_two_actions(
             "inner.destroy(inner_run::/a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_auto_destruction_child_state_crosses_two_actions(
@@ -979,7 +1022,7 @@ def test_auto_destruction_child_state_crosses_two_actions(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/a)": ["test.create(source)"],
         "test.create(source::/b)": ["test.create(source)"],
@@ -998,6 +1041,7 @@ def test_auto_destruction_child_state_crosses_two_actions(
             "inner.destroy(local::/a)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
@@ -1005,7 +1049,7 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
         "middle_a.create(box)": [],
@@ -1026,6 +1070,7 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
             "middle_b:destroyer.destroy(run::/b)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
@@ -1033,7 +1078,7 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
         "middle_a.create(box)": [],
@@ -1054,6 +1099,7 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
         ],
         "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/child)"],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
@@ -1061,7 +1107,7 @@ def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/sibling)": ["test.create(source)"],
         "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
@@ -1085,6 +1131,7 @@ def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
             "destroyer.destroy(parent::/maker::trigger_pos)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_state(
@@ -1092,7 +1139,7 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(source)": [],
         "test.create(source::/known_empty)": ["test.create(source)"],
         "test.create(source::/maybe_child)": ["test.create(source)"],
@@ -1116,6 +1163,7 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
             "destroyer.destroy(local::/known_occupied)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
 
 
 def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
@@ -1123,7 +1171,7 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert operation_dependencies(result.operation_graphs) == {
+    expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
         "middle_a.create(box)": [],
@@ -1180,3 +1228,4 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
             "middle_b:destroyer.destroy(run::/child)",
         ],
     }
+    assert_operation_dependencies(result.operation_graphs, expected)
