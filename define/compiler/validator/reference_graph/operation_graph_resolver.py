@@ -475,7 +475,6 @@ class ResolvedOperationGraphBuilder:
             self._callee_bindings_for_destruction_before_caller_contribution[
                 execution_and_binding_hole
             ] = operation_graph_action_resolver.CalleeBinding.for_callee_binding_hole(
-                self._graphs[triggered_by.caller.action],
                 resolved_execution.execution,
                 self._graphs,
                 callee_binding_hole_to_bind,

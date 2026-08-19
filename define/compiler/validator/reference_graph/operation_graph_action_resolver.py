@@ -187,7 +187,6 @@ class CalleeBinding:
     @classmethod
     def for_callee_binding_hole(
         cls,
-        caller_graph: operation_graph.OperationGraph,
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
         callee_binding_hole: operation_graph_model.BindingHole,
@@ -203,7 +202,6 @@ class CalleeBinding:
             case operation_graph_model.MoveRuleBindingHole() as move_rule_binding_hole:
                 return cls._for_move_rule_binding_hole(
                     execution,
-                    caller_graph,
                     operation_graphs,
                     move_rule_binding_hole,
                     prerequisite_callee_bindings,
@@ -218,7 +216,6 @@ class CalleeBinding:
             ):
                 return cls._for_empty_rule_binding_hole(
                     execution,
-                    caller_graph,
                     operation_graphs,
                     callee_binding_hole,
                     empty_rule_binding_hole,
@@ -230,7 +227,6 @@ class CalleeBinding:
             ):
                 return cls._for_empty_rule_binding_hole(
                     execution,
-                    caller_graph,
                     operation_graphs,
                     callee_binding_hole,
                     empty_rule_binding_hole,
@@ -252,7 +248,6 @@ class CalleeBinding:
     def _for_move_rule_binding_hole(
         cls,
         execution: operation_graph_model.ActionExecution,
-        caller_graph: operation_graph.OperationGraph,
         operation_graphs: operation_graph.OperationGraphs,
         move_rule_binding_hole: operation_graph_model.MoveRuleBindingHole,
         prerequisite_callee_bindings: list[CalleeBinding],
@@ -269,7 +264,7 @@ class CalleeBinding:
                 prerequisite_callee_binding.caller_binding_holes,
             )
         move_rule_application_result = (
-            caller_graph.apply_move_rule_binding_hole_in_caller(
+            operation_graph_rules.apply_move_rule_binding_hole_in_caller(
                 execution,
                 move_rule_binding_hole,
                 empty_rule_binding_inputs,
@@ -292,7 +287,6 @@ class CalleeBinding:
     def _for_empty_rule_binding_hole(
         cls,
         execution: operation_graph_model.ActionExecution,
-        caller_graph: operation_graph.OperationGraph,
         operation_graphs: operation_graph.OperationGraphs,
         callee_binding_hole: (
             operation_graph_model.EmptyRuleBindingHoleNode
@@ -313,7 +307,7 @@ class CalleeBinding:
                 prerequisite_callee_binding.caller_binding_holes,
             )
         empty_rule_application_result = (
-            caller_graph.apply_empty_rule_binding_hole_in_caller(
+            operation_graph_rules.apply_empty_rule_binding_hole_in_caller(
                 execution,
                 empty_rule_binding_hole,
                 empty_rule_binding_inputs,
@@ -432,7 +426,7 @@ class CalleeBindings:
         bindings_by_callee_binding_hole: dict[
             operation_graph_model.BindingHole, CalleeBinding
         ] = {}
-        # TODO: Investigate reusing Binding Hole reachability results while binding
+        # TODO: Investigate reusing Binding Hole dependency traversal results while binding
         # one Action Execution. The replacement relationships do not change during
         # this loop, so separate callee Binding Holes can repeat the same traversal.
         for callee_binding_hole in callee_action_binding_holes.in_binding_order:
@@ -445,7 +439,6 @@ class CalleeBindings:
                 )
             bindings_by_callee_binding_hole[callee_binding_hole] = (
                 CalleeBinding.for_callee_binding_hole(
-                    caller_graph,
                     execution,
                     operation_graphs,
                     callee_binding_hole,
@@ -834,7 +827,7 @@ class _ActionBindingHolesBuilder:
         ],
     ) -> operation_graph_model.EmptyRuleBindingHole:
         """Resolve an Operation Graph Empty Rule Binding Hole."""
-        prerequisite_binding_holes = self._graph.binding_holes_depended_on_by(
+        prerequisite_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
             node.remaining_concrete_nodes,
             replacement_depends_on_targets_by_node=(
                 replacement_depends_on_targets_by_node
@@ -1093,7 +1086,7 @@ class _ActionBindingHolesBuilder:
                     (),
                 )
             else:
-                binding_holes = self._graph.binding_holes_depended_on_by(
+                binding_holes = operation_graph_rules.binding_holes_depended_on_by(
                     (operation,),
                     replacement_depends_on_targets_by_node=(
                         replacement_depends_on_targets_by_node
@@ -1130,7 +1123,7 @@ class _ActionBindingHolesBuilder:
         )
         if binding_holes is not None:
             return binding_holes
-        binding_holes = self._graph.binding_holes_depended_on_by(
+        binding_holes = operation_graph_rules.binding_holes_depended_on_by(
             (guarantee,),
             replacement_depends_on_targets_by_node=(
                 replacement_depends_on_targets_by_node
@@ -1170,7 +1163,7 @@ class _ActionBindingHolesBuilder:
             directly_propagated_binding_holes.extend(
                 callee_binding.caller_binding_holes
             )
-        caller_binding_holes = self._graph.binding_holes_depended_on_by(
+        caller_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
             concrete_caller_nodes,
             caller_binding_holes=directly_propagated_binding_holes,
             replacement_depends_on_targets_by_node=(
@@ -1360,7 +1353,7 @@ class _ActionResolver:
             operation_graph_model.MoveNodeWithPartialMoveRuleResult,
         ):
             move_rule_result, relationships_changed = (
-                self._graph.apply_partial_move_rule_result(
+                operation_graph_rules.apply_partial_move_rule_result(
                     operation,
                     replacement_depends_on_targets_by_node,
                 )

@@ -3,6 +3,7 @@
 import typing
 from collections.abc import Collection, Iterable, Mapping, Sequence
 
+from define.compiler import ast
 from define.compiler.validator.reference_graph import operation_graph_model
 
 # Empty Rule Comparison
@@ -103,7 +104,7 @@ type _RemovalCandidatesByCanonicalNode = dict[
 ]
 type _ReplacementDependsOnTargetsByNode = Mapping[
     operation_graph_model.OperationNode,
-    Collection[
+    Sequence[
         operation_graph_model.ConcreteOperationNode | operation_graph_model.BindingHole
     ],
 ]
@@ -305,7 +306,7 @@ def _apply_comparison_to_caller_collection[
     return nodes_remaining_after_comparison, collected_nodes_most_recent_first
 
 
-def apply_empty_rule_to_caller_collection[
+def _apply_empty_rule_to_caller_collection[
     DependencyNodeT: operation_graph_model.LastOperationNode
 ](
     collected_nodes: set[DependencyNodeT],
@@ -341,7 +342,7 @@ def apply_empty_rule_to_caller_collection[
     return nodes_remaining_after_rule, collected_nodes_most_recent_first
 
 
-def apply_move_rule_to_caller_collection[
+def _apply_move_rule_to_caller_collection[
     DependencyNodeT: operation_graph_model.LastOperationNode
 ](
     collected_nodes: set[DependencyNodeT],
@@ -630,4 +631,437 @@ def _determine_emptying_dependencies(
         caller_collection,
         partial_move_rule_comparison_positions,
         fill_dependency_is_also_empty_dependency,
+    )
+
+
+# Binding Hole dependency traversal
+
+
+def binding_holes_depended_on_by(
+    nodes: Iterable[operation_graph_model.ConcreteOperationNode],
+    *,
+    caller_binding_holes: Iterable[operation_graph_model.BindingHole] = (),
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode
+    | None = None,
+) -> tuple[operation_graph_model.BindingHole, ...]:
+    """Return Binding Holes the supplied nodes depend on directly or indirectly.
+
+    The result uses deterministic first-encounter order as a stable tie-break;
+    the order gives no semantic priority to one Binding Hole over another.
+    """
+    prerequisite_binding_holes = list(caller_binding_holes)
+    # A prerequisite binding can supply the same Binding Hole that a concrete
+    # caller node depends on, so mark directly supplied holes visited.
+    visited: set[
+        operation_graph_model.OperationNode | operation_graph_model.BindingHole
+    ] = set(prerequisite_binding_holes)
+    nodes_to_visit: list[
+        operation_graph_model.OperationNode | operation_graph_model.BindingHole
+    ] = []
+    # Walk the dependency tree of the passed-in nodes and extract all binding
+    # holes.
+    for node in nodes:
+        nodes_to_visit.append(node)
+        while nodes_to_visit:
+            current_node = nodes_to_visit.pop()
+            if current_node in visited:
+                continue
+            visited.add(current_node)
+            if isinstance(
+                current_node,
+                (
+                    operation_graph_model.ActionParentLastOperationNode,
+                    operation_graph_model.RequirementNode,
+                    operation_graph_model.EmptyRuleBindingHoleNode,
+                    operation_graph_model.EmptyRuleBindingHole,
+                    operation_graph_model.MoveRuleBindingHole,
+                ),
+            ):
+                prerequisite_binding_holes.append(current_node)
+                continue
+            replacement_depends_on_targets = None
+            if replacement_depends_on_targets_by_node is not None:
+                replacement_depends_on_targets = (
+                    replacement_depends_on_targets_by_node.get(current_node)
+                )
+            if replacement_depends_on_targets is None:
+                nodes_to_visit.extend(reversed(current_node.depends_on))
+            else:
+                nodes_to_visit.extend(reversed(replacement_depends_on_targets))
+    return tuple(prerequisite_binding_holes)
+
+
+# Completing rules after action resolution
+
+
+def apply_partial_move_rule_result(
+    move: operation_graph_model.MoveNodeWithPartialMoveRuleResult,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode,
+) -> tuple[operation_graph_model.MoveRuleApplicationResult, bool]:
+    """Finish a partial Move Rule and report whether its depends_on relationships changed."""
+    partial_result = move.partial_move_rule_result
+    caller_fill_dependency = None
+    concrete_fill_dependency = None
+    if isinstance(
+        partial_result.fill_dependency, operation_graph_model.RequirementNode
+    ):
+        caller_fill_dependency = operation_graph_model.CallerFillDependency(
+            callee_binding_hole=partial_result.fill_dependency,
+            requirement=partial_result.fill_dependency.requirement,
+        )
+    else:
+        concrete_fill_dependency = partial_result.fill_dependency
+
+    nodes_remaining_after_comparison = move.depends_on
+    nodes_remaining_after_correction = (
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            concrete_fill_dependency,
+            fill_dependency_is_also_empty_dependency=(
+                partial_result.fill_dependency_is_also_empty_dependency
+            ),
+            replacement_depends_on_targets_by_node=(
+                replacement_depends_on_targets_by_node
+            ),
+        )
+    )
+    application_result = _complete_or_propagate_move_rule(
+        nodes_remaining_after_correction,
+        caller_empty_rule_collection=partial_result.caller_empty_rule_collection,
+        caller_fill_dependency=caller_fill_dependency,
+        comparison_positions=partial_result.comparison_positions,
+        fill_dependency_is_also_empty_dependency=(
+            partial_result.fill_dependency_is_also_empty_dependency
+        ),
+        caller_binding_holes=(),
+        replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
+    )
+    # A remaining Binding Hole changes the Move's relationships. Otherwise,
+    # Move Correction preserves the input sequence when it removes nothing,
+    # avoiding a second traversal merely to compare the relationships.
+    relationships_changed = (
+        application_result.move_rule_binding_hole is not None
+        or nodes_remaining_after_correction is not nodes_remaining_after_comparison
+    )
+    return application_result, relationships_changed
+
+
+def _complete_or_propagate_move_rule(
+    concrete_caller_nodes: Sequence[operation_graph_model.ConcreteOperationNode],
+    *,
+    caller_empty_rule_collection: (
+        operation_graph_model.CallerEmptyRuleCollection | None
+    ),
+    caller_fill_dependency: operation_graph_model.CallerFillDependency | None,
+    comparison_positions: Sequence[tuple[str, ...]],
+    fill_dependency_is_also_empty_dependency: bool,
+    caller_binding_holes: Iterable[operation_graph_model.BindingHole],
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode,
+) -> operation_graph_model.MoveRuleApplicationResult:
+    """Return a complete Move Rule result or its Binding Hole for the next caller."""
+    if caller_empty_rule_collection is None and caller_fill_dependency is None:
+        return operation_graph_model.MoveRuleApplicationResult(
+            concrete_caller_nodes,
+            None,
+        )
+    prerequisite_binding_holes = binding_holes_depended_on_by(
+        concrete_caller_nodes,
+        caller_binding_holes=caller_binding_holes,
+        replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
+    )
+    if caller_empty_rule_collection is None:
+        move_rule_binding_hole = (
+            operation_graph_model.MoveRuleBindingHoleWithCompleteEmptyRuleCollection(
+                caller_fill_dependency=caller_fill_dependency,
+                fill_dependency_is_also_empty_dependency=(
+                    fill_dependency_is_also_empty_dependency
+                ),
+                prerequisite_binding_holes=prerequisite_binding_holes,
+                collected_operation_positions=tuple(comparison_positions),
+            )
+        )
+    else:
+        move_rule_binding_hole = (
+            operation_graph_model.MoveRuleBindingHoleWithCallerEmptyRuleCollection(
+                caller_fill_dependency=caller_fill_dependency,
+                fill_dependency_is_also_empty_dependency=(
+                    fill_dependency_is_also_empty_dependency
+                ),
+                prerequisite_binding_holes=prerequisite_binding_holes,
+                empty_rule_collection=caller_empty_rule_collection,
+            )
+        )
+    return operation_graph_model.MoveRuleApplicationResult(
+        concrete_caller_nodes,
+        move_rule_binding_hole,
+    )
+
+
+# Binding rules through direct callers
+
+
+def _occupied_requirement_position(
+    requirement_satisfaction: operation_graph_model.RequirementSatisfaction,
+) -> tuple[str, ...] | None:
+    if not isinstance(
+        requirement_satisfaction.operation,
+        operation_graph_model.RequirementNode,
+    ):
+        return None
+    return requirement_satisfaction.operation.requirement.requirement_position
+
+
+def _add_positions_relative_to_particle(
+    relative_positions: set[tuple[str, ...]],
+    node: operation_graph_model.ConcreteOperationNode,
+    particle_position: tuple[str, ...],
+):
+    for position in node.operated_positions:
+        if not ast.is_prefix(particle_position, position):
+            continue
+        relative_positions.add(position[len(particle_position) :])
+
+
+def _collect_empty_dependencies_from_caller(
+    execution: operation_graph_model.ActionExecution,
+    caller_empty_rule_collection: operation_graph_model.CallerEmptyRuleCollection,
+) -> tuple[
+    set[operation_graph_model.LastOperationNode],
+    tuple[str, ...] | None,
+    set[tuple[str, ...]],
+]:
+    """Collect the remaining Empty Dependencies from one direct caller."""
+    particle_requirement_satisfaction = execution.requirement_satisfactions[
+        caller_empty_rule_collection.requirement_position
+    ]
+    child_operations = operations_not_on_same_paths_as(
+        particle_requirement_satisfaction.child_operations,
+        caller_empty_rule_collection.collected_child_operation_positions,
+    )
+    collected_nodes: set[operation_graph_model.LastOperationNode] = {
+        child_operation.operation for child_operation in child_operations
+    }
+    fill_dependency_requirement_position = (
+        caller_empty_rule_collection.fill_dependency_requirement_position
+    )
+    if fill_dependency_requirement_position is not None:
+        # The Fill Rule allows an EMPTY requirement to depend on an
+        # operation on any parent position. Search the required position
+        # and its parent-position prefixes for that operation.
+        for depth in range(len(fill_dependency_requirement_position), 0, -1):
+            callee_requirement_position = fill_dependency_requirement_position[:depth]
+            requirement_satisfaction = execution.requirement_satisfactions.get(
+                callee_requirement_position
+            )
+            if requirement_satisfaction is None:
+                continue
+            # The Move Rule combines the Empty Dependencies for the source
+            # position with the Fill Dependency for the target position, then
+            # applies Comparison. When the Fill Dependency operates on a
+            # transitive parent position of the source, a more recent Particle
+            # Operation on the source or one of its transitive child positions
+            # remains after Comparison.
+            if not ast.is_prefix(
+                callee_requirement_position,
+                caller_empty_rule_collection.requirement_position,
+            ):
+                collected_nodes.add(requirement_satisfaction.operation)
+            break
+
+    requirement_position_in_caller = _occupied_requirement_position(
+        particle_requirement_satisfaction
+    )
+    # The particle is not from an earlier caller, so Collection is complete
+    # after adding the operation that supplied it when no child operation did.
+    if requirement_position_in_caller is None and (
+        not child_operations
+        and not caller_empty_rule_collection.collected_child_operation_positions
+    ):
+        collected_nodes.add(particle_requirement_satisfaction.operation)
+
+    collected_child_operation_positions: set[tuple[str, ...]] = set()
+    if requirement_position_in_caller is not None:
+        collected_child_operation_positions.update(
+            child_operation.child_position
+            for child_operation in particle_requirement_satisfaction.child_operations.operations
+        )
+        collected_child_operation_positions.update(
+            caller_empty_rule_collection.collected_child_operation_positions
+        )
+    return (
+        collected_nodes,
+        requirement_position_in_caller,
+        collected_child_operation_positions,
+    )
+
+
+def apply_empty_rule_binding_hole_in_caller(
+    execution: operation_graph_model.ActionExecution,
+    empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
+    empty_rule_binding_inputs: operation_graph_model.EmptyRuleBindingInputs,
+    *,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode
+    | None = None,
+) -> operation_graph_model.EmptyRuleApplicationResult:
+    """Bind the callee's Empty Rule Binding Hole in one direct caller."""
+    (
+        collected_nodes,
+        requirement_position_in_caller,
+        collected_child_operation_positions,
+    ) = _collect_empty_dependencies_from_caller(
+        execution,
+        empty_rule_binding_hole,
+    )
+
+    collected_operation_positions = [
+        ast.chain_in_caller(execution.action_chain, position)
+        for position in empty_rule_binding_hole.collected_operation_positions
+    ]
+    (
+        caller_nodes,
+        collected_nodes_most_recent_first,
+    ) = _apply_empty_rule_to_caller_collection(
+        collected_nodes,
+        collected_operation_positions,
+        empty_rule_binding_inputs.concrete_caller_nodes,
+        replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
+    )
+    if requirement_position_in_caller is None:
+        return operation_graph_model.EmptyRuleApplicationResult(
+            caller_nodes,
+            None,
+        )
+
+    caller_nodes_for_next_substitution: list[
+        operation_graph_model.ConcreteOperationNode
+    ] = []
+    fill_dependency_requirement_position: tuple[str, ...] | None = None
+    for node in caller_nodes:
+        if isinstance(node, operation_graph_model.RequirementNode):
+            fill_dependency_requirement_position = node.requirement.requirement_position
+            continue
+        caller_nodes_for_next_substitution.append(node)
+        # This remains linear in the operated positions because each position
+        # is examined once, without comparing nodes.
+        _add_positions_relative_to_particle(
+            collected_child_operation_positions,
+            node,
+            requirement_position_in_caller,
+        )
+
+    for node in reversed(collected_nodes_most_recent_first):
+        collected_operation_positions.extend(node.operated_positions)
+    prerequisite_binding_holes = binding_holes_depended_on_by(
+        (
+            *empty_rule_binding_inputs.concrete_caller_nodes,
+            *caller_nodes_for_next_substitution,
+        ),
+        caller_binding_holes=empty_rule_binding_inputs.caller_binding_holes,
+    )
+    return operation_graph_model.EmptyRuleApplicationResult(
+        typing.cast(
+            "list[operation_graph_model.LastOperationNode]",
+            caller_nodes_for_next_substitution,
+        ),
+        operation_graph_model.EmptyRuleBindingHole(
+            requirement_position=requirement_position_in_caller,
+            collected_child_operation_positions=frozenset(
+                collected_child_operation_positions
+            ),
+            fill_dependency_requirement_position=(fill_dependency_requirement_position),
+            collected_operation_positions=tuple(collected_operation_positions),
+            prerequisite_binding_holes=prerequisite_binding_holes,
+        ),
+    )
+
+
+def apply_move_rule_binding_hole_in_caller(
+    execution: operation_graph_model.ActionExecution,
+    move_rule_binding_hole: operation_graph_model.MoveRuleBindingHole,
+    empty_rule_binding_inputs: operation_graph_model.EmptyRuleBindingInputs,
+    *,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode,
+) -> operation_graph_model.MoveRuleApplicationResult:
+    """Apply a callee Move Rule Binding Hole using one direct caller."""
+    caller_empty_rule_collection = move_rule_binding_hole.caller_empty_rule_collection
+    if caller_empty_rule_collection is None:
+        collected_nodes: set[operation_graph_model.ConcreteOperationNode] = set()
+        requirement_position_in_caller = None
+        collected_child_operation_positions: set[tuple[str, ...]] = set()
+    else:
+        (
+            collected_empty_dependencies,
+            requirement_position_in_caller,
+            collected_child_operation_positions,
+        ) = _collect_empty_dependencies_from_caller(
+            execution,
+            caller_empty_rule_collection,
+        )
+        collected_nodes = typing.cast(
+            "set[operation_graph_model.ConcreteOperationNode]",
+            collected_empty_dependencies,
+        )
+
+    fill_dependency = move_rule_binding_hole.caller_fill_dependency
+    if fill_dependency is not None:
+        fill_dependency = execution.resolve_move_rule_fill_dependency(fill_dependency)
+    match fill_dependency:
+        case (
+            operation_graph_model.PositionOperationNode()
+            | operation_graph_model.GuaranteeNode()
+        ):
+            concrete_fill_dependency = fill_dependency
+            caller_fill_dependency = None
+        case operation_graph_model.CallerFillDependency() | None:
+            concrete_fill_dependency = None
+            caller_fill_dependency = fill_dependency
+
+    comparison_positions = [
+        ast.chain_in_caller(execution.action_chain, position)
+        for position in move_rule_binding_hole.comparison_positions
+    ]
+    (
+        concrete_caller_nodes,
+        collected_nodes_most_recent_first,
+    ) = _apply_move_rule_to_caller_collection(
+        collected_nodes,
+        comparison_positions,
+        concrete_fill_dependency,
+        empty_rule_binding_inputs.concrete_caller_nodes,
+        fill_dependency_is_also_empty_dependency=(
+            move_rule_binding_hole.fill_dependency_is_also_empty_dependency
+        ),
+        replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
+    )
+    next_caller_empty_rule_collection = None
+    if requirement_position_in_caller is not None or caller_fill_dependency is not None:
+        for node in reversed(collected_nodes_most_recent_first):
+            comparison_positions.extend(node.operated_positions)
+        if requirement_position_in_caller is not None:
+            for node in concrete_caller_nodes:
+                _add_positions_relative_to_particle(
+                    collected_child_operation_positions,
+                    node,
+                    requirement_position_in_caller,
+                )
+            next_caller_empty_rule_collection = (
+                operation_graph_model.CallerEmptyRuleCollection(
+                    requirement_position=requirement_position_in_caller,
+                    collected_child_operation_positions=frozenset(
+                        collected_child_operation_positions
+                    ),
+                    fill_dependency_requirement_position=None,
+                    collected_operation_positions=tuple(comparison_positions),
+                )
+            )
+    return _complete_or_propagate_move_rule(
+        concrete_caller_nodes,
+        caller_empty_rule_collection=next_caller_empty_rule_collection,
+        caller_fill_dependency=caller_fill_dependency,
+        comparison_positions=comparison_positions,
+        fill_dependency_is_also_empty_dependency=(
+            move_rule_binding_hole.fill_dependency_is_also_empty_dependency
+        ),
+        caller_binding_holes=empty_rule_binding_inputs.caller_binding_holes,
+        replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
     )

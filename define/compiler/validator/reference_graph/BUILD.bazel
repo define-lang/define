@@ -168,7 +168,10 @@ py_library(
     name = "operation_graph_rules",
     srcs = ["operation_graph_rules.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [":operation_graph_model"],
+    deps = [
+        ":operation_graph_model",
+        "//define/compiler:ast",
+    ],
 )
 
 py_test(
