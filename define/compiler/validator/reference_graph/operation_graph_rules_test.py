@@ -1,3 +1,30 @@
+"""Unit tests for isolated Empty and Move Rule calculation contracts.
+
+This file is intentionally narrow. Tests belong here only when the behavior
+under test is independent of how a valid Define program produces an Operation
+Graph. Appropriate examples are path selection, reduction, ordering, and
+scaling behavior over an already-collected child-operation snapshot.
+
+Dependency semantics do not belong here. Move Correction, Fill Dependency
+removal, caller Collection, guarantees, Binding Holes, and partial rule
+application must be tested with valid Define source in an existing
+operation-graph integration test module. Those tests exercise the validator,
+particle tracker, Operation Graph, and action resolver together, so they protect
+the actual propagation path that production uses.
+
+In particular, do not construct a graph state that the compiler cannot produce
+in order to reach a branch. Do not omit requirements, preceding operations, or
+particle state that valid Define source would necessarily provide. Do not add a
+unit test merely to preserve defensive behavior or increase line or branch
+coverage. If a production branch can be reached here but cannot be reached by a
+valid integration fixture, first determine whether the branch is unreachable
+and should be deleted.
+
+Minimal node setup is acceptable when it is only incidental to a narrow
+calculation contract, such as ordering a child-operation snapshot. Assertions
+must not use that setup to specify dependency edges.
+"""
+
 import functools
 
 from define.compiler import ast

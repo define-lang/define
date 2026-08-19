@@ -5,11 +5,22 @@ from collections.abc import Collection, Iterable, Mapping, Sequence
 
 from define.compiler.validator.reference_graph import operation_graph_model
 
+# Empty Rule Comparison
 
-def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
-    """Return whether either child position is a prefix of the other."""
-    shared_depth = min(len(one), len(other))
-    return one[:shared_depth] == other[:shared_depth]
+
+def _has_related_position(
+    positions: tuple[tuple[str, ...], ...],
+    other_positions: set[tuple[str, ...]],
+    other_position_prefixes: set[tuple[str, ...]],
+) -> bool:
+    """Return whether any position shares a parent-child path with another position."""
+    for position in positions:
+        if position in other_positions or position in other_position_prefixes:
+            return True
+        for depth in range(1, len(position)):
+            if position[:depth] in other_positions:
+                return True
+    return False
 
 
 def _apply_empty_rule_comparison_most_recent_first[
@@ -73,44 +84,45 @@ def apply_empty_rule_comparison[
     )
 
 
-# TODO: Refactor this into smaller units for selecting removal targets, traversing
-# depends_on paths, and filtering the result. Preserve one shared traversal so Move
-# Correction and Fill Dependency removal remain linear together.
-def apply_move_correction_and_fill_dependency_removal[
+# Move Correction and Fill Dependency removal
+
+type _RemovalCandidatesByCanonicalNode = dict[
+    operation_graph_model.OperationNode,
+    list[operation_graph_model.OperationNode],
+]
+type _ReplacementDependsOnTargetsByNode = Mapping[
+    operation_graph_model.OperationNode,
+    Collection[
+        operation_graph_model.ConcreteOperationNode | operation_graph_model.BindingHole
+    ],
+]
+
+
+def _canonical_particle_operation_node(
+    node: operation_graph_model.OperationNode,
+) -> operation_graph_model.OperationNode:
+    if isinstance(node, operation_graph_model.GuaranteeNode):
+        return node.canonical_node_for_particle_operation
+    return node
+
+
+def _select_removal_candidates[
     DependencyNodeT: operation_graph_model.LastOperationNode
 ](
     nodes_remaining_after_comparison: Sequence[DependencyNodeT],
     fill_dependency: DependencyNodeT | None,
-    concrete_caller_nodes: Collection[operation_graph_model.ConcreteOperationNode] = (),
     *,
-    fill_dependency_is_also_empty_dependency: bool = False,
-    replacement_depends_on_targets_by_node: Mapping[
-        operation_graph_model.OperationNode,
-        Collection[
-            operation_graph_model.ConcreteOperationNode
-            | operation_graph_model.BindingHole
-        ],
-    ]
-    | None = None,
-) -> Sequence[DependencyNodeT]:
-    """Apply the Empty Rule's Move Correction and the Move Rule's optional Fill Dependency removal.
-
-    ``nodes_remaining_after_comparison`` must be ordered from least to most recent.
-    """
-    # Removal requires both a removable node and another remaining node that
-    # depends on it. A concrete caller node can represent that other node across an
-    # action boundary; without one, fewer than two remaining nodes cannot qualify.
-    if not nodes_remaining_after_comparison or (
-        len(nodes_remaining_after_comparison) < 2 and not concrete_caller_nodes
-    ):
-        return nodes_remaining_after_comparison
-    removable_nodes_by_canonical_node: dict[
-        operation_graph_model.OperationNode,
-        list[operation_graph_model.OperationNode],
-    ] = {}
+    fill_dependency_is_also_empty_dependency: bool,
+    has_concrete_caller_nodes: bool,
+) -> tuple[
+    _RemovalCandidatesByCanonicalNode,
+    operation_graph_model.OperationNode | None,
+]:
+    """Select the nodes that Move Correction or Fill Dependency removal can remove."""
+    removal_candidates_by_canonical_node: _RemovalCandidatesByCanonicalNode = {}
     least_recent_removable_node: operation_graph_model.OperationNode | None = None
     nodes_to_consider_for_removal_count = len(nodes_remaining_after_comparison)
-    if not concrete_caller_nodes:
+    if not has_concrete_caller_nodes:
         # The final list item is the most recent node. Without a callee node, no
         # remaining node can depend on it, so exclude that one item from the prefix
         # scanned for removal. Earlier nodes remain because more recent nodes can
@@ -127,17 +139,41 @@ def apply_move_correction_and_fill_dependency_removal[
             and not is_fill_dependency_removal_target
         ):
             continue
-        canonical_node = (
-            node.canonical_node_for_particle_operation
-            if isinstance(node, operation_graph_model.GuaranteeNode)
-            else node
-        )
-        removable_nodes_by_canonical_node.setdefault(canonical_node, []).append(node)
+        canonical_node = _canonical_particle_operation_node(node)
+        removal_candidates_by_canonical_node.setdefault(canonical_node, []).append(node)
         if least_recent_removable_node is None:
             least_recent_removable_node = node
-    if least_recent_removable_node is None:
-        return nodes_remaining_after_comparison
+    return removal_candidates_by_canonical_node, least_recent_removable_node
 
+
+def _dependency_targets_for_removal_traversal(
+    node: operation_graph_model.OperationNode,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode | None,
+) -> Iterable[operation_graph_model.OperationNode]:
+    replacement_depends_on_targets = None
+    if replacement_depends_on_targets_by_node is not None:
+        replacement_depends_on_targets = replacement_depends_on_targets_by_node.get(
+            node
+        )
+    if replacement_depends_on_targets is None:
+        return node.depends_on
+    return (
+        dependency
+        for dependency in replacement_depends_on_targets
+        if isinstance(dependency, operation_graph_model.OperationNode)
+    )
+
+
+def _find_reachable_removal_candidates[
+    DependencyNodeT: operation_graph_model.LastOperationNode
+](
+    nodes_remaining_after_comparison: Sequence[DependencyNodeT],
+    concrete_caller_nodes: Collection[operation_graph_model.ConcreteOperationNode],
+    removal_candidates_by_canonical_node: _RemovalCandidatesByCanonicalNode,
+    least_recent_removable_node: operation_graph_model.OperationNode,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode | None,
+) -> set[operation_graph_model.OperationNode]:
+    """Find removal candidates reached by another remaining or caller node."""
     nodes_to_visit: list[operation_graph_model.OperationNode] = list(
         concrete_caller_nodes
     )
@@ -145,32 +181,21 @@ def apply_move_correction_and_fill_dependency_removal[
         if node.operation_order <= least_recent_removable_node.operation_order:
             continue
         # A node cannot remove itself, so begin from the nodes it directly depends on.
-        replacement_depends_on_targets = None
-        if replacement_depends_on_targets_by_node is not None:
-            replacement_depends_on_targets = replacement_depends_on_targets_by_node.get(
-                node
+        nodes_to_visit.extend(
+            _dependency_targets_for_removal_traversal(
+                node,
+                replacement_depends_on_targets_by_node,
             )
-        if replacement_depends_on_targets is None:
-            nodes_to_visit.extend(node.depends_on)
-        else:
-            nodes_to_visit.extend(
-                dependency
-                for dependency in replacement_depends_on_targets
-                if isinstance(dependency, operation_graph_model.OperationNode)
-            )
+        )
     visited: set[operation_graph_model.OperationNode] = set()
     nodes_to_remove: set[operation_graph_model.OperationNode] = set()
-    while nodes_to_visit and removable_nodes_by_canonical_node:
+    while nodes_to_visit and removal_candidates_by_canonical_node:
         node = nodes_to_visit.pop()
         if node in visited:
             continue
         visited.add(node)
-        canonical_node = (
-            node.canonical_node_for_particle_operation
-            if isinstance(node, operation_graph_model.GuaranteeNode)
-            else node
-        )
-        matching_removal_targets = removable_nodes_by_canonical_node.pop(
+        canonical_node = _canonical_particle_operation_node(node)
+        matching_removal_targets = removal_candidates_by_canonical_node.pop(
             canonical_node,
             None,
         )
@@ -182,25 +207,91 @@ def apply_move_correction_and_fill_dependency_removal[
             continue
         # A removable node can depend on an earlier removable node, so the nodes it
         # depends on must participate in the same traversal.
-        replacement_depends_on_targets = None
-        if replacement_depends_on_targets_by_node is not None:
-            replacement_depends_on_targets = replacement_depends_on_targets_by_node.get(
-                node
+        nodes_to_visit.extend(
+            _dependency_targets_for_removal_traversal(
+                node,
+                replacement_depends_on_targets_by_node,
             )
-        if replacement_depends_on_targets is None:
-            nodes_to_visit.extend(node.depends_on)
-        else:
-            nodes_to_visit.extend(
-                dependency
-                for dependency in replacement_depends_on_targets
-                if isinstance(dependency, operation_graph_model.OperationNode)
-            )
+        )
+    return nodes_to_remove
 
+
+def _without_removed_nodes[DependencyNodeT: operation_graph_model.LastOperationNode](
+    nodes_remaining_after_comparison: Sequence[DependencyNodeT],
+    nodes_to_remove: set[operation_graph_model.OperationNode],
+) -> Sequence[DependencyNodeT]:
     if not nodes_to_remove:
         return nodes_remaining_after_comparison
     return [
         node for node in nodes_remaining_after_comparison if node not in nodes_to_remove
     ]
+
+
+def apply_move_correction_and_fill_dependency_removal[
+    DependencyNodeT: operation_graph_model.LastOperationNode
+](
+    nodes_remaining_after_comparison: Sequence[DependencyNodeT],
+    fill_dependency: DependencyNodeT | None,
+    concrete_caller_nodes: Collection[operation_graph_model.ConcreteOperationNode] = (),
+    *,
+    fill_dependency_is_also_empty_dependency: bool = False,
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode
+    | None = None,
+) -> Sequence[DependencyNodeT]:
+    """Apply the Empty Rule's Move Correction and the Move Rule's optional Fill Dependency removal.
+
+    ``nodes_remaining_after_comparison`` must be ordered from least to most recent.
+    """
+    # Removal requires both a removable node and another remaining node that
+    # depends on it. A concrete caller node can represent that other node across an
+    # action boundary; without one, fewer than two remaining nodes cannot qualify.
+    if not nodes_remaining_after_comparison or (
+        len(nodes_remaining_after_comparison) < 2 and not concrete_caller_nodes
+    ):
+        return nodes_remaining_after_comparison
+    (
+        removal_candidates_by_canonical_node,
+        least_recent_removable_node,
+    ) = _select_removal_candidates(
+        nodes_remaining_after_comparison,
+        fill_dependency,
+        fill_dependency_is_also_empty_dependency=(
+            fill_dependency_is_also_empty_dependency
+        ),
+        has_concrete_caller_nodes=bool(concrete_caller_nodes),
+    )
+    if least_recent_removable_node is None:
+        return nodes_remaining_after_comparison
+    nodes_to_remove = _find_reachable_removal_candidates(
+        nodes_remaining_after_comparison,
+        concrete_caller_nodes,
+        removal_candidates_by_canonical_node,
+        least_recent_removable_node,
+        replacement_depends_on_targets_by_node,
+    )
+
+    return _without_removed_nodes(nodes_remaining_after_comparison, nodes_to_remove)
+
+
+# Caller Collection application
+
+
+def _apply_comparison_to_caller_collection[
+    DependencyNodeT: operation_graph_model.LastOperationNode
+](
+    collected_nodes: set[DependencyNodeT],
+    callee_collected_operation_positions: Iterable[tuple[str, ...]],
+) -> tuple[list[DependencyNodeT], list[DependencyNodeT]]:
+    collected_nodes_most_recent_first = sorted(
+        collected_nodes,
+        key=lambda item: item.operation_order,
+        reverse=True,
+    )
+    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
+        collected_nodes_most_recent_first,
+        callee_collected_operation_positions,
+    )
+    return nodes_remaining_after_comparison, collected_nodes_most_recent_first
 
 
 def apply_empty_rule_to_caller_collection[
@@ -210,13 +301,7 @@ def apply_empty_rule_to_caller_collection[
     callee_collected_operation_positions: Iterable[tuple[str, ...]],
     concrete_caller_nodes: Collection[operation_graph_model.ConcreteOperationNode],
     *,
-    replacement_depends_on_targets_by_node: Mapping[
-        operation_graph_model.OperationNode,
-        Collection[
-            operation_graph_model.ConcreteOperationNode
-            | operation_graph_model.BindingHole
-        ],
-    ]
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode
     | None = None,
 ) -> tuple[list[DependencyNodeT], list[DependencyNodeT]]:
     """Apply the Empty Rule using Collection from one direct caller.
@@ -224,13 +309,11 @@ def apply_empty_rule_to_caller_collection[
     The first list is ordered least to most recent. The second contains every
     collected node from most to least recent.
     """
-    collected_nodes_most_recent_first = sorted(
-        collected_nodes,
-        key=lambda item: item.operation_order,
-        reverse=True,
-    )
-    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
+    (
+        nodes_remaining_after_comparison,
         collected_nodes_most_recent_first,
+    ) = _apply_comparison_to_caller_collection(
+        collected_nodes,
         callee_collected_operation_positions,
     )
     nodes_remaining_after_rule = typing.cast(
@@ -258,13 +341,7 @@ def apply_move_rule_to_caller_collection[
     ],
     *,
     fill_dependency_is_also_empty_dependency: bool,
-    replacement_depends_on_targets_by_node: Mapping[
-        operation_graph_model.OperationNode,
-        Collection[
-            operation_graph_model.ConcreteOperationNode
-            | operation_graph_model.BindingHole
-        ],
-    ],
+    replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode,
 ) -> tuple[list[DependencyNodeT], list[DependencyNodeT]]:
     """Apply the Move Rule using Collection from one direct caller.
 
@@ -274,13 +351,11 @@ def apply_move_rule_to_caller_collection[
     fill_dependency_was_collected = concrete_fill_dependency in collected_nodes
     if concrete_fill_dependency is not None:
         collected_nodes.add(concrete_fill_dependency)
-    collected_nodes_most_recent_first = sorted(
-        collected_nodes,
-        key=lambda item: item.operation_order,
-        reverse=True,
-    )
-    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
+    (
+        nodes_remaining_after_comparison,
         collected_nodes_most_recent_first,
+    ) = _apply_comparison_to_caller_collection(
+        collected_nodes,
         callee_collected_operation_positions,
     )
     nodes_remaining_after_rule = typing.cast(
@@ -301,63 +376,13 @@ def apply_move_rule_to_caller_collection[
     return nodes_remaining_after_rule, collected_nodes_most_recent_first
 
 
-def _apply_empty_rule_comparison_and_move_correction_most_recent_first[
-    DependencyNodeT: operation_graph_model.LastOperationNode
-](
-    collected_nodes: Iterable[DependencyNodeT],
-) -> list[DependencyNodeT]:
-    """Apply the Empty Rule's Comparison and Move Correction.
-
-    Requires collected nodes to already be sorted most recent to least recent.
-    """
-    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
-        collected_nodes
-    )
-    return typing.cast(
-        "list[DependencyNodeT]",
-        apply_move_correction_and_fill_dependency_removal(
-            nodes_remaining_after_comparison,
-            None,
-        ),
-    )
+# Child-operation path rules
 
 
-def _apply_full_move_rule_to_collected_empty_dependencies[
-    DependencyNodeT: operation_graph_model.LastOperationNode
-](
-    empty_dependencies: set[DependencyNodeT],
-    fill_dependency: DependencyNodeT | None,
-) -> list[DependencyNodeT]:
-    """Apply the Move Rule to collected Empty Dependencies."""
-    fill_dependency_is_also_empty_dependency = fill_dependency in empty_dependencies
-    if fill_dependency is not None:
-        empty_dependencies.add(fill_dependency)
-    nodes_remaining_after_comparison = apply_empty_rule_comparison(empty_dependencies)
-    return typing.cast(
-        "list[DependencyNodeT]",
-        apply_move_correction_and_fill_dependency_removal(
-            nodes_remaining_after_comparison,
-            fill_dependency,
-            fill_dependency_is_also_empty_dependency=(
-                fill_dependency_is_also_empty_dependency
-            ),
-        ),
-    )
-
-
-def _has_related_position(
-    positions: tuple[tuple[str, ...], ...],
-    other_positions: set[tuple[str, ...]],
-    other_position_prefixes: set[tuple[str, ...]],
-) -> bool:
-    """Return whether any position shares a parent-child path with another position."""
-    for position in positions:
-        if position in other_positions or position in other_position_prefixes:
-            return True
-        for depth in range(1, len(position)):
-            if position[:depth] in other_positions:
-                return True
-    return False
+def _shares_path(one: tuple[str, ...], other: tuple[str, ...]) -> bool:
+    """Return whether either child position is a prefix of the other."""
+    shared_depth = min(len(one), len(other))
+    return one[:shared_depth] == other[:shared_depth]
 
 
 def operations_not_on_same_paths_as(
@@ -384,6 +409,27 @@ def operations_not_on_same_paths_as(
     ]
 
 
+def _apply_empty_rule_comparison_and_move_correction_most_recent_first[
+    DependencyNodeT: operation_graph_model.LastOperationNode
+](
+    collected_nodes: Iterable[DependencyNodeT],
+) -> list[DependencyNodeT]:
+    """Apply the Empty Rule's Comparison and Move Correction.
+
+    Requires collected nodes to already be sorted most recent to least recent.
+    """
+    nodes_remaining_after_comparison = _apply_empty_rule_comparison_most_recent_first(
+        collected_nodes
+    )
+    return typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            None,
+        ),
+    )
+
+
 def empty_rule_dependencies_for(
     child_operations: operation_graph_model.ParticleChildOperations,
     relative_position: tuple[str, ...],
@@ -403,6 +449,32 @@ def empty_rule_dependencies_for(
         _apply_empty_rule_comparison_and_move_correction_most_recent_first(
             matching_operations,
         )
+    )
+
+
+# Local Empty and Move Rule dependency determination
+
+
+def _apply_full_move_rule_to_collected_empty_dependencies[
+    DependencyNodeT: operation_graph_model.LastOperationNode
+](
+    empty_dependencies: set[DependencyNodeT],
+    fill_dependency: DependencyNodeT | None,
+) -> list[DependencyNodeT]:
+    """Apply the Move Rule to collected Empty Dependencies."""
+    fill_dependency_is_also_empty_dependency = fill_dependency in empty_dependencies
+    if fill_dependency is not None:
+        empty_dependencies.add(fill_dependency)
+    nodes_remaining_after_comparison = apply_empty_rule_comparison(empty_dependencies)
+    return typing.cast(
+        "list[DependencyNodeT]",
+        apply_move_correction_and_fill_dependency_removal(
+            nodes_remaining_after_comparison,
+            fill_dependency,
+            fill_dependency_is_also_empty_dependency=(
+                fill_dependency_is_also_empty_dependency
+            ),
+        ),
     )
 
 
