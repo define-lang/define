@@ -1,15 +1,20 @@
 ---
 name: profile-compiler
 description: >-
-  Profile and investigate Define compiler wall and CPU performance using the
-  repository profiling tools and generated stress workloads. Use for compiler
-  profiling, benchmarks, bottlenecks, critical paths, optimization targets, or
-  questions about where compilation time goes in define/compiler.
+  Run and report Define compiler wall or CPU profiles using the repository
+  profiling tools and generated stress workloads. Use only when the user
+  explicitly instructs the agent to run or capture a compiler profile, including
+  a bare invocation of this skill.
 ---
 
 # Profile the Define compiler
 
 Measure and explain; do not optimize unless asked.
+
+When invoked without any additional instructions, immediately run a general wall
+profile: generate every workload below at its default settings, capture and
+analyze each profile, and report the results. Do not ask what to profile. Treat
+any explicit user instructions as overriding this default.
 
 Use fresh inputs from `tools/generators/`:
 
