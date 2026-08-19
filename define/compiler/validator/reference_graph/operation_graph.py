@@ -1107,9 +1107,6 @@ class OperationGraph:
             caller_binding_holes=empty_rule_binding_inputs.caller_binding_holes,
         )
         return operation_graph_model.EmptyRuleApplicationResult(
-            # TODO: Remove this cast when EmptyRuleApplicationResult is split into
-            # complete and continuing variants. The continuing variant can type
-            # caller_nodes as list[ConcreteOperationNode].
             typing.cast(
                 "list[operation_graph_model.LastOperationNode]",
                 caller_nodes_for_next_substitution,
@@ -1387,38 +1384,42 @@ class OperationGraph:
         # improvement, so it was rejected.
         nodes: dict[tuple[str, ...], operation_graph_model.GuaranteeNode] = {}
         canonical_node_by_move_positions: dict[
-            tuple[tuple[str, ...], ...], operation_graph_model.GuaranteeNode
+            tuple[tuple[str, ...], ...], operation_graph_model.MoveGuaranteeNode
         ] = {}
         for caller_position, operation_positions_in_guarantee in guaranteed_positions:
             operation_positions = tuple(
                 ast.chain_in_caller(guarantee_action_chain, operation_position)
                 for operation_position in operation_positions_in_guarantee
             )
-            particle_operation_is_move = len(operation_positions) == 2
-            canonical_node_for_particle_operation = None
-            if particle_operation_is_move:
-                canonical_node_for_particle_operation = (
-                    canonical_node_by_move_positions.get(operation_positions)
+            if len(operation_positions) == 2:
+                canonical_move_guarantee = canonical_node_by_move_positions.get(
+                    operation_positions
                 )
-            node = operation_graph_model.GuaranteeNode(
-                node_id=len(self._nodes),
-                execution=execution,
-                nested_executions=nested_executions,
-                guaranteed_position=ast.chain_in_callee(
-                    operation_graph_action_chain, caller_position
-                ),
-                depends_on=(execution.trigger_operation,),
-                operation_positions=operation_positions,
-                _canonical_node_for_particle_operation=(
-                    canonical_node_for_particle_operation
-                ),
-            )
+                node = operation_graph_model.MoveGuaranteeNode(
+                    node_id=len(self._nodes),
+                    execution=execution,
+                    nested_executions=nested_executions,
+                    guaranteed_position=ast.chain_in_callee(
+                        operation_graph_action_chain, caller_position
+                    ),
+                    depends_on=(execution.trigger_operation,),
+                    operation_positions=operation_positions,
+                    canonical_move_guarantee=canonical_move_guarantee,
+                )
+                if canonical_move_guarantee is None:
+                    canonical_node_by_move_positions[operation_positions] = node
+            else:
+                node = operation_graph_model.GuaranteeNode(
+                    node_id=len(self._nodes),
+                    execution=execution,
+                    nested_executions=nested_executions,
+                    guaranteed_position=ast.chain_in_callee(
+                        operation_graph_action_chain, caller_position
+                    ),
+                    depends_on=(execution.trigger_operation,),
+                    operation_positions=operation_positions,
+                )
             self._nodes.append(node)
-            if (
-                particle_operation_is_move
-                and canonical_node_for_particle_operation is None
-            ):
-                canonical_node_by_move_positions[operation_positions] = node
             self._set_last_operation(caller_position, node)
             nodes[caller_position] = node
         return nodes

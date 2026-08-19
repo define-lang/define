@@ -180,9 +180,7 @@ def apply_move_correction_and_fill_dependency_removal[
         )
         if (
             not isinstance(node, MoveNode)
-            and not (
-                isinstance(node, GuaranteeNode) and node.guaranteed_operation_is_move
-            )
+            and not isinstance(node, MoveGuaranteeNode)
             and not is_fill_dependency_removal_target
         ):
             continue
@@ -739,11 +737,6 @@ class _EmptyOrMoveRuleResult:
 class EmptyRuleApplicationResult:
     """The result of binding an Empty Rule Binding Hole in one caller."""
 
-    # TODO: Move empty_rule_binding_hole to a subclass where it is non-optional.
-    # The base class should retain caller_nodes because every application produces
-    # them; a base instance means binding is complete, while the subclass means one
-    # caller supplied concrete nodes and binding must continue through an earlier
-    # caller.
     caller_nodes: list[LastOperationNode]
     empty_rule_binding_hole: EmptyRuleBindingHole | None
 
@@ -1191,26 +1184,30 @@ class GuaranteeNode(OperationNode):
     guaranteed_position: tuple[str, ...]
     # Every caller position operated on by the guaranteed Particle Operation.
     operation_positions: tuple[tuple[str, ...], ...]
-    # TODO: Introduce MoveGuaranteeNode as a GuaranteeNode subclass and keep this
-    # relationship only on it. In a valid Operation Graph, only a Move can make
-    # Guarantee Nodes for multiple positions represent one Particle Operation.
-    _canonical_node_for_particle_operation: GuaranteeNode | None = field(repr=False)
 
     @property
     def canonical_node_for_particle_operation(self) -> GuaranteeNode:
-        """Return the shared representative for the guaranteed Particle Operation."""
-        return self._canonical_node_for_particle_operation or self
-
-    @property
-    def guaranteed_operation_is_move(self) -> bool:
-        """Return whether this node's guaranteed Particle Operation is a Move."""
-        return len(self.operation_positions) == 2
+        """Return this node as the guaranteed Particle Operation's representative."""
+        return self
 
     @property
     @typing.override
     def operated_positions(self) -> tuple[tuple[str, ...], ...]:
         """Every position operated on by this node."""
         return self.operation_positions
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class MoveGuaranteeNode(GuaranteeNode):
+    """One position operated on by a guaranteed Move Particle Statement."""
+
+    canonical_move_guarantee: MoveGuaranteeNode | None = field(repr=False)
+
+    @property
+    @typing.override
+    def canonical_node_for_particle_operation(self) -> MoveGuaranteeNode:
+        """Return the shared representative for the guaranteed Move."""
+        return self.canonical_move_guarantee or self
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
