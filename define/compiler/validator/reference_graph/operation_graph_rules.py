@@ -8,18 +8,29 @@ from define.compiler.validator.reference_graph import operation_graph_model
 # Empty Rule Comparison
 
 
+def _shares_path_with_any(
+    position: tuple[str, ...],
+    other_positions: Collection[tuple[str, ...]],
+    other_position_prefixes: Collection[tuple[str, ...]],
+) -> bool:
+    if position in other_positions or position in other_position_prefixes:
+        return True
+    return any(position[:depth] in other_positions for depth in range(1, len(position)))
+
+
 def _has_related_position(
     positions: tuple[tuple[str, ...], ...],
-    other_positions: set[tuple[str, ...]],
-    other_position_prefixes: set[tuple[str, ...]],
+    other_positions: Collection[tuple[str, ...]],
+    other_position_prefixes: Collection[tuple[str, ...]],
 ) -> bool:
     """Return whether any position shares a parent-child path with another position."""
     for position in positions:
-        if position in other_positions or position in other_position_prefixes:
+        if _shares_path_with_any(
+            position,
+            other_positions,
+            other_position_prefixes,
+        ):
             return True
-        for depth in range(1, len(position)):
-            if position[:depth] in other_positions:
-                return True
     return False
 
 
@@ -392,11 +403,19 @@ def operations_not_on_same_paths_as(
     """Return surviving operations independent of the supplied paths."""
     if not relative_positions:
         return list(child_operations.operations)
+    if () in relative_positions:
+        return []
+    relative_position_prefixes: set[tuple[str, ...]] = set()
+    for position in relative_positions:
+        relative_position_prefixes.update(
+            position[:depth] for depth in range(1, len(position))
+        )
     excluded_operations: set[operation_graph_model.ConcreteOperationNode] = set()
     for child_operation in child_operations.operations:
-        shares_dependency_path = any(
-            _shares_path(child_operation.child_position, dependency)
-            for dependency in relative_positions
+        shares_dependency_path = _shares_path_with_any(
+            child_operation.child_position,
+            relative_positions,
+            relative_position_prefixes,
         )
         if shares_dependency_path:
             excluded_operations.add(child_operation.operation)

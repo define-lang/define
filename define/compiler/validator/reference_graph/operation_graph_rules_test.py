@@ -66,13 +66,32 @@ def test_excludes_operations_on_the_same_paths():
             (
                 (("position<a>",), _operation_node(2)),
                 (("position<b>",), _operation_node(3)),
+                (("position<c>",), _operation_node(4)),
             )
         )
     )
 
     assert operation_graph_rules.operations_not_on_same_paths_as(
-        child_operations, frozenset({("position<a>", "position<deep>")})
-    ) == [operation_graph_model.ChildOperation(("position<b>",), _operation_node(3))]
+        child_operations,
+        frozenset(
+            {
+                ("position<a>", "position<deep>"),
+                ("position<d>",),
+                ("position<e>",),
+                ("position<f>",),
+                ("position<g>",),
+            }
+        ),
+    ) == [
+        operation_graph_model.ChildOperation(("position<c>",), _operation_node(4)),
+        operation_graph_model.ChildOperation(("position<b>",), _operation_node(3)),
+    ]
+    assert (
+        operation_graph_rules.operations_not_on_same_paths_as(
+            child_operations, frozenset({()})
+        )
+        == []
+    )
 
 
 def test_excludes_one_operation_known_on_multiple_positions():
@@ -91,7 +110,7 @@ def test_excludes_one_operation_known_on_multiple_positions():
     ) == [operation_graph_model.ChildOperation(("position<c>",), remaining_operation)]
 
 
-def test_path_exclusion_scales_to_wide_particles():
+def test_path_exclusion_scales_to_wide_child_and_relative_position_sets():
     child_count = 10_000
     child_operations = (
         operation_graph_model.ParticleChildOperations.from_preceding_operations(
@@ -101,7 +120,8 @@ def test_path_exclusion_scales_to_wide_particles():
     )
 
     operations = operation_graph_rules.operations_not_on_same_paths_as(
-        child_operations, frozenset()
+        child_operations,
+        frozenset((f"position<other{index}>",) for index in range(child_count)),
     )
 
     assert len(operations) == child_count
