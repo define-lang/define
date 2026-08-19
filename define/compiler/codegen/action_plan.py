@@ -248,8 +248,11 @@ class _FragmentTopologyBuilder:
         local_successors: dict[
             operation_graph_model.PositionOperationNode,
             list[operation_graph_model.PositionOperationNode],
-        ] = {operation: [] for operation in self._resolved_action.particle_operations}
-        for operation in self._resolved_action.particle_operations:
+        ] = {
+            operation: []
+            for operation in self._resolved_action.graph.particle_operations
+        }
+        for operation in self._resolved_action.graph.particle_operations:
             for predecessor in self._resolved_action.local_operations_depended_on_by(
                 operation
             ):
@@ -271,7 +274,7 @@ class _FragmentTopologyBuilder:
         ],
     ) -> list[ActionFragment]:
         fragments: list[ActionFragment] = []
-        for head in self._resolved_action.particle_operations:
+        for head in self._resolved_action.graph.particle_operations:
             if self._can_follow_predecessor(head, local_successors):
                 continue
             chain = [head]
@@ -514,7 +517,7 @@ class _ActionPlanBuilder:
                 callee_binding_join_by_callee_binding[callee_binding] = (
                     callee_binding_join
                 )
-        for operation in self._resolved_action.particle_operations:
+        for operation in self._resolved_action.graph.particle_operations:
             fragment = fragment_for_operation[operation]
             for callee_binding in self._resolved_action.callee_bindings_depending_on(
                 operation
@@ -633,7 +636,7 @@ class _ActionPlanBuilder:
             binding_hole_fanout.binding_hole: binding_hole_fanout
             for binding_hole_fanout in binding_hole_fanouts
         }
-        for operation in self._resolved_action.particle_operations:
+        for operation in self._resolved_action.graph.particle_operations:
             fragment = fragment_for_operation[operation]
             for binding_hole in self._resolved_action.binding_holes_depended_on_by(
                 operation

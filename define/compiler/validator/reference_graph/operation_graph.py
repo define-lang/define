@@ -140,6 +140,15 @@ class OperationGraph:
         """Every node, in creation order."""
         return self._nodes
 
+    @property
+    def particle_operations(
+        self,
+    ) -> Iterable[operation_graph_model.PositionOperationNode]:
+        """Iterate over every Particle Operation in creation order."""
+        for node in self._nodes:
+            if isinstance(node, operation_graph_model.PositionOperationNode):
+                yield node
+
     def last_operation_on_position(
         self, key: tuple[str, ...]
     ) -> (

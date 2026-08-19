@@ -93,9 +93,8 @@ class ResolvedOperationGraphBuilder:
         while work:
             caller_execution = work.pop()
             resolved_action = self._resolved_actions[caller_execution.action]
-            for node in resolved_action.graph.nodes:
-                if isinstance(node, operation_graph_model.PositionOperationNode):
-                    operation_keys.append((caller_execution, node))
+            for operation in resolved_action.graph.particle_operations:
+                operation_keys.append((caller_execution, operation))
 
             callees: list[ActionExecution] = []
             for resolved_execution in resolved_action.action_executions:

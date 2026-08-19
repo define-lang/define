@@ -81,8 +81,8 @@ def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():
     (binding_hole,) = resolved.binding_holes.in_binding_order
     assert binding_hole is graph.nodes[0]
     assert resolved.binding_holes_depended_on_by(create) == [binding_hole]
-    assert resolved.local_operations_depended_on_by(destroy) == [create]
-    assert resolved.guarantee_dependencies_for(destroy) == []
+    assert tuple(resolved.local_operations_depended_on_by(destroy)) == (create,)
+    assert not resolved.guarantee_dependencies_for(destroy)
 
 
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
@@ -178,5 +178,5 @@ def test_requirement_binding_hole_fires_destructor():
     assert destructor_execution.destructor_trigger_requirement is binding_hole
     assert all(
         not resolved.action_executions_triggered_by(operation)
-        for operation in resolved.particle_operations
+        for operation in resolved.graph.particle_operations
     )
