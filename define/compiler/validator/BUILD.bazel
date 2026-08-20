@@ -26,7 +26,10 @@ py_library(
     testonly = True,
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [":validation_result"],
+    deps = [
+        ":validation_result",
+        "//define/compiler:diagnostics",
+    ],
 )
 
 py_library(

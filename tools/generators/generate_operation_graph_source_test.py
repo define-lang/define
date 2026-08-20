@@ -210,7 +210,7 @@ class TestFullDriver:
             + "\n"
         )
 
-        result = driver.Driver().validate_source(source).result
+        result = driver.Driver().validate_source(source).program_validation
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []

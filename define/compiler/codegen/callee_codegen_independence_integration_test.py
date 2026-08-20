@@ -117,7 +117,7 @@ def test_adding_a_caller_does_not_change_generated_callees(
     monkeypatch.chdir(project)
     generated = tmp_path / "generated"
     result = driver.Driver().compile_program(Path("test.dfn"), generated)
-    assert_no_errors(result.result)
+    assert_no_errors(result)
 
     expected_files = {
         path.relative_to(baseline_expected)

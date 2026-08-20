@@ -132,6 +132,7 @@ py_library(
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":ast",
         ":constants",
         ":diagnostics",
         ":exceptions",
@@ -293,7 +294,11 @@ py_library(
     name = "overall_stats",
     srcs = ["overall_stats.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["//define/compiler/validator:validation_result"],
+    deps = [
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:validation_result",
+    ],
 )
 
 py_test(

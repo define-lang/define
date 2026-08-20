@@ -84,5 +84,5 @@ class TestFullDriver:
 
         result = driver.Driver().validate_source(source)
 
-        assert result.result.all_exceptions == []
-        assert result.result.all_diagnostics == []
+        assert result.program_validation.all_exceptions == []
+        assert result.program_validation.all_diagnostics == []

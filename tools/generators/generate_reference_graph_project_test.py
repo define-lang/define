@@ -108,7 +108,7 @@ class TestGeneratedProjectCompiles:
         monkeypatch.chdir(tmp_path)
 
         output_dir = tmp_path / "generated"
-        result = driver.Driver().compile_program(Path("test.dfn"), output_dir).result
+        result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []

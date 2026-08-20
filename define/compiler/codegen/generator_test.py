@@ -20,7 +20,7 @@ def _generate(
     entry_action = program_result.entry_action
     assert entry_action is not None
     generator.CodeGenerator().generate(
-        program_result.reference_graph,
+        list(program_result.reference_graph.dfs_postorder_from(entry_action)),
         reference_graph_result.operation_graphs,
         entry_action,
         tmp_path,

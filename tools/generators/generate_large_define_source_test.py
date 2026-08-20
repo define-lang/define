@@ -130,7 +130,7 @@ class TestFullDriver:
     def test_generated_source_passes_full_validation(self):
         source = "\n".join(gen.generate_source_lines(500, max_chain_length=10)) + "\n"
 
-        result = driver.Driver().validate_source(source).result
+        result = driver.Driver().validate_source(source).program_validation
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []

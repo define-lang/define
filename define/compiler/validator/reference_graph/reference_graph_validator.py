@@ -190,6 +190,7 @@ class _ValidatorWorkPool:
 class ReferenceGraphValidationResult:
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
+    definitions: list[ast.QualityDefinition]
     action_call_graph: action_call_graph.ActionCallGraph
     # The DLP 44 operation dependency graph of every action.
     operation_graphs: operation_graph.OperationGraphs
@@ -229,7 +230,7 @@ class ReferenceGraphValidator:
     def validate(
         self, max_workers: int | None = None
     ) -> ReferenceGraphValidationResult:
-        """Run analysis for all definitions in a depth-first-search, post-order."""
+        """Validate every definition in direct-reference-first order."""
         definitions = list(self._reference_graph.dfs_postorder_all())
         with _ValidatorWorkPool(self._validate_action, max_workers=max_workers) as pool:
             for definition in definitions:
@@ -252,6 +253,7 @@ class ReferenceGraphValidator:
                 call_graph.add_edge(edge.source, edge.target)
             operation_graphs[definition.typed_name] = result.operation_graph
         return ReferenceGraphValidationResult(
+            definitions=definitions,
             action_call_graph=call_graph,
             operation_graphs=operation_graphs,
         )

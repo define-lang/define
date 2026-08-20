@@ -64,7 +64,6 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler/codegen/literal/python:generator",
-        "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )

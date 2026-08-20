@@ -3,11 +3,21 @@
 
 from pathlib import Path
 from pprint import pformat
+from typing import Protocol
 
+from define.compiler import diagnostics
 from define.compiler.validator import validation_result
 
 
-def assert_no_errors(result: validation_result.ProgramValidationResult) -> None:
+class _ValidationErrors(Protocol):
+    @property
+    def all_exceptions(self) -> list[validation_result.AnyValidationException]: ...
+
+    @property
+    def all_diagnostics(self) -> list[diagnostics.Diagnostic]: ...
+
+
+def assert_no_errors(result: _ValidationErrors) -> None:
     """Assert that a validation result has no exceptions or diagnostics."""
     __tracebackhide__ = True
     exceptions = result.all_exceptions

@@ -114,7 +114,10 @@ def _format(
     mode: overall_stats.StatsMode,
 ) -> str:
     stats = overall_stats.calculate_overall_stats(results, config_loading_time_ns)
-    return overall_stats.format_stats(stats, results, mode)
+    timings = [
+        overall_stats.FileTiming(result.file_path, result.stats) for result in results
+    ]
+    return overall_stats.format_stats(stats, timings, mode)
 
 
 class TestFormatStatsOverall:

@@ -44,11 +44,11 @@ def _regenerate_case(
             expected_dir,
             trace_operations=trace_operations,
         )
-        if result.result.has_errors():
+        if result.has_errors():
             print(f"  {case_dir.relative_to(display_root)}: FAILED")
-            for exc in result.result.all_exceptions:
+            for exc in result.all_exceptions:
                 print(f"    {exc}")
-            for diag in result.result.all_diagnostics:
+            for diag in result.all_diagnostics:
                 print(f"    {diag}")
             return False, ""
     runtime_result = generated_program_runner.run_generated_program(

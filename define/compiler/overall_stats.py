@@ -9,7 +9,17 @@ from dataclasses import dataclass
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from define.compiler.data_structures import define_path
+    from define.compiler.validator import stats as validation_stats
     from define.compiler.validator import validation_result
+
+
+@dataclass(frozen=True, slots=True)
+class FileTiming:
+    """The validation timing retained for one compiled file."""
+
+    file_path: define_path.DefinePath
+    stats: validation_stats.ValidationTimingStats
 
 
 class StatsMode(enum.StrEnum):
@@ -49,8 +59,7 @@ def calculate_overall_stats(
         s.file_validation += fs.file_validation
         s.global_validation += fs.global_validation
         total_queue_wait += fs.queue_wait
-        if fs.queue_wait > s.max_queue_wait:
-            s.max_queue_wait = fs.queue_wait
+        s.max_queue_wait = max(s.max_queue_wait, fs.queue_wait)
 
     s.file_count = len(results)
     s.avg_queue_wait = total_queue_wait // s.file_count if s.file_count > 0 else 0
@@ -107,7 +116,7 @@ def _format_breakdown_section(stats: OverallStats) -> str:
 
 
 def _format_per_file_section(
-    results: Sequence[validation_result.FileValidationResult],
+    results: Sequence[FileTiming],
 ) -> str:
     """Format the Per File section, sorted slowest first."""
     sorted_results = sorted(
@@ -133,7 +142,7 @@ def _format_per_file_section(
 
 def format_stats(
     stats: OverallStats,
-    results: Sequence[validation_result.FileValidationResult],
+    results: Sequence[FileTiming],
     mode: StatsMode,
 ) -> str:
     """Format timing stats for the given mode."""

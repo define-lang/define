@@ -68,14 +68,14 @@ _CONCURRENT_RUNTIME_TEST_CASES = [
 ]
 
 
-def _compile(generated_dir: Path) -> driver.DriverResult:
+def _compile(generated_dir: Path) -> driver.CompilationResult:
     generated_dir.mkdir()
     result = driver.Driver().compile_program(
         Path("test.dfn"),
         generated_dir,
         trace_operations=True,
     )
-    assert_no_errors(result.result)
+    assert_no_errors(result)
     test_helpers.assert_generated_directory_matches(
         Path("expected_trace"),
         generated_dir,
@@ -101,7 +101,7 @@ def _trace(
 
 def _assert_trace_respects_resolved_operation_dependencies(
     trace: list[tracing.OperationTraceRecord],
-    result: driver.DriverResult,
+    result: driver.CompilerValidationResult | driver.CompilationResult,
 ):
     # TODO: Derive the generated runtime's operation partial order independently
     # from the Action Plan, including Action Fragment joins, Binding Hole Fanouts,
@@ -111,7 +111,10 @@ def _assert_trace_respects_resolved_operation_dependencies(
     # Resolver's closure. Checking one observed trace only proves that execution
     # respected the resolver; it cannot detect extra serialization, and scheduling
     # can conceal a missing generated dependency.
-    entry_action = result.result.entry_action
+    if isinstance(result, driver.CompilationResult):
+        entry_action = result.entry_action
+    else:
+        entry_action = result.program_validation.entry_action
     assert entry_action is not None
     resolved_dependencies = trace_analysis.resolved_operation_dependencies(
         result.operation_graphs,
@@ -154,7 +157,7 @@ def test_generated_operation_trace_matches_operation_graph_renderer_ordering(
 ):
     monkeypatch.chdir(test_case_dir.resolve())
     result = driver.Driver().validate_program(Path("test.dfn"))
-    assert_no_errors(result.result)
+    assert_no_errors(result.program_validation)
     trace = trace_analysis.read_operation_trace(Path("operation_trace.json"))
     _assert_trace_respects_resolved_operation_dependencies(trace, result)
 

@@ -31,9 +31,6 @@ class ParticleStatementValidity:
     from_is_prefix_of_to: bool = False
 
 
-# TODO: We should probably have a more minimal output from the reference
-# graph validator that provides codegen only what it needs (instead of
-# modifying this data structure).
 @dataclass
 class DefinitionValidationResult:
     """Validation output for one definition within a file."""

@@ -46,10 +46,10 @@ class TestPathFormats:
 
         d = driver.Driver(_PARSER)
         driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.dfn")))
-        assert len(driver_result.result.file_results) == 1
-        result = driver_result.result.file_results[0]
+        assert len(driver_result.program_validation.file_results) == 1
+        result = driver_result.program_validation.file_results[0]
 
-        assert_no_errors(driver_result.result)
+        assert_no_errors(driver_result.program_validation)
         assert str(result.file_path) == "sub/test.dfn"
 
 
@@ -66,11 +66,11 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver(_PARSER).validate_program(source_file)
-        assert len(driver_result.result.file_results) == 1
-        assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
-            "hello.dfn"
-        )
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert driver_result.program_validation.file_results[
+            0
+        ].file_path == define_path.DefinePath("hello.dfn")
 
     def test_absolute_path_outside_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -105,11 +105,11 @@ class TestPathResolution:
         driver_result = driver.Driver(_PARSER).validate_program(
             Path("sub/../hello.dfn")
         )
-        assert len(driver_result.result.file_results) == 1
-        assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
-            "hello.dfn"
-        )
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert driver_result.program_validation.file_results[
+            0
+        ].file_path == define_path.DefinePath("hello.dfn")
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -128,11 +128,11 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.dfn"))
-        assert len(driver_result.result.file_results) == 1
-        assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
-            "link/hello.dfn"
-        )
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert driver_result.program_validation.file_results[
+            0
+        ].file_path == define_path.DefinePath("link/hello.dfn")
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -167,11 +167,11 @@ class TestPathResolution:
         driver_result = driver.Driver(_PARSER).validate_program(
             Path("link/../hello.dfn")
         )
-        assert len(driver_result.result.file_results) == 1
-        assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
-            "real/hello.dfn"
-        )
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert driver_result.program_validation.file_results[
+            0
+        ].file_path == define_path.DefinePath("real/hello.dfn")
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -209,7 +209,10 @@ class TestSourceValidation:
             max_workers: int | None = None,
         ) -> reference_graph_validator.ReferenceGraphValidationResult:
             assert max_workers == 3
-            return reference_graph_validate(validator, max_workers=max_workers)
+            return reference_graph_validate(
+                validator,
+                max_workers=max_workers,
+            )
 
         with (
             mock.patch.object(
@@ -229,14 +232,17 @@ class TestSourceValidation:
                 source, max_threads=3
             )
 
-        assert_no_errors(driver_result.result)
+        assert_no_errors(driver_result.program_validation)
 
     def test_clean_source_validates_with_no_errors(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver(_PARSER).validate_source(source)
-        assert len(driver_result.result.file_results) == 1
-        assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].source_lines == source.splitlines()
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert (
+            driver_result.program_validation.file_results[0].source_lines
+            == source.splitlines()
+        )
 
     def test_duplicate_definition_reports_diagnostic(self):
         source = (
@@ -244,8 +250,8 @@ class TestSourceValidation:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         driver_result = driver.Driver(_PARSER).validate_source(source)
-        assert driver_result.result.all_exceptions == []
-        all_diagnostics = driver_result.result.all_diagnostics
+        assert driver_result.program_validation.all_exceptions == []
+        all_diagnostics = driver_result.program_validation.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
         assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
@@ -269,7 +275,7 @@ class TestSourceCompilation:
             "}\n"
         )
         driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
-        assert_no_errors(driver_result.result)
+        assert_no_errors(driver_result)
         main_file = tmp_path / "__main__.py"
         assert main_file.exists()
         assert main_file.stat().st_size > 0
@@ -277,8 +283,8 @@ class TestSourceCompilation:
     def test_position_entry_point_reports_diagnostic(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
-        assert driver_result.result.all_exceptions == []
-        all_diagnostics = driver_result.result.all_diagnostics
+        assert driver_result.all_exceptions == []
+        all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
         assert isinstance(diagnostic, diagnostics.EntryPointNotConstructorDiagnostic)
@@ -300,8 +306,8 @@ class TestSourceCompilation:
             "}\n"
         )
         driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
-        assert driver_result.result.all_exceptions == []
-        all_diagnostics = driver_result.result.all_diagnostics
+        assert driver_result.all_exceptions == []
+        all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
         assert isinstance(diagnostic, diagnostics.EntryPointNotConstructorDiagnostic)

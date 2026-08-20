@@ -50,7 +50,7 @@ def test_generates_expected_output(
     output_dir = Path(tempfile.mkdtemp())
     result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
 
-    assert_no_errors(result.result)
+    assert_no_errors(result)
     test_helpers.assert_generated_directory_matches(expected_dir, output_dir)
 
 

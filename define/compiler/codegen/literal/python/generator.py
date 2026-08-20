@@ -1,6 +1,7 @@
 """Python literal code generator for the Define compiler."""
 
 import typing
+from collections.abc import Sequence
 from pathlib import Path
 
 import jinja2
@@ -16,7 +17,6 @@ from define.compiler.codegen.literal.python import (
     template_env,
 )
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.graphs import reference_graph
 from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_labeler,
@@ -44,7 +44,7 @@ class PythonLiteralCodeGenerator:
 
     def generate(
         self,
-        graph: reference_graph.ReferenceGraph,
+        definitions: Sequence[ast.QualityDefinition],
         operation_graphs: operation_graph.OperationGraphs,
         entry_point: ast.ActionDefinition,
         output_dir: Path,
@@ -64,7 +64,7 @@ class PythonLiteralCodeGenerator:
         generated_actions = typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, action_context.GeneratedAction
         ]()
-        for definition in graph.dfs_postorder_from(entry_point):
+        for definition in definitions:
             if isinstance(definition, ast.ActionDefinition):
                 if definition.typed_name == entry_point.typed_name:
                     role = action_context.ActionRole.ENTRY_POINT

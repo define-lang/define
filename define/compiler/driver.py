@@ -8,13 +8,17 @@ as the interface that translates our internal error objects into
 actual error strings.
 """
 
+import abc
+import collections.abc
 import enum
 import sys
+import typing
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TextIO
 
 from define.compiler import (
+    ast,
     constants,
     diagnostics,
     exceptions,
@@ -44,13 +48,112 @@ class ExitCode(enum.IntEnum):
     ERROR = 1
 
 
-@dataclass
-class DriverResult:
-    """Full result of a compilation run."""
+def _error_strings(
+    file_results: list[validation_result.FileValidationResult],
+) -> list[str]:
+    """Format every exception and diagnostic for the command-line caller."""
+    error_strings: list[str] = []
+    for result in file_results:
+        if result.exception is not None:
+            error_strings.append(str(result.exception))
+        if result.diagnostics:
+            if result.source_lines is None:
+                raise ValueError(
+                    "result.source_lines must be set when there are diagnostics"
+                )
+            for diagnostic in result.diagnostics:
+                error_strings.append(diagnostic.format(result.source_lines))
+    return error_strings
 
-    result: validation_result.ProgramValidationResult
+
+class CompilerResult(abc.ABC):
+    """A compiler result that can report errors and validation timings."""
+
     overall_stats: overall_stats.OverallStats
     operation_graphs: operation_graph.OperationGraphs
+
+    @abc.abstractmethod
+    def error_strings(self) -> list[str]:
+        """Format errors for the command-line caller."""
+
+    @abc.abstractmethod
+    def file_timing_results(
+        self,
+    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
+        """Provide the retained per-file validation timings."""
+
+
+@dataclass
+class CompilerValidationResult(CompilerResult):
+    """Result of completing every compiler validation stage."""
+
+    program_validation: validation_result.ProgramValidationResult
+    definitions: list[ast.QualityDefinition]
+    overall_stats: overall_stats.OverallStats
+    operation_graphs: operation_graph.OperationGraphs
+
+    @typing.override
+    def error_strings(self) -> list[str]:
+        """Format errors from the detailed program validation data."""
+        return _error_strings(self.program_validation.file_results)
+
+    @typing.override
+    def file_timing_results(
+        self,
+    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
+        """Provide the per-file validation timings."""
+        return [
+            overall_stats.FileTiming(result.file_path, result.stats)
+            for result in self.program_validation.file_results
+        ]
+
+
+@dataclass(frozen=True, slots=True)
+class CompilationResult(CompilerResult):
+    """Caller-facing result retained after compilation."""
+
+    all_diagnostics: list[diagnostics.Diagnostic]
+    all_exceptions: list[validation_result.AnyValidationException]
+    entry_action: ast.ActionDefinition | None
+    _error_strings: list[str]
+    file_timings: list[overall_stats.FileTiming]
+    overall_stats: overall_stats.OverallStats
+    operation_graphs: operation_graph.OperationGraphs
+
+    @classmethod
+    def from_validation_result(
+        cls, validation: CompilerValidationResult
+    ) -> typing.Self:
+        """Create the compact result retained after compilation."""
+        program_validation = validation.program_validation
+        return cls(
+            all_diagnostics=program_validation.all_diagnostics,
+            all_exceptions=program_validation.all_exceptions,
+            entry_action=program_validation.entry_action,
+            _error_strings=_error_strings(program_validation.file_results),
+            file_timings=[
+                overall_stats.FileTiming(file_result.file_path, file_result.stats)
+                for file_result in program_validation.file_results
+            ],
+            overall_stats=validation.overall_stats,
+            operation_graphs=validation.operation_graphs,
+        )
+
+    def has_errors(self) -> bool:
+        """Whether validation produced exceptions or diagnostics."""
+        return bool(self.all_exceptions or self.all_diagnostics)
+
+    @typing.override
+    def error_strings(self) -> list[str]:
+        """Return errors formatted before detailed validation data was released."""
+        return self._error_strings
+
+    @typing.override
+    def file_timing_results(
+        self,
+    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
+        """Provide the retained per-file validation timings."""
+        return self.file_timings
 
 
 class Driver:
@@ -67,42 +170,41 @@ class Driver:
 
     def validate_program(
         self, path: Path, *, max_threads: int | None = None
-    ) -> DriverResult:
+    ) -> CompilerValidationResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         pv = program_validator.ProgramStructuralValidator(self._parser_instance)
-        return self._assemble_result(
+        return self._complete_validation(
             pv.validate_program(path=resolved_path, max_workers=max_threads),
             max_threads=max_threads,
         )
 
     def validate_source(
         self, source: str, *, max_threads: int | None = None
-    ) -> DriverResult:
+    ) -> CompilerValidationResult:
         """Validate source text in non-filesystem mode."""
         pv = program_validator.ProgramStructuralValidator(self._parser_instance)
-        return self._assemble_result(
+        return self._complete_validation(
             pv.validate_program_non_filesystem(source, max_workers=max_threads),
             max_threads=max_threads,
         )
 
-    def _assemble_result(
+    def _complete_validation(
         self,
         program_result: validation_result.ProgramValidationResult,
         *,
         max_threads: int | None = None,
-    ) -> DriverResult:
-        """Run reference-graph validation and wrap the program result."""
+    ) -> CompilerValidationResult:
+        """Run reference graph validation and produce the compiler result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
         reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
             program_result.reference_graph,
             program_result.definition_results,
         ).validate(max_workers=max_threads)
-        # TODO: Retain only the validation data needed after this point so the
-        # remaining compiler state can be released before code generation.
-        return DriverResult(
-            result=program_result,
+        return CompilerValidationResult(
+            program_validation=program_result,
+            definitions=reference_graph_result.definitions,
             overall_stats=overall_stats.calculate_overall_stats(
                 program_result.file_results,
                 program_result.config_loading_time_ns,
@@ -117,7 +219,7 @@ class Driver:
         *,
         trace_operations: bool = False,
         max_threads: int | None = None,
-    ) -> DriverResult:
+    ) -> CompilationResult:
         """Validate and then run code generation on a source file."""
         return self._generate_code(
             self.validate_program(path, max_threads=max_threads),
@@ -132,7 +234,7 @@ class Driver:
         *,
         trace_operations: bool = False,
         max_threads: int | None = None,
-    ) -> DriverResult:
+    ) -> CompilationResult:
         """Validate source text in non-filesystem mode and run code generation."""
         return self._generate_code(
             self.validate_source(source, max_threads=max_threads),
@@ -142,33 +244,43 @@ class Driver:
 
     @staticmethod
     def _generate_code(
-        driver_result: DriverResult,
+        compiler_validation: CompilerValidationResult,
         output_dir: Path,
         *,
         trace_operations: bool = False,
-    ) -> DriverResult:
+    ) -> CompilationResult:
         """Run code generation on an already-validated result."""
-        if driver_result.result.has_errors():
-            return driver_result
-        program_result = driver_result.result
-        first_file = program_result.file_results[0]
-        entry_action = program_result.entry_action
+        program_validation = compiler_validation.program_validation
+        if program_validation.has_errors():
+            return CompilationResult.from_validation_result(compiler_validation)
+        first_file = program_validation.file_results[0]
+        entry_action = program_validation.entry_action
         if entry_action is None:
             first_file.add_file_diagnostic(
                 diagnostics.EntryPointNotConstructorDiagnostic(
                     location=first_file.definition_results[0].definition.location
                 )
             )
-            return driver_result
+            return CompilationResult.from_validation_result(compiler_validation)
+        definitions = compiler_validation.definitions
+        operation_graphs = compiler_validation.operation_graphs
+        compilation_result = CompilationResult.from_validation_result(
+            compiler_validation
+        )
+        # These locals would otherwise retain validation-only data throughout
+        # codegen, when its memory can instead be reclaimed during generation.
+        del first_file
+        del program_validation
+        del compiler_validation
         codegen = generator.CodeGenerator()
         codegen.generate(
-            program_result.reference_graph,
-            driver_result.operation_graphs,
+            definitions,
+            operation_graphs,
             entry_action,
             output_dir,
             trace_operations=trace_operations,
         )
-        return driver_result
+        return compilation_result
 
     @staticmethod
     def _resolve_path(path: Path) -> PurePosixPath:
@@ -250,17 +362,7 @@ class Driver:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
-        all_error_strings: list[str] = []
-        for result in driver_result.result.file_results:
-            if result.exception is not None:
-                all_error_strings.append(str(result.exception))
-            if result.diagnostics:
-                if result.source_lines is None:
-                    raise ValueError(
-                        "result.source_lines must be set when there are diagnostics"
-                    )
-                for diagnostic in result.diagnostics:
-                    all_error_strings.append(diagnostic.format(result.source_lines))
+        all_error_strings = driver_result.error_strings()
 
         if all_error_strings:
             print(constants.ERROR_DIVIDER.join(all_error_strings), file=error_stream)
@@ -268,7 +370,7 @@ class Driver:
         if stats_stream is not None:
             stats_output = overall_stats.format_stats(
                 driver_result.overall_stats,
-                driver_result.result.file_results,
+                driver_result.file_timing_results(),
                 stats_mode,
             )
             print(stats_output, file=stats_stream, end="")
