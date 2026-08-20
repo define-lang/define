@@ -44,8 +44,8 @@ type _DefinitionContext = (
 
 
 @typing.final
-class _DefinitionContextGenerator:
-    """Build definition contexts after their referenced definitions complete."""
+class _DefinitionGenerator:
+    """Generate definitions after their referenced definitions complete."""
 
     def __init__(
         self,
@@ -54,6 +54,7 @@ class _DefinitionContextGenerator:
         entry_point: ast.ActionDefinition,
         converter: naming.NameConverter,
         operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
+        output_dir: Path,
     ):
         """Initialize the shared generation inputs."""
         self._definition_order = definition_order
@@ -61,6 +62,7 @@ class _DefinitionContextGenerator:
         self._entry_point = entry_point
         self._converter = converter
         self._operation_labels = operation_labels
+        self._output_dir = output_dir
         self._plans = action_plan.ActionPlans(operation_graphs, entry_point.typed_name)
         self._generated_actions = typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, action_context.GeneratedAction
@@ -70,30 +72,30 @@ class _DefinitionContextGenerator:
         self,
         *,
         max_workers: int | None,
-    ) -> tuple[
-        list[action_context.ActionDefinitionContext],
-        list[template_context.PositionDefinitionContext],
-    ]:
-        """Build every definition context with bounded worker concurrency."""
+    ) -> tuple[action_context.ActionDefinitionContext, set[Path]]:
+        """Generate every definition with bounded worker concurrency."""
         # TODO: Some referenced definitions may not contribute generated
         # information used by a definition. Investigate whether codegen can use
         # narrower prerequisites without duplicating Action Plan dependency logic.
-        contexts = reference_graph_executor.process_definitions(
+        package_dirs = reference_graph_executor.process_definitions(
             self._definition_order,
             self._generate_definition,
             max_workers=max_workers,
         )
-        return self._contexts_by_definition_kind(contexts)
+        entry_context = self._generated_actions[self._entry_point.typed_name].context
+        return entry_context, set(package_dirs)
 
-    def _generate_definition(
-        self, definition: ast.QualityDefinition
-    ) -> _DefinitionContext:
+    def _generate_definition(self, definition: ast.QualityDefinition) -> Path:
         if isinstance(definition, ast.ActionDefinition):
-            return self._generate_action(definition)
-        return position_definition.PositionDefinitionGenerator(
-            typing.cast("ast.PositionDefinition", definition),
-            self._converter,
-        ).generate()
+            context = self._generate_action(definition)
+            template = _ACTION_TEMPLATE
+        else:
+            context = position_definition.PositionDefinitionGenerator(
+                typing.cast("ast.PositionDefinition", definition),
+                self._converter,
+            ).generate()
+            template = _POSITION_TEMPLATE
+        return self._write_definition_file(template, context)
 
     def _generate_action(
         self,
@@ -116,27 +118,24 @@ class _DefinitionContextGenerator:
         self._generated_actions[definition.typed_name] = generated_action
         return generated_action.context
 
-    def _contexts_by_definition_kind(
+    def _write_definition_file(
         self,
-        contexts: list[_DefinitionContext],
-    ) -> tuple[
-        list[action_context.ActionDefinitionContext],
-        list[template_context.PositionDefinitionContext],
-    ]:
-        action_contexts: list[action_context.ActionDefinitionContext] = []
-        position_contexts: list[template_context.PositionDefinitionContext] = []
-        for definition, context in zip(
-            self._definition_order.definitions, contexts, strict=True
-        ):
-            if isinstance(definition, ast.ActionDefinition):
-                action_contexts.append(
-                    typing.cast("action_context.ActionDefinitionContext", context)
-                )
-            elif isinstance(definition, ast.PositionDefinition):
-                position_contexts.append(
-                    typing.cast("template_context.PositionDefinitionContext", context)
-                )
-        return action_contexts, position_contexts
+        template: jinja2.Template,
+        context: _DefinitionContext,
+    ) -> Path:
+        """Render and write a definition file."""
+        content = template.render(definition=context)
+
+        # TODO: Two definitions whose FQUN paths map to the same Python module
+        # (e.g., a position and an action with the same `/path` defined in one
+        # source file, or two positions sharing a path) can write the same file
+        # concurrently. The generator needs to either group same-module
+        # definitions into a single rendered file or reject the collision.
+        relative_file_path = naming.file_path_for_module(context.module_name)
+        file_path = self._output_dir / relative_file_path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        _ = file_path.write_text(content)
+        return relative_file_path.parent.parent
 
 
 class PythonLiteralCodeGenerator:
@@ -163,55 +162,17 @@ class PythonLiteralCodeGenerator:
         # existing definition-order choice before workers share the converter.
         for definition in definition_order.definitions:
             _ = converter.module_name(definition.typed_name.name_content)
-        action_contexts, position_contexts = _DefinitionContextGenerator(
+        entry_context, package_dirs = _DefinitionGenerator(
             definition_order,
             operation_graphs,
             entry_point,
             converter,
             operation_labels,
+            output_dir,
         ).generate(max_workers=max_workers)
 
-        # TODO: Render and write each definition in the same worker that builds
-        # its context, and have each worker return its required package directory.
-        # Write the package __init__.py files after all workers complete.
-
-        package_dirs: set[Path] = set()
-
-        for ctx in action_contexts:
-            self._write_definition_file(_ACTION_TEMPLATE, ctx, output_dir, package_dirs)
-
-        for ctx in position_contexts:
-            self._write_definition_file(
-                _POSITION_TEMPLATE, ctx, output_dir, package_dirs
-            )
-
         self._write_init_files(package_dirs, output_dir)
-
-        entry_ctx = action_contexts[-1]
-        self._write_entry_point(entry_ctx, output_dir)
-
-    def _write_definition_file(
-        self,
-        tmpl: jinja2.Template,
-        ctx: action_context.ActionDefinitionContext
-        | template_context.PositionDefinitionContext,
-        output_dir: Path,
-        package_dirs: set[Path],
-    ):
-        """Render and write a definition file."""
-        content = tmpl.render(definition=ctx)
-
-        # TODO: Two definitions whose FQUN paths map to the same Python module
-        # (e.g., a position and an action with the same `/path` defined in one
-        # source file, or two positions sharing a path) will silently overwrite
-        # each other here. The generator needs to either group same-module
-        # definitions into a single rendered file or reject the collision.
-        relative_file_path = naming.file_path_for_module(ctx.module_name)
-        file_path = output_dir / relative_file_path
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        _ = file_path.write_text(content)
-        package_dir = relative_file_path.parent.parent
-        package_dirs.add(package_dir)
+        self._write_entry_point(entry_context, output_dir)
 
     def _write_init_files(self, package_dirs: set[Path], output_dir: Path):
         """Write empty __init__.py files for intermediate packages."""
