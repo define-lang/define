@@ -62,11 +62,11 @@ class RunBothExecution:
     def accept_when_empty_action_call_empty__position_trigger_pos(self):
         self.create_action_call_empty__position_trigger_pos()
 
-    def accept_when_empty_global_position_item(self):
-        self.trigger_action_call_fill__when_empty_global_position_item()
-
     def accept_when_empty_action_fill_item__position_trigger_pos(self):
         self.trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos()
+
+    def accept_when_empty_global_position_item(self):
+        self.trigger_action_call_fill__when_empty_global_position_item()
 
     def accept_when_empty_action_empty_item__position_trigger_pos(self):
         self.trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos()

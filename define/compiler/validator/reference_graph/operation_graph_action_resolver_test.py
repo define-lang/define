@@ -45,6 +45,23 @@ def _position(name: str) -> ast.PositionReference:
     )
 
 
+def _record_execution(
+    builder: operation_graph.OperationGraphBuilder,
+    callee: ast.GlobalTypedNameReference,
+    trigger_name: str,
+) -> operation_graph_model.ActionExecution:
+    trigger_position = _position(trigger_name)
+    _ = builder.record_create(trigger_position)
+    return builder.record_action_execution(
+        _action_reference(callee),
+        trigger_position,
+        (),
+        is_destructor=False,
+        acting_on_preceding_child_operations=(),
+        required_preceding_child_operations=(),
+    )
+
+
 def test_resolved_actions_retains_resolved_action():
     action = _action("/test")
     graph = operation_graph.OperationGraphBuilder(action).finish()
@@ -180,3 +197,57 @@ def test_requirement_binding_hole_fires_destructor():
         not resolved.action_executions_triggered_by(operation)
         for operation in resolved.graph.particle_operations
     )
+
+
+def test_nested_guarantee_binding_holes_are_resolved_without_publishing_every_path():
+    depth = 12
+    actions = [_action(f"/action_{index}") for index in range(depth + 1)]
+    builders = [operation_graph.OperationGraphBuilder(action) for action in actions]
+    selected_executions: list[operation_graph_model.ActionExecution] = []
+    for index in range(depth):
+        selected_executions.append(
+            _record_execution(builders[index], actions[index + 1], "first")
+        )
+        _ = _record_execution(builders[index], actions[index + 1], "second")
+
+    work = _position("work")
+    _ = builders[-1].record_create(work)
+    builders[-1].record_guaranteed_positions((work.canonical_chained_name_tuple,))
+    _ = builders[0].record_guarantees(
+        selected_executions[0],
+        tuple(selected_executions[1:]),
+        (
+            (
+                work.canonical_chained_name_tuple,
+                (work.canonical_chained_name_tuple,),
+            ),
+        ),
+        guarantee_action_chain=(),
+        operation_graph_action_chain=(),
+    )
+    builders[0].record_guaranteed_positions((work.canonical_chained_name_tuple,))
+
+    graphs = operation_graph.OperationGraphs()
+    for action, builder in zip(actions, builders, strict=True):
+        graphs[action] = builder.finish()
+    resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
+    resolved = None
+    for action in reversed(actions):
+        resolved = resolved_actions.resolve(action)
+    assert resolved is not None
+
+    assert len(resolved.binding_holes.in_binding_order) == 1
+    assert (
+        len(
+            resolved.binding_holes.binding_holes_depended_on_by_guaranteed_position(
+                work.canonical_chained_name_tuple
+            )
+        )
+        == 1
+    )
+    for action in actions[1:-1]:
+        assert not resolved_actions[
+            action
+        ].binding_holes.binding_holes_depended_on_by_guaranteed_position(
+            work.canonical_chained_name_tuple
+        )

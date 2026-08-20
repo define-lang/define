@@ -75,18 +75,6 @@ type _OperationDependsOnTarget = (
 )
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _GuaranteedOperationReference:
-    """Identify a guaranteed operation from one reusable action's perspective.
-
-    ``executions`` is empty when the action publishes the operation directly;
-    otherwise it identifies the Action Executions leading to that operation.
-    """
-
-    executions: tuple[operation_graph_model.ActionExecution, ...]
-    guaranteed_position: tuple[str, ...]
-
-
 @dataclass(frozen=True, slots=True)
 class ActionDependencies:
     """Dependencies resolved within one reusable action graph."""
@@ -669,31 +657,16 @@ class ActionBindingHoles:
 
     in_binding_order: list[operation_graph_model.BindingHole]
     with_runtime_consumers: list[operation_graph_model.BindingHole]
-    _binding_holes_by_guaranteed_operation_reference: dict[
-        _GuaranteedOperationReference,
-        tuple[operation_graph_model.BindingHole, ...],
+    _binding_holes_by_guaranteed_position: dict[
+        tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]
     ]
 
-    @property
-    def binding_holes_by_guaranteed_operation_reference(
-        self,
-    ) -> Mapping[
-        _GuaranteedOperationReference,
-        tuple[operation_graph_model.BindingHole, ...],
-    ]:
-        """Binding Holes depended on by each guaranteed operation reference."""
-        return self._binding_holes_by_guaranteed_operation_reference
-
-    def binding_holes_depended_on_by_guaranteed_operation(
-        self,
-        guarantee: operation_graph_model.GuaranteeNode,
+    def binding_holes_depended_on_by_guaranteed_position(
+        self, guaranteed_position: tuple[str, ...]
     ) -> tuple[operation_graph_model.BindingHole, ...]:
-        """Return the Binding Holes depended on by a guaranteed operation."""
-        binding_holes = self._binding_holes_by_guaranteed_operation_reference.get(
-            _GuaranteedOperationReference(
-                executions=guarantee.nested_executions,
-                guaranteed_position=guarantee.guaranteed_position,
-            )
+        """Return the Binding Holes depended on by an Action Guarantee."""
+        binding_holes = self._binding_holes_by_guaranteed_position.get(
+            guaranteed_position
         )
         if binding_holes is None:
             return ()
@@ -715,6 +688,12 @@ class ResolvedAction:
         operation_graph_model.DestructionDependency,
         operation_graph_model.DestructionContribution,
     ]
+    resolved_execution_by_execution: dict[
+        operation_graph_model.ActionExecution, ResolvedActionExecution
+    ] = field(repr=False)
+    replacement_depends_on_targets_by_node: dict[
+        operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
+    ] = field(repr=False)
 
     def local_operations_depended_on_by(
         self,
@@ -792,31 +771,92 @@ class _ActionBindingHolesBuilder:
     def __init__(
         self,
         graph: operation_graph.OperationGraph,
+        operation_graphs: operation_graph.OperationGraphs,
         resolved_callees: Mapping[ast.GlobalTypedName, ResolvedAction],
     ):
         self._graph = graph
+        self._operation_graphs = operation_graphs
         self._resolved_callees = resolved_callees
-        self._guarantee_nodes_with_callee_binding_holes: list[
-            operation_graph_model.GuaranteeNode
-        ] = []
 
     def replacement_depends_on_targets_for_guarantee(
         self,
         guarantee: operation_graph_model.GuaranteeNode,
         resolved_execution: ResolvedActionExecution,
+        replacement_depends_on_targets_by_node: Mapping[
+            operation_graph_model.OperationNode,
+            Sequence[_ActionDependsOnTarget],
+        ],
     ) -> Sequence[_ActionDependsOnTarget]:
         """Return the Guarantee Node's relationships from the caller's perspective."""
-        callee = self._resolved_callees[guarantee.execution.callee_action_name]
-        callee_binding_holes = (
-            callee.binding_holes.binding_holes_depended_on_by_guaranteed_operation(
-                guarantee
-            )
+        guarantee_path = self._operation_graphs.resolve_guarantee(guarantee)
+        # Only the action that publishes the Action Guarantee records its Binding
+        # Holes. Having every caller also record them would materialize every
+        # possible Action Execution chain.
+        terminal_action = self._resolved_callees[
+            guarantee_path.executions[-1].callee_action_name
+        ]
+        callee_binding_holes = terminal_action.binding_holes.binding_holes_depended_on_by_guaranteed_position(
+            guarantee.guaranteed_position
         )
         if not callee_binding_holes:
             return ()
-        self._guarantee_nodes_with_callee_binding_holes.append(guarantee)
+        # A Binding Hole can be translated only from a direct callee's perspective
+        # to its direct caller's perspective, so resolution must proceed backward
+        # from the publishing action.
+        for execution_index in range(len(guarantee_path.executions) - 1, -1, -1):
+            execution = guarantee_path.executions[execution_index]
+            if execution_index == 0:
+                # This action's replacements are still being built. Every other
+                # action on the path completed resolution before its callers.
+                caller_resolved_execution = resolved_execution
+                caller_replacements = replacement_depends_on_targets_by_node
+            else:
+                caller_action = self._resolved_callees[
+                    guarantee_path.executions[execution_index - 1].callee_action_name
+                ]
+                caller_resolved_execution = (
+                    caller_action.resolved_execution_by_execution[execution]
+                )
+                caller_replacements = (
+                    caller_action.replacement_depends_on_targets_by_node
+                )
+            replacement_depends_on_targets = (
+                self._replacement_depends_on_targets_from_direct_callee(
+                    caller_resolved_execution,
+                    callee_binding_holes,
+                )
+            )
+            if execution_index == 0:
+                # The Guarantee Node needs the concrete relationships and remaining
+                # Binding Holes from this action's perspective. Reducing them again
+                # would discard relationships its consumers need.
+                return replacement_depends_on_targets
+            # The next Action Execution can bind only Binding Holes in its direct
+            # callee. Reduce intermediate concrete relationships to that interface
+            # without retaining the result after this Guarantee Node is resolved.
+            concrete_caller_nodes, directly_propagated_binding_holes = (
+                self._partition_replacement_depends_on_targets(
+                    replacement_depends_on_targets
+                )
+            )
+            callee_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
+                concrete_caller_nodes,
+                caller_binding_holes=directly_propagated_binding_holes,
+                replacement_depends_on_targets_by_node=caller_replacements,
+            )
+        raise AssertionError("a Guarantee Path must contain an Action Execution")
+
+    def _replacement_depends_on_targets_from_direct_callee(
+        self,
+        resolved_execution: ResolvedActionExecution,
+        callee_binding_holes: tuple[operation_graph_model.BindingHole, ...],
+    ) -> list[_ActionDependsOnTarget]:
+        """Return selected Binding Holes from the direct caller's perspective."""
         replacement_depends_on_targets: list[_ActionDependsOnTarget] = []
         for callee_binding_hole in callee_binding_holes:
+            # A Binding Hole reached from a guaranteed Particle Operation has a
+            # runtime consumer. Its binding therefore already exists on every
+            # Action Execution in the guarantee path.
             callee_binding = resolved_execution.callee_bindings[callee_binding_hole]
             replacement_depends_on_targets.extend(
                 callee_binding.caller_dependencies.concrete_nodes()
@@ -824,14 +864,32 @@ class _ActionBindingHolesBuilder:
             replacement_depends_on_targets.extend(callee_binding.caller_binding_holes)
         return replacement_depends_on_targets
 
+    @staticmethod
+    def _partition_replacement_depends_on_targets(
+        replacement_depends_on_targets: Iterable[_ActionDependsOnTarget],
+    ) -> tuple[
+        list[operation_graph_model.ConcreteOperationNode],
+        list[operation_graph_model.BindingHole],
+    ]:
+        concrete_nodes: list[operation_graph_model.ConcreteOperationNode] = []
+        binding_holes: list[operation_graph_model.BindingHole] = []
+        for target in replacement_depends_on_targets:
+            if isinstance(
+                target,
+                (
+                    operation_graph_model.PositionOperationNode,
+                    operation_graph_model.GuaranteeNode,
+                ),
+            ):
+                concrete_nodes.append(target)
+            else:
+                binding_holes.append(target)
+        return concrete_nodes, binding_holes
+
     def build(
         self,
         operation_relationships: Iterable[_ResolvedOperationRelationships],
         action_executions: list[ResolvedActionExecution],
-        resolved_execution_by_execution: Mapping[
-            operation_graph_model.ActionExecution,
-            ResolvedActionExecution,
-        ],
         replacement_depends_on_targets_by_node: Mapping[
             operation_graph_model.OperationNode,
             Sequence[_ActionDependsOnTarget],
@@ -842,10 +900,9 @@ class _ActionBindingHolesBuilder:
         # node saves enough repeated traversal across guaranteed operations to
         # justify the cache's memory cost. All replacement targets are final here,
         # so such a cache would remain valid throughout this calculation.
-        binding_holes_by_guaranteed_operation_reference = (
-            self._binding_holes_for_guaranteed_operations(
-                resolved_execution_by_execution,
-                replacement_depends_on_targets_by_node,
+        binding_holes_by_guaranteed_position = (
+            self._binding_holes_by_guaranteed_position(
+                replacement_depends_on_targets_by_node
             )
         )
         binding_holes: list[operation_graph_model.BindingHole] = []
@@ -860,7 +917,7 @@ class _ActionBindingHolesBuilder:
                 binding_holes_with_runtime_consumers.add(binding_hole)
         for (
             guaranteed_operation_binding_holes
-        ) in binding_holes_by_guaranteed_operation_reference.values():
+        ) in binding_holes_by_guaranteed_position.values():
             binding_holes.extend(guaranteed_operation_binding_holes)
         for resolved_execution in action_executions:
             for (
@@ -887,243 +944,36 @@ class _ActionBindingHolesBuilder:
                 for binding_hole in binding_holes_in_binding_order
                 if binding_hole in binding_holes_with_runtime_consumers
             ],
-            _binding_holes_by_guaranteed_operation_reference=(
-                binding_holes_by_guaranteed_operation_reference
+            _binding_holes_by_guaranteed_position=(
+                binding_holes_by_guaranteed_position
             ),
         )
 
-    def _binding_holes_for_guaranteed_operations(
+    def _binding_holes_by_guaranteed_position(
         self,
-        resolved_execution_by_execution: Mapping[
-            operation_graph_model.ActionExecution,
-            ResolvedActionExecution,
-        ],
         replacement_depends_on_targets_by_node: Mapping[
             operation_graph_model.OperationNode,
             Sequence[_ActionDependsOnTarget],
         ],
-    ) -> dict[
-        _GuaranteedOperationReference,
-        tuple[operation_graph_model.BindingHole, ...],
-    ]:
-        """Expose guaranteed operations whose depends_on paths reach Binding Holes.
-
-        When no Binding Hole remains, none of the guaranteed operation's
-        ``depends_on`` paths can reach a node in an earlier caller, so propagating
-        an empty value would add work without exposing a relationship that caller
-        could use.
-        """
-        binding_holes_by_guaranteed_operation_reference: dict[
-            _GuaranteedOperationReference,
-            tuple[operation_graph_model.BindingHole, ...],
+    ) -> dict[tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]]:
+        """Return Binding Holes for this action's published guarantees."""
+        binding_holes_by_guaranteed_position: dict[
+            tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]
         ] = {}
-        self._add_guaranteed_operations_from_direct_callees(
-            binding_holes_by_guaranteed_operation_reference,
-            resolved_execution_by_execution,
-            replacement_depends_on_targets_by_node,
-        )
-        self._add_guaranteed_operations_from_guarantee_nodes(
-            binding_holes_by_guaranteed_operation_reference,
-            replacement_depends_on_targets_by_node,
-        )
-        self._add_action_guarantees(
-            binding_holes_by_guaranteed_operation_reference,
-            replacement_depends_on_targets_by_node,
-        )
-        return binding_holes_by_guaranteed_operation_reference
-
-    def _add_guaranteed_operations_from_direct_callees(
-        self,
-        binding_holes_by_guaranteed_operation_reference: dict[
-            _GuaranteedOperationReference,
-            tuple[operation_graph_model.BindingHole, ...],
-        ],
-        resolved_execution_by_execution: Mapping[
-            operation_graph_model.ActionExecution,
-            ResolvedActionExecution,
-        ],
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ):
-        """Expose guaranteed operations from direct callees."""
-        for execution, resolved_execution in resolved_execution_by_execution.items():
-            callee = self._resolved_callees[execution.callee_action_name]
-            caller_binding_holes_by_callee_binding_holes: dict[
-                tuple[operation_graph_model.BindingHole, ...],
-                tuple[operation_graph_model.BindingHole, ...],
-            ] = {}
-            for (
-                guaranteed_operation_reference,
-                callee_binding_holes,
-            ) in callee.binding_holes.binding_holes_by_guaranteed_operation_reference.items():
-                caller_binding_holes = self._binding_holes_from_direct_callee(
-                    resolved_execution,
-                    callee_binding_holes,
-                    caller_binding_holes_by_callee_binding_holes,
-                    replacement_depends_on_targets_by_node,
-                )
-                if not caller_binding_holes:
-                    continue
-                caller_guaranteed_operation_reference = _GuaranteedOperationReference(
-                    executions=(
-                        execution,
-                        *guaranteed_operation_reference.executions,
-                    ),
-                    guaranteed_position=(
-                        guaranteed_operation_reference.guaranteed_position
-                    ),
-                )
-                binding_holes_by_guaranteed_operation_reference[
-                    caller_guaranteed_operation_reference
-                ] = caller_binding_holes
-
-    def _add_guaranteed_operations_from_guarantee_nodes(
-        self,
-        binding_holes_by_guaranteed_operation_reference: dict[
-            _GuaranteedOperationReference,
-            tuple[operation_graph_model.BindingHole, ...],
-        ],
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ):
-        """Expose guaranteed operations represented by Guarantee Nodes."""
-        binding_holes_by_canonical_node_for_particle_operation: dict[
-            operation_graph_model.GuaranteeNode,
-            tuple[operation_graph_model.BindingHole, ...],
-        ] = {}
-        for guarantee in self._guarantee_nodes_with_callee_binding_holes:
-            binding_holes = self._binding_holes_for_guarantee_node(
-                guarantee,
-                binding_holes_by_canonical_node_for_particle_operation,
-                replacement_depends_on_targets_by_node,
-            )
-            if binding_holes:
-                guaranteed_operation_reference = _GuaranteedOperationReference(
-                    executions=(guarantee.execution, *guarantee.nested_executions),
-                    guaranteed_position=guarantee.guaranteed_position,
-                )
-                binding_holes_by_guaranteed_operation_reference[
-                    guaranteed_operation_reference
-                ] = binding_holes
-
-    def _add_action_guarantees(
-        self,
-        binding_holes_by_guaranteed_operation_reference: dict[
-            _GuaranteedOperationReference,
-            tuple[operation_graph_model.BindingHole, ...],
-        ],
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ):
-        """Expose Action Guarantees whose operations reach Binding Holes."""
         for (
             operation,
             guaranteed_positions,
         ) in self._graph.guaranteed_positions_by_operation.items():
-            if isinstance(operation, operation_graph_model.GuaranteeNode):
-                guaranteed_operation_reference = _GuaranteedOperationReference(
-                    executions=(operation.execution, *operation.nested_executions),
-                    guaranteed_position=operation.guaranteed_position,
-                )
-                binding_holes = binding_holes_by_guaranteed_operation_reference.get(
-                    guaranteed_operation_reference,
-                    (),
-                )
-            else:
-                binding_holes = operation_graph_rules.binding_holes_depended_on_by(
-                    (operation,),
-                    replacement_depends_on_targets_by_node=(
-                        replacement_depends_on_targets_by_node
-                    ),
-                )
+            binding_holes = operation_graph_rules.binding_holes_depended_on_by(
+                (operation,),
+                replacement_depends_on_targets_by_node=(
+                    replacement_depends_on_targets_by_node
+                ),
+            )
             if binding_holes:
                 for position in guaranteed_positions:
-                    guaranteed_operation_reference = _GuaranteedOperationReference(
-                        executions=(),
-                        guaranteed_position=position,
-                    )
-                    binding_holes_by_guaranteed_operation_reference[
-                        guaranteed_operation_reference
-                    ] = binding_holes
-
-    def _binding_holes_for_guarantee_node(
-        self,
-        guarantee: operation_graph_model.GuaranteeNode,
-        binding_holes_by_canonical_node_for_particle_operation: dict[
-            operation_graph_model.GuaranteeNode,
-            tuple[operation_graph_model.BindingHole, ...],
-        ],
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ) -> tuple[operation_graph_model.BindingHole, ...]:
-        """Return Binding Holes the Guarantee Node depends on directly or indirectly."""
-        canonical_node_for_particle_operation = (
-            guarantee.canonical_node_for_particle_operation
-        )
-        binding_holes = binding_holes_by_canonical_node_for_particle_operation.get(
-            canonical_node_for_particle_operation
-        )
-        if binding_holes is not None:
-            return binding_holes
-        binding_holes = operation_graph_rules.binding_holes_depended_on_by(
-            (guarantee,),
-            replacement_depends_on_targets_by_node=(
-                replacement_depends_on_targets_by_node
-            ),
-        )
-        binding_holes_by_canonical_node_for_particle_operation[
-            canonical_node_for_particle_operation
-        ] = binding_holes
-        return binding_holes
-
-    def _binding_holes_from_direct_callee(
-        self,
-        resolved_execution: ResolvedActionExecution,
-        callee_binding_holes: tuple[operation_graph_model.BindingHole, ...],
-        caller_binding_holes_by_callee_binding_holes: dict[
-            tuple[operation_graph_model.BindingHole, ...],
-            tuple[operation_graph_model.BindingHole, ...],
-        ],
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ) -> tuple[operation_graph_model.BindingHole, ...]:
-        """Bind guaranteed-operation Binding Holes through one direct caller."""
-        caller_binding_holes = caller_binding_holes_by_callee_binding_holes.get(
-            callee_binding_holes
-        )
-        if caller_binding_holes is not None:
-            return caller_binding_holes
-        concrete_caller_nodes: list[operation_graph_model.ConcreteOperationNode] = []
-        directly_propagated_binding_holes: list[operation_graph_model.BindingHole] = []
-        for callee_binding_hole in callee_binding_holes:
-            callee_binding = resolved_execution.callee_bindings[callee_binding_hole]
-            concrete_caller_nodes.extend(
-                callee_binding.caller_dependencies.concrete_nodes()
-            )
-            directly_propagated_binding_holes.extend(
-                callee_binding.caller_binding_holes
-            )
-        caller_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
-            concrete_caller_nodes,
-            caller_binding_holes=directly_propagated_binding_holes,
-            replacement_depends_on_targets_by_node=(
-                replacement_depends_on_targets_by_node
-            ),
-        )
-        caller_binding_holes_by_callee_binding_holes[callee_binding_holes] = (
-            caller_binding_holes
-        )
-        return caller_binding_holes
+                    binding_holes_by_guaranteed_position[position] = binding_holes
+        return binding_holes_by_guaranteed_position
 
 
 @typing.final
@@ -1150,6 +1000,7 @@ class _ActionResolver:
         )
         self._action_binding_holes_builder = _ActionBindingHolesBuilder(
             graph,
+            operation_graphs,
             resolved_callees,
         )
 
@@ -1166,10 +1017,9 @@ class _ActionResolver:
         # Binding direct callees can replace a node's graph-local relationships.
         # An absent entry keeps node.depends_on; an empty entry replaces it with no
         # targets.
-        # TODO: Consider whether one action-resolution component should own these
-        # temporary replacements and their operations. This could reduce parameter
-        # threading, but it must not combine them with the persisted, partitioned
-        # operation relationships.
+        # Lazy nested-Guarantee translation needs the exact local replacements at
+        # each Action Execution boundary. Keeping only changed relationships makes
+        # this state proportional to the action graph.
         replacement_depends_on_targets_by_node: dict[
             operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
         ] = {}
@@ -1198,6 +1048,7 @@ class _ActionResolver:
                     self._action_binding_holes_builder.replacement_depends_on_targets_for_guarantee(
                         node,
                         resolved_execution,
+                        replacement_depends_on_targets_by_node,
                     )
                 )
             elif isinstance(node, operation_graph_model.PositionOperationNode):
@@ -1244,7 +1095,6 @@ class _ActionResolver:
         binding_holes = self._action_binding_holes_builder.build(
             relationships_by_operation.values(),
             action_executions,
-            resolved_execution_by_execution,
             replacement_depends_on_targets_by_node,
         )
         return ResolvedAction(
@@ -1254,6 +1104,10 @@ class _ActionResolver:
             action_executions=action_executions,
             destruction_contributions=self._operation_graphs.destruction_contributions(
                 self._graph
+            ),
+            resolved_execution_by_execution=resolved_execution_by_execution,
+            replacement_depends_on_targets_by_node=(
+                replacement_depends_on_targets_by_node
             ),
         )
 
