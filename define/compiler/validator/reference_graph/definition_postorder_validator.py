@@ -159,24 +159,30 @@ class ActionPostorderValidator:
                 action_assignment=action_assignment,
             )
         )
-        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            # We can't know exactly what qualities the particle has, but we
-            # can know the minimal set that it _must_ have according to the constraints
-            # the contracted position has.
-            qualities = self._get_transitive_required_qualities(
-                contracted_position, scope
-            )
-            self._executor.execute_assume_occupied(
-                particle_operation.AssumeOccupied(
-                    target=local_position,
-                    qualities=qualities,
-                    contracted_position_chain=contracted_position,
+        # ERROR represents a tracker failure and is never a Position Requirement state.
+        requirement_state = typing.cast(
+            "typing.Literal[action_contract.PositionOccupancyState.OCCUPIED, action_contract.PositionOccupancyState.EMPTY]",
+            required_state,
+        )
+        match requirement_state:
+            case action_contract.PositionOccupancyState.OCCUPIED:
+                # We can't know exactly what qualities the particle has, but we
+                # can know the minimal set that it _must_ have according to the constraints
+                # the contracted position has.
+                qualities = self._get_transitive_required_qualities(
+                    contracted_position, scope
                 )
-            )
-        elif required_state == action_contract.PositionOccupancyState.EMPTY:
-            self._executor.execute_assume_empty(
-                particle_operation.AssumeEmpty(target=local_position)
-            )
+                self._executor.execute_assume_occupied(
+                    particle_operation.AssumeOccupied(
+                        target=local_position,
+                        qualities=qualities,
+                        contracted_position_chain=contracted_position,
+                    )
+                )
+            case action_contract.PositionOccupancyState.EMPTY:
+                self._executor.execute_assume_empty(
+                    particle_operation.AssumeEmpty(target=local_position)
+                )
 
     # TODO: Classify every Position Requirement once, in one batched tracker
     # query, as either needing propagation or local violation checking. The
@@ -305,7 +311,7 @@ class ActionPostorderValidator:
                     auto_destruction_target=auto_destruction_target,
                     has_active_destruction_fact=has_active_destruction_fact,
                 )
-            elif quality.name_type == ast.NameType.ACTION:
+            else:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None:
                     continue
@@ -884,7 +890,7 @@ class ActionPostorderValidator:
                         contracted_position=contracted_position,
                     )
                 )
-            elif quality.name_type == ast.NameType.ACTION:
+            else:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None:
                     continue

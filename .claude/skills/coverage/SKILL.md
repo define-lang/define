@@ -43,7 +43,7 @@ description:
    Put low-value final-case non-match branches in a separate collapsed section.
    Show their paths, analyzer details, and source snippets, but do not give them
    checkboxes or comments fields and do not include them in the submission.
-   Explicit-failure-only branches omitted by the analyzer do not appear in the
+   Explicit-exit-only branches omitted by the analyzer do not appear in the
    report.
 
    Keep the report self-contained. Embed the syntax-highlighting styles and any

@@ -138,5 +138,5 @@ def compile_cmd(
     _run(ctx, file, max_threads, stats, driver.DriverMode.COMPILE, output_dir=out)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

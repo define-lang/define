@@ -23,7 +23,7 @@ def test_analyze_report_omits_branch_that_only_raises(tmp_path: Path):
         + "end_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
@@ -36,7 +36,7 @@ def test_analyze_report_omits_branch_that_only_raises(tmp_path: Path):
         )
     ]
     assert low_value == []
-    assert exception_only == [
+    assert explicit_exit_only == [
         analyze_coverage.UncoveredBranch(
             source_file=Path("example.py"),
             source_line=2,
@@ -56,13 +56,13 @@ def test_analyze_report_omits_jump_into_multiline_raise(tmp_path: Path):
         "SF:example.py\nBRDA:1,0,jump to line 3,-\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert actionable == []
     assert low_value == []
-    assert len(exception_only) == 1
+    assert len(explicit_exit_only) == 1
 
 
 def test_analyze_report_omits_branch_that_only_calls_pytest_fail(tmp_path: Path):
@@ -79,13 +79,34 @@ def test_analyze_report_omits_branch_that_only_calls_pytest_fail(tmp_path: Path)
         "SF:example.py\nBRDA:2,0,jump to line 4,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert actionable == []
     assert low_value == []
-    assert len(exception_only) == 1
+    assert len(explicit_exit_only) == 1
+
+
+def test_analyze_report_omits_branch_that_only_calls_pytest_skip(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def check(available: bool):\n"
+        + "    if not available:\n"
+        + '        pytest.skip("dependency unavailable")\n'
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        "SF:example.py\nBRDA:2,0,jump to line 3,0\nend_of_record\n"
+    )
+
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
+        report_path, tmp_path
+    )
+
+    assert actionable == []
+    assert low_value == []
+    assert len(explicit_exit_only) == 1
 
 
 def test_analyze_report_keeps_branch_with_work_before_pytest_fail(tmp_path: Path):
@@ -101,13 +122,13 @@ def test_analyze_report_keeps_branch_with_work_before_pytest_fail(tmp_path: Path
         "SF:example.py\nBRDA:2,0,jump to line 4,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert len(actionable) == 1
     assert low_value == []
-    assert exception_only == []
+    assert explicit_exit_only == []
 
 
 def test_analyze_report_omits_wildcard_case_that_only_raises(tmp_path: Path):
@@ -125,13 +146,13 @@ def test_analyze_report_omits_wildcard_case_that_only_raises(tmp_path: Path):
         "SF:example.py\nBRDA:3,0,jump to line 5,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert actionable == []
     assert low_value == []
-    assert len(exception_only) == 1
+    assert len(explicit_exit_only) == 1
 
 
 def test_analyze_report_omits_branch_to_typing_assert_never(tmp_path: Path):
@@ -150,13 +171,13 @@ def test_analyze_report_omits_branch_to_typing_assert_never(tmp_path: Path):
         "SF:example.py\nBRDA:5,0,jump to line 7,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert actionable == []
     assert low_value == []
-    assert len(exception_only) == 1
+    assert len(explicit_exit_only) == 1
 
 
 def test_analyze_report_separates_final_case_nonmatch(tmp_path: Path):
@@ -177,14 +198,14 @@ def test_analyze_report_separates_final_case_nonmatch(tmp_path: Path):
         + "end_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert len(actionable) == 1
     assert len(low_value) == 1
     assert low_value[0].source_line == 5
-    assert exception_only == []
+    assert explicit_exit_only == []
 
 
 def test_analyze_report_keeps_guarded_final_case_nonmatch(tmp_path: Path):
@@ -201,13 +222,13 @@ def test_analyze_report_keeps_guarded_final_case_nonmatch(tmp_path: Path):
         "SF:example.py\nBRDA:3,0,jump to line 5,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert len(actionable) == 1
     assert low_value == []
-    assert exception_only == []
+    assert explicit_exit_only == []
 
 
 def test_format_report_includes_branch_source_and_destination(tmp_path: Path):
@@ -228,7 +249,7 @@ def test_format_report_includes_branch_source_and_destination(tmp_path: Path):
         "  uncovered destination: line 2: run()\n"
         "1 actionable uncovered branches reported; "
         "0 low-value final-case non-match branches reported; "
-        "0 explicit-failure-only branches omitted."
+        "0 explicit-exit-only branches omitted."
     )
 
 
@@ -253,7 +274,7 @@ def test_format_report_separates_low_value_branches(tmp_path: Path):
         + "No uncovered actionable branches.\n"
         + "0 actionable uncovered branches reported; "
         + "1 low-value final-case non-match branches reported; "
-        + "0 explicit-failure-only branches omitted."
+        + "0 explicit-exit-only branches omitted."
     )
 
 
@@ -265,13 +286,13 @@ def test_analyze_report_keeps_non_python_branch(tmp_path: Path):
         f"SF:{source_path}\nBRDA:1,0,jump to line 1,0\nend_of_record\n"
     )
 
-    actionable, low_value, exception_only = analyze_coverage.analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
         report_path, tmp_path
     )
 
     assert len(actionable) == 1
     assert low_value == []
-    assert exception_only == []
+    assert explicit_exit_only == []
 
 
 def test_format_report_describes_implicit_return_and_empty_result(tmp_path: Path):
@@ -293,13 +314,13 @@ def test_format_report_describes_implicit_return_and_empty_result(tmp_path: Path
         "  uncovered destination: return from function 'choose'\n"
         "1 actionable uncovered branches reported; "
         "0 low-value final-case non-match branches reported; "
-        "0 explicit-failure-only branches omitted."
+        "0 explicit-exit-only branches omitted."
     )
     assert empty_report == (
         "No uncovered actionable branches.\n"
         "0 actionable uncovered branches reported; "
         "0 low-value final-case non-match branches reported; "
-        "1 explicit-failure-only branches omitted."
+        "1 explicit-exit-only branches omitted."
     )
 
 
@@ -388,7 +409,7 @@ def test_cli_filters_to_multiple_workspace_relative_files(
     assert result.output.endswith(
         "2 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "
-        + "0 explicit-failure-only branches omitted.\n"
+        + "0 explicit-exit-only branches omitted.\n"
     )
 
 
@@ -408,7 +429,7 @@ def test_cli_analyzes_all_files_without_arguments(
     assert result.output.endswith(
         "3 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "
-        + "0 explicit-failure-only branches omitted.\n"
+        + "0 explicit-exit-only branches omitted.\n"
     )
 
 
@@ -447,7 +468,7 @@ def test_cli_includes_files_transitively_under_directory(
     assert result.output.endswith(
         "2 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "
-        + "0 explicit-failure-only branches omitted.\n"
+        + "0 explicit-exit-only branches omitted.\n"
     )
 
 

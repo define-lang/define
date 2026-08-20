@@ -118,8 +118,8 @@ class SourceAnalysis:
                 return "pattern does not match"
         return None
 
-    def branch_only_fails(self, branch: UncoveredBranch) -> bool:
-        """Return whether a branch leads only to an explicit test failure."""
+    def branch_is_explicit_exit(self, branch: UncoveredBranch) -> bool:
+        """Return whether a branch leads only to an explicit exit."""
         if branch.target_line is None or branch.source_file.suffix != ".py":
             return False
 
@@ -142,8 +142,8 @@ class SourceAnalysis:
                 isinstance(node, ast.If)
                 and node.lineno == branch.source_line
                 and (
-                    _suite_only_calls_pytest_fail(node.body, branch.target_line)
-                    or _suite_only_calls_pytest_fail(node.orelse, branch.target_line)
+                    _suite_only_exits_pytest(node.body, branch.target_line)
+                    or _suite_only_exits_pytest(node.orelse, branch.target_line)
                 )
             ):
                 return True
@@ -188,15 +188,14 @@ class SourceAnalysis:
         return False
 
 
-def _suite_only_calls_pytest_fail(
-    statements: Sequence[ast.stmt], target_line: int
-) -> bool:
+def _suite_only_exits_pytest(statements: Sequence[ast.stmt], target_line: int) -> bool:
     if len(statements) != 1 or not isinstance(statements[0], ast.Expr):
         return False
     expression = statements[0]
-    return expression.lineno <= target_line <= cast(
-        "int", expression.end_lineno
-    ) and _expression_calls(expression, "pytest", "fail")
+    return expression.lineno <= target_line <= cast("int", expression.end_lineno) and (
+        _expression_calls(expression, "pytest", "fail")
+        or _expression_calls(expression, "pytest", "skip")
+    )
 
 
 def _expression_calls(expression: ast.Expr, module: str, function: str) -> bool:
@@ -215,7 +214,7 @@ def analyze_report(
     source_root: Path,
     source_paths: Sequence[Path] = (),
 ) -> tuple[list[UncoveredBranch], list[UncoveredBranch], list[UncoveredBranch]]:
-    """Classify actionable, low-value, and explicit-failure-only branches."""
+    """Classify actionable, low-value, and explicit-exit-only branches."""
     source_analysis = SourceAnalysis(source_root)
     uncovered = parse_uncovered_branches(report_path)
     selected_source_files: set[Path] = set()
@@ -228,7 +227,7 @@ def analyze_report(
             selected_source_files.add(resolved_path)
     actionable: list[UncoveredBranch] = []
     low_value: list[UncoveredBranch] = []
-    exception_only: list[UncoveredBranch] = []
+    explicit_exit_only: list[UncoveredBranch] = []
     for branch in uncovered:
         if selected_source_files or selected_source_directories:
             branch_source_path = source_analysis.resolve_path(branch.source_file)
@@ -237,19 +236,19 @@ def analyze_report(
                 and selected_source_directories.isdisjoint(branch_source_path.parents)
             ):
                 continue
-        if source_analysis.branch_only_fails(branch):
-            exception_only.append(branch)
+        if source_analysis.branch_is_explicit_exit(branch):
+            explicit_exit_only.append(branch)
         elif source_analysis.branch_is_final_case_nonmatch(branch):
             low_value.append(branch)
         else:
             actionable.append(branch)
-    return actionable, low_value, exception_only
+    return actionable, low_value, explicit_exit_only
 
 
 def format_report(
     actionable: Sequence[UncoveredBranch],
     low_value: Sequence[UncoveredBranch],
-    exception_only: Sequence[UncoveredBranch],
+    explicit_exit_only: Sequence[UncoveredBranch],
     source_root: Path,
 ) -> str:
     """Format uncovered branches with their source and destination lines."""
@@ -266,7 +265,7 @@ def format_report(
     output_lines.append(
         f"{len(actionable)} actionable uncovered branches reported; "
         + f"{len(low_value)} low-value final-case non-match branches reported; "
-        + f"{len(exception_only)} explicit-failure-only branches omitted."
+        + f"{len(explicit_exit_only)} explicit-exit-only branches omitted."
     )
     return "\n".join(output_lines)
 
@@ -338,10 +337,10 @@ def main(source_paths: tuple[Path, ...]):
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
         )
-    actionable, low_value, exception_only = analyze_report(
+    actionable, low_value, explicit_exit_only = analyze_report(
         report_path, source_root, source_paths
     )
-    click.echo(format_report(actionable, low_value, exception_only, source_root))
+    click.echo(format_report(actionable, low_value, explicit_exit_only, source_root))
 
 
 if __name__ == "__main__":

@@ -14,20 +14,22 @@ from define.compiler.validator.structural import program_validator
 def _validate_mermaid(text: str):
     validator = os.environ.get("MERMAID_VALIDATOR")
     if not validator:
-        return
+        pytest.skip("Mermaid validation requires its Bazel data dependency")
     validator_path = _resolve_runfile_path(validator)
     result = subprocess.run(
         [str(validator_path)],
         input=text,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, f"Invalid Mermaid syntax:\n{result.stderr}"
 
 
 def _resolve_runfile_path(path: str) -> Path:
     candidate = Path(path)
-    if candidate.exists():
+    # Direct pytest runs use a filesystem path instead of a Bazel runfiles key.
+    if candidate.exists():  # pragma: no branch
         return candidate
 
     if os.environ.get("RUNFILES_DIR") or os.environ.get("RUNFILES_MANIFEST_FILE"):

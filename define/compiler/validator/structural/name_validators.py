@@ -13,12 +13,7 @@ _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_wor
 def _load_reserved_words(filename: str) -> frozenset[str]:  # pragma: no mutate
     """Load reserved words from a reserved words file."""
     path = _RESERVED_WORDS_DIR / filename
-    words: set[str] = set()
-    for raw_line in path.read_text().splitlines():
-        stripped = raw_line.strip()
-        if stripped:
-            words.add(stripped.lower())
-    return frozenset(words)
+    return frozenset(word.lower() for word in path.read_text().split())
 
 
 _SMALL_COMMON_WORDS = _load_reserved_words("small_common_words.txt")

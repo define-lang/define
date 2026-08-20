@@ -85,7 +85,7 @@ def _assert_only_additional_caller_was_added(expected: str, actual: str):
         if tag == "equal":
             continue
         added_lines = actual_lines[actual_start:actual_end]
-        if tag == "insert" and any(
+        if tag == "insert" and any(  # pragma: no branch
             _ADDITIONAL_CALLER_NAME in line for line in added_lines
         ):
             continue

@@ -300,8 +300,8 @@ class DefineTransformer(
         for item in items[:-1]:
             if isinstance(item, ast.QualityImplicationStatement):
                 quality_implications.append(item)
-            elif isinstance(item, ast.PositionConstraintBlock):
-                constraints = item
+            else:
+                constraints = cast("ast.PositionConstraintBlock", item)
         return _PotentialPositionBlockData(
             quality_implications=tuple(quality_implications),
             constraints=constraints,

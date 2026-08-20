@@ -35,6 +35,13 @@ _REQUIREMENT_BINDING_HOLE_METHOD_PREFIXES = {
     action_contract.PositionOccupancyState.EMPTY: "accept_when_empty_",
     action_contract.PositionOccupancyState.OCCUPIED: "accept_when_occupied_",
 }
+
+type _PlannedBindingHole = (
+    operation_graph_model.MoveRuleBindingHole
+    | operation_graph_model.EmptyRuleBindingHole
+    | operation_graph_model.ActionParentLastOperationNode
+    | operation_graph_model.RequirementNode
+)
 _TRIGGERED_ACTION_PREFIX = "trigger_"
 _CALLEE_BINDING_JOIN_METHOD_SEPARATOR = "__"
 _TYPED_CHAIN_SEPARATOR = "__"
@@ -147,16 +154,20 @@ class ActionNameGenerator:
     ) -> dict[operation_graph_model.BindingHole, str]:
         method_names: dict[operation_graph_model.BindingHole, str] = {}
         for binding_hole_fanout in self._plan.binding_hole_fanouts:
+            # EmptyRuleBindingHoleNode values are resolved before action planning.
+            binding_hole = typing.cast(
+                "_PlannedBindingHole", binding_hole_fanout.binding_hole
+            )
             method_names[binding_hole_fanout.binding_hole] = (
                 self._execution_allocator.allocate(
-                    self._binding_hole_method_name(binding_hole_fanout.binding_hole)
+                    self._binding_hole_method_name(binding_hole)
                 )
             )
         return method_names
 
     def _binding_hole_method_name(
         self,
-        binding_hole: operation_graph_model.BindingHole,
+        binding_hole: _PlannedBindingHole,
     ) -> str:
         """Return the execution method name for one Binding Hole."""
         match binding_hole:
@@ -171,10 +182,6 @@ class ActionNameGenerator:
                 )
                 return self._requirement_binding_hole_method_name(
                     caller_fill_dependency.requirement
-                )
-            case operation_graph_model.EmptyRuleBindingHoleNode():
-                return self._empty_rule_binding_hole_method_name(
-                    binding_hole.empty_rule_binding_hole
                 )
             case operation_graph_model.EmptyRuleBindingHole():
                 return self._empty_rule_binding_hole_method_name(binding_hole)
