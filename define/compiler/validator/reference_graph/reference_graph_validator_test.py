@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 
 import threading
-from concurrent.futures import Future
 from unittest import mock
 
 import pytest
@@ -27,6 +26,7 @@ _ACTION_TEMPLATE = (
 )
 
 _CALLEE_NAME = "action<my.domain.com:my_lib:/callee>"
+_SECOND_CALLEE_NAME = "action<my.domain.com:my_lib:/second_callee>"
 _CALLER_NAME = "action<my.domain.com:my_lib:/caller>"
 _OTHER_CALLER_NAME = "action<my.domain.com:my_lib:/other_caller>"
 _CALLEE_AND_POSITION_SOURCE = (
@@ -65,6 +65,14 @@ def _caller_source(name: str) -> str:
 
 
 _CALLEE_AND_CALLER_SOURCE = _CALLEE_AND_POSITION_SOURCE + _caller_source("caller")
+_TWO_CALLEE_AND_CALLER_SOURCE = _CALLEE_AND_POSITION_SOURCE.replace(
+    "define the potential position<my.domain.com:my_lib:/gateway>",
+    _ACTION_TEMPLATE.format(name="second_callee")
+    + "define the potential position<my.domain.com:my_lib:/gateway>",
+).replace(
+    "        it has the action</callee>.\n",
+    "        it has the action</callee>.\n        it has the action</second_callee>.\n",
+) + _caller_source("caller")
 
 
 def _structural_result(source: str) -> validation_result.ProgramValidationResult:
@@ -174,7 +182,7 @@ def test_shared_referenced_definition_is_validated_once():
 
 
 def test_reference_failure_prevents_referencing_action_validation():
-    structural_result = _structural_result(_CALLEE_AND_CALLER_SOURCE)
+    structural_result = _structural_result(_TWO_CALLEE_AND_CALLER_SOURCE)
     analyzed_actions: set[str] = set()
 
     def fail_callee(
@@ -182,9 +190,9 @@ def test_reference_failure_prevents_referencing_action_validation():
     ) -> definition_postorder_validator.PostorderValidationResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         analyzed_actions.add(action_name)
-        if action_name == _CALLEE_NAME:
-            raise RuntimeError("callee validation failed")
-        raise AssertionError("the caller must not be validated")
+        if action_name == _CALLER_NAME:
+            raise AssertionError("the caller must not be validated")
+        raise RuntimeError(f"{action_name} validation failed")
 
     with (
         mock.patch.object(
@@ -193,52 +201,11 @@ def test_reference_failure_prevents_referencing_action_validation():
             autospec=True,
             side_effect=fail_callee,
         ),
-        pytest.raises(RuntimeError, match="callee validation failed"),
+        pytest.raises(RuntimeError, match="/callee> validation failed"),
     ):
         reference_graph_validator.ReferenceGraphValidator(
             structural_result.reference_graph,
             structural_result.definition_results,
         ).validate(max_workers=2)
 
-    assert analyzed_actions == {_CALLEE_NAME}
-
-
-def test_reference_failure_marks_dependent_validation_not_run():
-    structural_result = _structural_result(_CALLEE_AND_CALLER_SOURCE)
-    validator = reference_graph_validator.ReferenceGraphValidator(
-        structural_result.reference_graph,
-        structural_result.definition_results,
-    )
-    caller = next(
-        definition
-        for definition in structural_result.reference_graph.dfs_postorder_all()
-        if definition.typed_name.full_typed_name == _CALLER_NAME
-    )
-    failed_reference: Future[
-        definition_postorder_validator.PostorderValidationResult | None
-    ] = Future()
-    successful_reference: Future[
-        definition_postorder_validator.PostorderValidationResult | None
-    ] = Future()
-    expected_exception = RuntimeError("reference validation failed")
-
-    with reference_graph_validator._ValidatorWorkPool(  # pyright: ignore[reportPrivateUsage]
-        validator._validate_action,  # pyright: ignore[reportPrivateUsage]
-        max_workers=1,
-    ) as pool:
-        pending_validation = reference_graph_validator._PendingDefinitionValidation(  # pyright: ignore[reportPrivateUsage]
-            caller,
-            2,
-            pool._start_definition,  # pyright: ignore[reportPrivateUsage]
-        )
-        pending_validation.start_when_references_complete(
-            [failed_reference, successful_reference]
-        )
-        failed_reference.set_exception(expected_exception)
-        successful_reference.set_result(None)
-
-    assert failed_reference.exception() is expected_exception
-    assert isinstance(
-        pending_validation.future.exception(),
-        reference_graph_validator._ReferencedDefinitionValidationError,  # pyright: ignore[reportPrivateUsage]
-    )
+    assert analyzed_actions == {_CALLEE_NAME, _SECOND_CALLEE_NAME}

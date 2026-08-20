@@ -1,0 +1,12 @@
+# The entry action branches to two actions that both trigger /shared, so /left
+# and /right can be generated independently after their shared callee.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</left>.
+    it also assigns the action</right>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</left>::position<trigger>.
+        create a particle in action</right>::position<trigger>.
+    }
+}

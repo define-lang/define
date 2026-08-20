@@ -64,6 +64,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler/codegen/literal/python:generator",
+        "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator/reference_graph:operation_graph",
     ],
 )
@@ -96,6 +97,7 @@ py_test(
     data = ["//define/testdata/codegen/generator"],
     deps = [
         ":generator",
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",

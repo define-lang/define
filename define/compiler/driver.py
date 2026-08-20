@@ -26,6 +26,7 @@ from define.compiler import (
     parser,
 )
 from define.compiler.codegen import generator
+from define.compiler.graphs import reference_graph_executor
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     operation_graph,
@@ -88,7 +89,7 @@ class CompilerValidationResult(CompilerResult):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
-    definitions: list[ast.QualityDefinition]
+    definition_order: reference_graph_executor.ReferenceGraphOrder
     overall_stats: overall_stats.OverallStats
     operation_graphs: operation_graph.OperationGraphs
 
@@ -220,7 +221,7 @@ class Driver:
         ).validate(max_workers=max_threads)
         return CompilerValidationResult(
             program_validation=program_result,
-            definitions=reference_graph_result.definitions,
+            definition_order=reference_graph_result.definition_order,
             overall_stats=overall_stats.calculate_overall_stats(
                 program_result.file_results,
                 program_result.config_loading_time_ns,
@@ -241,6 +242,7 @@ class Driver:
             self.validate_program(path, max_threads=max_threads),
             output_dir,
             trace_operations=trace_operations,
+            max_threads=max_threads,
         )
 
     def compile_source(
@@ -256,6 +258,7 @@ class Driver:
             self.validate_source(source, max_threads=max_threads),
             output_dir,
             trace_operations=trace_operations,
+            max_threads=max_threads,
         )
 
     @staticmethod
@@ -264,6 +267,7 @@ class Driver:
         output_dir: Path,
         *,
         trace_operations: bool = False,
+        max_threads: int | None = None,
     ) -> CompilationResult:
         """Run code generation on an already-validated result."""
         program_validation = compiler_validation.program_validation
@@ -278,7 +282,7 @@ class Driver:
                 )
             )
             return CompilationResult.from_validation_result(compiler_validation)
-        definitions = compiler_validation.definitions
+        definition_order = compiler_validation.definition_order
         operation_graphs = compiler_validation.operation_graphs
         compilation_result = CompilationResult.from_validation_result(
             compiler_validation
@@ -290,11 +294,12 @@ class Driver:
         del compiler_validation
         codegen = generator.CodeGenerator()
         codegen.generate(
-            definitions,
+            definition_order,
             operation_graphs,
             entry_action,
             output_dir,
             trace_operations=trace_operations,
+            max_workers=max_threads,
         )
         return compilation_result
 
@@ -350,7 +355,7 @@ class Driver:
                 Required when mode is COMPILE.
             source: Source text to validate in non-filesystem mode instead of
                 reading from path.
-            max_threads: Maximum threads used by each validation phase.
+            max_threads: Maximum threads used by validation and code generation.
         """
         if error_stream is None:
             error_stream = sys.stderr

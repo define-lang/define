@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-import threading
 import typing
-from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 
 from define.compiler import ast
-from define.compiler.graphs import action_call_graph, reference_graph
+from define.compiler.graphs import (
+    action_call_graph,
+    reference_graph,
+    reference_graph_executor,
+)
 from define.compiler.validator.reference_graph import (
     definition_postorder_validator,
     operation_graph,
@@ -16,8 +18,6 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    import collections.abc
-
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
@@ -25,172 +25,11 @@ if typing.TYPE_CHECKING:
 type _PostorderResult = definition_postorder_validator.PostorderValidationResult | None
 
 
-class _ReferencedDefinitionValidationError(Exception):
-    """A definition could not be validated because a reference failed."""
-
-
-class _PendingDefinitionValidation:
-    """Starts one definition after its referenced definitions complete."""
-
-    _completion: Future[_PostorderResult]
-    _definition: ast.QualityDefinition
-    _remaining_references: int | None
-    _scheduling_lock: threading.Lock
-    _start_definition: collections.abc.Callable[
-        [ast.QualityDefinition, Future[_PostorderResult]], None
-    ]
-
-    def __init__(
-        self,
-        definition: ast.QualityDefinition,
-        reference_count: int,
-        start_definition: collections.abc.Callable[
-            [ast.QualityDefinition, Future[_PostorderResult]], None
-        ],
-    ):
-        self._completion = Future()
-        self._definition = definition
-        self._remaining_references = reference_count
-        self._scheduling_lock = threading.Lock()
-        self._start_definition = start_definition
-
-    def start_when_references_complete(
-        self,
-        referenced_futures: list[Future[_PostorderResult]],
-    ):
-        """Register referenced definitions and start when they are ready."""
-        if not referenced_futures:
-            self._start_definition(self._definition, self._completion)
-            return
-        for referenced_future in referenced_futures:
-            referenced_future.add_done_callback(self._reference_completed)
-
-    @property
-    def future(self) -> Future[_PostorderResult]:
-        return self._completion
-
-    def result(self) -> _PostorderResult:
-        return self._completion.result()
-
-    def _reference_completed(
-        self,
-        referenced_future: Future[_PostorderResult],
-    ):
-        reference_completed_successfully = referenced_future.exception() is None
-        start_definition = False
-        with self._scheduling_lock:
-            if self._remaining_references is None:
-                return
-            if not reference_completed_successfully:
-                self._remaining_references = None
-            else:
-                self._remaining_references -= 1
-                if self._remaining_references == 0:
-                    self._remaining_references = None
-                    start_definition = True
-
-        if not reference_completed_successfully:
-            # This completion future was not submitted to an executor, so
-            # cancel() would never reach the CANCELLED_AND_NOTIFIED state that
-            # concurrent.futures.wait() requires before it stops waiting. Thus
-            # we use this sentinel exception to indicate completion in the error
-            # case, instead of cancel().
-            self._completion.set_exception(_ReferencedDefinitionValidationError())
-        elif start_definition:
-            self._start_definition(self._definition, self._completion)
-
-
-class _ValidatorWorkPool:
-    """Runs definition validation after referenced definitions complete."""
-
-    _executor: ThreadPoolExecutor
-    _validation_by_name: dict[str, _PendingDefinitionValidation]
-    _validate_action: collections.abc.Callable[
-        [ast.ActionDefinition],
-        definition_postorder_validator.PostorderValidationResult,
-    ]
-
-    def __init__(
-        self,
-        validate_action: collections.abc.Callable[
-            [ast.ActionDefinition],
-            definition_postorder_validator.PostorderValidationResult,
-        ],
-        max_workers: int | None = None,
-    ):
-        self._executor = ThreadPoolExecutor(max_workers=max_workers)
-        self._validation_by_name = {}
-        self._validate_action = validate_action
-
-    def __enter__(self) -> typing.Self:
-        return self
-
-    def __exit__(self, *args: object):
-        self._executor.shutdown(wait=True)
-
-    def submit(
-        self,
-        definition: ast.QualityDefinition,
-        referenced_definitions: collections.abc.Iterable[ast.QualityDefinition],
-    ):
-        """Submit a definition to start after its references are ready."""
-        referenced_futures = [
-            self._validation_by_name[
-                referenced_definition.typed_name.full_typed_name
-            ].future
-            for referenced_definition in referenced_definitions
-        ]
-        validation = _PendingDefinitionValidation(
-            definition,
-            len(referenced_futures),
-            self._start_definition,
-        )
-        self._validation_by_name[definition.typed_name.full_typed_name] = validation
-        validation.start_when_references_complete(referenced_futures)
-
-    def wait(self):
-        """Wait for every submitted definition to complete."""
-        _ = wait(validation.future for validation in self._validation_by_name.values())
-
-    def result(self, definition: ast.QualityDefinition) -> _PostorderResult:
-        """Return the completed validation result for ``definition``."""
-        return self._validation_by_name[definition.typed_name.full_typed_name].result()
-
-    def _start_definition(
-        self,
-        definition: ast.QualityDefinition,
-        validator_future: Future[_PostorderResult],
-    ):
-        if not isinstance(definition, ast.ActionDefinition):
-            validator_future.set_result(None)
-            return
-
-        executor_future = self._executor.submit(self._validate_action, definition)
-        executor_future.add_done_callback(
-            lambda completed_executor_future: self._complete_future(
-                completed_executor_future, validator_future
-            )
-        )
-
-    def _complete_future(
-        self,
-        executor_future: Future[
-            definition_postorder_validator.PostorderValidationResult
-        ],
-        validator_future: Future[_PostorderResult],
-    ):
-        exception = executor_future.exception()
-        if exception is not None:
-            validator_future.set_exception(exception)
-        else:
-            validator_future.set_result(executor_future.result())
-
-
 @dataclass(frozen=True, slots=True)
 class ReferenceGraphValidationResult:
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
-    definitions: list[ast.QualityDefinition]
+    definition_order: reference_graph_executor.ReferenceGraphOrder
     action_call_graph: action_call_graph.ActionCallGraph
     # The DLP 44 operation dependency graph of every action.
     operation_graphs: operation_graph.OperationGraphs
@@ -231,19 +70,20 @@ class ReferenceGraphValidator:
         self, max_workers: int | None = None
     ) -> ReferenceGraphValidationResult:
         """Validate every definition in direct-reference-first order."""
-        definitions = list(self._reference_graph.dfs_postorder_all())
-        with _ValidatorWorkPool(self._validate_action, max_workers=max_workers) as pool:
-            for definition in definitions:
-                pool.submit(
-                    definition,
-                    self._reference_graph.referenced_definitions(definition),
-                )
-            pool.wait()
+        definition_order = reference_graph_executor.ReferenceGraphOrder(
+            self._reference_graph
+        )
+        results = reference_graph_executor.process_definitions(
+            definition_order,
+            self._validate_definition,
+            max_workers=max_workers,
+        )
 
         call_graph = action_call_graph.ActionCallGraph()
         operation_graphs = operation_graph.OperationGraphs()
-        for definition in definitions:
-            result = pool.result(definition)
+        for definition, result in zip(
+            definition_order.definitions, results, strict=True
+        ):
             if result is None:
                 continue
             definition_result = self._definition_results[definition.typed_name]
@@ -253,10 +93,17 @@ class ReferenceGraphValidator:
                 call_graph.add_edge(edge.source, edge.target)
             operation_graphs[definition.typed_name] = result.operation_graph
         return ReferenceGraphValidationResult(
-            definitions=definitions,
+            definition_order=definition_order,
             action_call_graph=call_graph,
             operation_graphs=operation_graphs,
         )
+
+    def _validate_definition(
+        self, definition: ast.QualityDefinition
+    ) -> _PostorderResult:
+        if not isinstance(definition, ast.ActionDefinition):
+            return None
+        return self._validate_action(definition)
 
     def _validate_action(
         self, definition: ast.ActionDefinition

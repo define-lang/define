@@ -45,6 +45,16 @@ py_library(
     deps = ["//define/compiler:ast"],
 )
 
+py_library(
+    name = "reference_graph_executor",
+    srcs = ["reference_graph_executor.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":reference_graph",
+        "//define/compiler:ast",
+    ],
+)
+
 py_test(
     name = "reference_graph_test",
     size = "small",
@@ -73,6 +83,7 @@ pyright_test(
         ":action_call_graph_renderer_test",
         ":graphs",
         ":reference_graph",
+        ":reference_graph_executor",
         ":reference_graph_test",
     ],
 )

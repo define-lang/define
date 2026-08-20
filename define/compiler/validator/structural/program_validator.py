@@ -185,6 +185,13 @@ class ProgramStructuralValidator:
         file_results: list[validation_result.FileValidationResult],
     ) -> validation_result.ProgramValidationResult:
         """Wrap file results into a ProgramValidationResult."""
+        # TODO: Finalize the ReferenceGraph into a ReferenceGraphOrder here and
+        # retain only that order in ProgramValidationResult. Reference graph
+        # validation and codegen can then share the completed order while the
+        # mutable graph and its cycle-detection state are collected before
+        # reference graph validation begins. ReferenceGraphOrder should move out
+        # of reference_graph_executor as part of that ownership change.
+
         # The completed ReferenceGraph replaces these structural-only edges;
         # retaining both would duplicate per-reference state during later stages.
         for file_result in file_results:
