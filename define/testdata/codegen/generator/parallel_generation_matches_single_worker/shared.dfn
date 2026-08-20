@@ -3,7 +3,6 @@ define the potential action<my.domain.com:my_lib:/shared> {
     it happens when {
         the position<trigger> has a particle.
     } and it does {
-        define the position<result>.
-        create a particle in position<result>.
+        destroy the particle in position<trigger>.
     }
 }

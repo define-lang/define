@@ -22,6 +22,7 @@ def _generate(
         program_result.reference_graph,
         program_result.definition_results,
     ).validate()
+    assert_no_errors(program_result)
     entry_action = program_result.entry_action
     assert entry_action is not None
     generator.CodeGenerator().generate(

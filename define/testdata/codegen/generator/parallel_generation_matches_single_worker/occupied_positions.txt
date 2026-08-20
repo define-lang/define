@@ -1,0 +1,2 @@
+action<local.my_domain_com.my_lib.left.Left>::position<trigger>
+action<local.my_domain_com.my_lib.right.Right>::position<trigger>
