@@ -26,7 +26,6 @@ in any such situation.
 
 from __future__ import annotations
 
-import collections
 import typing
 from dataclasses import dataclass, field
 
@@ -1101,17 +1100,18 @@ class OperationGraphs(
 ):
     """The operation dependency graphs of every validated action.
 
-    Not thread-safe. Adding an operation graph mutates the inherited mapping
-    (which itself is not thread-safe), and resolving cross-graph relationships
-    mutates internal lazy caches.
+    Adding an operation graph while other threads read this collection is not
+    supported. Calls from multiple threads write distinct destruction keys,
+    while shared guarantee operations are published with CPython's internally
+    synchronized dictionary operations.
     """
 
     def __init__(self):
         """Initialize an empty operation-graph collection."""
         super().__init__()
-        self._guarantee_resolutions: collections.defaultdict[
+        self._guarantee_resolutions: dict[
             str, dict[tuple[str, ...], operation_graph_model.PositionOperationNode]
-        ] = collections.defaultdict(dict)
+        ] = {}
         self._destruction_dependencies: dict[
             tuple[
                 operation_graph_model.ActionExecution,
@@ -1128,15 +1128,21 @@ class OperationGraphs(
         executions = [guarantee.execution, *guarantee.nested_executions]
         action = executions[-1].callee_action_name
         position = guarantee.guaranteed_position
-        action_resolutions = self._guarantee_resolutions[action.full_typed_name]
+        # The get avoids allocating a candidate dictionary on cache hits;
+        # setdefault rechecks and publishes the candidate in one synchronized
+        # CPython dictionary operation when independent callers miss together.
+        action_resolutions = self._guarantee_resolutions.get(action.full_typed_name)
+        if action_resolutions is None:
+            action_resolutions = self._guarantee_resolutions.setdefault(
+                action.full_typed_name, {}
+            )
         operation = action_resolutions.get(position)
         if operation is None:
-            graph = self[action]
-            operation = typing.cast(
+            candidate = typing.cast(
                 "operation_graph_model.PositionOperationNode",
-                graph.last_operation_on_position_or_parents(position),
+                self[action].last_operation_on_position_or_parents(position),
             )
-            action_resolutions[position] = operation
+            operation = action_resolutions.setdefault(position, candidate)
         return GuaranteePath(guarantee, executions, operation)
 
     def _resolve_destruction_operation(

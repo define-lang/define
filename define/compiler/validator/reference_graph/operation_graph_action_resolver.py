@@ -1467,11 +1467,11 @@ class _ActionResolver:
 
 @typing.final
 class ResolvedActions:
-    """Resolve and retain reusable action dependency interfaces."""
+    """Resolve and retain actions in direct-callee-first definition order.
 
-    # TODO: For parallel codegen, coordinate each action with a single-assignment
-    # future. The first thread to claim an action resolves it; other threads wait
-    # for the same result or exception.
+    Each action is resolved once after its direct callees, so parallel planning
+    writes distinct cached actions and only reads completed callee entries.
+    """
 
     def __init__(
         self,

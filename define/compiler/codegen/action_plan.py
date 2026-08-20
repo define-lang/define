@@ -679,10 +679,6 @@ class _ActionPlanBuilder:
 class ActionPlans:
     """Build action plans while reusing resolved direct-callee interfaces."""
 
-    # TODO: For parallel codegen, guarantee-resolution caching needs keyed
-    # synchronization because separate action plans can resolve the same
-    # guaranteed position concurrently.
-
     def __init__(
         self,
         operation_graphs: operation_graph.OperationGraphs,
