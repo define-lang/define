@@ -471,10 +471,6 @@ class CalleeBindings:
             ),
         )
 
-    def values(self) -> Iterable[CalleeBinding]:
-        """Return the direct callee bindings in their established order."""
-        return self._bindings_by_callee_binding_hole.values()
-
     @property
     def with_runtime_consumers(self) -> list[CalleeBinding]:
         """Bindings consumed by the callee or a contributed Destroy, in order."""
@@ -485,6 +481,12 @@ class CalleeBindings:
     ) -> CalleeBinding:
         """Return the binding for one direct callee Binding Hole."""
         return self._bindings_by_callee_binding_hole[callee_binding_hole]
+
+    def get(
+        self, callee_binding_hole: operation_graph_model.BindingHole
+    ) -> CalleeBinding | None:
+        """Return the binding for one direct callee Binding Hole, if present."""
+        return self._bindings_by_callee_binding_hole.get(callee_binding_hole)
 
     # A contributed Destroy can consume a binding otherwise used only as a
     # prerequisite, and that association is known only after every binding is
@@ -1133,7 +1135,7 @@ class _ActionResolver:
         graph: operation_graph.OperationGraph,
         operation_graphs: operation_graph.OperationGraphs,
         resolved_callees: Mapping[ast.GlobalTypedName, ResolvedAction],
-        empty_rule_binding_hole_by_operation_node: dict[
+        resolved_empty_rule_binding_hole_by_operation_node: dict[
             operation_graph_model.EmptyRuleBindingHoleNode,
             operation_graph_model.EmptyRuleBindingHole,
         ]
@@ -1143,8 +1145,8 @@ class _ActionResolver:
         self._graph = graph
         self._operation_graphs = operation_graphs
         self._resolved_callees = resolved_callees
-        self._empty_rule_binding_hole_by_operation_node = (
-            empty_rule_binding_hole_by_operation_node
+        self._resolved_empty_rule_binding_hole_by_operation_node = (
+            resolved_empty_rule_binding_hole_by_operation_node
         )
         self._action_binding_holes_builder = _ActionBindingHolesBuilder(
             graph,
@@ -1185,8 +1187,10 @@ class _ActionResolver:
                     node,
                     replacement_depends_on_targets_by_node,
                 )
-                if self._empty_rule_binding_hole_by_operation_node is not None:
-                    self._empty_rule_binding_hole_by_operation_node[node] = binding_hole
+                if self._resolved_empty_rule_binding_hole_by_operation_node is not None:
+                    self._resolved_empty_rule_binding_hole_by_operation_node[node] = (
+                        binding_hole
+                    )
                 replacement_depends_on_targets_by_node[node] = (binding_hole,)
             elif isinstance(node, operation_graph_model.GuaranteeNode):
                 resolved_execution = resolved_execution_by_execution[node.execution]
@@ -1473,7 +1477,7 @@ class ResolvedActions:
         self,
         operation_graphs: operation_graph.OperationGraphs,
         *,
-        empty_rule_binding_hole_by_operation_node: dict[
+        resolved_empty_rule_binding_hole_by_operation_node: dict[
             operation_graph_model.EmptyRuleBindingHoleNode,
             operation_graph_model.EmptyRuleBindingHole,
         ]
@@ -1481,8 +1485,8 @@ class ResolvedActions:
     ):
         """Initialize with the validated operation graphs."""
         self._operation_graphs = operation_graphs
-        self._empty_rule_binding_hole_by_operation_node = (
-            empty_rule_binding_hole_by_operation_node
+        self._resolved_empty_rule_binding_hole_by_operation_node = (
+            resolved_empty_rule_binding_hole_by_operation_node
         )
         self._resolved: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, ResolvedAction
@@ -1497,7 +1501,7 @@ class ResolvedActions:
             self._operation_graphs[action],
             self._operation_graphs,
             self._resolved,
-            self._empty_rule_binding_hole_by_operation_node,
+            self._resolved_empty_rule_binding_hole_by_operation_node,
         ).resolve()
         self._resolved[action] = resolved
         return resolved

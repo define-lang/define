@@ -119,11 +119,9 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
     assert resolved.action_executions_triggered_by(trigger_position_create) == [
         resolved_execution
     ]
-    (callee_binding,) = resolved_execution.callee_bindings.values()
-    assert (
-        callee_binding.callee_binding_hole
-        is resolved_callee.binding_holes.in_binding_order[0]
-    )
+    callee_binding_hole = resolved_callee.binding_holes.in_binding_order[0]
+    callee_binding = resolved_execution.callee_bindings[callee_binding_hole]
+    assert callee_binding.callee_binding_hole is callee_binding_hole
     assert (
         callee_binding.caller_dependencies
         == operation_graph_action_resolver.ActionDependencies([], [])
@@ -162,7 +160,7 @@ def test_requirement_binding_hole_fires_destructor():
     graphs[destructor_action] = destructor_builder.finish()
     graphs[caller_action] = caller_builder.finish()
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
-    _ = resolved_actions.resolve(destructor_action)
+    resolved_destructor = resolved_actions.resolve(destructor_action)
     resolved = resolved_actions.resolve(caller_action)
 
     assert isinstance(
@@ -170,9 +168,10 @@ def test_requirement_binding_hole_fires_destructor():
         operation_graph_model.RequirementNode,
     )
     (resolved_destructor_execution,) = resolved.action_executions
-    (destructor_callee_binding,) = (
-        resolved_destructor_execution.callee_bindings.values()
-    )
+    (destructor_binding_hole,) = resolved_destructor.binding_holes.in_binding_order
+    destructor_callee_binding = resolved_destructor_execution.callee_bindings[
+        destructor_binding_hole
+    ]
     (binding_hole,) = resolved.binding_holes.in_binding_order
     assert binding_hole is destructor_execution.trigger_operation
     assert destructor_callee_binding.caller_binding_holes == [binding_hole]
