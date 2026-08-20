@@ -118,8 +118,8 @@ class SourceAnalysis:
                 return "pattern does not match"
         return None
 
-    def branch_only_raises(self, branch: UncoveredBranch) -> bool:
-        """Return whether a branch leads only to a raise statement."""
+    def branch_only_fails(self, branch: UncoveredBranch) -> bool:
+        """Return whether a branch leads only to an explicit test failure."""
         if branch.target_line is None or branch.source_file.suffix != ".py":
             return False
 
@@ -134,6 +134,15 @@ class SourceAnalysis:
                 end_line = cast("int", node.end_lineno)
                 if node.lineno <= branch.target_line <= end_line:
                     return True
+            elif (
+                isinstance(node, ast.If)
+                and node.lineno == branch.source_line
+                and (
+                    _suite_only_calls_pytest_fail(node.body, branch.target_line)
+                    or _suite_only_calls_pytest_fail(node.orelse, branch.target_line)
+                )
+            ):
+                return True
             elif isinstance(node, ast.match_case):
                 pattern = node.pattern
                 if (
@@ -147,6 +156,23 @@ class SourceAnalysis:
                 ):
                     return True
         return False
+
+
+def _suite_only_calls_pytest_fail(
+    statements: Sequence[ast.stmt], target_line: int
+) -> bool:
+    if len(statements) != 1 or not isinstance(statements[0], ast.Expr):
+        return False
+    expression = statements[0]
+    call = expression.value
+    return (
+        expression.lineno <= target_line <= cast("int", expression.end_lineno)
+        and isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Attribute)
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "pytest"
+        and call.func.attr == "fail"
+    )
 
 
 def analyze_report(
@@ -175,7 +201,7 @@ def analyze_report(
                 and selected_source_directories.isdisjoint(branch_source_path.parents)
             ):
                 continue
-        if source_analysis.branch_only_raises(branch):
+        if source_analysis.branch_only_fails(branch):
             exception_only.append(branch)
         else:
             actionable.append(branch)

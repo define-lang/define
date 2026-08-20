@@ -59,6 +59,45 @@ def test_analyze_report_omits_jump_into_multiline_raise(tmp_path: Path):
     assert len(exception_only) == 1
 
 
+def test_analyze_report_omits_branch_that_only_calls_pytest_fail(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def check(success: bool):\n"
+        + "    if not success:\n"
+        + "        pytest.fail(\n"
+        + '            "operation failed"\n'
+        + "        )\n"
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        "SF:example.py\nBRDA:2,0,jump to line 4,0\nend_of_record\n"
+    )
+
+    actionable, exception_only = analyze_coverage.analyze_report(report_path, tmp_path)
+
+    assert actionable == []
+    assert len(exception_only) == 1
+
+
+def test_analyze_report_keeps_branch_with_work_before_pytest_fail(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def check(success: bool):\n"
+        + "    if not success:\n"
+        + "        log_failure()\n"
+        + '        pytest.fail("operation failed")\n'
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        "SF:example.py\nBRDA:2,0,jump to line 4,0\nend_of_record\n"
+    )
+
+    actionable, exception_only = analyze_coverage.analyze_report(report_path, tmp_path)
+
+    assert len(actionable) == 1
+    assert exception_only == []
+
+
 def test_analyze_report_omits_wildcard_case_that_only_raises(tmp_path: Path):
     source_path = tmp_path / "example.py"
     _ = source_path.write_text(
