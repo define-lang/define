@@ -455,11 +455,8 @@ class ResolvedOperationGraphBuilder:
                 operation_graph_action_resolver.CalleeBinding
             ] = []
             for prerequisite_callee_binding_hole in prerequisite_callee_binding_holes:
-                prerequisite_callee_binding = (
-                    self._existing_callee_binding_for_destruction(
-                        resolved_execution,
-                        prerequisite_callee_binding_hole,
-                    )
+                prerequisite_callee_binding = resolved_execution.callee_bindings.get(
+                    prerequisite_callee_binding_hole
                 )
                 if prerequisite_callee_binding is None:
                     prerequisite_callee_binding = self._callee_bindings_for_destruction_before_caller_contribution[
