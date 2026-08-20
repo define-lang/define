@@ -185,6 +185,11 @@ class ProgramStructuralValidator:
         file_results: list[validation_result.FileValidationResult],
     ) -> validation_result.ProgramValidationResult:
         """Wrap file results into a ProgramValidationResult."""
+        # The completed ReferenceGraph replaces these structural-only edges;
+        # retaining both would duplicate per-reference state during later stages.
+        for file_result in file_results:
+            for definition_result in file_result.definition_results:
+                definition_result.reference_edges.clear()
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             config_loading_time_ns=self._config_loading_time_ns,

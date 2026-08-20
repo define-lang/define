@@ -173,9 +173,17 @@ class Driver:
     ) -> CompilerValidationResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        pv = program_validator.ProgramStructuralValidator(self._parser_instance)
+        structural_validator = program_validator.ProgramStructuralValidator(
+            self._parser_instance
+        )
+        program_validation = structural_validator.validate_program(
+            path=resolved_path, max_workers=max_threads
+        )
+        # The result owns the completed data but not the PathTracker or other
+        # coordinator state, so release the coordinator before the next stage.
+        del structural_validator
         return self._complete_validation(
-            pv.validate_program(path=resolved_path, max_workers=max_threads),
+            program_validation,
             max_threads=max_threads,
         )
 
@@ -183,9 +191,17 @@ class Driver:
         self, source: str, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
         """Validate source text in non-filesystem mode."""
-        pv = program_validator.ProgramStructuralValidator(self._parser_instance)
+        structural_validator = program_validator.ProgramStructuralValidator(
+            self._parser_instance
+        )
+        program_validation = structural_validator.validate_program_non_filesystem(
+            source, max_workers=max_threads
+        )
+        # The result owns the completed data but not the PathTracker or other
+        # coordinator state, so release the coordinator before the next stage.
+        del structural_validator
         return self._complete_validation(
-            pv.validate_program_non_filesystem(source, max_workers=max_threads),
+            program_validation,
             max_threads=max_threads,
         )
 
