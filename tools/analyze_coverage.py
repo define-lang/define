@@ -135,6 +135,10 @@ class SourceAnalysis:
                 if node.lineno <= branch.target_line <= end_line:
                     return True
             elif (
+                isinstance(node, ast.Expr)
+                and node.lineno <= branch.target_line <= cast("int", node.end_lineno)
+                and _expression_calls(node, "typing", "assert_never")
+            ) or (
                 isinstance(node, ast.If)
                 and node.lineno == branch.source_line
                 and (
@@ -157,6 +161,32 @@ class SourceAnalysis:
                     return True
         return False
 
+    def branch_is_final_case_nonmatch(self, branch: UncoveredBranch) -> bool:
+        """Return whether a branch is the non-match edge of an unguarded final case."""
+        if branch.source_file.suffix != ".py":
+            return False
+
+        source_path = self._path(branch.source_file)
+        tree = self._trees_by_path.get(source_path)
+        if tree is None:
+            tree = ast.parse(source_path.read_text(), filename=str(source_path))
+            self._trees_by_path[source_path] = tree
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Match) or not node.cases:
+                continue
+            final_case = node.cases[-1]
+            if (
+                final_case.pattern.lineno == branch.source_line
+                and final_case.guard is None
+                and (
+                    branch.target_line is None
+                    or not _line_is_in_statements(branch.target_line, final_case.body)
+                )
+            ):
+                return True
+        return False
+
 
 def _suite_only_calls_pytest_fail(
     statements: Sequence[ast.stmt], target_line: int
@@ -164,14 +194,19 @@ def _suite_only_calls_pytest_fail(
     if len(statements) != 1 or not isinstance(statements[0], ast.Expr):
         return False
     expression = statements[0]
+    return expression.lineno <= target_line <= cast(
+        "int", expression.end_lineno
+    ) and _expression_calls(expression, "pytest", "fail")
+
+
+def _expression_calls(expression: ast.Expr, module: str, function: str) -> bool:
     call = expression.value
     return (
-        expression.lineno <= target_line <= cast("int", expression.end_lineno)
-        and isinstance(call, ast.Call)
+        isinstance(call, ast.Call)
         and isinstance(call.func, ast.Attribute)
         and isinstance(call.func.value, ast.Name)
-        and call.func.value.id == "pytest"
-        and call.func.attr == "fail"
+        and call.func.value.id == module
+        and call.func.attr == function
     )
 
 
@@ -179,8 +214,8 @@ def analyze_report(
     report_path: Path,
     source_root: Path,
     source_paths: Sequence[Path] = (),
-) -> tuple[list[UncoveredBranch], list[UncoveredBranch]]:
-    """Separate actionable uncovered branches from exception-only branches."""
+) -> tuple[list[UncoveredBranch], list[UncoveredBranch], list[UncoveredBranch]]:
+    """Classify actionable, low-value, and explicit-failure-only branches."""
     source_analysis = SourceAnalysis(source_root)
     uncovered = parse_uncovered_branches(report_path)
     selected_source_files: set[Path] = set()
@@ -192,6 +227,7 @@ def analyze_report(
         else:
             selected_source_files.add(resolved_path)
     actionable: list[UncoveredBranch] = []
+    low_value: list[UncoveredBranch] = []
     exception_only: list[UncoveredBranch] = []
     for branch in uncovered:
         if selected_source_files or selected_source_directories:
@@ -203,20 +239,44 @@ def analyze_report(
                 continue
         if source_analysis.branch_only_fails(branch):
             exception_only.append(branch)
+        elif source_analysis.branch_is_final_case_nonmatch(branch):
+            low_value.append(branch)
         else:
             actionable.append(branch)
-    return actionable, exception_only
+    return actionable, low_value, exception_only
 
 
 def format_report(
     actionable: Sequence[UncoveredBranch],
+    low_value: Sequence[UncoveredBranch],
     exception_only: Sequence[UncoveredBranch],
     source_root: Path,
 ) -> str:
     """Format uncovered branches with their source and destination lines."""
     source_analysis = SourceAnalysis(source_root)
     output_lines: list[str] = []
-    for branch in actionable:
+    _append_formatted_branches(output_lines, actionable, source_analysis)
+
+    if low_value:
+        output_lines.append("Low-value final-case non-match branches:")
+        _append_formatted_branches(output_lines, low_value, source_analysis)
+
+    if not actionable:
+        output_lines.append("No uncovered actionable branches.")
+    output_lines.append(
+        f"{len(actionable)} actionable uncovered branches reported; "
+        + f"{len(low_value)} low-value final-case non-match branches reported; "
+        + f"{len(exception_only)} explicit-failure-only branches omitted."
+    )
+    return "\n".join(output_lines)
+
+
+def _append_formatted_branches(
+    output_lines: list[str],
+    branches: Sequence[UncoveredBranch],
+    source_analysis: SourceAnalysis,
+):
+    for branch in branches:
         origin = source_analysis.line(branch.source_file, branch.source_line)
         output_lines.append(f"{branch.source_file}:{branch.source_line}:")
         output_lines.append(f"  branch source: {origin}")
@@ -228,14 +288,6 @@ def format_report(
             target = source_analysis.line(branch.source_file, branch.target_line)
             destination = f"line {branch.target_line}: {target}"
         output_lines.append(f"  uncovered destination: {destination}")
-
-    if not actionable:
-        output_lines.append("No uncovered non-exception branches.")
-    output_lines.append(
-        f"{len(actionable)} uncovered branches reported; "
-        + f"{len(exception_only)} exception-only branches omitted."
-    )
-    return "\n".join(output_lines)
 
 
 def _line_is_in_statements(line: int, statements: Sequence[ast.stmt]) -> bool:
@@ -286,8 +338,10 @@ def main(source_paths: tuple[Path, ...]):
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
         )
-    actionable, exception_only = analyze_report(report_path, source_root, source_paths)
-    click.echo(format_report(actionable, exception_only, source_root))
+    actionable, low_value, exception_only = analyze_report(
+        report_path, source_root, source_paths
+    )
+    click.echo(format_report(actionable, low_value, exception_only, source_root))
 
 
 if __name__ == "__main__":

@@ -24,11 +24,12 @@ description:
    The analyzer has `--help` if needed.
 
 3. Create `htmlcov/coverage_report.html` from the analyzer output. Include every
-   reported branch and preserve its branch source, uncovered outcome when
-   present, and uncovered destination. The `htmlcov/` directory is ignored by
-   Git.
+   reported branch and preserve its classification, branch source, uncovered
+   outcome when present, and uncovered destination. The `htmlcov/` directory is
+   ignored by Git.
 
-4. Give every branch:
+4. Put actionable branches in the main review section. Give every actionable
+   branch:
 
    - A checkbox.
    - An optional comments field.
@@ -38,6 +39,12 @@ description:
      surrounding code to understand the branch. Visually distinguish the branch
      source line and, when it is in the same file, the uncovered destination
      line.
+
+   Put low-value final-case non-match branches in a separate collapsed section.
+   Show their paths, analyzer details, and source snippets, but do not give them
+   checkboxes or comments fields and do not include them in the submission.
+   Explicit-failure-only branches omitted by the analyzer do not appear in the
+   report.
 
    Keep the report self-contained. Embed the syntax-highlighting styles and any
    required code in the HTML instead of loading a library from the network.

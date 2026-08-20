@@ -170,11 +170,11 @@ def test_server_restricts_access_and_stops_after_valid_submission(tmp_path: Path
             "POST",
             "/secret-token/submit",
             headers={"Content-Type": "application/json", "Origin": origin},
-            body=valid_payload,
+            body=json.dumps({"selected_branches": []}),
         )
         assert status == HTTPStatus.NO_CONTENT
 
         server_thread.join(timeout=1)
         assert not server_thread.is_alive()
 
-    assert selection_path.read_text() == '{\n  "items": []\n}\n'
+    assert selection_path.read_text() == '{\n  "selected_branches": []\n}\n'

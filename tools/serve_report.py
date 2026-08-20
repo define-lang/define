@@ -86,7 +86,9 @@ class ReportHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST)
             return
         payload_mapping = cast("dict[str, object]", payload)
-        if not isinstance(payload_mapping.get("items"), list):
+        if not isinstance(payload_mapping.get("items"), list) and not isinstance(
+            payload_mapping.get("selected_branches"), list
+        ):
             self.send_error(HTTPStatus.BAD_REQUEST)
             return
         _ = self.selection_path.write_text(json.dumps(payload, indent=2) + "\n")
