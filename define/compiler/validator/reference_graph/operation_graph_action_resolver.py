@@ -173,6 +173,24 @@ def _partition_caller_dependencies(
     return dependencies, binding_holes
 
 
+def _resolve_empty_rule_binding_hole(
+    node: operation_graph_model.EmptyRuleBindingHoleNode,
+    replacement_depends_on_targets_by_node: Mapping[
+        operation_graph_model.OperationNode,
+        Sequence[_ActionDependsOnTarget],
+    ],
+) -> operation_graph_model.EmptyRuleBindingHole:
+    """Resolve an Operation Graph Empty Rule Binding Hole."""
+    prerequisite_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
+        node.remaining_concrete_nodes,
+        replacement_depends_on_targets_by_node=replacement_depends_on_targets_by_node,
+    )
+    return operation_graph_model.EmptyRuleBindingHole.from_collection(
+        node.empty_rule_binding_hole,
+        prerequisite_binding_holes,
+    )
+
+
 @dataclass(slots=True, eq=False)
 class CalleeBinding:
     """One callee-to-caller binding across a direct Action Execution."""
@@ -207,10 +225,6 @@ class CalleeBinding:
                     prerequisite_callee_bindings,
                     replacement_depends_on_targets_by_node,
                 )
-            # TODO: Investigate moving direct EmptyRuleBindingHoleNode binding to
-            # operation_graph_resolver. Only full-graph resolution before a caller's
-            # destruction contribution binds an Operation Graph node instead of the
-            # resolved EmptyRuleBindingHole.
             case operation_graph_model.EmptyRuleBindingHoleNode(
                 empty_rule_binding_hole=empty_rule_binding_hole
             ):
@@ -346,10 +360,6 @@ def prerequisite_binding_holes(
 ) -> tuple[operation_graph_model.BindingHole, ...]:
     """Return the Binding Holes that must be bound before this one."""
     match binding_hole:
-        # TODO: Investigate moving EmptyRuleBindingHoleNode prerequisite handling
-        # to operation_graph_resolver. Only full-graph resolution before a caller's
-        # destruction contribution asks for prerequisites of the Operation Graph
-        # node.
         case operation_graph_model.EmptyRuleBindingHoleNode(
             empty_rule_binding_hole=empty_rule_binding_hole
         ):
@@ -475,16 +485,6 @@ class CalleeBindings:
     ) -> CalleeBinding:
         """Return the binding for one direct callee Binding Hole."""
         return self._bindings_by_callee_binding_hole[callee_binding_hole]
-
-    def get(
-        self, callee_binding_hole: operation_graph_model.BindingHole
-    ) -> CalleeBinding | None:
-        """Return the binding for one direct callee Binding Hole, if present."""
-        # TODO: Investigate moving optional callee-binding lookup to
-        # operation_graph_resolver. Only full-graph resolution before a caller's
-        # destruction contribution can request a Binding Hole absent from the
-        # reusable action interface.
-        return self._bindings_by_callee_binding_hole.get(callee_binding_hole)
 
     # A contributed Destroy can consume a binding otherwise used only as a
     # prerequisite, and that association is known only after every binding is
@@ -667,26 +667,10 @@ class ActionBindingHoles:
 
     in_binding_order: list[operation_graph_model.BindingHole]
     with_runtime_consumers: list[operation_graph_model.BindingHole]
-    # TODO: Remove this retained mapping when operation_graph_resolver owns direct
-    # EmptyRuleBindingHoleNode binding for destruction relationships before caller
-    # contributions. _ActionBindingHolesBuilder still needs the mapping while
-    # resolving the action, but the completed action interface should not retain
-    # state used only by the full-graph resolver.
-    _empty_rule_binding_hole_by_operation_node: dict[
-        operation_graph_model.EmptyRuleBindingHoleNode,
-        operation_graph_model.EmptyRuleBindingHole,
-    ]
     _binding_holes_by_guaranteed_operation_reference: dict[
         _GuaranteedOperationReference,
         tuple[operation_graph_model.BindingHole, ...],
     ]
-
-    def binding_hole_for_operation_node(
-        self,
-        node: operation_graph_model.EmptyRuleBindingHoleNode,
-    ) -> operation_graph_model.EmptyRuleBindingHole:
-        """Return the Binding Hole represented by an Operation Graph node."""
-        return self._empty_rule_binding_hole_by_operation_node[node]
 
     @property
     def binding_holes_by_guaranteed_operation_reference(
@@ -810,42 +794,9 @@ class _ActionBindingHolesBuilder:
     ):
         self._graph = graph
         self._resolved_callees = resolved_callees
-        self._empty_rule_binding_hole_by_operation_node: dict[
-            operation_graph_model.EmptyRuleBindingHoleNode,
-            operation_graph_model.EmptyRuleBindingHole,
-        ] = {}
         self._guarantee_nodes_with_callee_binding_holes: list[
             operation_graph_model.GuaranteeNode
         ] = []
-
-    def resolve_empty_rule_binding_hole(
-        self,
-        node: operation_graph_model.EmptyRuleBindingHoleNode,
-        replacement_depends_on_targets_by_node: Mapping[
-            operation_graph_model.OperationNode,
-            Sequence[_ActionDependsOnTarget],
-        ],
-    ) -> operation_graph_model.EmptyRuleBindingHole:
-        """Resolve an Operation Graph Empty Rule Binding Hole."""
-        prerequisite_binding_holes = operation_graph_rules.binding_holes_depended_on_by(
-            node.remaining_concrete_nodes,
-            replacement_depends_on_targets_by_node=(
-                replacement_depends_on_targets_by_node
-            ),
-        )
-        binding_hole = operation_graph_model.EmptyRuleBindingHole.from_collection(
-            node.empty_rule_binding_hole,
-            prerequisite_binding_holes,
-        )
-        self._empty_rule_binding_hole_by_operation_node[node] = binding_hole
-        return binding_hole
-
-    def binding_hole_for_operation_node(
-        self,
-        node: operation_graph_model.EmptyRuleBindingHoleNode,
-    ) -> operation_graph_model.EmptyRuleBindingHole:
-        """Return the Binding Hole already built for an Operation Graph node."""
-        return self._empty_rule_binding_hole_by_operation_node[node]
 
     def replacement_depends_on_targets_for_guarantee(
         self,
@@ -934,9 +885,6 @@ class _ActionBindingHolesBuilder:
                 for binding_hole in binding_holes_in_binding_order
                 if binding_hole in binding_holes_with_runtime_consumers
             ],
-            _empty_rule_binding_hole_by_operation_node=(
-                self._empty_rule_binding_hole_by_operation_node
-            ),
             _binding_holes_by_guaranteed_operation_reference=(
                 binding_holes_by_guaranteed_operation_reference
             ),
@@ -1185,11 +1133,19 @@ class _ActionResolver:
         graph: operation_graph.OperationGraph,
         operation_graphs: operation_graph.OperationGraphs,
         resolved_callees: Mapping[ast.GlobalTypedName, ResolvedAction],
+        empty_rule_binding_hole_by_operation_node: dict[
+            operation_graph_model.EmptyRuleBindingHoleNode,
+            operation_graph_model.EmptyRuleBindingHole,
+        ]
+        | None,
     ):
         """Initialize resolution with one graph and its resolved direct callees."""
         self._graph = graph
         self._operation_graphs = operation_graphs
         self._resolved_callees = resolved_callees
+        self._empty_rule_binding_hole_by_operation_node = (
+            empty_rule_binding_hole_by_operation_node
+        )
         self._action_binding_holes_builder = _ActionBindingHolesBuilder(
             graph,
             resolved_callees,
@@ -1225,12 +1181,12 @@ class _ActionResolver:
             )
         for node in self._graph.nodes:
             if isinstance(node, operation_graph_model.EmptyRuleBindingHoleNode):
-                binding_hole = (
-                    self._action_binding_holes_builder.resolve_empty_rule_binding_hole(
-                        node,
-                        replacement_depends_on_targets_by_node,
-                    )
+                binding_hole = _resolve_empty_rule_binding_hole(
+                    node,
+                    replacement_depends_on_targets_by_node,
                 )
+                if self._empty_rule_binding_hole_by_operation_node is not None:
+                    self._empty_rule_binding_hole_by_operation_node[node] = binding_hole
                 replacement_depends_on_targets_by_node[node] = (binding_hole,)
             elif isinstance(node, operation_graph_model.GuaranteeNode):
                 resolved_execution = resolved_execution_by_execution[node.execution]
@@ -1379,9 +1335,7 @@ class _ActionResolver:
                             operation.depends_on[:dependency_index]
                         )
                     replacement_depends_on_targets.append(
-                        self._action_binding_holes_builder.binding_hole_for_operation_node(
-                            dependency
-                        )
+                        replacement_depends_on_targets_by_node[dependency][0]
                     )
                 case (
                     operation_graph_model.ActionParentLastOperationNode()
@@ -1515,9 +1469,21 @@ class ResolvedActions:
     # future. The first thread to claim an action resolves it; other threads wait
     # for the same result or exception.
 
-    def __init__(self, operation_graphs: operation_graph.OperationGraphs):
+    def __init__(
+        self,
+        operation_graphs: operation_graph.OperationGraphs,
+        *,
+        empty_rule_binding_hole_by_operation_node: dict[
+            operation_graph_model.EmptyRuleBindingHoleNode,
+            operation_graph_model.EmptyRuleBindingHole,
+        ]
+        | None = None,
+    ):
         """Initialize with the validated operation graphs."""
         self._operation_graphs = operation_graphs
+        self._empty_rule_binding_hole_by_operation_node = (
+            empty_rule_binding_hole_by_operation_node
+        )
         self._resolved: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, ResolvedAction
         ] = typed_name_dict.TypedNameDict()
@@ -1531,6 +1497,7 @@ class ResolvedActions:
             self._operation_graphs[action],
             self._operation_graphs,
             self._resolved,
+            self._empty_rule_binding_hole_by_operation_node,
         ).resolve()
         self._resolved[action] = resolved
         return resolved
