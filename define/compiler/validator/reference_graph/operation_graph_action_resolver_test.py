@@ -47,7 +47,7 @@ def _position(name: str) -> ast.PositionReference:
 
 def test_resolved_actions_retains_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph(action)
+    graph = operation_graph.OperationGraphBuilder(action).finish()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -59,7 +59,7 @@ def test_resolved_actions_retains_resolved_action():
 
 def test_resolved_actions_reuses_resolved_action():
     action = _action("/test")
-    graph = operation_graph.OperationGraph(action)
+    graph = operation_graph.OperationGraphBuilder(action).finish()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
@@ -70,10 +70,11 @@ def test_resolved_actions_reuses_resolved_action():
 
 def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():
     action = _action("/test")
-    graph = operation_graph.OperationGraph(action)
+    builder = operation_graph.OperationGraphBuilder(action)
     work = _position("work")
-    create = graph.record_create(work)
-    destroy = graph.record_destroy(work, ())
+    create = builder.record_create(work)
+    destroy = builder.record_destroy(work, ())
+    graph = builder.finish()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved = operation_graph_action_resolver.ResolvedActions(graphs).resolve(action)
@@ -88,10 +89,10 @@ def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():
 def test_resolved_action_binds_action_parent_at_one_action_boundary():
     worker_action = _action("/worker")
     caller_action = _action("/caller")
-    caller_graph = operation_graph.OperationGraph(caller_action)
+    caller_builder = operation_graph.OperationGraphBuilder(caller_action)
     trigger_position = _position("run")
-    trigger_position_create = caller_graph.record_create(trigger_position)
-    execution = caller_graph.record_action_execution(
+    trigger_position_create = caller_builder.record_create(trigger_position)
+    execution = caller_builder.record_action_execution(
         _action_reference(worker_action),
         trigger_position,
         (),
@@ -99,11 +100,11 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    callee_graph = operation_graph.OperationGraph(worker_action)
-    _ = callee_graph.record_create(_position("work"))
+    callee_builder = operation_graph.OperationGraphBuilder(worker_action)
+    _ = callee_builder.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
-    graphs[worker_action] = callee_graph
-    graphs[caller_action] = caller_graph
+    graphs[worker_action] = callee_builder.finish()
+    graphs[caller_action] = caller_builder.finish()
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
     resolved_callee = resolved_actions.resolve(worker_action)
     resolved = resolved_actions.resolve(caller_action)
@@ -139,12 +140,12 @@ def test_resolved_action_binds_action_parent_at_one_action_boundary():
 def test_requirement_binding_hole_fires_destructor():
     destructor_action = _action("/destructor")
     caller_action = _action("/caller")
-    caller_graph = operation_graph.OperationGraph(caller_action)
+    caller_builder = operation_graph.OperationGraphBuilder(caller_action)
     item = _position("item")
-    caller_graph.record_requirement(
+    caller_builder.record_requirement(
         item, action_contract.PositionOccupancyState.OCCUPIED
     )
-    destructor_execution = caller_graph.record_action_execution(
+    destructor_execution = caller_builder.record_action_execution(
         ast.ActionReference(
             typed_names=(*item.typed_names, destructor_action),
             location=_LOCATION,
@@ -155,11 +156,11 @@ def test_requirement_binding_hole_fires_destructor():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    destructor_graph = operation_graph.OperationGraph(destructor_action)
-    _ = destructor_graph.record_create(_position("work"))
+    destructor_builder = operation_graph.OperationGraphBuilder(destructor_action)
+    _ = destructor_builder.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
-    graphs[destructor_action] = destructor_graph
-    graphs[caller_action] = caller_graph
+    graphs[destructor_action] = destructor_builder.finish()
+    graphs[caller_action] = caller_builder.finish()
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
     _ = resolved_actions.resolve(destructor_action)
     resolved = resolved_actions.resolve(caller_action)

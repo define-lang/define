@@ -85,12 +85,12 @@ def _fragment_operations(
 
 
 def test_serial_operations_form_one_fragment():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
     item = _position("item")
-    create = graph.record_create(item)
-    destroy = graph.record_destroy(item, ())
+    create = builder.record_create(item)
+    destroy = builder.record_destroy(item, ())
 
-    plan = _entry_plan(graph)
+    plan = _entry_plan(builder.finish())
 
     assert len(plan.fragments) == 1
     assert _fragment_operations(plan.fragments[0]) == (create, destroy)
@@ -100,24 +100,24 @@ def test_serial_operations_form_one_fragment():
 
 
 def test_triggered_action_has_no_execute_fragments():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
-    _ = graph.record_create(_position("item"))
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
+    _ = builder.record_create(_position("item"))
 
-    plan = _triggered_plan(graph)
+    plan = _triggered_plan(builder.finish())
 
     assert plan.execute_fragments == []
 
 
 def test_fan_out_forms_parallel_serial_fragments():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
     first = _position("first")
     second = _position("second")
-    first_create = graph.record_create(first)
-    first_destroy = graph.record_destroy(first, ())
-    second_create = graph.record_create(second)
-    second_destroy = graph.record_destroy(second, ())
+    first_create = builder.record_create(first)
+    first_destroy = builder.record_destroy(first, ())
+    second_create = builder.record_create(second)
+    second_destroy = builder.record_destroy(second, ())
 
-    plan = _entry_plan(graph)
+    plan = _entry_plan(builder.finish())
 
     assert [_fragment_operations(fragment) for fragment in plan.fragments] == [
         (first_create, first_destroy),
@@ -127,14 +127,14 @@ def test_fan_out_forms_parallel_serial_fragments():
 
 
 def test_join_starts_a_new_fragment():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
     source = _position("source")
     destination = _position("destination")
-    source_create = graph.record_create(source)
-    destination_create = graph.record_create(destination)
-    move = graph.record_move(source, destination, ())
+    source_create = builder.record_create(source)
+    destination_create = builder.record_create(destination)
+    move = builder.record_move(source, destination, ())
 
-    plan = _entry_plan(graph)
+    plan = _entry_plan(builder.finish())
 
     assert [_fragment_operations(fragment) for fragment in plan.fragments] == [
         (source_create,),
@@ -149,12 +149,14 @@ def test_join_starts_a_new_fragment():
 def test_entry_action_resolves_independent_empty_requirement_away():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
-    graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
-    create = graph.record_create(item)
-    move = graph.record_move(item, destination, ())
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
+    builder.record_requirement(
+        destination, action_contract.PositionOccupancyState.EMPTY
+    )
+    create = builder.record_create(item)
+    move = builder.record_move(item, destination, ())
 
-    plan = _entry_plan(graph)
+    plan = _entry_plan(builder.finish())
 
     assert [_fragment_operations(fragment) for fragment in plan.fragments] == [
         (create, move)
@@ -164,12 +166,14 @@ def test_entry_action_resolves_independent_empty_requirement_away():
 def test_triggered_action_preserves_independent_binding_hole():
     item = _position("item")
     destination = _position("destination")
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
-    graph.record_requirement(destination, action_contract.PositionOccupancyState.EMPTY)
-    create = graph.record_create(item)
-    move = graph.record_move(item, destination, ())
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
+    builder.record_requirement(
+        destination, action_contract.PositionOccupancyState.EMPTY
+    )
+    create = builder.record_create(item)
+    move = builder.record_move(item, destination, ())
 
-    plan = _triggered_plan(graph)
+    plan = _triggered_plan(builder.finish())
 
     assert [_fragment_operations(fragment) for fragment in plan.fragments] == [
         (create,),
@@ -186,15 +190,15 @@ def test_triggered_action_preserves_independent_binding_hole():
 def test_callee_continuation_ends_a_direct_call_chain():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
+    caller_builder = operation_graph.OperationGraphBuilder(caller_definition.typed_name)
     item = _position("item")
-    create = caller_graph.record_create(item)
+    create = caller_builder.record_create(item)
     callee_position = _position_reference(
         "position<item>::action</work>::position<trigger>"
     )
     callee_reference = callee_position.get_chain_to_last_action()
     assert callee_reference is not None
-    execution = caller_graph.record_action_execution(
+    execution = caller_builder.record_action_execution(
         callee_reference,
         item,
         (),
@@ -202,12 +206,12 @@ def test_callee_continuation_ends_a_direct_call_chain():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    destroy = caller_graph.record_destroy(item, ())
-    callee_graph = operation_graph.OperationGraph(callee_definition.typed_name)
-    _ = callee_graph.record_create(_position("work"))
+    destroy = caller_builder.record_destroy(item, ())
+    callee_builder = operation_graph.OperationGraphBuilder(callee_definition.typed_name)
+    _ = callee_builder.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
-    graphs[callee_definition.typed_name] = callee_graph
-    graphs[caller_definition.typed_name] = caller_graph
+    graphs[callee_definition.typed_name] = callee_builder.finish()
+    graphs[caller_definition.typed_name] = caller_builder.finish()
 
     plans = action_plan.ActionPlans(graphs, caller_definition.typed_name)
     _ = plans.plan_for(callee_definition)
@@ -234,16 +238,16 @@ def test_callee_continuation_ends_a_direct_call_chain():
 def test_callee_binding_join_uses_its_caller_operation():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
-    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
+    caller_builder = operation_graph.OperationGraphBuilder(caller_definition.typed_name)
     gateway = _position("gateway")
-    gateway_create = caller_graph.record_create(gateway)
+    gateway_create = caller_builder.record_create(gateway)
     trigger_position = _position_reference(
         "position<gateway>::action</work>::position<trigger>"
     )
     callee = trigger_position.get_chain_to_last_action()
     assert callee is not None
-    trigger_create = caller_graph.record_create(trigger_position)
-    execution = caller_graph.record_action_execution(
+    trigger_create = caller_builder.record_create(trigger_position)
+    execution = caller_builder.record_action_execution(
         callee,
         trigger_position,
         (),
@@ -252,14 +256,14 @@ def test_callee_binding_join_uses_its_caller_operation():
         required_preceding_child_operations=(),
     )
     output = _position("output")
-    callee_graph = operation_graph.OperationGraph(callee_definition.typed_name)
-    callee_graph.record_requirement(
+    callee_builder = operation_graph.OperationGraphBuilder(callee_definition.typed_name)
+    callee_builder.record_requirement(
         output, action_contract.PositionOccupancyState.EMPTY
     )
-    _ = callee_graph.record_create(output)
+    _ = callee_builder.record_create(output)
     graphs = operation_graph.OperationGraphs()
-    graphs[callee_definition.typed_name] = callee_graph
-    graphs[caller_definition.typed_name] = caller_graph
+    graphs[callee_definition.typed_name] = callee_builder.finish()
+    graphs[caller_definition.typed_name] = caller_builder.finish()
 
     plans = action_plan.ActionPlans(graphs, caller_definition.typed_name)
     _ = plans.plan_for(callee_definition)
@@ -284,9 +288,9 @@ def test_callee_binding_join_uses_its_caller_operation():
 def test_binding_hole_fanout_fires_destructor():
     caller_definition = _DUMMY_ACTION
     destructor_definition = _action_definition("/destructor")
-    caller_graph = operation_graph.OperationGraph(caller_definition.typed_name)
+    caller_builder = operation_graph.OperationGraphBuilder(caller_definition.typed_name)
     item = _position("item")
-    caller_graph.record_requirement(
+    caller_builder.record_requirement(
         item, action_contract.PositionOccupancyState.OCCUPIED
     )
     destructor_position = _position_reference(
@@ -294,7 +298,7 @@ def test_binding_hole_fanout_fires_destructor():
     )
     destructor_reference = destructor_position.get_chain_to_last_action()
     assert destructor_reference is not None
-    destructor_execution = caller_graph.record_action_execution(
+    destructor_execution = caller_builder.record_action_execution(
         destructor_reference,
         item,
         (),
@@ -302,11 +306,13 @@ def test_binding_hole_fanout_fires_destructor():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    destructor_graph = operation_graph.OperationGraph(destructor_definition.typed_name)
-    _ = destructor_graph.record_create(_position("work"))
+    destructor_builder = operation_graph.OperationGraphBuilder(
+        destructor_definition.typed_name
+    )
+    _ = destructor_builder.record_create(_position("work"))
     graphs = operation_graph.OperationGraphs()
-    graphs[destructor_definition.typed_name] = destructor_graph
-    graphs[caller_definition.typed_name] = caller_graph
+    graphs[destructor_definition.typed_name] = destructor_builder.finish()
+    graphs[caller_definition.typed_name] = caller_builder.finish()
 
     plans = action_plan.ActionPlans(graphs, _ACTION)
     _ = plans.plan_for(destructor_definition)
@@ -327,13 +333,14 @@ def test_binding_hole_fanout_fires_destructor():
 
 
 def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
     first = _position("first")
     second = _position("second")
-    first_create = graph.record_create(first)
-    move = graph.record_move(first, second, ())
-    refill_first = graph.record_create(first)
-    graph.record_guaranteed_positions((second.canonical_chained_name_tuple,))
+    first_create = builder.record_create(first)
+    move = builder.record_move(first, second, ())
+    refill_first = builder.record_create(first)
+    builder.record_guaranteed_positions((second.canonical_chained_name_tuple,))
+    graph = builder.finish()
 
     entry_plan = _entry_plan(graph)
     triggered_plan = _triggered_plan(graph)
@@ -357,19 +364,19 @@ def test_guarantee_publication_ends_a_triggered_action_direct_call_chain():
 
 
 def test_move_guarantee_publication_separates_source_and_target():
-    graph = operation_graph.OperationGraph(_DUMMY_ACTION.typed_name)
+    builder = operation_graph.OperationGraphBuilder(_DUMMY_ACTION.typed_name)
     source = _position("source")
     target = _position("target")
-    _ = graph.record_create(source)
-    move = graph.record_move(source, target, ())
-    graph.record_guaranteed_positions(
+    _ = builder.record_create(source)
+    move = builder.record_move(source, target, ())
+    builder.record_guaranteed_positions(
         (
             source.canonical_chained_name_tuple,
             target.canonical_chained_name_tuple,
         )
     )
 
-    plan = _triggered_plan(graph)
+    plan = _triggered_plan(builder.finish())
 
     assert len(plan.guarantee_publications) == 1
     publication = plan.guarantee_publications[0]

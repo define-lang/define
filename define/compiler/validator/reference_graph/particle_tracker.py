@@ -602,14 +602,14 @@ class ParticleTracker:
         # Monotonic body-operation counter, advanced once per body mutation and
         # once per trigger.
         self._body_operation_number: int = 0
-        self._operation_graph: operation_graph.OperationGraph = (
-            operation_graph.OperationGraph(action)
+        self._operation_graph_builder: operation_graph.OperationGraphBuilder = (
+            operation_graph.OperationGraphBuilder(action)
         )
 
     @property
-    def operation_graph(self) -> operation_graph.OperationGraph:
-        """The DLP 44 dependency graph of this action's body operations."""
-        return self._operation_graph
+    def operation_graph_builder(self) -> operation_graph.OperationGraphBuilder:
+        """The builder for this action's DLP 44 dependency graph."""
+        return self._operation_graph_builder
 
     def _ensure_action_parent(self, key: tuple[str, ...]):
         """Create the action intermediate trie node if needed."""
@@ -858,7 +858,9 @@ class ParticleTracker:
             # Any later child operation will depend only on that move operation.
             if particle.last_position != particle.origin_position:
                 return
-        self._operation_graph.record_requirement(contracted_position, required_state)
+        self._operation_graph_builder.record_requirement(
+            contracted_position, required_state
+        )
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
@@ -934,7 +936,7 @@ class ParticleTracker:
         # Only a body create becomes a node in the operation graph.
         operation_node: operation_graph_model.CreateNode | None = None
         if from_caller is None:
-            operation_node = self._operation_graph.record_create(in_position)
+            operation_node = self._operation_graph_builder.record_create(in_position)
         info = ParticleInfo(
             last_position=in_position,
             qualities=qualities,
@@ -956,7 +958,7 @@ class ParticleTracker:
         Raises ValueError if the position is not occupied.
         """
         key, preceding_child_operations, _ = self._prepare_destroy(in_position)
-        operation_node = self._operation_graph.record_destroy(
+        operation_node = self._operation_graph_builder.record_destroy(
             in_position,
             preceding_child_operations,
         )
@@ -970,14 +972,16 @@ class ParticleTracker:
         """Remove the particle targeted by an explicit Destroy statement."""
         key, preceding_child_operations, particle = self._prepare_destroy(in_position)
         if particle.from_caller:
-            operation_node = self._operation_graph.record_destruction_fact_destroy(
-                destruction_fact,
-                in_position,
-                preceding_child_operations,
-                propagate_to_caller=True,
+            operation_node = (
+                self._operation_graph_builder.record_destruction_fact_destroy(
+                    destruction_fact,
+                    in_position,
+                    preceding_child_operations,
+                    propagate_to_caller=True,
+                )
             )
         else:
-            operation_node = self._operation_graph.record_destroy(
+            operation_node = self._operation_graph_builder.record_destroy(
                 in_position,
                 preceding_child_operations,
             )
@@ -990,7 +994,7 @@ class ParticleTracker:
     ):
         """Remove a particle as part of one Destruction Fact."""
         key, preceding_child_operations, particle = self._prepare_destroy(in_position)
-        operation_node = self._operation_graph.record_destruction_fact_destroy(
+        operation_node = self._operation_graph_builder.record_destruction_fact_destroy(
             destruction_fact,
             in_position,
             preceding_child_operations,
@@ -1062,7 +1066,7 @@ class ParticleTracker:
         source_info = self._store.state[from_key].particle_info
         if source_info is None:
             raise ValueError(f"source position {from_key} is empty")
-        operation_node = self._operation_graph.record_move(
+        operation_node = self._operation_graph_builder.record_move(
             source, target, self._preceding_child_operations(from_key)
         )
         # Both positions are touched by this one move statement, so they share a
@@ -1289,7 +1293,7 @@ class ParticleTracker:
 
     def _position_was_touched(self, key: tuple[str, ...]) -> bool:
         """Whether the action ever touched ``key``."""
-        return self._operation_graph.body_touched_key(
+        return self._operation_graph_builder.body_touched_key(
             key
         ) or self._store.ever_set_by_callee(key)
 
@@ -1342,7 +1346,7 @@ class ParticleTracker:
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        execution = self._operation_graph.record_action_execution(
+        execution = self._operation_graph_builder.record_action_execution(
             action_chain,
             acting_on_position,
             requirements_in_caller,
@@ -1358,7 +1362,7 @@ class ParticleTracker:
             ),
         )
         for newly_occupied_children in newly_occupied_children_by_destruction_contract:
-            self._operation_graph.record_contributed_destruction_fragment(
+            self._operation_graph_builder.record_contributed_destruction_fragment(
                 execution,
                 newly_occupied_children,
             )
@@ -1390,7 +1394,7 @@ class ParticleTracker:
         operation_graph_positions = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
-        guarantee_nodes = self._operation_graph.record_guarantees(
+        guarantee_nodes = self._operation_graph_builder.record_guarantees(
             pending_guarantee.execution,
             pending_guarantee.transitive_executions,
             operation_graph_positions,

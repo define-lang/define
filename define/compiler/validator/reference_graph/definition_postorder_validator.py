@@ -1587,15 +1587,15 @@ class ActionPostorderValidator:
         """Run post-order validation and return diagnostics, edges, and contract."""
         action_def = self._action_definition
         contract = self._analyze_action_definition(action_def)
-        operation_graph = self._tracker.operation_graph
-        operation_graph.record_guaranteed_positions(
+        operation_graph_builder = self._tracker.operation_graph_builder
+        operation_graph_builder.record_guaranteed_positions(
             position for position, _ in contract.guarantees.own
         )
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             edges=self._action_edges,
             contract=contract,
-            operation_graph=operation_graph,
+            operation_graph=operation_graph_builder.finish(),
         )
 
     def _check_trigger(
@@ -1640,7 +1640,7 @@ class ActionPostorderValidator:
         trigger_ref = self._action_definition.trigger_position_reference
         if trigger_ref is not None:
             qualities = self._get_transitive_required_qualities(trigger_ref, scope)
-            self._tracker.operation_graph.record_requirement(
+            self._tracker.operation_graph_builder.record_requirement(
                 trigger_ref,
                 action_contract.PositionOccupancyState.OCCUPIED,
             )

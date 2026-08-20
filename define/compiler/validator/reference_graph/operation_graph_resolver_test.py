@@ -46,11 +46,11 @@ def _position(name: str) -> ast.PositionReference:
 def test_repeated_action_executions_create_distinct_executions():
     entry_action = _action("/test")
     worker_action = _action("/worker")
-    entry_graph = operation_graph.OperationGraph(entry_action)
+    entry_builder = operation_graph.OperationGraphBuilder(entry_action)
     first_trigger_position = _position("first")
     second_trigger_position = _position("second")
-    _ = entry_graph.record_create(first_trigger_position)
-    first_execution = entry_graph.record_action_execution(
+    _ = entry_builder.record_create(first_trigger_position)
+    first_execution = entry_builder.record_action_execution(
         _action_reference(worker_action),
         first_trigger_position,
         (),
@@ -58,8 +58,8 @@ def test_repeated_action_executions_create_distinct_executions():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    _ = entry_graph.record_create(second_trigger_position)
-    second_execution = entry_graph.record_action_execution(
+    _ = entry_builder.record_create(second_trigger_position)
+    second_execution = entry_builder.record_action_execution(
         _action_reference(worker_action),
         second_trigger_position,
         (),
@@ -67,12 +67,12 @@ def test_repeated_action_executions_create_distinct_executions():
         acting_on_preceding_child_operations=(),
         required_preceding_child_operations=(),
     )
-    worker_graph = operation_graph.OperationGraph(worker_action)
+    worker_builder = operation_graph.OperationGraphBuilder(worker_action)
     worker_operation = _position("work")
-    _ = worker_graph.record_create(worker_operation)
+    _ = worker_builder.record_create(worker_operation)
     graphs = operation_graph.OperationGraphs()
-    graphs[entry_action] = entry_graph
-    graphs[worker_action] = worker_graph
+    graphs[entry_action] = entry_builder.finish()
+    graphs[worker_action] = worker_builder.finish()
 
     resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
         graphs, entry_action

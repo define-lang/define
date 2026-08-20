@@ -39,7 +39,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
 
 
 @dataclass(slots=True)
@@ -63,8 +63,125 @@ class _RecordedContributedPosition:
     contributions: list[_RecordedDestructionContribution]
 
 
+def _last_operation_on_position_or_parents(
+    last_operations: Mapping[tuple[str, ...], operation_graph_model.LastOperationNode],
+    key: tuple[str, ...],
+) -> operation_graph_model.LastOperationNode:
+    """Return the last operation on ``key`` or one of its parent names."""
+    last_operation: operation_graph_model.LastOperationNode | None = None
+    for length in range(len(key), 0, -1):
+        operation = last_operations.get(key[:length])
+        if operation is not None and (
+            last_operation is None
+            or last_operation.operation_order < operation.operation_order
+        ):
+            last_operation = operation
+    if last_operation is None:
+        raise KeyError(key)
+    return last_operation
+
+
+@typing.final
 class OperationGraph:
-    """An append-only dependency graph of one action's particle operations."""
+    """A completed dependency graph of one action's particle operations."""
+
+    def __init__(
+        self,
+        action: ast.GlobalTypedName,
+        *,
+        nodes: list[operation_graph_model.OperationNode],
+        last_operation: dict[tuple[str, ...], operation_graph_model.LastOperationNode],
+        executions: list[operation_graph_model.ActionExecution],
+        guaranteed_positions_by_operation: dict[
+            operation_graph_model.ConcreteOperationNode,
+            tuple[tuple[str, ...], ...],
+        ],
+        destructions: dict[
+            operation_graph_model.DestructionFact,
+            operation_graph_model.OperationGraphDestruction,
+        ],
+        contributed_destruction_fragments_by_direct_callee_execution: dict[
+            operation_graph_model.ActionExecution,
+            list[operation_graph_model.ContributedDestructionFragment],
+        ],
+        executions_propagating_destruction_to_caller: set[
+            operation_graph_model.ActionExecution
+        ],
+    ):
+        """Initialize a completed Operation Graph."""
+        self.action = action
+        self._nodes = nodes
+        self._last_operation = last_operation
+        self._executions = executions
+        self.guaranteed_positions_by_operation = guaranteed_positions_by_operation
+        self._destructions = destructions
+        self._contributed_destruction_fragments_by_direct_callee_execution = (
+            contributed_destruction_fragments_by_direct_callee_execution
+        )
+        self._executions_propagating_destruction_to_caller = (
+            executions_propagating_destruction_to_caller
+        )
+
+    @property
+    def nodes(self) -> Sequence[operation_graph_model.OperationNode]:
+        """Every node, in creation order."""
+        return self._nodes
+
+    @property
+    def particle_operations(
+        self,
+    ) -> Iterable[operation_graph_model.PositionOperationNode]:
+        """Iterate over every Particle Operation in creation order."""
+        for node in self._nodes:
+            if isinstance(node, operation_graph_model.PositionOperationNode):
+                yield node
+
+    def last_operation_on_position_or_parents(
+        self, key: tuple[str, ...]
+    ) -> (
+        operation_graph_model.ConcreteOperationNode
+        | operation_graph_model.RequirementNode
+    ):
+        """Return the last operation on ``key`` or one of its parent names."""
+        return _last_operation_on_position_or_parents(self._last_operation, key)
+
+    @property
+    def executions(self) -> Sequence[operation_graph_model.ActionExecution]:
+        """Every action this action triggers, in the order it triggers them."""
+        return self._executions
+
+    def destruction_for_fact(
+        self, destruction_fact: operation_graph_model.DestructionFact
+    ) -> operation_graph_model.OperationGraphDestruction:
+        """Return the destruction recorded for one Destruction Fact."""
+        return self._destructions[destruction_fact]
+
+    @property
+    def propagates_destruction_facts(self) -> bool:
+        """Whether this action propagates any Destruction Fact to its caller."""
+        return any(
+            destruction.is_propagated_to_caller
+            for destruction in self._destructions.values()
+        )
+
+    def contributed_destruction_fragments_for(
+        self, direct_callee_execution: operation_graph_model.ActionExecution
+    ) -> Sequence[operation_graph_model.ContributedDestructionFragment]:
+        """Return destruction fragments contributed around one Action Execution."""
+        return self._contributed_destruction_fragments_by_direct_callee_execution.get(
+            direct_callee_execution, ()
+        )
+
+    def propagates_destruction_from_execution_to_caller(
+        self, execution: operation_graph_model.ActionExecution
+    ) -> bool:
+        """Return whether a Destruction Fact from the Action Execution's callee is propagated to this action's caller."""
+        return execution in self._executions_propagating_destruction_to_caller
+
+
+@typing.final
+class OperationGraphBuilder:
+    """Build an append-only dependency graph of one action's particle operations."""
 
     def __init__(self, action: ast.GlobalTypedName):
         """Create an empty operation graph."""
@@ -117,7 +234,7 @@ class OperationGraph:
             node_id=len(self._nodes),
         )
         self._nodes.append(self._action_parent_last_operation)
-        self.guaranteed_positions_by_operation: dict[
+        self._guaranteed_positions_by_operation: dict[
             operation_graph_model.ConcreteOperationNode,
             tuple[tuple[str, ...], ...],
         ] = {}
@@ -133,21 +250,7 @@ class OperationGraph:
             operation_graph_model.ActionExecution
         ] = set()
 
-    @property
-    def nodes(self) -> Sequence[operation_graph_model.OperationNode]:
-        """Every node, in creation order."""
-        return self._nodes
-
-    @property
-    def particle_operations(
-        self,
-    ) -> Iterable[operation_graph_model.PositionOperationNode]:
-        """Iterate over every Particle Operation in creation order."""
-        for node in self._nodes:
-            if isinstance(node, operation_graph_model.PositionOperationNode):
-                yield node
-
-    def last_operation_on_position(
+    def _last_operation_on_position(
         self, key: tuple[str, ...]
     ) -> (
         operation_graph_model.ConcreteOperationNode
@@ -156,24 +259,14 @@ class OperationGraph:
         """Return the last operation recorded on exactly ``key``."""
         return self._last_operation[key]
 
-    def last_operation_on_position_or_parents(
+    def _last_operation_on_position_or_parents(
         self, key: tuple[str, ...]
     ) -> (
         operation_graph_model.ConcreteOperationNode
         | operation_graph_model.RequirementNode
     ):
         """Return the last operation on ``key`` or one of its parent names."""
-        last_operation: operation_graph_model.LastOperationNode | None = None
-        for length in range(len(key), 0, -1):
-            operation = self._last_operation.get(key[:length])
-            if operation is not None and (
-                last_operation is None
-                or last_operation.operation_order < operation.operation_order
-            ):
-                last_operation = operation
-        if last_operation is None:
-            raise KeyError(key)
-        return last_operation
+        return _last_operation_on_position_or_parents(self._last_operation, key)
 
     def body_touched_key(self, key: tuple[str, ...]) -> bool:
         """Return whether the body performed a real operation on exactly this key.
@@ -244,11 +337,11 @@ class OperationGraph:
             # Need to check the parents because destructors trigger on child
             # positions of the passed-in particle, so it's the last operation
             # on their parent that matters.
-            firing_operation = self.last_operation_on_position_or_parents(
+            firing_operation = self._last_operation_on_position_or_parents(
                 acting_on_position_key
             )
         else:
-            firing_operation = self.last_operation_on_position(acting_on_position_key)
+            firing_operation = self._last_operation_on_position(acting_on_position_key)
         callee_action_key = callee.canonical_chained_name_tuple
         requirement_satisfactions: dict[
             tuple[str, ...], operation_graph_model.RequirementSatisfaction
@@ -332,39 +425,6 @@ class OperationGraph:
         return operation_graph_model.RequirementSatisfaction(
             operation, child_operations
         )
-
-    @property
-    def executions(self) -> Sequence[operation_graph_model.ActionExecution]:
-        """Every action this action triggers, in the order it triggers them."""
-        return self._executions
-
-    def destruction_for_fact(
-        self, destruction_fact: operation_graph_model.DestructionFact
-    ) -> operation_graph_model.OperationGraphDestruction:
-        """Return the destruction recorded for one Destruction Fact."""
-        return self._destructions[destruction_fact]
-
-    @property
-    def propagates_destruction_facts(self) -> bool:
-        """Whether this action propagates any Destruction Fact to its caller."""
-        return any(
-            destruction.is_propagated_to_caller
-            for destruction in self._destructions.values()
-        )
-
-    def contributed_destruction_fragments_for(
-        self, direct_callee_execution: operation_graph_model.ActionExecution
-    ) -> Sequence[operation_graph_model.ContributedDestructionFragment]:
-        """Return destruction fragments contributed around one Action Execution."""
-        return self._contributed_destruction_fragments_by_direct_callee_execution.get(
-            direct_callee_execution, ()
-        )
-
-    def propagates_destruction_from_execution_to_caller(
-        self, execution: operation_graph_model.ActionExecution
-    ) -> bool:
-        """Return whether a Destruction Fact from the Action Execution's callee is propagated to this action's caller."""
-        return execution in self._executions_propagating_destruction_to_caller
 
     def record_destruction_fact_destroy(
         self,
@@ -967,10 +1027,27 @@ class OperationGraph:
             ):
                 continue
             positions_by_operation.setdefault(node, []).append(position)
-        self.guaranteed_positions_by_operation = {
+        self._guaranteed_positions_by_operation = {
             operation: tuple(guaranteed_positions)
             for operation, guaranteed_positions in positions_by_operation.items()
         }
+
+    def finish(self) -> OperationGraph:
+        """Finish construction and return the completed Operation Graph."""
+        return OperationGraph(
+            self.action,
+            nodes=self._nodes,
+            last_operation=self._last_operation,
+            executions=self._executions,
+            guaranteed_positions_by_operation=self._guaranteed_positions_by_operation,
+            destructions=self._destructions,
+            contributed_destruction_fragments_by_direct_callee_execution=(
+                self._contributed_destruction_fragments_by_direct_callee_execution
+            ),
+            executions_propagating_destruction_to_caller=(
+                self._executions_propagating_destruction_to_caller
+            ),
+        )
 
 
 @dataclass(slots=True)

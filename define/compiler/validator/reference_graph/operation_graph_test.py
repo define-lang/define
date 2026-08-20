@@ -109,26 +109,26 @@ def _destruction_contribution(
 
 def test_repeated_destruction_at_one_position_retains_distinct_facts():
     action = _action("/test")
-    graph = operation_graph.OperationGraph(action)
+    builder = operation_graph.OperationGraphBuilder(action)
     destroyed_position = _ref("destroyed")
     first_fact = operation_graph_model.DestructionFact(destroyed_position, action)
     second_fact = operation_graph_model.DestructionFact(destroyed_position, action)
-    _ = graph.record_create(destroyed_position)
-    first_destroy = graph.record_destruction_fact_destroy(
+    _ = builder.record_create(destroyed_position)
+    first_destroy = builder.record_destruction_fact_destroy(
         first_fact,
         destroyed_position,
         (),
         propagate_to_caller=True,
     )
-    _ = graph.record_create(destroyed_position)
-    second_destroy = graph.record_destruction_fact_destroy(
+    _ = builder.record_create(destroyed_position)
+    second_destroy = builder.record_destruction_fact_destroy(
         second_fact,
         destroyed_position,
         (),
         propagate_to_caller=True,
     )
     graphs = operation_graph.OperationGraphs()
-    graphs[action] = graph
+    graphs[action] = builder.finish()
 
     first_contribution = _destruction_contribution(action, first_fact, (), 1)
     second_contribution = _destruction_contribution(action, second_fact, (), 2)
@@ -147,26 +147,26 @@ def test_repeated_destruction_at_one_position_retains_distinct_facts():
 
 def test_destruction_operations_distinguish_parent_and_child_destroys():
     action = _action("/test")
-    graph = operation_graph.OperationGraph(action)
+    builder = operation_graph.OperationGraphBuilder(action)
     parent = _ref("parent")
     child = _ref("parent", "child")
     destruction_fact = operation_graph_model.DestructionFact(parent, action)
-    _ = graph.record_create(parent)
-    _ = graph.record_create(child)
-    child_destroy = graph.record_destruction_fact_destroy(
+    _ = builder.record_create(parent)
+    _ = builder.record_create(child)
+    child_destroy = builder.record_destruction_fact_destroy(
         destruction_fact,
         child,
         (),
         propagate_to_caller=True,
     )
-    parent_destroy = graph.record_destruction_fact_destroy(
+    parent_destroy = builder.record_destruction_fact_destroy(
         destruction_fact,
         parent,
         (),
         propagate_to_caller=True,
     )
     graphs = operation_graph.OperationGraphs()
-    graphs[action] = graph
+    graphs[action] = builder.finish()
 
     child_contribution = _destruction_contribution(
         action,
@@ -196,22 +196,11 @@ def test_operation_nodes_use_identity_equality():
     assert len({one, equivalent}) == 2
 
 
-def test_last_operation_on_position_raises_for_an_untouched_position():
-    graph = operation_graph.OperationGraph(_action("/test"))
-    box = _ref("box")
-    operation = graph.record_create(box)
-
-    assert (
-        graph.last_operation_on_position(box.canonical_chained_name_tuple) is operation
-    )
-    with pytest.raises(KeyError):
-        _ = graph.last_operation_on_position(_ref("other").canonical_chained_name_tuple)
-
-
 def test_last_operation_on_position_or_parents_includes_parent_names():
-    graph = operation_graph.OperationGraph(_action("/test"))
+    builder = operation_graph.OperationGraphBuilder(_action("/test"))
     parent = _ref("parent")
-    operation = graph.record_create(parent)
+    operation = builder.record_create(parent)
+    graph = builder.finish()
 
     descendant_positions = (
         _ref("parent", "child"),
@@ -228,10 +217,11 @@ def test_last_operation_on_position_or_parents_includes_parent_names():
 
 
 def test_last_operation_on_position_or_parents_uses_newest_operation():
-    graph = operation_graph.OperationGraph(_action("/test"))
+    builder = operation_graph.OperationGraphBuilder(_action("/test"))
     child = _ref("parent", "child")
-    _ = graph.record_create(child)
-    parent_operation = graph.record_create(_ref("parent"))
+    _ = builder.record_create(child)
+    parent_operation = builder.record_create(_ref("parent"))
+    graph = builder.finish()
 
     assert (
         graph.last_operation_on_position_or_parents(
@@ -244,9 +234,10 @@ def test_last_operation_on_position_or_parents_uses_newest_operation():
 
 
 def test_last_operation_on_position_or_parents_prefers_newer_child_over_parent():
-    graph = operation_graph.OperationGraph(_action("/test"))
-    _ = graph.record_create(_ref("parent"))
-    child_operation = graph.record_create(_ref("parent", "child"))
+    builder = operation_graph.OperationGraphBuilder(_action("/test"))
+    _ = builder.record_create(_ref("parent"))
+    child_operation = builder.record_create(_ref("parent", "child"))
+    graph = builder.finish()
 
     assert (
         graph.last_operation_on_position_or_parents(
