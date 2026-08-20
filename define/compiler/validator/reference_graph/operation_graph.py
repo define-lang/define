@@ -63,11 +63,11 @@ class _RecordedContributedPosition:
     contributions: list[_RecordedDestructionContribution]
 
 
-def _last_operation_on_position_or_parents(
+def _most_recent_operation_on_position_or_parents(
     last_operations: Mapping[tuple[str, ...], operation_graph_model.LastOperationNode],
     key: tuple[str, ...],
-) -> operation_graph_model.LastOperationNode:
-    """Return the last operation on ``key`` or one of its parent names."""
+) -> operation_graph_model.LastOperationNode | None:
+    """Return the most recent operation on ``key`` or one of its parent names."""
     last_operation: operation_graph_model.LastOperationNode | None = None
     for length in range(len(key), 0, -1):
         operation = last_operations.get(key[:length])
@@ -76,9 +76,116 @@ def _last_operation_on_position_or_parents(
             or last_operation.operation_order < operation.operation_order
         ):
             last_operation = operation
+    return last_operation
+
+
+def _last_operation_on_position_or_parents(
+    last_operations: Mapping[tuple[str, ...], operation_graph_model.LastOperationNode],
+    key: tuple[str, ...],
+) -> operation_graph_model.LastOperationNode:
+    """Return the last operation on ``key`` or one of its parent names."""
+    last_operation = _most_recent_operation_on_position_or_parents(last_operations, key)
     if last_operation is None:
         raise KeyError(key)
     return last_operation
+
+
+@typing.final
+class _LastOperationsByPosition:
+    """Track the last operation recorded on each position."""
+
+    def __init__(self):
+        # Finding the most recent operation on a position or one of its parent
+        # names otherwise slices and probes every prefix of the position. Deep
+        # requirement propagation extends these names repeatedly, so copying all
+        # those prefixes became a material part of compilation time.
+        #
+        # Most matching operations were written only a few writes before the
+        # lookup. Retaining four writes found 95.050% of lookups in the default
+        # deep-pipeline workload and 98.652% in a more concentrated version of
+        # that workload. Two and three writes missed recurring matches at
+        # distances three and four. Eight writes found only another 0.117% and
+        # 0.008%, respectively, while doubling retained references, doing twice
+        # as many comparisons on a miss, and running slower on both concentrated
+        # and deliberately interleaved workloads. Four is therefore the smallest
+        # measured bound at the useful performance knee, not a language semantic
+        # invariant.
+        #
+        # The index is a flat tuple of four alternating key and operation pairs,
+        # so its memory is fixed at eight retained references per action. A prior
+        # prefix-tree experiment made representative workloads slower and used
+        # unbounded memory as position depth and breadth grew. Keep the mapping
+        # as the exact fallback: valid programs can interleave writes without
+        # temporal locality, and any index miss must still return the same result
+        # as the complete prefix scan.
+        #
+        # Every mapping write must go through record so the tuple is an exact
+        # suffix of write history. It is searched newest first. A matching
+        # retained write is necessarily newer than every evicted write, so it is
+        # safe to return immediately; when none matches, the complete mapping
+        # scan determines the answer.
+        self._recent: tuple[
+            tuple[str, ...] | operation_graph_model.LastOperationNode, ...
+        ] = ()
+        self._by_position: dict[
+            tuple[str, ...], operation_graph_model.LastOperationNode
+        ] = {}
+
+    def exact(self, key: tuple[str, ...]) -> operation_graph_model.LastOperationNode:
+        """Return the last operation recorded on exactly ``key``."""
+        return self._by_position[key]
+
+    def get(
+        self, key: tuple[str, ...]
+    ) -> operation_graph_model.LastOperationNode | None:
+        """Return the last operation recorded on exactly ``key``, if any."""
+        return self._by_position.get(key)
+
+    def on_position_or_parents(
+        self, key: tuple[str, ...]
+    ) -> operation_graph_model.LastOperationNode:
+        """Return the last operation on ``key`` or one of its parent names."""
+        return _last_operation_on_position_or_parents(self._by_position, key)
+
+    def most_recent_on_position_or_parents(
+        self, position: tuple[str, ...]
+    ) -> operation_graph_model.LastOperationNode | None:
+        """Return the most recent operation on a position's parent-name chain."""
+        # Check recent writes first to avoid slicing and probing every position
+        # prefix. The first match is newer than every omitted write, so it is exact.
+        for index in range(len(self._recent) - 2, -1, -2):
+            key = typing.cast("tuple[str, ...]", self._recent[index])
+            if len(key) <= len(position) and position[: len(key)] == key:
+                return typing.cast(
+                    "operation_graph_model.LastOperationNode",
+                    self._recent[index + 1],
+                )
+        return _most_recent_operation_on_position_or_parents(
+            self._by_position, position
+        )
+
+    def body_touched(self, key: tuple[str, ...]) -> bool:
+        """Return whether the body performed a real operation on exactly ``key``."""
+        node = self._by_position.get(key)
+        return node is not None and not isinstance(
+            node, operation_graph_model.RequirementNode
+        )
+
+    def record(
+        self,
+        key: tuple[str, ...],
+        operation: operation_graph_model.LastOperationNode,
+    ):
+        """Record the last operation and retain the four most recent writes."""
+        self._by_position[key] = operation
+        self._recent = (*self._recent[-6:], key, operation)
+
+    def finish(
+        self,
+    ) -> dict[tuple[str, ...], operation_graph_model.LastOperationNode]:
+        """Return the final lookup and discard the construction-only cache."""
+        self._recent = ()
+        return self._by_position
 
 
 @typing.final
@@ -187,43 +294,7 @@ class OperationGraphBuilder:
         """Create an empty operation graph."""
         self.action: ast.GlobalTypedName = action
         self._nodes: list[operation_graph_model.OperationNode] = []
-        # Finding the most recent operation on a position or one of its parent
-        # names otherwise slices and probes every prefix of the position. Deep
-        # requirement propagation extends these names repeatedly, so copying all
-        # those prefixes became a material part of compilation time.
-        #
-        # Most matching operations were written only a few writes before the
-        # lookup. Retaining four writes found 95.050% of lookups in the default
-        # deep-pipeline workload and 98.652% in a more concentrated version of
-        # that workload. Two and three writes missed recurring matches at
-        # distances three and four. Eight writes found only another 0.117% and
-        # 0.008%, respectively, while doubling retained references, doing twice
-        # as many comparisons on a miss, and running slower on both concentrated
-        # and deliberately interleaved workloads. Four is therefore the smallest
-        # measured bound at the useful performance knee, not a language semantic
-        # invariant.
-        #
-        # The index is a flat tuple of four alternating key and operation pairs,
-        # so its memory is fixed at eight retained references per action. A prior
-        # prefix-tree experiment made representative workloads slower and used
-        # unbounded memory as position depth and breadth grew. Keep this mapping
-        # as the exact fallback: valid programs can interleave writes without
-        # temporal locality, and any index miss must still return the same result
-        # as the complete prefix scan.
-        #
-        # Every mapping write must go through _set_last_operation so the tuple is
-        # an exact suffix of write history. It is searched newest first. A
-        # matching retained write is necessarily newer than every evicted write,
-        # so it is safe to return immediately; when none matches, the complete
-        # mapping scan determines the answer.
-        self._recent_last_operations: tuple[
-            tuple[str, ...] | operation_graph_model.LastOperationNode, ...
-        ] = ()
-        # A position's canonical chained name -> its last body operation or
-        # recorded requirement.
-        self._last_operation: dict[
-            tuple[str, ...], operation_graph_model.LastOperationNode
-        ] = {}
+        self._last_operations_by_position = _LastOperationsByPosition()
         # Every Action Execution this action performs, in the order it performs them.
         # One operation can fire more than one (creating a particle fires every
         # constructor it has).
@@ -250,34 +321,13 @@ class OperationGraphBuilder:
             operation_graph_model.ActionExecution
         ] = set()
 
-    def _last_operation_on_position(
-        self, key: tuple[str, ...]
-    ) -> (
-        operation_graph_model.ConcreteOperationNode
-        | operation_graph_model.RequirementNode
-    ):
-        """Return the last operation recorded on exactly ``key``."""
-        return self._last_operation[key]
-
-    def _last_operation_on_position_or_parents(
-        self, key: tuple[str, ...]
-    ) -> (
-        operation_graph_model.ConcreteOperationNode
-        | operation_graph_model.RequirementNode
-    ):
-        """Return the last operation on ``key`` or one of its parent names."""
-        return _last_operation_on_position_or_parents(self._last_operation, key)
-
     def body_touched_key(self, key: tuple[str, ...]) -> bool:
         """Return whether the body performed a real operation on exactly this key.
 
         A recorded RequirementNode stands in for a caller operation, not a
         body operation, so it does not count as the body touching the position.
         """
-        node = self._last_operation.get(key)
-        return node is not None and not isinstance(
-            node, operation_graph_model.RequirementNode
-        )
+        return self._last_operations_by_position.body_touched(key)
 
     def record_requirement(
         self,
@@ -288,7 +338,9 @@ class OperationGraphBuilder:
         key = position.canonical_chained_name_tuple
         ancestor = typing.cast(
             "operation_graph_model.RequirementNode | None",
-            self._most_recent_ancestor_chain_operation(key[:-1]),
+            self._last_operations_by_position.most_recent_on_position_or_parents(
+                key[:-1]
+            ),
         )
         if ancestor is None:
             ancestor = self._action_parent_last_operation
@@ -301,7 +353,7 @@ class OperationGraphBuilder:
             depends_on=(ancestor,),
         )
         self._nodes.append(node)
-        self._set_last_operation(key, node)
+        self._last_operations_by_position.record(key, node)
 
     def record_action_execution(
         self,
@@ -337,11 +389,13 @@ class OperationGraphBuilder:
             # Need to check the parents because destructors trigger on child
             # positions of the passed-in particle, so it's the last operation
             # on their parent that matters.
-            firing_operation = self._last_operation_on_position_or_parents(
+            firing_operation = self._last_operations_by_position.on_position_or_parents(
                 acting_on_position_key
             )
         else:
-            firing_operation = self._last_operation_on_position(acting_on_position_key)
+            firing_operation = self._last_operations_by_position.exact(
+                acting_on_position_key
+            )
         callee_action_key = callee.canonical_chained_name_tuple
         requirement_satisfactions: dict[
             tuple[str, ...], operation_graph_model.RequirementSatisfaction
@@ -397,7 +451,7 @@ class OperationGraphBuilder:
         else:
             action_parent_last_operation = typing.cast(
                 "operation_graph_model.LastOperationNode",
-                self._most_recent_ancestor_chain_operation(
+                self._last_operations_by_position.most_recent_on_position_or_parents(
                     action_parent_position.canonical_chained_name_tuple
                 ),
             )
@@ -438,7 +492,9 @@ class OperationGraphBuilder:
         target_key = target.canonical_chained_name_tuple
         dependency_before_caller_contribution = typing.cast(
             "operation_graph_model.LastOperationNode",
-            self._most_recent_ancestor_chain_operation(target_key),
+            self._last_operations_by_position.most_recent_on_position_or_parents(
+                target_key
+            ),
         )
         child_operations = (
             operation_graph_model.ParticleChildOperations.from_preceding_operations(
@@ -592,7 +648,9 @@ class OperationGraphBuilder:
                         ],
                         typing.cast(
                             "operation_graph_model.LastOperationNode",
-                            self._most_recent_ancestor_chain_operation(position_key),
+                            self._last_operations_by_position.most_recent_on_position_or_parents(
+                                position_key
+                            ),
                         ),
                     ),
                     execution=execution,
@@ -686,11 +744,13 @@ class OperationGraphBuilder:
         self, caller_position_key: tuple[str, ...]
     ) -> operation_graph_model.LastOperationNode | None:
         """Return the operation on ``caller_position_key`` that satisfies a callee requirement, or None."""
-        operation = self._last_operation.get(caller_position_key)
+        operation = self._last_operations_by_position.get(caller_position_key)
         if operation is not None:
             return operation
-        ancestor_operation = self._most_recent_ancestor_chain_operation(
-            caller_position_key
+        ancestor_operation = (
+            self._last_operations_by_position.most_recent_on_position_or_parents(
+                caller_position_key
+            )
         )
         # A move of a parent position also put this position in its current state.
         if isinstance(ancestor_operation, operation_graph_model.MoveNode):
@@ -704,7 +764,11 @@ class OperationGraphBuilder:
         """Return the dependency required before filling one position."""
         # Filling a position waits on the most recent operation on that
         # position and its parent names, so the parent particle is present.
-        fill_dependency = self._most_recent_ancestor_chain_operation(fill_position)
+        fill_dependency = (
+            self._last_operations_by_position.most_recent_on_position_or_parents(
+                fill_position
+            )
+        )
 
         if fill_dependency is not None:
             return fill_dependency
@@ -783,44 +847,6 @@ class OperationGraphBuilder:
             partial_move_rule_result,
         )
 
-    def _most_recent_ancestor_chain_operation(
-        self, position: tuple[str, ...]
-    ) -> operation_graph_model.LastOperationNode | None:
-        """Return the most recent operation on ``position``'s ancestor chain."""
-        # Check recent writes first to avoid slicing and probing every position
-        # prefix. The first match is newer than every omitted write, so it is exact.
-        for index in range(len(self._recent_last_operations) - 2, -1, -2):
-            key = typing.cast("tuple[str, ...]", self._recent_last_operations[index])
-            if len(key) <= len(position) and position[: len(key)] == key:
-                return typing.cast(
-                    "operation_graph_model.LastOperationNode",
-                    self._recent_last_operations[index + 1],
-                )
-        ancestor: operation_graph_model.LastOperationNode | None = None
-        for length in range(1, len(position) + 1):
-            key = position[:length]
-            existing = self._last_operation.get(key)
-            # Most parent names have no operation; among those that do, a newer
-            # operation wins even when it is on a more-distant parent name.
-            if existing is not None and (
-                ancestor is None or ancestor.operation_order < existing.operation_order
-            ):
-                ancestor = existing
-        return ancestor
-
-    def _set_last_operation(
-        self,
-        key: tuple[str, ...],
-        operation: operation_graph_model.LastOperationNode,
-    ):
-        """Record the last operation and retain the four most recent writes."""
-        self._last_operation[key] = operation
-        self._recent_last_operations = (
-            *self._recent_last_operations[-6:],
-            key,
-            operation,
-        )
-
     def _add_empty_rule_binding_hole(
         self,
         empty_rule_collection: operation_graph_model.CallerEmptyRuleCollection,
@@ -853,7 +879,7 @@ class OperationGraphBuilder:
             depends_on=(dependency,),
         )
         self._nodes.append(node)
-        self._set_last_operation(key, node)
+        self._last_operations_by_position.record(key, node)
         return node
 
     def record_move(
@@ -870,14 +896,20 @@ class OperationGraphBuilder:
         )
         source_key = source.canonical_chained_name_tuple
         target_key = target.canonical_chained_name_tuple
-        fill_dependency = self._most_recent_ancestor_chain_operation(target_key)
+        fill_dependency = (
+            self._last_operations_by_position.most_recent_on_position_or_parents(
+                target_key
+            )
+        )
         depends_on, partial_move_rule_result = self._move_dependencies(
             source_key,
             child_operations,
             fill_dependency,
             typing.cast(
                 "operation_graph_model.LastOperationNode",
-                self._most_recent_ancestor_chain_operation(source_key),
+                self._last_operations_by_position.most_recent_on_position_or_parents(
+                    source_key
+                ),
             ),
         )
         if partial_move_rule_result is None:
@@ -896,8 +928,8 @@ class OperationGraphBuilder:
                 partial_move_rule_result=partial_move_rule_result,
             )
         self._nodes.append(node)
-        self._set_last_operation(source_key, node)
-        self._set_last_operation(target_key, node)
+        self._last_operations_by_position.record(source_key, node)
+        self._last_operations_by_position.record(target_key, node)
         return node
 
     def record_destroy(
@@ -920,7 +952,9 @@ class OperationGraphBuilder:
                 child_operations,
                 typing.cast(
                     "operation_graph_model.LastOperationNode",
-                    self._most_recent_ancestor_chain_operation(key),
+                    self._last_operations_by_position.most_recent_on_position_or_parents(
+                        key
+                    ),
                 ),
             ),
         )
@@ -930,7 +964,9 @@ class OperationGraphBuilder:
     def _record_destroy_node(self, node: operation_graph_model.DestroyNode):
         """Add a constructed Destroy operation to this graph."""
         self._nodes.append(node)
-        self._set_last_operation(node.target.canonical_chained_name_tuple, node)
+        self._last_operations_by_position.record(
+            node.target.canonical_chained_name_tuple, node
+        )
 
     def record_guarantees(
         self,
@@ -1006,7 +1042,7 @@ class OperationGraphBuilder:
                     operation_positions=operation_positions,
                 )
             self._nodes.append(node)
-            self._set_last_operation(caller_position, node)
+            self._last_operations_by_position.record(caller_position, node)
             nodes[caller_position] = node
         return nodes
 
@@ -1017,7 +1053,7 @@ class OperationGraphBuilder:
             list[tuple[str, ...]],
         ] = {}
         for position in positions:
-            node = self._last_operation.get(position)
+            node = self._last_operations_by_position.get(position)
             if not isinstance(
                 node,
                 (
@@ -1037,7 +1073,7 @@ class OperationGraphBuilder:
         return OperationGraph(
             self.action,
             nodes=self._nodes,
-            last_operation=self._last_operation,
+            last_operation=self._last_operations_by_position.finish(),
             executions=self._executions,
             guaranteed_positions_by_operation=self._guaranteed_positions_by_operation,
             destructions=self._destructions,
