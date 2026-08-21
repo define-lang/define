@@ -1,0 +1,23 @@
+# action</callee>'s Destroy independently fires both Destructors that only its
+# caller assigns to the destroyed particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</callee>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</destructor_a>.
+                it has the action</destructor_b>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<box>::action</callee>::position<target>.
+        create a particle in position<box>::action</callee>::position<run>.
+    }
+}

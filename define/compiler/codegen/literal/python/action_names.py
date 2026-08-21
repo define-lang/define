@@ -74,6 +74,10 @@ class ActionNames:
     # The canonical name, initializer method, and execution member for each
     # Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
+    # The trigger method for each caller-contributed Destructor.
+    destruction_contract_destructor_trigger_method_names: dict[
+        action_plan.DestructionContractDestructorExecutionPlan, str
+    ]
     # The execution method for each Callee Binding Join.
     callee_binding_join_method_names: dict[action_plan.CalleeBindingJoin, str]
     # The execution method for each action fragment.
@@ -115,6 +119,9 @@ class ActionNameGenerator:
         local_positions = self._local_position_names()
         binding_hole_method_names = self._binding_hole_method_names()
         triggered_actions = self._triggered_action_names()
+        destruction_contract_destructor_trigger_method_names = (
+            self._destruction_contract_destructor_trigger_method_names()
+        )
         callee_binding_join_method_names = self._callee_binding_join_method_names(
             triggered_actions
         )
@@ -130,6 +137,9 @@ class ActionNameGenerator:
             local_positions=local_positions,
             binding_hole_method_names=binding_hole_method_names,
             triggered_actions=triggered_actions,
+            destruction_contract_destructor_trigger_method_names=(
+                destruction_contract_destructor_trigger_method_names
+            ),
             callee_binding_join_method_names=callee_binding_join_method_names,
             fragments=fragments,
             continue_destroy_methods=continue_destroy_methods,
@@ -215,11 +225,10 @@ class ActionNameGenerator:
     def _triggered_action_names(
         self,
     ) -> dict[operation_graph_model.ActionExecution, TriggeredActionNames]:
-        allocator = naming.NameAllocator()
         names: dict[operation_graph_model.ActionExecution, TriggeredActionNames] = {}
         for planned_execution in self._plan.action_executions:
             action_execution = planned_execution.execution
-            canonical_name = allocator.allocate(
+            canonical_name = self._execution_allocator.allocate(
                 _TRIGGERED_ACTION_PREFIX
                 + self._typed_chain_identifier(action_execution.action_chain)
             )
@@ -232,6 +241,21 @@ class ActionNameGenerator:
                     _EXECUTION_PREFIX + canonical_name
                 ),
             )
+        return names
+
+    def _destruction_contract_destructor_trigger_method_names(
+        self,
+    ) -> dict[action_plan.DestructionContractDestructorExecutionPlan, str]:
+        names: dict[action_plan.DestructionContractDestructorExecutionPlan, str] = {}
+        for action_execution in self._plan.action_executions:
+            for connection in action_execution.created_destruction_connections:
+                for destructor in connection.destruction_contract_destructors:
+                    names[destructor] = self._execution_allocator.allocate(
+                        _TRIGGERED_ACTION_PREFIX
+                        + self._typed_chain_identifier(
+                            destructor.execution.action_chain
+                        )
+                    )
         return names
 
     def _callee_binding_join_method_names(

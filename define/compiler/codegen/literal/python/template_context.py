@@ -125,12 +125,25 @@ class ActionFragmentContext:
 
 
 @dataclass
+class DestructionContractDestructorExecutionContext:
+    """One Destructor Action Execution contributed through a Destruction Contract."""
+
+    execution_class: naming.ClassReference
+    trigger_method_name: str
+    action_parent_binding_method_name: str
+    trace_action_name: str | None
+
+
+@dataclass
 class DestructionConnectionContext:
     """One destruction connection created for a direct callee."""
 
     member_name: str
     destruction_continuation: DestructionContinuationContext
     start_method_names: list[str]
+    destruction_contract_destructors: list[
+        DestructionContractDestructorExecutionContext
+    ]
     expected_completions: int
 
 

@@ -1,6 +1,5 @@
-# Aspirational: when destructor triggers are recorded, action</callee>'s destroy
-# fires the caller-added destructor on the particle it destroys, including the
-# destructor's operations in the operation graph.
+# action</callee>'s Destroy fires the caller-added Destructor on the particle it
+# destroys, including the Destructor's operations in the Operation Graph.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

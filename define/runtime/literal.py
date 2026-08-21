@@ -43,7 +43,7 @@ class _DestructionExecution(Protocol):
 
 
 def continue_destruction(continuation: types.MethodType):
-    """Run a destruction continuation after its caller-contributed work."""
+    """Run a destruction continuation through its caller-contributed work."""
     execution = cast("_DestructionExecution", continuation.__self__)
     destruction_continuation = continuation.__func__
     if execution.destruction_connections is None:
@@ -56,8 +56,11 @@ def continue_destruction(continuation: types.MethodType):
     connection.ready(continuation)
 
 
+# TODO: Reconsider this abstraction when one connection can combine work
+# that precedes the continuation with work that is only activated by the
+# same destruction. The current interface makes that distinction indirect.
 class DestructionConnection:
-    """Caller destruction work inserted before a callee Destroy."""
+    """Caller work activated when a callee reaches a destruction continuation."""
 
     _scheduler: Scheduler
     _destruction_continuation: DestructionContinuation
@@ -65,6 +68,7 @@ class DestructionConnection:
     # The destruction connection supplied by this Action Execution's caller.
     _forwarded_connection: DestructionConnection | None
     _completion_join: Join | None
+    _waits_for_local_completions: bool
     _continuation: types.MethodType | None
 
     def __init__(
@@ -75,34 +79,40 @@ class DestructionConnection:
         *start_tasks: Task,
         forwarded_connection: DestructionConnection | None = None,
     ):
-        """Initialize local destruction work and an optional forwarded connection."""
+        """Initialize local destruction work and an optional forwarded connection.
+
+        ``expected_completions`` is zero for work that starts at destruction but
+        does not precede the continuation.
+        """
         if not start_tasks:
             raise ValueError("a destruction connection requires local work")
-        if expected_completions <= 0:
-            raise ValueError("expected completions must be positive")
         self._scheduler = scheduler
         self._destruction_continuation = destruction_continuation
         self._start_tasks = start_tasks
         self._forwarded_connection = forwarded_connection
+        self._waits_for_local_completions = expected_completions > 0
         arrivals = expected_completions + (forwarded_connection is not None)
         self._completion_join = Join(arrivals) if arrivals > 1 else None
         self._continuation = None
 
     @property
     def destruction_continuation(self) -> DestructionContinuation:
-        """Return the generated continuation preceded by this work."""
+        """Return the generated continuation connected to this work."""
         return self._destruction_continuation
 
     def ready(self, continuation: types.MethodType):
-        """Start the connected work and run ``continuation`` after it completes."""
+        """Start connected work and run ``continuation`` when its dependencies complete."""
         if self._continuation is not None:
             raise RuntimeError("a destruction connection can only become ready once")
         self._continuation = continuation
-        if self._forwarded_connection is None:
+        if self._waits_for_local_completions and self._forwarded_connection is None:
             self._scheduler.continue_with(self._start_tasks)
             return
         self._scheduler.submit_all(self._start_tasks)
-        self._forwarded_connection.ready(self.complete)
+        if self._forwarded_connection is None:
+            continuation()
+        else:
+            self._forwarded_connection.ready(self.complete)
 
     def complete(self):
         """Record one terminal completion from connected work."""

@@ -1305,8 +1305,8 @@ class ParticleTracker:
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
         is_destructor: bool,
-        newly_occupied_children_by_destruction_contract: Sequence[
-            operation_graph_model.DestructionContractNewlyOccupiedChildren
+        destruction_contract_contributions: Sequence[
+            operation_graph_model.DestructionContractContribution
         ] = (),
     ) -> operation_graph_model.ActionExecution:
         """Record an Action Execution and apply the triggered action's guarantees.
@@ -1361,10 +1361,19 @@ class ParticleTracker:
                 for requirement in requirements_in_caller
             ),
         )
-        for newly_occupied_children in newly_occupied_children_by_destruction_contract:
+        for contribution in destruction_contract_contributions:
             self._operation_graph_builder.record_contributed_destruction_fragment(
                 execution,
-                newly_occupied_children,
+                contribution,
+                (
+                    # TODO: Investigate whether multiple contributed Destructors on
+                    # the same position make these child-operation subtree traversals
+                    # costly at project scale.
+                    self._preceding_child_operations(
+                        verified_destructor.position.canonical_chained_name_tuple
+                    )
+                    for verified_destructor in contribution.destructors
+                ),
             )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,

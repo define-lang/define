@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/extra_destructor> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        # This local work only makes the Destructor visible in an operation trace.
+        define the position<work>.
+        create a particle in position<work>.
+        destroy the particle in position<work>.
+    }
+}

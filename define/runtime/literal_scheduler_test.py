@@ -568,6 +568,67 @@ class TestJoin:
 
 
 class TestDestructionConnection:
+    def test_connection_starts_nonblocking_work_without_delaying_continuation(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                connection = literal.DestructionConnection(
+                    scheduler,
+                    _ContinuationExecution.first_continuation,
+                    0,
+                    lambda: calls.append("work"),
+                )
+                connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=1).start(Entry)
+
+        assert calls == ["continuation", "work"]
+
+    def test_nonblocking_connection_still_waits_for_forwarded_work(self):
+        calls: list[str] = []
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, scheduler: literal.Scheduler):
+                destruction_continuation = _ContinuationExecution.first_continuation
+
+                def forwarded_work():
+                    calls.append("forwarded")
+                    forwarded_connection.complete()
+
+                forwarded_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    1,
+                    forwarded_work,
+                )
+                local_connection = literal.DestructionConnection(
+                    scheduler,
+                    destruction_continuation,
+                    0,
+                    lambda: calls.append("local"),
+                    forwarded_connection=forwarded_connection,
+                )
+                local_connection.ready(
+                    _ContinuationExecution(
+                        lambda: calls.append("continuation")
+                    ).first_continuation
+                )
+
+        literal.Scheduler(max_threads=1).start(Entry)
+
+        assert calls == ["forwarded", "continuation", "local"]
+
     def test_connection_waits_for_every_terminal_completion(self):
         calls: list[str] = []
 

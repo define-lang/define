@@ -21,6 +21,7 @@ _ADDITIONAL_CALLER_MODULE = Path(
     "local/my_domain_com/my_lib/additional_caller/__init__.py"
 )
 _ADDITIONAL_CALLER_NAME = "additional_caller"
+_CALLEE_MODULE = Path("local/my_domain_com/my_lib/callee/__init__.py")
 _ADDITIONAL_CALLER_ENTRY_SOURCE = """    } and it does {
         define the position<additional_caller_call> {
             it may only contain particles where {
@@ -98,6 +99,37 @@ def _assert_only_additional_caller_was_added(expected: str, actual: str):
         pytest.fail("".join(diff))
 
 
+def _compile_project(
+    project: Path,
+    generated: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.chdir(project)
+    result = driver.Driver().compile_program(Path("test.dfn"), generated)
+    assert_no_errors(result)
+
+
+def _assert_generated_program_runs(generated: Path):
+    runtime_result = generated_program_runner.run_generated_program(generated)
+    if runtime_result.process.returncode != 0:
+        pytest.fail(runtime_result.process.stderr)
+
+
+def _generate_with_additional_caller(
+    source_project: Path,
+    additional_caller_source: Path,
+    project: Path,
+    generated: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    shutil.copytree(source_project, project)
+    test_source = project / "test.dfn"
+    _ = test_source.write_text(_add_additional_caller(test_source.read_text()))
+    shutil.copyfile(additional_caller_source, project / "additional_caller.dfn")
+    _compile_project(project, generated, monkeypatch)
+    _assert_generated_program_runs(generated)
+
+
 @pytest.mark.parametrize("case", _CASES, ids=[case.name for case in _CASES])
 def test_adding_a_caller_does_not_change_generated_callees(
     case: _Case,
@@ -109,15 +141,14 @@ def test_adding_a_caller_does_not_change_generated_callees(
         _ADDITIONAL_CALLER_ROOT / case.name / "additional_caller.dfn"
     ).resolve()
     project = tmp_path / "project"
-    shutil.copytree(case.baseline, project)
-    test_source = project / "test.dfn"
-    _ = test_source.write_text(_add_additional_caller(test_source.read_text()))
-    shutil.copyfile(additional_caller_source, project / "additional_caller.dfn")
-
-    monkeypatch.chdir(project)
     generated = tmp_path / "generated"
-    result = driver.Driver().compile_program(Path("test.dfn"), generated)
-    assert_no_errors(result)
+    _generate_with_additional_caller(
+        case.baseline,
+        additional_caller_source,
+        project,
+        generated,
+        monkeypatch,
+    )
 
     expected_files = {
         path.relative_to(baseline_expected)
@@ -140,6 +171,38 @@ def test_adding_a_caller_does_not_change_generated_callees(
         (generated / _TEST_MODULE).read_text(),
     )
 
-    runtime_result = generated_program_runner.run_generated_program(generated)
-    if runtime_result.process.returncode != 0:
-        pytest.fail(runtime_result.process.stderr)
+
+def test_adding_a_destructor_contributing_caller_does_not_change_generated_callee(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    case_root = (
+        _TESTDATA_ROOT
+        / "operation_graph_destructor_integration"
+        / "caller_added_destructor_fires_in_callee"
+    ).resolve()
+    caller_sources = (_ADDITIONAL_CALLER_ROOT / "destructor_contribution").resolve()
+    baseline_project = tmp_path / "baseline_project"
+    shutil.copytree(case_root, baseline_project)
+    shutil.copyfile(caller_sources / "baseline_test.dfn", baseline_project / "test.dfn")
+    baseline_generated = tmp_path / "baseline_generated"
+    _compile_project(baseline_project, baseline_generated, monkeypatch)
+    _assert_generated_program_runs(baseline_generated)
+
+    project_with_contributing_caller = tmp_path / "project_with_contributing_caller"
+    generated_with_contributing_caller = tmp_path / "generated_with_contributing_caller"
+    _generate_with_additional_caller(
+        baseline_project,
+        caller_sources / "additional_caller.dfn",
+        project_with_contributing_caller,
+        generated_with_contributing_caller,
+        monkeypatch,
+    )
+
+    assert (baseline_generated / _CALLEE_MODULE).read_text() == (
+        generated_with_contributing_caller / _CALLEE_MODULE
+    ).read_text()
+    _assert_only_additional_caller_was_added(
+        (baseline_generated / _TEST_MODULE).read_text(),
+        (generated_with_contributing_caller / _TEST_MODULE).read_text(),
+    )

@@ -53,6 +53,8 @@ class TestExecution:
             self.destroy_position_box
         )
         self.execution_trigger_position_box__action_close_thing: local.my_domain_com.my_lib.close_thing.CloseThingExecution
+        self.destruction_connection_trigger_position_box__action_close_thing: literal.DestructionConnection
+        self.trigger_position_box__action_close_thing_destruction_connections: literal.DestructionConnections
         self.join_for_move_position_source_to_position_box__action_close_thing__position_target = literal.Join(2)
         self.join_for_destroy_position_box = literal.Join(2)
         self.join_for_trigger_position_box__action_close_thing__for_empty_rule_position_target = literal.Join(2)
@@ -102,6 +104,15 @@ class TestExecution:
         self.local_position_box.destroy_particle()
 
     def init_execution_trigger_position_box__action_close_thing(self):
+        self.destruction_connection_trigger_position_box__action_close_thing = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.close_thing.CloseThingExecution.continue_destroy_position_target,
+            0,
+            self.trigger_position_box__action_close_thing__position_target__action_destructor,
+        )
+        self.trigger_position_box__action_close_thing_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_position_box__action_close_thing,
+        )
         action = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
         )
@@ -109,7 +120,14 @@ class TestExecution:
             action,
             self.scheduler,
             self.guarantees.trigger_position_box__action_close_thing,
+            destruction_connections=self.trigger_position_box__action_close_thing_destruction_connections,
         )
+
+    def trigger_position_box__action_close_thing__position_target__action_destructor(self):
+        execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+        )
+        execution.accept_action_parent()
 
     def trigger_position_box__action_close_thing__for_empty_rule_position_target(self):
         if not self.join_for_trigger_position_box__action_close_thing__for_empty_rule_position_target.arrive():

@@ -101,9 +101,11 @@ def _destruction_contribution(
     return operation_graph_model.DestructionContributionNode(
         node_id=node_id,
         depends_on=(),
-        execution=execution,
-        destruction_fact=destruction_fact,
-        callee_destroy_position=destruction_position,
+        callee_destroy=operation_graph_model.CalleeDestroy(
+            direct_callee_execution=execution,
+            destruction_fact=destruction_fact,
+            callee_destroy_position=destruction_position,
+        ),
     )
 
 
@@ -132,11 +134,11 @@ def test_repeated_destruction_at_one_position_retains_distinct_facts():
 
     first_contribution = _destruction_contribution(action, first_fact, (), 1)
     second_contribution = _destruction_contribution(action, second_fact, (), 2)
-    resolved_first_destroy = graphs.resolve_destruction_dependency(
-        first_contribution
+    resolved_first_destroy = graphs.resolve_callee_destroy(
+        first_contribution.callee_destroy
     ).callee_destroy
-    resolved_second_destroy = graphs.resolve_destruction_dependency(
-        second_contribution
+    resolved_second_destroy = graphs.resolve_callee_destroy(
+        second_contribution.callee_destroy
     ).callee_destroy
 
     assert resolved_first_destroy.operation is first_destroy
@@ -175,11 +177,11 @@ def test_destruction_operations_distinguish_parent_and_child_destroys():
         1,
     )
     parent_contribution = _destruction_contribution(action, destruction_fact, (), 2)
-    resolved_child_destroy = graphs.resolve_destruction_dependency(
-        child_contribution
+    resolved_child_destroy = graphs.resolve_callee_destroy(
+        child_contribution.callee_destroy
     ).callee_destroy
-    resolved_parent_destroy = graphs.resolve_destruction_dependency(
-        parent_contribution
+    resolved_parent_destroy = graphs.resolve_callee_destroy(
+        parent_contribution.callee_destroy
     ).callee_destroy
 
     assert resolved_child_destroy.operation is child_destroy

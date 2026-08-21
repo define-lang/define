@@ -37,6 +37,7 @@ modularity.
 from __future__ import annotations
 
 import collections
+import itertools
 import typing
 from dataclasses import dataclass, field
 
@@ -111,7 +112,7 @@ class _ResolvedOperationRelationships:
     callee_bindings_depending_on: list[CalleeBinding] | None = None
     action_executions_triggered: list[ResolvedActionExecution] | None = None
     destruction_dependencies: (
-        list[operation_graph_model.DestructionDependency] | None
+        list[operation_graph_model.ResolvedCalleeDestroy] | None
     ) = None
 
     def add_callee_binding_depending_on(self, callee_binding: CalleeBinding):
@@ -569,8 +570,14 @@ class CalleeBindings:
                     callee_binding,
                 )
         for fragment in fragments:
+            if not fragment.operations:
+                continue
+            contribution_dependencies = itertools.chain.from_iterable(
+                contributed_destruction.contribution_node.depends_on
+                for contributed_destruction in fragment.contributed_destructions
+            )
             dependencies, caller_binding_holes = _partition_caller_dependencies(
-                fragment.contribution_dependencies,
+                contribution_dependencies,
                 operation_graphs,
             )
             matching_callee_bindings: list[CalleeBinding] = []
@@ -648,6 +655,14 @@ class ResolvedActionExecution:
 
 
 @dataclass(frozen=True, slots=True)
+class ResolvedDestructionContribution:
+    """Caller-contributed work with its resolved Destructor executions."""
+
+    operation_graph_contribution: operation_graph_model.DestructionContribution
+    destructors: list[ResolvedActionExecution]
+
+
+@dataclass(frozen=True, slots=True)
 class ActionBindingHoles:
     """One action's Binding Holes in prerequisite-first order.
 
@@ -685,8 +700,8 @@ class ResolvedAction:
     binding_holes: ActionBindingHoles
     action_executions: list[ResolvedActionExecution]
     destruction_contributions: dict[
-        operation_graph_model.DestructionDependency,
-        operation_graph_model.DestructionContribution,
+        operation_graph_model.ResolvedCalleeDestroy,
+        ResolvedDestructionContribution,
     ]
     resolved_execution_by_execution: dict[
         operation_graph_model.ActionExecution, ResolvedActionExecution
@@ -756,7 +771,7 @@ class ResolvedAction:
     def destruction_dependencies_for(
         self,
         operation: operation_graph_model.DestructionFactDestroyNode,
-    ) -> Sequence[operation_graph_model.DestructionDependency]:
+    ) -> Sequence[operation_graph_model.ResolvedCalleeDestroy]:
         """Return the Destruction Dependencies of one Destruction Fact Destroy."""
         relationships = self.relationships_by_operation.get(operation)
         if relationships is None or relationships.destruction_dependencies is None:
@@ -889,7 +904,7 @@ class _ActionBindingHolesBuilder:
     def build(
         self,
         operation_relationships: Iterable[_ResolvedOperationRelationships],
-        action_executions: list[ResolvedActionExecution],
+        action_executions: Iterable[ResolvedActionExecution],
         replacement_depends_on_targets_by_node: Mapping[
             operation_graph_model.OperationNode,
             Sequence[_ActionDependsOnTarget],
@@ -1092,9 +1107,38 @@ class _ActionResolver:
             relationships_by_operation,
             action_executions,
         )
+        destruction_contributions: dict[
+            operation_graph_model.ResolvedCalleeDestroy,
+            ResolvedDestructionContribution,
+        ] = {}
+        for (
+            resolved_callee_destroy,
+            contribution,
+        ) in self._operation_graphs.destruction_contributions(self._graph):
+            destructors: list[ResolvedActionExecution] = []
+            for execution in contribution.destructors:
+                callee = self._resolved_callees[execution.callee_action_name]
+                destructors.append(
+                    ResolvedActionExecution.resolve(
+                        self._graph,
+                        self._operation_graphs,
+                        execution,
+                        callee,
+                        replacement_depends_on_targets_by_node,
+                    )
+                )
+            destruction_contributions[resolved_callee_destroy] = (
+                ResolvedDestructionContribution(contribution, destructors)
+            )
         binding_holes = self._action_binding_holes_builder.build(
             relationships_by_operation.values(),
-            action_executions,
+            itertools.chain(
+                action_executions,
+                itertools.chain.from_iterable(
+                    resolved_contribution.destructors
+                    for resolved_contribution in destruction_contributions.values()
+                ),
+            ),
             replacement_depends_on_targets_by_node,
         )
         return ResolvedAction(
@@ -1102,9 +1146,7 @@ class _ActionResolver:
             relationships_by_operation=relationships_by_operation,
             binding_holes=binding_holes,
             action_executions=action_executions,
-            destruction_contributions=self._operation_graphs.destruction_contributions(
-                self._graph
-            ),
+            destruction_contributions=destruction_contributions,
             resolved_execution_by_execution=resolved_execution_by_execution,
             replacement_depends_on_targets_by_node=(
                 replacement_depends_on_targets_by_node
@@ -1293,17 +1335,19 @@ class _ActionResolver:
     ) -> tuple[
         ActionDependencies,
         list[operation_graph_model.BindingHole],
-        list[operation_graph_model.DestructionDependency],
+        list[operation_graph_model.ResolvedCalleeDestroy],
     ]:
         dependencies = ActionDependencies([], [])
         binding_holes: list[operation_graph_model.BindingHole] = []
-        destruction_dependencies: list[operation_graph_model.DestructionDependency] = []
+        destruction_dependencies: list[operation_graph_model.ResolvedCalleeDestroy] = []
         for dependency in dependency_nodes:
             if isinstance(
                 dependency, operation_graph_model.DestructionContributionNode
             ):
                 destruction_dependencies.append(
-                    self._operation_graphs.resolve_destruction_dependency(dependency)
+                    self._operation_graphs.resolve_callee_destroy(
+                        dependency.callee_destroy
+                    )
                 )
                 continue
             _append_action_dependency(

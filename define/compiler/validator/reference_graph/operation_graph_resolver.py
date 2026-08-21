@@ -32,6 +32,25 @@ class ActionExecution:
     action: ast.GlobalTypedName
     triggered_by: TriggeredBy | None
 
+    @property
+    def direct_execution_caller(self) -> ActionExecution:
+        """Return the caller whose graph records this direct Action Execution."""
+        triggered_by = typing.cast("TriggeredBy", self.triggered_by)
+        return triggered_by.caller
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ContributedDestructorActionExecution(ActionExecution):
+    """A Destructor execution fired by a destroyer with bindings from a caller."""
+
+    contributing_execution: ActionExecution
+
+    @property
+    @typing.override
+    def direct_execution_caller(self) -> ActionExecution:
+        """Return the caller that contributed this Destructor Action Execution."""
+        return self.contributing_execution
+
 
 @dataclass(frozen=True, slots=True, eq=False)
 class ResolvedOperation:
@@ -98,6 +117,13 @@ class ResolvedOperationGraphBuilder:
         self._resolve_all_actions()
         entry_action_execution = ActionExecution(self._entry_action, None)
         operation_keys: list[_ResolvedOperationKey] = []
+        pending_destructors: list[
+            tuple[
+                ActionExecution,
+                operation_graph_model.ResolvedCalleeDestroy,
+                operation_graph_action_resolver.ResolvedActionExecution,
+            ]
+        ] = []
         work = [entry_action_execution]
         while work:
             caller_execution = work.pop()
@@ -109,13 +135,56 @@ class ResolvedOperationGraphBuilder:
             for resolved_execution in resolved_action.action_executions:
                 callee = ActionExecution(
                     resolved_execution.execution.callee_action_name,
-                    TriggeredBy(caller_execution, resolved_execution),
+                    TriggeredBy(
+                        caller_execution,
+                        resolved_execution,
+                    ),
                 )
                 self._callee_action_executions.setdefault(caller_execution, []).append(
                     (resolved_execution.execution, callee)
                 )
                 callees.append(callee)
+            for (
+                resolved_callee_destroy,
+                resolved_contribution,
+            ) in resolved_action.destruction_contributions.items():
+                for destructor in resolved_contribution.destructors:
+                    pending_destructors.append(
+                        (caller_execution, resolved_callee_destroy, destructor)
+                    )
             work.extend(reversed(callees))
+
+        for (
+            contributing_execution,
+            resolved_callee_destroy,
+            destructor,
+        ) in pending_destructors:
+            direct_callee_execution = self._callee_execution(
+                contributing_execution,
+                resolved_callee_destroy.direct_callee_execution,
+            )
+            callee_destroy = resolved_callee_destroy.callee_destroy
+            destroying_execution = self._execution_for_destruction_action(
+                direct_callee_execution,
+                callee_destroy.action,
+                callee_destroy.operation.destruction_fact,
+            )
+            destructor_execution = ContributedDestructorActionExecution(
+                destructor.execution.callee_action_name,
+                TriggeredBy(
+                    destroying_execution,
+                    destructor,
+                ),
+                contributing_execution,
+            )
+            self._callee_action_executions.setdefault(
+                contributing_execution, []
+            ).append((destructor.execution, destructor_execution))
+            resolved_destructor_action = self._resolved_actions[
+                destructor_execution.action
+            ]
+            for operation in resolved_destructor_action.graph.particle_operations:
+                operation_keys.append((destructor_execution, operation))
 
         return ResolvedOperationGraph(
             entry_action_execution,
@@ -137,7 +206,7 @@ class ResolvedOperationGraphBuilder:
                 continue
             visited_actions.add(action_name)
             work.append((action, True))
-            for execution in reversed(graph.executions):
+            for execution in graph.executions_including_contributions():
                 work.append((execution.callee_action_name, False))
 
     def _resolve_operation(
@@ -290,13 +359,13 @@ class ResolvedOperationGraphBuilder:
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
         operation: operation_graph_model.DestructionFactDestroyNode,
-        destruction_dependencies: Sequence[operation_graph_model.DestructionDependency],
+        destruction_dependencies: Sequence[operation_graph_model.ResolvedCalleeDestroy],
     ):
-        for destruction_dependency in destruction_dependencies:
-            callee_destroy = destruction_dependency.callee_destroy
+        for resolved_callee_destroy in destruction_dependencies:
+            callee_destroy = resolved_callee_destroy.callee_destroy
             direct_callee_execution = self._callee_execution(
                 action_execution,
-                destruction_dependency.execution,
+                resolved_callee_destroy.direct_callee_execution,
             )
             callee_destroy_owner_execution = self._execution_for_destruction_action(
                 direct_callee_execution,
@@ -550,17 +619,19 @@ class ResolvedOperationGraphBuilder:
                 raise ValueError("destruction interface reached the entry action")
             caller_execution = triggered_by.caller
             caller_action = self._resolved_actions[caller_execution.action]
-            destruction_dependency = operation_graph_model.DestructionDependency(
+            resolved_callee_destroy = operation_graph_model.ResolvedCalleeDestroy(
                 triggered_by.direct_execution.execution,
                 resolved_destruction_operation,
             )
-            contribution = caller_action.destruction_contributions.get(
-                destruction_dependency
+            resolved_contribution = caller_action.destruction_contributions.get(
+                resolved_callee_destroy
             )
-            if contribution is not None:
-                for operation in contribution.completion_operations:
+            if resolved_contribution is not None:
+                completion_operations = resolved_contribution.operation_graph_contribution.completion_operations
+                for operation in completion_operations:
                     dependency_keys[caller_execution, operation] = None
-                found_contribution = True
+                if completion_operations:
+                    found_contribution = True
             if not triggered_by.direct_execution.forwards_destruction_connections:
                 return found_contribution
             current_execution = caller_execution
@@ -608,16 +679,17 @@ class ResolvedOperationGraphBuilder:
         if triggered_by is None:
             return
         callee_binding = triggered_by.direct_execution.callee_bindings[binding_hole]
+        direct_execution_caller = action_execution.direct_execution_caller
         self._add_action_dependencies(
             dependency_keys,
-            triggered_by.caller,
+            direct_execution_caller,
             callee_binding.caller_dependencies.local_operations,
             callee_binding.caller_dependencies.guarantee_dependencies,
         )
         for caller_binding_hole in callee_binding.caller_binding_holes:
             self._add_dependencies_for_binding_hole(
                 dependency_keys,
-                triggered_by.caller,
+                direct_execution_caller,
                 caller_binding_hole,
             )
 

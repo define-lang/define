@@ -19,22 +19,9 @@ if typing.TYPE_CHECKING:
 type _ActionOperationLabels = typed_name_dict.TypedNameDict[
     ast.GlobalTypedName, _OperationLabels
 ]
-# One Action Execution, by the operation that triggered it and the action it runs.
-# An action names each of its direct Action Executions, and one operation can
-# trigger more than one of them.
-type _ExecutionKey = tuple[operation_graph_model.LastOperationNode, str]
-
 _CREATE_OPERATION_NAME = "create"
 _MOVE_OPERATION_NAME = "move"
 _DESTROY_OPERATION_NAME = "destroy"
-
-
-def _execution_key(execution: operation_graph_model.ActionExecution) -> _ExecutionKey:
-    """Return the identity of one Action Execution performed by an action."""
-    return (
-        execution.trigger_operation,
-        execution.callee_action_name.full_typed_name,
-    )
 
 
 def _action_name(action: ast.GlobalTypedName) -> str:
@@ -129,31 +116,31 @@ class _ExecutionLabels:
 
     def __init__(self, graph: operation_graph.OperationGraph):
         """Name every action ``graph`` triggers."""
-        self._names: dict[_ExecutionKey, str] = {}
-        self._callees: list[ast.GlobalTypedNameReference] = []
+        self._names: dict[operation_graph_model.ActionExecution, str] = {}
         execution_counts: dict[str, int] = {}
-        for execution in graph.executions:
+        for execution in graph.executions_including_contributions():
             action_name = _action_name(execution.callee_action_name)
             # An action can trigger the same action more than once, which every
             # Action Execution after the first says in its name.
             count = execution_counts.get(action_name, 0) + 1
             execution_counts[action_name] = count
-            self._names[_execution_key(execution)] = (
+            self._names[execution] = (
                 action_name if count == 1 else f"{action_name}#{count}"
             )
-            self._callees.append(execution.callee_action_name)
 
     def __getitem__(self, execution: operation_graph_model.ActionExecution) -> str:
         """Return the local name of ``execution``'s action."""
-        return self._names[_execution_key(execution)]
+        return self._names[execution]
 
     def names(self) -> Iterable[str]:
         """Return the local name of every action this action triggers."""
         return self._names.values()
 
-    def callees(self) -> Iterable[ast.GlobalTypedNameReference]:
-        """Return the action run by every direct Action Execution."""
-        return self._callees
+    def items(
+        self,
+    ) -> Iterable[tuple[operation_graph_model.ActionExecution, str]]:
+        """Return each Action Execution and its local name."""
+        return self._names.items()
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,9 +183,9 @@ class _ActionExecutionLabels:
         for caller, graph in graphs.items():
             labels = _ExecutionLabels(graph)
             self._labels[caller] = labels
-            for name in labels.names():
+            for execution, name in labels.items():
                 callers_naming[name] = callers_naming.get(name, 0) + 1
-            for callee in labels.callees():
+                callee = execution.callee_action_name
                 execution_counts[callee] = execution_counts.get(callee, 0) + 1
         self._ambiguous: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, set[str]
@@ -322,7 +309,7 @@ class OperationGraphLabeler:
                 unnamed_execution.triggered_by,
             )
             execution_names[unnamed_execution] = self.triggered_action_execution_name(
-                triggered_by.caller.action,
+                unnamed_execution.direct_execution_caller.action,
                 triggered_by.direct_execution.execution,
             ).render(execution_names[triggered_by.caller])
         return execution_names[action_execution]

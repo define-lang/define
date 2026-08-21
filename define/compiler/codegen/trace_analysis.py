@@ -71,7 +71,7 @@ def _execution_identity(
         identity = tracing.ActionExecutionIdentity(
             _execution_identity(triggered_by.caller, labels, identities),
             labels.triggered_action_execution_name(
-                triggered_by.caller.action,
+                execution.direct_execution_caller.action,
                 triggered_by.direct_execution.execution,
             ).local_name,
         )

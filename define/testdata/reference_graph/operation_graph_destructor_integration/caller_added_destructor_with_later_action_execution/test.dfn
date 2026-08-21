@@ -1,0 +1,31 @@
+# This caller gives two particles the same Destructor before two direct Action
+# Executions independently destroy them.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</callee>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        define the position<later_box> {
+            it may only contain particles where {
+                it has the action</later>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<later_box>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<box>::action</callee>::position<target>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<later_box>::action</later>::position<target>.
+        create a particle in position<box>::action</callee>::position<run>.
+        create a particle in position<later_box>::action</later>::position<run>.
+    }
+}

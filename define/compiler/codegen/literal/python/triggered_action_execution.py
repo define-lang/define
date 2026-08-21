@@ -12,7 +12,10 @@ from define.compiler.codegen.literal.python import (
     template_context,
 )
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import operation_graph_labeler
+from define.compiler.validator.reference_graph import (
+    operation_graph_labeler,
+    operation_graph_model,
+)
 
 
 @typing.final
@@ -86,17 +89,53 @@ class TriggeredActionExecutionGenerator:
                     forwards_destruction_connections=(
                         planned_execution.forwards_destruction_connections
                     ),
-                    trace_action_name=(
-                        self._operation_labels.triggered_action_execution_name(
-                            self._definition.typed_name,
-                            execution,
-                        ).local_name
-                        if self._operation_labels is not None
-                        else None
-                    ),
+                    trace_action_name=self._trace_action_name(execution),
                 )
             )
         return action_executions
+
+    def _generate_destruction_contract_destructors(
+        self,
+        connection: action_plan.DestructionConnection,
+    ) -> list[template_context.DestructionContractDestructorExecutionContext]:
+        """Generate Destructor Action Executions contributed by the caller."""
+        contexts: list[
+            template_context.DestructionContractDestructorExecutionContext
+        ] = []
+        for destructor in connection.destruction_contract_destructors:
+            execution = destructor.execution
+            contexts.append(
+                template_context.DestructionContractDestructorExecutionContext(
+                    execution_class=self._converter.execution_class_reference(
+                        execution.callee_action_name
+                    ),
+                    trigger_method_name=(
+                        self._names.destruction_contract_destructor_trigger_method_names[
+                            destructor
+                        ]
+                    ),
+                    action_parent_binding_method_name=(
+                        self._generated_actions[
+                            execution.callee_action_name
+                        ].binding_hole_method_names[
+                            destructor.action_parent_binding_hole
+                        ]
+                    ),
+                    trace_action_name=self._trace_action_name(execution),
+                )
+            )
+        return contexts
+
+    def _trace_action_name(
+        self,
+        execution: operation_graph_model.ActionExecution,
+    ) -> str | None:
+        if self._operation_labels is None:
+            return None
+        return self._operation_labels.triggered_action_execution_name(
+            self._definition.typed_name,
+            execution,
+        ).local_name
 
     def _generate_created_destruction_connections(
         self,
@@ -108,14 +147,20 @@ class TriggeredActionExecutionGenerator:
             destruction_continuation = self._generated_actions[
                 callee_destroy.action
             ].destruction_continuations[callee_destroy.operation]
+            start_method_names: list[str] = []
+            for fragment in connection.first_fragments_of_destructions:
+                start_method_names.append(self._names.fragments[fragment])
+            destruction_contract_destructors = (
+                self._generate_destruction_contract_destructors(connection)
+            )
+            for destructor in destruction_contract_destructors:
+                start_method_names.append(destructor.trigger_method_name)
             contexts.append(
                 template_context.DestructionConnectionContext(
                     member_name=self._names.destruction_connections[connection],
                     destruction_continuation=destruction_continuation,
-                    start_method_names=[
-                        self._names.fragments[fragment]
-                        for fragment in connection.first_fragments_of_destructions
-                    ],
+                    start_method_names=start_method_names,
+                    destruction_contract_destructors=(destruction_contract_destructors),
                     expected_completions=len(connection.completion_fragments),
                 )
             )

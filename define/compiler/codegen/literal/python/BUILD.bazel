@@ -225,6 +225,7 @@ py_library(
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/reference_graph:operation_graph_labeler",
+        "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
 

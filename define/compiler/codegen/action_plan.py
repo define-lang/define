@@ -37,7 +37,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Sequence
+    from collections.abc import Sequence
 
     from define.compiler import ast
 
@@ -97,12 +97,12 @@ class DestructionActionFragment(ActionFragment):
 
 @dataclass(slots=True, eq=False)
 class DestructionConnection:
-    """One caller-contributed fragment connected before a direct callee Destroy."""
+    """Caller-contributed work connected to a direct callee Destroy."""
 
     callee_destroy: operation_graph_model.DestructionOperation
-    operations: Collection[operation_graph_model.DestructionFragmentDestroyNode]
     first_fragments_of_destructions: list[ActionFragment]
     completion_fragments: list[ActionFragment]
+    destruction_contract_destructors: list[DestructionContractDestructorExecutionPlan]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
@@ -112,6 +112,14 @@ class ActionExecutionPlan:
     execution: operation_graph_model.ActionExecution
     created_destruction_connections: list[DestructionConnection]
     forwards_destruction_connections: bool
+
+
+@dataclass(slots=True, eq=False)
+class DestructionContractDestructorExecutionPlan:
+    """A Destructor Contract contribution fired by a destruction connection."""
+
+    execution: operation_graph_model.ActionExecution
+    action_parent_binding_hole: operation_graph_model.BindingHole
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -384,10 +392,9 @@ class _ActionPlanBuilder:
             publishes_guarantees=publishes_guarantees,
             uses_binding_hole_fanouts=not start_directly,
         ).build()
-        (
-            action_executions,
-            destruction_connection_by_operation,
-        ) = self._plan_action_executions(topology)
+        action_executions, destruction_connection_by_operation = (
+            self._plan_action_executions(topology)
+        )
         callee_binding_join_by_callee_binding = self._plan_callee_binding_joins(
             topology.fragment_for_operation,
             binding_holes,
@@ -457,9 +464,10 @@ class _ActionPlanBuilder:
             DestructionConnection,
         ] = {}
         for (
-            destruction_dependency,
-            contribution,
+            resolved_callee_destroy,
+            resolved_contribution,
         ) in self._resolved_action.destruction_contributions.items():
+            contribution = resolved_contribution.operation_graph_contribution
             first_fragments_of_destructions = [
                 topology.fragment_for_operation[operation]
                 for operation in contribution.first_operations
@@ -468,18 +476,31 @@ class _ActionPlanBuilder:
                 topology.fragment_for_operation[operation]
                 for operation in contribution.completion_operations
             ]
+            destructor_plans: list[DestructionContractDestructorExecutionPlan] = []
+            for resolved_destructor in resolved_contribution.destructors:
+                (action_parent_binding,) = (
+                    resolved_destructor.callee_bindings.with_runtime_consumers
+                )
+                destructor_plans.append(
+                    DestructionContractDestructorExecutionPlan(
+                        execution=resolved_destructor.execution,
+                        action_parent_binding_hole=(
+                            action_parent_binding.callee_binding_hole
+                        ),
+                    )
+                )
             connection = DestructionConnection(
-                destruction_dependency.callee_destroy,
-                contribution.operations,
+                resolved_callee_destroy.callee_destroy,
                 first_fragments_of_destructions,
                 completion_fragments,
+                destructor_plans,
             )
             action_execution_by_execution[
-                destruction_dependency.execution
+                resolved_callee_destroy.direct_callee_execution
             ].created_destruction_connections.append(connection)
             for fragment in completion_fragments:
                 fragment.destruction_connections_to_complete.append(connection)
-            for operation in connection.operations:
+            for operation in contribution.operations:
                 destruction_connection_by_operation[operation] = connection
         return action_executions, destruction_connection_by_operation
 
@@ -492,7 +513,6 @@ class _ActionPlanBuilder:
     ) -> _CalleeBindingJoinsByCalleeBinding:
         callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding = {}
         for resolved_action_execution in self._resolved_action.action_executions:
-            action_execution = resolved_action_execution.execution
             for (
                 callee_binding
             ) in resolved_action_execution.callee_bindings.with_runtime_consumers:
@@ -506,7 +526,7 @@ class _ActionPlanBuilder:
                 if binding_holes:
                     dependency_count += len(callee_binding.caller_binding_holes)
                 callee_binding_join = CalleeBindingJoin(
-                    execution=action_execution,
+                    execution=resolved_action_execution.execution,
                     callee_binding_hole=callee_binding.callee_binding_hole,
                     contributed_destruction_operations=(
                         callee_binding.contributed_destruction_operations

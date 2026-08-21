@@ -576,16 +576,16 @@ class DestructionOperation:
 
 
 @dataclass(frozen=True, slots=True)
-class DestructionDependency:
-    """A callee Destroy preceded by caller-contributed Destroys."""
+class ResolvedCalleeDestroy:
+    """A Destroy resolved through one direct callee Action Execution."""
 
-    execution: ActionExecution
+    direct_callee_execution: ActionExecution
     callee_destroy: DestructionOperation
 
 
 @dataclass(slots=True)
 class DestructionContribution:
-    """Caller-contributed Destroy operations for one destruction dependency."""
+    """Caller-contributed work for one direct callee Destroy."""
 
     operations: dict[DestructionFragmentDestroyNode, None] = field(default_factory=dict)
     first_operations: dict[DestructionFragmentDestroyNode, None] = field(
@@ -594,6 +594,16 @@ class DestructionContribution:
     completion_operations: dict[DestructionFragmentDestroyNode, None] = field(
         default_factory=dict
     )
+    destructors: list[ActionExecution] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class CalleeDestroy:
+    """A direct callee Destroy identified from its caller's Operation Graph."""
+
+    direct_callee_execution: ActionExecution
+    destruction_fact: DestructionFact
+    callee_destroy_position: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
@@ -601,9 +611,15 @@ class DestructionContributionNode(OperationNode):
     """Connects preceding caller operations to the first Destroy in one contribution."""
 
     depends_on: tuple[EmptyRuleDependencyNode, ...]
-    execution: ActionExecution
-    destruction_fact: DestructionFact
-    callee_destroy_position: tuple[str, ...]
+    callee_destroy: CalleeDestroy
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, eq=False)
+class DestructionContractDestructorContribution:
+    """A caller-verified Destructor contributed to one Destruction Fact."""
+
+    destructor_execution: ActionExecution
+    callee_destroy: CalleeDestroy
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -619,8 +635,17 @@ class ContributedDestructionPosition:
 
 
 @dataclass(frozen=True, slots=True)
-class DestructionContractNewlyOccupiedChildren:
-    """Children newly known as occupied while validating a Destruction Contract."""
+class VerifiedDestructionContractDestructor:
+    """A caller-verified Destructor to contribute through a Destruction Contract."""
+
+    action: ast.ActionReference
+    position: ast.PositionReference
+    position_relative_to_destroyed_particle: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContractContribution:
+    """Caller-known work for one Destruction Contract."""
 
     destruction_fact: DestructionFact
     destroyed_particle_position: ast.PositionReference
@@ -630,6 +655,7 @@ class DestructionContractNewlyOccupiedChildren:
     # their contributions before the callee Destroy without another traversal.
     final_contributed_positions: Sequence[ContributedDestructionPosition]
     is_propagated_to_caller: bool
+    destructors: Sequence[VerifiedDestructionContractDestructor]
 
 
 @dataclass(frozen=True, slots=True)
@@ -643,11 +669,11 @@ class ContributedDestruction:
 
 @dataclass(frozen=True, slots=True)
 class ContributedDestructionFragment:
-    """Ordinary Destroy operations contributed around one direct Action Execution."""
+    """Work from one Destruction Contract contributed around an Action Execution."""
 
-    contribution_dependencies: tuple[EmptyRuleDependencyNode, ...]
     operations: tuple[DestructionFragmentDestroyNode, ...]
     contributed_destructions: tuple[ContributedDestruction, ...]
+    destructors: tuple[DestructionContractDestructorContribution, ...]
 
 
 @dataclass(slots=True, eq=False)

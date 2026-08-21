@@ -1,0 +1,25 @@
+# Reverse quality removal logically triggers /extra_destructor after
+# /known_destructor on this path, although their independent Particle Operations
+# need not execute in that order.
+define the potential action<my.domain.com:my_lib:/caller_b> {
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<destroyer_particle> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+            }
+        }
+        create a particle in position<destroyer_particle>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
+        create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+    }
+}

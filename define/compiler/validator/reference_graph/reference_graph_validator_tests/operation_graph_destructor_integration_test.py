@@ -49,6 +49,174 @@ def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_diamond_callers_order_added_destructor_around_known_destructor(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/caller_a::trigger_pos)": [],
+        "test.create(/caller_b::trigger_pos)": [],
+        "caller_a.create(destroyer_particle)": [],
+        "caller_a.create(carrier)": [],
+        "caller_a.move(carrier, destroyer_particle::/destroyer::target)": [
+            "caller_a.create(destroyer_particle)",
+            "caller_a.create(carrier)",
+        ],
+        "caller_a.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_a.create(destroyer_particle)"
+        ],
+        "caller_a:destroyer.destroy(target)": [
+            "caller_a.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        # Logical trigger order does not serialize the Destructors' independent
+        # Particle Operations.
+        "caller_a:destroyer:extra_destructor.create(work)": [
+            "caller_a.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_a:destroyer:extra_destructor.destroy(work)": [
+            "caller_a:destroyer:extra_destructor.create(work)"
+        ],
+        "caller_a:destroyer:known_destructor.create(work)": [
+            "caller_a.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_a:destroyer:known_destructor.destroy(work)": [
+            "caller_a:destroyer:known_destructor.create(work)"
+        ],
+        "caller_a.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_a.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "caller_a.destroy(destroyer_particle)": [
+            "caller_a.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "caller_a:destroyer.destroy(target)",
+        ],
+        "caller_b.create(destroyer_particle)": [],
+        "caller_b.create(carrier)": [],
+        "caller_b.move(carrier, destroyer_particle::/destroyer::target)": [
+            "caller_b.create(destroyer_particle)",
+            "caller_b.create(carrier)",
+        ],
+        "caller_b.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_b.create(destroyer_particle)"
+        ],
+        "caller_b:destroyer.destroy(target)": [
+            "caller_b.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        # The opposite logical trigger order likewise creates no dependency
+        # between the independent Particle Operations.
+        "caller_b:destroyer:known_destructor.create(work)": [
+            "caller_b.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_b:destroyer:known_destructor.destroy(work)": [
+            "caller_b:destroyer:known_destructor.create(work)"
+        ],
+        "caller_b:destroyer:extra_destructor.create(work)": [
+            "caller_b.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_b:destroyer:extra_destructor.destroy(work)": [
+            "caller_b:destroyer:extra_destructor.create(work)"
+        ],
+        "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_b.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "caller_b.destroy(destroyer_particle)": [
+            "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "caller_b:destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Destructor Contract requirements are not recorded in the Operation Graph",
+)
+def test_diamond_callers_serialize_added_destructor_around_known_destructor(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/caller_a::trigger_pos)": [],
+        "test.create(/caller_b::trigger_pos)": [],
+        "caller_a.create(destroyer_particle)": [],
+        "caller_a.create(carrier)": [],
+        "caller_a.create(carrier::/marker)": ["caller_a.create(carrier)"],
+        "caller_a.move(carrier, destroyer_particle::/destroyer::target)": [
+            "caller_a.create(destroyer_particle)",
+            "caller_a.create(carrier::/marker)",
+        ],
+        "caller_a.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_a.create(destroyer_particle)"
+        ],
+        # Both Destructors operate on /marker, so the ordinary position dependency
+        # rules serialize their work in reverse quality-assignment order.
+        "caller_a:destroyer:extra_destructor.move(/marker, holder)": [
+            "caller_a.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_a:destroyer:extra_destructor.move(holder, /marker)": [
+            "caller_a:destroyer:extra_destructor.move(/marker, holder)"
+        ],
+        "caller_a:destroyer:known_destructor.move(/marker, holder)": [
+            "caller_a:destroyer:extra_destructor.move(holder, /marker)"
+        ],
+        "caller_a:destroyer:known_destructor.move(holder, /marker)": [
+            "caller_a:destroyer:known_destructor.move(/marker, holder)"
+        ],
+        "caller_a:destroyer.destroy(target::/marker)": [
+            "caller_a:destroyer:known_destructor.move(holder, /marker)"
+        ],
+        "caller_a:destroyer.destroy(target)": [
+            "caller_a:destroyer.destroy(target::/marker)"
+        ],
+        "caller_a.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_a.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "caller_a.destroy(destroyer_particle)": [
+            "caller_a.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "caller_a:destroyer.destroy(target)",
+        ],
+        "caller_b.create(destroyer_particle)": [],
+        "caller_b.create(carrier)": [],
+        "caller_b.create(carrier::/marker)": ["caller_b.create(carrier)"],
+        "caller_b.move(carrier, destroyer_particle::/destroyer::target)": [
+            "caller_b.create(destroyer_particle)",
+            "caller_b.create(carrier::/marker)",
+        ],
+        "caller_b.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_b.create(destroyer_particle)"
+        ],
+        # Reversing the quality assignments reverses the dependency between the
+        # same two Destructor bodies on this caller's Action Execution.
+        "caller_b:destroyer:known_destructor.move(/marker, holder)": [
+            "caller_b.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "caller_b:destroyer:known_destructor.move(holder, /marker)": [
+            "caller_b:destroyer:known_destructor.move(/marker, holder)"
+        ],
+        "caller_b:destroyer:extra_destructor.move(/marker, holder)": [
+            "caller_b:destroyer:known_destructor.move(holder, /marker)"
+        ],
+        "caller_b:destroyer:extra_destructor.move(holder, /marker)": [
+            "caller_b:destroyer:extra_destructor.move(/marker, holder)"
+        ],
+        "caller_b:destroyer.destroy(target::/marker)": [
+            "caller_b:destroyer:extra_destructor.move(holder, /marker)"
+        ],
+        "caller_b:destroyer.destroy(target)": [
+            "caller_b:destroyer.destroy(target::/marker)"
+        ],
+        "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "caller_b.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "caller_b.destroy(destroyer_particle)": [
+            "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "caller_b:destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_destructor_on_child_carried_by_parent_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -542,7 +710,6 @@ def test_multiple_destructors_on_particle_from_callee_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
 def test_caller_added_destructor_fires_in_callee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -559,8 +726,109 @@ def test_caller_added_destructor_fires_in_callee(
         "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
         "destructor.create(_noop)": ["test.move(carrier, box::/callee::target)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
         "test.destroy(box)": [
-            "test.create(box::/callee::run)",
+            "test.destroy(box::/callee::run)",
+            "callee.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_added_destructor_fans_out_from_action_parent(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, box::/callee::target)": [
+            "test.create(box)",
+            "test.create(carrier)",
+        ],
+        "test.create(box::/callee::run)": ["test.create(box)"],
+        "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
+        # Both independent Destructor chains receive the same Action Parent
+        # dependency from the operation that moved the destroyed particle.
+        "destructor.create(work_a)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.destroy(work_a)": ["destructor.create(work_a)"],
+        "destructor.create(work_b)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.destroy(work_b)": ["destructor.create(work_b)"],
+        "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/callee::run)",
+            "callee.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_added_destructor_with_later_action_execution(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(later_box)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, box::/callee::target)": [
+            "test.create(box)",
+            "test.create(carrier)",
+        ],
+        "test.create(carrier)#2": ["test.move(carrier, box::/callee::target)"],
+        "test.move(carrier, later_box::/later::target)": [
+            "test.create(later_box)",
+            "test.create(carrier)#2",
+        ],
+        "test.create(box::/callee::run)": ["test.create(box)"],
+        "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
+        # The two direct Action Executions independently fire the same
+        # caller-contributed Destructor from their respective particle Moves.
+        "destructor.create(_noop)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.create(later_box::/later::run)": ["test.create(later_box)"],
+        "later.destroy(target)": ["test.move(carrier, later_box::/later::target)"],
+        "destructor#2.create(_noop)": ["test.move(carrier, later_box::/later::target)"],
+        "destructor#2.destroy(_noop)": ["destructor#2.create(_noop)"],
+        "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/callee::run)",
+            "callee.destroy(target)",
+        ],
+        "test.destroy(later_box::/later::run)": ["test.create(later_box::/later::run)"],
+        "test.destroy(later_box)": [
+            "test.destroy(later_box::/later::run)",
+            "later.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_added_multiple_destructors_fire_in_callee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, box::/callee::target)": [
+            "test.create(box)",
+            "test.create(carrier)",
+        ],
+        "test.create(box::/callee::run)": ["test.create(box)"],
+        "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
+        # The same callee Destroy independently fires both caller-added
+        # Destructors from the operation that moved their parent particle.
+        "destructor_a.create(work)": ["test.move(carrier, box::/callee::target)"],
+        "destructor_a.destroy(work)": ["destructor_a.create(work)"],
+        "destructor_b.create(work)": ["test.move(carrier, box::/callee::target)"],
+        "destructor_b.destroy(work)": ["destructor_b.create(work)"],
+        "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/callee::run)",
             "callee.destroy(target)",
         ],
     }

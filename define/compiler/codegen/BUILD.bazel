@@ -34,6 +34,7 @@ py_test(
     size = "small",
     srcs = ["callee_codegen_independence_integration_test.py"],
     data = glob(["testdata/callee_codegen_independence/**/*.dfn"]) + [
+        "//define/testdata/reference_graph/operation_graph_destructor_integration:codegen_testdata",
         "//define/testdata/reference_graph/operation_graph_many_actions_integration:codegen_testdata",
         "//define/testdata/reference_graph/operation_graph_two_actions_integration:codegen_testdata",
     ],
