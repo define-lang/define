@@ -641,6 +641,7 @@ class VerifiedDestructionContractDestructor:
     action: ast.ActionReference
     position: ast.PositionReference
     position_relative_to_destroyed_particle: tuple[str, ...]
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

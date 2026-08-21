@@ -603,7 +603,7 @@ class OperationGraphBuilder:
                         direct_callee_execution=execution,
                         destruction_fact=destruction_fact,
                         callee_destroy_position=(
-                            verified_destructor.position_relative_to_destroyed_particle
+                            verified_destructor.callee_destroy_position_relative_to_destroyed_particle
                         ),
                     ),
                 )

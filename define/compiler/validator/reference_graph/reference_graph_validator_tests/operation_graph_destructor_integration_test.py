@@ -308,7 +308,6 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
 def test_auto_destruction_of_child_with_caller_known_destructor(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -319,11 +318,13 @@ def test_auto_destruction_of_child_with_caller_known_destructor(
         "test.create(source::/extra)": ["test.create(source)"],
         "test.move(source, /destroyer::run)": ["test.create(source::/extra)"],
         "destroyer.move(run, local)": ["test.move(source, /destroyer::run)"],
-        "child_destruct.create(_noop)": ["destroyer.move(run, local)"],
+        # Moving the parent particle into the callee supplies the Destructor's
+        # Action Parent; the later callee move does not operate on _noop.
+        "child_destruct.create(_noop)": ["test.move(source, /destroyer::run)"],
         "child_destruct.destroy(_noop)": ["child_destruct.create(_noop)"],
-        # The caller-known child's Destructor must finish before the contributed
-        # Destroy empties that child position.
-        "destroyer.destroy(local::/extra)": ["child_destruct.destroy(_noop)"],
+        # The Destructor does not operate on /extra, so its independent work does
+        # not precede the caller-contributed child Destroy.
+        "destroyer.destroy(local::/extra)": ["destroyer.move(run, local)"],
         # The contributed child Destroy must finish before automatic destruction
         # empties the local position.
         "destroyer.destroy(local)": ["destroyer.destroy(local::/extra)"],
