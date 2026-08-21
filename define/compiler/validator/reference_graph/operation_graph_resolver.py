@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import typing
 from dataclasses import dataclass
 
@@ -17,30 +18,55 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
+class ActionExecution(abc.ABC):
+    """One execution of a resolved action."""
+
+    __slots__: typing.ClassVar[tuple[str, ...]] = ()
+
+    @property
+    @abc.abstractmethod
+    def action(self) -> ast.GlobalTypedName:
+        """Return the action being executed."""
+
+
+class EntryActionExecution(ActionExecution):
+    """The entry Action Execution of a resolved Operation Graph."""
+
+    __slots__: typing.ClassVar[tuple[str, ...]] = ("_action",)
+    _action: ast.GlobalTypedName
+
+    def __init__(self, action: ast.GlobalTypedName):
+        """Create the entry Action Execution."""
+        self._action = action
+
+    @property
+    @typing.override
+    def action(self) -> ast.GlobalTypedName:
+        """Return the entry action."""
+        return self._action
+
+
 @dataclass(frozen=True, slots=True, eq=False)
-class TriggeredBy:
-    """The direct Action Execution that created an action execution."""
+class TriggeredActionExecution(ActionExecution):
+    """An Action Execution created by a direct Action Execution."""
 
     caller: ActionExecution
     direct_execution: operation_graph_action_resolver.ResolvedActionExecution
 
-
-@dataclass(frozen=True, slots=True, eq=False)
-class ActionExecution:
-    """One execution of a resolved action."""
-
-    action: ast.GlobalTypedName
-    triggered_by: TriggeredBy | None
+    @property
+    @typing.override
+    def action(self) -> ast.GlobalTypedName:
+        """Return the action named by the direct Action Execution."""
+        return self.direct_execution.execution.callee_action_name
 
     @property
     def direct_execution_caller(self) -> ActionExecution:
         """Return the caller whose graph records this direct Action Execution."""
-        triggered_by = typing.cast("TriggeredBy", self.triggered_by)
-        return triggered_by.caller
+        return self.caller
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class ContributedDestructorActionExecution(ActionExecution):
+class ContributedDestructorActionExecution(TriggeredActionExecution):
     """A Destructor execution fired by a destroyer with bindings from a caller."""
 
     contributing_execution: ActionExecution
@@ -64,13 +90,14 @@ class ResolvedOperation:
 type _ResolvedOperationKey = tuple[
     ActionExecution, operation_graph_model.PositionOperationNode
 ]
+type _CalleeExecutionKey = tuple[ActionExecution, operation_graph_model.ActionExecution]
 
 
 @dataclass(frozen=True, slots=True)
 class ResolvedOperationGraph:
     """The concrete operations reached from one action."""
 
-    entry_action_execution: ActionExecution
+    entry_action_execution: EntryActionExecution
     operations: tuple[ResolvedOperation, ...]
 
 
@@ -96,9 +123,8 @@ class ResolvedOperationGraphBuilder:
                 self._resolved_empty_rule_binding_hole_by_operation_node
             ),
         )
-        self._callee_action_executions: dict[
-            ActionExecution,
-            list[tuple[operation_graph_model.ActionExecution, ActionExecution]],
+        self._callee_execution_by_key: dict[
+            _CalleeExecutionKey, TriggeredActionExecution
         ] = {}
         self._operation_by_key: dict[_ResolvedOperationKey, ResolvedOperation] = {}
         # Only full-operation-graph resolution binds callee nodes used exclusively
@@ -115,7 +141,7 @@ class ResolvedOperationGraphBuilder:
     def build(self) -> ResolvedOperationGraph:
         """Build concrete operations and dependencies from the entry action."""
         self._resolve_all_actions()
-        entry_action_execution = ActionExecution(self._entry_action, None)
+        entry_action_execution = EntryActionExecution(self._entry_action)
         operation_keys: list[_ResolvedOperationKey] = []
         pending_destructors: list[
             tuple[
@@ -124,25 +150,20 @@ class ResolvedOperationGraphBuilder:
                 operation_graph_action_resolver.ResolvedActionExecution,
             ]
         ] = []
-        work = [entry_action_execution]
+        work: list[ActionExecution] = [entry_action_execution]
         while work:
             caller_execution = work.pop()
             resolved_action = self._resolved_actions[caller_execution.action]
             for operation in resolved_action.graph.particle_operations:
                 operation_keys.append((caller_execution, operation))
 
-            callees: list[ActionExecution] = []
+            callees: list[TriggeredActionExecution] = []
             for resolved_execution in resolved_action.action_executions:
-                callee = ActionExecution(
-                    resolved_execution.execution.callee_action_name,
-                    TriggeredBy(
-                        caller_execution,
-                        resolved_execution,
-                    ),
+                callee = TriggeredActionExecution(
+                    caller_execution,
+                    resolved_execution,
                 )
-                self._callee_action_executions.setdefault(caller_execution, []).append(
-                    (resolved_execution.execution, callee)
-                )
+                self._index_callee_execution(callee)
                 callees.append(callee)
             for (
                 resolved_callee_destroy,
@@ -170,16 +191,11 @@ class ResolvedOperationGraphBuilder:
                 callee_destroy.operation.destruction_fact,
             )
             destructor_execution = ContributedDestructorActionExecution(
-                destructor.execution.callee_action_name,
-                TriggeredBy(
-                    destroying_execution,
-                    destructor,
-                ),
-                contributing_execution,
+                caller=destroying_execution,
+                direct_execution=destructor,
+                contributing_execution=contributing_execution,
             )
-            self._callee_action_executions.setdefault(
-                contributing_execution, []
-            ).append((destructor.execution, destructor_execution))
+            self._index_callee_execution(destructor_execution)
             resolved_destructor_action = self._resolved_actions[
                 destructor_execution.action
             ]
@@ -447,18 +463,20 @@ class ResolvedOperationGraphBuilder:
         work = [(action_execution, binding_hole)]
         while work:
             current_execution, current_binding_hole = work.pop()
-            triggered_by = typing.cast("TriggeredBy", current_execution.triggered_by)
-            if triggered_by.caller is stop_execution:
+            triggered_execution = typing.cast(
+                "TriggeredActionExecution", current_execution
+            )
+            if triggered_execution.caller is stop_execution:
                 continue
             callee_binding = (
                 self._callee_binding_for_destruction_before_caller_contribution(
-                    triggered_by,
+                    triggered_execution,
                     current_binding_hole,
                 )
             )
             self._add_action_dependencies(
                 dependency_keys,
-                triggered_by.caller,
+                triggered_execution.caller,
                 callee_binding.caller_dependencies.local_operations,
                 callee_binding.caller_dependencies.guarantee_dependencies,
             )
@@ -470,7 +488,7 @@ class ResolvedOperationGraphBuilder:
             for caller_binding_hole in callee_binding.caller_binding_holes:
                 work.append(
                     (
-                        triggered_by.caller,
+                        triggered_execution.caller,
                         caller_binding_hole,
                     )
                 )
@@ -478,11 +496,11 @@ class ResolvedOperationGraphBuilder:
 
     def _callee_binding_for_destruction_before_caller_contribution(
         self,
-        triggered_by: TriggeredBy,
+        triggered_execution: TriggeredActionExecution,
         callee_binding_hole: operation_graph_model.BindingHole,
     ) -> operation_graph_action_resolver.CalleeBinding:
         """Return one binding used before a caller's destruction contribution."""
-        resolved_execution = triggered_by.direct_execution
+        resolved_execution = triggered_execution.direct_execution
         callee_binding_hole = self._binding_hole_for_destruction(callee_binding_hole)
         callee_binding = self._existing_callee_binding_for_destruction(
             resolved_execution,
@@ -578,25 +596,24 @@ class ResolvedOperationGraphBuilder:
         action_execution: ActionExecution,
         binding_hole: operation_graph_model.BindingHole,
     ):
-        triggered_by = action_execution.triggered_by
-        if triggered_by is None:
+        if not isinstance(action_execution, TriggeredActionExecution):
             return
         callee_binding = (
             self._callee_binding_for_destruction_before_caller_contribution(
-                triggered_by,
+                action_execution,
                 binding_hole,
             )
         )
         self._add_action_dependencies(
             dependency_keys,
-            triggered_by.caller,
+            action_execution.caller,
             callee_binding.caller_dependencies.local_operations,
             callee_binding.caller_dependencies.guarantee_dependencies,
         )
         for caller_binding_hole in callee_binding.caller_binding_holes:
             self._add_destruction_dependencies_for_binding_hole(
                 dependency_keys,
-                triggered_by.caller,
+                action_execution.caller,
                 caller_binding_hole,
             )
 
@@ -614,13 +631,12 @@ class ResolvedOperationGraphBuilder:
         )
         found_contribution = False
         while True:
-            triggered_by = current_execution.triggered_by
-            if triggered_by is None:
-                raise ValueError("destruction interface reached the entry action")
-            caller_execution = triggered_by.caller
+            if not isinstance(current_execution, TriggeredActionExecution):
+                raise TypeError("destruction interface reached the entry action")
+            caller_execution = current_execution.caller
             caller_action = self._resolved_actions[caller_execution.action]
             resolved_callee_destroy = operation_graph_model.ResolvedCalleeDestroy(
-                triggered_by.direct_execution.execution,
+                current_execution.direct_execution.execution,
                 resolved_destruction_operation,
             )
             resolved_contribution = caller_action.destruction_contributions.get(
@@ -632,7 +648,7 @@ class ResolvedOperationGraphBuilder:
                     dependency_keys[caller_execution, operation] = None
                 if completion_operations:
                     found_contribution = True
-            if not triggered_by.direct_execution.forwards_destruction_connections:
+            if not current_execution.direct_execution.forwards_destruction_connections:
                 return found_contribution
             current_execution = caller_execution
 
@@ -659,15 +675,16 @@ class ResolvedOperationGraphBuilder:
         self,
         caller_execution: ActionExecution,
         execution: operation_graph_model.ActionExecution,
-    ) -> ActionExecution:
+    ) -> TriggeredActionExecution:
         """Return the execution created by one direct Action Execution."""
-        return next(
-            callee_execution
-            for candidate_execution, callee_execution in self._callee_action_executions[
-                caller_execution
-            ]
-            if candidate_execution is execution
-        )
+        return self._callee_execution_by_key[caller_execution, execution]
+
+    def _index_callee_execution(self, callee_execution: TriggeredActionExecution):
+        """Make repeated callee resolution independent of caller fan-out."""
+        self._callee_execution_by_key[
+            callee_execution.direct_execution_caller,
+            callee_execution.direct_execution.execution,
+        ] = callee_execution
 
     def _add_dependencies_for_binding_hole(
         self,
@@ -675,10 +692,9 @@ class ResolvedOperationGraphBuilder:
         action_execution: ActionExecution,
         binding_hole: operation_graph_model.BindingHole,
     ):
-        triggered_by = action_execution.triggered_by
-        if triggered_by is None:
+        if not isinstance(action_execution, TriggeredActionExecution):
             return
-        callee_binding = triggered_by.direct_execution.callee_bindings[binding_hole]
+        callee_binding = action_execution.direct_execution.callee_bindings[binding_hole]
         direct_execution_caller = action_execution.direct_execution_caller
         self._add_action_dependencies(
             dependency_keys,

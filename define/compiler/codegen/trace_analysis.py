@@ -61,19 +61,18 @@ def _execution_identity(
     identity = identities.get(execution)
     if identity is not None:
         return identity
-    triggered_by = execution.triggered_by
-    if triggered_by is None:
+    if isinstance(execution, operation_graph_resolver.TriggeredActionExecution):
         identity = tracing.ActionExecutionIdentity(
-            None,
-            labels.entry_action_execution_name(execution.action),
+            _execution_identity(execution.caller, labels, identities),
+            labels.triggered_action_execution_name(
+                execution.direct_execution_caller.action,
+                execution.direct_execution.execution,
+            ).local_name,
         )
     else:
         identity = tracing.ActionExecutionIdentity(
-            _execution_identity(triggered_by.caller, labels, identities),
-            labels.triggered_action_execution_name(
-                execution.direct_execution_caller.action,
-                triggered_by.direct_execution.execution,
-            ).local_name,
+            None,
+            labels.entry_action_execution_name(execution.action),
         )
     identities[execution] = identity
     return identity

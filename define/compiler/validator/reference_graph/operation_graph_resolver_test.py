@@ -86,16 +86,24 @@ def test_repeated_action_executions_create_distinct_executions():
     ) = resolved.operations
     assert first_entry_node.action_execution is resolved.entry_action_execution
     assert second_entry_node.action_execution is resolved.entry_action_execution
-    assert resolved.entry_action_execution.triggered_by is None
     assert first_worker_node.action_execution is not second_worker_node.action_execution
     assert first_worker_node.action_execution.action == worker_action
     assert second_worker_node.action_execution.action == worker_action
-    first_triggered_by = first_worker_node.action_execution.triggered_by
-    second_triggered_by = second_worker_node.action_execution.triggered_by
-    assert first_triggered_by is not None
-    assert second_triggered_by is not None
-    assert first_triggered_by.caller is resolved.entry_action_execution
-    assert second_triggered_by.caller is resolved.entry_action_execution
-    assert first_triggered_by.direct_execution.execution is first_execution
-    assert second_triggered_by.direct_execution.execution is second_execution
+    assert isinstance(
+        first_worker_node.action_execution,
+        operation_graph_resolver.TriggeredActionExecution,
+    )
+    assert isinstance(
+        second_worker_node.action_execution,
+        operation_graph_resolver.TriggeredActionExecution,
+    )
+    assert first_worker_node.action_execution.caller is resolved.entry_action_execution
+    assert second_worker_node.action_execution.caller is resolved.entry_action_execution
+    assert (
+        first_worker_node.action_execution.direct_execution.execution is first_execution
+    )
+    assert (
+        second_worker_node.action_execution.direct_execution.execution
+        is second_execution
+    )
     assert first_worker_node.operation.target == worker_operation

@@ -294,22 +294,18 @@ class OperationGraphLabeler:
         action_execution: operation_graph_resolver.ActionExecution,
         execution_names: dict[operation_graph_resolver.ActionExecution, str],
     ) -> str:
-        unnamed_executions: list[operation_graph_resolver.ActionExecution] = []
+        unnamed_executions: list[operation_graph_resolver.TriggeredActionExecution] = []
         current_execution = action_execution
         while current_execution not in execution_names:
-            triggered_by = typing.cast(
-                "operation_graph_resolver.TriggeredBy",
-                current_execution.triggered_by,
+            triggered_execution = typing.cast(
+                "operation_graph_resolver.TriggeredActionExecution",
+                current_execution,
             )
-            unnamed_executions.append(current_execution)
-            current_execution = triggered_by.caller
-        for unnamed_execution in reversed(unnamed_executions):
-            triggered_by = typing.cast(
-                "operation_graph_resolver.TriggeredBy",
-                unnamed_execution.triggered_by,
-            )
-            execution_names[unnamed_execution] = self.triggered_action_execution_name(
-                unnamed_execution.direct_execution_caller.action,
-                triggered_by.direct_execution.execution,
-            ).render(execution_names[triggered_by.caller])
+            unnamed_executions.append(triggered_execution)
+            current_execution = triggered_execution.caller
+        for triggered_execution in reversed(unnamed_executions):
+            execution_names[triggered_execution] = self.triggered_action_execution_name(
+                triggered_execution.direct_execution_caller.action,
+                triggered_execution.direct_execution.execution,
+            ).render(execution_names[triggered_execution.caller])
         return execution_names[action_execution]
