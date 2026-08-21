@@ -4,10 +4,13 @@ filegroup(
     srcs = [
         ":deep_requirements",
         ":destruction_fragments",
+        ":fragment_fanout_joins",
         ":guarantee_expansion",
         ":large_operation_volume",
+        ":many_substantial_actions",
         ":operation_dependencies",
         ":project_config",
+        ":reference_graph_project",
     ],
     visibility = [
         "//define/compiler:__pkg__",
@@ -30,6 +33,13 @@ filegroup(
 )
 
 filegroup(
+    name = "fragment_fanout_joins",
+    testonly = True,
+    srcs = ["fragment_fanout_joins.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
     name = "guarantee_expansion",
     testonly = True,
     srcs = ["guarantee_expansion.dfn"],
@@ -44,6 +54,13 @@ filegroup(
 )
 
 filegroup(
+    name = "many_substantial_actions",
+    testonly = True,
+    srcs = ["many_substantial_actions.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
     name = "operation_dependencies",
     testonly = True,
     srcs = ["operation_dependencies.dfn"],
@@ -54,4 +71,20 @@ filegroup(
     name = "project_config",
     testonly = True,
     srcs = [".define/project/config.defcl"],
+)
+
+filegroup(
+    name = "reference_graph_project",
+    testonly = True,
+    srcs = glob(["reference_graph_project/**/*.dfn"]) + [
+        "reference_graph_project/.define/project/config.defcl",
+    ],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
+    name = "reference_graph_project_entry",
+    testonly = True,
+    srcs = ["reference_graph_project/test.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
 )

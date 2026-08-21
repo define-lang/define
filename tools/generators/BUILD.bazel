@@ -13,6 +13,28 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "generate_action_plan_source",
+    srcs = ["generate_action_plan_source.py"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "generate_action_plan_source_test",
+    size = "small",
+    srcs = ["generate_action_plan_source_test.py"],
+    deps = [
+        ":generate_action_plan_source",
+        "//define/compiler:driver",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
 py_test(
     name = "generate_action_graph_source_test",
     size = "small",
@@ -173,6 +195,8 @@ pyright_test(
     deps = [
         ":generate_action_graph_source",
         ":generate_action_graph_source_test",
+        ":generate_action_plan_source",
+        ":generate_action_plan_source_test",
         ":generate_deep_pipeline_source",
         ":generate_deep_pipeline_source_test",
         ":generate_destruction_fragments_source",

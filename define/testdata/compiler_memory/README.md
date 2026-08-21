@@ -93,3 +93,57 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --independent-move-chain-length 96 \
   --fqun-prefix mv:define-lang.org:compiler_memory
 ```
+
+## Many substantial actions
+
+`many_substantial_actions.dfn` distributes nontrivial Particle Operation chains
+across many actions. It exercises per-definition Operation Graphs, Action Plans,
+parallel scheduling state, and generated-code contexts.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_action_plan_source -- \
+  --output define/testdata/compiler_memory/many_substantial_actions.dfn \
+  --actions 650 \
+  --chains-per-action 4 \
+  --topology-groups 0 \
+  --topology-width 1 \
+  --fqun-prefix mv:define-lang.org:compiler_memory
+```
+
+## Action Fragment fan-out and joins
+
+`fragment_fanout_joins.dfn` repeatedly creates a parent particle, creates many
+child particles that can run after it, and then destroys the parent after all of
+them. This produces wide Action Fragment fan-out followed by a wide join.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_action_plan_source -- \
+  --output define/testdata/compiler_memory/fragment_fanout_joins.dfn \
+  --actions 0 \
+  --chains-per-action 1 \
+  --topology-groups 80 \
+  --topology-width 40 \
+  --fqun-prefix mv:define-lang.org:compiler_memory
+```
+
+## Many-file reference graph
+
+`reference_graph_project/` contains a layered project with one definition per
+file and heavy cross-file referencing. It exercises parallel file validation,
+path tracking, deferred references, and both representations of the Reference
+Graph. Remove the directory before regenerating it because the generator
+requires a new destination.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_reference_graph_project -- \
+  --output define/testdata/compiler_memory/reference_graph_project \
+  --modules 2000 \
+  --layers 20 \
+  --fan-out 3 \
+  --utility-fraction 0.3 \
+  --seed 7 \
+  --universe-name mv:define-lang.org:compiler_memory
+```

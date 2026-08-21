@@ -55,6 +55,7 @@ repos:
         name: reformat files
         entry: bazelisk run --noshow_progress //tools:format --
         language: system
+        pass_filenames: false
         require_serial: true
 
       - id: buf-plugin-build

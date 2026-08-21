@@ -1,0 +1,7 @@
+define the potential position<mv:define-lang.org:compiler_memory:/lib/pkg178/m178> {
+    it may only contain particles where {
+        it has the position</lib/pkg232/m232>.
+        it has the position</lib/pkg297/m297>.
+        it has the position</lib/pkg277/m277>.
+    }
+}

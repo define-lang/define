@@ -3,6 +3,7 @@
 
 import resource
 import subprocess
+import typing
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,8 @@ from define.compiler import test_runfiles
 _MEBIBYTE = 1024 * 1024
 _MAXIMUM_PEAK_RSS_BYTES = 192 * _MEBIBYTE
 _DATA_LIMIT_BYTES = 512 * _MEBIBYTE
+
+type _InputMethod = typing.Literal["stdin", "filesystem"]
 
 
 def _binary_path() -> Path:
@@ -27,37 +30,70 @@ def _runner_path() -> Path:
 
 
 @pytest.mark.parametrize(
-    "source_variable",
+    ("source_variable", "input_method"),
     [
-        "MEMORY_TEST_LARGE_OPERATION_VOLUME",
-        "MEMORY_TEST_DESTRUCTION_FRAGMENTS",
-        "MEMORY_TEST_OPERATION_DEPENDENCIES",
-        "MEMORY_TEST_GUARANTEE_EXPANSION",
-        "MEMORY_TEST_DEEP_REQUIREMENTS",
-    ],
-    ids=[
-        "large_operation_volume",
-        "destruction_fragments",
-        "operation_dependencies",
-        "guarantee_expansion",
-        "deep_requirements",
+        pytest.param(
+            "MEMORY_TEST_LARGE_OPERATION_VOLUME",
+            "stdin",
+            id="large_operation_volume",
+        ),
+        pytest.param(
+            "MEMORY_TEST_DESTRUCTION_FRAGMENTS",
+            "stdin",
+            id="destruction_fragments",
+        ),
+        pytest.param(
+            "MEMORY_TEST_MANY_SUBSTANTIAL_ACTIONS",
+            "stdin",
+            id="many_substantial_actions",
+        ),
+        pytest.param(
+            "MEMORY_TEST_FRAGMENT_FANOUT_JOINS",
+            "stdin",
+            id="fragment_fanout_joins",
+        ),
+        pytest.param(
+            "MEMORY_TEST_REFERENCE_GRAPH_PROJECT",
+            "filesystem",
+            id="reference_graph_project",
+        ),
+        pytest.param(
+            "MEMORY_TEST_OPERATION_DEPENDENCIES",
+            "stdin",
+            id="operation_dependencies",
+        ),
+        pytest.param(
+            "MEMORY_TEST_GUARANTEE_EXPANSION",
+            "stdin",
+            id="guarantee_expansion",
+        ),
+        pytest.param(
+            "MEMORY_TEST_DEEP_REQUIREMENTS",
+            "stdin",
+            id="deep_requirements",
+        ),
     ],
 )
-def test_peak_memory(source_variable: str, tmp_path: Path):
+def test_peak_memory(source_variable: str, input_method: _InputMethod, tmp_path: Path):
     source_path = _source_path(source_variable)
-    source = source_path.read_text(encoding="utf-8")
+    command = [
+        str(_runner_path()),
+        str(_DATA_LIMIT_BYTES),
+        str(_binary_path()),
+        "compile",
+        "--max-threads",
+        "4",
+        "--out",
+        str(tmp_path / "generated"),
+    ]
+    source = None
+    if input_method == "filesystem":
+        command.append(source_path.name)
+    else:
+        source = source_path.read_text(encoding="utf-8")
 
     completed = subprocess.run(
-        [
-            str(_runner_path()),
-            str(_DATA_LIMIT_BYTES),
-            str(_binary_path()),
-            "compile",
-            "--max-threads",
-            "4",
-            "--out",
-            str(tmp_path / "generated"),
-        ],
+        command,
         input=source,
         capture_output=True,
         check=False,
