@@ -250,7 +250,7 @@ py_test(
     # instrumented code and the coverage reporter fails on an empty data set.
     tags = ["no-coverage"],
     deps = [
-        "@rules_python//python/runfiles",
+        ":test_runfiles",
     ],
 )
 
@@ -265,6 +265,35 @@ py_test(
         ":overall_stats",
         "@pypi//click",
     ],
+)
+
+py_test(
+    name = "memory_integration_test",
+    size = "small",
+    srcs = ["memory_integration_test.py"],
+    data = [
+        ":main",
+        ":memory_limit_runner",
+        "//define/testdata/compiler_memory",
+        "//define/testdata/compiler_memory:guarantee_expansion",
+    ],
+    env = {
+        "MAIN_BINARY": "$(rlocationpath :main)",
+        "MEMORY_LIMIT_RUNNER": "$(rlocationpath :memory_limit_runner)",
+        "MEMORY_TEST_SOURCE": "$(rlocationpath //define/testdata/compiler_memory:guarantee_expansion)",
+    },
+    tags = ["no-coverage"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":test_runfiles",
+    ],
+)
+
+py_binary(
+    name = "memory_limit_runner",
+    testonly = True,
+    srcs = ["memory_limit_runner.py"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_library(
@@ -364,6 +393,13 @@ py_library(
 )
 
 py_library(
+    name = "test_runfiles",
+    testonly = True,
+    srcs = ["test_runfiles.py"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+py_library(
     name = "transformer",
     srcs = ["transformer.py"],
     visibility = [
@@ -421,6 +457,8 @@ pyright_test(
         ":main",
         ":main_integration_test",
         ":main_test",
+        ":memory_integration_test",
+        ":memory_limit_runner",
         ":name_parser",
         ":name_parser_test",
         ":overall_stats",
@@ -429,6 +467,7 @@ pyright_test(
         ":parser_error_classification",
         ":parser_exceptions",
         ":test_helpers",
+        ":test_runfiles",
         ":transformer",
         ":transformer_test",
     ],

@@ -10,7 +10,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from define.compiler import test_runfiles
 
 _USAGE_ERROR = 2
 _POSITION_SOURCE = "define the potential position<my.domain.com:my_lib:/test>.\n"
@@ -27,15 +27,7 @@ _CONSTRUCTOR_SOURCE = (
 
 
 def _binary_path() -> Path:
-    location = os.environ["MAIN_BINARY"]
-    candidate = Path(location)
-    if candidate.exists():
-        return candidate
-    r = runfiles.Runfiles.Create()
-    assert r is not None
-    resolved = r.Rlocation(location)
-    assert resolved is not None
-    return Path(resolved)
+    return test_runfiles.resolve_from_env("MAIN_BINARY")
 
 
 def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE) -> None:
@@ -55,6 +47,7 @@ class TestStdinPipe:
             [str(_binary_path()), "validate"],
             input=_POSITION_SOURCE,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
@@ -66,6 +59,7 @@ class TestStdinPipe:
             [str(_binary_path()), "validate", "test.dfn"],
             input=_POSITION_SOURCE,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
@@ -78,6 +72,7 @@ class TestStdinPipe:
             [str(_binary_path()), "validate", "test.dfn"],
             stdin=subprocess.DEVNULL,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
@@ -91,6 +86,7 @@ class TestStdinPipe:
                 [str(_binary_path()), "validate", "test.dfn"],
                 stdin=read_fd,
                 capture_output=True,
+                check=False,
                 text=True,
                 cwd=tmp_path,
                 timeout=30,
@@ -107,6 +103,7 @@ class TestStdinPipe:
             [str(_binary_path()), "validate"],
             stdin=subprocess.DEVNULL,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
@@ -120,6 +117,7 @@ class TestStdinPipe:
             [str(_binary_path()), "compile", "test.dfn", "--out", str(output_dir)],
             stdin=subprocess.DEVNULL,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
@@ -132,6 +130,7 @@ class TestStdinPipe:
             [str(_binary_path()), "compile", "--out", str(output_dir)],
             input=_CONSTRUCTOR_SOURCE,
             capture_output=True,
+            check=False,
             text=True,
             cwd=tmp_path,
         )
