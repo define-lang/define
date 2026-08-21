@@ -2,10 +2,9 @@
 
 ## Status
 
-The source-backed regression test for directly known Destructor timing is
-committed. Stage 1 behavior is implemented and validated. After Checkpoint 1,
-the contributed-destruction recording cleanup and resolved-execution refactor
-will each have their own checkpoint and commit before Stage 2 begins. Stages 2
+Checkpoint 1 is committed. The contributed-destruction recording refactor is
+implemented and validated, and is awaiting review. The resolved-execution
+refactor will have its own checkpoint and commit before Stage 2 begins. Stages 2
 and 3 remain planned.
 
 Each implementation stage must produce behavior visible from a real Define

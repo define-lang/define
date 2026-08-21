@@ -651,11 +651,60 @@ class OperationGraphBuilder:
         destruction: operation_graph_model.OperationGraphDestruction,
         destroyed_position_relative_to_fact: tuple[str, ...],
         destroyed_particle_key: tuple[str, ...],
-        destructors: Sequence[
+        destructors: list[
             operation_graph_model.DestructionContractDestructorContribution
         ],
     ) -> operation_graph_model.ContributedDestructionFragment:
-        destruction_fact = contribution.destruction_fact
+        child_operations_by_contribution_position = (
+            self._contributed_destruction_child_operations(
+                execution,
+                contribution,
+                destroyed_particle_key,
+            )
+        )
+        operations: list[operation_graph_model.DestructionFragmentDestroyNode] = []
+        contributions: list[_RecordedDestructionContribution] = []
+        # Record which contributions contain each Destroy. When a later
+        # parent-position Destroy depends on those child-position Destroys, add the
+        # parent-position Destroy to the same contributions.
+        records_by_contributed_position: dict[
+            operation_graph_model.ContributedDestructionPosition,
+            _RecordedContributedPosition,
+        ] = {}
+        for contributed_position in contribution.children:
+            record, begun_contribution = self._record_contributed_destroy(
+                execution,
+                contribution,
+                contributed_position,
+                destroyed_position_relative_to_fact,
+                destroyed_particle_key,
+                child_operations_by_contribution_position,
+                records_by_contributed_position,
+            )
+            operations.append(record.operation)
+            records_by_contributed_position[contributed_position] = record
+            if begun_contribution is not None:
+                contributions.append(begun_contribution)
+            destruction.operations_by_position[
+                record.operation.destruction_position
+            ] = record.operation
+        contributed_destructions = self._finish_contributed_destructions(
+            contribution.final_contributed_positions,
+            records_by_contributed_position,
+            contributions,
+        )
+        return operation_graph_model.ContributedDestructionFragment(
+            operations=tuple(operations),
+            contributed_destructions=contributed_destructions,
+            destructors=tuple(destructors),
+        )
+
+    def _contributed_destruction_child_operations(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        contribution: operation_graph_model.DestructionContractContribution,
+        destroyed_particle_key: tuple[str, ...],
+    ) -> dict[tuple[str, ...], operation_graph_model.ParticleChildOperations]:
         # By the Empty Rule, a caller-contributed Destroy depends on the caller's
         # earlier operations on relevant child positions of the destroyed particle.
         # The Action Requirement satisfaction records those operations.
@@ -674,123 +723,153 @@ class OperationGraphBuilder:
         # Each separate contribution needs only the preceding operations on child
         # positions of the position it destroys. Partition once to avoid searching
         # all retained child operations for every contribution.
-        child_operations_by_contribution_position = child_operations.partition_for_child_positions_without_parent_child_relationships(
+        return child_operations.partition_for_child_positions_without_parent_child_relationships(
             contribution_positions
         )
-        operations: list[operation_graph_model.DestructionFragmentDestroyNode] = []
-        contributions: list[_RecordedDestructionContribution] = []
-        # Record which contributions contain each Destroy. When a later
-        # parent-position Destroy depends on those child-position Destroys, add the
-        # parent-position Destroy to the same contributions.
-        records_by_contributed_position: dict[
+
+    def _record_contributed_destroy(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        contribution: operation_graph_model.DestructionContractContribution,
+        contributed_position: operation_graph_model.ContributedDestructionPosition,
+        destroyed_position_relative_to_fact: tuple[str, ...],
+        destroyed_particle_key: tuple[str, ...],
+        child_operations_by_contribution_position: Mapping[
+            tuple[str, ...], operation_graph_model.ParticleChildOperations
+        ],
+        records_by_contributed_position: Mapping[
             operation_graph_model.ContributedDestructionPosition,
             _RecordedContributedPosition,
-        ] = {}
-        for newly_occupied_child in contribution.children:
-            position = newly_occupied_child.position
-            position_key = position.canonical_chained_name_tuple
-            callee_destroy_position = (
-                *destroyed_position_relative_to_fact,
-                *newly_occupied_child.callee_destroy_position_relative_to_destroyed_particle,
+        ],
+    ) -> tuple[_RecordedContributedPosition, _RecordedDestructionContribution | None]:
+        position = contributed_position.position
+        preceding_contributed_positions = (
+            contributed_position.preceding_contributed_positions
+        )
+        # Validation records cascade Destroys child before parent, so these
+        # positions always have operations already constructed by the caller.
+        local_dependencies: list[
+            operation_graph_model.DestructionFragmentDestroyNode
+        ] = [
+            records_by_contributed_position[preceding_position].operation
+            for preceding_position in preceding_contributed_positions
+        ]
+        operation_contributions: list[_RecordedDestructionContribution] = []
+        for preceding_position in preceding_contributed_positions:
+            operation_contributions.extend(
+                records_by_contributed_position[preceding_position].contributions
             )
-            preceding_contributed_positions = (
-                newly_occupied_child.preceding_contributed_positions
+        begun_contribution = None
+        if local_dependencies:
+            # A parent-position Destroy continues the contributions begun by its
+            # child-position Destroys rather than beginning another contribution.
+            local_dependency_nodes = tuple(local_dependencies)
+            dependencies = local_dependency_nodes
+            dependencies_before_caller_contribution = local_dependency_nodes
+            dependencies_after_caller_contribution = local_dependency_nodes
+        else:
+            begun_contribution = self._record_destruction_contribution_node(
+                execution,
+                contribution,
+                contributed_position,
+                destroyed_position_relative_to_fact,
+                destroyed_particle_key,
+                child_operations_by_contribution_position,
             )
-            # Validation records cascade Destroys child before parent, so these
-            # positions always have operations already constructed in this loop.
-            local_dependencies: list[
-                operation_graph_model.DestructionFragmentDestroyNode
-            ] = [
-                records_by_contributed_position[contributed_position].operation
-                for contributed_position in preceding_contributed_positions
-            ]
-            operation_contributions: list[_RecordedDestructionContribution] = []
-            for contributed_position in preceding_contributed_positions:
-                operation_contributions.extend(
-                    records_by_contributed_position[contributed_position].contributions
-                )
-            if local_dependencies:
-                # A parent-position Destroy continues the contributions begun by its
-                # child-position Destroys rather than beginning another contribution.
-                local_dependency_nodes = tuple(local_dependencies)
-                dependencies = local_dependency_nodes
-                dependencies_before_caller_contribution = local_dependency_nodes
-                dependencies_after_caller_contribution = local_dependency_nodes
-            else:
-                # A caller-known occupied child position with no contributed child
-                # Destroy must begin a separate contribution because no existing
-                # contribution contains it.
-                contribution_position = position_key[len(destroyed_particle_key) :]
-                contribution_node = operation_graph_model.DestructionContributionNode(
-                    node_id=len(self._nodes),
-                    depends_on=self._destroy_dependencies(
-                        position,
-                        child_operations_by_contribution_position[
-                            contribution_position
-                        ],
-                        typing.cast(
-                            "operation_graph_model.LastOperationNode",
-                            self._last_operations_by_position.most_recent_on_position_or_parents(
-                                position_key
-                            ),
-                        ),
-                    ),
-                    callee_destroy=operation_graph_model.CalleeDestroy(
-                        direct_callee_execution=execution,
-                        destruction_fact=destruction_fact,
-                        callee_destroy_position=callee_destroy_position,
-                    ),
-                )
-                self._nodes.append(contribution_node)
-                recorded_contribution = _RecordedDestructionContribution(
-                    contribution_node
-                )
-                contributions.append(recorded_contribution)
-                operation_contributions.append(recorded_contribution)
-                dependencies = (contribution_node,)
-                dependencies_before_caller_contribution = contribution_node.depends_on
-                dependencies_after_caller_contribution = ()
-            # The resolver needs the same position relative to the original
-            # destroying action even when a higher caller discovered this child.
-            suffix = position.typed_names[
-                len(contribution.destroyed_particle_position.typed_names) :
-            ]
-            target_in_destroying_action = contribution.destroyed_position_in_destroying_action.with_position_suffix(
+            operation_contributions.append(begun_contribution)
+            dependencies = (begun_contribution.node,)
+            dependencies_before_caller_contribution = begun_contribution.node.depends_on
+            dependencies_after_caller_contribution = ()
+        # The resolver needs the same position relative to the original
+        # destroying action even when a higher caller discovered this child.
+        suffix = position.typed_names[
+            len(contribution.destroyed_particle_position.typed_names) :
+        ]
+        target_in_destroying_action = (
+            contribution.destroyed_position_in_destroying_action.with_position_suffix(
                 *suffix
             )
-            operation = operation_graph_model.DestructionFragmentDestroyNode(
-                node_id=len(self._nodes),
-                target=position,
-                depends_on=dependencies,
-                destruction_fact=destruction_fact,
-                destruction_position=(
-                    *destroyed_position_relative_to_fact,
-                    *newly_occupied_child.position_relative_to_destroyed_particle,
+        )
+        operation = operation_graph_model.DestructionFragmentDestroyNode(
+            node_id=len(self._nodes),
+            target=position,
+            depends_on=dependencies,
+            destruction_fact=contribution.destruction_fact,
+            destruction_position=(
+                *destroyed_position_relative_to_fact,
+                *contributed_position.position_relative_to_destroyed_particle,
+            ),
+            dependencies_before_caller_contribution=dependencies_before_caller_contribution,
+            dependencies_after_caller_contribution=dependencies_after_caller_contribution,
+            direct_callee_execution=execution,
+            target_in_destroying_action=target_in_destroying_action,
+        )
+        self._nodes.append(operation)
+        # When a parent-position Destroy depends on a child-position Destroy,
+        # add the parent-position Destroy to every contribution that contains
+        # the child-position Destroy.
+        for recorded_contribution in operation_contributions:
+            recorded_contribution.operations.append(operation)
+        return (
+            _RecordedContributedPosition(operation, operation_contributions),
+            begun_contribution,
+        )
+
+    def _record_destruction_contribution_node(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        contribution: operation_graph_model.DestructionContractContribution,
+        contributed_position: operation_graph_model.ContributedDestructionPosition,
+        destroyed_position_relative_to_fact: tuple[str, ...],
+        destroyed_particle_key: tuple[str, ...],
+        child_operations_by_contribution_position: Mapping[
+            tuple[str, ...], operation_graph_model.ParticleChildOperations
+        ],
+    ) -> _RecordedDestructionContribution:
+        # A caller-known occupied child position with no contributed child Destroy
+        # must begin a separate contribution because no existing contribution
+        # contains it.
+        position = contributed_position.position
+        position_key = position.canonical_chained_name_tuple
+        contribution_position = position_key[len(destroyed_particle_key) :]
+        contribution_node = operation_graph_model.DestructionContributionNode(
+            node_id=len(self._nodes),
+            depends_on=self._destroy_dependencies(
+                position,
+                child_operations_by_contribution_position[contribution_position],
+                typing.cast(
+                    "operation_graph_model.LastOperationNode",
+                    self._last_operations_by_position.most_recent_on_position_or_parents(
+                        position_key
+                    ),
                 ),
-                dependencies_before_caller_contribution=dependencies_before_caller_contribution,
-                dependencies_after_caller_contribution=dependencies_after_caller_contribution,
+            ),
+            callee_destroy=operation_graph_model.CalleeDestroy(
                 direct_callee_execution=execution,
-                target_in_destroying_action=target_in_destroying_action,
-            )
-            self._nodes.append(operation)
-            operations.append(operation)
-            records_by_contributed_position[newly_occupied_child] = (
-                _RecordedContributedPosition(
-                    operation,
-                    operation_contributions,
-                )
-            )
-            # When a parent-position Destroy depends on a child-position Destroy,
-            # add the parent-position Destroy to every contribution that contains
-            # the child-position Destroy.
-            for recorded_contribution in operation_contributions:
-                recorded_contribution.operations.append(operation)
-            destruction.operations_by_position[operation.destruction_position] = (
-                operation
-            )
+                destruction_fact=contribution.destruction_fact,
+                callee_destroy_position=(
+                    *destroyed_position_relative_to_fact,
+                    *contributed_position.callee_destroy_position_relative_to_destroyed_particle,
+                ),
+            ),
+        )
+        self._nodes.append(contribution_node)
+        return _RecordedDestructionContribution(contribution_node)
+
+    def _finish_contributed_destructions(
+        self,
+        final_contributed_positions: Sequence[
+            operation_graph_model.ContributedDestructionPosition
+        ],
+        records_by_contributed_position: Mapping[
+            operation_graph_model.ContributedDestructionPosition,
+            _RecordedContributedPosition,
+        ],
+        contributions: Sequence[_RecordedDestructionContribution],
+    ) -> tuple[operation_graph_model.ContributedDestruction, ...]:
         # The final contributed positions have no contributed parent-position
         # Destroy, so each contribution's callee Destroy depends on them.
-        for contributed_position in contribution.final_contributed_positions:
+        for contributed_position in final_contributed_positions:
             record = records_by_contributed_position[contributed_position]
             for recorded_contribution in record.contributions:
                 recorded_contribution.completion_operations.append(record.operation)
@@ -805,11 +884,7 @@ class OperationGraphBuilder:
                     tuple(recorded_contribution.completion_operations),
                 )
             )
-        return operation_graph_model.ContributedDestructionFragment(
-            operations=tuple(operations),
-            contributed_destructions=tuple(contributed_destructions),
-            destructors=tuple(destructors),
-        )
+        return tuple(contributed_destructions)
 
     def _get_or_create_destruction(
         self,
