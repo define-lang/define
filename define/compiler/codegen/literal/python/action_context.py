@@ -60,10 +60,14 @@ class ActionDefinitionContext:
                 if statement.to_position is not None:
                     class_references.extend(statement.to_position.class_references)
         for action_execution in self.execution.action_executions:
-            class_references.extend(
-                connection.destruction_continuation.execution_class
-                for connection in action_execution.created_destruction_connections
-            )
+            for connection in action_execution.created_destruction_connections:
+                class_references.append(
+                    connection.destruction_continuation.execution_class
+                )
+                class_references.extend(
+                    destructor.execution_class
+                    for destructor in connection.destruction_contract_destructors
+                )
             if action_execution.action is not None:
                 class_references.extend(action_execution.action.class_references)
             class_references.append(action_execution.execution_class)

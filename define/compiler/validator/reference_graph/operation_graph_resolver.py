@@ -70,6 +70,7 @@ class ContributedDestructorActionExecution(TriggeredActionExecution):
     """A Destructor execution fired by a destroyer with bindings from a caller."""
 
     contributing_execution: ActionExecution
+    callee_destroy: operation_graph_model.ResolvedCalleeDestroy
 
     @property
     @typing.override
@@ -194,6 +195,7 @@ class ResolvedOperationGraphBuilder:
                 caller=destroying_execution,
                 direct_execution=destructor,
                 contributing_execution=contributing_execution,
+                callee_destroy=resolved_callee_destroy,
             )
             self._index_callee_execution(destructor_execution)
             resolved_destructor_action = self._resolved_actions[
@@ -694,6 +696,19 @@ class ResolvedOperationGraphBuilder:
     ):
         if not isinstance(action_execution, TriggeredActionExecution):
             return
+        if isinstance(
+            action_execution, ContributedDestructorActionExecution
+        ) and isinstance(
+            binding_hole, operation_graph_model.ActionParentLastOperationNode
+        ):
+            has_dependency_in_callee = self._add_destruction_start_before_caller(
+                dependency_keys,
+                action_execution.caller,
+                action_execution.callee_destroy.callee_destroy.operation,
+                action_execution.contributing_execution,
+            )
+            if has_dependency_in_callee:
+                return
         callee_binding = action_execution.direct_execution.callee_bindings[binding_hole]
         direct_execution_caller = action_execution.direct_execution_caller
         self._add_action_dependencies(

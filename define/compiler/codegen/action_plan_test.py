@@ -1,3 +1,5 @@
+import pytest
+
 from define.compiler import ast, test_helpers
 from define.compiler.codegen import action_plan
 from define.compiler.validator.reference_graph import (
@@ -187,7 +189,7 @@ def test_triggered_action_preserves_independent_binding_hole():
     ]
 
 
-def test_callee_continuation_ends_a_direct_call_chain():
+def _plan_callee_continuation_ending_direct_call_chain():
     caller_definition = _DUMMY_ACTION
     callee_definition = _action_definition("/work")
     caller_builder = operation_graph.OperationGraphBuilder(caller_definition.typed_name)
@@ -217,6 +219,14 @@ def test_callee_continuation_ends_a_direct_call_chain():
     _ = plans.plan_for(callee_definition)
     plan = plans.plan_for(caller_definition)
 
+    return plan, execution, create, destroy
+
+
+def test_callee_continuation_ends_a_direct_call_chain():
+    plan, execution, create, destroy = (
+        _plan_callee_continuation_ending_direct_call_chain()
+    )
+
     assert [_fragment_operations(fragment) for fragment in plan.fragments] == [
         (create,),
         (destroy,),
@@ -224,15 +234,25 @@ def test_callee_continuation_ends_a_direct_call_chain():
     assert plan.execute_fragments == [plan.fragments[0]]
     (execution_plan,) = plan.action_executions
     assert execution_plan.execution is execution
+    assert plan.fragments[0].action_execution_successors == [execution]
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="an Action Execution trigger is counted separately from the same binding dependency",
+)
+def test_trigger_operation_satisfying_callee_binding_arrives_once():
+    plan, execution, _, _ = _plan_callee_continuation_ending_direct_call_chain()
     (callee_binding_join,) = plan.callee_binding_joins
+
+    # The Create both triggers the Action Execution and supplies its Action
+    # Parent, so it is one runtime prerequisite for this binding.
     assert plan.fragments[0].action_execution_successors == [execution]
     assert plan.fragments[0].callee_binding_joins_that_depend_on_fragment == [
         callee_binding_join
     ]
-    assert plan.fragments[0].triggered_action_execution_callee_binding_joins == [
-        callee_binding_join
-    ]
-    assert callee_binding_join.dependency_count == 2
+    assert not plan.fragments[0].triggered_action_execution_callee_binding_joins
+    assert callee_binding_join.dependency_count == 1
 
 
 def test_callee_binding_join_uses_its_caller_operation():

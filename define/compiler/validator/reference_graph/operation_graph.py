@@ -574,6 +574,9 @@ class OperationGraphBuilder:
     ):
         """Record the caller-known work from one Destruction Contract."""
         destruction_fact = contribution.destruction_fact
+        fact_key = destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
+        destroyed_position_key = contribution.destroyed_position_in_destroying_action.canonical_chained_name_tuple
+        destroyed_position_relative_to_fact = destroyed_position_key[len(fact_key) :]
         destruction = None
         if contribution.is_propagated_to_caller:
             destruction = self._get_or_create_destruction(destruction_fact)
@@ -603,7 +606,8 @@ class OperationGraphBuilder:
                         direct_callee_execution=execution,
                         destruction_fact=destruction_fact,
                         callee_destroy_position=(
-                            verified_destructor.position_relative_to_destroyed_particle
+                            *destroyed_position_relative_to_fact,
+                            *verified_destructor.callee_destroy_position_relative_to_destroyed_particle,
                         ),
                     ),
                 )
@@ -616,11 +620,6 @@ class OperationGraphBuilder:
         if contribution.children:
             if destruction is None:
                 destruction = self._get_or_create_destruction(destruction_fact)
-            fact_key = destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
-            destroyed_position_key = contribution.destroyed_position_in_destroying_action.canonical_chained_name_tuple
-            destroyed_position_relative_to_fact = destroyed_position_key[
-                len(fact_key) :
-            ]
             destroyed_particle_key = (
                 contribution.destroyed_particle_position.canonical_chained_name_tuple
             )

@@ -308,7 +308,6 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
 def test_auto_destruction_of_child_with_caller_known_destructor(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -319,14 +318,94 @@ def test_auto_destruction_of_child_with_caller_known_destructor(
         "test.create(source::/extra)": ["test.create(source)"],
         "test.move(source, /destroyer::run)": ["test.create(source::/extra)"],
         "destroyer.move(run, local)": ["test.move(source, /destroyer::run)"],
+        # The callee's parent move is also an operation on the child position, so
+        # it is the Destructor's most recent Action Parent operation.
         "child_destruct.create(_noop)": ["destroyer.move(run, local)"],
         "child_destruct.destroy(_noop)": ["child_destruct.create(_noop)"],
-        # The caller-known child's Destructor must finish before the contributed
-        # Destroy empties that child position.
-        "destroyer.destroy(local::/extra)": ["child_destruct.destroy(_noop)"],
+        # The Destructor does not operate on /extra, so its independent work does
+        # not precede the caller-contributed child Destroy.
+        "destroyer.destroy(local::/extra)": ["destroyer.move(run, local)"],
         # The contributed child Destroy must finish before automatic destruction
         # empties the local position.
         "destroyer.destroy(local)": ["destroyer.destroy(local::/extra)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_multiple_newly_known_children_with_destructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/extra_a)": ["test.create(source)"],
+        "test.create(source::/extra_b)": ["test.create(source)"],
+        "test.move(source, /destroyer::run)": [
+            "test.create(source::/extra_a)",
+            "test.create(source::/extra_b)",
+        ],
+        "destroyer.move(run, local)": ["test.move(source, /destroyer::run)"],
+        # The callee's parent move is the most recent Action Parent operation for
+        # each newly known child's independently contributed Destructor.
+        "destruct_a.create(_noop_a)": ["destroyer.move(run, local)"],
+        "destruct_a.destroy(_noop_a)": ["destruct_a.create(_noop_a)"],
+        "destruct_b.create(_noop_b)": ["destroyer.move(run, local)"],
+        "destruct_b.destroy(_noop_b)": ["destruct_b.create(_noop_b)"],
+        "destroyer.destroy(local::/extra_a)": ["destroyer.move(run, local)"],
+        "destroyer.destroy(local::/extra_b)": ["destroyer.move(run, local)"],
+        "destroyer.destroy(local)": [
+            "destroyer.destroy(local::/extra_b)",
+            "destroyer.destroy(local::/extra_a)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_destructor_on_passed_particle_with_newly_known_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/extra)": ["test.create(source)"],
+        "test.move(source, /destroyer::run)": ["test.create(source::/extra)"],
+        "destroyer.move(run, local)": ["test.move(source, /destroyer::run)"],
+        # Discovering child destruction in the same Destruction Contract must
+        # not suppress the passed particle's Destructor or its dependency on the
+        # callee's most recent Action Parent operation.
+        "parent_destruct.create(_noop)": ["destroyer.move(run, local)"],
+        "parent_destruct.destroy(_noop)": ["parent_destruct.create(_noop)"],
+        "destroyer.destroy(local::/extra)": ["destroyer.move(run, local)"],
+        "destroyer.destroy(local)": ["destroyer.destroy(local::/extra)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_newly_known_grandchild_destructor_uses_callee_child_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/known)": ["test.create(source)"],
+        "test.create(source::/known::/extra)": ["test.create(source::/known)"],
+        "test.move(source, /destroyer::run)": ["test.create(source::/known::/extra)"],
+        "destroyer.move(run::/known, holder)": ["test.move(source, /destroyer::run)"],
+        "destroyer.move(holder, run::/known)": ["destroyer.move(run::/known, holder)"],
+        # Restoring the child is also an operation on its caller-known grandchild,
+        # making it the Destructor's most recent Action Parent operation.
+        "grandchild_destruct.create(_noop)": ["destroyer.move(holder, run::/known)"],
+        "grandchild_destruct.destroy(_noop)": ["grandchild_destruct.create(_noop)"],
+        "destroyer.destroy(run::/known::/extra)": [
+            "destroyer.move(holder, run::/known)"
+        ],
+        # The caller-contributed grandchild Destroy must finish before the child
+        # Destroy that the callee can represent.
+        "destroyer.destroy(run::/known)": ["destroyer.destroy(run::/known::/extra)"],
+        "destroyer.destroy(run)": ["destroyer.destroy(run::/known)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

@@ -777,11 +777,14 @@ class ActionPostorderValidator:
                 newly_verified,
                 trigger_step,
             )
-        destructors = () if newly_occupied_children else destructor_contributions
         # Destruction Contract propagation ends at the action that created the
         # particle. If that action contributes no child Destroys or Destructors,
         # there is no additional work to record in its Operation Graph.
-        if created_in_this_action and not newly_occupied_children and not destructors:
+        if (
+            created_in_this_action
+            and not newly_occupied_children
+            and not destructor_contributions
+        ):
             return None
         return operation_graph_model.DestructionContractContribution(
             destruction_fact=destruction_contract.destruction_fact,
@@ -792,7 +795,7 @@ class ActionPostorderValidator:
             children=newly_occupied_children,
             final_contributed_positions=final_contributed_positions,
             is_propagated_to_caller=not created_in_this_action,
-            destructors=destructors,
+            destructors=destructor_contributions,
         )
 
     def _re_record_destruction_contract(
@@ -933,6 +936,9 @@ class ActionPostorderValidator:
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
                         position_relative_to_destroyed_particle=relative_key,
+                        callee_destroy_position_relative_to_destroyed_particle=(
+                            callee_destroy_position_for_children
+                        ),
                         newly_verified=newly_verified,
                     )
                 if destructor_contribution is not None:
@@ -987,6 +993,7 @@ class ActionPostorderValidator:
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
         position_relative_to_destroyed_particle: tuple[str, ...],
+        callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...],
         newly_verified: list[quality_assignment.QualityAssignment],
     ) -> operation_graph_model.VerifiedDestructionContractDestructor | None:
         """Verify one Destructor discovered through a Destruction Contract."""
@@ -1060,6 +1067,9 @@ class ActionPostorderValidator:
             position=particle_position,
             position_relative_to_destroyed_particle=(
                 position_relative_to_destroyed_particle
+            ),
+            callee_destroy_position_relative_to_destroyed_particle=(
+                callee_destroy_position_relative_to_destroyed_particle
             ),
         )
 
