@@ -4,7 +4,6 @@ from typing import ClassVar, final, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.child_destruct
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.extra
 
@@ -80,7 +79,6 @@ class TestExecution:
             local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_local,
             1,
             self.destroy_action_destroyer__position_run__global_position_extra,
-            self.trigger_action_destroyer__position_run__global_position_extra__action_child_destruct,
         )
         self.trigger_action_destroyer_destruction_connections = literal.DestructionConnections(
             self.destruction_connection_trigger_action_destroyer,
@@ -94,12 +92,6 @@ class TestExecution:
             self.guarantees.trigger_action_destroyer,
             destruction_connections=self.trigger_action_destroyer_destruction_connections,
         )
-
-    def trigger_action_destroyer__position_run__global_position_extra__action_child_destruct(self):
-        execution = local.my_domain_com.my_lib.child_destruct.ChildDestructExecution(
-            self.scheduler,
-        )
-        execution.accept_action_parent()
 
     def trigger_action_destroyer__for_empty_rule_position_run(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_run.arrive():
