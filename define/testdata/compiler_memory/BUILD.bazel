@@ -2,7 +2,11 @@ filegroup(
     name = "compiler_memory",
     testonly = True,
     srcs = [
+        ":deep_requirements",
+        ":destruction_fragments",
         ":guarantee_expansion",
+        ":large_operation_volume",
+        ":operation_dependencies",
         ":project_config",
     ],
     visibility = [
@@ -12,9 +16,37 @@ filegroup(
 )
 
 filegroup(
+    name = "deep_requirements",
+    testonly = True,
+    srcs = ["deep_requirements.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
+    name = "destruction_fragments",
+    testonly = True,
+    srcs = ["destruction_fragments.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
     name = "guarantee_expansion",
     testonly = True,
     srcs = ["guarantee_expansion.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
+    name = "large_operation_volume",
+    testonly = True,
+    srcs = ["large_operation_volume.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
+    name = "operation_dependencies",
+    testonly = True,
+    srcs = ["operation_dependencies.dfn"],
     visibility = ["//define/compiler:__pkg__"],
 )
 
