@@ -889,7 +889,7 @@ class _ActionBindingHolesBuilder:
             guarantee_path.executions[-1].callee_action_name
         ]
         callee_binding_holes = terminal_action.binding_holes.binding_holes_depended_on_by_guaranteed_position(
-            guarantee.guaranteed_position
+            guarantee.guarantee.guaranteed_position
         )
         if not callee_binding_holes:
             return ()

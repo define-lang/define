@@ -1338,6 +1338,12 @@ class OperationGraphBuilder:
                 ast.chain_in_caller(guarantee_action_chain, operation_position)
                 for operation_position in guarantee.operation_positions
             )
+            node_guarantee = operation_graph_model.OperationGraphGuarantee(
+                guaranteed_position=ast.chain_in_callee(
+                    operation_graph_action_chain, caller_position
+                ),
+                operation_positions=operation_positions,
+            )
             if len(operation_positions) == 2:
                 canonical_move_guarantee = canonical_node_by_move_positions.get(
                     operation_positions
@@ -1346,11 +1352,8 @@ class OperationGraphBuilder:
                     node_id=len(self._nodes),
                     execution=execution,
                     nested_executions=nested_executions,
-                    guaranteed_position=ast.chain_in_callee(
-                        operation_graph_action_chain, caller_position
-                    ),
                     depends_on=(execution.trigger_operation,),
-                    operation_positions=operation_positions,
+                    guarantee=node_guarantee,
                     canonical_move_guarantee=canonical_move_guarantee,
                 )
                 if canonical_move_guarantee is None:
@@ -1360,11 +1363,8 @@ class OperationGraphBuilder:
                     node_id=len(self._nodes),
                     execution=execution,
                     nested_executions=nested_executions,
-                    guaranteed_position=ast.chain_in_callee(
-                        operation_graph_action_chain, caller_position
-                    ),
                     depends_on=(execution.trigger_operation,),
-                    operation_positions=operation_positions,
+                    guarantee=node_guarantee,
                 )
             self._nodes.append(node)
             self._last_operations_by_position.record(caller_position, node)
@@ -1449,7 +1449,7 @@ class OperationGraphs(
         """Resolve one guarantee to its Particle Operation through callee graphs."""
         executions = [guarantee.execution, *guarantee.nested_executions]
         action = executions[-1].callee_action_name
-        position = guarantee.guaranteed_position
+        position = guarantee.guarantee.guaranteed_position
         # The get avoids allocating a candidate dictionary on cache hits;
         # setdefault rechecks and publishes the candidate in one synchronized
         # CPython dictionary operation when independent callers miss together.

@@ -746,9 +746,9 @@ class GuaranteeNode(OperationNode):
 
     This stands in for an operation whose details live in the callee's own graph.
     ``depends_on`` holds the operation that triggered the Action Execution; codegen resolves
-    this node to the callee's last operation on ``guaranteed_position`` when it
-    includes ``action`` for that execution. Caller operations that read the
-    position depend on this node with ordinary edges.
+    this node to the callee's last operation on the guaranteed position when it
+    includes ``action`` for that execution. Caller operations that read the position
+    depend on this node with ordinary edges.
     """
 
     _is_guarantee_or_has_partial_move_rule_result: typing.ClassVar[bool] = True
@@ -757,12 +757,9 @@ class GuaranteeNode(OperationNode):
     # The Action Execution of the action that guarantees the position.
     execution: ActionExecution
     # Action Executions to follow after ``execution`` before resolving
-    # ``guaranteed_position`` in the final callee's operation graph.
+    # the guaranteed position in the final callee's Operation Graph.
     nested_executions: tuple[ActionExecution, ...]
-    # The guaranteed position, by the callee's own key for it.
-    guaranteed_position: tuple[str, ...]
-    # Every caller position operated on by the guaranteed Particle Operation.
-    operation_positions: tuple[tuple[str, ...], ...]
+    guarantee: OperationGraphGuarantee
 
     @property
     def canonical_node_for_particle_operation(self) -> GuaranteeNode:
@@ -773,7 +770,7 @@ class GuaranteeNode(OperationNode):
     @typing.override
     def operated_positions(self) -> tuple[tuple[str, ...], ...]:
         """Every position operated on by this node."""
-        return self.operation_positions
+        return self.guarantee.operation_positions
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
