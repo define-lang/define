@@ -1069,6 +1069,21 @@ class _ActionBindingHolesBuilder:
         return binding_holes_by_guaranteed_position
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolvedActionNodes:
+    relationships_by_operation: dict[
+        operation_graph_model.PositionOperationNode,
+        _ResolvedOperationRelationships,
+    ]
+    action_executions: list[ResolvedActionExecution]
+    resolved_execution_by_execution: dict[
+        operation_graph_model.ActionExecution, ResolvedActionExecution
+    ]
+    replacement_depends_on_targets_by_node: dict[
+        operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
+    ]
+
+
 @typing.final
 class _ActionResolver:
     """Build the dependency interface of one reusable action."""
@@ -1099,6 +1114,45 @@ class _ActionResolver:
 
     def resolve(self) -> ResolvedAction:
         """Resolve the action's operations and direct Action Executions."""
+        resolved_nodes = self._resolve_nodes()
+        destruction_contributions = self._resolve_destruction_contributions(
+            resolved_nodes.resolved_execution_by_execution
+        )
+        for resolved_contribution in destruction_contributions.values():
+            self._associate_callee_bindings_with_operations(
+                resolved_nodes.relationships_by_operation,
+                (
+                    resolved_destructor
+                    for resolved_destructor in resolved_contribution.destructors
+                    if not resolved_destructor.has_only_action_parent_runtime_binding
+                ),
+            )
+        binding_holes = self._action_binding_holes_builder.build(
+            resolved_nodes.relationships_by_operation.values(),
+            itertools.chain(
+                resolved_nodes.action_executions,
+                itertools.chain.from_iterable(
+                    resolved_contribution.destructors
+                    for resolved_contribution in destruction_contributions.values()
+                ),
+            ),
+            resolved_nodes.replacement_depends_on_targets_by_node,
+        )
+        return ResolvedAction(
+            graph=self._graph,
+            relationships_by_operation=resolved_nodes.relationships_by_operation,
+            binding_holes=binding_holes,
+            action_executions=resolved_nodes.action_executions,
+            destruction_contributions=destruction_contributions,
+            resolved_execution_by_execution=(
+                resolved_nodes.resolved_execution_by_execution
+            ),
+            replacement_depends_on_targets_by_node=(
+                resolved_nodes.replacement_depends_on_targets_by_node
+            ),
+        )
+
+    def _resolve_nodes(self) -> _ResolvedActionNodes:
         relationships_by_operation: dict[
             operation_graph_model.PositionOperationNode,
             _ResolvedOperationRelationships,
@@ -1109,13 +1163,13 @@ class _ActionResolver:
         ] = {}
         # Binding direct callees can replace a node's graph-local relationships.
         # An absent entry keeps node.depends_on; an empty entry replaces it with no
-        # targets.
-        # Lazy nested-Guarantee translation needs the exact local replacements at
-        # each Action Execution boundary. Keeping only changed relationships makes
-        # this state proportional to the action graph.
+        # targets. Lazy nested-Guarantee translation needs the exact local
+        # replacements at each Action Execution boundary. Keeping only changed
+        # relationships makes this state proportional to the action graph.
         replacement_depends_on_targets_by_node: dict[
             operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
         ] = {}
+        destructor_guarantees_preceding_caller_contributed_destroys: _DestructorGuaranteesPrecedingCallerContributedDestroys = {}
         direct_executions_by_trigger: dict[
             operation_graph_model.LastOperationNode,
             list[operation_graph_model.ActionExecution],
@@ -1124,7 +1178,6 @@ class _ActionResolver:
             direct_executions_by_trigger.setdefault(
                 execution.trigger_operation, []
             ).append(execution)
-        destructor_guarantees_preceding_caller_contributed_destroys: _DestructorGuaranteesPrecedingCallerContributedDestroys = {}
         contributed_destructor_executions_by_trigger: dict[
             operation_graph_model.LastOperationNode,
             list[operation_graph_model.ActionExecution],
@@ -1140,36 +1193,12 @@ class _ActionResolver:
                         [],
                     ).append(execution)
         for node in self._graph.nodes:
-            if isinstance(node, operation_graph_model.EmptyRuleBindingHoleNode):
-                binding_hole = _resolve_empty_rule_binding_hole(
-                    node,
-                    replacement_depends_on_targets_by_node,
-                )
-                if self._resolved_empty_rule_binding_hole_by_operation_node is not None:
-                    self._resolved_empty_rule_binding_hole_by_operation_node[node] = (
-                        binding_hole
-                    )
-                replacement_depends_on_targets_by_node[node] = (binding_hole,)
-            elif isinstance(node, operation_graph_model.GuaranteeNode):
-                resolved_execution = resolved_execution_by_execution[node.execution]
-                replacement_depends_on_targets_by_node[node] = (
-                    self._action_binding_holes_builder.replacement_depends_on_targets_for_guarantee(
-                        node,
-                        resolved_execution,
-                        replacement_depends_on_targets_by_node,
-                    )
-                )
-            elif isinstance(node, operation_graph_model.PositionOperationNode):
-                relationships, replacement_depends_on_targets = self._resolve_operation(
-                    node,
-                    replacement_depends_on_targets_by_node,
-                )
-                if relationships is not None:
-                    relationships_by_operation[node] = relationships
-                if replacement_depends_on_targets is not None:
-                    replacement_depends_on_targets_by_node[node] = (
-                        replacement_depends_on_targets
-                    )
+            self._resolve_node_relationships(
+                node,
+                relationships_by_operation,
+                resolved_execution_by_execution,
+                replacement_depends_on_targets_by_node,
+            )
             if isinstance(
                 node,
                 (
@@ -1219,6 +1248,67 @@ class _ActionResolver:
             relationships_by_operation,
             action_executions,
         )
+        return _ResolvedActionNodes(
+            relationships_by_operation,
+            action_executions,
+            resolved_execution_by_execution,
+            replacement_depends_on_targets_by_node,
+        )
+
+    def _resolve_node_relationships(
+        self,
+        node: operation_graph_model.OperationNode,
+        relationships_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            _ResolvedOperationRelationships,
+        ],
+        resolved_execution_by_execution: Mapping[
+            operation_graph_model.ActionExecution, ResolvedActionExecution
+        ],
+        replacement_depends_on_targets_by_node: dict[
+            operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
+        ],
+    ):
+        if isinstance(node, operation_graph_model.EmptyRuleBindingHoleNode):
+            binding_hole = _resolve_empty_rule_binding_hole(
+                node,
+                replacement_depends_on_targets_by_node,
+            )
+            if self._resolved_empty_rule_binding_hole_by_operation_node is not None:
+                self._resolved_empty_rule_binding_hole_by_operation_node[node] = (
+                    binding_hole
+                )
+            replacement_depends_on_targets_by_node[node] = (binding_hole,)
+        elif isinstance(node, operation_graph_model.GuaranteeNode):
+            resolved_execution = resolved_execution_by_execution[node.execution]
+            replacement_depends_on_targets_by_node[node] = (
+                self._action_binding_holes_builder.replacement_depends_on_targets_for_guarantee(
+                    node,
+                    resolved_execution,
+                    replacement_depends_on_targets_by_node,
+                )
+            )
+        elif isinstance(node, operation_graph_model.PositionOperationNode):
+            relationships, replacement_depends_on_targets = self._resolve_operation(
+                node,
+                replacement_depends_on_targets_by_node,
+            )
+            if relationships is not None:
+                relationships_by_operation[node] = relationships
+            if replacement_depends_on_targets is not None:
+                replacement_depends_on_targets_by_node[node] = (
+                    replacement_depends_on_targets
+                )
+
+    def _resolve_destruction_contributions(
+        self,
+        resolved_execution_by_execution: Mapping[
+            operation_graph_model.ActionExecution, ResolvedActionExecution
+        ],
+    ) -> dict[
+        operation_graph_model.ResolvedCalleeDestroy,
+        ResolvedDestructionContribution,
+    ]:
         destruction_contributions: dict[
             operation_graph_model.ResolvedCalleeDestroy,
             ResolvedDestructionContribution,
@@ -1242,37 +1332,7 @@ class _ActionResolver:
                     ],
                 )
             )
-        for resolved_contribution in destruction_contributions.values():
-            self._associate_callee_bindings_with_operations(
-                relationships_by_operation,
-                (
-                    resolved_destructor
-                    for resolved_destructor in resolved_contribution.destructors
-                    if not resolved_destructor.has_only_action_parent_runtime_binding
-                ),
-            )
-        binding_holes = self._action_binding_holes_builder.build(
-            relationships_by_operation.values(),
-            itertools.chain(
-                action_executions,
-                itertools.chain.from_iterable(
-                    resolved_contribution.destructors
-                    for resolved_contribution in destruction_contributions.values()
-                ),
-            ),
-            replacement_depends_on_targets_by_node,
-        )
-        return ResolvedAction(
-            graph=self._graph,
-            relationships_by_operation=relationships_by_operation,
-            binding_holes=binding_holes,
-            action_executions=action_executions,
-            destruction_contributions=destruction_contributions,
-            resolved_execution_by_execution=resolved_execution_by_execution,
-            replacement_depends_on_targets_by_node=(
-                replacement_depends_on_targets_by_node
-            ),
-        )
+        return destruction_contributions
 
     def _resolve_operation(
         self,
