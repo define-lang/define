@@ -401,90 +401,19 @@ class _FragmentTopologyBuilder:
 
 
 @typing.final
-class _ActionPlanBuilder:
-    """Build code-generation plans from one action operation graph."""
+class _ActionExecutionPlanner:
+    """Plan one action's Action Executions and Destruction Connections."""
 
     def __init__(
         self,
         resolved_action: operation_graph_action_resolver.ResolvedAction,
-    ):
-        """Initialize for one action and its validated operation graph."""
-        self._resolved_action = resolved_action
-
-    def build_executed_action(self) -> ActionPlan:
-        """Build a plan started directly through the action's execute method."""
-        return self._build(
-            [],
-            publishes_guarantees=False,
-            start_directly=True,
-        )
-
-    def build_triggered_action(self) -> ActionPlan:
-        """Build the reusable Binding Hole plan for this action's callers."""
-        return self._build(
-            self._resolved_action.binding_holes.with_runtime_consumers,
-            publishes_guarantees=True,
-            start_directly=False,
-        )
-
-    def _build(
-        self,
-        binding_holes: Sequence[operation_graph_model.BindingHole],
-        *,
-        publishes_guarantees: bool,
-        start_directly: bool,
-    ) -> ActionPlan:
-        topology = _FragmentTopologyBuilder(
-            self._resolved_action,
-            publishes_guarantees=publishes_guarantees,
-            uses_binding_hole_fanouts=not start_directly,
-        ).build()
-        action_execution_plans = self._plan_action_executions(topology)
-        callee_binding_join_by_callee_binding = self._plan_callee_binding_joins(
-            topology.fragment_for_operation,
-            binding_holes,
-            action_execution_plans.action_executions,
-            action_execution_plans.destruction_connection_by_callee_destroy,
-        )
-        guarantee_publications = self._plan_guarantee_publications(
-            topology.fragment_for_operation,
-            publishes_guarantees=publishes_guarantees,
-        )
-        self._plan_fragments(topology)
-        binding_hole_fanouts = self._plan_binding_hole_fanouts(
-            binding_holes,
-            topology.fragment_for_operation,
-            callee_binding_join_by_callee_binding,
-        )
-        execute_fragments: list[ActionFragment] = []
-        if start_directly:
-            for fragment in topology.fragments:
-                if fragment.dependency_count == 0:
-                    execute_fragments.append(fragment)
-        return ActionPlan(
-            fragments=topology.fragments,
-            execute_fragments=execute_fragments,
-            binding_hole_fanouts=binding_hole_fanouts,
-            action_executions=action_execution_plans.action_executions,
-            callee_binding_joins=list(callee_binding_join_by_callee_binding.values()),
-            triggers_for_destroyed_callee_guarantee_particles=(
-                self._plan_triggers_for_destroyed_callee_guarantee_particles(
-                    callee_binding_join_by_callee_binding
-                )
-            ),
-            guarantee_publications=guarantee_publications,
-            accepts_destruction_connections=(
-                self._resolved_action.graph.propagates_destruction_facts
-            ),
-            destruction_connection_by_operation=(
-                action_execution_plans.destruction_connection_by_operation
-            ),
-        )
-
-    def _plan_action_executions(
-        self,
         topology: _FragmentTopology,
-    ) -> _ActionExecutionPlans:
+    ):
+        self._resolved_action = resolved_action
+        self._topology = topology
+
+    def plan(self) -> _ActionExecutionPlans:
+        """Return the action's planned Action Executions and Destruction Connections."""
         action_executions: list[ActionExecutionPlan] = []
         action_execution_by_execution: dict[
             operation_graph_model.ActionExecution,
@@ -515,11 +444,11 @@ class _ActionPlanBuilder:
         ) in self._resolved_action.destruction_contributions.items():
             contribution = resolved_contribution.operation_graph_contribution
             first_fragments_of_destructions = [
-                topology.fragment_for_operation[operation]
+                self._topology.fragment_for_operation[operation]
                 for operation in contribution.first_operations
             ]
             completion_fragments = [
-                topology.fragment_for_operation[operation]
+                self._topology.fragment_for_operation[operation]
                 for operation in contribution.completion_operations
             ]
             destruction_contract_destructor_plans = (
@@ -539,7 +468,7 @@ class _ActionPlanBuilder:
                     "operation_graph_model.PositionOperationNode",
                     execution.trigger_operation,
                 )
-                topology.fragment_for_operation[
+                self._topology.fragment_for_operation[
                     trigger_operation
                 ].action_execution_successors.append(execution)
             if not (
@@ -578,8 +507,8 @@ class _ActionPlanBuilder:
             destruction_connection_by_callee_destroy,
         )
 
-    @staticmethod
     def _plan_destruction_contract_destructors_for_one_callee_destroy(
+        self,
         resolved_callee_destroy: operation_graph_model.ResolvedCalleeDestroy,
         resolved_contribution: operation_graph_action_resolver.ResolvedDestructionContribution,
     ) -> _DestructionContractDestructorPlans:
@@ -626,6 +555,91 @@ class _ActionPlanBuilder:
             action_executions,
             destruction_contract_destructors,
             has_empty_or_fill_dependency_on_callee_destroy,
+        )
+
+
+@typing.final
+class _ActionPlanBuilder:
+    """Build code-generation plans from one action operation graph."""
+
+    def __init__(
+        self,
+        resolved_action: operation_graph_action_resolver.ResolvedAction,
+    ):
+        """Initialize for one action and its validated operation graph."""
+        self._resolved_action = resolved_action
+
+    def build_executed_action(self) -> ActionPlan:
+        """Build a plan started directly through the action's execute method."""
+        return self._build(
+            [],
+            publishes_guarantees=False,
+            start_directly=True,
+        )
+
+    def build_triggered_action(self) -> ActionPlan:
+        """Build the reusable Binding Hole plan for this action's callers."""
+        return self._build(
+            self._resolved_action.binding_holes.with_runtime_consumers,
+            publishes_guarantees=True,
+            start_directly=False,
+        )
+
+    def _build(
+        self,
+        binding_holes: Sequence[operation_graph_model.BindingHole],
+        *,
+        publishes_guarantees: bool,
+        start_directly: bool,
+    ) -> ActionPlan:
+        topology = _FragmentTopologyBuilder(
+            self._resolved_action,
+            publishes_guarantees=publishes_guarantees,
+            uses_binding_hole_fanouts=not start_directly,
+        ).build()
+        action_execution_plans = _ActionExecutionPlanner(
+            self._resolved_action,
+            topology,
+        ).plan()
+        callee_binding_join_by_callee_binding = self._plan_callee_binding_joins(
+            topology.fragment_for_operation,
+            binding_holes,
+            action_execution_plans.action_executions,
+            action_execution_plans.destruction_connection_by_callee_destroy,
+        )
+        guarantee_publications = self._plan_guarantee_publications(
+            topology.fragment_for_operation,
+            publishes_guarantees=publishes_guarantees,
+        )
+        self._plan_fragments(topology)
+        binding_hole_fanouts = self._plan_binding_hole_fanouts(
+            binding_holes,
+            topology.fragment_for_operation,
+            callee_binding_join_by_callee_binding,
+        )
+        execute_fragments: list[ActionFragment] = []
+        if start_directly:
+            for fragment in topology.fragments:
+                if fragment.dependency_count == 0:
+                    execute_fragments.append(fragment)
+        return ActionPlan(
+            fragments=topology.fragments,
+            execute_fragments=execute_fragments,
+            binding_hole_fanouts=binding_hole_fanouts,
+            action_executions=action_execution_plans.action_executions,
+            callee_binding_joins=list(callee_binding_join_by_callee_binding.values()),
+            triggers_for_destroyed_callee_guarantee_particles=(
+                self._plan_triggers_for_destroyed_callee_guarantee_particles(
+                    callee_binding_join_by_callee_binding
+                )
+            ),
+            guarantee_publications=guarantee_publications,
+            accepts_destruction_connections=(
+                self._resolved_action.graph.propagates_destruction_facts
+            ),
+            destruction_connection_by_operation=(
+                action_execution_plans.destruction_connection_by_operation
+            ),
         )
 
     def _plan_callee_binding_joins(
