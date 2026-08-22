@@ -24,14 +24,14 @@ from define.compiler.validator.reference_graph import (
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
-_ENV = template_env.create_environment(_TEMPLATES_DIR, _COMPILED_DIR)
-typing.cast(
-    "dict[str, object]",
-    _ENV.globals,
-).update(
-    ActionRole=action_context.ActionRole,
-    ChainAccessor=template_context.ChainAccessor,
-    StatementKind=template_context.StatementKind,
+_ENV = template_env.create_environment(
+    _TEMPLATES_DIR,
+    _COMPILED_DIR,
+    template_globals={
+        "ActionRole": action_context.ActionRole,
+        "ChainAccessor": template_context.ChainAccessor,
+        "StatementKind": template_context.StatementKind,
+    },
 )
 _POSITION_TEMPLATE = _ENV.get_template("position_definition.j2")
 _ACTION_TEMPLATE = _ENV.get_template("action_definition.j2")
