@@ -102,6 +102,23 @@ py_binary(
     deps = ["@pypi//j2lint"],
 )
 
+py_library(
+    name = "loop_coverage",
+    srcs = ["loop_coverage.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@pypi//pytest"],
+)
+
+py_test(
+    name = "loop_coverage_test",
+    size = "small",
+    srcs = ["loop_coverage_test.py"],
+    deps = [
+        ":loop_coverage",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "regenerate_codegen_testdata",
     srcs = ["regenerate_codegen_testdata.py"],
@@ -343,6 +360,8 @@ pyright_test(
         ":generate_programming_languages",
         ":git_commit_via_api",
         ":j2lint_runner",
+        ":loop_coverage",
+        ":loop_coverage_test",
         ":profile_orchestration",
         ":regenerate_codegen_testdata",
         ":run_profile",
