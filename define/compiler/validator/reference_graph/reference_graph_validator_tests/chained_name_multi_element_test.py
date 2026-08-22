@@ -1,13 +1,18 @@
 # pyright: reportUnusedCallResult=false
 """Multi-element chain tests, including chains that pass through actions."""
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 
 class TestCreateParticle:

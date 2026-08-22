@@ -3,13 +3,18 @@
 # because the constructor guarantee scenarios are complex enough to need
 # prose explanations of what each test verifies.
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 
 def test_nested_constructor_guarantees(

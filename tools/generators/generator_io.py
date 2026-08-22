@@ -1,9 +1,14 @@
 """I/O helpers shared by source generators."""
 
+from __future__ import annotations
+
 import os
 import tempfile
-from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def write_lines(output: Path, lines: Iterable[str]) -> int:

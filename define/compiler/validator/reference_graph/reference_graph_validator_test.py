@@ -1,17 +1,22 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 import threading
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     definition_postorder_validator,
     reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.validator import validation_result
 
 _ACTION_TEMPLATE = (
     "define the potential action<my.domain.com:my_lib:/{name}> {{\n"

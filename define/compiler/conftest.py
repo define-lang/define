@@ -2,14 +2,15 @@
 # pyright: reportImplicitStringConcatenation=false
 """Shared test fixtures for the Define compiler."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 import pytest
 
 from define.compiler import parser
-from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import (
     operation_graph,
@@ -17,6 +18,9 @@ from define.compiler.validator.reference_graph import (
 )
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
+
+if TYPE_CHECKING:
+    from define.compiler.graphs import action_call_graph
 
 _PARSER = parser.Parser()
 

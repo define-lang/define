@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Creates a signed commit via the GitHub REST API.
 
 Commits created through the API are automatically signed by GitHub,
@@ -7,6 +6,8 @@ unlike commits created with ``git commit`` in a workflow.
 Requires GH_TOKEN (or GITHUB_TOKEN), GITHUB_REPOSITORY, and
 GITHUB_REF_NAME environment variables.
 """
+
+from __future__ import annotations
 
 import base64
 import os

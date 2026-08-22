@@ -6,16 +6,21 @@
 # EMPTY requirement is only observed directly by the creator, instantly at the
 # moment of creation.
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"

@@ -1,9 +1,9 @@
 """Python literal code generator for the Define compiler."""
 
+from __future__ import annotations
+
 import typing
 from pathlib import Path
-
-import jinja2
 
 from define.compiler import ast
 from define.compiler.codegen import action_plan
@@ -21,6 +21,9 @@ from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_labeler,
 )
+
+if typing.TYPE_CHECKING:
+    import jinja2
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"

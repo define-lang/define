@@ -4,6 +4,8 @@ Usage:
     generate_lark_standalone.py <grammar_file>
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

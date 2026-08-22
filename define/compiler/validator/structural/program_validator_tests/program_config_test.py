@@ -4,12 +4,16 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
+from __future__ import annotations
 
-import pytest
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import config
 from define.compiler.validator.structural import program_validator
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

@@ -1,7 +1,13 @@
 # pyright: reportUnusedCallResult=false
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_valid_destroy_in_action_body(

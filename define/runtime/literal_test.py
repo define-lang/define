@@ -1,10 +1,14 @@
 # pyright: reportPrivateUsage=false
-from pathlib import Path
-from typing import ClassVar, override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, ClassVar, override
 
 import pytest
 
 from define.runtime import literal
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _local_position(

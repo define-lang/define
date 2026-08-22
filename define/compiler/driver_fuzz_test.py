@@ -1,17 +1,21 @@
 # pyright: reportUnusedCallResult=false
 """Fuzz tests for the Define compiler driver."""
 
+from __future__ import annotations
+
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from define.compiler import driver, exceptions, parser, parser_exceptions
-from define.compiler.validator import validation_result
+
+if TYPE_CHECKING:
+    from define.compiler.validator import validation_result
 
 _PARSER = parser.Parser()
 

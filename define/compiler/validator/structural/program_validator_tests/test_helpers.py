@@ -1,12 +1,16 @@
 """Helpers for tests that structurally validate a single-file program."""
 
-from pathlib import Path, PurePosixPath
+from __future__ import annotations
 
-import pytest
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import parser
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.structural import program_validator
+
+if TYPE_CHECKING:
+    import pytest
 
 _PARSER = parser.Parser()
 

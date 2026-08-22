@@ -1,12 +1,17 @@
 """Shared parser fixtures for parser_tests."""
 
-import pathlib
-from typing import Protocol
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
 from define.compiler import parser
-from define.compiler.lark import lark_standalone
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from define.compiler.lark import lark_standalone
 
 _parser = parser.Parser()
 

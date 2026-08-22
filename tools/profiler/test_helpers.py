@@ -1,5 +1,7 @@
 """Shared integration-test support for the compiler profiler."""
 
+from __future__ import annotations
+
 import collections
 import dataclasses
 import os

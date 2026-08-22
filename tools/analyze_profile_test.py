@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import json
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import click.testing
 import pytest
 
 from tools.profiler import analyzer, analyzer_model, schema, wall_analyzer, wall_model
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # PRF-016: Source identity. PRF-020: Machine and human interfaces.

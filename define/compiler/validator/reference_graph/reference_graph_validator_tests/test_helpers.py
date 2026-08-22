@@ -1,12 +1,15 @@
 # pyright: reportUnusedCallResult=false
 """Test helpers specific to reference_graph_validator_tests."""
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
 from pprint import pformat
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
-from define.compiler import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+if TYPE_CHECKING:
+    from define.compiler import diagnostics
+    from define.compiler.validator.reference_graph import action_contract
 
 
 class ExpectedPropagationStep(TypedDict):

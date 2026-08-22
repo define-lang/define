@@ -1,11 +1,16 @@
 """DCL parser that validates syntax and parses to protobuf messages."""
 
-import os
+from __future__ import annotations
+
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from google.protobuf import message, text_format
 
 from defcl.python.validator import semantics, syntax
+
+if TYPE_CHECKING:
+    import os
 
 
 class Parser:

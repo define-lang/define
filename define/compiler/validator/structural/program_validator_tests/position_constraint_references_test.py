@@ -4,14 +4,19 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataStructural,
-    ValidateTestdataStructuralNonFilesystem,
-)
 from define.compiler.data_structures import define_path
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataStructural,
+        ValidateTestdataStructuralNonFilesystem,
+    )
 
 
 def test_action_local_position_requires_missing_global(

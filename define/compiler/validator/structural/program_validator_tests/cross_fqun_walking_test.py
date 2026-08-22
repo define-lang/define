@@ -4,12 +4,17 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import config, diagnostics
-from define.compiler.conftest import ValidateTestdataStructural
 from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructural
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"

@@ -1,14 +1,18 @@
 """Report uncovered LCOV branches that do not only raise an exception."""
 
+from __future__ import annotations
+
 import ast
 import os
 import re
-from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import click
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _JUMP_DESCRIPTION = re.compile(r"jump to line (?P<line>\d+)")
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")

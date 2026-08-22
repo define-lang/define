@@ -3,8 +3,14 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_multiple_diagnostics_collected(

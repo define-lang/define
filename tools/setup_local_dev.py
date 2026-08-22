@@ -1,5 +1,7 @@
 """Sets up the local dev environment by copying Bazel-generated files into the source tree."""
 
+from __future__ import annotations
+
 import os
 import shutil
 import stat

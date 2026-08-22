@@ -1,12 +1,16 @@
 # pyright: reportUnusedCallResult=false
 """Shared validator test helpers."""
 
-from pathlib import Path
-from pprint import pformat
-from typing import Protocol
+from __future__ import annotations
 
-from define.compiler import diagnostics
-from define.compiler.validator import validation_result
+from pprint import pformat
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from define.compiler import diagnostics
+    from define.compiler.validator import validation_result
 
 
 class _ValidationErrors(Protocol):

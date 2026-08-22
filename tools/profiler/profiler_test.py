@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import signal
@@ -5,9 +7,9 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click.testing
-import pytest
 
 from tools.profiler import (
     analyzer,
@@ -18,6 +20,9 @@ from tools.profiler import (
     wall_critical_path,
     wall_model,
 )
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def _observed_process_id(profile_path: Path) -> int | None:

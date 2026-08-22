@@ -1,11 +1,11 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-)
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
@@ -14,6 +14,11 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
     assert_propagation_chain,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 
 def test_action_caller_occupied_overrides_inner_empty(

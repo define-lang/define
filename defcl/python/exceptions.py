@@ -1,9 +1,13 @@
 """DCL syntax errors."""
 
-import os
-from typing import ClassVar, override
+from __future__ import annotations
 
-from defcl.python.lark import lark_standalone
+from typing import TYPE_CHECKING, ClassVar, override
+
+if TYPE_CHECKING:
+    import os
+
+    from defcl.python.lark import lark_standalone
 
 
 class DclSyntaxError(Exception):

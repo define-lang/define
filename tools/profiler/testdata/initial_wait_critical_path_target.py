@@ -1,5 +1,7 @@
 """Event-controlled critical worker waiting from the first observation."""
 
+from __future__ import annotations
+
 import os
 import queue
 import sys

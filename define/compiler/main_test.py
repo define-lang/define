@@ -5,6 +5,8 @@ All Driver behavior is mocked out here. Driver behavior itself is tested
 in the driver tests.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

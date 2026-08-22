@@ -3,9 +3,15 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_authority_domain_leading_dot_position(

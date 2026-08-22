@@ -6,6 +6,8 @@ Each such test asserts the node's stored data fields, its full source location
 that location addresses.
 """
 
+from __future__ import annotations
+
 from define.compiler import ast, test_helpers
 
 

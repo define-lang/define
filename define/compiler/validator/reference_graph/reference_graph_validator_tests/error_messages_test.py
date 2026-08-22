@@ -1,12 +1,17 @@
 # pyright: reportUnusedCallResult=false
 
-import textwrap
+from __future__ import annotations
 
-from define.compiler.conftest import ValidateProject
+import textwrap
+from typing import TYPE_CHECKING
+
 from define.compiler.data_structures import define_path
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph_set,
 )
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.

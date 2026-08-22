@@ -1,14 +1,19 @@
 # pyright: reportUnusedCallResult=false
 """Chained reference tests for self-references and atypical chain starts."""
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataNonFilesystemWithReferenceGraph,
-    ValidateTestdataProjectWithReferenceGraph,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 
 class TestUnnecessarySelfReference:

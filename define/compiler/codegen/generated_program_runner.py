@@ -1,5 +1,7 @@
 """Execute generated Define programs for codegen testdata."""
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys

@@ -1,9 +1,14 @@
 """Shared assertions for code generation tests."""
 
+from __future__ import annotations
+
 import difflib
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _all_files(directory: Path) -> dict[str, str]:

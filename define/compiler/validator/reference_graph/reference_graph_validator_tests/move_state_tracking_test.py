@@ -1,12 +1,17 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import conftest, diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataNonFilesystemWithReferenceGraph,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
+    )
 
 
 def test_move_from_empty_position(

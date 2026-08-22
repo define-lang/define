@@ -1,5 +1,7 @@
 """Event-controlled handoff whose producer is external to the target."""
 
+from __future__ import annotations
+
 import os
 import sys
 import threading

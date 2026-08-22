@@ -4,11 +4,17 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataNonFilesystemWithReferenceGraph,
-)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
+    )
 
 
 def test_constructor_duplicate_local_position(

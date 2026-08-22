@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 """Shared helpers for tests that inspect post-order validation results."""
 
+from __future__ import annotations
+
 from unittest import mock
 
 from define.compiler.validator.reference_graph import (

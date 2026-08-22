@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from define.compiler.codegen.literal.python import template_env

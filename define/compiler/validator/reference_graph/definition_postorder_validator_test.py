@@ -1,11 +1,17 @@
 # pyright: reportUnusedCallResult=false
 
-from define.compiler import ast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.test_helpers import (
     get_contracts,
     get_results,
 )
+
+if TYPE_CHECKING:
+    from define.compiler import ast
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:

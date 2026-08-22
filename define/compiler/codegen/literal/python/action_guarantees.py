@@ -1,21 +1,25 @@
 """Literal Python guarantee generation for action executions."""
 
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 
-from define.compiler import ast
-from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
     action_context,
     action_names,
     naming,
     template_context,
 )
-from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import (
-    operation_graph,
-    operation_graph_model,
-)
+
+if typing.TYPE_CHECKING:
+    from define.compiler import ast
+    from define.compiler.codegen import action_plan
+    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator.reference_graph import (
+        operation_graph,
+        operation_graph_model,
+    )
 
 
 @dataclass(frozen=True, slots=True)

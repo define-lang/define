@@ -4,11 +4,16 @@
 # reference-graph error messages: destructor requirements, destructor
 # guarantees, auto-destruction, and Destruction Contracts.
 
+from __future__ import annotations
+
 import textwrap
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.

@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 """Tests for name format validators."""
 
+from __future__ import annotations
+
 from define.compiler import ast, diagnostics
 from define.compiler.validator.structural import name_validators
 

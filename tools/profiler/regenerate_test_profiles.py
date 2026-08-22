@@ -1,5 +1,7 @@
 """Regenerate checked-in profiler analysis fixtures."""
 
+from __future__ import annotations
+
 import concurrent.futures
 import contextlib
 import io
@@ -7,13 +9,16 @@ import os
 import select
 import subprocess
 import tempfile
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools.generators import generate_large_define_source
 from tools.profiler import schema, wall_analyzer, wall_critical_path
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _OBSERVATIONS_PER_PHASE = 20
 _MAX_CAPTURE_ATTEMPTS = 10

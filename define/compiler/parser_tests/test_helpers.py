@@ -1,5 +1,7 @@
 """Shared parser test helpers."""
 
+from __future__ import annotations
+
 from define.compiler.lark import lark_standalone
 
 

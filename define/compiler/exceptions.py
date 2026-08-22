@@ -1,8 +1,13 @@
 """Exceptions raised by the Define compiler."""
 
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from define.compiler import constants
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class DefineError(Exception):

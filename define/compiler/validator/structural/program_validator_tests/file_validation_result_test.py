@@ -4,9 +4,10 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
+from __future__ import annotations
 
-import pytest
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import config, exceptions, parser_exceptions
 from define.compiler.data_structures import define_path
@@ -15,6 +16,9 @@ from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (
     test_helpers,
 )
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_successful_validation_returns_result_fields(

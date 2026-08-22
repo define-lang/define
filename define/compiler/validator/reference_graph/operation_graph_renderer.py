@@ -1,5 +1,7 @@
 """Render operation graphs as readable maps for tests."""
 
+from __future__ import annotations
+
 import pprint
 
 from define.compiler.validator.reference_graph import (

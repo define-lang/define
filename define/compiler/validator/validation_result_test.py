@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 # pyright: reportImplicitStringConcatenation=false
 
+from __future__ import annotations
+
 from define.compiler import ast, test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.graphs import reference_graph

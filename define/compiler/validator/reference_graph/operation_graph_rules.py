@@ -1,5 +1,7 @@
 """Calculate Empty and Move Rule dependencies for Operation Graphs."""
 
+from __future__ import annotations
+
 import typing
 from collections.abc import Collection, Iterable, Mapping, Sequence
 

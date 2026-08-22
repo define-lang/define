@@ -1,11 +1,16 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-)
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
 
 _PARENT = "my.domain.com:parent_lib"
 _CHILD = "my.domain.com:child_lib"

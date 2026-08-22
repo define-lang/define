@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
 """Generate define/reserved_words/programming_languages.txt from GitHub Linguist languages.yml.
 
 Requires: PyYAML (pip install pyyaml)
 """
+
+from __future__ import annotations
 
 import re
 import sys
@@ -50,7 +51,7 @@ def main() -> int:
     try:
         with cast(
             "http.client.HTTPResponse",
-            urllib.request.urlopen(LINGUIST_URL, timeout=30),  # noqa: S310
+            urllib.request.urlopen(LINGUIST_URL, timeout=30),
         ) as resp:
             content: str = resp.read().decode("utf-8")
     except OSError as e:

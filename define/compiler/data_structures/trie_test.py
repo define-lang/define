@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 import pytest
 
 from define.compiler.data_structures import trie

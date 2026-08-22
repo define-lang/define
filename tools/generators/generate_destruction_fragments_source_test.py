@@ -1,11 +1,16 @@
 # pyright: reportUnusedCallResult=false
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import click.testing
 import pytest
 
 from define.compiler import driver
 from tools.generators import generate_destruction_fragments_source as gen
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestGenerateSourceLines:

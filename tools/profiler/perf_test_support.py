@@ -1,11 +1,16 @@
 """Host-capability checks for Linux perf integration tests."""
 
+from __future__ import annotations
+
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def require_perf_recording(temporary_directory: Path):

@@ -1,6 +1,8 @@
 # pyright: reportImplicitStringConcatenation=false
 """Tests for AST nodes."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import PurePosixPath
 

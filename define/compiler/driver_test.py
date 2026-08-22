@@ -1,7 +1,10 @@
 # pyright: reportUnusedCallResult=false
 """Tests for driver-only behavior."""
 
+from __future__ import annotations
+
 from pathlib import Path, PureWindowsPath
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
@@ -13,10 +16,12 @@ from define.compiler import (
     parser,
 )
 from define.compiler.data_structures import define_path
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.validator import validation_result
 
 _PARSER = parser.Parser()
 

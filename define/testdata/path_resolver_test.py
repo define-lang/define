@@ -1,5 +1,7 @@
 """Tests for convention-based testdata path resolution."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from define.testdata import path_resolver

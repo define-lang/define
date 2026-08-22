@@ -4,11 +4,17 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 from define.compiler import diagnostics, parser, parser_exceptions
-from define.compiler.parser_tests.conftest import Parse
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+if TYPE_CHECKING:
+    from define.compiler.parser_tests.conftest import Parse
 
 
 def test_action_definition_without_body_is_error(parse: Parse) -> None:

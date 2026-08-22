@@ -4,11 +4,17 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics, exceptions
-from define.compiler.conftest import (
-    ValidateTestdataStructural,
-)
 from define.compiler.data_structures import define_path
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataStructural,
+    )
 
 
 def test_entrypoint_file_not_found(

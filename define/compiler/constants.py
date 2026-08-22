@@ -1,5 +1,7 @@
 """Shared constants for the Define compiler."""
 
+from __future__ import annotations
+
 import pathlib
 from typing import Final
 

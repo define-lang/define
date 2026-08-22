@@ -4,16 +4,21 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataProjectWithReferenceGraph,
-    ValidateTestdataStructural,
-    ValidateTestdataStructuralNonFilesystem,
-)
 from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataProjectWithReferenceGraph,
+        ValidateTestdataStructural,
+        ValidateTestdataStructuralNonFilesystem,
+    )
 
 
 def test_non_self_ref_global_in_action_body(

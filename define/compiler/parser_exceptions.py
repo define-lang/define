@@ -1,10 +1,15 @@
 """Human-readable parser error messages for the Define language."""
 
-import pathlib
-from typing import ClassVar, Self, override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, ClassVar, Self, override
 
 from define.compiler import exceptions
-from define.compiler.lark import lark_standalone
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from define.compiler.lark import lark_standalone
 
 
 def _escape_invisible(text: str) -> str:

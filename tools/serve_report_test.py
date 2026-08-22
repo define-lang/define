@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import http.client
 import json
 import threading
 from http import HTTPStatus
 from http.server import HTTPServer
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from tools import serve_report
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _request(

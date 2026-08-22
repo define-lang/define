@@ -1,13 +1,18 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataProjectWithReferenceGraph
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataProjectWithReferenceGraph
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _CONSTRUCT = "action<my.domain.com:my_lib:/construct>"

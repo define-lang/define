@@ -6,6 +6,8 @@ tree containing a test.dfn entry point, an expected/ directory with the expected
 generated files, and an occupied_positions.txt runtime expectation.
 """
 
+from __future__ import annotations
+
 import difflib
 import glob
 import os

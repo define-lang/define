@@ -3,16 +3,21 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
 import textwrap
 from pathlib import Path, PurePosixPath
-
-import pytest
+from typing import TYPE_CHECKING
 
 from define.compiler import config, diagnostics, exceptions
-from define.compiler.conftest import ValidateProject
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
+
+if TYPE_CHECKING:
+    import pytest
+
+    from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.

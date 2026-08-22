@@ -1,8 +1,13 @@
 """Shared helpers for compiler tests."""
 
-from pathlib import PurePosixPath
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from define.compiler import ast, parser
+
+if TYPE_CHECKING:
+    from pathlib import PurePosixPath
 
 _PARSER = parser.Parser()
 

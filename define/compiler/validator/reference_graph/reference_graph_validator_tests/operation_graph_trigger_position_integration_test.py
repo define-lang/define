@@ -1,8 +1,14 @@
-from define.compiler import conftest
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 
 def test_destroy_of_the_trigger_particle(

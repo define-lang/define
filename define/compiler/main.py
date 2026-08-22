@@ -1,5 +1,7 @@
 """Entry point for the Define compiler."""
 
+from __future__ import annotations
+
 import functools
 import io
 import os

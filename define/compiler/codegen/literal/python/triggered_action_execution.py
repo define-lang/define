@@ -1,9 +1,9 @@
 """Literal Python lowering for Action Executions."""
 
+from __future__ import annotations
+
 import typing
 
-from define.compiler import ast
-from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
     action_context,
     action_names,
@@ -11,11 +11,15 @@ from define.compiler.codegen.literal.python import (
     naming,
     template_context,
 )
-from define.compiler.data_structures import typed_name_dict
-from define.compiler.validator.reference_graph import (
-    operation_graph_labeler,
-    operation_graph_model,
-)
+
+if typing.TYPE_CHECKING:
+    from define.compiler import ast
+    from define.compiler.codegen import action_plan
+    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator.reference_graph import (
+        operation_graph_labeler,
+        operation_graph_model,
+    )
 
 
 @typing.final

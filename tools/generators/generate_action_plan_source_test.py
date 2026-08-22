@@ -1,10 +1,15 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 from click import testing
 
 from define.compiler import driver
 from tools.generators import generate_action_plan_source
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_generated_source_compiles(tmp_path: Path):

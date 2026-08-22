@@ -1,5 +1,7 @@
 """Run a command with a Linux data-segment limit."""
 
+from __future__ import annotations
+
 import os
 import resource
 import sys

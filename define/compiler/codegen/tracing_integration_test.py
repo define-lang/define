@@ -1,8 +1,11 @@
 # pyright: reportUnusedCallResult=false
 """Integration tests for operation tracing in generated programs."""
 
+from __future__ import annotations
+
 import collections
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -13,7 +16,9 @@ from define.compiler.codegen import (
     trace_analysis,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
-from define.runtime import tracing
+
+if TYPE_CHECKING:
+    from define.runtime import tracing
 
 _TESTDATA_ROOT = Path("define/testdata/tracing/tracing_integration")
 _TRACE_TEST_CASE_DIRS = [

@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import validation_result

@@ -1,11 +1,17 @@
 """Code generator for the Define compiler."""
 
-from pathlib import Path
+from __future__ import annotations
 
-from define.compiler import ast
+from typing import TYPE_CHECKING
+
 from define.compiler.codegen.literal.python import generator as python_generator
-from define.compiler.graphs import reference_graph_executor
-from define.compiler.validator.reference_graph import operation_graph
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from define.compiler import ast
+    from define.compiler.graphs import reference_graph_executor
+    from define.compiler.validator.reference_graph import operation_graph
 
 
 class CodeGenerator:

@@ -1,10 +1,15 @@
 """Click conventions shared by generator commands."""
 
+from __future__ import annotations
+
 import os
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 OUTPUT_FILE = click.Path(path_type=Path, dir_okay=False)
 OUTPUT_DIRECTORY = click.Path(path_type=Path, file_okay=False)

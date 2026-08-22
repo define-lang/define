@@ -1,5 +1,7 @@
 """Event-controlled lifecycle fixture for continuous profiling."""
 
+from __future__ import annotations
+
 import os
 import sys
 import threading

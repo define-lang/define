@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Sync permissions from .claude/settings.json to Cursor and Codex configs."""
 
+from __future__ import annotations
+
 import argparse
 import difflib
 import json
@@ -28,8 +30,7 @@ def translate_permission(permission: str) -> str:
     if permission.startswith("Bash(") and permission.endswith(")"):
         content = permission[5:-1]
 
-        if content.endswith(":*"):
-            content = content[:-2]
+        content = content.removesuffix(":*")
 
         return f"Shell({content})"
 

@@ -6,6 +6,8 @@ or statistics. Together they cover every publicly reachable line and branch in
 driver.py.
 """
 
+from __future__ import annotations
+
 import io
 from pathlib import Path
 

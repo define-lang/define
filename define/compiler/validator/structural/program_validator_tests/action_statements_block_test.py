@@ -1,6 +1,12 @@
 # pyright: reportUnusedCallResult=false
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_undefined_local_position_in_create(

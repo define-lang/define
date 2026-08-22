@@ -1,5 +1,7 @@
 """Compiles Jinja2 templates to Python modules for ModuleLoader."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

@@ -1,9 +1,15 @@
-from define.compiler import conftest
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler.validator import test_helpers
 from define.compiler.validator.reference_graph import (
     operation_graph_labeler,
     operation_graph_resolver,
 )
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 
 def _resolved(

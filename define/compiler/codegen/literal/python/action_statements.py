@@ -1,12 +1,18 @@
 """Python code generator for action statements blocks."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler import ast
-from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import naming, template_context
 from define.compiler.validator.reference_graph import (
     operation_graph_labeler,
     operation_graph_model,
 )
+
+if TYPE_CHECKING:
+    from define.compiler.codegen import action_plan
 
 
 class ActionStatementsGenerator:

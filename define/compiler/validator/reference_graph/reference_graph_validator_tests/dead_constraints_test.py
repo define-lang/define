@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 

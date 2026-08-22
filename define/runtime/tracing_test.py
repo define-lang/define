@@ -1,12 +1,16 @@
 """Tests for operation tracing."""
 
+from __future__ import annotations
+
 import json
 import typing
-from pathlib import Path
-
-import pytest
 
 from define.runtime import literal, tracing
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 @typing.final

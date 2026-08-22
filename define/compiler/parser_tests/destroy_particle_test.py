@@ -4,8 +4,14 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-from define.compiler.parser_tests.conftest import Parse
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+if TYPE_CHECKING:
+    from define.compiler.parser_tests.conftest import Parse
 
 
 def test_action_statements_block_with_destroy_particle_local_position(

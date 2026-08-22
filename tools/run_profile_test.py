@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import shutil
@@ -7,11 +9,13 @@ from pathlib import Path
 from unittest import mock
 
 import click.testing
-import pytest
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools import profile_orchestration as run_profile
 from tools.profiler import analyzer, perf_analyzer, perf_test_support, schema
+
+if typing.TYPE_CHECKING:
+    import pytest
 
 # PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (

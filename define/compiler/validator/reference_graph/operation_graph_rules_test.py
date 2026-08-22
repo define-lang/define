@@ -25,6 +25,8 @@ calculation contract, such as ordering a child-operation snapshot. Assertions
 must not use that setup to specify dependency edges.
 """
 
+from __future__ import annotations
+
 import functools
 
 from define.compiler import ast

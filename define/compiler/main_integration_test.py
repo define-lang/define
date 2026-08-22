@@ -6,11 +6,16 @@ stdin), these tests launch the built binary in a subprocess so the stdin
 detection runs against a genuine OS pipe and /dev/null.
 """
 
+from __future__ import annotations
+
 import os
 import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from define.compiler import test_runfiles
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _USAGE_ERROR = 2
 _POSITION_SOURCE = "define the potential position<my.domain.com:my_lib:/test>.\n"

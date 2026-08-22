@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import (
-    ValidateTestdataStructural,
-    ValidateTestdataStructuralNonFilesystem,
-)
 from define.compiler.data_structures import define_path
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import (
+        ValidateTestdataStructural,
+        ValidateTestdataStructuralNonFilesystem,
+    )
 
 
 def test_move_from_a_position_to_itself(

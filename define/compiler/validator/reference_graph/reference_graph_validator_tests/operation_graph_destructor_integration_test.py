@@ -1,10 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
-from define.compiler import conftest
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded in the "

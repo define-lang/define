@@ -1,5 +1,7 @@
 """Serve an interactive coverage report and save its submitted selections."""
 
+from __future__ import annotations
+
 import json
 import os
 import secrets

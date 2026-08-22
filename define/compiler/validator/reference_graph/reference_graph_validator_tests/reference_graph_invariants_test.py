@@ -1,5 +1,7 @@
 """Tests for invariants of reference_graph.py itself, triggered by actual Define code."""
 
+from __future__ import annotations
+
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics

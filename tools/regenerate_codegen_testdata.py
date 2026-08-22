@@ -3,6 +3,8 @@
 Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_testdata
 """
 
+from __future__ import annotations
+
 import contextlib
 import glob
 import shutil

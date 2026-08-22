@@ -1,5 +1,7 @@
 """Resolve convention-organized Define testdata paths."""
 
+from __future__ import annotations
+
 import re
 from pathlib import Path
 

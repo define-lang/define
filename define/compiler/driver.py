@@ -8,8 +8,9 @@ as the interface that translates our internal error objects into
 actual error strings.
 """
 
+from __future__ import annotations
+
 import abc
-import collections.abc
 import enum
 import sys
 import typing
@@ -26,13 +27,17 @@ from define.compiler import (
     parser,
 )
 from define.compiler.codegen import generator
-from define.compiler.graphs import reference_graph_executor
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     operation_graph,
     reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
+
+if typing.TYPE_CHECKING:
+    import collections.abc
+
+    from define.compiler.graphs import reference_graph_executor
+    from define.compiler.validator import validation_result
 
 
 class DriverMode(enum.StrEnum):

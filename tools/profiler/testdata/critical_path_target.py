@@ -1,5 +1,7 @@
 """Event-controlled cross-thread completion-critical chain."""
 
+from __future__ import annotations
+
 import os
 import queue
 import sys

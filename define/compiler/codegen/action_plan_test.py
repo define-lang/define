@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from define.compiler import ast, test_helpers

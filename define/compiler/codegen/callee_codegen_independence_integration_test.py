@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 """Integration tests that generated callees are independent of their callers."""
 
+from __future__ import annotations
+
 import difflib
 import shutil
 from dataclasses import dataclass

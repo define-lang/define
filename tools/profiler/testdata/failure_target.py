@@ -1,5 +1,7 @@
 """Event-controlled failing process used by profiler integration tests."""
 
+from __future__ import annotations
+
 import sys
 
 # PRF-024: Explicit failures. PRF-041: Realistic tests.

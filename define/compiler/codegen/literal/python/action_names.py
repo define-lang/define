@@ -1,5 +1,7 @@
 """Name generation for literal Python actions."""
 
+from __future__ import annotations
+
 import re
 import typing
 from dataclasses import dataclass
@@ -7,11 +9,13 @@ from dataclasses import dataclass
 from define.compiler import ast
 from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import action_context, naming
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph_model,
 )
+
+if typing.TYPE_CHECKING:
+    from define.compiler.data_structures import typed_name_dict
 
 _BINDING_HOLE_METHOD_PREFIX = "accept_"
 _ACTION_PARENT_BINDING_HOLE_METHOD_NAME = "accept_action_parent"

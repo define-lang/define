@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import dataclasses
 import io
 import os
 import random
 import select
 import signal
-import subprocess
 import threading
 import types
 import typing
@@ -15,6 +16,9 @@ import click.testing
 import pytest
 
 from tools.profiler import process_events, profiler, remote_frame_names, schema
+
+if typing.TYPE_CHECKING:
+    import subprocess
 
 
 class _Process:

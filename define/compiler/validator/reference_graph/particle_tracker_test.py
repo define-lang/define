@@ -10,6 +10,8 @@ through the valid-source integration suite.
 
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,

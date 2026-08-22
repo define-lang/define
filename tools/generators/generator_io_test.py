@@ -1,9 +1,14 @@
 # pyright: reportUnusedCallResult=false
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
 from tools.generators import generator_io
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_write_lines_replaces_file_and_returns_line_count(tmp_path: Path):

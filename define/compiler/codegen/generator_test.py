@@ -1,15 +1,21 @@
 # pyright: reportUnusedCallResult=false
 
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from define.compiler.codegen import generator, test_helpers
-from define.compiler.conftest import (
-    ValidateTestdataStructural,
-    ValidateTestdataStructuralNonFilesystem,
-)
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from define.compiler.conftest import (
+        ValidateTestdataStructural,
+        ValidateTestdataStructuralNonFilesystem,
+    )
+    from define.compiler.validator import validation_result
 
 
 def _generate(

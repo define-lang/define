@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import dataclasses
 import io
@@ -6,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import typing
-from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -20,6 +21,9 @@ from tools.profiler import (
     perf_test_support,
     profiler,
 )
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _profile(

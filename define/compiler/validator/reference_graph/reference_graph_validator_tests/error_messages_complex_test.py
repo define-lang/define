@@ -9,10 +9,15 @@ trigger hop from the verifying definition down to the destruction, the same way
 ordinary requirement propagation does.
 """
 
+from __future__ import annotations
+
 import textwrap
+from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateProject
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.

@@ -4,13 +4,18 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
 import pathlib
 import textwrap
+from typing import TYPE_CHECKING
 
 import pytest
 
 from define.compiler import parser_exceptions
-from define.compiler.parser_tests.conftest import Parse
+
+if TYPE_CHECKING:
+    from define.compiler.parser_tests.conftest import Parse
 
 
 def test_empty_source_error_message(parse: Parse) -> None:

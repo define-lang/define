@@ -1,12 +1,16 @@
 """Semantic validation for DCL parse trees against protobuf descriptors."""
 
-import os
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 from google.protobuf import descriptor, message
 
 from defcl.python import exceptions
 from defcl.python.lark import lark_standalone
+
+if TYPE_CHECKING:
+    import os
 
 
 def validate(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from define.compiler import overall_stats
 from define.compiler.data_structures import define_path
 from define.compiler.validator import stats, validation_result

@@ -4,12 +4,18 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 from define.compiler import config, diagnostics
-from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
 
 
 def test_external_universe_no_project_config(

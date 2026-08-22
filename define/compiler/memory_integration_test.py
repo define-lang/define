@@ -1,14 +1,18 @@
 # pyright: reportUnusedCallResult=false
 """End-to-end compiler memory regression test."""
 
+from __future__ import annotations
+
 import resource
 import subprocess
 import typing
-from pathlib import Path
 
 import pytest
 
 from define.compiler import test_runfiles
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
 
 _MEBIBYTE = 1024 * 1024
 _MAXIMUM_PEAK_RSS_BYTES = 192 * _MEBIBYTE

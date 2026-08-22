@@ -1,5 +1,7 @@
 """Explicitly released normal-exit fixture for profiler lifecycle tests."""
 
+from __future__ import annotations
+
 import sys
 
 # PRF-024: Explicit failures. PRF-049: Event-driven coordination.

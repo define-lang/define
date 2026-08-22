@@ -1,10 +1,15 @@
 """Syntax validation for Define Configuration Language (DCL) files."""
 
-import os
+from __future__ import annotations
+
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python.lark import lark_standalone
+
+if TYPE_CHECKING:
+    import os
 
 _TOKEN_ERROR_EXAMPLES: dict[type[dcl_exceptions.DclTokenError], list[str]] = {
     dcl_exceptions.MissingColonError: [

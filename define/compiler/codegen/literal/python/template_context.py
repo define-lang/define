@@ -1,12 +1,18 @@
 """Template context dataclasses for Python literal code generation."""
 
+from __future__ import annotations
+
 import enum
-from collections.abc import Sequence
 from dataclasses import InitVar, dataclass, field
+from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.codegen.literal.python import naming
-from define.compiler.validator.reference_graph import operation_graph_labeler
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from define.compiler.codegen.literal.python import naming
+    from define.compiler.validator.reference_graph import operation_graph_labeler
 
 
 class StatementKind(enum.Enum):
@@ -116,7 +122,7 @@ class ActionFragmentContext:
     statements: list[ActionStatementContext]
     successor_fragment_method_names: list[str]
     callee_binding_join_method_names_that_depend_on_fragment: list[str]
-    triggered_action_successors: list["TriggeredActionExecutionContext"]
+    triggered_action_successors: list[TriggeredActionExecutionContext]
     triggered_action_execution_callee_binding_join_method_names: list[str]
     guarantee_publication_names: list[str]
     dependency_count: int

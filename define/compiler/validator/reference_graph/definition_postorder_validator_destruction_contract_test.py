@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from __future__ import annotations
+
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.test_helpers import get_contracts
 

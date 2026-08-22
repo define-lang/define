@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from define.compiler.validator.reference_graph import operation_graph_renderer

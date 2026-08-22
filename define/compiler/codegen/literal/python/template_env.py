@@ -1,8 +1,9 @@
 """Shared Jinja2 Environment factory for Python code generation templates."""
 
+from __future__ import annotations
+
 import typing
-from collections.abc import Mapping
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from jinja2 import (
     Environment,
@@ -10,6 +11,10 @@ from jinja2 import (
     ModuleLoader,
     StrictUndefined,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
 
 
 def create_environment(

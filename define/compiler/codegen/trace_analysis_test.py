@@ -1,10 +1,15 @@
 """Tests for generated-program operation trace analysis."""
 
+from __future__ import annotations
+
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from define.compiler.codegen import trace_analysis
 from define.runtime import tracing
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_read_operation_trace(tmp_path: Path):

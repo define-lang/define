@@ -29,6 +29,8 @@ observable behavior at that boundary belongs in operation-graph integration
 tests, while tracker state behavior belongs in ``particle_tracker_test.py``.
 """
 
+from __future__ import annotations
+
 import functools
 
 import pytest
