@@ -71,7 +71,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_producer()
+        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_producer,
+        )
         self.trigger_action_producer__for_empty_rule_global_position_input__global_position_a()
 
     def move_global_position_holder_to_global_position_intermediate(self):
@@ -99,16 +105,6 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-
-    def init_execution_trigger_action_producer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
-        )
-        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_producer,
-        )
 
     def trigger_action_producer__for_empty_rule_global_position_input__global_position_a(self):
         if not self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a.arrive():

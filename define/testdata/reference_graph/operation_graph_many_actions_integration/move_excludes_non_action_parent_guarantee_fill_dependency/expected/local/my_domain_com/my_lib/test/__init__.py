@@ -66,7 +66,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_producer()
+        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_producer,
+        )
         self.trigger_action_producer__for_empty_rule_global_position_input()
 
     def create_action_consumer__position_trigger_pos(self):
@@ -75,29 +81,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_consumer()
-        self.scheduler.submit(self.trigger_action_consumer__when_empty_global_position_box__global_position_item)
-        self.trigger_action_consumer__when_empty_global_position_box__global_position_destination()
-
-    def init_execution_trigger_action_producer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
-        )
-        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_producer,
-        )
-
-    def init_execution_trigger_action_consumer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.consumer.Consumer
-        )
         self.execution_trigger_action_consumer = local.my_domain_com.my_lib.consumer.ConsumerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.consumer.Consumer
+            ),
             self.scheduler,
             self.guarantees.trigger_action_consumer,
         )
+        self.scheduler.submit(self.trigger_action_consumer__when_empty_global_position_box__global_position_item)
+        self.trigger_action_consumer__when_empty_global_position_box__global_position_destination()
 
     def trigger_action_producer__for_empty_rule_global_position_input(self):
         if not self.join_for_trigger_action_producer__for_empty_rule_global_position_input.arrive():

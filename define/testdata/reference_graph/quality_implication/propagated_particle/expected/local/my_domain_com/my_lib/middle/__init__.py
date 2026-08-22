@@ -79,7 +79,15 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_inner()
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_inner,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
         self.trigger_position_box__action_inner__for_empty_rule_position_input()
 
@@ -98,18 +106,6 @@ class MiddleExecution:
             )
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_box__action_inner__position_output__move__position_final)
-
-    def init_execution_trigger_position_box__action_inner(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
-        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_inner,
-        )
 
     def trigger_position_box__action_inner__for_empty_rule_position_input(self):
         if not self.join_for_trigger_position_box__action_inner__for_empty_rule_position_input.arrive():

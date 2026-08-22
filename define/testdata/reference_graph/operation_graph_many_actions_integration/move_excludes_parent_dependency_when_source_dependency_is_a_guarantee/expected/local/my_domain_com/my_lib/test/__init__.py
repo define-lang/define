@@ -58,7 +58,15 @@ class TestExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.init_execution_trigger_global_position_box__action_producer()
+        self.execution_trigger_global_position_box__action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_lib.box.Box
+            ).particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_global_position_box__action_producer,
+        )
         self.scheduler.submit(self.trigger_global_position_box__action_producer__for_empty_rule_position_input)
         self.trigger_global_position_box__action_producer__for_empty_rule_position_input()
 
@@ -75,18 +83,6 @@ class TestExecution:
             ).particle.get_position(
                 local.my_domain_com.my_lib.destination.Destination
             )
-        )
-
-    def init_execution_trigger_global_position_box__action_producer(self):
-        action = self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
-        ).particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
-        )
-        self.execution_trigger_global_position_box__action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_global_position_box__action_producer,
         )
 
     def trigger_global_position_box__action_producer__for_empty_rule_position_input(self):

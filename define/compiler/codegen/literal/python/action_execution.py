@@ -84,7 +84,7 @@ class ActionExecutionGenerator:
             self._generated_actions,
             names,
         ).generate()
-        action_execution_contexts = (
+        action_execution_contexts_by_execution = (
             triggered_action_execution.TriggeredActionExecutionGenerator(
                 self._definition,
                 self._converter,
@@ -101,7 +101,10 @@ class ActionExecutionGenerator:
             statement_generator,
         )
         triggers_for_destroyed_callee_guarantee_particle_contexts = (
-            self._generate_triggers_for_destroyed_callee_guarantee_particles(names)
+            self._generate_triggers_for_destroyed_callee_guarantee_particles(
+                names,
+                action_execution_contexts_by_execution,
+            )
         )
         destruction_continuations = self._generate_destruction_continuations(names)
         context = template_context.ActionExecutionContext(
@@ -112,9 +115,13 @@ class ActionExecutionGenerator:
             fragments=self._generate_fragments(
                 names,
                 statement_generator,
+                action_execution_contexts_by_execution,
             ),
-            binding_hole_fanouts=self._generate_binding_hole_fanouts(names),
-            action_executions=action_execution_contexts,
+            binding_hole_fanouts=self._generate_binding_hole_fanouts(
+                names,
+                action_execution_contexts_by_execution,
+            ),
+            action_executions=list(action_execution_contexts_by_execution.values()),
             triggers_for_destroyed_callee_guarantee_particles=(
                 triggers_for_destroyed_callee_guarantee_particle_contexts
             ),
@@ -164,6 +171,10 @@ class ActionExecutionGenerator:
         self,
         names: action_names.ActionNames,
         statement_generator: action_statements.ActionStatementsGenerator,
+        action_execution_contexts_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ],
     ) -> list[template_context.ActionFragmentContext]:
         fragments: list[template_context.ActionFragmentContext] = []
         for fragment in self._plan.fragments:
@@ -194,8 +205,8 @@ class ActionExecutionGenerator:
                             fragment.callee_binding_joins_that_depend_on_fragment
                         )
                     ],
-                    triggered_action_successor_init_method_names=[
-                        names.triggered_actions[action_execution].initializer_name
+                    triggered_action_successors=[
+                        action_execution_contexts_by_execution[action_execution]
                         for action_execution in fragment.action_execution_successors
                     ],
                     triggered_action_execution_callee_binding_join_method_names=[
@@ -217,7 +228,12 @@ class ActionExecutionGenerator:
         return fragments
 
     def _generate_binding_hole_fanouts(
-        self, names: action_names.ActionNames
+        self,
+        names: action_names.ActionNames,
+        action_execution_contexts_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ],
     ) -> list[template_context.BindingHoleFanoutContext]:
         return [
             template_context.BindingHoleFanoutContext(
@@ -232,8 +248,8 @@ class ActionExecutionGenerator:
                     names.callee_binding_join_method_names[callee_binding_join]
                     for callee_binding_join in binding_hole_fanout.callee_binding_joins
                 ],
-                destructor_execution_init_methods=[
-                    names.triggered_actions[destructor_execution].initializer_name
+                destructor_executions=[
+                    action_execution_contexts_by_execution[destructor_execution]
                     for destructor_execution in (
                         binding_hole_fanout.destructor_executions
                     )
@@ -284,6 +300,10 @@ class ActionExecutionGenerator:
     def _generate_triggers_for_destroyed_callee_guarantee_particles(
         self,
         names: action_names.ActionNames,
+        action_execution_contexts_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ],
     ) -> list[template_context.TriggerForDestroyedCalleeGuaranteeParticleContext]:
         contexts: list[
             template_context.TriggerForDestroyedCalleeGuaranteeParticleContext
@@ -304,8 +324,10 @@ class ActionExecutionGenerator:
             contexts.append(
                 template_context.TriggerForDestroyedCalleeGuaranteeParticleContext(
                     method_name=triggered_action_names.canonical_name,
-                    action_execution_init_method_name=(
-                        triggered_action_names.initializer_name
+                    action_execution=(
+                        action_execution_contexts_by_execution[
+                            trigger_for_destroyed_callee_guarantee_particle.execution
+                        ]
                     ),
                     callee_binding_join_method_names=callee_binding_join_method_names,
                 )

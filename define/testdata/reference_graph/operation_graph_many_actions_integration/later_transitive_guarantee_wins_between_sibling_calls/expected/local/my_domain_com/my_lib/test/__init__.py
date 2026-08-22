@@ -52,7 +52,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_run_both()
+        self.execution_trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.run_both.RunBoth
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_run_both,
+        )
         self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos)
@@ -63,16 +69,6 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-
-    def init_execution_trigger_action_run_both(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.run_both.RunBoth
-        )
-        self.execution_trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_run_both,
-        )
 
     def trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos(self):
         self.execution_trigger_action_run_both.accept_when_empty_action_call_fill__position_trigger_pos()

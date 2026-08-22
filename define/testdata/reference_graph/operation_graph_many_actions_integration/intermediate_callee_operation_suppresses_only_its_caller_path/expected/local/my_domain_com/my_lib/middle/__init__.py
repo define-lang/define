@@ -83,18 +83,6 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_inner()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
-        self.trigger_action_inner__for_empty_rule_global_position_parent()
-
-    def destroy_global_position_parent__global_position_child(self):
-        literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child)
-
-    def continue_destroy_global_position_parent__global_position_child(self):
-        self.destruction_position_global_position_parent__global_position_child.destroy_particle()
-        self.destruction_connection_trigger_action_inner.complete()
-
-    def init_execution_trigger_action_inner(self):
         self.destruction_connection_trigger_action_inner = literal.DestructionConnection(
             self.scheduler,
             local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent,
@@ -106,15 +94,23 @@ class MiddleExecution:
             self.destruction_connection_trigger_action_inner,
             direct=self.destruction_connections,
         )
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
         self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
             self.scheduler,
             self.guarantees.trigger_action_inner,
             destruction_connections=self.trigger_action_inner_destruction_connections,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
+        self.trigger_action_inner__for_empty_rule_global_position_parent()
+
+    def destroy_global_position_parent__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child)
+
+    def continue_destroy_global_position_parent__global_position_child(self):
+        self.destruction_position_global_position_parent__global_position_child.destroy_particle()
+        self.destruction_connection_trigger_action_inner.complete()
 
     def trigger_action_inner__for_empty_rule_global_position_parent(self):
         if not self.join_for_trigger_action_inner__for_empty_rule_global_position_parent.arrive():

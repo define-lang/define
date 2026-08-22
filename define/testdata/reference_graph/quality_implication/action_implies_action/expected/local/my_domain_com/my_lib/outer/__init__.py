@@ -56,14 +56,11 @@ class OuterExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_inner()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_run)
-        self.trigger_action_inner__action_parent()
-
-    def init_execution_trigger_action_inner(self):
         self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.scheduler,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_run)
+        self.trigger_action_inner__action_parent()
 
     def trigger_action_inner__action_parent(self):
         if not self.join_for_trigger_action_inner__action_parent.arrive():

@@ -66,7 +66,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_first()
+        self.execution_trigger_position_box__action_first = local.my_domain_com.my_lib.first.FirstExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.first.First
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_first,
+        )
         self.scheduler.submit(self.trigger_position_box__action_first__for_empty_rule_position_trigger_pos)
         self.trigger_position_box__action_first__for_empty_rule_position_trigger_pos()
 
@@ -76,7 +82,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_second()
+        self.execution_trigger_position_box__action_second = local.my_domain_com.my_lib.second.SecondExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.second.Second
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_second,
+        )
         self.scheduler.submit(self.trigger_position_box__action_second__for_empty_rule_position_trigger_pos)
         self.trigger_position_box__action_second__for_empty_rule_position_trigger_pos()
 
@@ -84,26 +96,6 @@ class TestExecution:
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_first(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.first.First
-        )
-        self.execution_trigger_position_box__action_first = local.my_domain_com.my_lib.first.FirstExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_first,
-        )
-
-    def init_execution_trigger_position_box__action_second(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
-        )
-        self.execution_trigger_position_box__action_second = local.my_domain_com.my_lib.second.SecondExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_second,
-        )
 
     def trigger_position_box__action_first__for_empty_rule_position_trigger_pos(self):
         if not self.join_for_trigger_position_box__action_first__for_empty_rule_position_trigger_pos.arrive():

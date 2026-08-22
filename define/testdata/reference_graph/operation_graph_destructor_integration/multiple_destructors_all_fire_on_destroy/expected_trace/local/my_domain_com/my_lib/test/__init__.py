@@ -53,8 +53,16 @@ class TestExecution:
             "box",
             1,
         )
-        self.init_execution_trigger_position_box__action_destruct_b()
-        self.init_execution_trigger_position_box__action_destruct_a()
+        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
+            self.scheduler,
+            self.trace_execution,
+            "destruct_b",
+        )
+        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
+            self.scheduler,
+            self.trace_execution,
+            "destruct_a",
+        )
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__action_destruct_b__action_parent)
         self.scheduler.submit(self.trigger_position_box__action_destruct_a__action_parent)
@@ -67,20 +75,6 @@ class TestExecution:
             self.trace_execution,
             "box",
             1,
-        )
-
-    def init_execution_trigger_position_box__action_destruct_b(self):
-        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
-            self.scheduler,
-            self.trace_execution,
-            "destruct_b",
-        )
-
-    def init_execution_trigger_position_box__action_destruct_a(self):
-        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
-            self.scheduler,
-            self.trace_execution,
-            "destruct_a",
         )
 
     def trigger_position_box__action_destruct_b__action_parent(self):

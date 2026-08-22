@@ -47,18 +47,14 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_runner()
-        self.trigger_action_runner__when_empty_position_output()
-
-    def init_execution_trigger_action_runner(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
-        )
         self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.runner.Runner
+            ),
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
+        self.trigger_action_runner__when_empty_position_output()
 
     def trigger_action_runner__when_empty_position_output(self):
         self.execution_trigger_action_runner.accept_when_empty_position_output()

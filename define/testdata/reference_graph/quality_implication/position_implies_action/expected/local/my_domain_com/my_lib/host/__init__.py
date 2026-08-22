@@ -45,14 +45,11 @@ class HostExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_helper()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_helper__position_run)
-        self.trigger_action_helper__action_parent()
-
-    def init_execution_trigger_action_helper(self):
         self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
             self.scheduler,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_helper__position_run)
+        self.trigger_action_helper__action_parent()
 
     def trigger_action_helper__action_parent(self):
         if not self.join_for_trigger_action_helper__action_parent.arrive():

@@ -90,20 +90,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_gateway__action_middle()
-        self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
-
-    def init_execution_trigger_position_gateway__action_middle(self):
-        action = self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
         self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_middle,
         )
+        self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
 
     def trigger_position_gateway__action_middle__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source.arrive():

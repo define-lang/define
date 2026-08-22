@@ -109,21 +109,17 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_outer_holder__action_outer()
-        self.scheduler.submit(self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder)
-        self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
-
-    def init_execution_trigger_position_outer_holder__action_outer(self):
-        action = self.action.get_interface_position(
-            "position<outer_holder>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
-        )
         self.execution_trigger_position_outer_holder__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            action,
+            self.action.get_interface_position(
+                "position<outer_holder>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
             self.scheduler,
             self.guarantees.trigger_position_outer_holder__action_outer,
         )
+        self.scheduler.submit(self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder)
+        self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
 
     def trigger_position_outer_holder__action_outer__when_empty_position_middle_holder(self):
         if not self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder.arrive():

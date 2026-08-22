@@ -68,7 +68,11 @@ class FirstExecution:
             "box::/inner::trigger_pos",
             1,
         )
-        self.init_execution_trigger_position_box__action_inner()
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+        )
         self.scheduler.submit(self.destroy_position_box__action_inner__position_trigger_pos)
         self.trigger_position_box__action_inner__action_parent()
 
@@ -88,13 +92,6 @@ class FirstExecution:
             self.trace_execution,
             "box",
             1,
-        )
-
-    def init_execution_trigger_position_box__action_inner(self):
-        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.scheduler,
-            self.trace_execution,
-            "inner",
         )
 
     def trigger_position_box__action_inner__action_parent(self):

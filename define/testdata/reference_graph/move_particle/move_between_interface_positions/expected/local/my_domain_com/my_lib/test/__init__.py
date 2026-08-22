@@ -57,18 +57,14 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_runner()
-        self.trigger_action_runner__for_empty_rule_position_source()
-
-    def init_execution_trigger_action_runner(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
-        )
         self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.runner.Runner
+            ),
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
+        self.trigger_action_runner__for_empty_rule_position_source()
 
     def trigger_action_runner__for_empty_rule_position_source(self):
         if not self.join_for_trigger_action_runner__for_empty_rule_position_source.arrive():

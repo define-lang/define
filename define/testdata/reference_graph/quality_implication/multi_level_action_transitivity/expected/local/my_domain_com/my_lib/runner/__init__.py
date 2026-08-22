@@ -75,7 +75,15 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.init_execution_trigger_position_source__action_implier()
+        self.execution_trigger_position_source__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
+            self.action.get_interface_position(
+                "position<source>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.implier.Implier
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_source__action_implier,
+        )
         self.scheduler.submit(self.trigger_position_source__action_implier__when_empty_action_implied__position_run)
         self.scheduler.submit(self.trigger_position_source__action_implier__when_empty_global_position_transitive_implied)
         self.scheduler.submit(self.trigger_position_source__action_implier__when_empty_action_implied__position_run)
@@ -92,18 +100,6 @@ class RunnerExecution:
             )
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_dest)
-
-    def init_execution_trigger_position_source__action_implier(self):
-        action = self.action.get_interface_position(
-            "position<source>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.implier.Implier
-        )
-        self.execution_trigger_position_source__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_source__action_implier,
-        )
 
     def trigger_position_source__action_implier__when_empty_action_implied__position_run(self):
         if not self.join_for_trigger_position_source__action_implier__when_empty_action_implied__position_run.arrive():

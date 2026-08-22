@@ -78,23 +78,19 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_local__global_position_parent__action_middle()
-        self.scheduler.submit(self.trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos)
-        self.trigger_position_local__global_position_parent__action_middle__action_parent()
-
-    def init_execution_trigger_position_local__global_position_parent__action_middle(self):
-        action = self.action.get_interface_position(
-            "position<local>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
         self.execution_trigger_position_local__global_position_parent__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
+            self.action.get_interface_position(
+                "position<local>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.parent.Parent
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
             self.scheduler,
             self.guarantees.trigger_position_local__global_position_parent__action_middle,
         )
+        self.scheduler.submit(self.trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos)
+        self.trigger_position_local__global_position_parent__action_middle__action_parent()
 
     def trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos(self):
         if not self.join_for_trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos.arrive():

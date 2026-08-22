@@ -57,21 +57,17 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_other()
-        self.scheduler.submit(self.trigger_position_box__action_other__when_empty_global_position_filled)
-        self.trigger_position_box__action_other__when_empty_global_position_filled()
-
-    def init_execution_trigger_position_box__action_other(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        )
         self.execution_trigger_position_box__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            action,
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_other,
         )
+        self.scheduler.submit(self.trigger_position_box__action_other__when_empty_global_position_filled)
+        self.trigger_position_box__action_other__when_empty_global_position_filled()
 
     def trigger_position_box__action_other__when_empty_global_position_filled(self):
         if not self.join_for_trigger_position_box__action_other__when_empty_global_position_filled.arrive():

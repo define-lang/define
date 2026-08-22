@@ -55,7 +55,11 @@ class TestExecution:
             "/first::trigger_pos",
             1,
         )
-        self.init_execution_trigger_action_first()
+        self.execution_trigger_action_first = local.my_domain_com.my_lib.first.FirstExecution(
+            self.scheduler,
+            self.trace_execution,
+            "first",
+        )
         self.trigger_action_first__action_parent()
 
     def create_action_second__position_trigger_pos(self):
@@ -69,22 +73,12 @@ class TestExecution:
             "/second::trigger_pos",
             1,
         )
-        self.init_execution_trigger_action_second()
-        self.trigger_action_second__action_parent()
-
-    def init_execution_trigger_action_first(self):
-        self.execution_trigger_action_first = local.my_domain_com.my_lib.first.FirstExecution(
-            self.scheduler,
-            self.trace_execution,
-            "first",
-        )
-
-    def init_execution_trigger_action_second(self):
         self.execution_trigger_action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
             self.trace_execution,
             "second",
         )
+        self.trigger_action_second__action_parent()
 
     def trigger_action_first__action_parent(self):
         self.execution_trigger_action_first.accept_action_parent()

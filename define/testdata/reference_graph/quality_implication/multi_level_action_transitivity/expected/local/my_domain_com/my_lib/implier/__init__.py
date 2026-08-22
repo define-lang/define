@@ -46,19 +46,15 @@ class ImplierExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_implied()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_implied__position_run)
-        self.trigger_action_implied__when_empty_global_position_transitive_implied()
-
-    def init_execution_trigger_action_implied(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.implied.Implied
-        )
         self.execution_trigger_action_implied = local.my_domain_com.my_lib.implied.ImpliedExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.implied.Implied
+            ),
             self.scheduler,
             self.guarantees.trigger_action_implied,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_implied__position_run)
+        self.trigger_action_implied__when_empty_global_position_transitive_implied()
 
     def trigger_action_implied__when_empty_global_position_transitive_implied(self):
         if not self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied.arrive():

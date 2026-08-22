@@ -131,7 +131,26 @@ class TestExecution:
             "/middle::run",
             1,
         )
-        self.init_execution_trigger_action_middle()
+        self.destruction_connection_trigger_action_middle = tracing.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run,
+            1,
+            self.destroy_action_middle__position_run__global_position_extra__global_position_marker_b,
+            self.destroy_action_middle__position_run__global_position_extra__global_position_marker_a,
+        )
+        self.trigger_action_middle_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_action_middle,
+        )
+        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+            self.guarantees.trigger_action_middle,
+            destruction_connections=self.trigger_action_middle_destruction_connections,
+        )
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run)
         self.trigger_action_middle__for_empty_rule_position_run()
 
@@ -163,29 +182,6 @@ class TestExecution:
             1,
         )
         self.destruction_connection_trigger_action_middle.complete()
-
-    def init_execution_trigger_action_middle(self):
-        self.destruction_connection_trigger_action_middle = tracing.DestructionConnection(
-            self.scheduler,
-            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run,
-            1,
-            self.destroy_action_middle__position_run__global_position_extra__global_position_marker_b,
-            self.destroy_action_middle__position_run__global_position_extra__global_position_marker_a,
-        )
-        self.trigger_action_middle_destruction_connections = literal.DestructionConnections(
-            self.destruction_connection_trigger_action_middle,
-        )
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
-        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
-            self.scheduler,
-            self.trace_execution,
-            "middle",
-            self.guarantees.trigger_action_middle,
-            destruction_connections=self.trigger_action_middle_destruction_connections,
-        )
 
     def trigger_action_middle__for_empty_rule_position_run(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_position_run.arrive():

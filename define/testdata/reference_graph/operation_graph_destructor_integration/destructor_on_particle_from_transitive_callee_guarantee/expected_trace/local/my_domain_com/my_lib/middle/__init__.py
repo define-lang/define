@@ -85,23 +85,19 @@ class MiddleExecution:
             "box::/inner::run",
             1,
         )
-        self.init_execution_trigger_position_box__action_inner()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
-        self.trigger_position_box__action_inner__when_empty_position_result()
-
-    def init_execution_trigger_position_box__action_inner(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
         self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
             self.scheduler,
             self.trace_execution,
             "inner",
             self.guarantees.trigger_position_box__action_inner,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
+        self.trigger_position_box__action_inner__when_empty_position_result()
 
     def trigger_position_box__action_inner__when_empty_position_result(self):
         if not self.join_for_trigger_position_box__action_inner__when_empty_position_result.arrive():

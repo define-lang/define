@@ -116,7 +116,7 @@ class ActionFragmentContext:
     statements: list[ActionStatementContext]
     successor_fragment_method_names: list[str]
     callee_binding_join_method_names_that_depend_on_fragment: list[str]
-    triggered_action_successor_init_method_names: list[str]
+    triggered_action_successors: list["TriggeredActionExecutionContext"]
     triggered_action_execution_callee_binding_join_method_names: list[str]
     guarantee_publication_names: list[str]
     dependency_count: int
@@ -159,9 +159,8 @@ class DestructionPositionContext:
 class TriggeredActionExecutionContext:
     """One direct Action Execution used by generated dependency wiring."""
 
-    action: PositionExpr | None
+    action_expression: PositionExpr | None
     execution_class: naming.ClassReference
-    init_method_name: str
     execution_name: str
     child_guarantees_name: str | None
     created_destruction_connections: list[DestructionConnectionContext]
@@ -172,7 +171,7 @@ class TriggeredActionExecutionContext:
     @property
     def execution_needs_action(self) -> bool:
         """Whether the triggered execution receives its Action instance."""
-        return self.action is not None
+        return self.action_expression is not None
 
     @property
     def execution_needs_guarantees(self) -> bool:
@@ -225,7 +224,7 @@ class BindingHoleFanoutContext:
     binding_hole_method_name: str
     fragment_method_names: list[str]
     callee_binding_join_method_names: list[str]
-    destructor_execution_init_methods: list[str]
+    destructor_executions: list[TriggeredActionExecutionContext]
 
 
 @dataclass
@@ -233,7 +232,7 @@ class TriggerForDestroyedCalleeGuaranteeParticleContext:
     """One Action Execution for a destroyed callee-guaranteed particle."""
 
     method_name: str
-    action_execution_init_method_name: str
+    action_execution: TriggeredActionExecutionContext
     callee_binding_join_method_names: list[str]
 
 
@@ -272,8 +271,8 @@ class ActionExecutionContext:
                     self.needs_action = True
                     return
         self.needs_action = any(
-            triggered_action.action is not None
-            and triggered_action.action.local_position_member_name is None
+            triggered_action.action_expression is not None
+            and triggered_action.action_expression.local_position_member_name is None
             for triggered_action in self.action_executions
         )
 

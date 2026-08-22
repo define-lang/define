@@ -58,23 +58,19 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_host()
+        self.execution_trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.host.Host
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_host,
+        )
         self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_helper__position_run)
         self.scheduler.submit(self.trigger_position_box__action_host__action_parent)
         self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_helper__position_run)
         self.trigger_position_box__action_host__action_parent()
-
-    def init_execution_trigger_position_box__action_host(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.host.Host
-        )
-        self.execution_trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_host,
-        )
 
     def trigger_position_box__action_host__when_empty_action_helper__position_run(self):
         if not self.join_for_trigger_position_box__action_host__when_empty_action_helper__position_run.arrive():

@@ -62,7 +62,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_holder__action_middle()
+        self.execution_trigger_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_holder__action_middle__position_trigger_pos)
         self.trigger_position_holder__action_middle__action_parent()
 
@@ -81,18 +83,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_holder__action_middle_2()
-        self.trigger_position_holder__action_middle_2__action_parent()
-
-    def init_execution_trigger_position_holder__action_middle(self):
-        self.execution_trigger_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_position_holder__action_middle_2(self):
         self.execution_trigger_position_holder__action_middle_2 = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.scheduler,
         )
+        self.trigger_position_holder__action_middle_2__action_parent()
 
     def trigger_position_holder__action_middle__action_parent(self):
         if not self.join_for_trigger_position_holder__action_middle__action_parent.arrive():

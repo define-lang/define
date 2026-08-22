@@ -68,8 +68,9 @@ class ActionDefinitionContext:
                     destructor.execution_class
                     for destructor in connection.destruction_contract_destructors
                 )
-            if action_execution.action is not None:
-                class_references.extend(action_execution.action.class_references)
+            action_expression = action_execution.action_expression
+            if action_expression is not None:
+                class_references.extend(action_expression.class_references)
             class_references.append(action_execution.execution_class)
         for callee_binding_join in self.execution.callee_binding_joins:
             for destruction_position in callee_binding_join.destruction_positions:

@@ -61,7 +61,11 @@ class TestExecution:
             "box",
             1,
         )
-        self.init_execution_trigger_position_box__action_destructor()
+        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+            self.trace_execution,
+            "destructor",
+        )
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
         self.trigger_position_box__action_destructor__action_parent()
@@ -82,13 +86,6 @@ class TestExecution:
             self.trace_execution,
             "box",
             2,
-        )
-
-    def init_execution_trigger_position_box__action_destructor(self):
-        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            self.scheduler,
-            self.trace_execution,
-            "destructor",
         )
 
     def trigger_position_box__action_destructor__action_parent(self):

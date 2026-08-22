@@ -26,7 +26,6 @@ _GLOBAL_NAME_PREFIX = "global_"
 _GUARANTEE_MOVE_SEPARATOR = "__move__"
 _GUARANTEE_PREFIX = "guarantee_"
 _IDENTIFIER_SEPARATOR = "_"
-_INITIALIZER_PREFIX = "init_"
 _CONTINUE_DESTROY_PREFIX = "continue_"
 _LOCAL_POSITION_PREFIX = "local_position_"
 _MOVE_FRAGMENT_PREFIX = "move_"
@@ -53,8 +52,6 @@ class TriggeredActionNames:
     """Names for one Action Execution in an execution class."""
 
     canonical_name: str
-    # The method that initializes the triggered action's execution.
-    initializer_name: str
     # The member that stores the triggered action's execution.
     execution_name: str
 
@@ -71,8 +68,7 @@ class ActionNames:
     local_positions: dict[str, str]
     # The execution method for each Binding Hole.
     binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
-    # The canonical name, initializer method, and execution member for each
-    # Action Execution.
+    # The canonical name and execution member for each Action Execution.
     triggered_actions: dict[operation_graph_model.ActionExecution, TriggeredActionNames]
     # The trigger method for each caller-contributed Destructor.
     destruction_contract_destructor_trigger_method_names: dict[
@@ -234,9 +230,6 @@ class ActionNameGenerator:
             )
             names[action_execution] = TriggeredActionNames(
                 canonical_name=canonical_name,
-                initializer_name=self._execution_allocator.allocate(
-                    _INITIALIZER_PREFIX + _EXECUTION_PREFIX + canonical_name
-                ),
                 execution_name=self._execution_allocator.allocate(
                     _EXECUTION_PREFIX + canonical_name
                 ),

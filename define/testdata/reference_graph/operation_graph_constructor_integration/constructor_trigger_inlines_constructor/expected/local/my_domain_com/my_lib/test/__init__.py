@@ -57,21 +57,17 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_construct()
-        self.scheduler.submit(self.trigger_position_box__action_construct__when_empty_global_position_marker)
-        self.trigger_position_box__action_construct__when_empty_global_position_marker()
-
-    def init_execution_trigger_position_box__action_construct(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct.Construct
-        )
         self.execution_trigger_position_box__action_construct = local.my_domain_com.my_lib.construct.ConstructExecution(
-            action,
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct.Construct
+            ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_construct,
         )
+        self.scheduler.submit(self.trigger_position_box__action_construct__when_empty_global_position_marker)
+        self.trigger_position_box__action_construct__when_empty_global_position_marker()
 
     def trigger_position_box__action_construct__when_empty_global_position_marker(self):
         if not self.join_for_trigger_position_box__action_construct__when_empty_global_position_marker.arrive():

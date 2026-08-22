@@ -47,19 +47,15 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_work()
-        self.scheduler.submit(self.trigger_action_work__when_empty_position_source)
-        self.trigger_action_work__when_empty_position_dest()
-
-    def init_execution_trigger_action_work(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.work.Work
-        )
         self.execution_trigger_action_work = local.my_domain_com.my_lib.work.WorkExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.work.Work
+            ),
             self.scheduler,
             self.guarantees.trigger_action_work,
         )
+        self.scheduler.submit(self.trigger_action_work__when_empty_position_source)
+        self.trigger_action_work__when_empty_position_dest()
 
     def trigger_action_work__when_empty_position_source(self):
         self.execution_trigger_action_work.accept_when_empty_position_source()

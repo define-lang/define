@@ -38,13 +38,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_do_thing()
-        self.trigger_action_do_thing__action_parent()
-
-    def init_execution_trigger_action_do_thing(self):
         self.execution_trigger_action_do_thing = local.my_domain_com.my_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
+        self.trigger_action_do_thing__action_parent()
 
     def trigger_action_do_thing__action_parent(self):
         self.execution_trigger_action_do_thing.accept_action_parent()

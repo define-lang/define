@@ -85,7 +85,17 @@ class TestExecution:
             "gateway::/other::trigger_pos",
             1,
         )
-        self.init_execution_trigger_position_gateway__action_other()
+        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "other",
+            self.guarantees.trigger_position_gateway__action_other,
+        )
         self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos)
         self.trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos()
 
@@ -101,20 +111,6 @@ class TestExecution:
             self.trace_execution,
             "gateway::/other::output",
             1,
-        )
-
-    def init_execution_trigger_position_gateway__action_other(self):
-        action = self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        )
-        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            action,
-            self.scheduler,
-            self.trace_execution,
-            "other",
-            self.guarantees.trigger_position_gateway__action_other,
         )
 
     def trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos(self):

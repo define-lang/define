@@ -42,7 +42,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_do_thing()
+        self.execution_trigger_action_do_thing = local.my_domain_com.parent_lib.do_thing.DoThingExecution(
+            self.scheduler,
+        )
         self.trigger_action_do_thing__action_parent()
 
     def create_action_my_domain_com_child_lib_do_thing__position_trigger_pos(self):
@@ -51,18 +53,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_my_domain_com_child_lib_do_thing()
-        self.trigger_action_my_domain_com_child_lib_do_thing__action_parent()
-
-    def init_execution_trigger_action_do_thing(self):
-        self.execution_trigger_action_do_thing = local.my_domain_com.parent_lib.do_thing.DoThingExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_my_domain_com_child_lib_do_thing(self):
         self.execution_trigger_action_my_domain_com_child_lib_do_thing = local.my_domain_com.child_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
+        self.trigger_action_my_domain_com_child_lib_do_thing__action_parent()
 
     def trigger_action_do_thing__action_parent(self):
         self.execution_trigger_action_do_thing.accept_action_parent()

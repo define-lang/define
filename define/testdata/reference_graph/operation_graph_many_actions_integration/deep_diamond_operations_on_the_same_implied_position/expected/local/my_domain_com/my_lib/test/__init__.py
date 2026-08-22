@@ -56,7 +56,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_left()
+        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left.Left
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_left,
+        )
         self.scheduler.submit(self.trigger_action_left__when_empty_action_left_child__position_trigger_pos)
         self.trigger_action_left__when_empty_global_position_marker()
 
@@ -66,29 +72,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_right()
-        self.scheduler.submit(self.trigger_action_right__when_empty_action_right_child__position_trigger_pos)
-        self.trigger_action_right__for_empty_rule_global_position_marker()
-
-    def init_execution_trigger_action_left(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
-        )
-        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_left,
-        )
-
-    def init_execution_trigger_action_right(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.right.Right
-        )
         self.execution_trigger_action_right = local.my_domain_com.my_lib.right.RightExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.right.Right
+            ),
             self.scheduler,
             self.guarantees.trigger_action_right,
         )
+        self.scheduler.submit(self.trigger_action_right__when_empty_action_right_child__position_trigger_pos)
+        self.trigger_action_right__for_empty_rule_global_position_marker()
 
     def trigger_action_left__when_empty_action_left_child__position_trigger_pos(self):
         self.execution_trigger_action_left.accept_when_empty_action_left_child__position_trigger_pos()

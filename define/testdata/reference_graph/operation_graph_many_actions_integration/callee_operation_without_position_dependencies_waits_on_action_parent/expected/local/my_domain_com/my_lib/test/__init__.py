@@ -58,20 +58,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_global_position_box__action_worker()
-        self.trigger_global_position_box__action_worker__when_empty_position_result()
-
-    def init_execution_trigger_global_position_box__action_worker(self):
-        action = self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        )
         self.execution_trigger_global_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            action,
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_lib.box.Box
+            ).particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
             self.scheduler,
             self.guarantees.trigger_global_position_box__action_worker,
         )
+        self.trigger_global_position_box__action_worker__when_empty_position_result()
 
     def trigger_global_position_box__action_worker__when_empty_position_result(self):
         if not self.join_for_trigger_global_position_box__action_worker__when_empty_position_result.arrive():

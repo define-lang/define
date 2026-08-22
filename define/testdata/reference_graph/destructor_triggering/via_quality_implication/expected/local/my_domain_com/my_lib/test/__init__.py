@@ -55,8 +55,20 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_execution_trigger_position_box__action_marked()
-        self.init_execution_trigger_position_box__action_destructor()
+        self.execution_trigger_position_box__action_marked = local.my_domain_com.my_lib.marked.MarkedExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.marked.Marked
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_marked,
+        )
+        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.destructor.Destructor
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_destructor,
+        )
         self.scheduler.submit(self.trigger_position_box__action_marked__when_empty_action_destructor__position_slot)
         self.scheduler.submit(self.trigger_position_box__action_marked__when_empty_action_destructor__position_slot)
         self.trigger_position_box__action_destructor__for_empty_rule_position_slot()
@@ -68,26 +80,6 @@ class TestExecution:
             "position<slot>"
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_marked(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.marked.Marked
-        )
-        self.execution_trigger_position_box__action_marked = local.my_domain_com.my_lib.marked.MarkedExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_marked,
-        )
-
-    def init_execution_trigger_position_box__action_destructor(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
-        )
-        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_destructor,
-        )
 
     def trigger_position_box__action_marked__when_empty_action_destructor__position_slot(self):
         if not self.join_for_trigger_position_box__action_marked__when_empty_action_destructor__position_slot.arrive():

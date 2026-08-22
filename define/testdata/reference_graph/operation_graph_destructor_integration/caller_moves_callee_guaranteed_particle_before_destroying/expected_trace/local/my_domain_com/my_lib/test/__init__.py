@@ -83,7 +83,15 @@ class TestExecution:
             "box::/maker::run",
             1,
         )
-        self.init_execution_trigger_position_box__action_maker()
+        self.execution_trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "maker",
+            self.guarantees.trigger_position_box__action_maker,
+        )
         self.scheduler.submit(self.destroy_position_box__action_maker__position_run)
         self.scheduler.submit(self.trigger_position_box__action_maker__action_parent)
         self.trigger_position_box__action_maker__when_empty_position_result()
@@ -100,7 +108,11 @@ class TestExecution:
             "held",
             1,
         )
-        self.init_execution_trigger_position_held__action_destructor()
+        self.execution_trigger_position_held__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+            self.trace_execution,
+            "destructor",
+        )
         self.scheduler.submit(self.destroy_position_held)
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_held__action_destructor__action_parent)
@@ -135,25 +147,6 @@ class TestExecution:
             self.trace_execution,
             "box",
             1,
-        )
-
-    def init_execution_trigger_position_box__action_maker(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
-        )
-        self.execution_trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
-            action,
-            self.scheduler,
-            self.trace_execution,
-            "maker",
-            self.guarantees.trigger_position_box__action_maker,
-        )
-
-    def init_execution_trigger_position_held__action_destructor(self):
-        self.execution_trigger_position_held__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            self.scheduler,
-            self.trace_execution,
-            "destructor",
         )
 
     def trigger_position_box__action_maker__action_parent(self):

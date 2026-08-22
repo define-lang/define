@@ -91,7 +91,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_gateway__action_other()
+        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_gateway__action_other,
+        )
         self.trigger_position_gateway__action_other__for_empty_rule_position_source()
 
     def destroy_position_gateway__action_other__position_holder__global_position_a(self):
@@ -104,18 +112,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).destroy_particle()
-
-    def init_execution_trigger_position_gateway__action_other(self):
-        action = self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        )
-        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_other,
-        )
 
     def trigger_position_gateway__action_other__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_source.arrive():

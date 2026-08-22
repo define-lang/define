@@ -388,21 +388,14 @@ def test_repeated_action_execution_skips_a_source_suffix(
     assert names.triggered_actions == {
         naturally_suffixed: action_names.TriggeredActionNames(
             canonical_name="trigger_position_gateway__action_worker_2",
-            initializer_name=(
-                "init_execution_trigger_position_gateway__action_worker_2"
-            ),
             execution_name="execution_trigger_position_gateway__action_worker_2",
         ),
         first: action_names.TriggeredActionNames(
             canonical_name="trigger_position_gateway__action_worker",
-            initializer_name="init_execution_trigger_position_gateway__action_worker",
             execution_name="execution_trigger_position_gateway__action_worker",
         ),
         second: action_names.TriggeredActionNames(
             canonical_name="trigger_position_gateway__action_worker_3",
-            initializer_name=(
-                "init_execution_trigger_position_gateway__action_worker_3"
-            ),
             execution_name="execution_trigger_position_gateway__action_worker_3",
         ),
     }

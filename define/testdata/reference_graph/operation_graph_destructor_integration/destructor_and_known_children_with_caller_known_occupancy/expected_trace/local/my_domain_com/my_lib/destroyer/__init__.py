@@ -89,7 +89,17 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.init_execution_trigger_position_run__action_destruct()
+        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
+            self.action.get_interface_position(
+                "position<run>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.destruct.Destruct
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "destruct",
+            self.guarantees.trigger_position_run__action_destruct,
+        )
         self.scheduler.submit(self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a)
         self.trigger_position_run__action_destruct__for_empty_rule_global_position_marker_b()
 
@@ -217,20 +227,6 @@ class DestroyerExecution:
             1,
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def init_execution_trigger_position_run__action_destruct(self):
-        action = self.action.get_interface_position(
-            "position<run>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destruct.Destruct
-        )
-        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
-            action,
-            self.scheduler,
-            self.trace_execution,
-            "destruct",
-            self.guarantees.trigger_position_run__action_destruct,
-        )
 
     def trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a(self):
         if not self.join_for_trigger_position_run__action_destruct__for_empty_rule_global_position_marker_a.arrive():

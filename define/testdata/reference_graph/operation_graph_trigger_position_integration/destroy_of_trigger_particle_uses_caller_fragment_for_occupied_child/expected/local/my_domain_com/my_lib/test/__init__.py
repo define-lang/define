@@ -67,15 +67,6 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.init_execution_trigger_action_triggered()
-        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
-        self.trigger_action_triggered__for_empty_rule_position_run()
-
-    def destroy_action_triggered__position_run__global_position_a(self):
-        self.destruction_position_action_triggered__position_run__global_position_a.destroy_particle()
-        self.destruction_connection_trigger_action_triggered.complete()
-
-    def init_execution_trigger_action_triggered(self):
         self.destruction_connection_trigger_action_triggered = literal.DestructionConnection(
             self.scheduler,
             local.my_domain_com.my_lib.triggered.TriggeredExecution.continue_destroy_global_position_target,
@@ -85,15 +76,20 @@ class TestExecution:
         self.trigger_action_triggered_destruction_connections = literal.DestructionConnections(
             self.destruction_connection_trigger_action_triggered,
         )
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
-        )
         self.execution_trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.triggered.Triggered
+            ),
             self.scheduler,
             self.guarantees.trigger_action_triggered,
             destruction_connections=self.trigger_action_triggered_destruction_connections,
         )
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
+        self.trigger_action_triggered__for_empty_rule_position_run()
+
+    def destroy_action_triggered__position_run__global_position_a(self):
+        self.destruction_position_action_triggered__position_run__global_position_a.destroy_particle()
+        self.destruction_connection_trigger_action_triggered.complete()
 
     def trigger_action_triggered__for_empty_rule_position_run(self):
         if not self.join_for_trigger_action_triggered__for_empty_rule_position_run.arrive():

@@ -134,22 +134,18 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_outer()
-        self.scheduler.submit(self.trigger_position_box__action_outer__for_empty_rule_position_mw__action_middle__position_gw__action_inner__position_holder__global_position_a)
-        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_mw__action_middle__position_trigger_pos)
-        self.trigger_position_box__action_outer__when_empty_position_mw__action_middle__position_gw__action_inner__position_trigger_pos()
-
-    def init_execution_trigger_position_box__action_outer(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
-        )
         self.execution_trigger_position_box__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            action,
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_outer,
         )
+        self.scheduler.submit(self.trigger_position_box__action_outer__for_empty_rule_position_mw__action_middle__position_gw__action_inner__position_holder__global_position_a)
+        self.scheduler.submit(self.trigger_position_box__action_outer__when_empty_position_mw__action_middle__position_trigger_pos)
+        self.trigger_position_box__action_outer__when_empty_position_mw__action_middle__position_gw__action_inner__position_trigger_pos()
 
     def trigger_position_box__action_outer__for_empty_rule_position_mw__action_middle__position_gw__action_inner__position_holder__global_position_a(self):
         if not self.join_for_trigger_position_box__action_outer__for_empty_rule_position_mw__action_middle__position_gw__action_inner__position_holder__global_position_a.arrive():

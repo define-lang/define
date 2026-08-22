@@ -52,7 +52,13 @@ class TestExecution:
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_perform_operation()
+        self.execution_trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_perform_operation,
+        )
         self.scheduler.submit(self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position)
         self.scheduler.submit(self.trigger_action_perform_operation__action_parent)
         self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position()
@@ -65,16 +71,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_library_collection.inner_position.InnerPosition
         ).create_particle()
-
-    def init_execution_trigger_action_perform_operation(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
-        )
-        self.execution_trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_perform_operation,
-        )
 
     def trigger_action_perform_operation__action_parent(self):
         self.execution_trigger_action_perform_operation.accept_action_parent()

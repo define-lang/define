@@ -96,7 +96,23 @@ class CallerAExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_destroyer_particle__action_destroyer()
+        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target,
+            0,
+            self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor,
+        )
+        self.trigger_position_destroyer_particle__action_destroyer_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_position_destroyer_particle__action_destroyer,
+        )
+        self.execution_trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.local_position_destroyer_particle.particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_destroyer_particle__action_destroyer,
+            destruction_connections=self.trigger_position_destroyer_particle__action_destroyer_destruction_connections,
+        )
         self.scheduler.submit(self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target)
         self.trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target()
@@ -114,32 +130,6 @@ class CallerAExecution:
             return
         self.local_position_destroyer_particle.destroy_particle()
 
-    def init_execution_trigger_position_destroyer_particle__action_destroyer(self):
-        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = literal.DestructionConnection(
-            self.scheduler,
-            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target,
-            0,
-            self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor,
-        )
-        self.trigger_position_destroyer_particle__action_destroyer_destruction_connections = literal.DestructionConnections(
-            self.destruction_connection_trigger_position_destroyer_particle__action_destroyer,
-        )
-        action = self.local_position_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
-        self.execution_trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_destroyer_particle__action_destroyer,
-            destruction_connections=self.trigger_position_destroyer_particle__action_destroyer_destruction_connections,
-        )
-
-    def trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor(self):
-        execution = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(
-            self.scheduler,
-        )
-        execution.accept_action_parent()
-
     def trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target(self):
         if not self.join_for_trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target.arrive():
             return
@@ -149,3 +139,9 @@ class CallerAExecution:
         if not self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target.arrive():
             return
         self.execution_trigger_position_destroyer_particle__action_destroyer.accept_when_occupied_position_target()
+
+    def trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor(self):
+        execution = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(
+            self.scheduler,
+        )
+        execution.accept_action_parent()

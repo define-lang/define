@@ -69,7 +69,17 @@ class CalleeExecution:
         self.destroy_position_src()
 
     def accept_when_occupied_position_src(self):
-        self.init_execution_trigger_position_src__action_destructor()
+        self.execution_trigger_position_src__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.action.get_interface_position(
+                "position<src>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.destructor.Destructor
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "destructor",
+            self.guarantees.trigger_position_src__action_destructor,
+        )
         self.trigger_position_src__action_destructor__when_empty_global_position_marker()
 
     def destroy_position_src(self):
@@ -87,20 +97,6 @@ class CalleeExecution:
             1,
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_src)
-
-    def init_execution_trigger_position_src__action_destructor(self):
-        action = self.action.get_interface_position(
-            "position<src>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
-        )
-        self.execution_trigger_position_src__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            action,
-            self.scheduler,
-            self.trace_execution,
-            "destructor",
-            self.guarantees.trigger_position_src__action_destructor,
-        )
 
     def trigger_position_src__action_destructor__when_empty_global_position_marker(self):
         if not self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker.arrive():

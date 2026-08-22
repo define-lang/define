@@ -93,7 +93,23 @@ class RunnerExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.init_execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier()
+        self.execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
+            self.action.get_interface_position(
+                "position<wrapper>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ).get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.implier.Implier
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier,
+        )
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied)
         self.trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied()
 
@@ -105,43 +121,19 @@ class RunnerExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_wrapper__action_middle()
+        self.execution_trigger_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.get_interface_position(
+                "position<wrapper>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_wrapper__action_middle,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_position_wrapper__action_middle__position_run)
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__when_empty_position_box__action_inner__position_run)
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input)
         self.trigger_position_wrapper__action_middle__when_empty_position_final()
-
-    def init_execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier(self):
-        action = self.action.get_interface_position(
-            "position<wrapper>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        ).get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<input>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.implier.Implier
-        )
-        self.execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier,
-        )
-
-    def init_execution_trigger_position_wrapper__action_middle(self):
-        action = self.action.get_interface_position(
-            "position<wrapper>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
-        self.execution_trigger_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_wrapper__action_middle,
-        )
 
     def trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied(self):
         if not self.join_for_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied.arrive():

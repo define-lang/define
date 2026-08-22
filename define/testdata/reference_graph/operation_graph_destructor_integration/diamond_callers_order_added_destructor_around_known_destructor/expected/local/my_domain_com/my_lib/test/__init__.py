@@ -52,7 +52,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_caller_a()
+        self.execution_trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
+            self.scheduler,
+            self.guarantees.trigger_action_caller_a,
+        )
         self.trigger_action_caller_a__action_parent()
 
     def create_action_caller_b__position_trigger_pos(self):
@@ -61,20 +64,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_caller_b()
-        self.trigger_action_caller_b__action_parent()
-
-    def init_execution_trigger_action_caller_a(self):
-        self.execution_trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
-            self.scheduler,
-            self.guarantees.trigger_action_caller_a,
-        )
-
-    def init_execution_trigger_action_caller_b(self):
         self.execution_trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
             self.scheduler,
             self.guarantees.trigger_action_caller_b,
         )
+        self.trigger_action_caller_b__action_parent()
 
     def trigger_action_caller_a__action_parent(self):
         self.execution_trigger_action_caller_a.accept_action_parent()

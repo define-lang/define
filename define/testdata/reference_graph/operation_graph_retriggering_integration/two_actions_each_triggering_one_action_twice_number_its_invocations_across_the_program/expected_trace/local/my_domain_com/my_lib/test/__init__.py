@@ -88,7 +88,11 @@ class TestExecution:
             "holder_first::/first::trigger_pos",
             1,
         )
-        self.init_execution_trigger_position_holder_first__action_first()
+        self.execution_trigger_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
+            self.scheduler,
+            self.trace_execution,
+            "first",
+        )
         self.trigger_position_holder_first__action_first__action_parent()
 
     def create_position_holder_second(self):
@@ -116,22 +120,12 @@ class TestExecution:
             "holder_second::/second::trigger_pos",
             1,
         )
-        self.init_execution_trigger_position_holder_second__action_second()
-        self.trigger_position_holder_second__action_second__action_parent()
-
-    def init_execution_trigger_position_holder_first__action_first(self):
-        self.execution_trigger_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
-            self.scheduler,
-            self.trace_execution,
-            "first",
-        )
-
-    def init_execution_trigger_position_holder_second__action_second(self):
         self.execution_trigger_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
             self.trace_execution,
             "second",
         )
+        self.trigger_position_holder_second__action_second__action_parent()
 
     def trigger_position_holder_first__action_first__action_parent(self):
         if not self.join_for_trigger_position_holder_first__action_first__action_parent.arrive():

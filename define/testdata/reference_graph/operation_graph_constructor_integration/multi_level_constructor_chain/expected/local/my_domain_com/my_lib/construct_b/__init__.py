@@ -42,22 +42,18 @@ class ConstructBExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).create_particle()
-        self.init_execution_trigger_global_position_inner__action_construct_c()
-        self.scheduler.submit(self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf)
-        self.scheduler.submit_all(self.guarantees.guarantee_global_position_inner)
-        self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf()
-
-    def init_execution_trigger_global_position_inner__action_construct_c(self):
-        action = self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct_c.ConstructC
-        )
         self.execution_trigger_global_position_inner__action_construct_c = local.my_domain_com.my_lib.construct_c.ConstructCExecution(
-            action,
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_lib.inner.Inner
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct_c.ConstructC
+            ),
             self.scheduler,
             self.guarantees.trigger_global_position_inner__action_construct_c,
         )
+        self.scheduler.submit(self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf)
+        self.scheduler.submit_all(self.guarantees.guarantee_global_position_inner)
+        self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf()
 
     def trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf(self):
         if not self.join_for_trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf.arrive():

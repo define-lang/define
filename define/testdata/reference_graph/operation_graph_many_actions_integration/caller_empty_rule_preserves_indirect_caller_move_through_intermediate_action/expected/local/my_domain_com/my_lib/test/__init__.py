@@ -97,21 +97,17 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_middle_action()
+        self.execution_trigger_action_middle_action = local.my_domain_com.my_lib.middle_action.MiddleActionExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_action.MiddleAction
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_middle_action,
+        )
         self.scheduler.submit(self.trigger_action_middle_action__when_empty_action_inner__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_middle_action__for_empty_rule_global_position_intermediate)
         self.scheduler.submit(self.trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b)
         self.trigger_action_middle_action__for_empty_rule_global_position_input()
-
-    def init_execution_trigger_action_middle_action(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
-        )
-        self.execution_trigger_action_middle_action = local.my_domain_com.my_lib.middle_action.MiddleActionExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_middle_action,
-        )
 
     def trigger_action_middle_action__when_empty_action_inner__position_trigger_pos(self):
         self.execution_trigger_action_middle_action.accept_when_empty_action_inner__position_trigger_pos()

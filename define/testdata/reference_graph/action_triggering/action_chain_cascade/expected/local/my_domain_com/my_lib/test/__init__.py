@@ -48,20 +48,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_kick_off()
-        self.scheduler.submit(self.trigger_action_kick_off__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_action_kick_off__when_empty_position_output)
-        self.trigger_action_kick_off__for_empty_rule_position_trigger()
-
-    def init_execution_trigger_action_kick_off(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.kick_off.KickOff
-        )
         self.execution_trigger_action_kick_off = local.my_domain_com.my_lib.kick_off.KickOffExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.kick_off.KickOff
+            ),
             self.scheduler,
             self.guarantees.trigger_action_kick_off,
         )
+        self.scheduler.submit(self.trigger_action_kick_off__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_action_kick_off__when_empty_position_output)
+        self.trigger_action_kick_off__for_empty_rule_position_trigger()
 
     def trigger_action_kick_off__when_empty_position_output(self):
         self.execution_trigger_action_kick_off.accept_when_empty_position_output()

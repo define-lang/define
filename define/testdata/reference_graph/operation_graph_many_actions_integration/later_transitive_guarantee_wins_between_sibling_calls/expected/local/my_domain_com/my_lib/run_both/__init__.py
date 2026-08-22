@@ -77,7 +77,13 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_call_fill()
+        self.execution_trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.call_fill.CallFill
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_call_fill,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_action_call_fill__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos)
         self.trigger_action_call_fill__when_empty_global_position_item()
@@ -88,30 +94,16 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_call_empty()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos)
-        self.trigger_action_call_empty__for_empty_rule_global_position_item()
-
-    def init_execution_trigger_action_call_fill(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.call_fill.CallFill
-        )
-        self.execution_trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_call_fill,
-        )
-
-    def init_execution_trigger_action_call_empty(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.call_empty.CallEmpty
-        )
         self.execution_trigger_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.call_empty.CallEmpty
+            ),
             self.scheduler,
             self.guarantees.trigger_action_call_empty,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_call_empty__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos)
+        self.trigger_action_call_empty__for_empty_rule_global_position_item()
 
     def trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos(self):
         if not self.join_for_trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos.arrive():

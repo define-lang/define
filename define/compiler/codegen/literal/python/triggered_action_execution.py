@@ -45,9 +45,17 @@ class TriggeredActionExecutionGenerator:
         self._guarantee_interface = guarantee_interface
         self._statement_generator = statement_generator
 
-    def generate(self) -> list[template_context.TriggeredActionExecutionContext]:
+    def generate(
+        self,
+    ) -> dict[
+        operation_graph_model.ActionExecution,
+        template_context.TriggeredActionExecutionContext,
+    ]:
         """Generate direct Action Execution contexts."""
-        action_executions: list[template_context.TriggeredActionExecutionContext] = []
+        action_executions: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ] = {}
         for planned_execution in self._plan.action_executions:
             execution = planned_execution.execution
             action_execution_names = self._names.triggered_actions[execution]
@@ -63,9 +71,6 @@ class TriggeredActionExecutionGenerator:
                 )
             elif planned_execution.forwards_destruction_connections:
                 destruction_connections_member_name = "destruction_connections"
-            action = None
-            if generated_callee.context.execution.needs_action:
-                action = self._statement_generator.build_action(execution.callee)
             child_guarantees_name = None
             if self._guarantee_interface is not None:
                 child_guarantees = self._guarantee_interface.child_guarantees.get(
@@ -73,13 +78,17 @@ class TriggeredActionExecutionGenerator:
                 )
                 if child_guarantees is not None:
                     child_guarantees_name = child_guarantees.member_name
-            action_executions.append(
+            action_expression = None
+            if generated_callee.context.execution.needs_action:
+                action_expression = self._statement_generator.build_action(
+                    execution.callee
+                )
+            action_executions[execution] = (
                 template_context.TriggeredActionExecutionContext(
-                    action=action,
+                    action_expression=action_expression,
                     execution_class=self._converter.execution_class_reference(
                         execution.callee_action_name
                     ),
-                    init_method_name=action_execution_names.initializer_name,
                     execution_name=action_execution_names.execution_name,
                     child_guarantees_name=child_guarantees_name,
                     created_destruction_connections=created_destruction_connections,

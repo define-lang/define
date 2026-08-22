@@ -52,7 +52,9 @@ class FirstExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_inner()
+        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_box__action_inner__position_trigger_pos)
         self.trigger_position_box__action_inner__action_parent()
 
@@ -63,11 +65,6 @@ class FirstExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_inner(self):
-        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.scheduler,
-        )
 
     def trigger_position_box__action_inner__action_parent(self):
         if not self.join_for_trigger_position_box__action_inner__action_parent.arrive():

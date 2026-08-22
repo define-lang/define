@@ -60,20 +60,16 @@ class CallEmptyExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_empty_item()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_empty_item__position_trigger_pos)
-        self.trigger_action_empty_item__for_empty_rule_global_position_item()
-
-    def init_execution_trigger_action_empty_item(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
-        )
         self.execution_trigger_action_empty_item = local.my_domain_com.my_lib.empty_item.EmptyItemExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.empty_item.EmptyItem
+            ),
             self.scheduler,
             self.guarantees.trigger_action_empty_item,
             destruction_connections=self.destruction_connections,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_empty_item__position_trigger_pos)
+        self.trigger_action_empty_item__for_empty_rule_global_position_item()
 
     def trigger_action_empty_item__for_empty_rule_global_position_item(self):
         if not self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item.arrive():

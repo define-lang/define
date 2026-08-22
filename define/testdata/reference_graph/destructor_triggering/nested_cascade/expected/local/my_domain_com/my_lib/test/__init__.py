@@ -41,7 +41,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_execution_trigger_position_box__action_parent_destructor()
+        self.execution_trigger_position_box__action_parent_destructor = local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.create_position_box__global_position_child)
         self.scheduler.submit(self.trigger_position_box__action_parent_destructor__action_parent)
         self.trigger_position_box__action_parent_destructor__action_parent()
@@ -50,7 +52,9 @@ class TestExecution:
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.init_execution_trigger_position_box__global_position_child__action_child_destructor()
+        self.execution_trigger_position_box__global_position_child__action_child_destructor = local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_box__global_position_child)
         self.scheduler.submit(self.trigger_position_box__global_position_child__action_child_destructor__action_parent)
         self.trigger_position_box__global_position_child__action_child_destructor__action_parent()
@@ -60,16 +64,6 @@ class TestExecution:
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_parent_destructor(self):
-        self.execution_trigger_position_box__action_parent_destructor = local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_position_box__global_position_child__action_child_destructor(self):
-        self.execution_trigger_position_box__global_position_child__action_child_destructor = local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution(
-            self.scheduler,
-        )
 
     def trigger_position_box__action_parent_destructor__action_parent(self):
         if not self.join_for_trigger_position_box__action_parent_destructor__action_parent.arrive():

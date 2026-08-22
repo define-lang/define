@@ -75,21 +75,17 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_other()
+        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_other,
+        )
         self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_input__global_position_start)
         self.scheduler.submit(self.trigger_action_other__when_empty_global_position_input__global_position_target)
         self.scheduler.submit(self.trigger_action_other__when_empty_position_holder)
         self.trigger_action_other__for_empty_rule_global_position_input()
-
-    def init_execution_trigger_action_other(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        )
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_other,
-        )
 
     def trigger_action_other__for_empty_rule_global_position_input__global_position_start(self):
         if not self.join_for_trigger_action_other__for_empty_rule_global_position_input__global_position_start.arrive():

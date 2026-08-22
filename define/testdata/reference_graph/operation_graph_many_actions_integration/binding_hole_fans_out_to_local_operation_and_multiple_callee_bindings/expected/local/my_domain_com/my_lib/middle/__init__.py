@@ -80,7 +80,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_global_position_shared__action_child_a()
+        self.execution_trigger_global_position_shared__action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
+            self.scheduler,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_global_position_shared__action_child_a__position_trigger_pos)
         self.trigger_global_position_shared__action_child_a__action_parent()
 
@@ -92,19 +94,11 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_global_position_shared__action_child_b()
-        self.scheduler.submit_all(self.guarantees.guarantee_global_position_shared__action_child_b__position_trigger_pos)
-        self.trigger_global_position_shared__action_child_b__action_parent()
-
-    def init_execution_trigger_global_position_shared__action_child_a(self):
-        self.execution_trigger_global_position_shared__action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_global_position_shared__action_child_b(self):
         self.execution_trigger_global_position_shared__action_child_b = local.my_domain_com.my_lib.child_b.ChildBExecution(
             self.scheduler,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_global_position_shared__action_child_b__position_trigger_pos)
+        self.trigger_global_position_shared__action_child_b__action_parent()
 
     def trigger_global_position_shared__action_child_a__action_parent(self):
         if not self.join_for_trigger_global_position_shared__action_child_a__action_parent.arrive():

@@ -49,13 +49,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_global_position_a__action_act()
-        self.trigger_global_position_a__action_act__action_parent()
-
-    def init_execution_trigger_global_position_a__action_act(self):
         self.execution_trigger_global_position_a__action_act = local.my_domain_com.my_lib.act.ActExecution(
             self.scheduler,
         )
+        self.trigger_global_position_a__action_act__action_parent()
 
     def trigger_global_position_a__action_act__action_parent(self):
         if not self.join_for_trigger_global_position_a__action_act__action_parent.arrive():

@@ -63,7 +63,13 @@ class CallerExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_callee()
+        self.execution_trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.callee.Callee
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_callee,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_action_callee__position_run)
         self.trigger_action_callee__when_empty_global_position_implied()
 
@@ -72,16 +78,6 @@ class CallerExecution:
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
-
-    def init_execution_trigger_action_callee(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
-        )
-        self.execution_trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_callee,
-        )
 
     def trigger_action_callee__when_empty_global_position_implied(self):
         if not self.join_for_trigger_action_callee__when_empty_global_position_implied.arrive():

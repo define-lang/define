@@ -56,7 +56,11 @@ class TestExecution:
             "/other::trigger_pos",
             1,
         )
-        self.init_execution_trigger_action_other()
+        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.scheduler,
+            self.trace_execution,
+            "other",
+        )
         self.trigger_action_other__action_parent()
 
     def create_position_local_item(self):
@@ -71,13 +75,6 @@ class TestExecution:
             self.trace_execution,
             "local_item",
             1,
-        )
-
-    def init_execution_trigger_action_other(self):
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.scheduler,
-            self.trace_execution,
-            "other",
         )
 
     def trigger_action_other__action_parent(self):

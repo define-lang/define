@@ -66,20 +66,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_middle()
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_global_position_destination)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_inner__position_trigger_pos)
-        self.trigger_action_middle__for_empty_rule_global_position_input()
-
-    def init_execution_trigger_action_middle(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
         self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
             self.scheduler,
             self.guarantees.trigger_action_middle,
         )
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_global_position_destination)
+        self.scheduler.submit(self.trigger_action_middle__when_empty_action_inner__position_trigger_pos)
+        self.trigger_action_middle__for_empty_rule_global_position_input()
 
     def trigger_action_middle__for_empty_rule_global_position_destination(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_global_position_destination.arrive():

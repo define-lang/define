@@ -43,17 +43,14 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_other()
+        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.scheduler,
+        )
         self.trigger_action_other__action_parent()
 
     def create_position_local_item(self):
         self.local_position_local_item.create_particle()
         self.local_position_local_item.destroy_particle()
-
-    def init_execution_trigger_action_other(self):
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.scheduler,
-        )
 
     def trigger_action_other__action_parent(self):
         self.execution_trigger_action_other.accept_action_parent()

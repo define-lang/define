@@ -50,7 +50,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_do_thing()
+        self.execution_trigger_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingExecution(
+            self.scheduler,
+        )
         self.trigger_action_do_thing__action_parent()
 
     def create_action_a_b_c_the_lib_do_thing__position_trigger_pos(self):
@@ -59,7 +61,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_a_b_c_the_lib_do_thing()
+        self.execution_trigger_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingExecution(
+            self.scheduler,
+        )
         self.trigger_action_a_b_c_the_lib_do_thing__action_parent()
 
     def create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos(self):
@@ -68,7 +72,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_mv_a_b_c_the_lib_do_thing()
+        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingExecution(
+            self.scheduler,
+        )
         self.trigger_action_mv_a_b_c_the_lib_do_thing__action_parent()
 
     def create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2(self):
@@ -77,28 +83,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_a_b_c_the_lib_do_thing_2()
-        self.trigger_action_a_b_c_the_lib_do_thing_2__action_parent()
-
-    def init_execution_trigger_action_do_thing(self):
-        self.execution_trigger_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_a_b_c_the_lib_do_thing(self):
-        self.execution_trigger_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_mv_a_b_c_the_lib_do_thing(self):
-        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_a_b_c_the_lib_do_thing_2(self):
         self.execution_trigger_action_a_b_c_the_lib_do_thing_2 = local.a_b_c__.the_lib.do_thing.DoThingExecution(
             self.scheduler,
         )
+        self.trigger_action_a_b_c_the_lib_do_thing_2__action_parent()
 
     def trigger_action_do_thing__action_parent(self):
         self.execution_trigger_action_do_thing.accept_action_parent()

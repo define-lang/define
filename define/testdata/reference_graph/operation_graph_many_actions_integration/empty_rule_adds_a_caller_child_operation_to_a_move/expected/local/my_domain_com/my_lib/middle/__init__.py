@@ -76,7 +76,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_source__action_child()
+        self.execution_trigger_position_source__action_child = local.my_domain_com.my_lib.child.ChildExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.move_position_source_to_position_holder)
         self.trigger_position_source__action_child__action_parent()
 
@@ -91,11 +93,6 @@ class MiddleExecution:
             )
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
-
-    def init_execution_trigger_position_source__action_child(self):
-        self.execution_trigger_position_source__action_child = local.my_domain_com.my_lib.child.ChildExecution(
-            self.scheduler,
-        )
 
     def trigger_position_source__action_child__action_parent(self):
         if not self.join_for_trigger_position_source__action_child__action_parent.arrive():

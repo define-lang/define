@@ -57,19 +57,15 @@ class CallFillExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_fill_item()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_fill_item__position_trigger_pos)
-        self.trigger_action_fill_item__when_empty_global_position_item()
-
-    def init_execution_trigger_action_fill_item(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_item.FillItem
-        )
         self.execution_trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.fill_item.FillItem
+            ),
             self.scheduler,
             self.guarantees.trigger_action_fill_item,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_fill_item__position_trigger_pos)
+        self.trigger_action_fill_item__when_empty_global_position_item()
 
     def trigger_action_fill_item__when_empty_global_position_item(self):
         if not self.join_for_trigger_action_fill_item__when_empty_global_position_item.arrive():

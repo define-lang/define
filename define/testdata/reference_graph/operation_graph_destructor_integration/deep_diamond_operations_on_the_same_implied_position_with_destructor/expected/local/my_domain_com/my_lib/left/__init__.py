@@ -57,19 +57,15 @@ class LeftExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_left_child()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_left_child__position_trigger_pos)
-        self.trigger_action_left_child__when_empty_global_position_marker()
-
-    def init_execution_trigger_action_left_child(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.left_child.LeftChild
-        )
         self.execution_trigger_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left_child.LeftChild
+            ),
             self.scheduler,
             self.guarantees.trigger_action_left_child,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_left_child__position_trigger_pos)
+        self.trigger_action_left_child__when_empty_global_position_marker()
 
     def trigger_action_left_child__when_empty_global_position_marker(self):
         if not self.join_for_trigger_action_left_child__when_empty_global_position_marker.arrive():

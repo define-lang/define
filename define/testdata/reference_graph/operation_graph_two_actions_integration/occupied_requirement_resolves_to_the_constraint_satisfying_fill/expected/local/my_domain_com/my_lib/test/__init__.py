@@ -149,7 +149,15 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_action_holder__action_move()
+        self.execution_trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveExecution(
+            self.action.get_interface_position(
+                "position<action_holder>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.move.Move
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_action_holder__action_move,
+        )
         self.trigger_position_action_holder__action_move__for_empty_rule_position_input()
 
     def move_position_action_holder__action_move__position_output_to_position_dest(self):
@@ -169,18 +177,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-
-    def init_execution_trigger_position_action_holder__action_move(self):
-        action = self.action.get_interface_position(
-            "position<action_holder>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.move.Move
-        )
-        self.execution_trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_action_holder__action_move,
-        )
 
     def trigger_position_action_holder__action_move__for_empty_rule_position_input(self):
         if not self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input.arrive():

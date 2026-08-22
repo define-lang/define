@@ -84,20 +84,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_mover()
-        self.scheduler.submit(self.trigger_action_mover__when_empty_action_helper__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_mover__for_empty_rule_global_position_slot)
-        self.trigger_action_mover__when_empty_global_position_destination()
-
-    def init_execution_trigger_action_mover(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
-        )
         self.execution_trigger_action_mover = local.my_domain_com.my_lib.mover.MoverExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.mover.Mover
+            ),
             self.scheduler,
             self.guarantees.trigger_action_mover,
         )
+        self.scheduler.submit(self.trigger_action_mover__when_empty_action_helper__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_mover__for_empty_rule_global_position_slot)
+        self.trigger_action_mover__when_empty_global_position_destination()
 
     def trigger_action_mover__when_empty_action_helper__position_trigger_pos(self):
         self.execution_trigger_action_mover.accept_when_empty_action_helper__position_trigger_pos()

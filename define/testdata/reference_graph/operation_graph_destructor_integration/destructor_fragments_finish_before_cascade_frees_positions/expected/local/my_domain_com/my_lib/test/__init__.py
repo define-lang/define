@@ -57,7 +57,13 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_execution_trigger_position_box__action_destruct()
+        self.execution_trigger_position_box__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.destruct.Destruct
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_destruct,
+        )
         self.scheduler.submit(self.create_position_box__global_position_marker_a)
         self.scheduler.submit(self.create_position_box__global_position_marker_b)
         self.scheduler.submit(self.trigger_position_box__action_destruct__for_empty_rule_global_position_marker_a)
@@ -91,16 +97,6 @@ class TestExecution:
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_destruct(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.destruct.Destruct
-        )
-        self.execution_trigger_position_box__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_destruct,
-        )
 
     def trigger_position_box__action_destruct__for_empty_rule_global_position_marker_a(self):
         if not self.join_for_trigger_position_box__action_destruct__for_empty_rule_global_position_marker_a.arrive():

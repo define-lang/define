@@ -89,16 +89,6 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.init_execution_trigger_action_destroyer()
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_run)
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_run)
-        self.trigger_action_destroyer__for_empty_rule_position_run()
-
-    def destroy_action_destroyer__position_run__global_position_run__global_position_child(self):
-        self.destruction_position_action_destroyer__position_run__global_position_run__global_position_child.destroy_particle()
-        self.destruction_connection_trigger_action_destroyer.complete()
-
-    def init_execution_trigger_action_destroyer(self):
         self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
             self.scheduler,
             local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run__global_position_run,
@@ -108,15 +98,21 @@ class TestExecution:
         self.trigger_action_destroyer_destruction_connections = literal.DestructionConnections(
             self.destruction_connection_trigger_action_destroyer,
         )
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
         self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
             self.scheduler,
             self.guarantees.trigger_action_destroyer,
             destruction_connections=self.trigger_action_destroyer_destruction_connections,
         )
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_run)
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_run)
+        self.trigger_action_destroyer__for_empty_rule_position_run()
+
+    def destroy_action_destroyer__position_run__global_position_run__global_position_child(self):
+        self.destruction_position_action_destroyer__position_run__global_position_run__global_position_child.destroy_particle()
+        self.destruction_connection_trigger_action_destroyer.complete()
 
     def trigger_action_destroyer__for_empty_rule_position_run__global_position_run(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_run.arrive():

@@ -75,7 +75,14 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.init_execution_trigger_action_destroyer()
+        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_destroyer,
+            destruction_connections=self.destruction_connections,
+        )
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run)
         self.scheduler.submit_all(self.guarantees.guarantee_position_run)
         self.trigger_action_destroyer__for_empty_rule_position_run()
@@ -94,30 +101,15 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.init_execution_trigger_action_destroyer_2()
-        self.scheduler.submit(self.trigger_action_destroyer_2__for_empty_rule_position_run)
-        self.trigger_action_destroyer_2__for_empty_rule_position_run()
-
-    def init_execution_trigger_action_destroyer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
-        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_destroyer,
-            destruction_connections=self.destruction_connections,
-        )
-
-    def init_execution_trigger_action_destroyer_2(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
         self.execution_trigger_action_destroyer_2 = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
             self.scheduler,
             self.guarantees.trigger_action_destroyer_2,
         )
+        self.scheduler.submit(self.trigger_action_destroyer_2__for_empty_rule_position_run)
+        self.trigger_action_destroyer_2__for_empty_rule_position_run()
 
     def trigger_action_destroyer__for_empty_rule_position_run(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_run.arrive():

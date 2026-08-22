@@ -85,10 +85,42 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_construct_a()
-        self.init_execution_trigger_position_box__action_construct_b()
-        self.init_execution_trigger_position_box__action_destruct_b()
-        self.init_execution_trigger_position_box__action_destruct_a()
+        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct_a.ConstructA
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_construct_a,
+        )
+        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct_b.ConstructB
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_construct_b,
+        )
+        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.destruct_b.DestructB
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_destruct_b,
+        )
+        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.destruct_a.DestructA
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_destruct_a,
+        )
         self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker)
         self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker)
         self.scheduler.submit(self.trigger_position_box__action_construct_b__for_empty_rule_global_position_marker)
@@ -104,54 +136,6 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-
-    def init_execution_trigger_position_box__action_construct_a(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct_a.ConstructA
-        )
-        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_construct_a,
-        )
-
-    def init_execution_trigger_position_box__action_construct_b(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct_b.ConstructB
-        )
-        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_construct_b,
-        )
-
-    def init_execution_trigger_position_box__action_destruct_b(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destruct_b.DestructB
-        )
-        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_destruct_b,
-        )
-
-    def init_execution_trigger_position_box__action_destruct_a(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destruct_a.DestructA
-        )
-        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_destruct_a,
-        )
 
     def trigger_position_box__action_construct_a__when_empty_global_position_marker(self):
         if not self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker.arrive():

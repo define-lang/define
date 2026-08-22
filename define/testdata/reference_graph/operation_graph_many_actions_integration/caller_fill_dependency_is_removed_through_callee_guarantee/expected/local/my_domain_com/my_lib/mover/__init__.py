@@ -69,7 +69,13 @@ class MoverExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_helper()
+        self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.helper.Helper
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_helper,
+        )
         self.scheduler.submit_all(self.guarantees.guarantee_action_helper__position_trigger_pos)
         self.trigger_action_helper__for_empty_rule_global_position_slot()
 
@@ -84,16 +90,6 @@ class MoverExecution:
             )
         )
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_out__move__global_position_destination)
-
-    def init_execution_trigger_action_helper(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
-        )
-        self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_helper,
-        )
 
     def trigger_action_helper__for_empty_rule_global_position_slot(self):
         if not self.join_for_trigger_action_helper__for_empty_rule_global_position_slot.arrive():

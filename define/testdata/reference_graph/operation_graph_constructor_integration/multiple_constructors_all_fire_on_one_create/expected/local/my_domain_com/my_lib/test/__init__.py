@@ -62,36 +62,28 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_construct_a()
-        self.init_execution_trigger_position_box__action_construct_b()
+        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct_a.ConstructA
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_construct_a,
+        )
+        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.construct_b.ConstructB
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_construct_b,
+        )
         self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker_a)
         self.scheduler.submit(self.trigger_position_box__action_construct_b__when_empty_global_position_marker_b)
         self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker_a)
         self.trigger_position_box__action_construct_b__when_empty_global_position_marker_b()
-
-    def init_execution_trigger_position_box__action_construct_a(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct_a.ConstructA
-        )
-        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_construct_a,
-        )
-
-    def init_execution_trigger_position_box__action_construct_b(self):
-        action = self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.construct_b.ConstructB
-        )
-        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_construct_b,
-        )
 
     def trigger_position_box__action_construct_a__when_empty_global_position_marker_a(self):
         if not self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker_a.arrive():

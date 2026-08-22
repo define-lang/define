@@ -51,7 +51,9 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.init_execution_trigger_position_run__action_destruct()
+        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.trigger_position_run__action_destruct__action_parent)
         self.trigger_position_run__action_destruct__action_parent()
 
@@ -63,11 +65,6 @@ class DestroyerExecution:
             "position<run>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def init_execution_trigger_position_run__action_destruct(self):
-        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
-            self.scheduler,
-        )
 
     def trigger_position_run__action_destruct__action_parent(self):
         if not self.join_for_trigger_position_run__action_destruct__action_parent.arrive():

@@ -85,21 +85,17 @@ class TestExecution:
         ).get_interface_position(
             "position<in>"
         ).create_particle()
-        self.init_execution_trigger_position_gw__action_worker()
-        self.scheduler.submit(self.trigger_position_gw__action_worker__for_empty_rule_position_in)
-        self.trigger_position_gw__action_worker__for_empty_rule_position_in()
-
-    def init_execution_trigger_position_gw__action_worker(self):
-        action = self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        )
         self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            action,
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
             self.scheduler,
             self.guarantees.trigger_position_gw__action_worker,
         )
+        self.scheduler.submit(self.trigger_position_gw__action_worker__for_empty_rule_position_in)
+        self.trigger_position_gw__action_worker__for_empty_rule_position_in()
 
     def trigger_position_gw__action_worker__for_empty_rule_position_in(self):
         if not self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in.arrive():

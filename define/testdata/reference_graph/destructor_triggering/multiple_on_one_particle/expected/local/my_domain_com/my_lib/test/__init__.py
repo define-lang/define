@@ -40,8 +40,12 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_execution_trigger_position_box__action_destructor_b()
-        self.init_execution_trigger_position_box__action_destructor_a()
+        self.execution_trigger_position_box__action_destructor_b = local.my_domain_com.my_lib.destructor_b.DestructorBExecution(
+            self.scheduler,
+        )
+        self.execution_trigger_position_box__action_destructor_a = local.my_domain_com.my_lib.destructor_a.DestructorAExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__action_destructor_b__action_parent)
         self.scheduler.submit(self.trigger_position_box__action_destructor_a__action_parent)
@@ -50,16 +54,6 @@ class TestExecution:
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_destructor_b(self):
-        self.execution_trigger_position_box__action_destructor_b = local.my_domain_com.my_lib.destructor_b.DestructorBExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_position_box__action_destructor_a(self):
-        self.execution_trigger_position_box__action_destructor_a = local.my_domain_com.my_lib.destructor_a.DestructorAExecution(
-            self.scheduler,
-        )
 
     def trigger_position_box__action_destructor_b__action_parent(self):
         if not self.join_for_trigger_position_box__action_destructor_b__action_parent.arrive():

@@ -108,22 +108,18 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_holder__action_inner()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_holder__action_inner__position_trigger_pos)
-        self.trigger_position_holder__action_inner__for_empty_rule_position_item()
-
-    def init_execution_trigger_position_holder__action_inner(self):
-        action = self.action.get_interface_position(
-            "position<holder>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
         self.execution_trigger_position_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
+            self.action.get_interface_position(
+                "position<holder>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
             self.scheduler,
             self.guarantees.trigger_position_holder__action_inner,
             destruction_connections=self.destruction_connections,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_position_holder__action_inner__position_trigger_pos)
+        self.trigger_position_holder__action_inner__for_empty_rule_position_item()
 
     def trigger_position_holder__action_inner__for_empty_rule_position_item(self):
         if not self.join_for_trigger_position_holder__action_inner__for_empty_rule_position_item.arrive():

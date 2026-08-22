@@ -65,18 +65,14 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_triggered()
-        self.trigger_action_triggered__for_empty_rule_position_input__global_position_child()
-
-    def init_execution_trigger_action_triggered(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
-        )
         self.execution_trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.triggered.Triggered
+            ),
             self.scheduler,
             self.guarantees.trigger_action_triggered,
         )
+        self.trigger_action_triggered__for_empty_rule_position_input__global_position_child()
 
     def trigger_action_triggered__for_empty_rule_position_input__global_position_child(self):
         if not self.join_for_trigger_action_triggered__for_empty_rule_position_input__global_position_child.arrive():

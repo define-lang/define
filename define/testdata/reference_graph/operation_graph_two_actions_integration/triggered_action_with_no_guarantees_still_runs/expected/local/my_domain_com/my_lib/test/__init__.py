@@ -64,18 +64,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_gw__action_worker()
+        self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.scheduler,
+        )
         self.trigger_position_gw__action_worker__action_parent()
 
     def create_position_note(self):
         self.action.get_interface_position(
             "position<note>"
         ).create_particle()
-
-    def init_execution_trigger_position_gw__action_worker(self):
-        self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.scheduler,
-        )
 
     def trigger_position_gw__action_worker__action_parent(self):
         if not self.join_for_trigger_position_gw__action_worker__action_parent.arrive():

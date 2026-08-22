@@ -1,9 +1,10 @@
 {% from "action_statements.j2" import action_statements %}
 {% from "method_invocation.j2" import invoke_method %}
+{% from "triggered_action_execution.j2" import initialize_action_execution %}
 {% macro action_fragment_body(fragment) %}
 {{ action_statements(fragment.statements) -}}
-        {% for init_method_name in fragment.triggered_action_successor_init_method_names %}
-        self.{{ init_method_name }}()
+        {% for action_execution in fragment.triggered_action_successors %}
+{{ initialize_action_execution(action_execution) -}}
         {% endfor %}
         {% for successor_method_name in fragment.successor_fragment_method_names %}
             {% set has_later = not loop.last or fragment.callee_binding_join_method_names_that_depend_on_fragment or fragment.guarantee_publication_names or fragment.triggered_action_execution_callee_binding_join_method_names or fragment.destruction_connection_names_to_complete %}

@@ -99,7 +99,13 @@ class CallerAExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_destroyer_particle__action_destroyer()
+        self.execution_trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.local_position_destroyer_particle.particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_destroyer_particle__action_destroyer,
+        )
         self.scheduler.submit(self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker)
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target)
@@ -117,16 +123,6 @@ class CallerAExecution:
         if not self.join_for_destroy_position_destroyer_particle.arrive():
             return
         self.local_position_destroyer_particle.destroy_particle()
-
-    def init_execution_trigger_position_destroyer_particle__action_destroyer(self):
-        action = self.local_position_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
-        self.execution_trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_destroyer_particle__action_destroyer,
-        )
 
     def trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker(self):
         if not self.join_for_trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker.arrive():

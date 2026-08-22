@@ -56,7 +56,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_left()
+        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left.Left
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_left,
+        )
         self.trigger_action_left__when_empty_action_shared__position_trigger()
 
     def create_action_right__position_trigger(self):
@@ -65,28 +71,14 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_right()
-        self.trigger_action_right__when_empty_action_shared__position_trigger()
-
-    def init_execution_trigger_action_left(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
-        )
-        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_left,
-        )
-
-    def init_execution_trigger_action_right(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.right.Right
-        )
         self.execution_trigger_action_right = local.my_domain_com.my_lib.right.RightExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.right.Right
+            ),
             self.scheduler,
             self.guarantees.trigger_action_right,
         )
+        self.trigger_action_right__when_empty_action_shared__position_trigger()
 
     def trigger_action_left__when_empty_action_shared__position_trigger(self):
         self.execution_trigger_action_left.accept_when_empty_action_shared__position_trigger()

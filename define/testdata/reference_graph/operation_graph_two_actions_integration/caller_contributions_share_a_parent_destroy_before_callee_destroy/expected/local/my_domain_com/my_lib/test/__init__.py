@@ -102,7 +102,24 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_destroyer()
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
+            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_parent,
+            1,
+            self.destroy_action_destroyer__position_parent__global_position_branch__global_position_b,
+            self.destroy_action_destroyer__position_parent__global_position_branch__global_position_a,
+        )
+        self.trigger_action_destroyer_destruction_connections = literal.DestructionConnections(
+            self.destruction_connection_trigger_action_destroyer,
+        )
+        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_destroyer,
+            destruction_connections=self.trigger_action_destroyer_destruction_connections,
+        )
         self.trigger_action_destroyer__for_empty_rule_position_parent()
 
     def destroy_action_destroyer__position_parent__global_position_branch__global_position_b(self):
@@ -118,27 +135,6 @@ class TestExecution:
             return
         self.destruction_position_action_destroyer__position_parent__global_position_branch.destroy_particle()
         self.destruction_connection_trigger_action_destroyer.complete()
-
-    def init_execution_trigger_action_destroyer(self):
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
-            local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_parent,
-            1,
-            self.destroy_action_destroyer__position_parent__global_position_branch__global_position_b,
-            self.destroy_action_destroyer__position_parent__global_position_branch__global_position_a,
-        )
-        self.trigger_action_destroyer_destruction_connections = literal.DestructionConnections(
-            self.destruction_connection_trigger_action_destroyer,
-        )
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
-        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_destroyer,
-            destruction_connections=self.trigger_action_destroyer_destruction_connections,
-        )
 
     def trigger_action_destroyer__for_empty_rule_position_parent(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_parent.arrive():

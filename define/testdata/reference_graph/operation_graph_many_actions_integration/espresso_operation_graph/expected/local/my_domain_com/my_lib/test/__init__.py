@@ -83,7 +83,13 @@ class TestExecution:
         ).get_interface_position(
             "position<beans>"
         ).create_particle()
-        self.init_execution_trigger_position_station__action_grind()
+        self.execution_trigger_position_station__action_grind = local.my_domain_com.my_lib.grind.GrindExecution(
+            self.local_position_station.particle.get_action(
+                local.my_domain_com.my_lib.grind.Grind
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_station__action_grind,
+        )
         self.scheduler.submit(self.trigger_position_station__action_grind__for_empty_rule_position_beans)
         self.trigger_position_station__action_grind__for_empty_rule_position_beans()
 
@@ -93,7 +99,13 @@ class TestExecution:
         ).get_interface_position(
             "position<cold_water>"
         ).create_particle()
-        self.init_execution_trigger_position_station__action_heat()
+        self.execution_trigger_position_station__action_heat = local.my_domain_com.my_lib.heat.HeatExecution(
+            self.local_position_station.particle.get_action(
+                local.my_domain_com.my_lib.heat.Heat
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_station__action_heat,
+        )
         self.scheduler.submit(self.trigger_position_station__action_heat__for_empty_rule_position_cold_water)
         self.trigger_position_station__action_heat__for_empty_rule_position_cold_water()
 
@@ -123,7 +135,13 @@ class TestExecution:
                 "position<water>"
             )
         )
-        self.init_execution_trigger_position_station__action_brew()
+        self.execution_trigger_position_station__action_brew = local.my_domain_com.my_lib.brew.BrewExecution(
+            self.local_position_station.particle.get_action(
+                local.my_domain_com.my_lib.brew.Brew
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_station__action_brew,
+        )
         self.scheduler.submit(self.trigger_position_station__action_brew__for_empty_rule_position_water)
         self.scheduler.submit(self.trigger_position_station__action_brew__when_empty_position_cup)
         self.scheduler.submit(self.trigger_position_station__action_brew__for_empty_rule_position_water)
@@ -149,36 +167,6 @@ class TestExecution:
         if not self.join_for_destroy_position_station.arrive():
             return
         self.local_position_station.destroy_particle()
-
-    def init_execution_trigger_position_station__action_grind(self):
-        action = self.local_position_station.particle.get_action(
-            local.my_domain_com.my_lib.grind.Grind
-        )
-        self.execution_trigger_position_station__action_grind = local.my_domain_com.my_lib.grind.GrindExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_station__action_grind,
-        )
-
-    def init_execution_trigger_position_station__action_heat(self):
-        action = self.local_position_station.particle.get_action(
-            local.my_domain_com.my_lib.heat.Heat
-        )
-        self.execution_trigger_position_station__action_heat = local.my_domain_com.my_lib.heat.HeatExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_station__action_heat,
-        )
-
-    def init_execution_trigger_position_station__action_brew(self):
-        action = self.local_position_station.particle.get_action(
-            local.my_domain_com.my_lib.brew.Brew
-        )
-        self.execution_trigger_position_station__action_brew = local.my_domain_com.my_lib.brew.BrewExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_station__action_brew,
-        )
 
     def trigger_position_station__action_grind__for_empty_rule_position_beans(self):
         if not self.join_for_trigger_position_station__action_grind__for_empty_rule_position_beans.arrive():

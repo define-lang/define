@@ -74,7 +74,14 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.init_execution_trigger_action_destroyer()
+        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_destroyer,
+            destruction_connections=self.destruction_connections,
+        )
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_a)
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_b)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_run__global_position_maybe_empty)
@@ -85,17 +92,6 @@ class MiddleExecution:
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_run__global_position_maybe_empty)
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run)
         self.trigger_action_destroyer__when_occupied_position_run()
-
-    def init_execution_trigger_action_destroyer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
-        )
-        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_destroyer,
-            destruction_connections=self.destruction_connections,
-        )
 
     def trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_a(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_a.arrive():

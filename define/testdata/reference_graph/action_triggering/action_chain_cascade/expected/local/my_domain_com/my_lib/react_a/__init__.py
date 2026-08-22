@@ -76,7 +76,15 @@ class ReactAExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_position_result__action_final()
+        self.execution_trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalExecution(
+            self.action.get_interface_position(
+                "position<result>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.final.Final
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_result__action_final,
+        )
         self.scheduler.submit(self.trigger_position_result__action_final__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
         self.trigger_position_result__action_final__for_empty_rule_position_trigger()
@@ -89,18 +97,6 @@ class ReactAExecution:
             "position<trigger>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
-
-    def init_execution_trigger_position_result__action_final(self):
-        action = self.action.get_interface_position(
-            "position<result>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.final.Final
-        )
-        self.execution_trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_result__action_final,
-        )
 
     def trigger_position_result__action_final__action_parent(self):
         if not self.join_for_trigger_position_result__action_final__action_parent.arrive():

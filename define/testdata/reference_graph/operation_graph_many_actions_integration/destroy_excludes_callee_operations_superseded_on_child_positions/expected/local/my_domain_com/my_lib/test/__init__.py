@@ -53,7 +53,13 @@ class TestExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_worker()
+        self.execution_trigger_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_worker,
+        )
         self.scheduler.submit(self.trigger_position_box__action_worker__for_empty_rule_position_input)
         self.trigger_position_box__action_worker__for_empty_rule_position_input()
 
@@ -64,16 +70,6 @@ class TestExecution:
             "position<result>"
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_worker(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        )
-        self.execution_trigger_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_worker,
-        )
 
     def trigger_position_box__action_worker__for_empty_rule_position_input(self):
         if not self.join_for_trigger_position_box__action_worker__for_empty_rule_position_input.arrive():

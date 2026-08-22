@@ -105,7 +105,13 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_gw__action_inner()
+        self.execution_trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.local_position_gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_gw__action_inner,
+        )
         self.scheduler.submit(self.destroy_position_gw__action_inner__position_run)
         self.scheduler.submit(self.trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_a)
         self.trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_b()
@@ -178,16 +184,6 @@ class MiddleExecution:
         if not self.join_for_destroy_position_gw.arrive():
             return
         self.local_position_gw.destroy_particle()
-
-    def init_execution_trigger_position_gw__action_inner(self):
-        action = self.local_position_gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
-        self.execution_trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_gw__action_inner,
-        )
 
     def trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_a(self):
         if not self.join_for_trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_a.arrive():

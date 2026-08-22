@@ -56,7 +56,13 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_middle_a()
+        self.execution_trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_a.MiddleA
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_middle_a,
+        )
         self.scheduler.submit(self.trigger_action_middle_a__action_parent)
         self.trigger_action_middle_a__when_empty_action_destroyer__position_run()
 
@@ -66,29 +72,15 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_middle_b()
-        self.scheduler.submit(self.trigger_action_middle_b__action_parent)
-        self.trigger_action_middle_b__when_empty_action_destroyer__position_run()
-
-    def init_execution_trigger_action_middle_a(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_a.MiddleA
-        )
-        self.execution_trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_middle_a,
-        )
-
-    def init_execution_trigger_action_middle_b(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_b.MiddleB
-        )
         self.execution_trigger_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_b.MiddleB
+            ),
             self.scheduler,
             self.guarantees.trigger_action_middle_b,
         )
+        self.scheduler.submit(self.trigger_action_middle_b__action_parent)
+        self.trigger_action_middle_b__when_empty_action_destroyer__position_run()
 
     def trigger_action_middle_a__action_parent(self):
         self.execution_trigger_action_middle_a.accept_action_parent()

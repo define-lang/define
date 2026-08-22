@@ -52,7 +52,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_act()
+        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.act.Act
+            ),
+            self.scheduler,
+            self.guarantees.trigger_action_act,
+        )
         self.scheduler.submit(self.trigger_action_act__when_empty_position_trigger_pos__global_position_inner)
         self.scheduler.submit(self.trigger_action_act__action_parent)
         self.trigger_action_act__when_empty_position_trigger_pos__global_position_inner()
@@ -65,16 +71,6 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).create_particle()
-
-    def init_execution_trigger_action_act(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
-        )
-        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_action_act,
-        )
 
     def trigger_action_act__action_parent(self):
         self.execution_trigger_action_act.accept_action_parent()

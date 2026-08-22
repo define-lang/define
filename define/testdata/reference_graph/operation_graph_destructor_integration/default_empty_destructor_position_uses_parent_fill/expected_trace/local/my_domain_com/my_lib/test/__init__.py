@@ -103,24 +103,20 @@ class TestExecution:
             "carrier::/callee::trigger_pos",
             1,
         )
-        self.init_execution_trigger_position_carrier__action_callee()
-        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
-        self.scheduler.submit(self.trigger_position_carrier__action_callee__for_empty_rule_position_src)
-        self.trigger_position_carrier__action_callee__when_occupied_position_src()
-
-    def init_execution_trigger_position_carrier__action_callee(self):
-        action = self.action.get_interface_position(
-            "position<carrier>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
-        )
         self.execution_trigger_position_carrier__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
-            action,
+            self.action.get_interface_position(
+                "position<carrier>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.callee.Callee
+            ),
             self.scheduler,
             self.trace_execution,
             "callee",
             self.guarantees.trigger_position_carrier__action_callee,
         )
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
+        self.scheduler.submit(self.trigger_position_carrier__action_callee__for_empty_rule_position_src)
+        self.trigger_position_carrier__action_callee__when_occupied_position_src()
 
     def trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker(self):
         if not self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker.arrive():

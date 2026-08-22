@@ -65,20 +65,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_act()
-        self.scheduler.submit(self.trigger_action_act__action_parent)
-        self.scheduler.submit(self.trigger_action_act__when_empty_position_iface_dest)
-        self.trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
-
-    def init_execution_trigger_action_act(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
-        )
         self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.act.Act
+            ),
             self.scheduler,
             self.guarantees.trigger_action_act,
         )
+        self.scheduler.submit(self.trigger_action_act__action_parent)
+        self.scheduler.submit(self.trigger_action_act__when_empty_position_iface_dest)
+        self.trigger_action_act__when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest()
 
     def trigger_action_act__action_parent(self):
         self.execution_trigger_action_act.accept_action_parent()

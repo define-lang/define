@@ -84,22 +84,18 @@ class OuterExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_middle_iface__action_middle()
-        self.scheduler.submit_all(self.guarantees.guarantee_position_middle_iface__action_middle__position_run)
-        self.scheduler.submit(self.trigger_position_middle_iface__action_middle__when_empty_position_inner_iface__action_inner__position_run)
-        self.trigger_position_middle_iface__action_middle__for_empty_rule_position_inner_iface__action_inner__position_data()
-
-    def init_execution_trigger_position_middle_iface__action_middle(self):
-        action = self.action.get_interface_position(
-            "position<middle_iface>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
         self.execution_trigger_position_middle_iface__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
+            self.action.get_interface_position(
+                "position<middle_iface>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
             self.scheduler,
             self.guarantees.trigger_position_middle_iface__action_middle,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_position_middle_iface__action_middle__position_run)
+        self.scheduler.submit(self.trigger_position_middle_iface__action_middle__when_empty_position_inner_iface__action_inner__position_run)
+        self.trigger_position_middle_iface__action_middle__for_empty_rule_position_inner_iface__action_inner__position_data()
 
     def trigger_position_middle_iface__action_middle__when_empty_position_inner_iface__action_inner__position_run(self):
         if not self.join_for_trigger_position_middle_iface__action_middle__when_empty_position_inner_iface__action_inner__position_run.arrive():

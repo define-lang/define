@@ -64,7 +64,15 @@ class DestroyerExecution:
         self.destroy_position_target()
 
     def accept_when_occupied_position_target(self):
-        self.init_execution_trigger_position_target__action_known_destructor()
+        self.execution_trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
+            self.action.get_interface_position(
+                "position<target>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.known_destructor.KnownDestructor
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_target__action_known_destructor,
+        )
         self.trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker()
 
     def destroy_position_target__global_position_marker(self):
@@ -88,18 +96,6 @@ class DestroyerExecution:
             "position<target>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_target)
-
-    def init_execution_trigger_position_target__action_known_destructor(self):
-        action = self.action.get_interface_position(
-            "position<target>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.known_destructor.KnownDestructor
-        )
-        self.execution_trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_target__action_known_destructor,
-        )
 
     def trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker(self):
         if not self.join_for_trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker.arrive():

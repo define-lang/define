@@ -46,7 +46,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_class_var()
+        self.execution_trigger_action_class_var = local.my_domain_com.my_lib.class_var.ClassVarExecution(
+            self.scheduler,
+        )
         self.trigger_action_class_var__action_parent()
 
     def create_action_class_var__position_trigger_pos_2(self):
@@ -55,7 +57,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_class_var_2()
+        self.execution_trigger_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVarExecution(
+            self.scheduler,
+        )
         self.trigger_action_class_var_2__action_parent()
 
     def create_action_type_error__position_pp(self):
@@ -64,23 +68,10 @@ class TestExecution:
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
-        self.init_execution_trigger_action_type_error()
-        self.trigger_action_type_error__action_parent()
-
-    def init_execution_trigger_action_class_var(self):
-        self.execution_trigger_action_class_var = local.my_domain_com.my_lib.class_var.ClassVarExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_class_var_2(self):
-        self.execution_trigger_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVarExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_action_type_error(self):
         self.execution_trigger_action_type_error = local.my_domain_com.my_lib.type_error.TypeErrorExecution(
             self.scheduler,
         )
+        self.trigger_action_type_error__action_parent()
 
     def trigger_action_class_var__action_parent(self):
         self.execution_trigger_action_class_var.accept_action_parent()

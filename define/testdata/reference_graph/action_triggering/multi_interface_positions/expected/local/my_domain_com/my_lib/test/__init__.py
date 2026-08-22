@@ -57,20 +57,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_process()
-        self.scheduler.submit(self.trigger_action_process__action_parent)
-        self.scheduler.submit(self.trigger_action_process__for_empty_rule_position_input)
-        self.trigger_action_process__when_empty_position_config()
-
-    def init_execution_trigger_action_process(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.process.Process
-        )
         self.execution_trigger_action_process = local.my_domain_com.my_lib.process.ProcessExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.process.Process
+            ),
             self.scheduler,
             self.guarantees.trigger_action_process,
         )
+        self.scheduler.submit(self.trigger_action_process__action_parent)
+        self.scheduler.submit(self.trigger_action_process__for_empty_rule_position_input)
+        self.trigger_action_process__when_empty_position_config()
 
     def trigger_action_process__action_parent(self):
         self.execution_trigger_action_process.accept_action_parent()

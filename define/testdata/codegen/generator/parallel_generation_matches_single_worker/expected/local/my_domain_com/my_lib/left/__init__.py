@@ -53,19 +53,15 @@ class LeftExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_shared()
-        self.scheduler.submit(self.trigger_action_shared__for_empty_rule_position_trigger)
-        self.trigger_action_shared__for_empty_rule_position_trigger()
-
-    def init_execution_trigger_action_shared(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.shared.Shared
-        )
         self.execution_trigger_action_shared = local.my_domain_com.my_lib.shared.SharedExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.shared.Shared
+            ),
             self.scheduler,
             self.guarantees.trigger_action_shared,
         )
+        self.scheduler.submit(self.trigger_action_shared__for_empty_rule_position_trigger)
+        self.trigger_action_shared__for_empty_rule_position_trigger()
 
     def trigger_action_shared__for_empty_rule_position_trigger(self):
         if not self.join_for_trigger_action_shared__for_empty_rule_position_trigger.arrive():

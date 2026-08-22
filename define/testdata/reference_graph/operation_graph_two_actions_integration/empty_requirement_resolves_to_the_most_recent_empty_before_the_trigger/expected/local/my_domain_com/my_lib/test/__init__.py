@@ -99,20 +99,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_gw__action_filler()
-        self.trigger_position_gw__action_filler__when_empty_position_slot()
-
-    def init_execution_trigger_position_gw__action_filler(self):
-        action = self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
-        )
         self.execution_trigger_position_gw__action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
-            action,
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.filler.Filler
+            ),
             self.scheduler,
             self.guarantees.trigger_position_gw__action_filler,
         )
+        self.trigger_position_gw__action_filler__when_empty_position_slot()
 
     def trigger_position_gw__action_filler__when_empty_position_slot(self):
         if not self.join_for_trigger_position_gw__action_filler__when_empty_position_slot.arrive():

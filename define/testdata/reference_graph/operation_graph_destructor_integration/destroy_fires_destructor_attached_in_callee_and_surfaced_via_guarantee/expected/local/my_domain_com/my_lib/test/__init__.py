@@ -67,7 +67,13 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_make_thing()
+        self.execution_trigger_position_box__action_make_thing = local.my_domain_com.my_lib.make_thing.MakeThingExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.make_thing.MakeThing
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_box__action_make_thing,
+        )
         self.scheduler.submit(self.destroy_position_box__action_make_thing__position_run)
         self.scheduler.submit(self.trigger_position_box__action_make_thing__action_parent)
         self.trigger_position_box__action_make_thing__when_empty_position_result()
@@ -93,23 +99,10 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_execution_trigger_position_box__action_make_thing(self):
-        action = self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
-        )
-        self.execution_trigger_position_box__action_make_thing = local.my_domain_com.my_lib.make_thing.MakeThingExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_make_thing,
-        )
-
-    def init_execution_trigger_position_box__action_make_thing__position_result__action_destructor(self):
+    def trigger_position_box__action_make_thing__position_result__action_destructor(self):
         self.execution_trigger_position_box__action_make_thing__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
-
-    def trigger_position_box__action_make_thing__position_result__action_destructor(self):
-        self.init_execution_trigger_position_box__action_make_thing__position_result__action_destructor()
         self.trigger_position_box__action_make_thing__position_result__action_destructor__action_parent()
 
     def trigger_position_box__action_make_thing__action_parent(self):

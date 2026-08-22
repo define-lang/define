@@ -52,8 +52,12 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).create_particle()
-        self.init_execution_trigger_position_box__action_construct_a()
-        self.init_execution_trigger_position_box__action_construct_b()
+        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+            self.scheduler,
+        )
+        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__action_construct_a__action_parent)
         self.scheduler.submit(self.trigger_position_box__action_construct_b__action_parent)
@@ -64,16 +68,6 @@ class TestExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-
-    def init_execution_trigger_position_box__action_construct_a(self):
-        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
-            self.scheduler,
-        )
-
-    def init_execution_trigger_position_box__action_construct_b(self):
-        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            self.scheduler,
-        )
 
     def trigger_position_box__action_construct_a__action_parent(self):
         if not self.join_for_trigger_position_box__action_construct_a__action_parent.arrive():

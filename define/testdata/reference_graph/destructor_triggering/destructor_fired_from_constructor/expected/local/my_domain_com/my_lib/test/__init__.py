@@ -36,18 +36,15 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.init_execution_trigger_position_box__action_destructor()
+        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.destroy_position_box)
         self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
         self.trigger_position_box__action_destructor__action_parent()
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
-
-    def init_execution_trigger_position_box__action_destructor(self):
-        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            self.scheduler,
-        )
 
     def trigger_position_box__action_destructor__action_parent(self):
         if not self.join_for_trigger_position_box__action_destructor__action_parent.arrive():

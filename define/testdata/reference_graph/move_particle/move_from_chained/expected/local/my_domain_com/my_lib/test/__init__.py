@@ -148,20 +148,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.init_execution_trigger_action_act()
-        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a)
-        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b)
-        self.trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c()
-
-    def init_execution_trigger_action_act(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
-        )
         self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.act.Act
+            ),
             self.scheduler,
             self.guarantees.trigger_action_act,
         )
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b)
+        self.trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c()
 
     def trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a(self):
         if not self.join_for_trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a.arrive():

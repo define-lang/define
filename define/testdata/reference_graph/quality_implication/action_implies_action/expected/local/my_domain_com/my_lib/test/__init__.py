@@ -47,19 +47,15 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_action_outer()
-        self.scheduler.submit(self.trigger_action_outer__when_empty_action_inner__position_run)
-        self.trigger_action_outer__action_parent()
-
-    def init_execution_trigger_action_outer(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
-        )
         self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
             self.scheduler,
             self.guarantees.trigger_action_outer,
         )
+        self.scheduler.submit(self.trigger_action_outer__when_empty_action_inner__position_run)
+        self.trigger_action_outer__action_parent()
 
     def trigger_action_outer__when_empty_action_inner__position_run(self):
         self.execution_trigger_action_outer.accept_when_empty_action_inner__position_run()

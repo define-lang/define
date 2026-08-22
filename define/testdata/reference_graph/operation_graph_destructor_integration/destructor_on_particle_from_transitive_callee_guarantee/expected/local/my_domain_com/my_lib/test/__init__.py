@@ -78,7 +78,13 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.init_execution_trigger_position_gateway__action_middle()
+        self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_gateway__action_middle,
+        )
         self.scheduler.submit(self.destroy_position_gateway__action_middle__position_run)
         self.trigger_position_gateway__action_middle__when_empty_position_box()
 
@@ -140,36 +146,22 @@ class TestExecution:
             return
         self.local_position_gateway.destroy_particle()
 
-    def init_execution_trigger_position_gateway__action_middle(self):
-        action = self.local_position_gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        )
-        self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            action,
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_middle,
-        )
-
-    def init_execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor(self):
-        action = self.local_position_gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        ).get_interface_position(
-            "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<result>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
-        )
+    def trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor(self):
         self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
-            action,
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ).get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<result>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.destructor.Destructor
+            ),
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor,
         )
-
-    def trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor(self):
-        self.init_execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor()
         self.scheduler.submit(self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent)
         self.trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker()
 

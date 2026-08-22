@@ -139,20 +139,6 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_position_gateway__action_other()
-        self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild)
-        self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child)
-        self.trigger_position_gateway__action_other__for_empty_rule_position_parent()
-
-    def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
-        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
-        self.destruction_connection_trigger_position_gateway__action_other.complete()
-
-    def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_sibling(self):
-        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_sibling.destroy_particle()
-        self.destruction_connection_trigger_position_gateway__action_other_2.complete()
-
-    def init_execution_trigger_position_gateway__action_other(self):
         self.destruction_connection_trigger_position_gateway__action_other = literal.DestructionConnection(
             self.scheduler,
             local.my_domain_com.my_lib.other.OtherExecution.continue_destroy_position_parent__global_position_child__global_position_grandchild,
@@ -169,17 +155,27 @@ class TestExecution:
             self.destruction_connection_trigger_position_gateway__action_other,
             self.destruction_connection_trigger_position_gateway__action_other_2,
         )
-        action = self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        )
         self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            action,
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
             destruction_connections=self.trigger_position_gateway__action_other_destruction_connections,
         )
+        self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild)
+        self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child)
+        self.trigger_position_gateway__action_other__for_empty_rule_position_parent()
+
+    def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
+        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
+        self.destruction_connection_trigger_position_gateway__action_other.complete()
+
+    def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_sibling(self):
+        self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_sibling.destroy_particle()
+        self.destruction_connection_trigger_position_gateway__action_other_2.complete()
 
     def trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild.arrive():

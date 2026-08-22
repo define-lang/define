@@ -61,20 +61,16 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.init_execution_trigger_action_inner()
-        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
-        self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
-
-    def init_execution_trigger_action_inner(self):
-        action = self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        )
         self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            action,
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
             self.scheduler,
             self.guarantees.trigger_action_inner,
         )
+        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
+        self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
 
     def trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1(self):
         if not self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1.arrive():
