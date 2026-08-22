@@ -54,7 +54,7 @@ class ActionFragment:
     """A maximal direct-call chain of Particle Operations."""
 
     operations: list[operation_graph_model.PositionOperationNode]
-    guarantee_dependencies: Sequence[operation_graph.GuaranteePath] = field(
+    guarantee_dependencies: Sequence[operation_graph.ResolvedGuarantee] = field(
         init=False, default=()
     )
     guarantee_publications: list[GuaranteePublication] = field(
@@ -118,7 +118,9 @@ class DestructionConnection:
     callee_destroy: operation_graph_model.DestructionOperation
     first_fragments_of_destructions: list[ActionFragment]
     completion_fragments: list[ActionFragment]
-    destructor_guarantees_preceding_callee_destroy: list[operation_graph.GuaranteePath]
+    destructor_guarantees_preceding_callee_destroy: list[
+        operation_graph.ResolvedGuarantee
+    ]
     destruction_contract_destructors: list[DestructionContractDestructorExecutionPlan]
     callee_binding_joins_to_start: list[CalleeBindingJoin] = field(
         init=False, default_factory=list

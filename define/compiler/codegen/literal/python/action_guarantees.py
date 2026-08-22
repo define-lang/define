@@ -150,8 +150,8 @@ class ActionGuaranteesGenerator:
         registrations: list[template_context.GuaranteeRegistrationContext] = []
         for fragment in self._plan.fragments:
             for dependency in fragment.guarantee_dependencies:
-                child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
-                    interface, dependency
+                child_guarantees_names, guarantee_name = (
+                    self._names_for_resolved_guarantee(interface, dependency)
                 )
                 registrations.append(
                     template_context.GuaranteeRegistrationContext(
@@ -162,8 +162,8 @@ class ActionGuaranteesGenerator:
                 )
         for callee_binding_join in self._plan.callee_binding_joins:
             for dependency in callee_binding_join.guarantee_dependencies:
-                child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
-                    interface, dependency
+                child_guarantees_names, guarantee_name = (
+                    self._names_for_resolved_guarantee(interface, dependency)
                 )
                 registrations.append(
                     template_context.GuaranteeRegistrationContext(
@@ -177,7 +177,7 @@ class ActionGuaranteesGenerator:
         for (
             action_execution
         ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
-            child_guarantees_names, guarantee_name = self._names_for_guarantee_path(
+            child_guarantees_names, guarantee_name = self._names_for_resolved_guarantee(
                 interface, action_execution.guarantee_dependency
             )
             registrations.append(
@@ -192,17 +192,19 @@ class ActionGuaranteesGenerator:
         return registrations
 
     @staticmethod
-    def _names_for_guarantee_path(
+    def _names_for_resolved_guarantee(
         interface: action_context.GuaranteeInterface,
-        guarantee_path: operation_graph.GuaranteePath,
+        resolved_guarantee: operation_graph.ResolvedGuarantee,
     ) -> tuple[list[str], str]:
         current_interface = interface
         child_guarantees_names: list[str] = []
-        for execution in guarantee_path.executions:
+        for execution in resolved_guarantee.executions:
             child_guarantees = current_interface.child_guarantees[execution]
             child_guarantees_names.append(child_guarantees.member_name)
             current_interface = child_guarantees.callee_interface
         return (
             child_guarantees_names,
-            current_interface.guarantee_names_by_operation[guarantee_path.operation],
+            current_interface.guarantee_names_by_operation[
+                resolved_guarantee.operation
+            ],
         )

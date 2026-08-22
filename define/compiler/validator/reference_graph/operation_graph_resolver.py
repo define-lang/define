@@ -270,13 +270,34 @@ class ResolvedOperationGraphBuilder:
                         self._graphs.resolve_guarantee(dependency),
                     )
         else:
+            guarantee_dependencies = resolved_action.guarantee_dependencies_for(
+                operation
+            )
+            contributed_destructor_guarantee_dependencies: Sequence[
+                operation_graph.ResolvedGuarantee
+            ] = ()
+            if isinstance(
+                operation,
+                operation_graph_model.DestructionFragmentDestroyNode,
+            ):
+                contributed_destructor_guarantee_dependencies = (
+                    resolved_action.contributed_destructor_guarantee_dependencies_for(
+                        operation
+                    )
+                )
             self._add_action_dependencies(
                 dependency_keys,
                 action_execution,
                 resolved_action.local_operations_depended_on_by(operation),
-                resolved_action.guarantee_dependencies_for(operation),
+                guarantee_dependencies,
             )
-            if is_destruction_operation:
+            # The contributed Destructor Guarantee already depends on the caller
+            # Particle Operation, so the Destroy does not also depend on that
+            # Particle Operation directly.
+            if (
+                is_destruction_operation
+                and not contributed_destructor_guarantee_dependencies
+            ):
                 self._add_destruction_dependencies(
                     dependency_keys,
                     action_execution,
@@ -339,7 +360,7 @@ class ResolvedOperationGraphBuilder:
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
         local_operations: Sequence[operation_graph_model.PositionOperationNode],
-        guarantee_dependencies: Sequence[operation_graph.GuaranteePath],
+        guarantee_dependencies: Sequence[operation_graph.ResolvedGuarantee],
     ):
         for operation in local_operations:
             dependency_keys[action_execution, operation] = None
@@ -760,12 +781,14 @@ class ResolvedOperationGraphBuilder:
         self,
         dependency_keys: dict[_ResolvedOperationKey, None],
         action_execution: ActionExecution,
-        resolution: operation_graph.GuaranteePath,
+        resolved_guarantee: operation_graph.ResolvedGuarantee,
     ):
         guaranteed_action_execution = action_execution
-        for execution in resolution.executions:
+        for execution in resolved_guarantee.executions:
             guaranteed_action_execution = self._callee_execution(
                 guaranteed_action_execution,
                 execution,
             )
-        dependency_keys[guaranteed_action_execution, resolution.operation] = None
+        dependency_keys[guaranteed_action_execution, resolved_guarantee.operation] = (
+            None
+        )

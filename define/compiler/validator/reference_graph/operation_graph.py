@@ -726,34 +726,13 @@ class OperationGraphBuilder:
             destructor_execution.requirement_satisfactions[requirement_key] = (
                 satisfaction
             )
-        action_chain = destructor_execution.action_chain
-        guarantees: list[operation_graph_model.OperationGraphGuarantee] = []
-        for verified_guarantee in verified_destructor.guarantees:
-            guarantee = verified_guarantee.guarantee
-            guarantees.append(
-                operation_graph_model.OperationGraphGuarantee(
-                    guaranteed_position=ast.chain_in_caller(
-                        action_chain,
-                        guarantee.guaranteed_position,
-                    ),
-                    operation_positions=guarantee.operation_positions,
-                )
-            )
-        guarantee_nodes = self.record_guarantees(
-            destructor_execution,
-            (),
-            guarantees,
-            guarantee_action_chain=action_chain,
-            operation_graph_action_chain=action_chain,
-        )
-        guarantee_contributions = (
-            self._destruction_contract_destructor_guarantee_contributions(
+        guarantees, guarantee_contributions = (
+            self._record_destruction_contract_destructor_guarantees(
                 execution,
                 destruction_fact,
                 destroyed_position_relative_to_fact,
-                verified_destructor,
                 destructor_execution,
-                guarantee_nodes,
+                verified_destructor.guarantees,
             )
         )
         return operation_graph_model.DestructionContractDestructorContribution(
@@ -766,30 +745,41 @@ class OperationGraphBuilder:
                     *destruction_contract_position.callee_destroy_position_relative_to_destroyed_particle,
                 ),
             ),
+            guarantees=guarantees,
             guarantee_contributions=guarantee_contributions,
         )
 
-    def _destruction_contract_destructor_guarantee_contributions(
+    def _record_destruction_contract_destructor_guarantees(
         self,
         direct_callee_execution: operation_graph_model.ActionExecution,
         destruction_fact: operation_graph_model.DestructionFact,
         destroyed_position_relative_to_fact: tuple[str, ...],
-        verified_destructor: operation_graph_model.VerifiedDestructionContractDestructor,
         destructor_execution: operation_graph_model.ActionExecution,
-        guarantee_nodes: dict[tuple[str, ...], operation_graph_model.GuaranteeNode],
-    ) -> list[operation_graph_model.DestructionContractDestructorGuaranteeContribution]:
+        verified_guarantees: Sequence[
+            operation_graph_model.VerifiedDestructionContractDestructorGuarantee
+        ],
+    ) -> tuple[
+        list[operation_graph_model.DestructionContractDestructorGuarantee],
+        list[operation_graph_model.DestructionContractDestructorGuaranteeContribution],
+    ]:
+        guarantees: list[
+            operation_graph_model.DestructionContractDestructorGuarantee
+        ] = []
         guarantee_contributions: list[
             operation_graph_model.DestructionContractDestructorGuaranteeContribution
         ] = []
-        action_chain = destructor_execution.action_chain
-        for verified_guarantee in verified_destructor.guarantees:
-            callee_destroy_position = verified_guarantee.callee_destroy_position_relative_to_destroyed_particle
+        for verified_guarantee in verified_guarantees:
+            guarantee = operation_graph_model.DestructionContractDestructorGuarantee(
+                destructor_execution,
+                verified_guarantee,
+            )
+            guarantees.append(guarantee)
+            requirement = verified_guarantee.requirement
+            callee_destroy_position = (
+                requirement.callee_destroy_position_relative_to_destroyed_particle
+            )
             if callee_destroy_position is None:
                 continue
-            guarantee_position = ast.chain_in_caller(
-                action_chain,
-                verified_guarantee.guarantee.guaranteed_position,
-            )
             guarantee_contributions.append(
                 operation_graph_model.DestructionContractDestructorGuaranteeContribution(
                     callee_destroy=operation_graph_model.CalleeDestroy(
@@ -800,10 +790,10 @@ class OperationGraphBuilder:
                             *callee_destroy_position,
                         ),
                     ),
-                    guarantee=guarantee_nodes[guarantee_position],
+                    guarantee=guarantee,
                 )
             )
-        return guarantee_contributions
+        return guarantees, guarantee_contributions
 
     def _record_contributed_destruction_operations(
         self,
@@ -854,11 +844,70 @@ class OperationGraphBuilder:
             records_by_contributed_position,
             contributions,
         )
+        destructor_guarantees_preceding_destroys = (
+            self._destructor_guarantees_preceding_contributed_destroys(
+                destructors,
+                records_by_contributed_position,
+            )
+        )
         return operation_graph_model.ContributedDestructionFragment(
             operations=tuple(operations),
             contributed_destructions=contributed_destructions,
             destructors=tuple(destructors),
+            destructor_guarantees_preceding_destroys=tuple(
+                destructor_guarantees_preceding_destroys
+            ),
         )
+
+    @staticmethod
+    def _destructor_guarantees_preceding_contributed_destroys(
+        destructors: Sequence[
+            operation_graph_model.DestructionContractDestructorContribution
+        ],
+        records_by_contributed_position: Mapping[
+            operation_graph_model.ContributedDestructionPosition,
+            _RecordedContributedPosition,
+        ],
+    ) -> list[
+        operation_graph_model.DestructionContractDestructorGuaranteePrecedingDestroy
+    ]:
+        # A Destruction Contract can carry Destructors through an intermediate
+        # caller, but that action does not contribute their Action Executions or
+        # Guarantees.
+        if not destructors:
+            return []
+        destroy_by_position: dict[
+            tuple[str, ...],
+            operation_graph_model.DestructionFragmentDestroyNode,
+        ] = {}
+        for contributed_position, record in records_by_contributed_position.items():
+            position = contributed_position.destruction_contract_position.position
+            destroy_by_position[position.canonical_chained_name_tuple] = (
+                record.operation
+            )
+        preceding_guarantees: list[
+            operation_graph_model.DestructionContractDestructorGuaranteePrecedingDestroy
+        ] = []
+        for destructor in destructors:
+            for guarantee in destructor.guarantees:
+                requirement = guarantee.verified_guarantee.requirement
+                # This fragment owns only Guarantees that precede its
+                # caller-contributed Destroys. A Guarantee for a callee Destroy
+                # was recorded with that callee Destroy.
+                if (
+                    requirement.callee_destroy_position_relative_to_destroyed_particle
+                    is not None
+                ):
+                    continue
+                preceding_guarantees.append(
+                    operation_graph_model.DestructionContractDestructorGuaranteePrecedingDestroy(
+                        guarantee,
+                        destroy_by_position[
+                            requirement.caller_position.canonical_chained_name_tuple
+                        ],
+                    )
+                )
+        return preceding_guarantees
 
     def _contributed_destruction_child_operations(
         self,
@@ -1412,12 +1461,18 @@ class OperationGraphBuilder:
 
 
 @dataclass(slots=True)
-class GuaranteePath:
-    """Action Executions from a guarantee to its publishing Particle Operation."""
+class ResolvedGuarantee:
+    """Action Executions from a Guarantee to its Particle Operation."""
 
-    guarantee: operation_graph_model.GuaranteeNode
     executions: list[operation_graph_model.ActionExecution]
     operation: operation_graph_model.PositionOperationNode
+
+
+@dataclass(slots=True)
+class GuaranteePath(ResolvedGuarantee):
+    """An Operation Graph Guarantee resolved through its Action Executions."""
+
+    guarantee: operation_graph_model.GuaranteeNode
 
 
 @typing.final
@@ -1449,7 +1504,30 @@ class OperationGraphs(
         """Resolve one guarantee to its Particle Operation through callee graphs."""
         executions = [guarantee.execution, *guarantee.nested_executions]
         action = executions[-1].callee_action_name
-        position = guarantee.guarantee.guaranteed_position
+        operation = self._resolve_guaranteed_operation(
+            action,
+            guarantee.guarantee.guaranteed_position,
+        )
+        return GuaranteePath(executions, operation, guarantee)
+
+    def resolve_destruction_contract_destructor_guarantee(
+        self,
+        guarantee: operation_graph_model.DestructionContractDestructorGuarantee,
+    ) -> ResolvedGuarantee:
+        """Resolve a contributed Destructor Guarantee to its Particle Operation."""
+        return ResolvedGuarantee(
+            [guarantee.destructor_execution],
+            self._resolve_guaranteed_operation(
+                guarantee.destructor_execution.callee_action_name,
+                guarantee.verified_guarantee.guarantee.guaranteed_position,
+            ),
+        )
+
+    def _resolve_guaranteed_operation(
+        self,
+        action: ast.GlobalTypedName,
+        position: tuple[str, ...],
+    ) -> operation_graph_model.PositionOperationNode:
         # The get avoids allocating a candidate dictionary on cache hits;
         # setdefault rechecks and publishes the candidate in one synchronized
         # CPython dictionary operation when independent callers miss together.
@@ -1465,7 +1543,7 @@ class OperationGraphs(
                 self[action].last_operation_on_position_or_parents(position),
             )
             operation = action_resolutions.setdefault(position, candidate)
-        return GuaranteePath(guarantee, executions, operation)
+        return operation
 
     def _resolve_destruction_operation(
         self,

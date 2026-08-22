@@ -71,8 +71,6 @@ def _verified_destructor_guarantees(
         operation_graph_model.VerifiedDestructionContractRequirement,
     ] = {}
     for requirement in requirements:
-        if requirement.callee_destroy_position_relative_to_destroyed_particle is None:
-            continue
         requirements_by_caller_position[
             requirement.caller_position.canonical_chained_name_tuple
         ] = requirement
@@ -83,25 +81,24 @@ def _verified_destructor_guarantees(
     action_chain_key = action_chain.canonical_chained_name_tuple
     for guaranteed_position, guarantee in guarantees:
         caller_position = ast.chain_in_caller(action_chain_key, guaranteed_position)
-        callee_destroy_position = None
         # A requirement's Destroy precedes the Destroy for a requirement on one
         # of its parent positions. Searching from the guaranteed position toward
         # its parents therefore retains only the direct dependency.
-        for depth in range(len(caller_position), 0, -1):
-            requirement = requirements_by_caller_position.get(caller_position[:depth])
-            if requirement is None:
-                continue
-            callee_destroy_position = (
-                requirement.callee_destroy_position_relative_to_destroyed_particle
-            )
-            break
+        requirement_positions = (
+            caller_position[:depth] for depth in range(len(caller_position), 0, -1)
+        )
+        related_requirement = next(
+            requirements_by_caller_position[position]
+            for position in requirement_positions
+            if position in requirements_by_caller_position
+        )
         verified_guarantees.append(
             operation_graph_model.VerifiedDestructionContractDestructorGuarantee(
                 guarantee=operation_graph_model.OperationGraphGuarantee(
                     guaranteed_position=guaranteed_position,
                     operation_positions=guarantee.operation_positions,
                 ),
-                callee_destroy_position_relative_to_destroyed_particle=callee_destroy_position,
+                requirement=related_requirement,
             )
         )
     return verified_guarantees

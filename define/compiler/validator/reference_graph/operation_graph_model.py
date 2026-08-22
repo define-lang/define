@@ -591,6 +591,14 @@ class ResolvedCalleeDestroy:
     callee_destroy: DestructionOperation
 
 
+@dataclass(frozen=True, slots=True)
+class DestructionContractDestructorGuarantee:
+    """A verified Destructor Guarantee and its contributed Action Execution."""
+
+    destructor_execution: ActionExecution
+    verified_guarantee: VerifiedDestructionContractDestructorGuarantee
+
+
 @dataclass(slots=True)
 class DestructionContribution:
     """Caller-contributed work for one direct callee Destroy."""
@@ -602,9 +610,9 @@ class DestructionContribution:
     completion_operations: dict[DestructionFragmentDestroyNode, None] = field(
         default_factory=dict
     )
-    destructor_guarantees_preceding_callee_destroy: list[GuaranteeNode] = field(
-        default_factory=list
-    )
+    destructor_guarantees_preceding_callee_destroy: list[
+        DestructionContractDestructorGuarantee
+    ] = field(default_factory=list)
     destructors: list[ActionExecution] = field(default_factory=list)
 
 
@@ -631,6 +639,7 @@ class DestructionContractDestructorContribution:
 
     destructor_execution: ActionExecution
     callee_destroy: CalleeDestroy
+    guarantees: list[DestructionContractDestructorGuarantee]
     guarantee_contributions: list[DestructionContractDestructorGuaranteeContribution]
 
 
@@ -639,7 +648,15 @@ class DestructionContractDestructorGuaranteeContribution:
     """A contributed Destructor's last operation on one contracted position before a callee Destroy."""
 
     callee_destroy: CalleeDestroy
-    guarantee: GuaranteeNode
+    guarantee: DestructionContractDestructorGuarantee
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContractDestructorGuaranteePrecedingDestroy:
+    """A contributed Destructor Guarantee that precedes a caller-contributed Destroy."""
+
+    guarantee: DestructionContractDestructorGuarantee
+    destroy: DestructionFragmentDestroyNode
 
 
 @dataclass(frozen=True, slots=True)
@@ -670,11 +687,20 @@ class OperationGraphGuarantee:
 
 
 @dataclass(frozen=True, slots=True)
+class VerifiedDestructionContractRequirement:
+    """A verified Destructor requirement and its destruction-time source."""
+
+    requirement_position: ast.PositionReference
+    caller_position: ast.PositionReference
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
+
+
+@dataclass(frozen=True, slots=True)
 class VerifiedDestructionContractDestructorGuarantee:
-    """One verified Destructor Guarantee and a callee Destroy it must precede."""
+    """One verified Destructor Guarantee and the requirement whose Destroy it precedes."""
 
     guarantee: OperationGraphGuarantee
-    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
+    requirement: VerifiedDestructionContractRequirement
 
 
 @dataclass(frozen=True, slots=True)
@@ -685,15 +711,6 @@ class VerifiedDestructionContractDestructor:
     destruction_contract_position: DestructionContractPosition
     requirements: list[VerifiedDestructionContractRequirement]
     guarantees: list[VerifiedDestructionContractDestructorGuarantee]
-
-
-@dataclass(frozen=True, slots=True)
-class VerifiedDestructionContractRequirement:
-    """A verified Destructor requirement and its destruction-time source."""
-
-    requirement_position: ast.PositionReference
-    caller_position: ast.PositionReference
-    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -727,6 +744,9 @@ class ContributedDestructionFragment:
     operations: tuple[DestructionFragmentDestroyNode, ...]
     contributed_destructions: tuple[ContributedDestruction, ...]
     destructors: tuple[DestructionContractDestructorContribution, ...]
+    destructor_guarantees_preceding_destroys: tuple[
+        DestructionContractDestructorGuaranteePrecedingDestroy, ...
+    ] = ()
 
 
 @dataclass(slots=True, eq=False)

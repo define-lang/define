@@ -333,8 +333,7 @@ The completed `ActionPlan` contains Particle Operations rather than requiring a
 renderer to index back into an operation graph. It also contains directly
 executed fragments, direct Action Executions, Binding Hole fan-outs, Callee
 Binding Joins, dependency counts, guarantee publications, guarantee-fired
-destructors, and the resolved `GuaranteePath`s needed by fragments, Callee
-Binding Joins, and destructor Action Executions. A renderer assigns
-target-language names and expressions to this plan; it does not receive
-operation graphs, resolve dependencies, discover continuations, or calculate
-joins.
+destructors, and the resolved Guarantees needed by fragments, Callee Binding
+Joins, and destructor Action Executions. A renderer assigns target-language
+names and expressions to this plan; it does not receive operation graphs,
+resolve dependencies, discover continuations, or calculate joins.
