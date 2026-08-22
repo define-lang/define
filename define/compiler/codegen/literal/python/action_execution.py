@@ -192,6 +192,15 @@ class ActionExecutionGenerator:
                 guarantee_publication_names.append(
                     names.guarantee_publications[publication]
                 )
+            guarantee_dependent_destroy_position = None
+            operation = fragment.guarantee_dependent_destroy
+            if operation is not None:
+                guarantee_dependent_destroy_position = (
+                    template_context.DestructionPositionContext(
+                        member_name=names.destruction_positions[operation],
+                        position=statement_generator.build_position(operation.target),
+                    )
+                )
             fragments.append(
                 template_context.ActionFragmentContext(
                     method_name=names.fragments[fragment],
@@ -226,6 +235,9 @@ class ActionExecutionGenerator:
                     ),
                     destruction_connection_names_to_complete=(
                         destruction_connection_names_to_complete
+                    ),
+                    guarantee_dependent_destroy_position=(
+                        guarantee_dependent_destroy_position
                     ),
                 )
             )

@@ -219,9 +219,9 @@ def test_nested_guarantee_binding_holes_are_resolved_without_publishing_every_pa
         selected_executions[0],
         tuple(selected_executions[1:]),
         (
-            (
-                work.canonical_chained_name_tuple,
-                (work.canonical_chained_name_tuple,),
+            operation_graph_model.OperationGraphGuarantee(
+                guaranteed_position=work.canonical_chained_name_tuple,
+                operation_positions=(work.canonical_chained_name_tuple,),
             ),
         ),
         guarantee_action_chain=(),

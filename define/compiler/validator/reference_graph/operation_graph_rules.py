@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 from define.compiler import ast
 from define.compiler.validator.reference_graph import operation_graph_model
@@ -736,6 +737,7 @@ def apply_partial_move_rule_result(
             partial_result.fill_dependency_is_also_empty_dependency
         ),
         caller_binding_holes=(),
+        callee_destroy=None,
         replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
     )
     # A remaining Binding Hole changes the Move's relationships. Otherwise,
@@ -758,6 +760,7 @@ def _complete_or_propagate_move_rule(
     comparison_positions: Sequence[tuple[str, ...]],
     fill_dependency_is_also_empty_dependency: bool,
     caller_binding_holes: Iterable[operation_graph_model.BindingHole],
+    callee_destroy: operation_graph_model.CalleeDestroy | None,
     replacement_depends_on_targets_by_node: _ReplacementDependsOnTargetsByNode,
 ) -> operation_graph_model.MoveRuleApplicationResult:
     """Return a complete Move Rule result or its Binding Hole for the next caller."""
@@ -765,6 +768,7 @@ def _complete_or_propagate_move_rule(
         return operation_graph_model.MoveRuleApplicationResult(
             concrete_caller_nodes,
             None,
+            callee_destroy,
         )
     prerequisite_binding_holes = binding_holes_depended_on_by(
         concrete_caller_nodes,
@@ -796,6 +800,7 @@ def _complete_or_propagate_move_rule(
     return operation_graph_model.MoveRuleApplicationResult(
         concrete_caller_nodes,
         move_rule_binding_hole,
+        callee_destroy,
     )
 
 
@@ -824,14 +829,20 @@ def _add_positions_relative_to_particle(
         relative_positions.add(position[len(particle_position) :])
 
 
+@dataclass(slots=True)
+class _CallerEmptyDependencies:
+    """Remaining Empty Dependencies collected from one direct caller."""
+
+    collected_nodes: set[operation_graph_model.LastOperationNode]
+    requirement_position_in_caller: tuple[str, ...] | None
+    collected_child_operation_positions: set[tuple[str, ...]]
+    callee_destroy: operation_graph_model.CalleeDestroy | None
+
+
 def _collect_empty_dependencies_from_caller(
     execution: operation_graph_model.ActionExecution,
     caller_empty_rule_collection: operation_graph_model.CallerEmptyRuleCollection,
-) -> tuple[
-    set[operation_graph_model.LastOperationNode],
-    tuple[str, ...] | None,
-    set[tuple[str, ...]],
-]:
+) -> _CallerEmptyDependencies:
     """Collect the remaining Empty Dependencies from one direct caller."""
     particle_requirement_satisfaction = execution.requirement_satisfactions[
         caller_empty_rule_collection.requirement_position
@@ -867,19 +878,35 @@ def _collect_empty_dependencies_from_caller(
                 callee_requirement_position,
                 caller_empty_rule_collection.requirement_position,
             ):
-                collected_nodes.add(requirement_satisfaction.operation)
+                # Destruction Contract contributions do not yet propagate a
+                # callee Destroy through an intermediate caller's Fill Dependency.
+                collected_nodes.add(
+                    typing.cast(
+                        "operation_graph_model.LastOperationNode",
+                        requirement_satisfaction.operation,
+                    )
+                )
             break
 
     requirement_position_in_caller = _occupied_requirement_position(
         particle_requirement_satisfaction
     )
-    # The particle is not from an earlier caller, so Collection is complete
-    # after adding the operation that supplied it when no child operation did.
-    if requirement_position_in_caller is None and (
-        not child_operations
+    callee_destroy = None
+    # When the requirement is satisfied in this caller and no child Particle
+    # Operation supplies an Empty Dependency, its satisfying operation is the
+    # remaining Empty Dependency. A callee Destroy is returned separately.
+    if (
+        requirement_position_in_caller is None
+        and not child_operations
         and not caller_empty_rule_collection.collected_child_operation_positions
     ):
-        collected_nodes.add(particle_requirement_satisfaction.operation)
+        if isinstance(
+            particle_requirement_satisfaction.operation,
+            operation_graph_model.CalleeDestroy,
+        ):
+            callee_destroy = particle_requirement_satisfaction.operation
+        else:
+            collected_nodes.add(particle_requirement_satisfaction.operation)
 
     collected_child_operation_positions: set[tuple[str, ...]] = set()
     if requirement_position_in_caller is not None:
@@ -890,10 +917,11 @@ def _collect_empty_dependencies_from_caller(
         collected_child_operation_positions.update(
             caller_empty_rule_collection.collected_child_operation_positions
         )
-    return (
+    return _CallerEmptyDependencies(
         collected_nodes,
         requirement_position_in_caller,
         collected_child_operation_positions,
+        callee_destroy,
     )
 
 
@@ -906,11 +934,7 @@ def apply_empty_rule_binding_hole_in_caller(
     | None = None,
 ) -> operation_graph_model.EmptyRuleApplicationResult:
     """Bind the callee's Empty Rule Binding Hole in one direct caller."""
-    (
-        collected_nodes,
-        requirement_position_in_caller,
-        collected_child_operation_positions,
-    ) = _collect_empty_dependencies_from_caller(
+    caller_empty_dependencies = _collect_empty_dependencies_from_caller(
         execution,
         empty_rule_binding_hole,
     )
@@ -923,10 +947,13 @@ def apply_empty_rule_binding_hole_in_caller(
         caller_nodes,
         collected_nodes_most_recent_first,
     ) = _apply_empty_rule_to_caller_collection(
-        collected_nodes,
+        caller_empty_dependencies.collected_nodes,
         collected_operation_positions,
         empty_rule_binding_inputs.concrete_caller_nodes,
         replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
+    )
+    requirement_position_in_caller = (
+        caller_empty_dependencies.requirement_position_in_caller
     )
     if requirement_position_in_caller is None:
         return operation_graph_model.EmptyRuleApplicationResult(
@@ -946,7 +973,7 @@ def apply_empty_rule_binding_hole_in_caller(
         # This remains linear in the operated positions because each position
         # is examined once, without comparing nodes.
         _add_positions_relative_to_particle(
-            collected_child_operation_positions,
+            caller_empty_dependencies.collected_child_operation_positions,
             node,
             requirement_position_in_caller,
         )
@@ -968,7 +995,7 @@ def apply_empty_rule_binding_hole_in_caller(
         operation_graph_model.EmptyRuleBindingHole(
             requirement_position=requirement_position_in_caller,
             collected_child_operation_positions=frozenset(
-                collected_child_operation_positions
+                caller_empty_dependencies.collected_child_operation_positions
             ),
             fill_dependency_requirement_position=(fill_dependency_requirement_position),
             collected_operation_positions=tuple(collected_operation_positions),
@@ -990,18 +1017,22 @@ def apply_move_rule_binding_hole_in_caller(
         collected_nodes: set[operation_graph_model.ConcreteOperationNode] = set()
         requirement_position_in_caller = None
         collected_child_operation_positions: set[tuple[str, ...]] = set()
+        callee_destroy = None
     else:
-        (
-            collected_empty_dependencies,
-            requirement_position_in_caller,
-            collected_child_operation_positions,
-        ) = _collect_empty_dependencies_from_caller(
+        caller_empty_dependencies = _collect_empty_dependencies_from_caller(
             execution,
             caller_empty_rule_collection,
         )
+        requirement_position_in_caller = (
+            caller_empty_dependencies.requirement_position_in_caller
+        )
+        collected_child_operation_positions = (
+            caller_empty_dependencies.collected_child_operation_positions
+        )
+        callee_destroy = caller_empty_dependencies.callee_destroy
         collected_nodes = typing.cast(
             "set[operation_graph_model.ConcreteOperationNode]",
-            collected_empty_dependencies,
+            caller_empty_dependencies.collected_nodes,
         )
 
     fill_dependency = move_rule_binding_hole.caller_fill_dependency
@@ -1065,5 +1096,6 @@ def apply_move_rule_binding_hole_in_caller(
             move_rule_binding_hole.fill_dependency_is_also_empty_dependency
         ),
         caller_binding_holes=empty_rule_binding_inputs.caller_binding_holes,
+        callee_destroy=callee_destroy,
         replacement_depends_on_targets_by_node=(replacement_depends_on_targets_by_node),
     )

@@ -909,6 +909,51 @@ class ParticleTracker:
             key, lambda state: state.operation_node
         )
 
+    def _preceding_child_operations_for_contributed_destructor_requirement(
+        self,
+        requirement: operation_graph_model.VerifiedDestructionContractRequirement,
+    ) -> operation_graph_model.PrecedingChildOperations:
+        """Return child operations needed by one contributed Destructor requirement."""
+        if (
+            requirement.callee_destroy_position_relative_to_destroyed_particle
+            is not None
+        ):
+            # The Callee Destroy supplies the dependency directly, so child
+            # operations at the destroyed position cannot add a dependency.
+            return ()
+        return self._preceding_child_operations(
+            requirement.caller_position.canonical_chained_name_tuple
+        )
+
+    def _preceding_child_operations_for_contributed_destructors(
+        self,
+        destructors: Sequence[
+            operation_graph_model.VerifiedDestructionContractDestructor
+        ],
+    ) -> Iterator[
+        tuple[
+            operation_graph_model.PrecedingChildOperations,
+            list[operation_graph_model.PrecedingChildOperations],
+        ]
+    ]:
+        for verified_destructor in destructors:
+            required_preceding_child_operations: list[
+                operation_graph_model.PrecedingChildOperations
+            ] = []
+            for requirement in verified_destructor.requirements:
+                required_preceding_child_operations.append(
+                    self._preceding_child_operations_for_contributed_destructor_requirement(
+                        requirement
+                    )
+                )
+            acting_on_preceding_child_operations = self._preceding_child_operations(
+                verified_destructor.destruction_contract_position.position.canonical_chained_name_tuple
+            )
+            yield (
+                acting_on_preceding_child_operations,
+                required_preceding_child_operations,
+            )
+
     def create(
         self,
         in_position: ast.PositionReference,
@@ -1361,18 +1406,15 @@ class ParticleTracker:
                 for requirement in requirements_in_caller
             ),
         )
+        # TODO: Investigate whether batching or reusing child-operation subtree
+        # traversals across all Destruction Contract contributions for one Action
+        # Execution improves project-scale performance without excessive memory.
         for contribution in destruction_contract_contributions:
             self._operation_graph_builder.record_contributed_destruction_fragment(
                 execution,
                 contribution,
-                (
-                    # TODO: Investigate whether multiple contributed Destructors on
-                    # the same position make these child-operation subtree traversals
-                    # costly at project scale.
-                    self._preceding_child_operations(
-                        verified_destructor.position.canonical_chained_name_tuple
-                    )
-                    for verified_destructor in contribution.destructors
+                self._preceding_child_operations_for_contributed_destructors(
+                    contribution.destructors
                 ),
             )
         callee_guarantees = _PendingGuarantee(
@@ -1400,13 +1442,13 @@ class ParticleTracker:
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
         """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
-        operation_graph_positions = self._update_store_from_callee_direct_guarantees(
+        operation_graph_guarantees = self._update_store_from_callee_direct_guarantees(
             pending_guarantee
         )
         guarantee_nodes = self._operation_graph_builder.record_guarantees(
             pending_guarantee.execution,
             pending_guarantee.transitive_executions,
-            operation_graph_positions,
+            operation_graph_guarantees,
             guarantee_action_chain=pending_guarantee.action_chain,
             operation_graph_action_chain=(
                 pending_guarantee.operation_graph_action_chain
@@ -1601,11 +1643,11 @@ class ParticleTracker:
     def _update_store_from_callee_direct_guarantees(
         self,
         pending_guarantee: _PendingGuarantee,
-    ) -> list[tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]]:
+    ) -> list[operation_graph_model.OperationGraphGuarantee]:
         """Apply a callee's own guarantees; return what it wrote, in order."""
         guarantees = pending_guarantee.guarantees.own
-        operation_graph_positions: list[
-            tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]
+        operation_graph_guarantees: list[
+            operation_graph_model.OperationGraphGuarantee
         ] = []
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
@@ -1677,7 +1719,12 @@ class ParticleTracker:
                 else callee_derived_write,
             )
 
-            operation_graph_positions.append((key, guarantee.operation_positions))
+            operation_graph_guarantees.append(
+                operation_graph_model.OperationGraphGuarantee(
+                    guaranteed_position=key,
+                    operation_positions=guarantee.operation_positions,
+                )
+            )
 
             overwrites_subtree = key in origin_keys or (
                 key in self._store.state
@@ -1741,7 +1788,7 @@ class ParticleTracker:
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
-        return operation_graph_positions
+        return operation_graph_guarantees
 
     def _save_origins_at_or_below(
         self,

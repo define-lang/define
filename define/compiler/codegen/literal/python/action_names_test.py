@@ -372,7 +372,6 @@ def test_repeated_action_execution_skips_a_source_suffix(
             action_plan.ActionExecutionPlan(
                 execution=action_execution,
                 created_destruction_connections=[],
-                forwards_destruction_connections=False,
             )
             for action_execution in action_executions
         ],
@@ -436,12 +435,14 @@ def test_destruction_connection_names_use_action_execution(
         [],
         [],
         [],
+        [],
     )
     second_connection = action_plan.DestructionConnection(
         operation_graph_model.DestructionOperation(
             execution.callee_action_name,
             second_destroy,
         ),
+        [],
         [],
         [],
         [],
@@ -457,7 +458,6 @@ def test_destruction_connection_names_use_action_execution(
                     first_connection,
                     second_connection,
                 ],
-                forwards_destruction_connections=False,
             )
         ],
         callee_binding_joins=[],

@@ -158,6 +158,9 @@ class ParticleChildOperations:
         return frozenset(operation.child_position for operation in self.operations)
 
 
+NO_CHILD_OPERATIONS = ParticleChildOperations()
+
+
 # Separate propagation paths can require distinct Binding Holes with identical
 # Empty Rule Collection data, so these values use identity when codegen keys
 # Binding Hole methods.
@@ -356,6 +359,7 @@ class MoveRuleApplicationResult:
 
     concrete_caller_nodes: Sequence[ConcreteOperationNode]
     move_rule_binding_hole: MoveRuleBindingHole | None
+    callee_destroy: CalleeDestroy | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -364,7 +368,7 @@ class RequirementSatisfaction:
 
     # The operation or RequirementNode that put the position in its required
     # state from the caller's perspective.
-    operation: LastOperationNode
+    operation: LastOperationNode | CalleeDestroy
     child_operations: ParticleChildOperations
 
 
@@ -407,7 +411,7 @@ class ActionExecution:
     def caller_operation_for_callee_binding_hole(
         self,
         callee_binding_hole: ActionParentLastOperationNode | RequirementNode,
-    ) -> ActionParentOperationNode:
+    ) -> ActionParentOperationNode | CalleeDestroy:
         """Return the caller operation for one direct callee Binding Hole."""
         if isinstance(callee_binding_hole, ActionParentLastOperationNode):
             return self.action_parent_last_operation
@@ -438,8 +442,12 @@ class ActionExecution:
         )
         if isinstance(fill_dependency, (PositionOperationNode, GuaranteeNode)):
             return fill_dependency
+        # Destruction Contract contributions do not yet propagate a callee
+        # Destroy through an intermediate caller's Fill Dependency.
         return CallerFillDependency(
-            callee_binding_hole=fill_dependency,
+            callee_binding_hole=typing.cast(
+                "ActionParentLastOperationNode | RequirementNode", fill_dependency
+            ),
             requirement=OperationGraphRequirement(
                 requirement_position=ast.chain_in_caller(
                     self.action_chain,
@@ -594,6 +602,9 @@ class DestructionContribution:
     completion_operations: dict[DestructionFragmentDestroyNode, None] = field(
         default_factory=dict
     )
+    destructor_guarantees_preceding_callee_destroy: list[GuaranteeNode] = field(
+        default_factory=list
+    )
     destructors: list[ActionExecution] = field(default_factory=list)
 
 
@@ -620,18 +631,50 @@ class DestructionContractDestructorContribution:
 
     destructor_execution: ActionExecution
     callee_destroy: CalleeDestroy
+    guarantee_contributions: list[DestructionContractDestructorGuaranteeContribution]
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContractDestructorGuaranteeContribution:
+    """A contributed Destructor's last operation on one contracted position before a callee Destroy."""
+
+    callee_destroy: CalleeDestroy
+    guarantee: GuaranteeNode
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContractPosition:
+    """One occupied position considered during Destruction Contract verification."""
+
+    position: ast.PositionReference
+    position_relative_to_destroyed_particle: tuple[str, ...]
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class ContributedDestructionPosition:
     """One caller-known occupied position contributed to a destruction."""
 
-    position: ast.PositionReference
-    position_relative_to_destroyed_particle: tuple[str, ...]
-    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
+    destruction_contract_position: DestructionContractPosition
     # Retaining the contributed child positions preserves the Destroys that must
     # precede this position's Destroy without reconstructing name relationships.
     preceding_contributed_positions: tuple[ContributedDestructionPosition, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class OperationGraphGuarantee:
+    """One Action Guarantee represented in an Operation Graph."""
+
+    guaranteed_position: tuple[str, ...]
+    operation_positions: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedDestructionContractDestructorGuarantee:
+    """One verified Destructor Guarantee and a callee Destroy it must precede."""
+
+    guarantee: OperationGraphGuarantee
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -639,9 +682,18 @@ class VerifiedDestructionContractDestructor:
     """A caller-verified Destructor to contribute through a Destruction Contract."""
 
     action: ast.ActionReference
-    position: ast.PositionReference
-    position_relative_to_destroyed_particle: tuple[str, ...]
-    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...]
+    destruction_contract_position: DestructionContractPosition
+    requirements: list[VerifiedDestructionContractRequirement]
+    guarantees: list[VerifiedDestructionContractDestructorGuarantee]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedDestructionContractRequirement:
+    """A verified Destructor requirement and its destruction-time source."""
+
+    requirement_position: ast.PositionReference
+    caller_position: ast.PositionReference
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
 
 
 @dataclass(frozen=True, slots=True)

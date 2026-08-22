@@ -23,7 +23,6 @@ _ADDITIONAL_CALLER_MODULE = Path(
     "local/my_domain_com/my_lib/additional_caller/__init__.py"
 )
 _ADDITIONAL_CALLER_NAME = "additional_caller"
-_CALLEE_MODULE = Path("local/my_domain_com/my_lib/callee/__init__.py")
 _ADDITIONAL_CALLER_ENTRY_SOURCE = """    } and it does {
         define the position<additional_caller_call> {
             it may only contain particles where {
@@ -39,6 +38,11 @@ class _Case:
     name: str
     baseline: Path
     callee_module: Path
+
+
+@dataclass(frozen=True, slots=True)
+class _DestructorContributionCase(_Case):
+    caller_sources: Path
 
 
 _CASES = (
@@ -62,6 +66,31 @@ _CASES = (
         / "operation_graph_many_actions_integration"
         / "destruction_cascade_includes_disjoint_child_paths_from_two_callers",
         Path("local/my_domain_com/my_lib/destroyer/__init__.py"),
+    ),
+)
+
+_DESTRUCTOR_CONTRIBUTION_CASES = (
+    _DestructorContributionCase(
+        name="requirement_free",
+        baseline=(
+            _TESTDATA_ROOT
+            / "operation_graph_destructor_integration"
+            / "caller_added_destructor_fires_in_callee"
+        ),
+        callee_module=Path("local/my_domain_com/my_lib/callee/__init__.py"),
+        caller_sources=_ADDITIONAL_CALLER_ROOT / "destructor_contribution",
+    ),
+    _DestructorContributionCase(
+        name="automatic_action_requirements",
+        baseline=(
+            _TESTDATA_ROOT
+            / "operation_graph_destructor_integration"
+            / "caller_contributed_child_destructor_depends_on_callee_guarantee"
+        ),
+        callee_module=Path("local/my_domain_com/my_lib/destroyer/__init__.py"),
+        caller_sources=(
+            _ADDITIONAL_CALLER_ROOT / "requirementful_destructor_contribution"
+        ),
     ),
 )
 
@@ -174,16 +203,18 @@ def test_adding_a_caller_does_not_change_generated_callees(
     )
 
 
+@pytest.mark.parametrize(
+    "case",
+    _DESTRUCTOR_CONTRIBUTION_CASES,
+    ids=[case.name for case in _DESTRUCTOR_CONTRIBUTION_CASES],
+)
 def test_adding_a_destructor_contributing_caller_does_not_change_generated_callee(
+    case: _DestructorContributionCase,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    case_root = (
-        _TESTDATA_ROOT
-        / "operation_graph_destructor_integration"
-        / "caller_added_destructor_fires_in_callee"
-    ).resolve()
-    caller_sources = (_ADDITIONAL_CALLER_ROOT / "destructor_contribution").resolve()
+    case_root = case.baseline.resolve()
+    caller_sources = case.caller_sources.resolve()
     baseline_project = tmp_path / "baseline_project"
     shutil.copytree(case_root, baseline_project)
     shutil.copyfile(caller_sources / "baseline_test.dfn", baseline_project / "test.dfn")
@@ -201,8 +232,8 @@ def test_adding_a_destructor_contributing_caller_does_not_change_generated_calle
         monkeypatch,
     )
 
-    assert (baseline_generated / _CALLEE_MODULE).read_text() == (
-        generated_with_contributing_caller / _CALLEE_MODULE
+    assert (baseline_generated / case.callee_module).read_text() == (
+        generated_with_contributing_caller / case.callee_module
     ).read_text()
     _assert_only_additional_caller_was_added(
         (baseline_generated / _TEST_MODULE).read_text(),

@@ -28,6 +28,7 @@ class CallerB(literal.Action):
 class CallerBGuarantees:
     def __init__(self):
         self.trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
+        self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorGuarantees()
 
 
 @final
@@ -59,10 +60,12 @@ class CallerBExecution:
             self.destroy_position_destroyer_particle
         )
         self.execution_trigger_position_destroyer_particle__action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
+        self.execution_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor: local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution
         self.join_for_move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target = literal.Join(2)
         self.join_for_destroy_position_destroyer_particle = literal.Join(2)
         self.join_for_trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker = literal.Join(2)
         self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target = literal.Join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker = literal.Join(2)
 
     def accept_action_parent(self):
         self.scheduler.submit(self.create_position_destroyer_particle)
@@ -90,8 +93,21 @@ class CallerBExecution:
                 "position<target>"
             )
         )
+        self.execution_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(
+            self.local_position_destroyer_particle.particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ).get_interface_position(
+                "position<target>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor,
+        )
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker)
-        self.trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target()
+        self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target)
+        self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker)
+        self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker()
 
     def create_position_destroyer_particle__action_destroyer__position_trigger_pos(self):
         self.local_position_destroyer_particle.particle.get_action(
@@ -136,3 +152,8 @@ class CallerBExecution:
         if not self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target.arrive():
             return
         self.execution_trigger_position_destroyer_particle__action_destroyer.accept_when_occupied_position_target()
+
+    def trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker(self):
+        if not self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker.arrive():
+            return
+        self.execution_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor.accept_for_empty_rule_global_position_marker()

@@ -416,7 +416,6 @@ def test_newly_known_grandchild_destructor_uses_callee_child_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_DESTRUCTION_CONTRACTS_NOT_RECORDED)
 def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -455,10 +454,167 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
             "destruct.move(held_sibling, /sibling)"
         ],
         "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
             "destroyer.destroy(parent::/maker::result)",
             "destroyer.destroy(parent::/maker::trigger_pos)",
-            "destroyer.destroy(parent::/sibling)",
         ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_known_destructor_precedes_destroyer_known_child_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.move(source, /destroyer::parent)": ["test.create(source)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.create(parent::/maker::trigger_pos)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "maker.create(result)": ["test.move(source, /destroyer::parent)"],
+        "destruct.move(/maker::result, held_result)": ["maker.create(result)"],
+        "destruct.move(held_result, /maker::result)": [
+            "destruct.move(/maker::result, held_result)"
+        ],
+        # The caller-known Destructor's final Move fills /maker::result before
+        # its Destroy.
+        "destroyer.destroy(parent::/maker::result)": [
+            "destruct.move(held_result, /maker::result)"
+        ],
+        "destroyer.destroy(parent::/maker::trigger_pos)": [
+            "destroyer.create(parent::/maker::trigger_pos)"
+        ],
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/maker::result)",
+            "destroyer.destroy(parent::/maker::trigger_pos)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_two_caller_known_destructors_precede_same_child_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.create(parent::/maker::trigger_pos)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "maker.create(result)": ["test.move(source, /destroyer::parent)"],
+        "destruct_a.move(/maker::result, held_result)": ["maker.create(result)"],
+        "destruct_a.move(held_result, /maker::result)": [
+            "destruct_a.move(/maker::result, held_result)"
+        ],
+        "destruct_b.move(/maker::result, held_result)": ["maker.create(result)"],
+        "destruct_b.move(held_result, /maker::result)": [
+            "destruct_b.move(/maker::result, held_result)"
+        ],
+        # Both caller-known Destructors' final Moves must fill the child position
+        # before the destruction cascade in /destroyer destroys its particle.
+        "destroyer.destroy(parent::/maker::result)": [
+            "destruct_b.move(held_result, /maker::result)",
+            "destruct_a.move(held_result, /maker::result)",
+        ],
+        "destroyer.destroy(parent::/maker::trigger_pos)": [
+            "destroyer.create(parent::/maker::trigger_pos)"
+        ],
+        "destroyer.destroy(parent::/sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "destroyer.destroy(parent::/maker::result)",
+            "destroyer.destroy(parent::/maker::trigger_pos)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_known_child_destroy_and_destructor_precede_parent_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/required)": ["test.create(source)"],
+        "test.create(source::/required::/extra)": ["test.create(source::/required)"],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": [
+            "test.create(source::/required::/extra)",
+            "test.create(source::/sibling)",
+        ],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.move(parent::/required, held_required)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destruct_required.move(/required, held_required)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct_required.move(held_required, /required)": [
+            "destruct_required.move(/required, held_required)"
+        ],
+        "destruct_sibling.move(/sibling, held_sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destruct_sibling.move(held_sibling, /sibling)": [
+            "destruct_sibling.move(/sibling, held_sibling)"
+        ],
+        # Both the caller-contributed child Destroy and the Destructor's final
+        # operation must precede destruction of /required.
+        "destroyer.destroy(parent::/required::/extra)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destroyer.destroy(parent::/required)": [
+            "destroyer.destroy(parent::/required::/extra)",
+            "destruct_required.move(held_required, /required)",
+        ],
+        "destroyer.destroy(parent::/sibling)": [
+            "destruct_sibling.move(held_sibling, /sibling)"
+        ],
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "destroyer.destroy(parent::/required)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_contributed_destructor_operates_on_child_of_occupied_requirement(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/required)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/required)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.move(parent::/required, held_required)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        # The Fill Rule makes the Destructor's Create depend on /destroyer's
+        # final Move into the parent position of its empty /required::/work.
+        "destruct.create(/required::/work)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
+        "destroyer.destroy(parent::/required)": ["destruct.destroy(/required::/work)"],
+        "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

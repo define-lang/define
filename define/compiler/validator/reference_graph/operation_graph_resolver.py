@@ -648,7 +648,19 @@ class ResolvedOperationGraphBuilder:
                 completion_operations = resolved_contribution.operation_graph_contribution.completion_operations
                 for operation in completion_operations:
                     dependency_keys[caller_execution, operation] = None
-                if completion_operations:
+                destructor_guarantees_preceding_callee_destroy = (
+                    resolved_contribution.destructor_guarantees_preceding_callee_destroy
+                )
+                for guarantee in destructor_guarantees_preceding_callee_destroy:
+                    self._add_guarantee(
+                        dependency_keys,
+                        caller_execution,
+                        guarantee,
+                    )
+                if (
+                    completion_operations
+                    or destructor_guarantees_preceding_callee_destroy
+                ):
                     found_contribution = True
             if not current_execution.direct_execution.forwards_destruction_connections:
                 return found_contribution
@@ -717,6 +729,26 @@ class ResolvedOperationGraphBuilder:
             callee_binding.caller_dependencies.local_operations,
             callee_binding.caller_dependencies.guarantee_dependencies,
         )
+        resolved_callee_destroy = (
+            callee_binding.callee_destroy_for_empty_or_fill_dependency
+        )
+        if resolved_callee_destroy is not None:
+            direct_callee_execution = self._callee_execution(
+                direct_execution_caller,
+                resolved_callee_destroy.direct_callee_execution,
+            )
+            callee_destroy = resolved_callee_destroy.callee_destroy
+            callee_destroy_owner_execution = self._execution_for_destruction_action(
+                direct_callee_execution,
+                callee_destroy.action,
+                callee_destroy.operation.destruction_fact,
+            )
+            _ = self._add_destruction_start_before_caller(
+                dependency_keys,
+                callee_destroy_owner_execution,
+                callee_destroy.operation,
+                direct_execution_caller,
+            )
         for caller_binding_hole in callee_binding.caller_binding_holes:
             self._add_dependencies_for_binding_hole(
                 dependency_keys,

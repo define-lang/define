@@ -75,14 +75,30 @@ class ActionFragment:
     )
     dependency_count: int = field(init=False, default=0)
 
+    @property
+    def guarantee_dependent_destroy(
+        self,
+    ) -> operation_graph_model.DestructionFragmentDestroyNode | None:
+        """A contributed Destroy with a Guarantee dependency needs its Position at run time."""
+        first_operation = self.operations[0]
+        if (
+            isinstance(
+                first_operation,
+                operation_graph_model.DestructionFragmentDestroyNode,
+            )
+            and self.guarantee_dependencies
+        ):
+            return first_operation
+        return None
+
 
 @dataclass(slots=True, eq=False)
 class DestructionActionFragment(ActionFragment):
     """An Action Fragment that requires a destruction continuation.
 
     The distinct type lets consumers identify these fragments and access their
-    Destruction Fact Destroy without giving every ActionFragment an optional
-    destruction operation that cannot exist for ordinary fragments.
+    propagated Destruction Fact Destroy without giving every ActionFragment an
+    optional propagated Destruction Fact Destroy.
     """
 
     @property
@@ -102,7 +118,11 @@ class DestructionConnection:
     callee_destroy: operation_graph_model.DestructionOperation
     first_fragments_of_destructions: list[ActionFragment]
     completion_fragments: list[ActionFragment]
+    destructor_guarantees_preceding_callee_destroy: list[operation_graph.GuaranteePath]
     destruction_contract_destructors: list[DestructionContractDestructorExecutionPlan]
+    callee_binding_joins_to_start: list[CalleeBindingJoin] = field(
+        init=False, default_factory=list
+    )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, eq=False)
@@ -111,7 +131,25 @@ class ActionExecutionPlan:
 
     execution: operation_graph_model.ActionExecution
     created_destruction_connections: list[DestructionConnection]
-    forwards_destruction_connections: bool
+    forwards_destruction_connections: bool = False
+    contributed_destructor_destroying_action_execution: (
+        operation_graph_model.ActionExecution | None
+    ) = None
+
+
+@dataclass(slots=True)
+class _ActionExecutionPlans:
+    """The Action Executions and Destruction Connections planned for one action."""
+
+    action_executions: list[ActionExecutionPlan]
+    destruction_connection_by_operation: dict[
+        operation_graph_model.DestructionFragmentDestroyNode,
+        DestructionConnection,
+    ]
+    destruction_connection_by_callee_destroy: dict[
+        operation_graph_model.ResolvedCalleeDestroy,
+        DestructionConnection,
+    ]
 
 
 @dataclass(slots=True, eq=False)
@@ -120,6 +158,15 @@ class DestructionContractDestructorExecutionPlan:
 
     execution: operation_graph_model.ActionExecution
     action_parent_binding_hole: operation_graph_model.BindingHole
+
+
+@dataclass(slots=True)
+class _DestructionContractDestructorPlans:
+    """The Action Executions and destruction-time triggers for contributed Destructors."""
+
+    action_executions: list[ActionExecutionPlan]
+    destruction_contract_destructors: list[DestructionContractDestructorExecutionPlan]
+    has_empty_or_fill_dependency_on_callee_destroy: bool
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -392,12 +439,12 @@ class _ActionPlanBuilder:
             publishes_guarantees=publishes_guarantees,
             uses_binding_hole_fanouts=not start_directly,
         ).build()
-        action_executions, destruction_connection_by_operation = (
-            self._plan_action_executions(topology)
-        )
+        action_execution_plans = self._plan_action_executions(topology)
         callee_binding_join_by_callee_binding = self._plan_callee_binding_joins(
             topology.fragment_for_operation,
             binding_holes,
+            action_execution_plans.action_executions,
+            action_execution_plans.destruction_connection_by_callee_destroy,
         )
         guarantee_publications = self._plan_guarantee_publications(
             topology.fragment_for_operation,
@@ -418,7 +465,7 @@ class _ActionPlanBuilder:
             fragments=topology.fragments,
             execute_fragments=execute_fragments,
             binding_hole_fanouts=binding_hole_fanouts,
-            action_executions=action_executions,
+            action_executions=action_execution_plans.action_executions,
             callee_binding_joins=list(callee_binding_join_by_callee_binding.values()),
             triggers_for_destroyed_callee_guarantee_particles=(
                 self._plan_triggers_for_destroyed_callee_guarantee_particles(
@@ -429,19 +476,15 @@ class _ActionPlanBuilder:
             accepts_destruction_connections=(
                 self._resolved_action.graph.propagates_destruction_facts
             ),
-            destruction_connection_by_operation=destruction_connection_by_operation,
+            destruction_connection_by_operation=(
+                action_execution_plans.destruction_connection_by_operation
+            ),
         )
 
     def _plan_action_executions(
         self,
         topology: _FragmentTopology,
-    ) -> tuple[
-        list[ActionExecutionPlan],
-        dict[
-            operation_graph_model.DestructionFragmentDestroyNode,
-            DestructionConnection,
-        ],
-    ]:
+    ) -> _ActionExecutionPlans:
         action_executions: list[ActionExecutionPlan] = []
         action_execution_by_execution: dict[
             operation_graph_model.ActionExecution,
@@ -463,6 +506,9 @@ class _ActionPlanBuilder:
             operation_graph_model.DestructionFragmentDestroyNode,
             DestructionConnection,
         ] = {}
+        destruction_connection_by_callee_destroy: dict[
+            operation_graph_model.ResolvedCalleeDestroy, DestructionConnection
+        ] = {}
         for (
             resolved_callee_destroy,
             resolved_contribution,
@@ -476,24 +522,48 @@ class _ActionPlanBuilder:
                 topology.fragment_for_operation[operation]
                 for operation in contribution.completion_operations
             ]
-            destructor_plans: list[DestructionContractDestructorExecutionPlan] = []
-            for resolved_destructor in resolved_contribution.destructors:
-                (action_parent_binding,) = (
-                    resolved_destructor.callee_bindings.with_runtime_consumers
+            destruction_contract_destructor_plans = (
+                self._plan_destruction_contract_destructors_for_one_callee_destroy(
+                    resolved_callee_destroy,
+                    resolved_contribution,
                 )
-                destructor_plans.append(
-                    DestructionContractDestructorExecutionPlan(
-                        execution=resolved_destructor.execution,
-                        action_parent_binding_hole=(
-                            action_parent_binding.callee_binding_hole
-                        ),
-                    )
+            )
+            action_executions.extend(
+                destruction_contract_destructor_plans.action_executions
+            )
+            for (
+                action_execution
+            ) in destruction_contract_destructor_plans.action_executions:
+                execution = action_execution.execution
+                trigger_operation = typing.cast(
+                    "operation_graph_model.PositionOperationNode",
+                    execution.trigger_operation,
                 )
+                topology.fragment_for_operation[
+                    trigger_operation
+                ].action_execution_successors.append(execution)
+            if not (
+                first_fragments_of_destructions
+                or completion_fragments
+                or resolved_contribution.destructor_guarantees_preceding_callee_destroy
+                or destruction_contract_destructor_plans.destruction_contract_destructors
+                or destruction_contract_destructor_plans.has_empty_or_fill_dependency_on_callee_destroy
+            ):
+                # No caller-contributed Destroy or Destructor receives an Empty or
+                # Fill Dependency, or a dependency from the Action Parent Rule,
+                # from this callee Destroy. The callee Destroy also depends on no
+                # caller-contributed Particle Operation, so it needs no Destruction
+                # Connection.
+                continue
             connection = DestructionConnection(
                 resolved_callee_destroy.callee_destroy,
                 first_fragments_of_destructions,
                 completion_fragments,
-                destructor_plans,
+                resolved_contribution.destructor_guarantees_preceding_callee_destroy,
+                destruction_contract_destructor_plans.destruction_contract_destructors,
+            )
+            destruction_connection_by_callee_destroy[resolved_callee_destroy] = (
+                connection
             )
             action_execution_by_execution[
                 resolved_callee_destroy.direct_callee_execution
@@ -502,7 +572,61 @@ class _ActionPlanBuilder:
                 fragment.destruction_connections_to_complete.append(connection)
             for operation in contribution.operations:
                 destruction_connection_by_operation[operation] = connection
-        return action_executions, destruction_connection_by_operation
+        return _ActionExecutionPlans(
+            action_executions,
+            destruction_connection_by_operation,
+            destruction_connection_by_callee_destroy,
+        )
+
+    @staticmethod
+    def _plan_destruction_contract_destructors_for_one_callee_destroy(
+        resolved_callee_destroy: operation_graph_model.ResolvedCalleeDestroy,
+        resolved_contribution: operation_graph_action_resolver.ResolvedDestructionContribution,
+    ) -> _DestructionContractDestructorPlans:
+        """Plan Destructors contributed at one callee Destroy."""
+        action_executions: list[ActionExecutionPlan] = []
+        destruction_contract_destructors: list[
+            DestructionContractDestructorExecutionPlan
+        ] = []
+        has_empty_or_fill_dependency_on_callee_destroy = False
+        for resolved_destructor in resolved_contribution.destructors:
+            if not resolved_destructor.has_only_action_parent_runtime_binding:
+                execution = resolved_destructor.execution
+                action_executions.append(
+                    ActionExecutionPlan(
+                        execution=execution,
+                        created_destruction_connections=[],
+                        contributed_destructor_destroying_action_execution=(
+                            resolved_callee_destroy.direct_callee_execution
+                        ),
+                    )
+                )
+                for (
+                    callee_binding
+                ) in resolved_destructor.callee_bindings.with_runtime_consumers:
+                    if (
+                        callee_binding.callee_destroy_for_empty_or_fill_dependency
+                        == resolved_callee_destroy
+                    ):
+                        has_empty_or_fill_dependency_on_callee_destroy = True
+                        break
+                continue
+            (action_parent_binding,) = (
+                resolved_destructor.callee_bindings.with_runtime_consumers
+            )
+            destruction_contract_destructors.append(
+                DestructionContractDestructorExecutionPlan(
+                    execution=resolved_destructor.execution,
+                    action_parent_binding_hole=(
+                        action_parent_binding.callee_binding_hole
+                    ),
+                )
+            )
+        return _DestructionContractDestructorPlans(
+            action_executions,
+            destruction_contract_destructors,
+            has_empty_or_fill_dependency_on_callee_destroy,
+        )
 
     def _plan_callee_binding_joins(
         self,
@@ -510,18 +634,32 @@ class _ActionPlanBuilder:
             operation_graph_model.PositionOperationNode, ActionFragment
         ],
         binding_holes: Sequence[operation_graph_model.BindingHole],
+        action_executions: Sequence[ActionExecutionPlan],
+        destruction_connection_by_callee_destroy: dict[
+            operation_graph_model.ResolvedCalleeDestroy, DestructionConnection
+        ],
     ) -> _CalleeBindingJoinsByCalleeBinding:
         callee_binding_join_by_callee_binding: _CalleeBindingJoinsByCalleeBinding = {}
-        for resolved_action_execution in self._resolved_action.action_executions:
+        for action_execution in action_executions:
+            resolved_action_execution = (
+                self._resolved_action.resolved_execution_by_execution[
+                    action_execution.execution
+                ]
+            )
             for (
                 callee_binding
             ) in resolved_action_execution.callee_bindings.with_runtime_consumers:
                 dependencies = callee_binding.caller_dependencies
+                callee_destroy_for_empty_or_fill_dependency = (
+                    callee_binding.callee_destroy_for_empty_or_fill_dependency
+                )
                 dependency_count = (
                     len(dependencies.local_operations)
                     + len(dependencies.guarantee_dependencies)
                     + 1
                 )
+                if callee_destroy_for_empty_or_fill_dependency is not None:
+                    dependency_count += 1
                 # The entry point action has no Binding Holes to contribute.
                 if binding_holes:
                     dependency_count += len(callee_binding.caller_binding_holes)
@@ -537,6 +675,10 @@ class _ActionPlanBuilder:
                 callee_binding_join_by_callee_binding[callee_binding] = (
                     callee_binding_join
                 )
+                if callee_destroy_for_empty_or_fill_dependency is not None:
+                    destruction_connection_by_callee_destroy[
+                        callee_destroy_for_empty_or_fill_dependency
+                    ].callee_binding_joins_to_start.append(callee_binding_join)
         for operation in self._resolved_action.graph.particle_operations:
             fragment = fragment_for_operation[operation]
             for callee_binding in self._resolved_action.callee_bindings_depending_on(
@@ -557,6 +699,27 @@ class _ActionPlanBuilder:
                         resolved_action_execution.callee_bindings.with_runtime_consumers
                     )
                 )
+        for action_execution in action_executions:
+            if (
+                action_execution.contributed_destructor_destroying_action_execution
+                is None
+            ):
+                continue
+            execution = action_execution.execution
+            trigger_operation = typing.cast(
+                "operation_graph_model.PositionOperationNode",
+                execution.trigger_operation,
+            )
+            fragment = fragment_for_operation[trigger_operation]
+            resolved_execution = self._resolved_action.resolved_execution_by_execution[
+                execution
+            ]
+            fragment.triggered_action_execution_callee_binding_joins.extend(
+                callee_binding_join_by_callee_binding[callee_binding]
+                for callee_binding in (
+                    resolved_execution.callee_bindings.with_runtime_consumers
+                )
+            )
         return callee_binding_join_by_callee_binding
 
     def _plan_triggers_for_destroyed_callee_guarantee_particles(

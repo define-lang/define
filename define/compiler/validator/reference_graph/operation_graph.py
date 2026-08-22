@@ -507,7 +507,7 @@ class OperationGraphBuilder:
         if isinstance(
             operation, operation_graph_model.MoveNode
         ) and child_operations.all_precede(operation):
-            child_operations = operation_graph_model.ParticleChildOperations()
+            child_operations = operation_graph_model.NO_CHILD_OPERATIONS
         return operation_graph_model.RequirementSatisfaction(
             operation, child_operations
         )
@@ -569,7 +569,10 @@ class OperationGraphBuilder:
         execution: operation_graph_model.ActionExecution,
         contribution: operation_graph_model.DestructionContractContribution,
         destructor_preceding_child_operations: Iterable[
-            operation_graph_model.PrecedingChildOperations
+            tuple[
+                operation_graph_model.PrecedingChildOperations,
+                Iterable[operation_graph_model.PrecedingChildOperations],
+            ]
         ],
     ):
         """Record the caller-known work from one Destruction Contract."""
@@ -583,35 +586,12 @@ class OperationGraphBuilder:
             destruction.is_propagated_to_caller = True
             destruction.direct_callee_execution = execution
             self._executions_propagating_destruction_to_caller.add(execution)
-        destructors: list[
-            operation_graph_model.DestructionContractDestructorContribution
-        ] = []
-        for verified_destructor, preceding_child_operations in zip(
-            contribution.destructors,
+        destructors = self._record_destruction_contract_destructors(
+            execution,
+            contribution,
+            destroyed_position_relative_to_fact,
             destructor_preceding_child_operations,
-            strict=True,
-        ):
-            destructor_execution = self._create_action_execution(
-                verified_destructor.action,
-                verified_destructor.position,
-                requirements_in_caller=(),
-                is_destructor=True,
-                acting_on_preceding_child_operations=preceding_child_operations,
-                required_preceding_child_operations=(),
-            )
-            destructors.append(
-                operation_graph_model.DestructionContractDestructorContribution(
-                    destructor_execution=destructor_execution,
-                    callee_destroy=operation_graph_model.CalleeDestroy(
-                        direct_callee_execution=execution,
-                        destruction_fact=destruction_fact,
-                        callee_destroy_position=(
-                            *destroyed_position_relative_to_fact,
-                            *verified_destructor.callee_destroy_position_relative_to_destroyed_particle,
-                        ),
-                    ),
-                )
-            )
+        )
         # A Destruction Contract can propagate through this action without the
         # action learning any new occupied child positions or Destructors. The
         # propagation recorded above is still needed, but there is no local work.
@@ -642,6 +622,188 @@ class OperationGraphBuilder:
         self._contributed_destruction_fragments_by_direct_callee_execution.setdefault(
             execution, []
         ).append(fragment)
+
+    def _record_destruction_contract_destructors(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        contribution: operation_graph_model.DestructionContractContribution,
+        destroyed_position_relative_to_fact: tuple[str, ...],
+        destructor_preceding_child_operations: Iterable[
+            tuple[
+                operation_graph_model.PrecedingChildOperations,
+                Iterable[operation_graph_model.PrecedingChildOperations],
+            ]
+        ],
+    ) -> list[operation_graph_model.DestructionContractDestructorContribution]:
+        destruction_fact = contribution.destruction_fact
+        # TODO: Record Destructors learned after a Destruction Contract has
+        # propagated through an intermediate caller when their ordering can be
+        # represented across every caller path.
+        if (
+            execution.callee_action_name.full_typed_name
+            != destruction_fact.destroying_action.full_typed_name
+        ):
+            return []
+        destructors: list[
+            operation_graph_model.DestructionContractDestructorContribution
+        ] = []
+        for verified_destructor, preceding_child_operations in zip(
+            contribution.destructors,
+            destructor_preceding_child_operations,
+            strict=True,
+        ):
+            destructors.append(
+                self._record_destruction_contract_destructor(
+                    execution,
+                    destruction_fact,
+                    destroyed_position_relative_to_fact,
+                    verified_destructor,
+                    preceding_child_operations,
+                )
+            )
+        return destructors
+
+    def _record_destruction_contract_destructor(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        destruction_fact: operation_graph_model.DestructionFact,
+        destroyed_position_relative_to_fact: tuple[str, ...],
+        verified_destructor: operation_graph_model.VerifiedDestructionContractDestructor,
+        preceding_child_operations: tuple[
+            operation_graph_model.PrecedingChildOperations,
+            Iterable[operation_graph_model.PrecedingChildOperations],
+        ],
+    ) -> operation_graph_model.DestructionContractDestructorContribution:
+        (
+            acting_on_preceding_child_operations,
+            required_preceding_child_operations,
+        ) = preceding_child_operations
+        destruction_contract_position = (
+            verified_destructor.destruction_contract_position
+        )
+        destructor_execution = self._create_action_execution(
+            verified_destructor.action,
+            destruction_contract_position.position,
+            requirements_in_caller=(),
+            is_destructor=True,
+            acting_on_preceding_child_operations=acting_on_preceding_child_operations,
+            required_preceding_child_operations=(),
+        )
+        for verified_requirement, required_child_operations in zip(
+            verified_destructor.requirements,
+            required_preceding_child_operations,
+            strict=True,
+        ):
+            requirement_key = (
+                verified_requirement.requirement_position.canonical_chained_name_tuple
+            )
+            requirement_destroy_position = verified_requirement.callee_destroy_position_relative_to_destroyed_particle
+            if requirement_destroy_position is not None:
+                satisfaction = operation_graph_model.RequirementSatisfaction(
+                    operation_graph_model.CalleeDestroy(
+                        direct_callee_execution=execution,
+                        destruction_fact=destruction_fact,
+                        callee_destroy_position=(
+                            *destroyed_position_relative_to_fact,
+                            *requirement_destroy_position,
+                        ),
+                    ),
+                    operation_graph_model.NO_CHILD_OPERATIONS,
+                )
+            else:
+                satisfying_operation = self._operation_satisfying_requirement(
+                    verified_requirement.caller_position.canonical_chained_name_tuple
+                )
+                satisfaction = self._requirement_satisfaction(
+                    operation_graph_model.ParticleChildOperations.from_preceding_operations(
+                        required_child_operations
+                    ),
+                    typing.cast(
+                        "operation_graph_model.LastOperationNode",
+                        satisfying_operation,
+                    ),
+                )
+            destructor_execution.requirement_satisfactions[requirement_key] = (
+                satisfaction
+            )
+        action_chain = destructor_execution.action_chain
+        guarantees: list[operation_graph_model.OperationGraphGuarantee] = []
+        for verified_guarantee in verified_destructor.guarantees:
+            guarantee = verified_guarantee.guarantee
+            guarantees.append(
+                operation_graph_model.OperationGraphGuarantee(
+                    guaranteed_position=ast.chain_in_caller(
+                        action_chain,
+                        guarantee.guaranteed_position,
+                    ),
+                    operation_positions=guarantee.operation_positions,
+                )
+            )
+        guarantee_nodes = self.record_guarantees(
+            destructor_execution,
+            (),
+            guarantees,
+            guarantee_action_chain=action_chain,
+            operation_graph_action_chain=action_chain,
+        )
+        guarantee_contributions = (
+            self._destruction_contract_destructor_guarantee_contributions(
+                execution,
+                destruction_fact,
+                destroyed_position_relative_to_fact,
+                verified_destructor,
+                destructor_execution,
+                guarantee_nodes,
+            )
+        )
+        return operation_graph_model.DestructionContractDestructorContribution(
+            destructor_execution=destructor_execution,
+            callee_destroy=operation_graph_model.CalleeDestroy(
+                direct_callee_execution=execution,
+                destruction_fact=destruction_fact,
+                callee_destroy_position=(
+                    *destroyed_position_relative_to_fact,
+                    *destruction_contract_position.callee_destroy_position_relative_to_destroyed_particle,
+                ),
+            ),
+            guarantee_contributions=guarantee_contributions,
+        )
+
+    def _destruction_contract_destructor_guarantee_contributions(
+        self,
+        direct_callee_execution: operation_graph_model.ActionExecution,
+        destruction_fact: operation_graph_model.DestructionFact,
+        destroyed_position_relative_to_fact: tuple[str, ...],
+        verified_destructor: operation_graph_model.VerifiedDestructionContractDestructor,
+        destructor_execution: operation_graph_model.ActionExecution,
+        guarantee_nodes: dict[tuple[str, ...], operation_graph_model.GuaranteeNode],
+    ) -> list[operation_graph_model.DestructionContractDestructorGuaranteeContribution]:
+        guarantee_contributions: list[
+            operation_graph_model.DestructionContractDestructorGuaranteeContribution
+        ] = []
+        action_chain = destructor_execution.action_chain
+        for verified_guarantee in verified_destructor.guarantees:
+            callee_destroy_position = verified_guarantee.callee_destroy_position_relative_to_destroyed_particle
+            if callee_destroy_position is None:
+                continue
+            guarantee_position = ast.chain_in_caller(
+                action_chain,
+                verified_guarantee.guarantee.guaranteed_position,
+            )
+            guarantee_contributions.append(
+                operation_graph_model.DestructionContractDestructorGuaranteeContribution(
+                    callee_destroy=operation_graph_model.CalleeDestroy(
+                        direct_callee_execution=direct_callee_execution,
+                        destruction_fact=destruction_fact,
+                        callee_destroy_position=(
+                            *destroyed_position_relative_to_fact,
+                            *callee_destroy_position,
+                        ),
+                    ),
+                    guarantee=guarantee_nodes[guarantee_position],
+                )
+            )
+        return guarantee_contributions
 
     def _record_contributed_destruction_operations(
         self,
@@ -716,8 +878,11 @@ class OperationGraphBuilder:
         contribution_positions: set[tuple[str, ...]] = set()
         for contributed_position in contribution.children:
             if not contributed_position.preceding_contributed_positions:
+                destruction_contract_position = (
+                    contributed_position.destruction_contract_position
+                )
                 contribution_positions.add(
-                    contributed_position.position_relative_to_destroyed_particle
+                    destruction_contract_position.position_relative_to_destroyed_particle
                 )
         # Each separate contribution needs only the preceding operations on child
         # positions of the position it destroys. Partition once to avoid searching
@@ -741,7 +906,10 @@ class OperationGraphBuilder:
             _RecordedContributedPosition,
         ],
     ) -> tuple[_RecordedContributedPosition, _RecordedDestructionContribution | None]:
-        position = contributed_position.position
+        destruction_contract_position = (
+            contributed_position.destruction_contract_position
+        )
+        position = destruction_contract_position.position
         preceding_contributed_positions = (
             contributed_position.preceding_contributed_positions
         )
@@ -796,7 +964,7 @@ class OperationGraphBuilder:
             destruction_fact=contribution.destruction_fact,
             destruction_position=(
                 *destroyed_position_relative_to_fact,
-                *contributed_position.position_relative_to_destroyed_particle,
+                *destruction_contract_position.position_relative_to_destroyed_particle,
             ),
             dependencies_before_caller_contribution=dependencies_before_caller_contribution,
             dependencies_after_caller_contribution=dependencies_after_caller_contribution,
@@ -828,7 +996,10 @@ class OperationGraphBuilder:
         # A caller-known occupied child position with no contributed child Destroy
         # must begin a separate contribution because no existing contribution
         # contains it.
-        position = contributed_position.position
+        destruction_contract_position = (
+            contributed_position.destruction_contract_position
+        )
+        position = destruction_contract_position.position
         position_key = position.canonical_chained_name_tuple
         contribution_position = position_key[len(destroyed_particle_key) :]
         contribution_node = operation_graph_model.DestructionContributionNode(
@@ -848,7 +1019,7 @@ class OperationGraphBuilder:
                 destruction_fact=contribution.destruction_fact,
                 callee_destroy_position=(
                     *destroyed_position_relative_to_fact,
-                    *contributed_position.callee_destroy_position_relative_to_destroyed_particle,
+                    *destruction_contract_position.callee_destroy_position_relative_to_destroyed_particle,
                 ),
             ),
         )
@@ -1127,9 +1298,7 @@ class OperationGraphBuilder:
         self,
         execution: operation_graph_model.ActionExecution,
         nested_executions: tuple[operation_graph_model.ActionExecution, ...],
-        guaranteed_positions: Iterable[
-            tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]
-        ],
+        guarantees: Iterable[operation_graph_model.OperationGraphGuarantee],
         *,
         guarantee_action_chain: tuple[str, ...],
         operation_graph_action_chain: tuple[str, ...],
@@ -1163,10 +1332,11 @@ class OperationGraphBuilder:
         canonical_node_by_move_positions: dict[
             tuple[tuple[str, ...], ...], operation_graph_model.MoveGuaranteeNode
         ] = {}
-        for caller_position, operation_positions_in_guarantee in guaranteed_positions:
+        for guarantee in guarantees:
+            caller_position = guarantee.guaranteed_position
             operation_positions = tuple(
                 ast.chain_in_caller(guarantee_action_chain, operation_position)
-                for operation_position in operation_positions_in_guarantee
+                for operation_position in guarantee.operation_positions
             )
             if len(operation_positions) == 2:
                 canonical_move_guarantee = canonical_node_by_move_positions.get(
@@ -1371,4 +1541,13 @@ class OperationGraphs(
                     )
                     contribution = contributions[resolved_callee_destroy]
                     contribution.destructors.append(destructor.destructor_execution)
+                    for guarantee_contribution in destructor.guarantee_contributions:
+                        guarantee_callee_destroy = self.resolve_callee_destroy(
+                            guarantee_contribution.callee_destroy
+                        )
+                        contributions[
+                            guarantee_callee_destroy
+                        ].destructor_guarantees_preceding_callee_destroy.append(
+                            guarantee_contribution.guarantee
+                        )
         return contributions.items()

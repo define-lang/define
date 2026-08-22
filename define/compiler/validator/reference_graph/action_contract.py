@@ -301,6 +301,24 @@ class DestructionContract:
     # destruction can render every hop in between.
     trigger_chain: tuple[PropagationStep, ...] = ()
 
+    def occupied_child_state_position_or_nearest_occupied_parent(
+        self,
+        position: tuple[str, ...],
+    ) -> tuple[str, ...] | None:
+        """Return the position or its nearest occupied parent in the Child State."""
+        # TODO: Investigate whether projects with many contributed Destructor
+        # requirements repeat enough Child State parent-position lookups to justify
+        # caching or indexing them without an excessive memory cost.
+        for depth in range(len(position), 0, -1):
+            candidate_position = position[:depth]
+            occupancy = self.child_state.get(candidate_position)
+            if (
+                occupancy is not None
+                and occupancy.state == PositionOccupancyState.OCCUPIED
+            ):
+                return candidate_position
+        return None
+
 
 @dataclass(frozen=True, slots=True)
 class CascadeDestructor:

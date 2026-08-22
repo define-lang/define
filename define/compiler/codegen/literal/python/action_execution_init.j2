@@ -64,6 +64,12 @@
         {% endfor %}
     {% endfor %}
     {% for fragment in execution.fragments %}
+        {% if fragment.guarantee_dependent_destroy_position is not none %}
+        {% set destruction_position = fragment.guarantee_dependent_destroy_position %}
+        self.{{ destruction_position.member_name }}: literal.Position
+        {% endif %}
+    {% endfor %}
+    {% for fragment in execution.fragments %}
         {% if fragment.dependency_count > 1 %}
         self.join_for_{{ fragment.method_name }} = literal.Join({{ fragment.dependency_count }})
         {% endif %}

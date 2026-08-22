@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/destruct_sibling> {
+    it also assigns the position</sibling>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<held_sibling>.
+        move the particle in position</sibling> to position<held_sibling>.
+        move the particle in position<held_sibling> to position</sibling>.
+    }
+}

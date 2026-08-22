@@ -16,6 +16,11 @@
             forwarded_connection=self.destruction_connections.connection({{ destruction_continuation(connection.destruction_continuation) }}) if self.destruction_connections is not None else None,
         {% endif %}
         )
+        {% for registration in connection.destructor_guarantee_registrations %}
+        self.guarantees.{{ registration.child_guarantees_name }}.{{ registration.guarantee_name }}.append(
+            self.{{ connection.member_name }}.complete
+        )
+        {% endfor %}
         {% endfor %}
         {% if action_execution.created_destruction_connections %}
         self.{{ action_execution.destruction_connections_member_name }} = literal.DestructionConnections(
@@ -33,7 +38,14 @@
         {% endif %}
             self.scheduler,
         {% if action_execution.trace_action_name is not none %}
+            {% if action_execution.trace_parent_action_name is not none %}
+            self.scheduler.execution_created(
+                self.trace_execution,
+                "{{ action_execution.trace_parent_action_name }}",
+            ),
+            {% else %}
             self.trace_execution,
+            {% endif %}
             "{{ action_execution.trace_action_name }}",
         {% endif %}
         {% if action_execution.execution_needs_guarantees %}

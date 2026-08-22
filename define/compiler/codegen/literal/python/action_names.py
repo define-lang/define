@@ -416,12 +416,11 @@ class ActionNameGenerator:
         self,
     ) -> dict[operation_graph_model.DestructionFragmentDestroyNode, str]:
         names: dict[operation_graph_model.DestructionFragmentDestroyNode, str] = {}
-        for callee_binding_join in self._plan.callee_binding_joins:
-            for operation in callee_binding_join.contributed_destruction_operations:
-                target = self._typed_chain_identifier(
-                    operation.target.canonical_chained_name_tuple
-                )
-                names[operation] = self._execution_allocator.allocate(
-                    _DESTRUCTION_POSITION_PREFIX + target
-                )
+        for operation in self._plan.destruction_connection_by_operation:
+            target = self._typed_chain_identifier(
+                operation.target.canonical_chained_name_tuple
+            )
+            names[operation] = self._execution_allocator.allocate(
+                _DESTRUCTION_POSITION_PREFIX + target
+            )
         return names

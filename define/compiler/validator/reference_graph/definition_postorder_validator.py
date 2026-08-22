@@ -45,6 +45,66 @@ class _ResolvedRequirement:
     requirement: action_contract.PositionRequirement
     position: ast.PositionReference
     occupancy: action_contract.ChildOccupancy
+    callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...] | None
+
+    def as_verified_destruction_contract_requirement(
+        self,
+    ) -> operation_graph_model.VerifiedDestructionContractRequirement:
+        return operation_graph_model.VerifiedDestructionContractRequirement(
+            requirement_position=self.requirement.position,
+            caller_position=self.position,
+            callee_destroy_position_relative_to_destroyed_particle=(
+                self.callee_destroy_position_relative_to_destroyed_particle
+            ),
+        )
+
+
+def _verified_destructor_guarantees(
+    action_chain: ast.ActionReference,
+    guarantees: Sequence[action_contract.GuaranteePair],
+    requirements: Sequence[
+        operation_graph_model.VerifiedDestructionContractRequirement
+    ],
+) -> list[operation_graph_model.VerifiedDestructionContractDestructorGuarantee]:
+    requirements_by_caller_position: dict[
+        tuple[str, ...],
+        operation_graph_model.VerifiedDestructionContractRequirement,
+    ] = {}
+    for requirement in requirements:
+        if requirement.callee_destroy_position_relative_to_destroyed_particle is None:
+            continue
+        requirements_by_caller_position[
+            requirement.caller_position.canonical_chained_name_tuple
+        ] = requirement
+
+    verified_guarantees: list[
+        operation_graph_model.VerifiedDestructionContractDestructorGuarantee
+    ] = []
+    action_chain_key = action_chain.canonical_chained_name_tuple
+    for guaranteed_position, guarantee in guarantees:
+        caller_position = ast.chain_in_caller(action_chain_key, guaranteed_position)
+        callee_destroy_position = None
+        # A requirement's Destroy precedes the Destroy for a requirement on one
+        # of its parent positions. Searching from the guaranteed position toward
+        # its parents therefore retains only the direct dependency.
+        for depth in range(len(caller_position), 0, -1):
+            requirement = requirements_by_caller_position.get(caller_position[:depth])
+            if requirement is None:
+                continue
+            callee_destroy_position = (
+                requirement.callee_destroy_position_relative_to_destroyed_particle
+            )
+            break
+        verified_guarantees.append(
+            operation_graph_model.VerifiedDestructionContractDestructorGuarantee(
+                guarantee=operation_graph_model.OperationGraphGuarantee(
+                    guaranteed_position=guaranteed_position,
+                    operation_positions=guarantee.operation_positions,
+                ),
+                callee_destroy_position_relative_to_destroyed_particle=callee_destroy_position,
+            )
+        )
+    return verified_guarantees
 
 
 @dataclass(frozen=True, slots=True)
@@ -886,6 +946,7 @@ class ActionPostorderValidator:
         ):
             callee_destroy_position_for_children = relative_key
         particle = occupancy_info.occupant
+        destruction_contract_position = None
         final_contributed_positions: list[
             operation_graph_model.ContributedDestructionPosition
         ] = []
@@ -924,9 +985,17 @@ class ActionPostorderValidator:
                 if definition.is_destructor and not (
                     destruction_contract.verified_destructors.has_quality(quality)
                 ):
+                    if destruction_contract_position is None:
+                        destruction_contract_position = (
+                            operation_graph_model.DestructionContractPosition(
+                                position,
+                                relative_key,
+                                callee_destroy_position_for_children,
+                            )
+                        )
                     destructor_contribution = self._verify_one_cascade_destructor(
                         destructor_quality=quality,
-                        particle_position=position,
+                        destruction_contract_position=destruction_contract_position,
                         particle=particle,
                         destruction_contract=destruction_contract,
                         destroying_definition=destroying_definition,
@@ -935,10 +1004,6 @@ class ActionPostorderValidator:
                         quality_assignment=preferred_assignment,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
-                        position_relative_to_destroyed_particle=relative_key,
-                        callee_destroy_position_relative_to_destroyed_particle=(
-                            callee_destroy_position_for_children
-                        ),
                         newly_verified=newly_verified,
                     )
                 if destructor_contribution is not None:
@@ -969,10 +1034,16 @@ class ActionPostorderValidator:
         # contributed Destroy operations are recorded child before parent; the
         # contracted position itself is destroyed by the callee.
         if is_newly_occupied_child:
+            if destruction_contract_position is None:
+                destruction_contract_position = (
+                    operation_graph_model.DestructionContractPosition(
+                        position,
+                        relative_key,
+                        callee_destroy_position,
+                    )
+                )
             contributed_position = operation_graph_model.ContributedDestructionPosition(
-                position,
-                relative_key,
-                callee_destroy_position,
+                destruction_contract_position,
                 tuple(reversed(final_contributed_positions)),
             )
             newly_occupied_children.append(contributed_position)
@@ -983,7 +1054,7 @@ class ActionPostorderValidator:
         self,
         *,
         destructor_quality: ast.GlobalTypedNameReference,
-        particle_position: ast.PositionReference,
+        destruction_contract_position: operation_graph_model.DestructionContractPosition,
         particle: particle_tracker.ParticleInfo,
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition,
@@ -992,8 +1063,6 @@ class ActionPostorderValidator:
         quality_assignment: quality_assignment.QualityAssignment,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        position_relative_to_destroyed_particle: tuple[str, ...],
-        callee_destroy_position_relative_to_destroyed_particle: tuple[str, ...],
         newly_verified: list[quality_assignment.QualityAssignment],
     ) -> operation_graph_model.VerifiedDestructionContractDestructor | None:
         """Verify one Destructor discovered through a Destruction Contract."""
@@ -1002,6 +1071,7 @@ class ActionPostorderValidator:
         )
         if destructor_contract is None:
             return None
+        particle_position = destruction_contract_position.position
         action_chain = particle_position.with_action_suffix(destructor_quality)
         # A destructor is checked exactly once: only at the action that knows the
         # state of every position it requires. Resolve the state of all required positions
@@ -1012,6 +1082,8 @@ class ActionPostorderValidator:
                 inner_req=inner_req,
                 action_chain=action_chain,
                 caller_prefix_length=caller_prefix_length,
+                destruction_contract=destruction_contract,
+                destruction_contract_position=destruction_contract_position,
                 merged_child_state=merged_child_state,
                 created_in_this_action=created_in_this_action,
             )
@@ -1058,18 +1130,18 @@ class ActionPostorderValidator:
                 )
             )
         newly_verified.append(quality_assignment)
-        # TODO: Contribute Destructors with Automatic Action Requirements once
-        # their dependencies can be recorded in the Operation Graph.
-        if resolved_requirements:
-            return None
+        verified_requirements = [
+            resolved_requirement.as_verified_destruction_contract_requirement()
+            for resolved_requirement in resolved_requirements
+        ]
         return operation_graph_model.VerifiedDestructionContractDestructor(
             action=action_chain,
-            position=particle_position,
-            position_relative_to_destroyed_particle=(
-                position_relative_to_destroyed_particle
-            ),
-            callee_destroy_position_relative_to_destroyed_particle=(
-                callee_destroy_position_relative_to_destroyed_particle
+            destruction_contract_position=destruction_contract_position,
+            requirements=verified_requirements,
+            guarantees=_verified_destructor_guarantees(
+                action_chain,
+                destructor_contract.guarantees.own,
+                verified_requirements,
             ),
         )
 
@@ -1079,6 +1151,8 @@ class ActionPostorderValidator:
         inner_req: action_contract.PositionRequirement,
         action_chain: ast.ActionReference,
         caller_prefix_length: int,
+        destruction_contract: action_contract.DestructionContract,
+        destruction_contract_position: operation_graph_model.DestructionContractPosition,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
     ) -> _ResolvedRequirement | None:
@@ -1093,6 +1167,7 @@ class ActionPostorderValidator:
         relative_key = required_position.canonical_chained_name_tuple[
             caller_prefix_length:
         ]
+        callee_occupancy = destruction_contract.child_state.get(relative_key)
         occupancy = merged_child_state.get(relative_key)
         if occupancy is None:
             # A passed-in particle's untouched position is decided higher up: this
@@ -1113,10 +1188,28 @@ class ActionPostorderValidator:
                 )
             else:
                 occupancy = action_contract.EMPTY_OCCUPANCY
+        requirement_callee_destroy_position = None
+        # A callee-known occupied requirement uses that position's Destroy. An
+        # empty requirement has no Destroy, so it uses the nearest callee-known
+        # occupied parent position's Destroy. A caller-only occupied position
+        # instead has a caller-contributed Destroy.
+        if occupancy.state == action_contract.PositionOccupancyState.EMPTY or (
+            callee_occupancy is not None
+            and callee_occupancy.state != action_contract.PositionOccupancyState.ERROR
+        ):
+            requirement_callee_destroy_position = destruction_contract_position.callee_destroy_position_relative_to_destroyed_particle
+            occupied_position_or_parent = destruction_contract.occupied_child_state_position_or_nearest_occupied_parent(
+                relative_key
+            )
+            if occupied_position_or_parent is not None:
+                requirement_callee_destroy_position = occupied_position_or_parent
         return _ResolvedRequirement(
             requirement=inner_req,
             position=required_position,
             occupancy=occupancy,
+            callee_destroy_position_relative_to_destroyed_particle=(
+                requirement_callee_destroy_position
+            ),
         )
 
     def _analyze_statements(

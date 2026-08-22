@@ -128,6 +128,7 @@ class ActionFragmentContext:
     dependency_count: int
     continue_destroy_method_name: str | None
     destruction_connection_names_to_complete: list[str]
+    guarantee_dependent_destroy_position: DestructionPositionContext | None
 
 
 @dataclass
@@ -149,6 +150,9 @@ class DestructionConnectionContext:
     start_method_names: list[str]
     destruction_contract_destructors: list[
         DestructionContractDestructorExecutionContext
+    ]
+    destructor_guarantee_registrations: list[
+        DestructionConnectionGuaranteeRegistrationContext
     ]
     expected_completions: int
 
@@ -172,6 +176,7 @@ class TriggeredActionExecutionContext:
     created_destruction_connections: list[DestructionConnectionContext]
     destruction_connections_member_name: str | None
     forwards_destruction_connections: bool
+    trace_parent_action_name: str | None
     trace_action_name: str | None = None
 
     @property
@@ -200,6 +205,14 @@ class GuaranteeRegistrationContext:
     child_guarantees_names: list[str]
     guarantee_name: str
     method_name: str
+
+
+@dataclass
+class DestructionConnectionGuaranteeRegistrationContext:
+    """A destruction continuation's dependency on one Guarantee."""
+
+    child_guarantees_name: str
+    guarantee_name: str
 
 
 @dataclass

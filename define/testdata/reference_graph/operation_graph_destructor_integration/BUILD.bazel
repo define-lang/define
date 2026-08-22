@@ -6,7 +6,6 @@ _TRACING_TESTDATA_EXCLUDES = [
 ]
 
 _CODEGEN_TESTDATA_EXCLUDES = [
-    "caller_contributed_child_destructor_depends_on_callee_guarantee/**",
     "diamond_callers_serialize_added_destructor_around_known_destructor/**",
     "destructor_known_only_two_callers_up/**",
     "destructor_on_passed_particle_with_newly_known_child/**",

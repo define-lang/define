@@ -87,6 +87,14 @@ class TriggeredActionExecutionGenerator:
                 action_expression = self._statement_generator.build_action(
                     execution.callee
                 )
+            trace_parent_action_name = None
+            destroying_action_execution = (
+                planned_execution.contributed_destructor_destroying_action_execution
+            )
+            if destroying_action_execution is not None:
+                trace_parent_action_name = self._trace_action_name(
+                    destroying_action_execution
+                )
             action_executions[execution] = (
                 template_context.TriggeredActionExecutionContext(
                     action_expression=action_expression,
@@ -102,6 +110,7 @@ class TriggeredActionExecutionGenerator:
                     forwards_destruction_connections=(
                         planned_execution.forwards_destruction_connections
                     ),
+                    trace_parent_action_name=trace_parent_action_name,
                     trace_action_name=self._trace_action_name(execution),
                 )
             )
@@ -168,13 +177,46 @@ class TriggeredActionExecutionGenerator:
             )
             for destructor in destruction_contract_destructors:
                 start_method_names.append(destructor.trigger_method_name)
+            for callee_binding_join in connection.callee_binding_joins_to_start:
+                start_method_names.append(
+                    self._names.callee_binding_join_method_names[callee_binding_join]
+                )
+            destructor_guarantee_registrations: list[
+                template_context.DestructionConnectionGuaranteeRegistrationContext
+            ] = []
+            if connection.destructor_guarantees_preceding_callee_destroy:
+                guarantee_interface = typing.cast(
+                    "action_context.GuaranteeInterface", self._guarantee_interface
+                )
+                for (
+                    guarantee
+                ) in connection.destructor_guarantees_preceding_callee_destroy:
+                    (execution,) = guarantee.executions
+                    child_guarantees = guarantee_interface.child_guarantees[execution]
+                    guarantee_name = (
+                        child_guarantees.callee_interface.guarantee_names_by_operation[
+                            guarantee.operation
+                        ]
+                    )
+                    destructor_guarantee_registrations.append(
+                        template_context.DestructionConnectionGuaranteeRegistrationContext(
+                            child_guarantees_name=child_guarantees.member_name,
+                            guarantee_name=guarantee_name,
+                        )
+                    )
             contexts.append(
                 template_context.DestructionConnectionContext(
                     member_name=self._names.destruction_connections[connection],
                     destruction_continuation=destruction_continuation,
                     start_method_names=start_method_names,
                     destruction_contract_destructors=(destruction_contract_destructors),
-                    expected_completions=len(connection.completion_fragments),
+                    destructor_guarantee_registrations=(
+                        destructor_guarantee_registrations
+                    ),
+                    expected_completions=(
+                        len(connection.completion_fragments)
+                        + len(connection.destructor_guarantees_preceding_callee_destroy)
+                    ),
                 )
             )
         return contexts

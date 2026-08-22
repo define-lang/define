@@ -1,4 +1,9 @@
-"""Operation tracing for instrumented literal Python programs."""
+"""Operation tracing for instrumented literal Python programs.
+
+The purpose of tracing is to accurately output the executed order of
+operations at runtime, and nothing else. It does not fully track every method
+in the generated code, just the order of actual Define operations.
+"""
 
 from __future__ import annotations
 

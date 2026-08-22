@@ -1,0 +1,178 @@
+[
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "/destroyer::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "source",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "create",
+    "target": "source::/sibling",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": null,
+      "action_name": "test"
+    },
+    "operation_name": "move",
+    "source": "source",
+    "target": "/destroyer::parent",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "create",
+    "target": "parent::/maker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "maker"
+    },
+    "operation_name": "create",
+    "target": "result",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "/sibling",
+    "target": "held_sibling",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "held_sibling",
+    "target": "/sibling",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "/maker::result",
+    "target": "held_result",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "action_name": "destruct"
+    },
+    "operation_name": "move",
+    "source": "held_result",
+    "target": "/maker::result",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "parent::/maker::result",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "parent::/maker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "parent::/sibling",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "parent",
+    "occurrence": 1
+  }
+]
