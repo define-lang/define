@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the action</destroyer>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</first>.
+            it has the action</first_destructor>.
+            it has the position</second>.
+            it has the action</second_destructor>.
+            it has the action</third_destructor>.
+            it has the action</fourth_destructor>.
+            it has the position</fifth>.
+            it has the action</fifth_destructor>.
+        }
+    }
+    it happens when {
+        the position<target> has a particle.
+    } and it does {
+        create a particle in position<target>::position</first>.
+        create a particle in position<target>::position</second>.
+        create a particle in position<target>::position</fifth>.
+        move the particle in position<target> to action</destroyer>::position<target>.
+    }
+}

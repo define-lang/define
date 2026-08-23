@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</first_destructor>.
+                it has the position</second>.
+                it has the action</second_destructor>.
+                it has the action</third_destructor>.
+            }
+        }
+        create a particle in position<carrier>.
+        create a particle in position<carrier>::position</second>.
+        move the particle in position<carrier> to action</destroyer>::position<target>.
+    }
+}

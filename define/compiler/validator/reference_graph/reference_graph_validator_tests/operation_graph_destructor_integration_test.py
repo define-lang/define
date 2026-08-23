@@ -19,6 +19,13 @@ _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
 _DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED = (
     "caller-added Destructor dependencies are not fully resolved in the Operation Graph"
 )
+_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED = (
+    "caller-introduced child Positions are not merged into the destroyer's "
+    "canonical destruction order"
+)
+_CREATOR_CHILD_ORDER_NOT_PROPAGATED = (
+    "the creator's canonical child order is not propagated through multiple callees"
+)
 
 
 def test_destructor_independent_chains_and_operation_after_destroy(
@@ -1535,5 +1542,1111 @@ def test_multiple_constructors_run_in_parallel_with_destroy_and_destructors(
         "destruct_a.destroy(_noop)": ["destruct_a.create(_noop)"],
         "destruct_b.create(_noop)": ["test.create(box)"],
         "destruct_b.destroy(_noop)": ["destruct_b.create(_noop)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_three_destroyer_occupied_caller_occupied(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": ["test.create(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.move(/third, holder)": ["destroyer.create(target::/third)"],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.move(/second, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.move(/first, holder)": ["destroyer.create(target::/first)"],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_five_destroyer_occupied_caller_occupied(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.create(carrier::/first)",
+            "test.create(carrier::/third)",
+            "test.create(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.move(/fifth, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "third_destructor.move(/third, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.create(target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.move(/first, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fifth)",
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_three_destroyer_empty_caller_empty(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.destroy(carrier::/second)": ["test.create(carrier::/second)"],
+        "test.move(carrier, /destroyer::target)": ["test.destroy(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/first)": ["destroyer.create(target::/first)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/third)": ["destroyer.create(target::/third)"],
+        "third_destructor.create(/third)": ["destroyer.destroy(target::/third)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.create(/second)": ["test.move(carrier, /destroyer::target)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.create(/first)": ["destroyer.destroy(target::/first)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "third_destructor.destroy(/third)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_five_destroyer_empty_caller_empty(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.destroy(carrier::/first)": ["test.create(carrier::/first)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.destroy(carrier::/third)": ["test.create(carrier::/third)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.destroy(carrier::/fifth)": ["test.create(carrier::/fifth)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.destroy(carrier::/first)",
+            "test.destroy(carrier::/third)",
+            "test.destroy(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/second)": ["destroyer.create(target::/second)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/fourth)": ["destroyer.create(target::/fourth)"],
+        "fifth_destructor.create(/fifth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/fifth)": ["fifth_destructor.create(/fifth)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "fourth_destructor.create(/fourth)": ["destroyer.destroy(target::/fourth)"],
+        "fourth_destructor.destroy(/fourth)": ["fourth_destructor.create(/fourth)"],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "third_destructor.create(/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.create(/second)": ["destroyer.destroy(target::/second)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.create(/first)": ["test.move(carrier, /destroyer::target)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "fifth_destructor.destroy(/fifth)",
+            "fourth_destructor.destroy(/fourth)",
+            "third_destructor.destroy(/third)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_three_destroyer_occupied_caller_empty(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.destroy(carrier::/second)": ["test.create(carrier::/second)"],
+        "test.move(carrier, /destroyer::target)": ["test.destroy(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.move(/third, holder)": ["destroyer.create(target::/third)"],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.create(/second)": ["test.move(carrier, /destroyer::target)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.move(/first, holder)": ["destroyer.create(target::/first)"],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/first)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_five_destroyer_occupied_caller_empty(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.destroy(carrier::/first)": ["test.create(carrier::/first)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.destroy(carrier::/third)": ["test.create(carrier::/third)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.destroy(carrier::/fifth)": ["test.create(carrier::/fifth)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.destroy(carrier::/first)",
+            "test.destroy(carrier::/third)",
+            "test.destroy(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.create(/fifth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/fifth)": ["fifth_destructor.create(/fifth)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "third_destructor.create(/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.create(target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.create(/first)": ["test.move(carrier, /destroyer::target)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/second)",
+            "fifth_destructor.destroy(/fifth)",
+            "third_destructor.destroy(/third)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_three_destroyer_empty_caller_occupied(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": ["test.create(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/first)": ["destroyer.create(target::/first)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/third)": ["destroyer.create(target::/third)"],
+        "third_destructor.create(/third)": ["destroyer.destroy(target::/third)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.move(/second, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.create(/first)": ["destroyer.destroy(target::/first)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/second)",
+            "third_destructor.destroy(/third)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_all_positions_five_destroyer_empty_caller_occupied(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.create(carrier::/first)",
+            "test.create(carrier::/third)",
+            "test.create(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/second)": ["destroyer.create(target::/second)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/fourth)": ["destroyer.create(target::/fourth)"],
+        "fifth_destructor.move(/fifth, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "fourth_destructor.create(/fourth)": ["destroyer.destroy(target::/fourth)"],
+        "fourth_destructor.destroy(/fourth)": ["fourth_destructor.create(/fourth)"],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "third_destructor.move(/third, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.create(/second)": ["destroyer.destroy(target::/second)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.move(/first, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fifth)",
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/first)",
+            "fourth_destructor.destroy(/fourth)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_three_occupied_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": ["test.create(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.move(/third, holder)": ["destroyer.create(target::/third)"],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.move(/second, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.move(/first, holder)": ["destroyer.create(target::/first)"],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_five_occupied_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.create(carrier::/first)",
+            "test.create(carrier::/third)",
+            "test.create(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.move(/fifth, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "third_destructor.move(/third, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.create(target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.move(/first, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fifth)",
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_three_empty_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.destroy(carrier::/second)": ["test.create(carrier::/second)"],
+        "test.move(carrier, /destroyer::target)": ["test.destroy(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/first)": ["destroyer.create(target::/first)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/third)": ["destroyer.create(target::/third)"],
+        "third_destructor.create(/third)": ["destroyer.destroy(target::/third)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.create(/second)": ["test.move(carrier, /destroyer::target)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.create(/first)": ["destroyer.destroy(target::/first)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "third_destructor.destroy(/third)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_five_empty_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.destroy(carrier::/first)": ["test.create(carrier::/first)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.destroy(carrier::/third)": ["test.create(carrier::/third)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.destroy(carrier::/fifth)": ["test.create(carrier::/fifth)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.destroy(carrier::/first)",
+            "test.destroy(carrier::/third)",
+            "test.destroy(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/second)": ["destroyer.create(target::/second)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/fourth)": ["destroyer.create(target::/fourth)"],
+        "fifth_destructor.create(/fifth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/fifth)": ["fifth_destructor.create(/fifth)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "fourth_destructor.create(/fourth)": ["destroyer.destroy(target::/fourth)"],
+        "fourth_destructor.destroy(/fourth)": ["fourth_destructor.create(/fourth)"],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "third_destructor.create(/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.create(/second)": ["destroyer.destroy(target::/second)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.create(/first)": ["test.move(carrier, /destroyer::target)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "fifth_destructor.destroy(/fifth)",
+            "fourth_destructor.destroy(/fourth)",
+            "third_destructor.destroy(/third)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_three_empty_children_between_occupied_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.destroy(carrier::/second)": ["test.create(carrier::/second)"],
+        "test.move(carrier, /destroyer::target)": ["test.destroy(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.move(/third, holder)": ["destroyer.create(target::/third)"],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.create(/second)": ["test.move(carrier, /destroyer::target)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.move(/first, holder)": ["destroyer.create(target::/first)"],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/first)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_five_empty_children_between_occupied_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.destroy(carrier::/first)": ["test.create(carrier::/first)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.destroy(carrier::/third)": ["test.create(carrier::/third)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.destroy(carrier::/fifth)": ["test.create(carrier::/fifth)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.destroy(carrier::/first)",
+            "test.destroy(carrier::/third)",
+            "test.destroy(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.create(/fifth)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/fifth)": ["fifth_destructor.create(/fifth)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "third_destructor.create(/third)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.create(target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.create(/first)": ["test.move(carrier, /destroyer::target)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/second)",
+            "fifth_destructor.destroy(/fifth)",
+            "third_destructor.destroy(/third)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_three_occupied_children_between_empty_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/second)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": ["test.create(carrier::/second)"],
+        "destroyer.create(target::/first)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/first)": ["destroyer.create(target::/first)"],
+        "destroyer.create(target::/third)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/third)": ["destroyer.create(target::/third)"],
+        "third_destructor.create(/third)": ["destroyer.destroy(target::/third)"],
+        "third_destructor.destroy(/third)": ["third_destructor.create(/third)"],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "third_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "second_destructor.move(/second, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "first_destructor.create(/first)": ["destroyer.destroy(target::/first)"],
+        "first_destructor.destroy(/first)": ["first_destructor.create(/first)"],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/second)",
+            "third_destructor.destroy(/third)",
+            "first_destructor.destroy(/first)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLER_INTRODUCED_CHILD_POSITIONS_NOT_RESOLVED,
+)
+def test_caller_introduces_five_occupied_children_between_empty_children(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/first)": ["test.create(carrier)"],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.create(carrier::/fifth)": ["test.create(carrier)"],
+        "test.move(carrier, /destroyer::target)": [
+            "test.create(carrier::/first)",
+            "test.create(carrier::/third)",
+            "test.create(carrier::/fifth)",
+        ],
+        "destroyer.create(target::/second)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/second)": ["destroyer.create(target::/second)"],
+        "destroyer.create(target::/fourth)": ["test.move(carrier, /destroyer::target)"],
+        "destroyer.destroy(target::/fourth)": ["destroyer.create(target::/fourth)"],
+        "fifth_destructor.move(/fifth, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "fifth_destructor.create(/marker)": ["test.move(carrier, /destroyer::target)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "fourth_destructor.create(/fourth)": ["destroyer.destroy(target::/fourth)"],
+        "fourth_destructor.destroy(/fourth)": ["fourth_destructor.create(/fourth)"],
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "third_destructor.move(/third, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "second_destructor.create(/second)": ["destroyer.destroy(target::/second)"],
+        "second_destructor.destroy(/second)": ["second_destructor.create(/second)"],
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "first_destructor.move(/first, holder)": [
+            "test.move(carrier, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/fifth)",
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/first)",
+            "fourth_destructor.destroy(/fourth)",
+            "second_destructor.destroy(/second)",
+            "first_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CREATOR_CHILD_ORDER_NOT_PROPAGATED,
+)
+def test_creator_reverse_child_order_is_canonical_across_three_actions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.move(carrier, /middle::target)": ["test.create(carrier::/third)"],
+        "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
+        "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
+        "middle.create(target::/fifth)": ["test.move(carrier, /middle::target)"],
+        "middle.move(target, /destroyer::target)": [
+            "middle.create(target::/first)",
+            "middle.create(target::/second)",
+            "middle.create(target::/fifth)",
+        ],
+        "destroyer.move(target::/second, second_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destroyer.move(second_holder, target::/second)": [
+            "destroyer.move(target::/second, second_holder)"
+        ],
+        "destroyer.create(target::/fourth)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "first_destructor.move(/first, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "first_destructor.create(/marker)": ["middle.move(target, /destroyer::target)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.move(second_holder, target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["first_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "third_destructor.move(/third, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "fifth_destructor.move(/fifth, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        "fifth_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/first)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/fifth)",
+            "fifth_destructor.destroy(/marker)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CREATOR_CHILD_ORDER_NOT_PROPAGATED,
+)
+def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(carrier)": [],
+        "test.create(carrier::/third)": ["test.create(carrier)"],
+        "test.move(carrier, /middle::target)": ["test.create(carrier::/third)"],
+        "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
+        "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
+        "middle.create(target::/fifth)": ["test.move(carrier, /middle::target)"],
+        "middle.move(target, /destroyer::target)": [
+            "middle.create(target::/first)",
+            "middle.create(target::/second)",
+            "middle.create(target::/fifth)",
+        ],
+        "destroyer.move(target::/second, second_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destroyer.move(second_holder, target::/second)": [
+            "destroyer.move(target::/second, second_holder)"
+        ],
+        "destroyer.create(target::/fourth)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "first_destructor.move(/first, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "first_destructor.move(holder, /first)": [
+            "first_destructor.move(/first, holder)"
+        ],
+        # The shared Positions Fill and Empty Rules serialize the Destructors
+        # in reverse creator assignment order.
+        "first_destructor.create(/marker)": ["middle.move(target, /destroyer::target)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target::/first)": ["first_destructor.move(holder, /first)"],
+        "fourth_destructor.move(/fourth, holder)": [
+            "destroyer.create(target::/fourth)"
+        ],
+        "fourth_destructor.move(holder, /fourth)": [
+            "fourth_destructor.move(/fourth, holder)"
+        ],
+        "fourth_destructor.create(/marker)": ["first_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fourth)": [
+            "fourth_destructor.move(holder, /fourth)"
+        ],
+        "second_destructor.move(/second, holder)": [
+            "destroyer.move(second_holder, target::/second)"
+        ],
+        "second_destructor.move(holder, /second)": [
+            "second_destructor.move(/second, holder)"
+        ],
+        "second_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        "destroyer.destroy(target::/second)": [
+            "second_destructor.move(holder, /second)"
+        ],
+        "fifth_destructor.move(/fifth, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "fifth_destructor.move(holder, /fifth)": [
+            "fifth_destructor.move(/fifth, holder)"
+        ],
+        "fifth_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        "destroyer.destroy(target::/fifth)": ["fifth_destructor.move(holder, /fifth)"],
+        "third_destructor.move(/third, holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "third_destructor.move(holder, /third)": [
+            "third_destructor.move(/third, holder)"
+        ],
+        "third_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/first)",
+            "destroyer.destroy(target::/fourth)",
+            "destroyer.destroy(target::/second)",
+            "destroyer.destroy(target::/fifth)",
+            "destroyer.destroy(target::/third)",
+            "third_destructor.destroy(/marker)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
