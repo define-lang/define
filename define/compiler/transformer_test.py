@@ -445,7 +445,7 @@ def test_destroy_particle_statement_fields():
 
 
 def test_position_presence_statement_fields():
-    condition = _only_action(_FULL_ACTION).trigger_conditions.conditions[0]
+    condition = _only_action(_FULL_ACTION).trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
     assert condition.typed_name.name_content.name == "run"
@@ -458,7 +458,7 @@ def test_position_presence_statement_fields():
 
 
 def test_constructor_condition_statement_fields():
-    condition = _only_action(_CONSTRUCTOR_ACTION).trigger_conditions.conditions[0]
+    condition = _only_action(_CONSTRUCTOR_ACTION).trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
     assert condition.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=34
@@ -469,7 +469,7 @@ def test_constructor_condition_statement_fields():
 
 
 def test_destructor_condition_statement_fields():
-    condition = _only_action(_DESTRUCTOR_ACTION).trigger_conditions.conditions[0]
+    condition = _only_action(_DESTRUCTOR_ACTION).trigger_conditions.condition
     assert isinstance(condition, ast.DestructorConditionStatement)
     assert condition.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=42
@@ -482,8 +482,7 @@ def test_destructor_condition_statement_fields():
 
 def test_trigger_conditions_block_fields():
     block = _only_action(_FULL_ACTION).trigger_conditions
-    assert len(block.conditions) == 1
-    assert isinstance(block.conditions[0], ast.PositionPresenceStatement)
+    assert isinstance(block.condition, ast.PositionPresenceStatement)
     assert block.location == ast.SourceLocation(
         line=5, column=5, end_line=7, end_column=6
     )

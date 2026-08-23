@@ -82,7 +82,7 @@ def _destructor_def(path: str) -> ast.ActionDefinition:
         quality_implications=(),
         interface_positions=(),
         trigger_conditions=ast.TriggerConditionsBlock(
-            conditions=(ast.DestructorConditionStatement(location=_LOC),),
+            condition=ast.DestructorConditionStatement(location=_LOC),
             location=_LOC,
         ),
         action_statements=ast.ActionStatementsBlock(statements=(), location=_LOC),

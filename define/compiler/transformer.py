@@ -505,13 +505,13 @@ class DefineTransformer(
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block.
 
-        items: [IT_HAPPENS_WHEN token, *conditions, CLOSE_BRACE token].
+        items: [IT_HAPPENS_WHEN token, condition, CLOSE_BRACE token].
         """
         keyword = cast("lark_standalone.Token", items[0])
         close_brace = cast("lark_standalone.Token", items[-1])
-        conditions = cast("list[ast.TriggerConditionStatement]", items[1:-1])
+        condition = cast("ast.TriggerConditionStatement", items[1])
         return ast.TriggerConditionsBlock(
-            conditions=tuple(conditions),
+            condition=condition,
             location=self._location(start=keyword, end=close_brace),
         )
 

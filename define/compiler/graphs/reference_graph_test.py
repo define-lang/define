@@ -46,8 +46,8 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
         quality_implications=(),
         interface_positions=(),
         trigger_conditions=ast.TriggerConditionsBlock(
-            conditions=(
-                ast.PositionPresenceStatement(typed_name=_TRIGGER_REF, location=_LOC),
+            condition=ast.PositionPresenceStatement(
+                typed_name=_TRIGGER_REF, location=_LOC
             ),
             location=_LOC,
         ),

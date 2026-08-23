@@ -61,6 +61,7 @@ required-imports = ["from __future__ import annotations"]
     "D103", # Generated code doesn't need function docstrings.
     "D107", # Generated code doesn't need __init__ docstrings.
     "I001", # Import ordering depends on isort first-party config of the target project.
+    "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
 ]
 "**/testdata/**/expected_trace/**/*.py" = [
@@ -71,6 +72,7 @@ required-imports = ["from __future__ import annotations"]
     "D103", # Generated code doesn't need function docstrings.
     "D107", # Generated code doesn't need __init__ docstrings.
     "I001", # Import ordering depends on isort first-party config of the target project.
+    "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
 ]
 "**/*_test.py" = [

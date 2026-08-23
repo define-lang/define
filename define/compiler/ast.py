@@ -788,7 +788,7 @@ type TriggerConditionStatement = (
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
-    conditions: tuple[TriggerConditionStatement, ...]
+    condition: TriggerConditionStatement
 
 
 @dataclass(frozen=True, slots=True)
@@ -861,34 +861,34 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
-        first_condition = self.trigger_conditions.conditions[0]
-        if not isinstance(first_condition, PositionPresenceStatement):
+        condition = self.trigger_conditions.condition
+        if not isinstance(condition, PositionPresenceStatement):
             return None
-        trigger_name = first_condition.typed_name.source_typed_name
+        trigger_name = condition.typed_name.source_typed_name
         return self.interface_positions_by_name.get(trigger_name)
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:
         """Return the trigger condition's PositionReference, if valid."""
-        first_condition = self.trigger_conditions.conditions[0]
+        condition = self.trigger_conditions.condition
         if self.trigger_position is None or not isinstance(
-            first_condition, PositionPresenceStatement
+            condition, PositionPresenceStatement
         ):
             return None
-        return first_condition.position_reference
+        return condition.position_reference
 
     @property
     def is_constructor(self) -> bool:
         """Whether this action triggers when its particle is created."""
         return isinstance(
-            self.trigger_conditions.conditions[0], ConstructorConditionStatement
+            self.trigger_conditions.condition, ConstructorConditionStatement
         )
 
     @property
     def is_destructor(self) -> bool:
         """Whether this action triggers when its particle is destroyed."""
         return isinstance(
-            self.trigger_conditions.conditions[0], DestructorConditionStatement
+            self.trigger_conditions.condition, DestructorConditionStatement
         )
 
 
