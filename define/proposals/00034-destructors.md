@@ -257,12 +257,8 @@ define the potential action<mv:example.com:example:/temp_file/destroy> {
     it also assigns the position</file_handle>.
     it also assigns the position</buffer>.
 
-    define the position<run>.
-
     it happens when {
         this particle is being destroyed.
-        OR
-        the position<run> has a particle.
     } and it does {
         # All totally imaginary syntax that will never exist.
         flush the value in position</buffer> to the file in position</file_handle>.
@@ -310,12 +306,9 @@ conditional destructors that only fire when the action is in the state where it
 actually needs the destructor.
 
 The one trade-off is that you have to add the action to any position you need
-destroyed in that way, which forces certain software design patterns on
-well-designed Define programs (that is, it means you want to have potential
-positions that define objects that need destructors, instead of just providing a
-collection of actions and positions that the developer can _choose_ to assign to
-a position). Once we implement access controls (in future proposals), the way
-you implement these design patterns will be more apparent.
+destroyed in that way. However, you can easily add it to a global position and
+then every time you reference that global position, it will have that destructor
+on it.
 
 ## Forward Compatibility
 
