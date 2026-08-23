@@ -12,7 +12,7 @@ description:
 1. Run:
 
    ```text
-   bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov //...
+   bazelisk coverage --noshow_progress --ui_event_filters=-info --combined_report=lcov --cache_test_results=no //...
    ```
 
 2. Run:

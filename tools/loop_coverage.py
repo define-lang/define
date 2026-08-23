@@ -32,23 +32,29 @@ class LoopCoverageCollector:
         """Create a collector for the Python files in a Bazel coverage manifest."""
         self._report_path: Path = report_path
         self._loops_by_filename: dict[
-            str, tuple[dict[int, LoopLocation], dict[int, LoopLocation]]
+            str, tuple[dict[int, set[LoopLocation]], dict[int, LoopLocation]]
         ] = {}
         self._loop_lines_by_path: dict[Path, list[int]] = {}
         self._covered_loops: set[LoopLocation] = set()
         self._pending_by_frame: dict[FrameType, set[LoopLocation]] = {}
-        self._locations_by_code: dict[CodeType, dict[int, LoopLocation]] = {}
+        self._locations_by_code: dict[CodeType, dict[int, set[LoopLocation]]] = {}
         self._lines_by_offset: dict[CodeType, dict[int, int]] = {}
         self._monitoring_tool_id: int | None = None
         for reported_path, runtime_path in _manifest_python_paths(manifest_path):
             entries = _loop_entries(runtime_path)
             if entries:
-                locations_by_entry_line: dict[int, LoopLocation] = {}
+                locations_by_entry_line: dict[int, set[LoopLocation]] = {}
                 locations_by_target_line: dict[int, LoopLocation] = {}
-                for loop_line, entry_line in entries:
+                for loop_line, target_lines, entry_lines in entries:
                     location = (reported_path, loop_line)
-                    locations_by_entry_line[entry_line] = location
-                    locations_by_target_line[loop_line] = location
+                    # Python may attribute bytecode to any executable line in a
+                    # multiline loop header or first body statement.
+                    for entry_line in entry_lines:
+                        locations_by_entry_line.setdefault(entry_line, set()).add(
+                            location
+                        )
+                    for target_line in target_lines:
+                        locations_by_target_line[target_line] = location
                     self._loop_lines_by_path.setdefault(reported_path, []).append(
                         loop_line
                     )
@@ -164,14 +170,17 @@ class LoopCoverageCollector:
         self, code: CodeType, line_number: int
     ):
         locations_by_entry_line = self._locations_by_code[code]
-        location = locations_by_entry_line.get(line_number)
+        locations = locations_by_entry_line.get(line_number)
         frame = _monitored_frame()
         pending = self._pending_by_frame.get(frame)
-        if location is None or pending is None or location not in pending:
+        if locations is None or pending is None:
             return
 
-        self._covered_loops.add(location)
-        pending.remove(location)
+        covered_locations = locations & pending
+        if not covered_locations:
+            return
+        self._covered_loops.update(covered_locations)
+        pending.difference_update(covered_locations)
         if not pending:
             del self._pending_by_frame[frame]
 
@@ -237,13 +246,27 @@ def _manifest_python_paths(manifest_path: Path) -> list[tuple[Path, Path]]:
     return paths
 
 
-def _loop_entries(source_path: Path) -> list[tuple[int, int]]:
+def _loop_entries(
+    source_path: Path,
+) -> list[tuple[int, range, range]]:
     tree = ast.parse(source_path.read_text(), filename=str(source_path))
-    entries: list[tuple[int, int]] = []
+    entries: list[tuple[int, range, range]] = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.For, ast.AsyncFor, ast.While)):
-            entry_line = node.body[0].lineno
-            entries.append((node.lineno, entry_line))
+            first_body_statement = node.body[0]
+            target_lines = range(node.lineno, first_body_statement.lineno)
+            nested_body = typing.cast(
+                "list[ast.stmt] | None",
+                getattr(first_body_statement, "body", None),
+            )
+            if nested_body:
+                entry_end_line = nested_body[0].lineno
+            else:
+                entry_end_line = (
+                    first_body_statement.end_lineno or first_body_statement.lineno
+                ) + 1
+            entry_lines = range(first_body_statement.lineno, entry_end_line)
+            entries.append((node.lineno, target_lines, entry_lines))
     return entries
 
 

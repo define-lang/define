@@ -40,6 +40,23 @@ def test_unreferenced_local_position_error(
     assert diags[0].location.column == 29
 
 
+def test_two_unreferenced_local_positions(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert diags[0].position_name == "position<first_unused>"
+    assert diags[0].location.line == 8
+    assert diags[0].location.column == 29
+    assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
+    assert diags[1].position_name == "position<second_unused>"
+    assert diags[1].location.line == 9
+    assert diags[1].location.column == 29
+
+
 def test_trigger_only_interface_position_is_referenced(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):

@@ -1,0 +1,5 @@
+action<local.my_domain_com.my_lib.caller.Caller>::position<run>
+action<local.my_domain_com.my_lib.caller.Caller>::position<first_gateway>
+action<local.my_domain_com.my_lib.caller.Caller>::position<first_gateway>::action<local.my_domain_com.my_lib.worker.Worker>::position<first>
+action<local.my_domain_com.my_lib.caller.Caller>::position<second_gateway>
+action<local.my_domain_com.my_lib.caller.Caller>::position<second_gateway>::action<local.my_domain_com.my_lib.worker.Worker>::position<first>

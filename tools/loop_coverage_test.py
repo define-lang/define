@@ -54,6 +54,70 @@ def test_collector_reports_loop_body_executed_more_than_once(tmp_path: Path):
     )
 
 
+def test_collector_handles_multiline_loop_header(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def consume(values):\n"
+        + "    for (\n"
+        + "        value\n"
+        + "    ) in values:\n"
+        + "        str(value)\n"
+    )
+    manifest_path = tmp_path / "manifest.txt"
+    _ = manifest_path.write_text(f"{source_path}\n")
+    report_path = tmp_path / "loop_coverage.dat"
+    namespace = _execute_source(source_path)
+    consume = typing.cast(
+        "collections.abc.Callable[[object], object]",
+        namespace["consume"],
+    )
+
+    collector = loop_coverage.LoopCoverageCollector(manifest_path, report_path)
+    collector.start()
+    try:
+        _ = consume([1, 2])
+    finally:
+        collector.stop()
+
+    assert "BRDA:2,1,loop body executes more than once,1\n" in report_path.read_text()
+
+
+def test_collector_handles_multiline_first_body_statement(tmp_path: Path):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def consume(values):\n"
+        + "    for value in values:\n"
+        + "        for (\n"
+        + "            inner\n"
+        + "        ) in [value]:\n"
+        + "            str(inner)\n"
+    )
+    manifest_path = tmp_path / "manifest.txt"
+    _ = manifest_path.write_text(f"{source_path}\n")
+    report_path = tmp_path / "loop_coverage.dat"
+    namespace = _execute_source(source_path)
+    consume = typing.cast(
+        "collections.abc.Callable[[object], object]",
+        namespace["consume"],
+    )
+
+    collector = loop_coverage.LoopCoverageCollector(manifest_path, report_path)
+    collector.start()
+    try:
+        _ = consume([1, 2])
+    finally:
+        collector.stop()
+
+    assert report_path.read_text() == (
+        f"SF:{source_path}\n"
+        + "BRDA:2,1,loop body executes more than once,1\n"
+        + "BRDA:3,1,loop body executes more than once,1\n"
+        + "BRF:2\n"
+        + "BRH:2\n"
+        + "end_of_record\n"
+    )
+
+
 def test_collector_does_not_combine_single_iterations_across_calls(tmp_path: Path):
     source_path = tmp_path / "example.py"
     _ = source_path.write_text(

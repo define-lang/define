@@ -1,12 +1,14 @@
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</item/name>.
     it also assigns the position</item/name_2>.
+    it also assigns the position</item/name_3>.
     it also assigns the position</item_name>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position</item/name>.
         create a particle in position</item/name_2>.
+        create a particle in position</item/name_3>.
         create a particle in position</item_name>.
     }
 }

@@ -340,6 +340,8 @@ class DefinitionStructuralValidator:
         trigger_conditions: ast.TriggerConditionsBlock,
         scope: scope_tracker.ScopeTracker,
     ):
+        # TODO: Make TriggerConditionsBlock.condition singular, as the grammar
+        # permits exactly one condition, and remove this loop.
         for condition in trigger_conditions.conditions:
             if isinstance(condition, ast.PositionPresenceStatement):
                 _ = self._validate_full_chained_name(

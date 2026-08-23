@@ -812,6 +812,45 @@ def test_triggered_action_with_no_guarantees_still_runs(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_two_interface_positions_bound_by_caller(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/caller::run)": [],
+        "caller.create(first_gateway)": [],
+        "caller.create(first_gateway::/worker::second)": [
+            "caller.create(first_gateway)"
+        ],
+        "caller.create(first_gateway::/worker::third)": [
+            "caller.create(first_gateway)"
+        ],
+        "caller.create(first_gateway::/worker::first)": [
+            "caller.create(first_gateway)"
+        ],
+        # The caller binds both interface positions, so each Destroy depends on
+        # the corresponding caller Create.
+        "worker.destroy(second)": ["caller.create(first_gateway::/worker::second)"],
+        "worker.destroy(third)": ["caller.create(first_gateway::/worker::third)"],
+        "caller.create(second_gateway)": [],
+        "caller.create(second_gateway::/worker::second)": [
+            "caller.create(second_gateway)"
+        ],
+        "caller.create(second_gateway::/worker::third)": [
+            "caller.create(second_gateway)"
+        ],
+        "caller.create(second_gateway::/worker::first)": [
+            "caller.create(second_gateway)"
+        ],
+        # The second worker execution resolves the same two dependencies
+        # independently.
+        "worker#2.destroy(second)": ["caller.create(second_gateway::/worker::second)"],
+        "worker#2.destroy(third)": ["caller.create(second_gateway::/worker::third)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_parallel_callee_local_operation_chains_wait_on_action_parent_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
