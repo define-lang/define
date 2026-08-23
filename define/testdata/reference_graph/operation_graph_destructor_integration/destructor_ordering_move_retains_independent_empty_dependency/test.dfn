@@ -1,0 +1,27 @@
+# Destructors run in reverse assignment order, so /known_destructor runs before
+# /extra_destructor. The latter's Move has both the former's /destination
+# Guarantee and /destroyer's latest operation on /origin as dependencies.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<destroyer_particle> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+                it has the position</origin>.
+                it has the position</destination>.
+            }
+        }
+        create a particle in position<destroyer_particle>.
+        create a particle in position<carrier>.
+        create a particle in position<carrier>::position</origin>.
+        move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
+        create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+    }
+}

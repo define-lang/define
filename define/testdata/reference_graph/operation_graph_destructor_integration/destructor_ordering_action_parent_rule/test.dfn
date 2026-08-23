@@ -1,0 +1,25 @@
+# /marker has no previous operation of its own. The first Destructor's Create
+# therefore reaches the parent operation through its Action Parent Binding Hole;
+# the second Destructor instead follows the first Destructor's final Destroy.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<destroyer_particle> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+                it has the position</marker>.
+            }
+        }
+        create a particle in position<destroyer_particle>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
+        create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+    }
+}

@@ -24,13 +24,38 @@ _TESTDATA_ROOT = Path("define/testdata/tracing/tracing_integration")
 _TRACE_TEST_CASE_DIRS = [
     test_file.parent for test_file in sorted(_TESTDATA_ROOT.glob("*/test.dfn"))
 ]
-_UNSUPPORTED_TRACE_CASE_REASONS = {
-    "destructor_known_only_two_callers_up": (
-        "destructors learned through Destruction Contracts are not recorded"
-    ),
-    "destructor_with_children_known_only_two_callers_up": (
-        "destructors learned through Destruction Contracts are not recorded"
-    ),
+_CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
+    "caller-added Destructor operation ordering is not generated"
+)
+_DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED = (
+    "destructors learned through Destruction Contracts are not recorded"
+)
+_UNSUPPORTED_GENERATED_TRACE_CASE_REASONS = {
+    "callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_destructor_between_two_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_known_child_destroy_and_destructor_precede_parent_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "diamond_callers_serialize_added_destructor_around_known_destructor": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
+    "destructor_with_children_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
+}
+_UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS = {
+    "caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "destructor_ordering_move_retains_independent_empty_dependency": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "diamond_callers_serialize_added_destructor_around_known_destructor": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
+    "destructor_with_children_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
+    "two_caller_known_destructors_precede_same_child_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+}
+_CONCURRENT_RUNTIME_CASES_WITH_NONDETERMINISTIC_FAILURE = {
+    "caller_interleaves_destructors_with_destroyer_known_destructors",
+    "destructor_ordering_move_retains_independent_empty_dependency",
+    "diamond_callers_serialize_added_destructor_around_known_destructor",
+    "two_caller_known_destructors_precede_same_child_destroy",
+}
+_UNSUPPORTED_OPERATION_TRACE_CASE_REASONS = {
+    "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
+    "destructor_with_children_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
 }
 _GENERATED_TRACE_TEST_CASES = [
     pytest.param(
@@ -38,9 +63,9 @@ _GENERATED_TRACE_TEST_CASES = [
         id=test_case_dir.name,
         marks=pytest.mark.xfail(
             strict=True,
-            reason=_UNSUPPORTED_TRACE_CASE_REASONS[test_case_dir.name],
+            reason=_UNSUPPORTED_GENERATED_TRACE_CASE_REASONS[test_case_dir.name],
         )
-        if test_case_dir.name in _UNSUPPORTED_TRACE_CASE_REASONS
+        if test_case_dir.name in _UNSUPPORTED_GENERATED_TRACE_CASE_REASONS
         else (),
     )
     for test_case_dir in _TRACE_TEST_CASE_DIRS
@@ -51,9 +76,9 @@ _GENERATED_OPERATION_TRACE_TEST_CASES = [
         id=trace_file.parent.name,
         marks=pytest.mark.xfail(
             strict=True,
-            reason=_UNSUPPORTED_TRACE_CASE_REASONS[trace_file.parent.name],
+            reason=_UNSUPPORTED_OPERATION_TRACE_CASE_REASONS[trace_file.parent.name],
         )
-        if trace_file.parent.name in _UNSUPPORTED_TRACE_CASE_REASONS
+        if trace_file.parent.name in _UNSUPPORTED_OPERATION_TRACE_CASE_REASONS
         else (),
     )
     for trace_file in sorted(_TESTDATA_ROOT.glob("*/operation_trace.json"))
@@ -63,10 +88,13 @@ _CONCURRENT_RUNTIME_TEST_CASES = [
         test_case_dir,
         id=test_case_dir.name,
         marks=pytest.mark.xfail(
-            strict=True,
-            reason=_UNSUPPORTED_TRACE_CASE_REASONS[test_case_dir.name],
+            strict=(
+                test_case_dir.name
+                not in _CONCURRENT_RUNTIME_CASES_WITH_NONDETERMINISTIC_FAILURE
+            ),
+            reason=_UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS[test_case_dir.name],
         )
-        if test_case_dir.name in _UNSUPPORTED_TRACE_CASE_REASONS
+        if test_case_dir.name in _UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS
         else (),
     )
     for test_case_dir in _TRACE_TEST_CASE_DIRS

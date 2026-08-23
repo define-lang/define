@@ -1,0 +1,28 @@
+# /destroyer knows the second and fourth Destructors. The caller's complete
+# assignment sequence places one caller-known Destructor before, between, and
+# after those two Destructors.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<destroyer_particle> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</first_destructor>.
+                it has the action</second_destructor>.
+                it has the action</third_destructor>.
+                it has the action</fourth_destructor>.
+                it has the action</fifth_destructor>.
+                it has the position</marker>.
+            }
+        }
+        create a particle in position<destroyer_particle>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
+        create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+    }
+}

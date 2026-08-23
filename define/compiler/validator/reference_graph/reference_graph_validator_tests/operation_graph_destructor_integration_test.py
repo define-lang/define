@@ -16,6 +16,9 @@ _DESTRUCTION_CONTRACTS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded in the "
     "operation graph"
 )
+_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED = (
+    "caller-added Destructor dependencies are not fully resolved in the Operation Graph"
+)
 
 
 def test_destructor_independent_chains_and_operation_after_destroy(
@@ -218,6 +221,320 @@ def test_diamond_callers_serialize_added_destructor_around_known_destructor(
         "caller_b.destroy(destroyer_particle)": [
             "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)",
             "caller_b:destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_ordering_move_retains_independent_fill_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.create(carrier::/shared)": ["test.create(carrier)"],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier::/shared)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.move(target::/shared, holder)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.move(holder, target::/shared)": [
+            "destroyer.move(target::/shared, holder)"
+        ],
+        "destroyer.create(target::/destination)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.destroy(target::/destination)": [
+            "destroyer.create(target::/destination)"
+        ],
+        "known_destructor.move(/shared, holder)": [
+            "destroyer.move(holder, target::/shared)"
+        ],
+        "known_destructor.move(holder, /shared)": [
+            "known_destructor.move(/shared, holder)"
+        ],
+        # The Move Rule retains the independent Fill Dependency because the
+        # preceding Destructor Guarantee does not depend on it.
+        "extra_destructor.move(/shared, /destination)": [
+            "known_destructor.move(holder, /shared)",
+            "destroyer.destroy(target::/destination)",
+        ],
+        "extra_destructor.move(/destination, /shared)": [
+            "extra_destructor.move(/shared, /destination)"
+        ],
+        "destroyer.destroy(target::/shared)": [
+            "extra_destructor.move(/destination, /shared)"
+        ],
+        "destroyer.destroy(target)": ["destroyer.destroy(target::/shared)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_ordering_fill_rule(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.create(target::/marker)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.destroy(target::/marker)": ["destroyer.create(target::/marker)"],
+        # The Fill Rule selects each preceding Destroy as the single most recent
+        # operation on /marker.
+        "known_destructor.create(/marker)": ["destroyer.destroy(target::/marker)"],
+        "known_destructor.destroy(/marker)": ["known_destructor.create(/marker)"],
+        "extra_destructor.create(/marker)": ["known_destructor.destroy(/marker)"],
+        "extra_destructor.destroy(/marker)": ["extra_destructor.create(/marker)"],
+        "destroyer.destroy(target)": ["extra_destructor.destroy(/marker)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_caller_destructor_between_two_destroyer_known_destructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.create(target::/marker)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.destroy(target::/marker)": ["destroyer.create(target::/marker)"],
+        "later_assigned_destructor.create(/marker)": [
+            "destroyer.destroy(target::/marker)"
+        ],
+        "later_assigned_destructor.destroy(/marker)": [
+            "later_assigned_destructor.create(/marker)"
+        ],
+        # The caller-assigned Destructor's Fill Rule selects the Guarantee from
+        # the later-assigned Destructor that precedes it in destruction order.
+        "caller_destructor.create(/marker)": [
+            "later_assigned_destructor.destroy(/marker)"
+        ],
+        "caller_destructor.destroy(/marker)": ["caller_destructor.create(/marker)"],
+        # The earlier-assigned Destructor's Fill Rule likewise selects the
+        # caller-assigned Destructor's Guarantee as its preceding operation.
+        "earlier_assigned_destructor.create(/marker)": [
+            "caller_destructor.destroy(/marker)"
+        ],
+        "earlier_assigned_destructor.destroy(/marker)": [
+            "earlier_assigned_destructor.create(/marker)"
+        ],
+        "destroyer.destroy(target)": ["earlier_assigned_destructor.destroy(/marker)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_caller_interleaves_destructors_with_destroyer_known_destructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.create(target::/marker)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.destroy(target::/marker)": ["destroyer.create(target::/marker)"],
+        "fifth_destructor.create(/marker)": ["destroyer.destroy(target::/marker)"],
+        "fifth_destructor.destroy(/marker)": ["fifth_destructor.create(/marker)"],
+        # The next directly known Destructor follows the caller-known Destructor
+        # assigned after it because destruction reverses assignment order.
+        "fourth_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
+        "fourth_destructor.destroy(/marker)": ["fourth_destructor.create(/marker)"],
+        # The next caller-known Destructor follows the directly known Destructor's
+        # final operation on their shared position.
+        "third_destructor.create(/marker)": ["fourth_destructor.destroy(/marker)"],
+        "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
+        # The second directly known Destructor exercises the same transition a
+        # second time rather than terminating the interleaved sequence.
+        "second_destructor.create(/marker)": ["third_destructor.destroy(/marker)"],
+        "second_destructor.destroy(/marker)": ["second_destructor.create(/marker)"],
+        # The caller-known Destructor assigned first must be the final Destructor
+        # to operate on /marker before its parent is destroyed.
+        "first_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
+        "first_destructor.destroy(/marker)": ["first_destructor.create(/marker)"],
+        "destroyer.destroy(target)": ["first_destructor.destroy(/marker)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_ordering_move_retains_independent_empty_dependency(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.create(carrier::/origin)": ["test.create(carrier)"],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier::/origin)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.move(target::/origin, holder)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.move(holder, target::/origin)": [
+            "destroyer.move(target::/origin, holder)"
+        ],
+        "destroyer.create(target::/destination)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.destroy(target::/destination)": [
+            "destroyer.create(target::/destination)"
+        ],
+        "known_destructor.create(/destination)": [
+            "destroyer.destroy(target::/destination)"
+        ],
+        "known_destructor.destroy(/destination)": [
+            "known_destructor.create(/destination)"
+        ],
+        # Replacing the target Fill Dependency does not replace the independent
+        # Empty Dependency selected for /origin.
+        "extra_destructor.move(/origin, /destination)": [
+            "known_destructor.destroy(/destination)",
+            "destroyer.move(holder, target::/origin)",
+        ],
+        "extra_destructor.move(/destination, /origin)": [
+            "extra_destructor.move(/origin, /destination)"
+        ],
+        "destroyer.destroy(target::/origin)": [
+            "extra_destructor.move(/destination, /origin)"
+        ],
+        "destroyer.destroy(target)": ["destroyer.destroy(target::/origin)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_ordering_action_parent_rule(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(destroyer_particle)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, destroyer_particle::/destroyer::target)": [
+            "test.create(destroyer_particle)",
+            "test.create(carrier)",
+        ],
+        "test.create(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle)"
+        ],
+        "destroyer.move(target, holder)": [
+            "test.move(carrier, destroyer_particle::/destroyer::target)"
+        ],
+        "destroyer.move(holder, target)": ["destroyer.move(target, holder)"],
+        # The Fill Rule selects the latest operation on /marker's parent. Modular
+        # resolution represents that relationship through the Action Parent Rule.
+        "known_destructor.create(/marker)": ["destroyer.move(holder, target)"],
+        "known_destructor.destroy(/marker)": ["known_destructor.create(/marker)"],
+        "extra_destructor.create(/marker)": ["known_destructor.destroy(/marker)"],
+        "extra_destructor.destroy(/marker)": ["extra_destructor.create(/marker)"],
+        "destroyer.destroy(target)": ["extra_destructor.destroy(/marker)"],
+        "test.destroy(destroyer_particle::/destroyer::trigger_pos)": [
+            "test.create(destroyer_particle::/destroyer::trigger_pos)"
+        ],
+        "test.destroy(destroyer_particle)": [
+            "test.destroy(destroyer_particle::/destroyer::trigger_pos)",
+            "destroyer.destroy(target)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -495,6 +812,10 @@ def test_caller_known_destructor_precedes_destroyer_known_child_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
 def test_two_caller_known_destructors_precede_same_child_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -509,7 +830,11 @@ def test_two_caller_known_destructors_precede_same_child_destroy(
             "test.move(source, /destroyer::parent)"
         ],
         "maker.create(result)": ["test.move(source, /destroyer::parent)"],
-        "destruct_a.move(/maker::result, held_result)": ["maker.create(result)"],
+        # Both Destructors operate on /maker::result, so the ordinary position
+        # dependency rules serialize them in reverse quality-assignment order.
+        "destruct_a.move(/maker::result, held_result)": [
+            "destruct_b.move(held_result, /maker::result)"
+        ],
         "destruct_a.move(held_result, /maker::result)": [
             "destruct_a.move(/maker::result, held_result)"
         ],
@@ -517,10 +842,9 @@ def test_two_caller_known_destructors_precede_same_child_destroy(
         "destruct_b.move(held_result, /maker::result)": [
             "destruct_b.move(/maker::result, held_result)"
         ],
-        # Both caller-known Destructors' final Moves must fill the child position
-        # before the destruction cascade in /destroyer destroys its particle.
+        # The final Destructor's last Move fills the child position before the
+        # destruction cascade in /destroyer destroys its particle.
         "destroyer.destroy(parent::/maker::result)": [
-            "destruct_b.move(held_result, /maker::result)",
             "destruct_a.move(held_result, /maker::result)",
         ],
         "destroyer.destroy(parent::/maker::trigger_pos)": [
@@ -538,6 +862,10 @@ def test_two_caller_known_destructors_precede_same_child_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
 def test_caller_known_child_destroy_and_destructor_precede_parent_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -571,14 +899,15 @@ def test_caller_known_child_destroy_and_destructor_precede_parent_destroy(
         "destruct_sibling.move(held_sibling, /sibling)": [
             "destruct_sibling.move(/sibling, held_sibling)"
         ],
-        # Both the caller-contributed child Destroy and the Destructor's final
-        # operation must precede destruction of /required.
+        # The child Destroy is later on a child of the Destructor's position, so
+        # the Empty Rule makes it depend on the Destructor's final operation.
         "destroyer.destroy(parent::/required::/extra)": [
-            "destroyer.move(held_required, parent::/required)"
+            "destruct_required.move(held_required, /required)"
         ],
+        # The later child Destroy replaces the Destructor's operation on its
+        # parent during the Empty Rule's Comparison.
         "destroyer.destroy(parent::/required)": [
-            "destroyer.destroy(parent::/required::/extra)",
-            "destruct_required.move(held_required, /required)",
+            "destroyer.destroy(parent::/required::/extra)"
         ],
         "destroyer.destroy(parent::/sibling)": [
             "destruct_sibling.move(held_sibling, /sibling)"
@@ -614,6 +943,100 @@ def test_contributed_destructor_operates_on_child_of_occupied_requirement(
         ],
         "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
         "destroyer.destroy(parent::/required)": ["destruct.destroy(/required::/work)"],
+        "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_contributed_destructor_depends_on_callee_move_with_two_dependencies(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/required)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/required)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.move(parent::/required, held_required)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.create(held_required::/left)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destroyer.create(held_required::/right)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destroyer.destroy(held_required::/left)": [
+            "destroyer.create(held_required::/left)"
+        ],
+        "destroyer.destroy(held_required::/right)": [
+            "destroyer.create(held_required::/right)"
+        ],
+        # The Move Rule retains both sibling child Destroys as independent Empty
+        # Dependencies of the Move back to /required.
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.destroy(held_required::/left)",
+            "destroyer.destroy(held_required::/right)",
+        ],
+        # The Fill Rule makes the Destructor's Create depend on the completed
+        # Move rather than either of the Move's dependencies directly.
+        "destruct.create(/required::/work)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
+        "destroyer.destroy(parent::/required)": ["destruct.destroy(/required::/work)"],
+        "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/required)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/required)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.move(parent::/required, held_required)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.create(held_required::/extra_a)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destroyer.create(held_required::/extra_b)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.create(held_required::/extra_a)",
+            "destroyer.create(held_required::/extra_b)",
+        ],
+        # The Fill Rule makes the Destructor's Create depend on /destroyer's
+        # final Move into the parent position of its empty /required::/work.
+        "destruct.create(/required::/work)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
+        "destroyer.destroy(parent::/required::/extra_a)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destroyer.destroy(parent::/required::/extra_b)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        # /extra_a, /extra_b, and /work are sibling child positions, so the Empty
+        # Rule retains all three final operations before the Destroy of /required.
+        "destroyer.destroy(parent::/required)": [
+            "destruct.destroy(/required::/work)",
+            "destroyer.destroy(parent::/required::/extra_b)",
+            "destroyer.destroy(parent::/required::/extra_a)",
+        ],
         "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

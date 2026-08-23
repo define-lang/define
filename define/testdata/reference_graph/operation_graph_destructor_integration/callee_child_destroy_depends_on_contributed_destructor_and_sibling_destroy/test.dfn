@@ -1,0 +1,19 @@
+# A caller-known Destructor and two destroyer-known sibling particles independently
+# precede the Destroy of their parent position in /destroyer.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</destruct>.
+                it has the position</required>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</required>.
+        move the particle in position<source> to action</destroyer>::position<parent>.
+        create a particle in action</destroyer>::position<trigger_pos>.
+    }
+}

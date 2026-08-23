@@ -1,5 +1,5 @@
-# Both caller-known Destructors operate on the same child whose particle is
-# created by /maker, so both must finish before that particle is destroyed.
+# The caller-known Destructors operate on the same child whose particle is
+# created by /maker, so they run in reverse assignment order before it is destroyed.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {

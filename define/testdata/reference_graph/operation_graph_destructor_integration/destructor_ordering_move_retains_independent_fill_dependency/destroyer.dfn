@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    define the position<trigger_pos>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the action</known_destructor>.
+            it has the position</shared>.
+            it has the position</destination>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<holder>.
+        move the particle in position<target>::position</shared> to position<holder>.
+        move the particle in position<holder> to position<target>::position</shared>.
+        create a particle in position<target>::position</destination>.
+        destroy the particle in position<target>::position</destination>.
+        destroy the particle in position<target>.
+    }
+}

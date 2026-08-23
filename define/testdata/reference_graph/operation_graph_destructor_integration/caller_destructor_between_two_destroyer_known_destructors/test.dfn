@@ -1,0 +1,26 @@
+# The caller assigns /caller_destructor between the two Destructors known by
+# /destroyer. All three leave /marker empty, so each Destructor's Guarantee
+# precedes the next Destructor in reverse assignment order.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<destroyer_particle> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        define the position<carrier> {
+            it may only contain particles where {
+                it has the action</earlier_assigned_destructor>.
+                it has the action</caller_destructor>.
+                it has the action</later_assigned_destructor>.
+                it has the position</marker>.
+            }
+        }
+        create a particle in position<destroyer_particle>.
+        create a particle in position<carrier>.
+        move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
+        create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+    }
+}
