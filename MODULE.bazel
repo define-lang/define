@@ -34,6 +34,13 @@ local_path_override(
     path = "vendored/re2",
 )
 
+# TODO: Upgrade to the next aspect_rules_py 2.0.0 release and remove this override.
+git_override(
+    module_name = "aspect_rules_py",
+    commit = "4a9ac6d8fa6fefdfead50ee0fda95643f1a7a48a",
+    remote = "https://github.com/aspect-build/rules_py.git",
+)
+
 git_override(
     module_name = "rules_lean",
     commit = "6abaa70b3b917304752719ae539c59eacdaa521c",
