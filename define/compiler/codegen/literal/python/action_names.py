@@ -22,7 +22,6 @@ _ACTION_PARENT_BINDING_HOLE_METHOD_NAME = "accept_action_parent"
 _CREATE_FRAGMENT_PREFIX = "create_"
 _DESTROY_FRAGMENT_PREFIX = "destroy_"
 _DESTRUCTION_CONNECTION_PREFIX = "destruction_connection_"
-_DESTRUCTION_CONNECTIONS_SUFFIX = "_destruction_connections"
 _DESTRUCTION_POSITION_PREFIX = "destruction_position_"
 _EMPTY_RULE_BINDING_HOLE_METHOD_PREFIX = "accept_for_empty_rule_"
 _EXECUTION_PREFIX = "execution_"
@@ -84,7 +83,6 @@ class ActionNames:
     fragments: dict[action_plan.ActionFragment, str]
     continue_destroy_methods: dict[action_plan.ActionFragment, str]
     destruction_connections: dict[action_plan.DestructionConnection, str]
-    triggered_destruction_connections: dict[operation_graph_model.ActionExecution, str]
     destruction_positions: dict[
         operation_graph_model.DestructionFragmentDestroyNode, str
     ]
@@ -128,9 +126,6 @@ class ActionNameGenerator:
         fragments = self._fragment_method_names()
         continue_destroy_methods = self._continue_destroy_method_names(fragments)
         destruction_connections = self._destruction_connection_names(triggered_actions)
-        triggered_destruction_connections = (
-            self._triggered_destruction_connection_names(triggered_actions)
-        )
         destruction_positions = self._destruction_position_names()
         guarantee_publications = self._guarantee_publication_names()
         return ActionNames(
@@ -144,7 +139,6 @@ class ActionNameGenerator:
             fragments=fragments,
             continue_destroy_methods=continue_destroy_methods,
             destruction_connections=destruction_connections,
-            triggered_destruction_connections=triggered_destruction_connections,
             destruction_positions=destruction_positions,
             guarantee_publications=guarantee_publications,
         )
@@ -393,23 +387,6 @@ class ActionNameGenerator:
                     _DESTRUCTION_CONNECTION_PREFIX
                     + triggered_action_names[execution_plan.execution].canonical_name
                 )
-        return names
-
-    def _triggered_destruction_connection_names(
-        self,
-        triggered_action_names: dict[
-            operation_graph_model.ActionExecution, TriggeredActionNames
-        ],
-    ) -> dict[operation_graph_model.ActionExecution, str]:
-        names: dict[operation_graph_model.ActionExecution, str] = {}
-        for execution_plan in self._plan.action_executions:
-            if not execution_plan.created_destruction_connections:
-                continue
-            execution = execution_plan.execution
-            names[execution] = self._execution_allocator.allocate(
-                triggered_action_names[execution].canonical_name
-                + _DESTRUCTION_CONNECTIONS_SUFFIX
-            )
         return names
 
     def _destruction_position_names(

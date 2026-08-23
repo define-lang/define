@@ -8,6 +8,7 @@ import typing
 from define.runtime import literal, tracing
 
 if typing.TYPE_CHECKING:
+    import types
     from pathlib import Path
 
     import pytest
@@ -28,6 +29,19 @@ class _ContinuationExecution:
         self.destroyed = True
 
 
+@typing.final
+class _BoundTask:
+    def __init__(self, task: literal.Task):
+        self._task = task
+
+    def run(self):
+        self._task()
+
+
+def _bound_task(task: literal.Task) -> types.MethodType:
+    return _BoundTask(task).run
+
+
 def test_destruction_connection_propagates_execution_through_forwarded_connections():
     connections: list[tracing.DestructionConnection] = []
     executions: list[_ContinuationExecution] = []
@@ -44,28 +58,28 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
 
             forwarded_connection = tracing.DestructionConnection(
                 scheduler,
-                destruction_continuation,
                 1,
-                complete_forwarded_connection,
+                _bound_task(complete_forwarded_connection),
             )
 
-            def complete_local_connection():
-                local_connection.complete()
+            def complete_current_connection():
+                current_connection.complete()
 
-            local_connection = tracing.DestructionConnection(
+            current_connection = tracing.DestructionConnection(
                 scheduler,
-                destruction_continuation,
                 1,
-                complete_local_connection,
+                _bound_task(complete_current_connection),
                 forwarded_connection=forwarded_connection,
             )
             trace_execution = scheduler.execution_created(None, "test")
             assert isinstance(trace_execution, tracing.ActionExecutionIdentity)
             execution = _ContinuationExecution(
                 trace_execution,
-                literal.DestructionConnections(local_connection),
+                literal.DestructionConnections(
+                    {destruction_continuation: current_connection}
+                ),
             )
-            connections.extend((local_connection, forwarded_connection))
+            connections.extend((current_connection, forwarded_connection))
             executions.append(execution)
 
             literal.continue_destruction(execution.continue_destroy)

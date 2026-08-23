@@ -98,6 +98,18 @@
   {
     "execution": {
       "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "parent::/maker::trigger_pos",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -137,18 +149,6 @@
     },
     "operation_name": "destroy",
     "target": "parent::/maker::result",
-    "occurrence": 1
-  },
-  {
-    "execution": {
-      "caller": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "action_name": "destroyer"
-    },
-    "operation_name": "destroy",
-    "target": "parent::/maker::trigger_pos",
     "occurrence": 1
   },
   {

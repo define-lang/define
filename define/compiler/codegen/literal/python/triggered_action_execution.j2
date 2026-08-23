@@ -7,8 +7,7 @@
         {% for connection in action_execution.created_destruction_connections %}
         self.{{ connection.member_name }} = {{ destruction_connection_class }}(
             self.scheduler,
-            {{ destruction_continuation(connection.destruction_continuation) }},
-            {{ connection.expected_completions }},
+            {{ connection.predecessor_count }},
             {% for method_name in connection.start_method_names %}
             self.{{ method_name }},
             {% endfor %}
@@ -22,16 +21,6 @@
         )
         {% endfor %}
         {% endfor %}
-        {% if action_execution.created_destruction_connections %}
-        self.{{ action_execution.destruction_connections_member_name }} = literal.DestructionConnections(
-            {% for connection in action_execution.created_destruction_connections %}
-            self.{{ connection.member_name }},
-            {% endfor %}
-            {% if action_execution.forwards_destruction_connections %}
-            direct=self.destruction_connections,
-            {% endif %}
-        )
-        {% endif %}
         self.{{ action_execution.execution_name }} = {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}(
         {% if action_execution.execution_needs_action %}
             {{ position_expression(action_execution.action_expression, extra_indent="    ") }},
@@ -51,8 +40,19 @@
         {% if action_execution.execution_needs_guarantees %}
             self.guarantees.{{ action_execution.child_guarantees_name }},
         {% endif %}
-        {% if action_execution.destruction_connections_member_name %}
-            destruction_connections=self.{{ action_execution.destruction_connections_member_name }},
+        {% if action_execution.created_destruction_connections %}
+            destruction_connections=literal.DestructionConnections(
+            {
+            {% for connection in action_execution.created_destruction_connections %}
+                {{ destruction_continuation(connection.destruction_continuation) }}: self.{{ connection.member_name }},
+            {% endfor %}
+            },
+            {% if action_execution.forwards_destruction_connections %}
+            forwarded=self.destruction_connections,
+            {% endif %}
+            ),
+        {% elif action_execution.forwards_destruction_connections %}
+            destruction_connections=self.destruction_connections,
         {% endif %}
         )
 {% endmacro %}

@@ -38,6 +38,30 @@ class Join:
         return next(self._arrivals) == self._final_arrival
 
 
+@final
+class _DestructionContinuationGate:
+    """Run one continuation after it and every expected arrival are available."""
+
+    _continuation: types.MethodType | None
+
+    def __init__(self, predecessor_count: int):
+        # Reaching the callee Destroy is an arrival so earlier predecessor
+        # completions cannot need the continuation before it is available.
+        self._arrival_join = Join(predecessor_count + 1)
+        self._continuation = None
+
+    def ready(self, continuation: types.MethodType):
+        """Record that the callee reached its Destroy."""
+        self._continuation = continuation
+        if self._arrival_join.arrive():
+            continuation()
+
+    def arrive(self):
+        """Record one predecessor completion."""
+        if self._arrival_join.arrive():
+            cast("types.MethodType", self._continuation)()
+
+
 class _DestructionExecution(Protocol):
     destruction_connections: DestructionConnections | None
 
@@ -56,88 +80,63 @@ def continue_destruction(continuation: types.MethodType):
     connection.ready(continuation)
 
 
-# TODO: Reconsider this abstraction when one connection can combine work
-# that precedes the continuation with work that is only activated by the
-# same destruction. The current interface makes that distinction indirect.
 class DestructionConnection:
-    """Caller work activated when a callee reaches a destruction continuation."""
+    """Caller work connected to a callee destruction continuation."""
 
     _scheduler: Scheduler
-    _destruction_continuation: DestructionContinuation
-    _start_tasks: Tasks
+    _start_tasks: tuple[types.MethodType, ...]
     # The destruction connection supplied by this Action Execution's caller.
     _forwarded_connection: DestructionConnection | None
-    _completion_join: Join | None
-    _waits_for_local_completions: bool
-    _continuation: types.MethodType | None
+    _continuation_gate: _DestructionContinuationGate
 
     def __init__(
         self,
         scheduler: Scheduler,
-        destruction_continuation: DestructionContinuation,
-        expected_completions: int,
-        *start_tasks: Task,
+        predecessor_count: int,
+        *start_tasks: types.MethodType,
         forwarded_connection: DestructionConnection | None = None,
     ):
-        """Initialize local destruction work and an optional forwarded connection.
+        """Initialize this connection's work and an optional forwarded connection.
 
-        ``expected_completions`` is zero for work that starts at destruction but
-        does not precede the continuation.
+        ``predecessor_count`` is the number of this connection's completion
+        arrivals that the callee Destroy must receive before its continuation
+        runs. It is zero when the Destroy activates this connection's work but
+        does not depend on any completion from that work.
         """
-        if not start_tasks:
-            raise ValueError("a destruction connection requires local work")
         self._scheduler = scheduler
-        self._destruction_continuation = destruction_continuation
         self._start_tasks = start_tasks
         self._forwarded_connection = forwarded_connection
-        self._waits_for_local_completions = expected_completions > 0
-        arrivals = expected_completions + (forwarded_connection is not None)
-        self._completion_join = Join(arrivals) if arrivals > 1 else None
-        self._continuation = None
-
-    @property
-    def destruction_continuation(self) -> DestructionContinuation:
-        """Return the generated continuation connected to this work."""
-        return self._destruction_continuation
+        self._continuation_gate = _DestructionContinuationGate(
+            predecessor_count + (forwarded_connection is not None)
+        )
 
     def ready(self, continuation: types.MethodType):
         """Start connected work and run ``continuation`` when its dependencies complete."""
-        if self._continuation is not None:
-            raise RuntimeError("a destruction connection can only become ready once")
-        self._continuation = continuation
-        if self._waits_for_local_completions and self._forwarded_connection is None:
-            self._scheduler.continue_with(self._start_tasks)
-            return
         self._scheduler.submit_all(self._start_tasks)
-        if self._forwarded_connection is None:
-            continuation()
-        else:
+        if self._forwarded_connection is not None:
             self._forwarded_connection.ready(self.complete)
+        self._continuation_gate.ready(continuation)
 
     def complete(self):
         """Record one terminal completion from connected work."""
-        if self._continuation is None:
-            raise RuntimeError("a destruction connection is not ready")
-        if self._completion_join is not None and not self._completion_join.arrive():
-            return
-        self._continuation()
+        self._continuation_gate.arrive()
 
 
 @final
 class DestructionConnections:
-    """Locally added destruction connections over a forwarded interface."""
+    """Destruction Connections supplied to an Action Execution by its callers."""
 
     def __init__(
         self,
-        *connections: DestructionConnection,
-        direct: DestructionConnections | None = None,
+        connections_by_continuation: dict[
+            DestructionContinuation, DestructionConnection
+        ],
+        *,
+        forwarded: DestructionConnections | None = None,
     ):
-        """Initialize one local connection layer over ``direct``."""
-        self._direct = direct
-        self._local = {
-            connection.destruction_continuation: connection
-            for connection in connections
-        }
+        """Combine one caller's connections with those it received from its caller."""
+        self._forwarded = forwarded
+        self._connections_by_continuation = connections_by_continuation
 
     def connection(
         self, destruction_continuation: DestructionContinuation
@@ -145,10 +144,12 @@ class DestructionConnections:
         """Return the nearest connection for a generated continuation."""
         current: DestructionConnections | None = self
         while current is not None:
-            connection = current._local.get(destruction_continuation)
+            connection = current._connections_by_continuation.get(
+                destruction_continuation
+            )
             if connection is not None:
                 return connection
-            current = current._direct
+            current = current._forwarded
         return None
 
 

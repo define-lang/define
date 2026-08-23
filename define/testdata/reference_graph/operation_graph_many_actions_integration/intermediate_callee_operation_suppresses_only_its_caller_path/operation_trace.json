@@ -101,7 +101,7 @@
       "action_name": "inner"
     },
     "operation_name": "destroy",
-    "target": "/parent::/sibling",
+    "target": "/parent::/child",
     "occurrence": 1
   },
   {
@@ -116,7 +116,7 @@
       "action_name": "inner"
     },
     "operation_name": "destroy",
-    "target": "/parent::/child",
+    "target": "/parent::/sibling",
     "occurrence": 1
   },
   {

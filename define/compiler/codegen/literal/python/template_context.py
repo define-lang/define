@@ -154,7 +154,7 @@ class DestructionConnectionContext:
     destructor_guarantee_registrations: list[
         DestructionConnectionGuaranteeRegistrationContext
     ]
-    expected_completions: int
+    predecessor_count: int
 
 
 @dataclass
@@ -174,7 +174,6 @@ class TriggeredActionExecutionContext:
     execution_name: str
     child_guarantees_name: str | None
     created_destruction_connections: list[DestructionConnectionContext]
-    destruction_connections_member_name: str | None
     forwards_destruction_connections: bool
     trace_parent_action_name: str | None
     trace_action_name: str | None = None

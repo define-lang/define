@@ -3,11 +3,14 @@ from __future__ import annotations
 import os
 import queue
 import threading
-from typing import ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, override
 
 import pytest
 
 from define.runtime import literal
+
+if TYPE_CHECKING:
+    import types
 
 
 class _ContinuationExecution:
@@ -25,6 +28,20 @@ class _ContinuationExecution:
 
     def absent_continuation(self):
         pass
+
+
+class _BoundTask:
+    _task: literal.Task
+
+    def __init__(self, task: literal.Task):
+        self._task = task
+
+    def run(self):
+        self._task()
+
+
+def _bound_task(task: literal.Task) -> types.MethodType:
+    return _BoundTask(task).run
 
 
 def _assert_execution_thread_count(
@@ -183,7 +200,7 @@ class TestScheduler:
 
         scheduler.start(Entry)
 
-        assert calls == ["first", "second"]
+        assert sorted(calls) == ["first", "second"]
 
     def test_default_operation_tracing_hooks_are_no_ops(self):
         scheduler = literal.Scheduler()
@@ -570,29 +587,72 @@ class TestJoin:
 
 
 class TestDestructionConnection:
+    def test_connection_waits_for_work_that_is_already_running(self):
+        calls: list[str] = []
+        connection = literal.DestructionConnection(
+            literal.Scheduler(),
+            1,
+        )
+        connection.ready(
+            _ContinuationExecution(
+                lambda: calls.append("continuation")
+            ).first_continuation
+        )
+
+        assert calls == []
+
+        connection.complete()
+
+        assert calls == ["continuation"]
+
+    def test_connection_accepts_completion_before_destruction_reaches_it(self):
+        calls: list[str] = []
+        connection = literal.DestructionConnection(
+            literal.Scheduler(),
+            1,
+        )
+        connection.complete()
+
+        connection.ready(
+            _ContinuationExecution(
+                lambda: calls.append("continuation")
+            ).first_continuation
+        )
+
+        assert calls == ["continuation"]
+
     def test_connection_starts_nonblocking_work_without_delaying_continuation(self):
         calls: list[str] = []
+        work_started = threading.Event()
+        continuation_started = threading.Event()
 
         class Entry(literal.EntryPoint):
             typed_name: ClassVar[str] = "action<entry>"
 
             @override
             def execute(self, scheduler: literal.Scheduler):
+                def work():
+                    work_started.set()
+                    assert continuation_started.wait(timeout=5)
+                    calls.append("work")
+
+                def continuation():
+                    continuation_started.set()
+                    assert work_started.wait(timeout=5)
+                    calls.append("continuation")
+
                 connection = literal.DestructionConnection(
                     scheduler,
-                    _ContinuationExecution.first_continuation,
                     0,
-                    lambda: calls.append("work"),
+                    _bound_task(work),
                 )
                 connection.ready(
-                    _ContinuationExecution(
-                        lambda: calls.append("continuation")
-                    ).first_continuation
+                    _ContinuationExecution(continuation).first_continuation
                 )
 
-        literal.Scheduler(max_threads=1).start(Entry)
+        literal.Scheduler(max_threads=2).start(Entry)
 
-        assert calls == ["continuation", "work"]
+        assert sorted(calls) == ["continuation", "work"]
 
     def test_nonblocking_connection_still_waits_for_forwarded_work(self):
         calls: list[str] = []
@@ -602,26 +662,22 @@ class TestDestructionConnection:
 
             @override
             def execute(self, scheduler: literal.Scheduler):
-                destruction_continuation = _ContinuationExecution.first_continuation
-
                 def forwarded_work():
                     calls.append("forwarded")
                     forwarded_connection.complete()
 
                 forwarded_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     1,
-                    forwarded_work,
+                    _bound_task(forwarded_work),
                 )
-                local_connection = literal.DestructionConnection(
+                current_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     0,
-                    lambda: calls.append("local"),
+                    _bound_task(lambda: calls.append("current")),
                     forwarded_connection=forwarded_connection,
                 )
-                local_connection.ready(
+                current_connection.ready(
                     _ContinuationExecution(
                         lambda: calls.append("continuation")
                     ).first_continuation
@@ -629,7 +685,8 @@ class TestDestructionConnection:
 
         literal.Scheduler(max_threads=1).start(Entry)
 
-        assert calls == ["forwarded", "continuation", "local"]
+        assert sorted(calls) == ["continuation", "current", "forwarded"]
+        assert calls.index("forwarded") < calls.index("continuation")
 
     def test_connection_waits_for_every_terminal_completion(self):
         calls: list[str] = []
@@ -649,10 +706,9 @@ class TestDestructionConnection:
 
                 connection = literal.DestructionConnection(
                     scheduler,
-                    _ContinuationExecution.first_continuation,
                     2,
-                    first,
-                    second,
+                    _bound_task(first),
+                    _bound_task(second),
                 )
                 connection.ready(
                     _ContinuationExecution(
@@ -665,7 +721,7 @@ class TestDestructionConnection:
         assert set(calls[:2]) == {"first", "second"}
         assert calls[2] == "continuation"
 
-    def test_connection_composes_local_and_forwarded_work(self):
+    def test_connection_composes_its_work_with_forwarded_work(self):
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
@@ -673,31 +729,27 @@ class TestDestructionConnection:
 
             @override
             def execute(self, scheduler: literal.Scheduler):
-                destruction_continuation = _ContinuationExecution.first_continuation
-
                 def higher_work():
                     calls.append("higher")
                     higher_connection.complete()
 
                 higher_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     1,
-                    higher_work,
+                    _bound_task(higher_work),
                 )
 
-                def local_work():
-                    calls.append("local")
-                    local_connection.complete()
+                def current_work():
+                    calls.append("current")
+                    current_connection.complete()
 
-                local_connection = literal.DestructionConnection(
+                current_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     1,
-                    local_work,
+                    _bound_task(current_work),
                     forwarded_connection=higher_connection,
                 )
-                local_connection.ready(
+                current_connection.ready(
                     _ContinuationExecution(
                         lambda: calls.append("continuation")
                     ).first_continuation
@@ -705,32 +757,32 @@ class TestDestructionConnection:
 
         literal.Scheduler(max_threads=2).start(Entry)
 
-        assert set(calls[:2]) == {"local", "higher"}
+        assert set(calls[:2]) == {"current", "higher"}
         assert calls[2] == "continuation"
 
-    def test_connection_layers_override_only_their_local_continuations(self):
+    def test_nearest_connection_overrides_forwarded_connection_for_continuation(self):
         scheduler = literal.Scheduler(max_threads=1)
         first_continuation = _ContinuationExecution.first_continuation
         second_continuation = _ContinuationExecution.second_continuation
         absent_continuation = _ContinuationExecution.absent_continuation
         first = literal.DestructionConnection(
             scheduler,
-            first_continuation,
             1,
-            lambda: None,
+            _bound_task(lambda: None),
         )
         second = literal.DestructionConnection(
             scheduler,
-            second_continuation,
             1,
-            lambda: None,
+            _bound_task(lambda: None),
         )
-        direct = literal.DestructionConnections(first)
-        local = literal.DestructionConnections(second, direct=direct)
+        forwarded = literal.DestructionConnections({first_continuation: first})
+        connections = literal.DestructionConnections(
+            {second_continuation: second}, forwarded=forwarded
+        )
 
-        assert local.connection(first_continuation) is first
-        assert local.connection(second_continuation) is second
-        assert local.connection(absent_continuation) is None
+        assert connections.connection(first_continuation) is first
+        assert connections.connection(second_continuation) is second
+        assert connections.connection(absent_continuation) is None
 
     def test_connection_starts_tasks_concurrently(self):
         calls: list[str] = []
@@ -756,10 +808,9 @@ class TestDestructionConnection:
 
                 connection = literal.DestructionConnection(
                     scheduler,
-                    _ContinuationExecution.first_continuation,
                     2,
-                    first,
-                    second,
+                    _bound_task(first),
+                    _bound_task(second),
                 )
                 connection.ready(
                     _ContinuationExecution(
@@ -774,7 +825,7 @@ class TestDestructionConnection:
 
     def test_connection_starts_forwarded_layers_concurrently(self):
         calls: list[str] = []
-        local_started = threading.Event()
+        current_started = threading.Event()
         forwarded_started = threading.Event()
 
         class Entry(literal.EntryPoint):
@@ -782,35 +833,31 @@ class TestDestructionConnection:
 
             @override
             def execute(self, scheduler: literal.Scheduler):
-                destruction_continuation = _ContinuationExecution.first_continuation
-
                 def forwarded_work():
                     forwarded_started.set()
-                    assert local_started.wait(timeout=5)
+                    assert current_started.wait(timeout=5)
                     calls.append("forwarded")
                     forwarded_connection.complete()
 
                 forwarded_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     1,
-                    forwarded_work,
+                    _bound_task(forwarded_work),
                 )
 
-                def local_work():
-                    local_started.set()
+                def current_work():
+                    current_started.set()
                     assert forwarded_started.wait(timeout=5)
-                    calls.append("local")
-                    local_connection.complete()
+                    calls.append("current")
+                    current_connection.complete()
 
-                local_connection = literal.DestructionConnection(
+                current_connection = literal.DestructionConnection(
                     scheduler,
-                    destruction_continuation,
                     1,
-                    local_work,
+                    _bound_task(current_work),
                     forwarded_connection=forwarded_connection,
                 )
-                local_connection.ready(
+                current_connection.ready(
                     _ContinuationExecution(
                         lambda: calls.append("continuation")
                     ).first_continuation
@@ -818,7 +865,7 @@ class TestDestructionConnection:
 
         literal.Scheduler(max_threads=2).start(Entry)
 
-        assert set(calls[:2]) == {"local", "forwarded"}
+        assert set(calls[:2]) == {"current", "forwarded"}
         assert calls[2] == "continuation"
 
     def test_continuation_runs_directly_without_connections(self):
@@ -860,12 +907,11 @@ class TestDestructionConnection:
 
                 other_connection = literal.DestructionConnection(
                     scheduler,
-                    Entry.continue_other_destroy,
                     1,
-                    other_work,
+                    _bound_task(other_work),
                 )
                 self.destruction_connections = literal.DestructionConnections(
-                    other_connection
+                    {Entry.continue_other_destroy: other_connection}
                 )
                 literal.continue_destruction(self.continue_destroy)
                 literal.continue_destruction(self.continue_other_destroy)
@@ -892,12 +938,11 @@ class TestDestructionConnection:
 
                 connection = literal.DestructionConnection(
                     scheduler,
-                    Entry.continue_destroy,
                     1,
-                    work,
+                    _bound_task(work),
                 )
                 self.destruction_connections = literal.DestructionConnections(
-                    connection
+                    {Entry.continue_destroy: connection}
                 )
                 literal.continue_destruction(self.continue_destroy)
 

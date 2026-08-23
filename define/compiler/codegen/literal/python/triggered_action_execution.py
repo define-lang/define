@@ -68,13 +68,6 @@ class TriggeredActionExecutionGenerator:
             created_destruction_connections = (
                 self._generate_created_destruction_connections(destruction_connections)
             )
-            destruction_connections_member_name = None
-            if destruction_connections:
-                destruction_connections_member_name = (
-                    self._names.triggered_destruction_connections[execution]
-                )
-            elif planned_execution.forwards_destruction_connections:
-                destruction_connections_member_name = "destruction_connections"
             child_guarantees_name = None
             if self._guarantee_interface is not None:
                 child_guarantees = self._guarantee_interface.child_guarantees.get(
@@ -104,9 +97,6 @@ class TriggeredActionExecutionGenerator:
                     execution_name=action_execution_names.execution_name,
                     child_guarantees_name=child_guarantees_name,
                     created_destruction_connections=created_destruction_connections,
-                    destruction_connections_member_name=(
-                        destruction_connections_member_name
-                    ),
                     forwards_destruction_connections=(
                         planned_execution.forwards_destruction_connections
                     ),
@@ -213,7 +203,7 @@ class TriggeredActionExecutionGenerator:
                     destructor_guarantee_registrations=(
                         destructor_guarantee_registrations
                     ),
-                    expected_completions=(
+                    predecessor_count=(
                         len(connection.completion_fragments)
                         + len(connection.destructor_guarantees_preceding_callee_destroy)
                     ),

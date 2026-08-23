@@ -54,9 +54,6 @@
         {% for connection in action_execution.created_destruction_connections %}
         self.{{ connection.member_name }}: {{ destruction_connection_class }}
         {% endfor %}
-        {% if action_execution.created_destruction_connections %}
-        self.{{ action_execution.destruction_connections_member_name }}: literal.DestructionConnections
-        {% endif %}
     {% endfor %}
     {% for callee_binding_join in execution.callee_binding_joins %}
         {% for destruction_position in callee_binding_join.destruction_positions %}
