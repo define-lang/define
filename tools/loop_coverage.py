@@ -36,7 +36,7 @@ class LoopCoverageCollector:
         ] = {}
         self._loop_lines_by_path: dict[Path, list[int]] = {}
         self._covered_loops: set[LoopLocation] = set()
-        self._pending_by_frame: dict[FrameType, set[LoopLocation]] = {}
+        self._pending_by_frame: dict[FrameType, dict[LoopLocation, int]] = {}
         self._locations_by_code: dict[CodeType, dict[int, set[LoopLocation]]] = {}
         self._lines_by_offset: dict[CodeType, dict[int, int]] = {}
         self._monitoring_tool_id: int | None = None
@@ -132,8 +132,6 @@ class LoopCoverageCollector:
     def _record_jump(  # pragma: no cover
         self, code: CodeType, instruction_offset: int, destination_offset: int
     ):
-        if destination_offset >= instruction_offset:
-            return
         location_maps = self._loops_by_filename.get(code.co_filename)
         if location_maps is None:
             return
@@ -148,10 +146,20 @@ class LoopCoverageCollector:
             )
             self._lines_by_offset[code] = lines_by_offset
         target_line = lines_by_offset.get(destination_offset)
+        source_line = lines_by_offset.get(instruction_offset)
+
+        if destination_offset >= instruction_offset:
+            if source_line is not None:
+                location = locations_by_target_line.get(source_line)
+                if location is not None:
+                    self._record_loop_exit(
+                        _monitored_frame(), location, destination_offset
+                    )
+            return
+
         if target_line is None:
             return
         location = locations_by_target_line.get(target_line)
-        source_line = lines_by_offset.get(instruction_offset)
         if (
             location is None
             or source_line == target_line
@@ -160,7 +168,7 @@ class LoopCoverageCollector:
             return
 
         frame = _monitored_frame()
-        self._pending_by_frame.setdefault(frame, set()).add(location)
+        self._pending_by_frame.setdefault(frame, {})[location] = instruction_offset
 
         events = sys.monitoring.events.LINE | sys.monitoring.events.PY_RETURN
         self._locations_by_code[code] = locations_by_entry_line
@@ -176,11 +184,28 @@ class LoopCoverageCollector:
         if locations is None or pending is None:
             return
 
-        covered_locations = locations & pending
+        covered_locations = locations & pending.keys()
         if not covered_locations:
             return
         self._covered_loops.update(covered_locations)
-        pending.difference_update(covered_locations)
+        for location in covered_locations:
+            del pending[location]
+        if not pending:
+            del self._pending_by_frame[frame]
+
+    def _record_loop_exit(
+        self,
+        frame: FrameType,
+        location: LoopLocation,
+        destination_offset: int,
+    ):  # pragma: no cover
+        pending = self._pending_by_frame.get(frame)
+        if pending is None:
+            return
+        back_edge_offset = pending.get(location)
+        if back_edge_offset is None or destination_offset <= back_edge_offset:
+            return
+        del pending[location]
         if not pending:
             del self._pending_by_frame[frame]
 

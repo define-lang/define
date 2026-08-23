@@ -82,7 +82,7 @@ def test_collector_handles_multiline_loop_header(tmp_path: Path):
     assert "BRDA:2,1,loop body executes more than once,1\n" in report_path.read_text()
 
 
-def test_collector_handles_multiline_first_body_statement(tmp_path: Path):
+def test_collector_does_not_combine_nested_loop_activations(tmp_path: Path):
     source_path = tmp_path / "example.py"
     _ = source_path.write_text(
         "def consume(values):\n"
@@ -111,9 +111,9 @@ def test_collector_handles_multiline_first_body_statement(tmp_path: Path):
     assert report_path.read_text() == (
         f"SF:{source_path}\n"
         + "BRDA:2,1,loop body executes more than once,1\n"
-        + "BRDA:3,1,loop body executes more than once,1\n"
+        + "BRDA:3,1,loop body executes more than once,-\n"
         + "BRF:2\n"
-        + "BRH:2\n"
+        + "BRH:1\n"
         + "end_of_record\n"
     )
 
