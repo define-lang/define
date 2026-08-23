@@ -30,17 +30,40 @@ _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
 _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED = (
     "destructors learned through Destruction Contracts are not recorded"
 )
+_CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED = (
+    "a child Destructor known only through the creator is not generated"
+)
 _UNSUPPORTED_GENERATED_TRACE_CASE_REASONS = {
     "callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_destructor_between_two_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_known_child_destroy_and_destructor_precede_parent_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "creator_nonoverlapping_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
+    "creator_reverse_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "diamond_callers_serialize_added_destructor_around_known_destructor": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
     "destructor_with_children_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
 }
 _UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS = {
     "caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_five_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "caller_introduces_three_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "creator_nonoverlapping_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
+    "creator_reverse_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "destructor_ordering_move_retains_independent_empty_dependency": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "diamond_callers_serialize_added_destructor_around_known_destructor": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
@@ -49,11 +72,21 @@ _UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS = {
 }
 _CONCURRENT_RUNTIME_CASES_WITH_NONDETERMINISTIC_FAILURE = {
     "caller_interleaves_destructors_with_destroyer_known_destructors",
+    "caller_introduces_five_empty_children",
+    "caller_introduces_five_empty_children_between_occupied_children",
+    "caller_introduces_five_occupied_children",
+    "caller_introduces_five_occupied_children_between_empty_children",
+    "caller_introduces_three_empty_children",
+    "caller_introduces_three_empty_children_between_occupied_children",
+    "caller_introduces_three_occupied_children",
+    "caller_introduces_three_occupied_children_between_empty_children",
     "destructor_ordering_move_retains_independent_empty_dependency",
     "diamond_callers_serialize_added_destructor_around_known_destructor",
     "two_caller_known_destructors_precede_same_child_destroy",
 }
 _UNSUPPORTED_OPERATION_TRACE_CASE_REASONS = {
+    "creator_nonoverlapping_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
+    "creator_reverse_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "destructor_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
     "destructor_with_children_known_only_two_callers_up": _DESTRUCTION_CONTRACT_DESTRUCTORS_NOT_RECORDED,
 }
