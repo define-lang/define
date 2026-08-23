@@ -23,6 +23,20 @@ _parser = syntax.Parser()
 
 
 class TestIntegerEnum:
+    def test_integer_enum_in_second_top_level_message(self):
+        path = _INVALID_SEMANTICS_PATH / "enums" / "second_top_level.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.IntegerEnumError) as exc_info:
+            semantics.validate(
+                tree,
+                integer_enum_pb2.IntegerEnumFile,
+                path_name=path,
+            )
+        assert exc_info.value.line == 5
+        assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "status"
+
     def test_integer_enum_value(self):
         path = _INVALID_SEMANTICS_PATH / "enums" / "integer_enum.defcl"
         tree = _parser.parse_file(path)

@@ -1,0 +1,6 @@
+metadata: {
+    name: "example"
+}
+config: {
+    status: 0
+}

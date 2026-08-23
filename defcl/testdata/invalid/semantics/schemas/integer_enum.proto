@@ -4,8 +4,12 @@ package defcl.testdata.invalid.semantics.schemas;
 
 message IntegerEnumFile {
   Config config = 1;
+  Metadata metadata = 2;
   message Config {
     Status status = 1;
+  }
+  message Metadata {
+    string name = 1;
   }
   enum Status {
     STATUS_UNSPECIFIED = 0;
