@@ -10,3 +10,6 @@ interface position.
 Useless trigger positions: never interacted with and there are other interface
 positions that _are_ interacted with. Especially important when there is only
 one other interface position.
+
+Should we allow constructors and destructors to be implied? If so, destructor
+analysis has to be thoroughly tested for implications.
