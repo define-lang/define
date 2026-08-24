@@ -143,6 +143,7 @@ py_test(
     size = "small",
     srcs = ["tracing_integration_test.py"],
     data = ["//define/testdata/tracing/tracing_integration"],
+    shard_count = 4,
     deps = [
         ":generated_program_runner",
         ":operation_dependency_analysis",
