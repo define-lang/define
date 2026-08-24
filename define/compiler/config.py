@@ -165,14 +165,17 @@ class ConfigLoader:
         except dcl_exceptions.DclSyntaxError as e:
             raise ConfigSyntaxError(e) from e
         try:
-            protovalidate.validate(result)
+            # TODO: Remove this cast when Protovalidate's annotation is fixed:
+            # https://github.com/bufbuild/protovalidate-py/issues/522
+            typing.cast(
+                "typing.Callable[[message.Message], None]", protovalidate.validate
+            )(result)
         except protovalidate.ValidationError as e:
             messages: list[str] = []
             for violation in e.violations:
-                field_path = ".".join(
-                    elem.field_name for elem in violation.proto.field.elements
-                )
-                if field_path:
+                field = violation.proto.field
+                if field:
+                    field_path = ".".join(elem.field_name for elem in field.elements)
                     messages.append(f"{field_path}: {violation.proto.message}")
                 else:
                     # TODO: Add a real test for this once the config schema
