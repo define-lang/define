@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
@@ -56,8 +57,8 @@ class TestExecution:
         )
         self.guarantees = guarantees
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.destruction_connection_trigger_action_middle: literal.DestructionConnection
-        self.destruction_connection_trigger_action_middle_2: literal.DestructionConnection
+        self.destruction_connection_trigger_action_middle: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_middle_2: tracing.DestructionConnection
         self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild: literal.Position
         self.destruction_position_global_position_parent__global_position_sibling: literal.Position
         self.join_for_trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild = self.scheduler.create_join(2)
@@ -138,11 +139,13 @@ class TestExecution:
             "/middle::trigger_pos",
             1,
         )
-        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild,
         )
-        self.destruction_connection_trigger_action_middle_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle_2 = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_global_position_parent__global_position_sibling,
         )
@@ -168,7 +171,7 @@ class TestExecution:
     def destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
         self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle.destroying_action_execution,
+            self.destruction_connection_trigger_action_middle.trace_execution,
             "/parent::/child::/grandchild::/greatgrandchild",
             1,
         )
@@ -177,7 +180,7 @@ class TestExecution:
     def destroy_global_position_parent__global_position_sibling(self):
         self.destruction_position_global_position_parent__global_position_sibling.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle_2.destroying_action_execution,
+            self.destruction_connection_trigger_action_middle_2.trace_execution,
             "/parent::/sibling",
             1,
         )

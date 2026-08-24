@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.first_destructor
@@ -66,7 +67,7 @@ class TestExecution:
             self.destroy_action_destroyer__position_target__global_position_second
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_second_destructor: local.my_domain_com.my_lib.second_destructor.SecondDestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_second: literal.Position
         self.join_for_destroy_action_destroyer__position_target__global_position_second = self.scheduler.create_join(2)
@@ -121,7 +122,8 @@ class TestExecution:
             "second_destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_second_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             2,
             self.destroy_action_destroyer__position_target__global_position_second,
             self.trigger_action_destroyer__position_target__action_second_destructor__when_empty_global_position_marker,
@@ -168,7 +170,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_second.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/second",
             1,
         )

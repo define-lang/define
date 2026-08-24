@@ -295,6 +295,16 @@ class ActionExecutionContext:
         )
 
     @property
+    def needs_tracing(self) -> bool:
+        """Whether generated code imports the tracing runtime."""
+        if not self.trace_operations:
+            return False
+        return any(
+            action_execution.created_destruction_connections
+            for action_execution in self.action_executions
+        )
+
+    @property
     def needs_guarantees(self) -> bool:
         """Whether this execution publishes or consumes guarantees."""
         return self.guarantees is not None

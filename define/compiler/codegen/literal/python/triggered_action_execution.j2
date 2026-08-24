@@ -3,8 +3,10 @@
 {{ continuation.execution_class.module_name }}.{{ continuation.execution_class.class_name }}.{{ continuation.member_name }}
 {%- endmacro %}
 {% macro initialize_action_execution(action_execution) %}
+{% set destruction_connection_class = "tracing.DestructionConnection" if action_execution.trace_action_name is not none else "literal.DestructionConnection" %}
         {% for connection in action_execution.created_destruction_connections %}
-        self.{{ connection.member_name }} = self.scheduler.create_destruction_connection(
+        self.{{ connection.member_name }} = {{ destruction_connection_class }}(
+            self.scheduler,
             {{ connection.predecessor_count }},
             {% for method_name in connection.start_method_names %}
             self.{{ method_name }},
@@ -63,7 +65,7 @@
         execution = {{ destructor.execution_class.module_name }}.{{ destructor.execution_class.class_name }}(
             self.scheduler,
         {% if destructor.trace_action_name is not none %}
-            self.{{ connection.member_name }}.destroying_action_execution,
+            self.{{ connection.member_name }}.trace_execution,
             "{{ destructor.trace_action_name }}",
         {% endif %}
         )

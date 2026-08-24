@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.fifth
@@ -82,7 +83,7 @@ class TestExecution:
             self.destroy_action_destroyer__position_target__global_position_first
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_fifth_destructor: local.my_domain_com.my_lib.fifth_destructor.FifthDestructorExecution
         self.execution_trigger_action_destroyer__position_target__action_third_destructor: local.my_domain_com.my_lib.third_destructor.ThirdDestructorExecution
         self.execution_trigger_action_destroyer__position_target__action_first_destructor: local.my_domain_com.my_lib.first_destructor.FirstDestructorExecution
@@ -212,7 +213,8 @@ class TestExecution:
             "first_destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_first_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             6,
             self.destroy_action_destroyer__position_target__global_position_fifth,
             self.destroy_action_destroyer__position_target__global_position_third,
@@ -275,7 +277,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_fifth.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/fifth",
             1,
         )
@@ -293,7 +295,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_third.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/third",
             1,
         )
@@ -311,7 +313,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_first.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/first",
             1,
         )

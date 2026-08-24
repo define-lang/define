@@ -78,7 +78,8 @@ class MiddleBExecution:
                 "position<run>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_run__global_position_b,
         )

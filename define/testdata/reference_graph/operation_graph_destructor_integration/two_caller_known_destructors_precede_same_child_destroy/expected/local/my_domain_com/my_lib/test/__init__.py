@@ -112,11 +112,13 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_parent__global_position_sibling,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
             2,
             self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result,
             self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result,

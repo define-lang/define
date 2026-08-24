@@ -84,7 +84,8 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
+            self.scheduler,
             2,
             self.destroy_action_middle__position_run__global_position_b,
             self.destroy_action_middle__position_run__global_position_a,

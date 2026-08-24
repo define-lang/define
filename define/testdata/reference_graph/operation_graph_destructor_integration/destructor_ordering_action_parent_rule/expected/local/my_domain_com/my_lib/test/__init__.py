@@ -104,7 +104,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__when_empty_global_position_marker,
         )

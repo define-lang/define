@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.extra
@@ -58,7 +59,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.destruction_position_action_destroyer__position_run__global_position_known__global_position_extra: literal.Position
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_known = self.scheduler.create_join(2)
 
@@ -100,7 +101,8 @@ class TestExecution:
             "/destroyer::run",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_run__global_position_known__global_position_extra,
             self.trigger_action_destroyer__position_run__global_position_known__global_position_extra__action_grandchild_destruct,
@@ -126,7 +128,7 @@ class TestExecution:
     def destroy_action_destroyer__position_run__global_position_known__global_position_extra(self):
         self.destruction_position_action_destroyer__position_run__global_position_known__global_position_extra.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "run::/known::/extra",
             1,
         )
@@ -152,7 +154,7 @@ class TestExecution:
     def trigger_action_destroyer__position_run__global_position_known__global_position_extra__action_grandchild_destruct(self):
         execution = local.my_domain_com.my_lib.grandchild_destruct.GrandchildDestructExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "grandchild_destruct",
         )
         execution.accept_action_parent()

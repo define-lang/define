@@ -106,7 +106,8 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_target__action_destructor_a,
         )
@@ -139,7 +140,8 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_target__action_destructor_b,
             self.trigger_action_destroyer__position_target__action_destructor_a_2,
@@ -173,7 +175,8 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer_3 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_3 = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_target__action_destructor_b_2,
         )

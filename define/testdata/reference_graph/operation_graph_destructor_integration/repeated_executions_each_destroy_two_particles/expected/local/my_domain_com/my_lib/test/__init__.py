@@ -123,7 +123,8 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_first__action_destructor_a,
         )
@@ -182,11 +183,13 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_first__action_destructor_b,
         )
-        self.destruction_connection_trigger_action_destroyer_2_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2_2 = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_second__action_destructor_b,
             self.trigger_action_destroyer__position_second__action_destructor_a,

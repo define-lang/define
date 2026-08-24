@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct
@@ -65,8 +66,8 @@ class TestExecution:
             self.destroy_action_destroyer__position_parent__global_position_sibling
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
-        self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer_2: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_parent__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
         self.destruction_position_action_destroyer__position_parent__global_position_sibling: literal.Position
         self.join_for_destroy_action_destroyer__position_parent__global_position_sibling = self.scheduler.create_join(2)
@@ -136,11 +137,13 @@ class TestExecution:
             "/destroyer::trigger_pos",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_parent__global_position_sibling,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.trigger_action_destroyer__position_parent__action_destruct__for_empty_rule_action_maker__position_result,
         )
@@ -178,7 +181,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_parent__global_position_sibling.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "parent::/sibling",
             1,
         )

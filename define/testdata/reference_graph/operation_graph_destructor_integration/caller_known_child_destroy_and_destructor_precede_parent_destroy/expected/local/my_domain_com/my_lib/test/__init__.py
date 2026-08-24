@@ -138,7 +138,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             2,
             self.destroy_action_destroyer__position_parent__global_position_required__global_position_extra,
             self.trigger_action_destroyer__position_parent__action_destruct_required__for_empty_rule_global_position_required,
@@ -146,7 +147,8 @@ class TestExecution:
         self.guarantees.trigger_action_destroyer__position_parent__action_destruct_required.guarantee_global_position_required.append(
             self.destruction_connection_trigger_action_destroyer.complete
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_parent__global_position_sibling,
         )

@@ -110,11 +110,6 @@ class DestructionConnection:
             scheduler, predecessor_count + (forwarded_connection is not None)
         )
 
-    @property
-    def destroying_action_execution(self) -> object | None:
-        """Return the scheduler identity of the Action Execution reaching Destroy."""
-        return None
-
     def ready(self, continuation: types.MethodType):
         """Start connected work and run ``continuation`` when its dependencies complete."""
         self._scheduler.submit_all(self._start_tasks)
@@ -222,20 +217,6 @@ class Scheduler:
     def create_join(self, arrivals: int) -> Join:
         """Create a dependency join for generated work."""
         return Join(arrivals)
-
-    def create_destruction_connection(
-        self,
-        predecessor_count: int,
-        *start_tasks: types.MethodType,
-        forwarded_connection: DestructionConnection | None = None,
-    ) -> DestructionConnection:
-        """Create caller work connected to a callee destruction continuation."""
-        return DestructionConnection(
-            self,
-            predecessor_count,
-            *start_tasks,
-            forwarded_connection=forwarded_connection,
-        )
 
     def submit(self, task: Task):
         """Make a generated parallel branch available for execution."""

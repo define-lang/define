@@ -3,6 +3,7 @@
 from typing import ClassVar, final
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
@@ -56,7 +57,7 @@ class MiddleExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.destruction_connection_trigger_action_inner: literal.DestructionConnection
+        self.destruction_connection_trigger_action_inner: tracing.DestructionConnection
         self.destruction_position_global_position_parent__global_position_child: literal.Position
         self.join_for_trigger_action_inner__for_empty_rule_global_position_parent = self.scheduler.create_join(3)
 
@@ -98,7 +99,8 @@ class MiddleExecution:
             "/inner::trigger_pos",
             1,
         )
-        self.destruction_connection_trigger_action_inner = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_inner = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_global_position_parent__global_position_child,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent) if self.destruction_connections is not None else None,
@@ -127,7 +129,7 @@ class MiddleExecution:
     def continue_destroy_global_position_parent__global_position_child(self):
         self.destruction_position_global_position_parent__global_position_child.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_inner.destroying_action_execution,
+            self.destruction_connection_trigger_action_inner.trace_execution,
             "/parent::/child",
             1,
         )

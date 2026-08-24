@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct
@@ -61,7 +62,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.destruction_connection_trigger_action_middle: literal.DestructionConnection
+        self.destruction_connection_trigger_action_middle: tracing.DestructionConnection
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_b: literal.Position
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_a: literal.Position
         self.destruction_position_action_middle__position_run__global_position_extra: literal.Position
@@ -129,7 +130,8 @@ class TestExecution:
             "/middle::run",
             1,
         )
-        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_middle__position_run__global_position_extra__global_position_marker_b,
             self.destroy_action_middle__position_run__global_position_extra__global_position_marker_a,
@@ -154,7 +156,7 @@ class TestExecution:
     def destroy_action_middle__position_run__global_position_extra__global_position_marker_b(self):
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_b.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle.destroying_action_execution,
+            self.destruction_connection_trigger_action_middle.trace_execution,
             "run::/extra::/marker_b",
             1,
         )
@@ -163,7 +165,7 @@ class TestExecution:
     def destroy_action_middle__position_run__global_position_extra__global_position_marker_a(self):
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_a.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle.destroying_action_execution,
+            self.destruction_connection_trigger_action_middle.trace_execution,
             "run::/extra::/marker_a",
             1,
         )
@@ -174,7 +176,7 @@ class TestExecution:
             return
         self.destruction_position_action_middle__position_run__global_position_extra.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle.destroying_action_execution,
+            self.destruction_connection_trigger_action_middle.trace_execution,
             "run::/extra",
             1,
         )

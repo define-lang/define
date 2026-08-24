@@ -1,5 +1,6 @@
 {% from "action_statements.j2" import action_statements %}
 {% macro action_execution_init(action_class_name, execution) %}
+{% set destruction_connection_class = "tracing.DestructionConnection" if execution.trace_operations else "literal.DestructionConnection" %}
     def __init__(
         self,
     {% if execution.needs_action %}
@@ -51,7 +52,7 @@
     {% for action_execution in execution.action_executions %}
         self.{{ action_execution.execution_name }}: {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}
         {% for connection in action_execution.created_destruction_connections %}
-        self.{{ connection.member_name }}: literal.DestructionConnection
+        self.{{ connection.member_name }}: {{ destruction_connection_class }}
         {% endfor %}
     {% endfor %}
     {% for callee_binding_join in execution.callee_binding_joins %}

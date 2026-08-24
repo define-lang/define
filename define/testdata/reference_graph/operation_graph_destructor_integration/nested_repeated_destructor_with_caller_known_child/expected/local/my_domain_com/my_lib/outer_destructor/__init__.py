@@ -97,7 +97,8 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra,
             self.trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a,
@@ -138,7 +139,8 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2,
             self.trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_b,

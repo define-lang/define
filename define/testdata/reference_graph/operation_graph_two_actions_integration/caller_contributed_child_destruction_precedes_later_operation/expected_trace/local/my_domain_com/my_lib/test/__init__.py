@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.destroyer
@@ -65,7 +66,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.destruction_position_action_destroyer__position_run__global_position_run__global_position_child: literal.Position
         self.join_for_move_position_child_particle_to_position_source__global_position_run = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_run = self.scheduler.create_join(2)
@@ -123,7 +124,8 @@ class TestExecution:
             "/destroyer::run",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_run__global_position_run__global_position_child,
         )
@@ -148,7 +150,7 @@ class TestExecution:
     def destroy_action_destroyer__position_run__global_position_run__global_position_child(self):
         self.destruction_position_action_destroyer__position_run__global_position_run__global_position_child.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "run::/run::/child",
             1,
         )

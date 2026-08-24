@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct_a
@@ -60,7 +61,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.destruction_position_action_destroyer__position_run__global_position_extra_b: literal.Position
         self.destruction_position_action_destroyer__position_run__global_position_extra_a: literal.Position
         self.join_for_move_position_source_to_action_destroyer__position_run = self.scheduler.create_join(2)
@@ -114,7 +115,8 @@ class TestExecution:
             "/destroyer::run",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             2,
             self.destroy_action_destroyer__position_run__global_position_extra_b,
             self.destroy_action_destroyer__position_run__global_position_extra_a,
@@ -141,7 +143,7 @@ class TestExecution:
     def destroy_action_destroyer__position_run__global_position_extra_b(self):
         self.destruction_position_action_destroyer__position_run__global_position_extra_b.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "local::/extra_b",
             1,
         )
@@ -150,7 +152,7 @@ class TestExecution:
     def destroy_action_destroyer__position_run__global_position_extra_a(self):
         self.destruction_position_action_destroyer__position_run__global_position_extra_a.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "local::/extra_a",
             1,
         )
@@ -178,7 +180,7 @@ class TestExecution:
     def trigger_action_destroyer__position_run__global_position_extra_b__action_destruct_b(self):
         execution = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "destruct_b",
         )
         execution.accept_action_parent()
@@ -186,7 +188,7 @@ class TestExecution:
     def trigger_action_destroyer__position_run__global_position_extra_a__action_destruct_a(self):
         execution = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "destruct_a",
         )
         execution.accept_action_parent()

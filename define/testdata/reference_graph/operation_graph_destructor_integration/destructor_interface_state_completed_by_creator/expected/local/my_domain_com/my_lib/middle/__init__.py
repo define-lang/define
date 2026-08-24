@@ -83,7 +83,8 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_destroyer__position_target__action_destructor__position_occupied_last,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target) if self.destruction_connections is not None else None,

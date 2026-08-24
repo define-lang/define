@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.child_destructor
 import local.my_domain_com.my_lib.destroyer
@@ -79,8 +80,8 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
-        self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer_2: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_parent_destructor: local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_left__global_position_extra: literal.Position
         self.join_for_move_position_left_source_to_position_source__global_position_left = self.scheduler.create_join(2)
@@ -190,11 +191,13 @@ class TestExecution:
             "parent_destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_parent_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_target__global_position_right__action_child_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = tracing.DestructionConnection(
+            self.scheduler,
             2,
             self.destroy_action_destroyer__position_target__global_position_left__global_position_extra,
             self.trigger_action_destroyer__position_target__action_parent_destructor__for_empty_rule_global_position_left,
@@ -227,7 +230,7 @@ class TestExecution:
     def destroy_action_destroyer__position_target__global_position_left__global_position_extra(self):
         self.destruction_position_action_destroyer__position_target__global_position_left__global_position_extra.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer_2.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer_2.trace_execution,
             "target::/left::/extra",
             1,
         )
@@ -263,7 +266,7 @@ class TestExecution:
     def trigger_action_destroyer__position_target__global_position_right__action_child_destructor(self):
         execution = local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "child_destructor",
         )
         execution.accept_action_parent()

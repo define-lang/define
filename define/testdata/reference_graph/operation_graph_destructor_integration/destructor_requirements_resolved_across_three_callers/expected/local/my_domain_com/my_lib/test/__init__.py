@@ -90,7 +90,8 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_action_middle__position_target__global_position_creator_known,
         )

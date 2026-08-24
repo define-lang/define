@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destructor
@@ -67,7 +68,7 @@ class TestExecution:
             self.destroy_action_destroyer__position_target__action_destructor__position_occupied_first
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_last: literal.Position
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_first__global_position_transitive: literal.Position
@@ -161,7 +162,8 @@ class TestExecution:
             "destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             3,
             self.destroy_action_destroyer__position_target__action_destructor__position_occupied_last,
             self.destroy_action_destroyer__position_target__action_destructor__position_occupied_first__global_position_transitive,
@@ -206,7 +208,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_last.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/destructor::occupied_last",
             1,
         )
@@ -228,7 +230,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_first__global_position_transitive.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/destructor::occupied_first::/transitive",
             1,
         )
@@ -248,7 +250,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_first.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "target::/destructor::occupied_first",
             1,
         )

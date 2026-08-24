@@ -163,7 +163,8 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_destroyer__position_target__action_first_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
+            self.scheduler,
             6,
             self.destroy_action_destroyer__position_target__global_position_fifth,
             self.destroy_action_destroyer__position_target__global_position_third,

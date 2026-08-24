@@ -111,7 +111,8 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
+            self.scheduler,
             3,
             self.destroy_action_middle__position_target__action_worker__position_second_interface,
             self.destroy_action_middle__position_target__action_worker__position_first_interface,

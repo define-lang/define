@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destructor_a
@@ -90,10 +91,10 @@ class TestExecution:
             self.create_action_destroyer__position_run_2
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer_2: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
-        self.destruction_connection_trigger_action_destroyer_2_2: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer_2: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer_2_2: tracing.DestructionConnection
         self.join_for_move_position_second_b_to_action_destroyer__position_first = self.scheduler.create_join(2)
         self.join_for_move_position_second_a_and_b_to_action_destroyer__position_second = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run = self.scheduler.create_join(2)
@@ -158,7 +159,8 @@ class TestExecution:
             "/destroyer::run",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_first__action_destructor_a,
         )
@@ -246,11 +248,13 @@ class TestExecution:
             "/destroyer::run",
             2,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2 = tracing.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_first__action_destructor_b,
         )
-        self.destruction_connection_trigger_action_destroyer_2_2 = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer_2_2 = tracing.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_action_destroyer__position_second__action_destructor_b,
             self.trigger_action_destroyer__position_second__action_destructor_a,
@@ -308,7 +312,7 @@ class TestExecution:
     def trigger_action_destroyer__position_first__action_destructor_a(self):
         execution = local.my_domain_com.my_lib.destructor_a.DestructorAExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer.trace_execution,
             "destructor_a",
         )
         execution.accept_action_parent()
@@ -316,7 +320,7 @@ class TestExecution:
     def trigger_action_destroyer__position_first__action_destructor_b(self):
         execution = local.my_domain_com.my_lib.destructor_b.DestructorBExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer_2.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer_2.trace_execution,
             "destructor_b",
         )
         execution.accept_action_parent()
@@ -324,7 +328,7 @@ class TestExecution:
     def trigger_action_destroyer__position_second__action_destructor_b(self):
         execution = local.my_domain_com.my_lib.destructor_b.DestructorBExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer_2_2.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer_2_2.trace_execution,
             "destructor_b#2",
         )
         execution.accept_action_parent()
@@ -332,7 +336,7 @@ class TestExecution:
     def trigger_action_destroyer__position_second__action_destructor_a(self):
         execution = local.my_domain_com.my_lib.destructor_a.DestructorAExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer_2_2.destroying_action_execution,
+            self.destruction_connection_trigger_action_destroyer_2_2.trace_execution,
             "destructor_a#2",
         )
         execution.accept_action_parent()

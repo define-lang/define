@@ -82,7 +82,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_inner = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_inner = literal.DestructionConnection(
+            self.scheduler,
             1,
             self.destroy_global_position_parent__global_position_child,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent) if self.destruction_connections is not None else None,

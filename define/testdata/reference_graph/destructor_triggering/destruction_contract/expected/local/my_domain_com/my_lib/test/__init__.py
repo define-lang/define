@@ -85,7 +85,8 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_position_box__action_close_thing = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_position_box__action_close_thing = literal.DestructionConnection(
+            self.scheduler,
             0,
             self.trigger_position_box__action_close_thing__position_target__action_destructor,
         )

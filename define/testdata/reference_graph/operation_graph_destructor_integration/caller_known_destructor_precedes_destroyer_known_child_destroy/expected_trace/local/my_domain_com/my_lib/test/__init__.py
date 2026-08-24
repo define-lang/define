@@ -3,6 +3,7 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
+from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct
@@ -60,7 +61,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_parent__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = self.scheduler.create_join(2)
@@ -117,7 +118,8 @@ class TestExecution:
             "/destroyer::trigger_pos",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
+        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
             1,
             self.trigger_action_destroyer__position_parent__action_destruct__for_empty_rule_action_maker__position_result,
         )

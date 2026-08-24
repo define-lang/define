@@ -32,7 +32,7 @@
             {% if stmt.operation_label is not none %}
         self.scheduler.destroy_completed(
                 {% if stmt.destruction_connection_name is not none %}
-            self.{{ stmt.destruction_connection_name }}.destroying_action_execution,
+            self.{{ stmt.destruction_connection_name }}.trace_execution,
                 {% else %}
             self.trace_execution,
                 {% endif %}
