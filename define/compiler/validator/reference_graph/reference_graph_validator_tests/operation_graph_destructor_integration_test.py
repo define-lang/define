@@ -2478,7 +2478,13 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
     expected = {
         "test.create(carrier)": [],
         "test.create(carrier::/third)": ["test.create(carrier)"],
-        "test.move(carrier, /middle::target)": ["test.create(carrier::/third)"],
+        "worker.create(first_interface)": ["test.create(carrier)"],
+        "worker.create(second_interface)": ["test.create(carrier)"],
+        "test.move(carrier, /middle::target)": [
+            "test.create(carrier::/third)",
+            "worker.create(first_interface)",
+            "worker.create(second_interface)",
+        ],
         "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/fifth)": ["test.move(carrier, /middle::target)"],
@@ -2527,6 +2533,12 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
         "third_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
         "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
         "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "destroyer.destroy(target::/worker::second_interface)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destroyer.destroy(target::/worker::first_interface)": [
+            "middle.move(target, /destroyer::target)"
+        ],
         "fourth_destructor.move(/fourth, holder)": [
             "destroyer.create(target::/fourth)"
         ],
@@ -2551,6 +2563,8 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
             "destroyer.destroy(target::/first)",
             "destroyer.destroy(target::/second)",
             "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/worker::second_interface)",
+            "destroyer.destroy(target::/worker::first_interface)",
             "destroyer.destroy(target::/fourth)",
             "destroyer.destroy(target::/fifth)",
             "fifth_destructor.destroy(/marker)",
@@ -2571,7 +2585,13 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
     expected = {
         "test.create(carrier)": [],
         "test.create(carrier::/third)": ["test.create(carrier)"],
-        "test.move(carrier, /middle::target)": ["test.create(carrier::/third)"],
+        "worker.create(first_interface)": ["test.create(carrier)"],
+        "worker.create(second_interface)": ["test.create(carrier)"],
+        "test.move(carrier, /middle::target)": [
+            "test.create(carrier::/third)",
+            "worker.create(first_interface)",
+            "worker.create(second_interface)",
+        ],
         "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/fifth)": ["test.move(carrier, /middle::target)"],
@@ -2640,13 +2660,640 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
         "third_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
         "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
         "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
+        "destroyer.destroy(target::/worker::second_interface)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destroyer.destroy(target::/worker::first_interface)": [
+            "middle.move(target, /destroyer::target)"
+        ],
         "destroyer.destroy(target)": [
             "destroyer.destroy(target::/first)",
             "destroyer.destroy(target::/fourth)",
             "destroyer.destroy(target::/second)",
             "destroyer.destroy(target::/fifth)",
             "destroyer.destroy(target::/third)",
+            "destroyer.destroy(target::/worker::second_interface)",
+            "destroyer.destroy(target::/worker::first_interface)",
             "third_destructor.destroy(/marker)",
         ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_direct_destructor_with_mixed_interface_child_state(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/destructor::occupied_first)": ["test.create(source)"],
+        "test.create(source::/destructor::occupied_first::/transitive)": [
+            "test.create(source::/destructor::occupied_first)"
+        ],
+        "test.create(source::/destructor::occupied_last)": ["test.create(source)"],
+        "test.move(source, /destroyer::target)": [
+            "test.create(source::/destructor::occupied_first::/transitive)",
+            "test.create(source::/destructor::occupied_last)",
+        ],
+        "destructor.move(occupied_first, first_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, occupied_first)": [
+            "destructor.move(occupied_first, first_holder)"
+        ],
+        "destructor.move(occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, occupied_first)"
+        ],
+        "destructor.move(transitive_holder, occupied_first::/transitive)": [
+            "destructor.move(occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(empty)": ["test.move(source, /destroyer::target)"],
+        "destructor.destroy(empty)": ["destructor.create(empty)"],
+        "destructor.move(occupied_last, last_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, occupied_last)": [
+            "destructor.move(occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_last)": [
+            "destructor.move(last_holder, occupied_last)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first)": [
+            "destroyer.destroy(target::/destructor::occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/destructor::occupied_last)",
+            "destroyer.destroy(target::/destructor::occupied_first)",
+            "destructor.destroy(empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_caller_contributed_destructor_with_mixed_interface_child_state(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/destructor::occupied_first)": ["test.create(source)"],
+        "test.create(source::/destructor::occupied_first::/transitive)": [
+            "test.create(source::/destructor::occupied_first)"
+        ],
+        "test.create(source::/destructor::occupied_last)": ["test.create(source)"],
+        "test.move(source, /destroyer::target)": [
+            "test.create(source::/destructor::occupied_first::/transitive)",
+            "test.create(source::/destructor::occupied_last)",
+        ],
+        "destructor.move(occupied_first, first_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, occupied_first)": [
+            "destructor.move(occupied_first, first_holder)"
+        ],
+        "destructor.move(occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, occupied_first)"
+        ],
+        "destructor.move(transitive_holder, occupied_first::/transitive)": [
+            "destructor.move(occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(empty)": ["test.move(source, /destroyer::target)"],
+        "destructor.destroy(empty)": ["destructor.create(empty)"],
+        "destructor.move(occupied_last, last_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, occupied_last)": [
+            "destructor.move(occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_last)": [
+            "destructor.move(last_holder, occupied_last)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first)": [
+            "destroyer.destroy(target::/destructor::occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/destructor::occupied_last)",
+            "destroyer.destroy(target::/destructor::occupied_first)",
+            "destructor.destroy(empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_interface_state_completed_by_creator(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/bundle)": [],
+        "test.create(/bundle::/destructor::occupied_first)": ["test.create(/bundle)"],
+        "test.create(/bundle::/destructor::occupied_first::/transitive)": [
+            "test.create(/bundle::/destructor::occupied_first)"
+        ],
+        "test.move(/bundle, /middle::target)": [
+            "test.create(/bundle::/destructor::occupied_first::/transitive)"
+        ],
+        "middle.create(target::/destructor::occupied_last)": [
+            "test.move(/bundle, /middle::target)"
+        ],
+        "middle.move(target, /destroyer::target)": [
+            "middle.create(target::/destructor::occupied_last)"
+        ],
+        "destructor.move(occupied_first, first_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, occupied_first)": [
+            "destructor.move(occupied_first, first_holder)"
+        ],
+        "destructor.move(occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, occupied_first)"
+        ],
+        "destructor.move(transitive_holder, occupied_first::/transitive)": [
+            "destructor.move(occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(empty)": ["middle.move(target, /destroyer::target)"],
+        "destructor.destroy(empty)": ["destructor.create(empty)"],
+        "destructor.move(occupied_last, last_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, occupied_last)": [
+            "destructor.move(occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_last)": [
+            "destructor.move(last_holder, occupied_last)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/destructor::occupied_first)": [
+            "destroyer.destroy(target::/destructor::occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/destructor::occupied_last)",
+            "destroyer.destroy(target::/destructor::occupied_first)",
+            "destructor.destroy(empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_two_destruction_facts_with_distinct_destructor_sets(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(first_source)": [],
+        "test.create(second_source)": [],
+        "test.move(first_source, /destroyer::first)": ["test.create(first_source)"],
+        "test.move(second_source, /destroyer::second)": ["test.create(second_source)"],
+        "test.create(/destroyer::run)": [],
+        # Each Destruction Fact resolves only the Destructors assigned to its
+        # particle without creating edges between their independent work.
+        "extra_destructor.create(work)": ["test.move(first_source, /destroyer::first)"],
+        "extra_destructor.destroy(work)": ["extra_destructor.create(work)"],
+        "shared_destructor.create(work)": [
+            "test.move(first_source, /destroyer::first)"
+        ],
+        "shared_destructor.destroy(work)": ["shared_destructor.create(work)"],
+        "direct_destructor.create(work)": [
+            "test.move(first_source, /destroyer::first)"
+        ],
+        "direct_destructor.destroy(work)": ["direct_destructor.create(work)"],
+        "destroyer.destroy(first)": ["test.move(first_source, /destroyer::first)"],
+        "shared_destructor#2.create(work)": [
+            "test.move(second_source, /destroyer::second)"
+        ],
+        "shared_destructor#2.destroy(work)": ["shared_destructor#2.create(work)"],
+        "destroyer.destroy(second)": ["test.move(second_source, /destroyer::second)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_repeated_destroyer_executions_receive_own_destructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(a_only)": [],
+        "test.move(a_only, /destroyer::target)": ["test.create(a_only)"],
+        "destructor_a.create(work)": ["test.move(a_only, /destroyer::target)"],
+        "destructor_a.destroy(work)": ["destructor_a.create(work)"],
+        "destroyer.destroy(target)": ["test.move(a_only, /destroyer::target)"],
+        "test.create(a_and_b)": [],
+        "test.move(a_and_b, /destroyer::target)": [
+            "test.create(a_and_b)",
+            "destroyer.destroy(target)",
+        ],
+        "destructor_a#2.create(work)": ["test.move(a_and_b, /destroyer::target)"],
+        "destructor_a#2.destroy(work)": ["destructor_a#2.create(work)"],
+        "destructor_b.create(work)": ["test.move(a_and_b, /destroyer::target)"],
+        "destructor_b.destroy(work)": ["destructor_b.create(work)"],
+        "destroyer#2.destroy(target)": ["test.move(a_and_b, /destroyer::target)"],
+        "test.create(b_only)": [],
+        "test.move(b_only, /destroyer::target)": [
+            "test.create(b_only)",
+            "destroyer#2.destroy(target)",
+        ],
+        "destructor_b#2.create(work)": ["test.move(b_only, /destroyer::target)"],
+        "destructor_b#2.destroy(work)": ["destructor_b#2.create(work)"],
+        "destroyer#3.destroy(target)": ["test.move(b_only, /destroyer::target)"],
+        "test.create(none)": [],
+        "test.move(none, /destroyer::target)": [
+            "test.create(none)",
+            "destroyer#3.destroy(target)",
+        ],
+        "destroyer#4.destroy(target)": ["test.move(none, /destroyer::target)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_requirements_resolved_across_three_callers(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/callee_known)": ["test.create(source)"],
+        "test.destroy(source::/callee_known)": ["test.create(source::/callee_known)"],
+        "test.create(source::/creator_known)": ["test.create(source)"],
+        "test.move(source, /middle::target)": [
+            "test.destroy(source::/callee_known)",
+            "test.create(source::/creator_known)",
+        ],
+        "middle.create(target::/middle_known)": ["test.move(source, /middle::target)"],
+        "middle.destroy(target::/middle_known)": [
+            "middle.create(target::/middle_known)"
+        ],
+        "middle.move(target, /destroyer::target)": [
+            "middle.destroy(target::/middle_known)"
+        ],
+        "middle.create(/destroyer::run)": [],
+        "destroyer.create(target::/callee_known)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        # The callee, middle caller, and creator respectively supply the last
+        # known states of these three Destructor requirement Positions.
+        "destructor.move(/callee_known, callee_holder)": [
+            "destroyer.create(target::/callee_known)"
+        ],
+        "destructor.move(callee_holder, /callee_known)": [
+            "destructor.move(/callee_known, callee_holder)"
+        ],
+        "destructor.create(/middle_known)": ["middle.move(target, /destroyer::target)"],
+        "destructor.destroy(/middle_known)": ["destructor.create(/middle_known)"],
+        "destructor.move(/creator_known, creator_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destructor.move(creator_holder, /creator_known)": [
+            "destructor.move(/creator_known, creator_holder)"
+        ],
+        "destroyer.destroy(target::/callee_known)": [
+            "destructor.move(callee_holder, /callee_known)"
+        ],
+        "destroyer.destroy(target::/creator_known)": [
+            "destructor.move(creator_holder, /creator_known)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/callee_known)",
+            "destroyer.destroy(target::/creator_known)",
+            "destructor.destroy(/middle_known)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_callee_child_state_precedes_destructor_knowledge(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.move(source, /middle::target)": ["test.create(source)"],
+        "middle.move(target, /destroyer::target)": [
+            "test.move(source, /middle::target)"
+        ],
+        "destroyer.create(target::/occupied)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destroyer.create(target::/empty)": ["middle.move(target, /destroyer::target)"],
+        "destroyer.destroy(target::/empty)": ["destroyer.create(target::/empty)"],
+        # The complete Child State originates in /destroyer, but only /middle
+        # knows the Destructor assignment and therefore verifies this execution.
+        "destructor.move(/occupied, holder)": ["destroyer.create(target::/occupied)"],
+        "destructor.move(holder, /occupied)": ["destructor.move(/occupied, holder)"],
+        "destructor.create(/empty)": ["destroyer.destroy(target::/empty)"],
+        "destructor.destroy(/empty)": ["destructor.create(/empty)"],
+        "destroyer.destroy(target::/occupied)": ["destructor.move(holder, /occupied)"],
+        "destroyer.destroy(target)": [
+            "destructor.destroy(/empty)",
+            "destroyer.destroy(target::/occupied)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_direct_and_implied_destructor_executes_once(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/bundle)": [],
+        "test.create(/bundle::/marker)": ["test.create(/bundle)"],
+        "test.move(/bundle, direct)": ["test.create(/bundle::/marker)"],
+        "test.move(direct, /destroyer::target)": ["test.move(/bundle, direct)"],
+        # The Position Constraint and the direct destination constraint assign
+        # one Destructor quality to the same particle, so destruction creates
+        # one Action Execution.
+        "destructor.move(/marker, holder)": ["test.move(direct, /destroyer::target)"],
+        "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
+        "destroyer.destroy(target::/marker)": ["destructor.move(holder, /marker)"],
+        "destroyer.destroy(target)": ["destroyer.destroy(target::/marker)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_destructor_reached_through_two_implication_paths(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/left)": [],
+        "test.create(/left::/marker)": ["test.create(/left)"],
+        "test.move(/left, /right)": ["test.create(/left::/marker)"],
+        "test.move(/right, /destroyer::target)": ["test.move(/left, /right)"],
+        # Moving the particle through the second implied Position does not
+        # duplicate the Destructor first assigned in /left.
+        "destructor.move(/marker, holder)": ["test.move(/right, /destroyer::target)"],
+        "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
+        "destroyer.destroy(target::/marker)": ["destructor.move(holder, /marker)"],
+        "destroyer.destroy(target)": ["destroyer.destroy(target::/marker)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_nested_caller_contributed_destructor(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(outer)": [],
+        "outer_destructor.create(inner_destroyer_particle)": ["test.create(outer)"],
+        "outer_destructor.create(inner_source)": ["test.create(outer)"],
+        "outer_destructor.move(inner_source, inner_destroyer_particle::/inner_destroyer::target)": [
+            "outer_destructor.create(inner_destroyer_particle)",
+            "outer_destructor.create(inner_source)",
+        ],
+        "inner_destroyer.destroy(target)": [
+            "outer_destructor.move(inner_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destructor.create(work)": [
+            "outer_destructor.move(inner_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destructor.destroy(work)": ["inner_destructor.create(work)"],
+        "outer_destructor.destroy(inner_destroyer_particle)": [
+            "inner_destroyer.destroy(target)"
+        ],
+        "test.destroy(outer)": ["test.create(outer)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_nested_repeated_destructor_with_caller_known_child(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(outer)": [],
+        "outer_destructor.create(inner_destroyer_particle)": ["test.create(outer)"],
+        "outer_destructor.create(first_source)": ["test.create(outer)"],
+        "outer_destructor.create(first_source::/extra)": [
+            "outer_destructor.create(first_source)"
+        ],
+        "outer_destructor.move(first_source, inner_destroyer_particle::/inner_destroyer::target)": [
+            "outer_destructor.create(inner_destroyer_particle)",
+            "outer_destructor.create(first_source::/extra)",
+        ],
+        "inner_destructor_a.create(work_a)": [
+            "outer_destructor.move(first_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destructor_a.destroy(work_a)": ["inner_destructor_a.create(work_a)"],
+        "inner_destroyer.destroy(target::/extra)": [
+            "outer_destructor.move(first_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destroyer.destroy(target)": ["inner_destroyer.destroy(target::/extra)"],
+        "outer_destructor.create(second_source)": ["test.create(outer)"],
+        "outer_destructor.create(second_source::/extra)": [
+            "outer_destructor.create(second_source)"
+        ],
+        "outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)": [
+            "outer_destructor.create(second_source::/extra)",
+            "inner_destroyer.destroy(target)",
+        ],
+        "inner_destructor_a#2.create(work_a)": [
+            "outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destructor_a#2.destroy(work_a)": ["inner_destructor_a#2.create(work_a)"],
+        "inner_destructor_b.create(work_b)": [
+            "outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destructor_b.destroy(work_b)": ["inner_destructor_b.create(work_b)"],
+        "inner_destroyer#2.destroy(target::/extra)#2": [
+            "outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)"
+        ],
+        "inner_destroyer#2.destroy(target)": [
+            "inner_destroyer#2.destroy(target::/extra)#2"
+        ],
+        "outer_destructor.destroy(inner_destroyer_particle)": [
+            "inner_destroyer#2.destroy(target)"
+        ],
+        "test.destroy(outer)": ["test.create(outer)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_repeated_executions_each_destroy_two_particles(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(first_a)": [],
+        "test.create(first_none)": [],
+        "test.move(first_a, /destroyer::first)": ["test.create(first_a)"],
+        "test.move(first_none, /destroyer::second)": ["test.create(first_none)"],
+        "test.create(/destroyer::run)": [],
+        "destroyer.move(run, used_run)": ["test.create(/destroyer::run)"],
+        "destroyer.destroy(used_run)": ["destroyer.move(run, used_run)"],
+        "destructor_a.create(work_a)": ["test.move(first_a, /destroyer::first)"],
+        "destructor_a.destroy(work_a)": ["destructor_a.create(work_a)"],
+        "destroyer.destroy(first)": ["test.move(first_a, /destroyer::first)"],
+        "destroyer.destroy(second)": ["test.move(first_none, /destroyer::second)"],
+        "test.create(second_b)": [],
+        "test.create(second_a_and_b)": [],
+        "test.move(second_b, /destroyer::first)": [
+            "test.create(second_b)",
+            "destroyer.destroy(first)",
+        ],
+        "test.move(second_a_and_b, /destroyer::second)": [
+            "test.create(second_a_and_b)",
+            "destroyer.destroy(second)",
+        ],
+        "test.create(/destroyer::run)#2": ["destroyer.move(run, used_run)"],
+        "destroyer#2.move(run, used_run)": ["test.create(/destroyer::run)#2"],
+        "destroyer#2.destroy(used_run)": ["destroyer#2.move(run, used_run)"],
+        # The second Action Execution's two Destruction Facts receive different
+        # contribution sets, and neither fact acquires dependencies from the
+        # first execution's Destructor.
+        "destructor_b.create(work_b)": ["test.move(second_b, /destroyer::first)"],
+        "destructor_b.destroy(work_b)": ["destructor_b.create(work_b)"],
+        "destroyer#2.destroy(first)": ["test.move(second_b, /destroyer::first)"],
+        "destructor_a#2.create(work_a)": [
+            "test.move(second_a_and_b, /destroyer::second)"
+        ],
+        "destructor_a#2.destroy(work_a)": ["destructor_a#2.create(work_a)"],
+        "destructor_b#2.create(work_b)": [
+            "test.move(second_a_and_b, /destroyer::second)"
+        ],
+        "destructor_b#2.destroy(work_b)": ["destructor_b#2.create(work_b)"],
+        "destroyer#2.destroy(second)": [
+            "test.move(second_a_and_b, /destroyer::second)"
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_separate_child_contract_paths(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(left_source)": [],
+        "test.create(left_source::/extra)": ["test.create(left_source)"],
+        "test.move(left_source, source::/left)": [
+            "test.create(source)",
+            "test.create(left_source::/extra)",
+        ],
+        "test.create(right_source)": [],
+        "test.move(right_source, source::/right)": [
+            "test.create(source)",
+            "test.create(right_source)",
+        ],
+        "test.move(source, /destroyer::target)": [
+            "test.move(left_source, source::/left)",
+            "test.move(right_source, source::/right)",
+        ],
+        "destroyer.move(target::/left, left_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destroyer.move(left_holder, target::/left)": [
+            "destroyer.move(target::/left, left_holder)"
+        ],
+        "destroyer.move(target::/right, right_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destroyer.move(right_holder, target::/right)": [
+            "destroyer.move(target::/right, right_holder)"
+        ],
+        # The parent Destructor and the caller-known child Destroy share the
+        # /left path, while /right's Destructor remains an independent chain.
+        "parent_destructor.move(/left, holder)": [
+            "destroyer.move(left_holder, target::/left)"
+        ],
+        "parent_destructor.move(holder, /left)": [
+            "parent_destructor.move(/left, holder)"
+        ],
+        "destroyer.destroy(target::/left::/extra)": [
+            "parent_destructor.move(holder, /left)"
+        ],
+        "destroyer.destroy(target::/left)": [
+            "destroyer.destroy(target::/left::/extra)"
+        ],
+        "child_destructor.create(work)": [
+            "destroyer.move(right_holder, target::/right)"
+        ],
+        "child_destructor.destroy(work)": ["child_destructor.create(work)"],
+        "destroyer.destroy(target::/right)": [
+            "destroyer.move(right_holder, target::/right)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/left)",
+            "destroyer.destroy(target::/right)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_repeated_destructor_uses_distinct_requirement_sources(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(first_source)": [],
+        "test.create(first_source::/marker)": ["test.create(first_source)"],
+        "test.move(first_source, /destroyer::target)": [
+            "test.create(first_source::/marker)"
+        ],
+        "destructor.move(/marker, holder)": [
+            "test.move(first_source, /destroyer::target)"
+        ],
+        "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
+        "destroyer.destroy(target::/marker)": ["destructor.move(holder, /marker)"],
+        "destroyer.destroy(target)": ["destroyer.destroy(target::/marker)"],
+        "test.create(second_source)": [],
+        "test.create(second_source::/marker)": ["test.create(second_source)"],
+        "test.move(second_source, /destroyer::target)": [
+            "test.create(second_source::/marker)",
+            "destroyer.destroy(target)",
+        ],
+        # Each Destructor Action Execution receives the parent Move belonging
+        # to its own destroyed particle as its occupied requirement dependency.
+        "destructor#2.move(/marker, holder)": [
+            "test.move(second_source, /destroyer::target)"
+        ],
+        "destructor#2.move(holder, /marker)": ["destructor#2.move(/marker, holder)"],
+        "destroyer#2.destroy(target::/marker)#2": [
+            "destructor#2.move(holder, /marker)"
+        ],
+        "destroyer#2.destroy(target)": ["destroyer#2.destroy(target::/marker)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

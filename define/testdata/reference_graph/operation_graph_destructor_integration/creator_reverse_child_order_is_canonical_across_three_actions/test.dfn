@@ -9,6 +9,7 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the action</fourth_destructor>.
                 it has the position</third>.
                 it has the action</third_destructor>.
+                it has the action</worker>.
                 it has the action</second_destructor>.
                 it has the action</first_destructor>.
             }

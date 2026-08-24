@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it also assigns the position</left>.
+    it also assigns the position</right>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</left>.
+        create a particle in position</left>::position</marker>.
+        move the particle in position</left> to position</right>.
+        move the particle in position</right> to action</destroyer>::position<target>.
+    }
+}

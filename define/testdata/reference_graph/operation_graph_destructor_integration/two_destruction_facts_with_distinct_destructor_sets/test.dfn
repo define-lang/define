@@ -1,0 +1,24 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first_source> {
+            it may only contain particles where {
+                it has the action</direct_destructor>.
+                it has the action</shared_destructor>.
+                it has the action</extra_destructor>.
+            }
+        }
+        define the position<second_source> {
+            it may only contain particles where {
+                it has the action</shared_destructor>.
+            }
+        }
+        create a particle in position<first_source>.
+        create a particle in position<second_source>.
+        move the particle in position<first_source> to action</destroyer>::position<first>.
+        move the particle in position<second_source> to action</destroyer>::position<second>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

@@ -19,6 +19,30 @@
   },
   {
     "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "create",
+    "target": "first_interface",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "action_name": "worker"
+    },
+    "operation_name": "create",
+    "target": "second_interface",
+    "occurrence": 1
+  },
+  {
+    "execution": {
       "caller": null,
       "action_name": "test"
     },
@@ -566,6 +590,36 @@
     },
     "operation_name": "destroy",
     "target": "/marker",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "target::/worker::second_interface",
+    "occurrence": 1
+  },
+  {
+    "execution": {
+      "caller": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "action_name": "destroyer"
+    },
+    "operation_name": "destroy",
+    "target": "target::/worker::first_interface",
     "occurrence": 1
   },
   {

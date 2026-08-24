@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it also assigns the position</bundle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</bundle>.
+        create a particle in position</bundle>::action</destructor>::position<occupied_first>.
+        create a particle in position</bundle>::action</destructor>::position<occupied_first>::position</transitive>.
+        move the particle in position</bundle> to action</middle>::position<target>.
+    }
+}

@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/inner_destructor_b> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<work_b>.
+        create a particle in position<work_b>.
+        destroy the particle in position<work_b>.
+    }
+}

@@ -1,0 +1,31 @@
+define the potential action<my.domain.com:my_lib:/outer_destructor> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<inner_destroyer_particle> {
+            it may only contain particles where {
+                it has the action</inner_destroyer>.
+            }
+        }
+        define the position<first_source> {
+            it may only contain particles where {
+                it has the position</extra>.
+                it has the action</inner_destructor_a>.
+            }
+        }
+        define the position<second_source> {
+            it may only contain particles where {
+                it has the position</extra>.
+                it has the action</inner_destructor_a>.
+                it has the action</inner_destructor_b>.
+            }
+        }
+        create a particle in position<inner_destroyer_particle>.
+        create a particle in position<first_source>.
+        create a particle in position<first_source>::position</extra>.
+        move the particle in position<first_source> to position<inner_destroyer_particle>::action</inner_destroyer>::position<target>.
+        create a particle in position<second_source>.
+        create a particle in position<second_source>::position</extra>.
+        move the particle in position<second_source> to position<inner_destroyer_particle>::action</inner_destroyer>::position<target>.
+    }
+}
