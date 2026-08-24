@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import typing
+from collections import abc
 
 from define.compiler.validator.reference_graph import (
     operation_graph_labeler,
@@ -16,6 +17,59 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import operation_graph
+
+
+@typing.final
+class OperationDependencies(
+    abc.Mapping[
+        tracing.OperationTraceRecord,
+        frozenset[tracing.OperationTraceRecord],
+    ]
+):
+    """The direct dependencies between traced Particle Operations."""
+
+    def __init__(
+        self,
+        direct_dependencies: dict[
+            tracing.OperationTraceRecord,
+            frozenset[tracing.OperationTraceRecord],
+        ],
+    ):
+        """Initialize the direct dependencies."""
+        self._direct_dependencies = direct_dependencies
+
+    @typing.override
+    def __getitem__(
+        self,
+        operation: tracing.OperationTraceRecord,
+    ) -> frozenset[tracing.OperationTraceRecord]:
+        return self._direct_dependencies[operation]
+
+    @typing.override
+    def __iter__(self) -> abc.Iterator[tracing.OperationTraceRecord]:
+        return iter(self._direct_dependencies)
+
+    @typing.override
+    def __len__(self) -> int:
+        return len(self._direct_dependencies)
+
+    def transitive(self) -> OperationDependencies:
+        """Include every direct and indirect dependency of each operation."""
+        transitive_dependencies: dict[
+            tracing.OperationTraceRecord,
+            frozenset[tracing.OperationTraceRecord],
+        ] = {}
+        for operation in self:
+            dependencies: set[tracing.OperationTraceRecord] = set()
+            remaining = list(self[operation])
+            while remaining:
+                dependency = remaining.pop()
+                if dependency in dependencies:
+                    continue
+                dependencies.add(dependency)
+                remaining.extend(self[dependency])
+            transitive_dependencies[operation] = frozenset(dependencies)
+        return OperationDependencies(transitive_dependencies)
 
 
 def _deserialize_object(
@@ -50,6 +104,29 @@ def read_operation_trace(trace_file: Path) -> list[tracing.OperationTraceRecord]
         )
 
 
+def read_operation_dependencies(
+    dependencies_file: Path,
+    operations: list[tracing.OperationTraceRecord],
+) -> OperationDependencies:
+    """Read the runtime dependencies for an ordered operation trace."""
+    with dependencies_file.open(encoding="utf-8") as dependencies_stream:
+        dependency_indices_by_operation = typing.cast(
+            "list[list[int]]", json.load(dependencies_stream)
+        )
+    dependencies: dict[
+        tracing.OperationTraceRecord,
+        frozenset[tracing.OperationTraceRecord],
+    ] = {}
+    for operation, dependency_indices in zip(
+        operations, dependency_indices_by_operation, strict=True
+    ):
+        operation_dependencies: set[tracing.OperationTraceRecord] = set()
+        for dependency_index in dependency_indices:
+            operation_dependencies.add(operations[dependency_index])
+        dependencies[operation] = frozenset(operation_dependencies)
+    return OperationDependencies(dependencies)
+
+
 def _execution_identity(
     execution: operation_graph_resolver.ActionExecution,
     labels: operation_graph_labeler.OperationGraphLabeler,
@@ -81,7 +158,7 @@ def _execution_identity(
 def resolved_operation_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
     entry_action: ast.ActionDefinition,
-) -> dict[tracing.OperationTraceRecord, tuple[tracing.OperationTraceRecord, ...]]:
+) -> OperationDependencies:
     """Map each resolved operation's trace record to its direct dependency records."""
     resolved = operation_graph_resolver.ResolvedOperationGraphBuilder(
         operation_graphs,
@@ -108,9 +185,12 @@ def resolved_operation_dependencies(
             local_label.target,
             local_label.occurrence,
         )
-    return {
-        records[operation]: tuple(
+    direct_dependencies: dict[
+        tracing.OperationTraceRecord,
+        frozenset[tracing.OperationTraceRecord],
+    ] = {}
+    for operation in resolved.operations:
+        direct_dependencies[records[operation]] = frozenset(
             records[dependency] for dependency in operation.dependencies
         )
-        for operation in resolved.operations
-    }
+    return OperationDependencies(direct_dependencies)

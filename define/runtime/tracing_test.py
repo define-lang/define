@@ -91,6 +91,65 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
     assert connections[1].trace_execution is executions[0].trace_execution
 
 
+def test_destruction_connection_combines_operation_dependencies():
+    @typing.final
+    class ContinuationExecution:
+        def __init__(
+            self,
+            scheduler: literal.Scheduler,
+            trace_execution: tracing.ActionExecutionIdentity,
+            destruction_connections: literal.DestructionConnections,
+        ):
+            self.scheduler = scheduler
+            self.trace_execution = trace_execution
+            self.destruction_connections = destruction_connections
+
+        def continue_destroy(self):
+            self.scheduler.destroy_completed(
+                self.trace_execution,
+                "destroyed",
+                1,
+            )
+
+    class Entry(literal.EntryPoint):
+        typed_name: typing.ClassVar[str] = "action<entry>"
+
+        @typing.override
+        def execute(self, scheduler: literal.Scheduler):
+            trace_execution = scheduler.execution_created(None, "test")
+            assert isinstance(trace_execution, tracing.ActionExecutionIdentity)
+            connection: tracing.DestructionConnection
+
+            def complete_connected_work():
+                scheduler.create_completed(trace_execution, "connected_work", 1)
+                connection.complete()
+
+            connection = tracing.DestructionConnection(
+                scheduler,
+                1,
+                _bound_task(complete_connected_work),
+            )
+            execution = ContinuationExecution(
+                scheduler,
+                trace_execution,
+                literal.DestructionConnections(
+                    {ContinuationExecution.continue_destroy: connection}
+                ),
+            )
+            scheduler.create_completed(trace_execution, "callee_work", 1)
+            literal.continue_destruction(execution.continue_destroy)
+
+    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler.start(Entry)
+
+    callee_work, connected_work, destroyed = scheduler.trace
+    assert scheduler.trace == {
+        callee_work: frozenset(),
+        connected_work: frozenset((callee_work,)),
+        destroyed: frozenset((callee_work, connected_work)),
+    }
+
+
 def test_action_execution_identity_retains_each_caller():
     scheduler = tracing.TracingScheduler()
 
@@ -116,7 +175,7 @@ def test_completion_hooks_retain_every_operation_in_order():
     scheduler.destroy_completed(execution, "destination", 1)
     scheduler.create_completed(execution, "item", 2)
 
-    assert scheduler.records == [
+    assert list(scheduler.trace) == [
         tracing.OperationTraceRecord(execution, "create", None, "item", 1),
         tracing.OperationTraceRecord(
             execution,
@@ -134,21 +193,86 @@ def test_completion_hooks_retain_every_operation_in_order():
         ),
         tracing.OperationTraceRecord(execution, "create", None, "item", 2),
     ]
+    first, second, third, fourth = scheduler.trace
+    assert scheduler.trace == {
+        first: frozenset(),
+        second: frozenset((first,)),
+        third: frozenset((second,)),
+        fourth: frozenset((third,)),
+    }
 
 
-def test_trace_json_preserves_structural_execution_and_completion_order(
+def test_submitted_tasks_retain_only_their_submission_dependencies():
+    class Entry(literal.EntryPoint):
+        typed_name: typing.ClassVar[str] = "action<entry>"
+
+        @typing.override
+        def execute(self, scheduler: literal.Scheduler):
+            execution = scheduler.execution_created(None, "test")
+
+            def create_first():
+                scheduler.create_completed(execution, "first", 1)
+
+            def create_second():
+                scheduler.create_completed(execution, "second", 1)
+
+            scheduler.submit(create_first)
+            scheduler.submit(create_second)
+
+    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler.start(Entry)
+
+    first, second = scheduler.trace
+    assert scheduler.trace == {
+        first: frozenset(),
+        second: frozenset(),
+    }
+
+
+def test_join_combines_dependencies_from_every_arrival():
+    class Entry(literal.EntryPoint):
+        typed_name: typing.ClassVar[str] = "action<entry>"
+
+        @typing.override
+        def execute(self, scheduler: literal.Scheduler):
+            execution = scheduler.execution_created(None, "test")
+            join = scheduler.create_join(2)
+
+            def complete_branch(position_name: str):
+                scheduler.create_completed(execution, position_name, 1)
+                if join.arrive():
+                    scheduler.destroy_completed(execution, "parent", 1)
+
+            scheduler.submit(lambda: complete_branch("first"))
+            scheduler.submit(lambda: complete_branch("second"))
+
+    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler.start(Entry)
+
+    first, second, parent = scheduler.trace
+    assert scheduler.trace == {
+        first: frozenset(),
+        second: frozenset(),
+        parent: frozenset((first, second)),
+    }
+
+
+def test_trace_json_preserves_order_and_runtime_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
     trace_file = tmp_path / "trace.json"
+    dependencies_file = tmp_path / "dependencies.json"
     monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
+    monkeypatch.setenv("DEFINE_OPERATION_DEPENDENCIES_FILE", str(dependencies_file))
     scheduler = tracing.TracingScheduler()
     entry = scheduler.execution_created(None, "test")
     worker = scheduler.execution_created(entry, "worker")
     scheduler.create_completed(entry, "gateway", 1)
     scheduler.create_completed(worker, "scratch", 1)
+    scheduler.move_completed(worker, "scratch", "destination", 1)
 
-    tracing.write_operation_trace(scheduler.records)
+    tracing.write_operation_trace(scheduler.trace)
 
     assert json.loads(trace_file.read_text()) == [
         {
@@ -172,12 +296,27 @@ def test_trace_json_preserves_structural_execution_and_completion_order(
             "target": "scratch",
             "occurrence": 1,
         },
+        {
+            "execution": {
+                "caller": {
+                    "caller": None,
+                    "action_name": "test",
+                },
+                "action_name": "worker",
+            },
+            "operation_name": "move",
+            "source": "scratch",
+            "target": "destination",
+            "occurrence": 1,
+        },
     ]
+    assert json.loads(dependencies_file.read_text()) == [[], [0], [1]]
 
 
 def test_write_operation_trace_does_nothing_without_environment_file(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.delenv("DEFINE_OPERATION_TRACE_FILE", raising=False)
+    monkeypatch.delenv("DEFINE_OPERATION_DEPENDENCIES_FILE", raising=False)
 
-    tracing.write_operation_trace(())
+    tracing.write_operation_trace({})

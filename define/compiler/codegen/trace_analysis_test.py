@@ -53,3 +53,37 @@ def test_read_operation_trace(tmp_path: Path):
             2,
         )
     ]
+
+
+def test_read_operation_dependencies(tmp_path: Path):
+    dependencies_file = tmp_path / "operation_dependencies.json"
+    _ = dependencies_file.write_text(json.dumps([[], [0]]), encoding="utf-8")
+    execution = tracing.ActionExecutionIdentity(None, "test")
+    first = tracing.OperationTraceRecord(execution, "create", None, "first", 1)
+    second = tracing.OperationTraceRecord(execution, "create", None, "second", 1)
+
+    assert trace_analysis.read_operation_dependencies(
+        dependencies_file, [first, second]
+    ) == {
+        first: frozenset(),
+        second: frozenset((first,)),
+    }
+
+
+def test_operation_dependencies_transitive():
+    execution = tracing.ActionExecutionIdentity(None, "test")
+    first = tracing.OperationTraceRecord(execution, "create", None, "first", 1)
+    second = tracing.OperationTraceRecord(execution, "create", None, "second", 1)
+    third = tracing.OperationTraceRecord(execution, "create", None, "third", 1)
+
+    assert trace_analysis.OperationDependencies(
+        {
+            first: frozenset(),
+            second: frozenset((first,)),
+            third: frozenset((second,)),
+        }
+    ).transitive() == {
+        first: frozenset(),
+        second: frozenset((first,)),
+        third: frozenset((first, second)),
+    }

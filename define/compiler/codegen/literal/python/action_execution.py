@@ -218,6 +218,11 @@ class ActionExecutionGenerator:
                             fragment.callee_binding_joins_that_depend_on_fragment
                         )
                     ],
+                    # TODO: Do not make a triggered Action Execution inherit the
+                    # triggering Particle Operation as a runtime dependency. The
+                    # particle operation dependency graph has no such dependency,
+                    # but initialization currently follows the triggering Particle
+                    # Operation's completion hook.
                     triggered_action_successors=[
                         action_execution_contexts_by_execution[action_execution]
                         for action_execution in fragment.action_execution_successors

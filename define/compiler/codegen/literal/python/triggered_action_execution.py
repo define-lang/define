@@ -159,6 +159,10 @@ class TriggeredActionExecutionGenerator:
             destruction_continuation = self._generated_actions[
                 callee_destroy.action
             ].destruction_continuations[callee_destroy.operation]
+            # TODO: Preserve each connected task's Particle Operation dependencies
+            # through codegen. Starting all of them when execution reaches the
+            # callee Destroy adds dependencies absent from the Particle Operation
+            # dependency graph.
             start_method_names: list[str] = []
             for fragment in connection.first_fragments_of_destructions:
                 start_method_names.append(self._names.fragments[fragment])
@@ -194,6 +198,10 @@ class TriggeredActionExecutionGenerator:
                             guarantee_name=guarantee_name,
                         )
                     )
+            # TODO: Make the continuation available without representing that
+            # availability as a predecessor of the callee Destroy. Combining it
+            # with the true predecessors adds dependencies absent from the
+            # Particle Operation dependency graph.
             contexts.append(
                 template_context.DestructionConnectionContext(
                     member_name=self._names.destruction_connections[connection],

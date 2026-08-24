@@ -23,6 +23,7 @@ def run_generated_program(
     entry_script: str = "__main__.py",
     *,
     trace_file: Path | None = None,
+    operation_dependencies_file: Path | None = None,
     max_threads: int | None = None,
 ) -> GeneratedProgramResult:
     """Execute a generated program and capture its occupied positions.
@@ -32,6 +33,8 @@ def run_generated_program(
         entry_script: A script in that directory to run instead of the generated
             entry point, for a test that needs to start the program differently.
         trace_file: A file to receive the generated program's operation trace.
+        operation_dependencies_file: A file to receive the runtime dependencies
+            between traced operations.
         max_threads: The maximum scheduler threads for this execution.
     """
     # Closing the file leaves it in place for the generated program to write,
@@ -45,6 +48,10 @@ def run_generated_program(
         }
         if trace_file is not None:
             generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(trace_file)
+        if operation_dependencies_file is not None:
+            generated_environment["DEFINE_OPERATION_DEPENDENCIES_FILE"] = str(
+                operation_dependencies_file
+            )
         if max_threads is not None:
             generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)
         process = subprocess.run(
