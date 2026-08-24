@@ -35,26 +35,48 @@ _TEST_CASES = sorted(
 _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
     "caller-added Destructor operation ordering is not generated"
 )
-_UNSUPPORTED_TEST_CASE_REASONS = {
+_CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED = (
+    "a child Destructor known only through the creator is not generated"
+)
+_UNSUPPORTED_RUNTIME_TEST_CASE_REASONS = {
     "operation_graph_destructor_integration/callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/caller_destructor_between_two_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_five_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_five_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_five_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_five_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_three_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_three_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_three_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/caller_introduces_three_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/creator_nonoverlapping_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
+    "operation_graph_destructor_integration/creator_reverse_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "operation_graph_destructor_integration/contributed_destructor_depends_on_callee_move_with_two_dependencies": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/destructor_ordering_action_parent_rule": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/destructor_ordering_fill_rule": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/destructor_ordering_move_retains_independent_empty_dependency": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/destructor_ordering_move_retains_independent_fill_dependency": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/diamond_callers_serialize_added_destructor_around_known_destructor": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "operation_graph_destructor_integration/two_caller_known_destructors_precede_same_child_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
 }
-_TEST_CASE_PARAMS: list[object] = []
+_GENERATION_TEST_CASE_PARAMS: list[object] = []
+_RUNTIME_TEST_CASE_PARAMS: list[object] = []
 for test_case_dir in _TEST_CASES:
     test_case_id = test_case_dir.relative_to(_TESTDATA_ROOT).as_posix()
-    marks = ()
-    if test_case_id in _UNSUPPORTED_TEST_CASE_REASONS:
-        marks = pytest.mark.xfail(
-            strict=True,
-            reason=_UNSUPPORTED_TEST_CASE_REASONS[test_case_id],
+    _GENERATION_TEST_CASE_PARAMS.append(
+        pytest.param(
+            test_case_dir,
+            id=test_case_id,
         )
-    _TEST_CASE_PARAMS.append(
+    )
+    marks = ()
+    if test_case_id in _UNSUPPORTED_RUNTIME_TEST_CASE_REASONS:
+        marks = pytest.mark.xfail(
+            strict=False,
+            reason=_UNSUPPORTED_RUNTIME_TEST_CASE_REASONS[test_case_id],
+        )
+    _RUNTIME_TEST_CASE_PARAMS.append(
         pytest.param(
             test_case_dir,
             id=test_case_id,
@@ -69,7 +91,7 @@ def test_test_cases_not_empty():
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    _TEST_CASE_PARAMS,
+    _GENERATION_TEST_CASE_PARAMS,
 )
 def test_generates_expected_output(
     test_case_dir: Path, monkeypatch: pytest.MonkeyPatch
@@ -86,7 +108,7 @@ def test_generates_expected_output(
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    _TEST_CASE_PARAMS,
+    _RUNTIME_TEST_CASE_PARAMS,
 )
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"

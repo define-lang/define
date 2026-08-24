@@ -5,25 +5,12 @@ _TRACING_TESTDATA_EXCLUDES = [
     "**/operation_trace.json",
 ]
 
-_CODEGEN_TESTDATA_EXCLUDES = [
-    "all_positions_*/**",
-    "caller_introduces_*/**",
-    "creator_*_child_order_is_canonical_across_three_actions/**",
-    "diamond_callers_serialize_added_destructor_around_known_destructor/**",
-    "destructor_known_only_two_callers_up/**",
-    "destructor_on_passed_particle_with_newly_known_child/**",
-    "destructor_on_particle_from_callee_guarantee/**",
-    "destructor_with_children_known_only_two_callers_up/**",
-    "multiple_newly_known_children_with_destructors/**",
-    "newly_known_grandchild_destructor_uses_callee_child_destroy/**",
-]
-
 filegroup(
     name = "codegen_testdata",
     testonly = True,
     srcs = glob(
         ["**"],
-        exclude = _CODEGEN_TESTDATA_EXCLUDES + _TRACING_TESTDATA_EXCLUDES,
+        exclude = _TRACING_TESTDATA_EXCLUDES,
     ),
     visibility = [
         "//define/compiler/codegen:__pkg__",
