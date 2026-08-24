@@ -1,0 +1,168 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "staging",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "staging::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "staging",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "staging",
+      "target": "box",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "staging::/child",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "box::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "staging",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "box",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "destroy",
+        "target": "box::/child",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "create",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "staging",
+        "target": "box",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "staging",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "destroy",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "destructor"
+        },
+        "operation_name": "create",
+        "target": "_noop",
+        "occurrence": 1
+      }
+    ]
+  }
+]

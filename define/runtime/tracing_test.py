@@ -142,11 +142,16 @@ def test_destruction_connection_combines_operation_dependencies():
     scheduler = tracing.TracingScheduler(max_threads=1)
     scheduler.start(Entry)
 
-    callee_work, connected_work, destroyed = scheduler.trace
-    assert scheduler.trace == {
-        callee_work: frozenset(),
-        connected_work: frozenset((callee_work,)),
-        destroyed: frozenset((callee_work, connected_work)),
+    execution = tracing.ActionExecutionIdentity(None, "test")
+    callee_work = tracing.OperationIdentity(execution, "create", None, "callee_work", 1)
+    connected_work = tracing.OperationIdentity(
+        execution, "create", None, "connected_work", 1
+    )
+    destroyed = tracing.OperationIdentity(execution, "destroy", None, "destroyed", 1)
+    assert scheduler.operation_dependencies == {
+        callee_work: (),
+        connected_work: (callee_work,),
+        destroyed: (callee_work, connected_work),
     }
 
 
@@ -166,7 +171,7 @@ def test_action_execution_identity_retains_each_caller():
     )
 
 
-def test_completion_hooks_retain_every_operation_in_order():
+def test_completion_hooks_record_operation_dependencies():
     scheduler = tracing.TracingScheduler()
     execution = scheduler.execution_created(None, "test")
 
@@ -175,30 +180,27 @@ def test_completion_hooks_retain_every_operation_in_order():
     scheduler.destroy_completed(execution, "destination", 1)
     scheduler.create_completed(execution, "item", 2)
 
-    assert list(scheduler.trace) == [
-        tracing.OperationTraceRecord(execution, "create", None, "item", 1),
-        tracing.OperationTraceRecord(
-            execution,
-            "move",
-            "item",
-            "destination",
-            1,
-        ),
-        tracing.OperationTraceRecord(
-            execution,
-            "destroy",
-            None,
-            "destination",
-            1,
-        ),
-        tracing.OperationTraceRecord(execution, "create", None, "item", 2),
-    ]
-    first, second, third, fourth = scheduler.trace
-    assert scheduler.trace == {
-        first: frozenset(),
-        second: frozenset((first,)),
-        third: frozenset((second,)),
-        fourth: frozenset((third,)),
+    first = tracing.OperationIdentity(execution, "create", None, "item", 1)
+    second = tracing.OperationIdentity(
+        execution,
+        "move",
+        "item",
+        "destination",
+        1,
+    )
+    third = tracing.OperationIdentity(
+        execution,
+        "destroy",
+        None,
+        "destination",
+        1,
+    )
+    fourth = tracing.OperationIdentity(execution, "create", None, "item", 2)
+    assert scheduler.operation_dependencies == {
+        first: (),
+        second: (first,),
+        third: (second,),
+        fourth: (third,),
     }
 
 
@@ -222,10 +224,12 @@ def test_submitted_tasks_retain_only_their_submission_dependencies():
     scheduler = tracing.TracingScheduler(max_threads=1)
     scheduler.start(Entry)
 
-    first, second = scheduler.trace
-    assert scheduler.trace == {
-        first: frozenset(),
-        second: frozenset(),
+    execution = tracing.ActionExecutionIdentity(None, "test")
+    first = tracing.OperationIdentity(execution, "create", None, "first", 1)
+    second = tracing.OperationIdentity(execution, "create", None, "second", 1)
+    assert scheduler.operation_dependencies == {
+        first: (),
+        second: (),
     }
 
 
@@ -249,22 +253,26 @@ def test_join_combines_dependencies_from_every_arrival():
     scheduler = tracing.TracingScheduler(max_threads=1)
     scheduler.start(Entry)
 
-    first, second, parent = scheduler.trace
-    assert scheduler.trace == {
-        first: frozenset(),
-        second: frozenset(),
-        parent: frozenset((first, second)),
+    execution = tracing.ActionExecutionIdentity(None, "test")
+    first = tracing.OperationIdentity(execution, "create", None, "first", 1)
+    second = tracing.OperationIdentity(execution, "create", None, "second", 1)
+    parent = tracing.OperationIdentity(execution, "destroy", None, "parent", 1)
+    assert scheduler.operation_dependencies == {
+        first: (),
+        second: (),
+        parent: (first, second),
     }
 
 
-def test_trace_json_preserves_order_and_runtime_dependencies(
+def test_operation_dependency_json_preserves_runtime_operation_order(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    trace_file = tmp_path / "trace.json"
-    dependencies_file = tmp_path / "dependencies.json"
-    monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
-    monkeypatch.setenv("DEFINE_OPERATION_DEPENDENCIES_FILE", str(dependencies_file))
+    dependencies_file = tmp_path / "operation_dependencies.json"
+    monkeypatch.setenv(
+        "DEFINE_OPERATION_DEPENDENCIES_FILE",
+        str(dependencies_file),
+    )
     scheduler = tracing.TracingScheduler()
     entry = scheduler.execution_created(None, "test")
     worker = scheduler.execution_created(entry, "worker")
@@ -272,51 +280,81 @@ def test_trace_json_preserves_order_and_runtime_dependencies(
     scheduler.create_completed(worker, "scratch", 1)
     scheduler.move_completed(worker, "scratch", "destination", 1)
 
-    tracing.write_operation_trace(scheduler.trace)
+    tracing.write_operation_dependencies(scheduler.operation_dependencies)
 
-    assert json.loads(trace_file.read_text()) == [
+    assert json.loads(dependencies_file.read_text()) == [
         {
-            "execution": {
-                "caller": None,
-                "action_name": "test",
-            },
-            "operation_name": "create",
-            "target": "gateway",
-            "occurrence": 1,
-        },
-        {
-            "execution": {
-                "caller": {
+            "operation": {
+                "execution": {
                     "caller": None,
                     "action_name": "test",
                 },
-                "action_name": "worker",
+                "operation_name": "create",
+                "target": "gateway",
+                "occurrence": 1,
             },
-            "operation_name": "create",
-            "target": "scratch",
-            "occurrence": 1,
+            "dependencies": [],
         },
         {
-            "execution": {
-                "caller": {
-                    "caller": None,
-                    "action_name": "test",
+            "operation": {
+                "execution": {
+                    "caller": {
+                        "caller": None,
+                        "action_name": "test",
+                    },
+                    "action_name": "worker",
                 },
-                "action_name": "worker",
+                "operation_name": "create",
+                "target": "scratch",
+                "occurrence": 1,
             },
-            "operation_name": "move",
-            "source": "scratch",
-            "target": "destination",
-            "occurrence": 1,
+            "dependencies": [
+                {
+                    "execution": {
+                        "caller": None,
+                        "action_name": "test",
+                    },
+                    "operation_name": "create",
+                    "target": "gateway",
+                    "occurrence": 1,
+                }
+            ],
+        },
+        {
+            "operation": {
+                "execution": {
+                    "caller": {
+                        "caller": None,
+                        "action_name": "test",
+                    },
+                    "action_name": "worker",
+                },
+                "operation_name": "move",
+                "source": "scratch",
+                "target": "destination",
+                "occurrence": 1,
+            },
+            "dependencies": [
+                {
+                    "execution": {
+                        "caller": {
+                            "caller": None,
+                            "action_name": "test",
+                        },
+                        "action_name": "worker",
+                    },
+                    "operation_name": "create",
+                    "target": "scratch",
+                    "occurrence": 1,
+                }
+            ],
         },
     ]
-    assert json.loads(dependencies_file.read_text()) == [[], [0], [1]]
 
 
-def test_write_operation_trace_does_nothing_without_environment_file(
+def test_write_operation_dependencies_does_nothing_without_environment_file(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.delenv("DEFINE_OPERATION_TRACE_FILE", raising=False)
     monkeypatch.delenv("DEFINE_OPERATION_DEPENDENCIES_FILE", raising=False)
 
-    tracing.write_operation_trace({})
+    tracing.write_operation_dependencies({})

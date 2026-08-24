@@ -1,0 +1,97 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "gateway",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "gateway::/other::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "gateway",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "other"
+      },
+      "operation_name": "move",
+      "source": "trigger_pos",
+      "target": "output",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "gateway::/other::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "gateway::/other::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "gateway::/other::output",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "other"
+        },
+        "operation_name": "move",
+        "source": "trigger_pos",
+        "target": "output",
+        "occurrence": 1
+      }
+    ]
+  }
+]

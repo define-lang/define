@@ -108,32 +108,34 @@ py_test(
 )
 
 py_library(
-    name = "test_helpers",
+    name = "operation_dependency_analysis",
     testonly = True,
-    srcs = ["test_helpers.py"],
-    deps = ["@pypi//pytest"],
-)
-
-py_library(
-    name = "trace_analysis",
-    srcs = ["trace_analysis.py"],
+    srcs = ["operation_dependency_analysis.py"],
     deps = [
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:operation_graph_labeler",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
         "//define/compiler/validator/reference_graph:operation_graph_resolver",
         "//define/runtime:tracing",
     ],
 )
 
 py_test(
-    name = "trace_analysis_test",
+    name = "operation_dependency_analysis_test",
     size = "small",
-    srcs = ["trace_analysis_test.py"],
+    srcs = ["operation_dependency_analysis_test.py"],
     deps = [
-        ":trace_analysis",
+        ":operation_dependency_analysis",
         "//define/runtime:tracing",
     ],
+)
+
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    deps = ["@pypi//pytest"],
 )
 
 py_test(
@@ -143,11 +145,10 @@ py_test(
     data = ["//define/testdata/tracing/tracing_integration"],
     deps = [
         ":generated_program_runner",
+        ":operation_dependency_analysis",
         ":test_helpers",
-        ":trace_analysis",
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
-        "//define/runtime:tracing",
         "@pypi//pytest",
     ],
 )
@@ -182,9 +183,9 @@ pyright_test(
         ":generator",
         ":generator_integration_test",
         ":generator_test",
+        ":operation_dependency_analysis",
+        ":operation_dependency_analysis_test",
         ":test_helpers",
-        ":trace_analysis",
-        ":trace_analysis_test",
         ":tracing_integration_test",
     ],
 )

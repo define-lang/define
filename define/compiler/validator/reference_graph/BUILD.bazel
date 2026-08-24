@@ -189,7 +189,7 @@ py_library(
     name = "operation_graph_renderer",
     testonly = True,
     srcs = ["operation_graph_renderer.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":operation_graph",
         ":operation_graph_labeler",

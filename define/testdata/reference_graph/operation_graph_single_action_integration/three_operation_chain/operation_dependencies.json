@@ -1,0 +1,60 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "item",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "item",
+      "target": "dest",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "item",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "dest",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "item",
+        "target": "dest",
+        "occurrence": 1
+      }
+    ]
+  }
+]

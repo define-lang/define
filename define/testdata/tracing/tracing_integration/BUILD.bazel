@@ -5,7 +5,7 @@ filegroup(
         "**/.define/**",
         "**/*.dfn",
         "**/expected_trace/**",
-        "**/operation_trace.json",
+        "**/operation_dependencies.json",
     ]),
     visibility = [
         "//define/compiler/codegen:__pkg__",

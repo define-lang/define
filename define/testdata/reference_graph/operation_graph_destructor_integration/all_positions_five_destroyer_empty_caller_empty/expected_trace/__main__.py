@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.test
 def main():
     scheduler = tracing.TracingScheduler()
     literal.start(local.my_domain_com.my_lib.test.Test, scheduler)
-    tracing.write_operation_trace(scheduler.trace)
+    tracing.write_operation_dependencies(scheduler.operation_dependencies)
 
 
 if __name__ == "__main__":

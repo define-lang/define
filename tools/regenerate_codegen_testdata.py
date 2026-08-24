@@ -47,13 +47,13 @@ def _run_case(
     expected_dir: Path,
     *,
     testdata_root: Path,
-    trace_file: Path | None = None,
+    operation_dependencies_file: Path | None = None,
     max_threads: int | None = None,
 ) -> generated_program_runner.GeneratedProgramResult | None:
     case_dir = expected_dir.parent
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
-        trace_file=trace_file,
+        operation_dependencies_file=operation_dependencies_file,
         max_threads=max_threads,
     )
     if runtime_result.process.returncode != 0:
@@ -96,16 +96,16 @@ def _regenerate_tracing_case(case_dir: Path) -> bool:
     ):
         return False
 
-    # An existing trace is a behavioral expectation and can intentionally
-    # differ from behavior that remains xfailed in generated code.
-    trace_file = case_dir / "operation_trace.json"
-    if trace_file.exists():
+    # Existing runtime behavior is an expectation; execution is only needed
+    # when a new case does not have that expectation yet.
+    operation_dependencies_file = case_dir / "operation_dependencies.json"
+    if operation_dependencies_file.exists():
         return True
     return (
         _run_case(
             expected_dir,
             testdata_root=TRACING_TESTDATA_ROOT,
-            trace_file=trace_file,
+            operation_dependencies_file=operation_dependencies_file,
             max_threads=1,
         )
         is not None

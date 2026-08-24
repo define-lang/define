@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pprint
+from collections import abc
 
 from define.compiler.validator.reference_graph import (
     operation_graph,
@@ -12,6 +13,23 @@ from define.compiler.validator.reference_graph import (
 
 # Every operation graph test names the action it validates /test.
 _ENTRY_POINT_ACTION_PATH = "/test"
+
+
+def resolved_operation_scheduling_table[OperationLabelT: abc.Hashable](
+    resolved: operation_graph_resolver.ResolvedOperationGraph,
+    operation_labels: abc.Mapping[
+        operation_graph_resolver.ResolvedOperation,
+        OperationLabelT,
+    ],
+) -> dict[OperationLabelT, tuple[OperationLabelT, ...]]:
+    """Return the scheduling table for one resolved Operation Graph."""
+    scheduling_table: dict[OperationLabelT, tuple[OperationLabelT, ...]] = {}
+    for operation in resolved.operations:
+        direct_dependencies: list[OperationLabelT] = []
+        for dependency in operation.dependencies:
+            direct_dependencies.append(operation_labels[dependency])
+        scheduling_table[operation_labels[operation]] = tuple(direct_dependencies)
+    return scheduling_table
 
 
 def _operation_dependencies(
@@ -26,10 +44,11 @@ def _operation_dependencies(
             labels = operation_graph_labeler.OperationGraphLabeler(
                 operation_graphs
             ).resolved_operation_labels(resolved)
-            return {
-                label: [labels[dependency] for dependency in operation.dependencies]
-                for operation, label in labels.items()
-            }
+            scheduling_table = resolved_operation_scheduling_table(resolved, labels)
+            dependencies_by_operation: dict[str, list[str]] = {}
+            for operation, dependencies in scheduling_table.items():
+                dependencies_by_operation[operation] = list(dependencies)
+            return dependencies_by_operation
     raise KeyError(_ENTRY_POINT_ACTION_PATH)
 
 

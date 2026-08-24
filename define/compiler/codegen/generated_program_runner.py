@@ -22,7 +22,6 @@ def run_generated_program(
     generated_dir: Path,
     entry_script: str = "__main__.py",
     *,
-    trace_file: Path | None = None,
     operation_dependencies_file: Path | None = None,
     max_threads: int | None = None,
 ) -> GeneratedProgramResult:
@@ -32,9 +31,8 @@ def run_generated_program(
         generated_dir: The directory a program was generated into.
         entry_script: A script in that directory to run instead of the generated
             entry point, for a test that needs to start the program differently.
-        trace_file: A file to receive the generated program's operation trace.
-        operation_dependencies_file: A file to receive the runtime dependencies
-            between traced operations.
+        operation_dependencies_file: A file to receive the generated program's
+            Particle Operation dependencies.
         max_threads: The maximum scheduler threads for this execution.
     """
     # Closing the file leaves it in place for the generated program to write,
@@ -46,8 +44,6 @@ def run_generated_program(
             "PYTHONPATH": os.pathsep.join([str(generated_dir), *sys.path]),
             "DEFINE_REPORT_OCCUPIED_POSITIONS": report_file.name,
         }
-        if trace_file is not None:
-            generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(trace_file)
         if operation_dependencies_file is not None:
             generated_environment["DEFINE_OPERATION_DEPENDENCIES_FILE"] = str(
                 operation_dependencies_file

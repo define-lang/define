@@ -1,7 +1,7 @@
-"""Particle Operation tracing for instrumented literal Python programs.
+"""Particle Operation tracing for instrumented literal programs.
 
-Tracing records both the realized operation order and the runtime dependency
-relation. It does not track generated methods that perform no Particle Operation.
+Tracing records both realized operation order and runtime dependencies. It does
+not track generated methods that perform no Particle Operation.
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ from define.runtime import literal
 if typing.TYPE_CHECKING:
     import types
 
-_OPERATION_TRACE_FILE_ENV_VAR = "DEFINE_OPERATION_TRACE_FILE"
 _OPERATION_DEPENDENCIES_FILE_ENV_VAR = "DEFINE_OPERATION_DEPENDENCIES_FILE"
 
 
@@ -32,8 +31,8 @@ class ActionExecutionIdentity:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class OperationTraceRecord:
-    """One successfully completed generated Particle Operation."""
+class OperationIdentity:
+    """The identity of one generated Particle Operation."""
 
     execution: ActionExecutionIdentity
     operation_name: str
@@ -42,9 +41,9 @@ class OperationTraceRecord:
     occurrence: int
 
 
-type OperationTrace = dict[
-    OperationTraceRecord,
-    frozenset[OperationTraceRecord],
+type OperationDependencyMap = dict[
+    OperationIdentity,
+    tuple[OperationIdentity, ...],
 ]
 
 
@@ -56,22 +55,22 @@ class Join(literal.Join):
         self,
         arrivals: int,
         current_operation_dependencies: contextvars.ContextVar[
-            frozenset[OperationTraceRecord]
+            tuple[OperationIdentity, ...]
         ],
     ):
         """Initialize a traced Join requiring ``arrivals`` arrivals."""
         super().__init__(arrivals)
         self._current_operation_dependencies = current_operation_dependencies
-        self._operation_dependencies: set[OperationTraceRecord] = set()
+        self._operation_dependencies: list[OperationIdentity] = []
 
     @override
     def arrive(self) -> bool:
         """Combine dependencies and adopt them on the final arrival."""
-        self._operation_dependencies.update(self._current_operation_dependencies.get())
+        self._operation_dependencies.extend(self._current_operation_dependencies.get())
         if not super().arrive():
             return False
         _ = self._current_operation_dependencies.set(
-            frozenset(self._operation_dependencies)
+            tuple(self._operation_dependencies)
         )
         return True
 
@@ -102,20 +101,20 @@ class TracingScheduler(literal.Scheduler):
     """A literal Scheduler that records operations and runtime dependencies."""
 
     def __init__(self, *, max_threads: int | None = None):
-        """Initialize an empty operation trace."""
+        """Initialize an empty operation dependency relation."""
         super().__init__(max_threads=max_threads)
-        self._trace: OperationTrace = {}
+        self._operation_dependencies: OperationDependencyMap = {}
         self._current_operation_dependencies = contextvars.ContextVar[
-            frozenset[OperationTraceRecord]
+            tuple[OperationIdentity, ...]
         ](
             "current_operation_dependencies",
-            default=frozenset(),
+            default=(),
         )
 
     @property
-    def trace(self) -> OperationTrace:
-        """Return the realized operations and their runtime dependencies."""
-        return self._trace
+    def operation_dependencies(self) -> OperationDependencyMap:
+        """Return each completed operation's direct runtime dependencies."""
+        return self._operation_dependencies
 
     @override
     def create_join(self, arrivals: int) -> Join:
@@ -212,7 +211,7 @@ class TracingScheduler(literal.Scheduler):
             raise ValueError("trace execution is required")
         if not isinstance(execution, ActionExecutionIdentity):
             raise TypeError("invalid trace execution type")
-        operation = OperationTraceRecord(
+        operation = OperationIdentity(
             execution,
             operation_name,
             source,
@@ -220,35 +219,34 @@ class TracingScheduler(literal.Scheduler):
             occurrence,
         )
         operation_dependencies = self._current_operation_dependencies.get()
-        self._trace[operation] = operation_dependencies
-        _ = self._current_operation_dependencies.set(frozenset((operation,)))
+        self._operation_dependencies[operation] = operation_dependencies
+        _ = self._current_operation_dependencies.set((operation,))
 
 
-def write_operation_trace(trace: OperationTrace):
-    """Write the configured trace artifacts, when requested."""
-    trace_file = os.environ.get(_OPERATION_TRACE_FILE_ENV_VAR)
-    if trace_file is not None:
-        serialized_operations = [_serialize_operation(operation) for operation in trace]
-        _write_json(Path(trace_file), serialized_operations)
+def write_operation_dependencies(operation_dependencies: OperationDependencyMap):
+    """Write the configured operation dependencies, when requested."""
     dependencies_file = os.environ.get(_OPERATION_DEPENDENCIES_FILE_ENV_VAR)
-    if dependencies_file is not None:
-        operation_indices = {operation: index for index, operation in enumerate(trace)}
-        serialized_dependencies: list[list[int]] = []
-        for operation in trace:
-            serialized_dependencies.append(
-                sorted(operation_indices[dependency] for dependency in trace[operation])
-            )
-        _write_json(Path(dependencies_file), serialized_dependencies)
+    if dependencies_file is None:
+        return
+    serialized_dependencies: list[dict[str, object]] = []
+    for operation, dependencies in operation_dependencies.items():
+        serialized_dependencies.append(
+            {
+                "operation": _serialize_operation(operation),
+                "dependencies": [
+                    _serialize_operation(dependency) for dependency in dependencies
+                ],
+            }
+        )
+    # TODO: Version this artifact and publish a JSON Schema before external
+    # tools consume it.
+    _ = Path(dependencies_file).write_text(
+        json.dumps(serialized_dependencies, indent=2) + "\n"
+    )
 
 
-def _serialize_operation(operation: OperationTraceRecord) -> dict[str, object]:
+def _serialize_operation(operation: OperationIdentity) -> dict[str, object]:
     serialized_operation = dataclasses.asdict(operation)
     if operation.source is None:
         del serialized_operation["source"]
     return serialized_operation
-
-
-def _write_json(trace_file: Path, value: object):
-    # TODO: Version this artifact and publish a JSON Schema before external
-    # tools consume it.
-    _ = trace_file.write_text(json.dumps(value, indent=2) + "\n")

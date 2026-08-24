@@ -1,0 +1,426 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "source",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "source::/creator_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "source",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "source::/callee_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "source",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "source::/callee_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "source::/callee_known",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "source",
+      "target": "/middle::target",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "source::/creator_known",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "destroy",
+        "target": "source::/callee_known",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "create",
+      "target": "/destroyer::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/middle::target",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "create",
+      "target": "target::/middle_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/middle::target",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/middle::target",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "destroy",
+      "target": "target::/middle_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "target::/middle_known",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "move",
+      "source": "target",
+      "target": "/destroyer::target",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "destroy",
+        "target": "target::/middle_known",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/middle::target",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "create",
+      "target": "target::/callee_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "/destroyer::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "target",
+        "target": "/destroyer::target",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "destroy",
+      "target": "target::/callee_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "create",
+        "target": "target::/callee_known",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "destroy",
+      "target": "target::/creator_known",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "/destroyer::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "destroy",
+        "target": "target::/callee_known",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "destroy",
+      "target": "target",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "/destroyer::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "destroy",
+        "target": "target::/callee_known",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "destroy",
+        "target": "target::/creator_known",
+        "occurrence": 1
+      }
+    ]
+  }
+]
