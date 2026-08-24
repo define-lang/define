@@ -49,8 +49,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_middle_action: local.my_domain_com.my_lib.middle_action.MiddleActionExecution
-        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_intermediate = literal.Join(2)
-        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b = literal.Join(2)
+        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_intermediate = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input__global_position_b = self.scheduler.create_join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(

@@ -55,10 +55,10 @@ class RunnerExecution:
         )
         self.execution_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier: local.my_domain_com.my_lib.implier.ImplierExecution
         self.execution_trigger_position_wrapper__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied = literal.Join(2)
-        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_box__action_inner__position_run = literal.Join(2)
-        self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input = literal.Join(2)
-        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final = literal.Join(2)
+        self.join_for_trigger_position_wrapper__action_middle__position_box__action_inner__position_input__action_implier__when_empty_global_position_implied = self.scheduler.create_join(2)
+        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_box__action_inner__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_box__action_inner__position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final = self.scheduler.create_join(2)
 
     def accept_when_empty_position_wrapper__action_middle__position_box(self):
         self.create_position_wrapper__action_middle__position_box()

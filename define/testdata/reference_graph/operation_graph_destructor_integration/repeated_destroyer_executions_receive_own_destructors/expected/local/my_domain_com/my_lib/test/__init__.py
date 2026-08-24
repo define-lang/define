@@ -89,13 +89,13 @@ class TestExecution:
         self.execution_trigger_action_destroyer_3: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_action_destroyer_3: literal.DestructionConnection
         self.execution_trigger_action_destroyer_4: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.join_for_move_position_a_and_b_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_move_position_b_only_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_move_position_none_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer_2__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer_3__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer_4__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_move_position_a_and_b_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_move_position_b_only_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_move_position_none_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer_2__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer_3__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer_4__for_empty_rule_position_target = self.scheduler.create_join(2)
 
     def create_position_a_only(self):
         self.local_position_a_only.create_particle()
@@ -106,8 +106,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_target__action_destructor_a,
         )
@@ -140,8 +139,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_target__action_destructor_b,
             self.trigger_action_destroyer__position_target__action_destructor_a_2,
@@ -175,8 +173,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer_3 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_3 = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_target__action_destructor_b_2,
         )

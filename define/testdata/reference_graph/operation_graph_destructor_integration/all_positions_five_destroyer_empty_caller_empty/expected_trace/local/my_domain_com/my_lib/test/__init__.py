@@ -70,14 +70,14 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.join_for_move_position_carrier_to_action_destroyer__position_target = literal.Join(3)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_second = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fourth = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fifth = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_third = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_target = literal.Join(2)
+        self.join_for_move_position_carrier_to_action_destroyer__position_target = self.scheduler.create_join(3)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fourth = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fifth = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_third = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()

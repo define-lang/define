@@ -43,7 +43,7 @@ class CallFillExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
-        self.join_for_trigger_action_fill_item__when_empty_global_position_item = literal.Join(2)
+        self.join_for_trigger_action_fill_item__when_empty_global_position_item = self.scheduler.create_join(2)
 
     def accept_when_empty_action_fill_item__position_trigger_pos(self):
         self.create_action_fill_item__position_trigger_pos()

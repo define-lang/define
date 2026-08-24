@@ -62,10 +62,10 @@ class DestroyerExecution:
             self.destroy_position_target
         )
         self.execution_trigger_position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_destroy_position_target = literal.Join(4)
-        self.join_for_trigger_position_target__action_destructor__for_empty_rule_position_occupied_first = literal.Join(2)
-        self.join_for_trigger_position_target__action_destructor__when_empty_position_empty = literal.Join(2)
-        self.join_for_trigger_position_target__action_destructor__for_empty_rule_position_occupied_last = literal.Join(2)
+        self.join_for_destroy_position_target = self.scheduler.create_join(4)
+        self.join_for_trigger_position_target__action_destructor__for_empty_rule_position_occupied_first = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_destructor__when_empty_position_empty = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_destructor__for_empty_rule_position_occupied_last = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__action_destructor__position_empty(self):
         self.trigger_position_target__action_destructor__when_empty_position_empty()

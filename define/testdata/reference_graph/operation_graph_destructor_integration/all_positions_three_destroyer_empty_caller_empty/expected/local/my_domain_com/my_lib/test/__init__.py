@@ -54,11 +54,11 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_third = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_second = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_target = literal.Join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_third = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()

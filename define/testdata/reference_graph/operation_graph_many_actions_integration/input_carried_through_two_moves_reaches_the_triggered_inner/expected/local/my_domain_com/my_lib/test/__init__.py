@@ -60,9 +60,9 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_outer_holder__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = literal.Join(2)
-        self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder = literal.Join(2)
-        self.join_for_trigger_position_outer_holder__action_outer__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder = self.scheduler.create_join(2)
+        self.join_for_trigger_position_outer_holder__action_outer__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

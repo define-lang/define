@@ -51,8 +51,8 @@ class TestExecution:
         )
         self.execution_trigger_position_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.execution_trigger_position_holder__action_middle_2: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_holder__action_middle__action_parent = literal.Join(2)
-        self.join_for_trigger_position_holder__action_middle_2__action_parent = literal.Join(2)
+        self.join_for_trigger_position_holder__action_middle__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_holder__action_middle_2__action_parent = self.scheduler.create_join(2)
 
     def create_position_holder(self):
         self.action.get_interface_position(

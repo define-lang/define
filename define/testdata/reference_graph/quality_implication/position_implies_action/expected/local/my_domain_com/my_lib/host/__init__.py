@@ -31,7 +31,7 @@ class HostExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
-        self.join_for_trigger_action_helper__action_parent = literal.Join(2)
+        self.join_for_trigger_action_helper__action_parent = self.scheduler.create_join(2)
 
     def accept_when_empty_action_helper__position_run(self):
         self.create_action_helper__position_run()

@@ -52,7 +52,7 @@ class WorkExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.join_for_move_position_source_to_position_dest = literal.Join(2)
+        self.join_for_move_position_source_to_position_dest = self.scheduler.create_join(2)
 
     def accept_when_empty_position_source(self):
         self.create_position_source()

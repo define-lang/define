@@ -53,7 +53,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_source = literal.Join(3)
+        self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_source = self.scheduler.create_join(3)
 
     def create_position_gateway(self):
         self.action.get_interface_position(

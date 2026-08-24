@@ -75,9 +75,9 @@ class TestExecution:
             self.move_position_action_holder__action_move__position_output_to_position_dest
         )
         self.execution_trigger_position_action_holder__action_move: local.my_domain_com.my_lib.move.MoveExecution
-        self.join_for_move_position_box2_to_position_action_holder__action_move__position_input = literal.Join(2)
-        self.join_for_move_position_box1_to_position_action_holder__action_move__position_input = literal.Join(2)
-        self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_move_position_box2_to_position_action_holder__action_move__position_input = self.scheduler.create_join(2)
+        self.join_for_move_position_box1_to_position_action_holder__action_move__position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def create_position_action_holder(self):
         self.action.get_interface_position(

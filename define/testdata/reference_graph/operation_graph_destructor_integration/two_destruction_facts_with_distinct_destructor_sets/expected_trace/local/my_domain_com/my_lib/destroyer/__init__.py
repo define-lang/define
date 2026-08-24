@@ -60,7 +60,7 @@ class DestroyerExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_first__action_direct_destructor: local.my_domain_com.my_lib.direct_destructor.DirectDestructorExecution
-        self.join_for_trigger_position_first__action_direct_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_first__action_direct_destructor__action_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_first(self):
         self.destroy_position_first()

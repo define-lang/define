@@ -50,7 +50,7 @@ class MiddleExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_input__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_input__action_inner__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_trigger_position_input__action_inner__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def accept_when_empty_position_input__action_inner__position_run(self):
         self.create_position_input__action_inner__position_run()

@@ -51,7 +51,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gw__action_filler: local.my_domain_com.my_lib.filler.FillerExecution
-        self.join_for_trigger_position_gw__action_filler__when_empty_position_slot = literal.Join(2)
+        self.join_for_trigger_position_gw__action_filler__when_empty_position_slot = self.scheduler.create_join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(

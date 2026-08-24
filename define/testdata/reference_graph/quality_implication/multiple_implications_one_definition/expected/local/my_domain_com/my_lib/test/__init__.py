@@ -51,8 +51,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_box__action_combiner: local.my_domain_com.my_lib.combiner.CombinerExecution
-        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker = literal.Join(2)
-        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_second_marker = literal.Join(2)
+        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_combiner__when_empty_global_position_second_marker = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

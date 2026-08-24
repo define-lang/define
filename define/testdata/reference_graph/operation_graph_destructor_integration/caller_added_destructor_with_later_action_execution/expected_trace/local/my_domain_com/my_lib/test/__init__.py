@@ -3,7 +3,6 @@
 from typing import final, override
 
 from define.runtime import literal
-from define.runtime import tracing
 
 import local.my_domain_com.my_lib.callee
 import local.my_domain_com.my_lib.destructor
@@ -75,15 +74,15 @@ class TestExecution:
             self.destroy_position_box
         )
         self.execution_trigger_position_box__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.destruction_connection_trigger_position_box__action_callee: tracing.DestructionConnection
+        self.destruction_connection_trigger_position_box__action_callee: literal.DestructionConnection
         self.execution_trigger_position_later_box__action_later: local.my_domain_com.my_lib.later.LaterExecution
-        self.destruction_connection_trigger_position_later_box__action_later: tracing.DestructionConnection
-        self.join_for_move_position_carrier_to_position_box__action_callee__position_target = literal.Join(2)
-        self.join_for_move_position_carrier_to_position_later_box__action_later__position_target = literal.Join(2)
-        self.join_for_destroy_position_later_box = literal.Join(2)
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target = literal.Join(2)
+        self.destruction_connection_trigger_position_later_box__action_later: literal.DestructionConnection
+        self.join_for_move_position_carrier_to_position_box__action_callee__position_target = self.scheduler.create_join(2)
+        self.join_for_move_position_carrier_to_position_later_box__action_later__position_target = self.scheduler.create_join(2)
+        self.join_for_destroy_position_later_box = self.scheduler.create_join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -171,8 +170,7 @@ class TestExecution:
             "box::/callee::run",
             1,
         )
-        self.destruction_connection_trigger_position_box__action_callee = tracing.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_box__action_callee = self.scheduler.create_destruction_connection(
             0,
             self.trigger_position_box__action_callee__position_target__action_destructor,
         )
@@ -204,8 +202,7 @@ class TestExecution:
             "later_box::/later::run",
             1,
         )
-        self.destruction_connection_trigger_position_later_box__action_later = tracing.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_later_box__action_later = self.scheduler.create_destruction_connection(
             0,
             self.trigger_position_later_box__action_later__position_target__action_destructor,
         )
@@ -285,7 +282,7 @@ class TestExecution:
     def trigger_position_box__action_callee__position_target__action_destructor(self):
         execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_position_box__action_callee.trace_execution,
+            self.destruction_connection_trigger_position_box__action_callee.destroying_action_execution,
             "destructor",
         )
         execution.accept_action_parent()
@@ -293,7 +290,7 @@ class TestExecution:
     def trigger_position_later_box__action_later__position_target__action_destructor(self):
         execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_position_later_box__action_later.trace_execution,
+            self.destruction_connection_trigger_position_later_box__action_later.destroying_action_execution,
             "destructor#2",
         )
         execution.accept_action_parent()

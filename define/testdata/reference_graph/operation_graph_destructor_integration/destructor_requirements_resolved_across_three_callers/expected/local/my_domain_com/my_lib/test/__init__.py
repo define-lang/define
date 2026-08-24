@@ -57,8 +57,8 @@ class TestExecution:
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_connection_trigger_action_middle: literal.DestructionConnection
         self.destruction_position_action_middle__position_target__global_position_creator_known: literal.Position
-        self.join_for_move_position_source_to_action_middle__position_target = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_middle_known = literal.Join(2)
+        self.join_for_move_position_source_to_action_middle__position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_position_target__global_position_middle_known = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -90,8 +90,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_middle__position_target__global_position_creator_known,
         )

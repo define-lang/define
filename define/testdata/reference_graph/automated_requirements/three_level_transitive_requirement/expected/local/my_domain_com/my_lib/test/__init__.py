@@ -42,9 +42,9 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data = literal.Join(2)
-        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run = literal.Join(2)
-        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run = literal.Join(2)
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_data = self.scheduler.create_join(2)
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_outer__when_empty_position_middle_iface__action_middle__position_inner_iface__action_inner__position_run = self.scheduler.create_join(2)
 
     def create_action_outer__position_middle_iface(self):
         self.action.on_particle.get_action(

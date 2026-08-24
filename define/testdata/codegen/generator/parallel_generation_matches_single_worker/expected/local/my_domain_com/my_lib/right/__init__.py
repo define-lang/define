@@ -42,7 +42,7 @@ class RightExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_shared: local.my_domain_com.my_lib.shared.SharedExecution
-        self.join_for_trigger_action_shared__for_empty_rule_position_trigger = literal.Join(2)
+        self.join_for_trigger_action_shared__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def accept_when_empty_action_shared__position_trigger(self):
         self.create_action_shared__position_trigger()

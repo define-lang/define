@@ -56,7 +56,7 @@ class TestExecution:
         )
         self.execution_trigger_action_middle_a: local.my_domain_com.my_lib.middle_a.MiddleAExecution
         self.execution_trigger_action_middle_b: local.my_domain_com.my_lib.middle_b.MiddleBExecution
-        self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run = literal.Join(2)
+        self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run = self.scheduler.create_join(2)
 
     def create_action_middle_a__position_run(self):
         self.action.on_particle.get_action(

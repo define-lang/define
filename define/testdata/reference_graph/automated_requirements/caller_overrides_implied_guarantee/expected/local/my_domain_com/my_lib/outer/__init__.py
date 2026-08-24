@@ -49,8 +49,8 @@ class OuterExecution:
             self.create_global_position_implied
         )
         self.execution_trigger_action_caller: local.my_domain_com.my_lib.caller.CallerExecution
-        self.join_for_trigger_action_caller__when_empty_action_callee__position_run = literal.Join(2)
-        self.join_for_trigger_action_caller__when_empty_global_position_implied = literal.Join(2)
+        self.join_for_trigger_action_caller__when_empty_action_callee__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_caller__when_empty_global_position_implied = self.scheduler.create_join(2)
 
     def accept_when_empty_action_caller__position_run(self):
         self.create_action_caller__position_run()

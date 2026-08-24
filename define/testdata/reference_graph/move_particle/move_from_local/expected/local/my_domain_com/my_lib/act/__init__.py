@@ -80,9 +80,9 @@ class ActExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_src_b_to_position_iface_dest = literal.Join(2)
-        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest = literal.Join(2)
-        self.join_for_move_position_src_d_to_position_local_chain_dest__global_position_mid_local__global_position_end_local = literal.Join(2)
+        self.join_for_move_position_src_b_to_position_iface_dest = self.scheduler.create_join(2)
+        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest = self.scheduler.create_join(2)
+        self.join_for_move_position_src_d_to_position_local_chain_dest__global_position_mid_local__global_position_end_local = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.scheduler.submit(self.create_position_src_a)

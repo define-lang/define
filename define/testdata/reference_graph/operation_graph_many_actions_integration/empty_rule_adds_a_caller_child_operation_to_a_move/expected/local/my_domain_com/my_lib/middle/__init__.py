@@ -56,8 +56,8 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_source__action_child: local.my_domain_com.my_lib.child.ChildExecution
-        self.join_for_move_position_source_to_position_holder = literal.Join(2)
-        self.join_for_trigger_position_source__action_child__action_parent = literal.Join(2)
+        self.join_for_move_position_source_to_position_holder = self.scheduler.create_join(2)
+        self.join_for_trigger_position_source__action_child__action_parent = self.scheduler.create_join(2)
 
     def accept_when_empty_position_source__action_child__position_trigger_pos(self):
         self.create_position_source__action_child__position_trigger_pos()

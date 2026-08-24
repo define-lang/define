@@ -74,10 +74,10 @@ class TestExecution:
         )
         self.execution_trigger_position_gw_b__action_helper: local.my_domain_com.my_lib.helper.HelperExecution
         self.execution_trigger_position_gw_a__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_move_position_source_to_position_gw_a__action_worker__position_slot = literal.Join(2)
-        self.join_for_move_position_temp_to_position_gw_b__action_helper__position_slot = literal.Join(2)
-        self.join_for_trigger_position_gw_b__action_helper__for_empty_rule_position_slot = literal.Join(2)
-        self.join_for_trigger_position_gw_a__action_worker__for_empty_rule_position_slot = literal.Join(2)
+        self.join_for_move_position_source_to_position_gw_a__action_worker__position_slot = self.scheduler.create_join(2)
+        self.join_for_move_position_temp_to_position_gw_b__action_helper__position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw_b__action_helper__for_empty_rule_position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw_a__action_worker__for_empty_rule_position_slot = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.action.get_interface_position(

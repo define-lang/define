@@ -87,8 +87,8 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
     tracing.TracingScheduler(max_threads=2).start(Entry)
 
     assert executions[0].destroyed
-    assert connections[0].trace_execution is executions[0].trace_execution
-    assert connections[1].trace_execution is executions[0].trace_execution
+    assert connections[0].destroying_action_execution is executions[0].trace_execution
+    assert connections[1].destroying_action_execution is executions[0].trace_execution
 
 
 def test_action_execution_identity_retains_each_caller():

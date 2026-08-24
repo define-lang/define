@@ -73,12 +73,12 @@ class TestExecution:
         self.destruction_position_action_middle__position_target__action_worker__position_second_interface: literal.Position
         self.destruction_position_action_middle__position_target__action_worker__position_first_interface: literal.Position
         self.destruction_position_action_middle__position_target__global_position_third: literal.Position
-        self.join_for_move_position_carrier_to_action_middle__position_target = literal.Join(3)
-        self.join_for_trigger_position_carrier__action_worker__when_empty_position_first_interface = literal.Join(2)
-        self.join_for_trigger_position_carrier__action_worker__when_empty_position_second_interface = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_first = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_second = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_fifth = literal.Join(2)
+        self.join_for_move_position_carrier_to_action_middle__position_target = self.scheduler.create_join(3)
+        self.join_for_trigger_position_carrier__action_worker__when_empty_position_first_interface = self.scheduler.create_join(2)
+        self.join_for_trigger_position_carrier__action_worker__when_empty_position_second_interface = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_position_target__global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_position_target__global_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_position_target__global_position_fifth = self.scheduler.create_join(2)
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
@@ -111,8 +111,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
             3,
             self.destroy_action_middle__position_target__action_worker__position_second_interface,
             self.destroy_action_middle__position_target__action_worker__position_first_interface,

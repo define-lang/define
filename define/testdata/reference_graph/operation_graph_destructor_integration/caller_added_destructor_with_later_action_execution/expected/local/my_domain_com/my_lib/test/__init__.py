@@ -69,12 +69,12 @@ class TestExecution:
         self.destruction_connection_trigger_position_box__action_callee: literal.DestructionConnection
         self.execution_trigger_position_later_box__action_later: local.my_domain_com.my_lib.later.LaterExecution
         self.destruction_connection_trigger_position_later_box__action_later: literal.DestructionConnection
-        self.join_for_move_position_carrier_to_position_box__action_callee__position_target = literal.Join(2)
-        self.join_for_move_position_carrier_to_position_later_box__action_later__position_target = literal.Join(2)
-        self.join_for_destroy_position_later_box = literal.Join(2)
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_move_position_carrier_to_position_box__action_callee__position_target = self.scheduler.create_join(2)
+        self.join_for_move_position_carrier_to_position_later_box__action_later__position_target = self.scheduler.create_join(2)
+        self.join_for_destroy_position_later_box = self.scheduler.create_join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -125,8 +125,7 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_position_box__action_callee = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_box__action_callee = self.scheduler.create_destruction_connection(
             0,
             self.trigger_position_box__action_callee__position_target__action_destructor,
         )
@@ -151,8 +150,7 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_position_later_box__action_later = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_later_box__action_later = self.scheduler.create_destruction_connection(
             0,
             self.trigger_position_later_box__action_later__position_target__action_destructor,
         )

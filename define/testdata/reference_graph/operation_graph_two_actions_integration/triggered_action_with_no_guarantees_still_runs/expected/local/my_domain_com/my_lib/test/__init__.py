@@ -47,7 +47,7 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gw__action_worker__action_parent = literal.Join(2)
+        self.join_for_trigger_position_gw__action_worker__action_parent = self.scheduler.create_join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(

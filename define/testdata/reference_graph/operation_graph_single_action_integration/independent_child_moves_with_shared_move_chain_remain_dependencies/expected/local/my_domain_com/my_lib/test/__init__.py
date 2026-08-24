@@ -71,9 +71,9 @@ class TestExecution:
             "position<right_b_holder>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_workspace__global_position_box_a = literal.Join(2)
-        self.join_for_destroy_position_workspace__global_position_box_b = literal.Join(2)
-        self.join_for_destroy_position_workspace = literal.Join(2)
+        self.join_for_destroy_position_workspace__global_position_box_a = self.scheduler.create_join(2)
+        self.join_for_destroy_position_workspace__global_position_box_b = self.scheduler.create_join(2)
+        self.join_for_destroy_position_workspace = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()

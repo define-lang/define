@@ -55,7 +55,7 @@ class DestroyerExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
-        self.join_for_trigger_position_target__action_known_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_target__action_known_destructor__action_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_target(self):
         self.destroy_position_target()

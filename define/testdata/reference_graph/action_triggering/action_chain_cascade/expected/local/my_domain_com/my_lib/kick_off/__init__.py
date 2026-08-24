@@ -55,10 +55,10 @@ class KickOffExecution:
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_output__action_react_a: local.my_domain_com.my_lib.react_a.ReactAExecution
         self.execution_trigger_position_output__action_react_b: local.my_domain_com.my_lib.react_b.ReactBExecution
-        self.join_for_trigger_position_output__action_react_a__when_empty_position_result = literal.Join(2)
-        self.join_for_trigger_position_output__action_react_a__for_empty_rule_position_trigger = literal.Join(2)
-        self.join_for_trigger_position_output__action_react_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_output__action_react_b__for_empty_rule_position_trigger = literal.Join(2)
+        self.join_for_trigger_position_output__action_react_a__when_empty_position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_position_output__action_react_a__for_empty_rule_position_trigger = self.scheduler.create_join(2)
+        self.join_for_trigger_position_output__action_react_b__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_output__action_react_b__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def accept_when_empty_position_output(self):
         self.create_position_output()

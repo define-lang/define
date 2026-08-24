@@ -48,7 +48,7 @@ class TestExecution:
         )
         self.execution_trigger_action_left: local.my_domain_com.my_lib.left.LeftExecution
         self.execution_trigger_action_right: local.my_domain_com.my_lib.right.RightExecution
-        self.join_for_trigger_action_right__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_trigger_action_right__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
 
     def create_action_left__position_trigger_pos(self):
         self.action.on_particle.get_action(

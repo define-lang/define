@@ -56,8 +56,8 @@ class MiddleExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_run = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_run = literal.Join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_run = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_action_destroyer__position_run()

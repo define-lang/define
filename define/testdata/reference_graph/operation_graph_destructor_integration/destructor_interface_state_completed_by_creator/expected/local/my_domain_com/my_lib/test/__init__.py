@@ -48,7 +48,7 @@ class TestExecution:
         self.destruction_connection_trigger_action_middle: literal.DestructionConnection
         self.destruction_position_action_middle__position_target__action_destructor__position_occupied_first__global_position_transitive: literal.Position
         self.destruction_position_action_middle__position_target__action_destructor__position_occupied_first: literal.Position
-        self.join_for_trigger_action_middle__when_empty_position_target__action_destructor__position_occupied_last = literal.Join(2)
+        self.join_for_trigger_action_middle__when_empty_position_target__action_destructor__position_occupied_last = self.scheduler.create_join(2)
 
     def create_global_position_bundle(self):
         self.action.on_particle.get_position(
@@ -79,8 +79,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_middle__position_target__action_destructor__position_occupied_first__global_position_transitive,
         )

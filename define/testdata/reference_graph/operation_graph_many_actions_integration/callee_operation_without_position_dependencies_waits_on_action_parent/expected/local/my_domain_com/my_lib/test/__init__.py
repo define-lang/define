@@ -41,7 +41,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_global_position_box__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_global_position_box__action_worker__when_empty_position_result = literal.Join(2)
+        self.join_for_trigger_global_position_box__action_worker__when_empty_position_result = self.scheduler.create_join(2)
 
     def create_global_position_box(self):
         self.action.on_particle.get_position(

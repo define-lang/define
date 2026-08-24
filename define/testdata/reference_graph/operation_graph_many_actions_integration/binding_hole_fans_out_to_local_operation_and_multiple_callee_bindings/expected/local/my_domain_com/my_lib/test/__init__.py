@@ -43,10 +43,10 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__when_empty_global_position_shared__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_action_middle__when_occupied_global_position_shared = literal.Join(2)
+        self.join_for_trigger_action_middle__when_empty_global_position_shared__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_occupied_global_position_shared = self.scheduler.create_join(2)
 
     def create_global_position_shared(self):
         self.action.on_particle.get_position(

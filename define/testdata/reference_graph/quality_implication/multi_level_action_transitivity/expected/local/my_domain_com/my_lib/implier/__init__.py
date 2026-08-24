@@ -32,7 +32,7 @@ class ImplierExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_implied: local.my_domain_com.my_lib.implied.ImpliedExecution
-        self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied = literal.Join(2)
+        self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied = self.scheduler.create_join(2)
 
     def accept_when_empty_action_implied__position_run(self):
         self.create_action_implied__position_run()

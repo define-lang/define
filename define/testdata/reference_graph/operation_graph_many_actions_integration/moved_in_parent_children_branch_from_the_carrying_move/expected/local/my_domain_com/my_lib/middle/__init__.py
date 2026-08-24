@@ -66,11 +66,11 @@ class MiddleExecution:
             self.destroy_position_gw__action_inner__position_input__global_position_parent__global_position_a
         )
         self.execution_trigger_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_iface_to_position_gw__action_inner__position_input = literal.Join(2)
-        self.join_for_destroy_position_gw__action_inner__position_input__global_position_parent = literal.Join(2)
-        self.join_for_destroy_position_gw = literal.Join(2)
-        self.join_for_trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_a = literal.Join(2)
-        self.join_for_trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_b = literal.Join(2)
+        self.join_for_move_position_iface_to_position_gw__action_inner__position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_position_gw__action_inner__position_input__global_position_parent = self.scheduler.create_join(2)
+        self.join_for_destroy_position_gw = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_a = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_inner__when_empty_position_input__global_position_parent__global_position_b = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.create_position_gw()

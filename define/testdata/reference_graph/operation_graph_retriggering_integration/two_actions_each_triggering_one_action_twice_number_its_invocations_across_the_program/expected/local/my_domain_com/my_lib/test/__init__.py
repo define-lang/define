@@ -52,8 +52,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.execution_trigger_position_holder_first__action_first: local.my_domain_com.my_lib.first.FirstExecution
         self.execution_trigger_position_holder_second__action_second: local.my_domain_com.my_lib.second.SecondExecution
-        self.join_for_trigger_position_holder_first__action_first__action_parent = literal.Join(2)
-        self.join_for_trigger_position_holder_second__action_second__action_parent = literal.Join(2)
+        self.join_for_trigger_position_holder_first__action_first__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_holder_second__action_second__action_parent = self.scheduler.create_join(2)
 
     def create_position_holder_first(self):
         self.action.get_interface_position(

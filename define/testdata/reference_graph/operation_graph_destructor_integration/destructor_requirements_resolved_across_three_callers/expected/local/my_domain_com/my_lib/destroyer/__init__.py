@@ -48,7 +48,7 @@ class DestroyerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_target = literal.Join(2)
+        self.join_for_destroy_position_target = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__global_position_callee_known(self):
         self.create_position_target__global_position_callee_known()

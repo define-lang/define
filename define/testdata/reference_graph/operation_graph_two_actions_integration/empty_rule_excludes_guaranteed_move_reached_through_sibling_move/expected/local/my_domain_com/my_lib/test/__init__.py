@@ -52,7 +52,7 @@ class TestExecution:
             self.move_global_position_holder_to_global_position_intermediate
         )
         self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a = literal.Join(2)
+        self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a = self.scheduler.create_join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(

@@ -43,7 +43,7 @@ class LeftExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_left_child: local.my_domain_com.my_lib.left_child.LeftChildExecution
-        self.join_for_trigger_action_left_child__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_trigger_action_left_child__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def accept_when_empty_action_left_child__position_trigger_pos(self):
         self.create_action_left_child__position_trigger_pos()

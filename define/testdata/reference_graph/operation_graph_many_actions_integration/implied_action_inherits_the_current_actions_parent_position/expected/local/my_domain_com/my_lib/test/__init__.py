@@ -52,8 +52,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_local__global_position_parent__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent = literal.Join(2)
+        self.join_for_trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent = self.scheduler.create_join(2)
 
     def create_position_local(self):
         self.action.get_interface_position(

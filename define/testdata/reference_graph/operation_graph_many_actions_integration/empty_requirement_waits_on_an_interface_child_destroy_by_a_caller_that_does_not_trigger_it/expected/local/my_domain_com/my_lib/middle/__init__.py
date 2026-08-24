@@ -47,7 +47,7 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_gw__action_inner__when_empty_position_holder__global_position_a = literal.Join(2)
+        self.join_for_trigger_position_gw__action_inner__when_empty_position_holder__global_position_a = self.scheduler.create_join(2)
 
     def accept_when_empty_position_gw__action_inner__position_trigger_pos(self):
         self.create_position_gw__action_inner__position_trigger_pos()

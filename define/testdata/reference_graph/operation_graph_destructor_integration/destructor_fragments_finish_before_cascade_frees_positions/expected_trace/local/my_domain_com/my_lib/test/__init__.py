@@ -59,9 +59,9 @@ class TestExecution:
             self.destroy_position_box__global_position_marker_a
         )
         self.execution_trigger_position_box__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_destruct__for_empty_rule_global_position_marker_a = literal.Join(2)
-        self.join_for_trigger_position_box__action_destruct__for_empty_rule_global_position_marker_b = literal.Join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destruct__for_empty_rule_global_position_marker_a = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destruct__for_empty_rule_global_position_marker_b = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

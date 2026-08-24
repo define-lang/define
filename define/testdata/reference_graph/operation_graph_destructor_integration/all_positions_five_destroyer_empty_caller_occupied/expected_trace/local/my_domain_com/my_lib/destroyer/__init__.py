@@ -105,17 +105,17 @@ class DestroyerExecution:
         self.execution_trigger_position_target__action_third_destructor: local.my_domain_com.my_lib.third_destructor.ThirdDestructorExecution
         self.execution_trigger_position_target__action_second_destructor: local.my_domain_com.my_lib.second_destructor.SecondDestructorExecution
         self.execution_trigger_position_target__action_first_destructor: local.my_domain_com.my_lib.first_destructor.FirstDestructorExecution
-        self.join_for_destroy_position_target = literal.Join(7)
-        self.join_for_trigger_position_target__action_fifth_destructor__for_empty_rule_global_position_fifth = literal.Join(2)
-        self.join_for_trigger_position_target__action_fifth_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_fourth = literal.Join(2)
-        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_target__action_third_destructor__for_empty_rule_global_position_third = literal.Join(2)
-        self.join_for_trigger_position_target__action_third_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_second = literal.Join(2)
-        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_target__action_first_destructor__for_empty_rule_global_position_first = literal.Join(2)
-        self.join_for_trigger_position_target__action_first_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_destroy_position_target = self.scheduler.create_join(7)
+        self.join_for_trigger_position_target__action_fifth_destructor__for_empty_rule_global_position_fifth = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_fifth_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_fourth = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_third_destructor__for_empty_rule_global_position_third = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_third_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_first_destructor__for_empty_rule_global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_first_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__global_position_second(self):
         self.create_position_target__global_position_second()

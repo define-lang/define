@@ -51,10 +51,10 @@ class RunBothExecution:
         )
         self.execution_trigger_action_call_fill: local.my_domain_com.my_lib.call_fill.CallFillExecution
         self.execution_trigger_action_call_empty: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
-        self.join_for_trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_action_call_fill__when_empty_global_position_item = literal.Join(2)
-        self.join_for_trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item = literal.Join(2)
+        self.join_for_trigger_action_call_fill__when_empty_action_fill_item__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_call_fill__when_empty_global_position_item = self.scheduler.create_join(2)
+        self.join_for_trigger_action_call_empty__when_empty_action_empty_item__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item = self.scheduler.create_join(2)
 
     def accept_when_empty_action_call_fill__position_trigger_pos(self):
         self.create_action_call_fill__position_trigger_pos()

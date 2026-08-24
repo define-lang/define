@@ -51,8 +51,8 @@ class TestExecution:
         )
         self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
         self.execution_trigger_action_consumer: local.my_domain_com.my_lib.consumer.ConsumerExecution
-        self.join_for_trigger_action_producer__for_empty_rule_global_position_input = literal.Join(2)
-        self.join_for_trigger_action_consumer__when_empty_global_position_box__global_position_item = literal.Join(2)
+        self.join_for_trigger_action_producer__for_empty_rule_global_position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_action_consumer__when_empty_global_position_box__global_position_item = self.scheduler.create_join(2)
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(

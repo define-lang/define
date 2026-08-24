@@ -61,11 +61,11 @@ class CallerAExecution:
         )
         self.execution_trigger_position_destroyer_particle__action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.execution_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor: local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution
-        self.join_for_move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target = literal.Join(2)
-        self.join_for_destroy_position_destroyer_particle = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_destroy_position_destroyer_particle = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.scheduler.submit(self.create_position_destroyer_particle)

@@ -49,7 +49,7 @@ class MiddleActionExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_input = literal.Join(3)
+        self.join_for_trigger_action_inner__for_empty_rule_global_position_input = self.scheduler.create_join(3)
 
     def accept_when_empty_global_position_input__global_position_marker(self):
         self.create_global_position_input__global_position_marker()

@@ -56,7 +56,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
-        self.join_for_trigger_action_mover__for_empty_rule_global_position_slot = literal.Join(2)
+        self.join_for_trigger_action_mover__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
 
     def create_global_position_destination(self):
         self.action.on_particle.get_position(

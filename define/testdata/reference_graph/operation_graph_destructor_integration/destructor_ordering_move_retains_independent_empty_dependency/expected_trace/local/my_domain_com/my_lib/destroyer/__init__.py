@@ -67,8 +67,8 @@ class DestroyerExecution:
             self.destroy_position_target
         )
         self.execution_trigger_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
-        self.join_for_destroy_position_target = literal.Join(3)
-        self.join_for_trigger_position_target__action_known_destructor__when_empty_global_position_destination = literal.Join(2)
+        self.join_for_destroy_position_target = self.scheduler.create_join(3)
+        self.join_for_trigger_position_target__action_known_destructor__when_empty_global_position_destination = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_target__global_position_origin(self):
         self.move_position_target__global_position_origin_to_position_holder()

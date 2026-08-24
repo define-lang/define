@@ -64,12 +64,12 @@ class TestExecution:
         self.execution_trigger_position_station__action_grind: local.my_domain_com.my_lib.grind.GrindExecution
         self.execution_trigger_position_station__action_heat: local.my_domain_com.my_lib.heat.HeatExecution
         self.execution_trigger_position_station__action_brew: local.my_domain_com.my_lib.brew.BrewExecution
-        self.join_for_destroy_position_station = literal.Join(3)
-        self.join_for_trigger_position_station__action_grind__for_empty_rule_position_beans = literal.Join(2)
-        self.join_for_trigger_position_station__action_heat__for_empty_rule_position_cold_water = literal.Join(2)
-        self.join_for_trigger_position_station__action_brew__when_empty_position_cup = literal.Join(2)
-        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_water = literal.Join(2)
-        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_grounds = literal.Join(2)
+        self.join_for_destroy_position_station = self.scheduler.create_join(3)
+        self.join_for_trigger_position_station__action_grind__for_empty_rule_position_beans = self.scheduler.create_join(2)
+        self.join_for_trigger_position_station__action_heat__for_empty_rule_position_cold_water = self.scheduler.create_join(2)
+        self.join_for_trigger_position_station__action_brew__when_empty_position_cup = self.scheduler.create_join(2)
+        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_water = self.scheduler.create_join(2)
+        self.join_for_trigger_position_station__action_brew__for_empty_rule_position_grounds = self.scheduler.create_join(2)
 
     def create_position_station(self):
         self.local_position_station.create_particle()

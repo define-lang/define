@@ -45,7 +45,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_move_position_box__global_position_origin_to_position_box__global_position_destination = literal.Join(2)
+        self.join_for_move_position_box__global_position_origin_to_position_box__global_position_destination = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

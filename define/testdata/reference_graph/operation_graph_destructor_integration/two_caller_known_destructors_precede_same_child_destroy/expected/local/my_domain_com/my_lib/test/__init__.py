@@ -62,10 +62,10 @@ class TestExecution:
         self.execution_trigger_action_destroyer__position_parent__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
         self.execution_trigger_action_destroyer__position_parent__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
         self.destruction_position_action_destroyer__position_parent__global_position_sibling: literal.Position
-        self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result = literal.Join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -112,13 +112,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_destroyer__position_parent__global_position_sibling,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
             2,
             self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result,
             self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result,

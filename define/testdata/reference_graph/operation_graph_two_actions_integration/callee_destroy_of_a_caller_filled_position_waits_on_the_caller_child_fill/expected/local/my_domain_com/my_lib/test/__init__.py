@@ -55,7 +55,7 @@ class TestExecution:
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.destruction_connection_trigger_position_gateway__action_other: literal.DestructionConnection
         self.destruction_position_position_gateway__action_other__position_input__global_position_item__global_position_deep: literal.Position
-        self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_input__global_position_item = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_input__global_position_item = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -102,8 +102,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_position_gateway__action_other = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_gateway__action_other = self.scheduler.create_destruction_connection(
             1,
             self.destroy_position_gateway__action_other__position_input__global_position_item__global_position_deep,
         )

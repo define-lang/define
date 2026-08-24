@@ -53,8 +53,8 @@ class OtherExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_move_global_position_input__global_position_b_to_position_sink = literal.Join(2)
-        self.join_for_destroy_global_position_input = literal.Join(2)
+        self.join_for_move_global_position_input__global_position_b_to_position_sink = self.scheduler.create_join(2)
+        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_global_position_intermediate(self):
         self.move_global_position_intermediate_to_global_position_input__global_position_b()

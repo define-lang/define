@@ -55,7 +55,7 @@ class OtherExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_move_position_source_to_position_holder = literal.Join(2)
+        self.join_for_move_position_source_to_position_holder = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_source__global_position_a(self):
         self.destroy_position_source__global_position_a()

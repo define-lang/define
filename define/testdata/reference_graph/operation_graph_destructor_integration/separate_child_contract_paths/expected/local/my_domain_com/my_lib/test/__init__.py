@@ -75,12 +75,12 @@ class TestExecution:
         self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_parent_destructor: local.my_domain_com.my_lib.parent_destructor.ParentDestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_left__global_position_extra: literal.Position
-        self.join_for_move_position_left_source_to_position_source__global_position_left = literal.Join(2)
-        self.join_for_move_position_right_source_to_position_source__global_position_right = literal.Join(2)
-        self.join_for_move_position_source_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_left = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_right = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_parent_destructor__for_empty_rule_global_position_left = literal.Join(2)
+        self.join_for_move_position_left_source_to_position_source__global_position_left = self.scheduler.create_join(2)
+        self.join_for_move_position_right_source_to_position_source__global_position_right = self.scheduler.create_join(2)
+        self.join_for_move_position_source_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_left = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_right = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_parent_destructor__for_empty_rule_global_position_left = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -139,13 +139,11 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_destroyer__position_target__action_parent_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_target__global_position_right__action_child_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
             2,
             self.destroy_action_destroyer__position_target__global_position_left__global_position_extra,
             self.trigger_action_destroyer__position_target__action_parent_destructor__for_empty_rule_global_position_left,

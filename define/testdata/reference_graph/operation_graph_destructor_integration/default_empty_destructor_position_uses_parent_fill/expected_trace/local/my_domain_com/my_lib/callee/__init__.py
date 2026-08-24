@@ -59,8 +59,8 @@ class CalleeExecution:
             self.destroy_position_src
         )
         self.execution_trigger_position_src__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_destroy_position_src = literal.Join(2)
-        self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_destroy_position_src = self.scheduler.create_join(2)
+        self.join_for_trigger_position_src__action_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def accept_when_empty_position_src__global_position_marker(self):
         self.trigger_position_src__action_destructor__when_empty_global_position_marker()

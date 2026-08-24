@@ -51,9 +51,9 @@ class TestExecution:
         )
         self.execution_trigger_position_box__action_first: local.my_domain_com.my_lib.first.FirstExecution
         self.execution_trigger_position_box__action_second: local.my_domain_com.my_lib.second.SecondExecution
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_first__for_empty_rule_position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_box__action_second__for_empty_rule_position_trigger_pos = literal.Join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_first__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_second__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

@@ -59,10 +59,10 @@ class CallerExecution:
         self.guarantees = guarantees
         self.execution_trigger_position_first_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.execution_trigger_position_second_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_second = literal.Join(2)
-        self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_third = literal.Join(2)
-        self.join_for_trigger_position_second_gateway__action_worker__for_empty_rule_position_second = literal.Join(2)
-        self.join_for_trigger_position_second_gateway__action_worker__for_empty_rule_position_third = literal.Join(2)
+        self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_third = self.scheduler.create_join(2)
+        self.join_for_trigger_position_second_gateway__action_worker__for_empty_rule_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_position_second_gateway__action_worker__for_empty_rule_position_third = self.scheduler.create_join(2)
 
     def accept_when_empty_position_first_gateway(self):
         self.create_position_first_gateway()

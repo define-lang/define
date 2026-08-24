@@ -40,7 +40,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_kick_off: local.my_domain_com.my_lib.kick_off.KickOffExecution
-        self.join_for_trigger_action_kick_off__for_empty_rule_position_trigger = literal.Join(2)
+        self.join_for_trigger_action_kick_off__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_action_kick_off__position_trigger(self):
         self.action.on_particle.get_action(

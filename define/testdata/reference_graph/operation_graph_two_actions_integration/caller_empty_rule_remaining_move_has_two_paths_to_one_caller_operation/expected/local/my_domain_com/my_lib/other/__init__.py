@@ -60,10 +60,10 @@ class OtherExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_move_position_holder_a_to_position_holder_b = literal.Join(2)
-        self.join_for_move_position_holder_b_to_global_position_input__global_position_a = literal.Join(2)
-        self.join_for_move_global_position_input__global_position_a_to_position_holder_c = literal.Join(2)
-        self.join_for_destroy_global_position_input = literal.Join(2)
+        self.join_for_move_position_holder_a_to_position_holder_b = self.scheduler.create_join(2)
+        self.join_for_move_position_holder_b_to_global_position_input__global_position_a = self.scheduler.create_join(2)
+        self.join_for_move_global_position_input__global_position_a_to_position_holder_c = self.scheduler.create_join(2)
+        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_global_position_input__global_position_a(self):
         self.move_global_position_input__global_position_a_to_position_holder_a()

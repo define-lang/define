@@ -43,7 +43,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf = literal.Join(2)
+        self.join_for_trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf = self.scheduler.create_join(2)
 
     def create_action_runner__position_wrap(self):
         self.action.on_particle.get_action(

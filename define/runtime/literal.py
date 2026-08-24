@@ -44,21 +44,21 @@ class _DestructionContinuationGate:
 
     _continuation: types.MethodType | None
 
-    def __init__(self, predecessor_count: int):
+    def __init__(self, scheduler: Scheduler, predecessor_count: int):
         # Reaching the callee Destroy is an arrival so earlier predecessor
         # completions cannot need the continuation before it is available.
-        self._arrival_join = Join(predecessor_count + 1)
+        self._join = scheduler.create_join(predecessor_count + 1)
         self._continuation = None
 
     def ready(self, continuation: types.MethodType):
         """Record that the callee reached its Destroy."""
         self._continuation = continuation
-        if self._arrival_join.arrive():
+        if self._join.arrive():
             continuation()
 
     def arrive(self):
         """Record one predecessor completion."""
-        if self._arrival_join.arrive():
+        if self._join.arrive():
             cast("types.MethodType", self._continuation)()
 
 
@@ -107,8 +107,13 @@ class DestructionConnection:
         self._start_tasks = start_tasks
         self._forwarded_connection = forwarded_connection
         self._continuation_gate = _DestructionContinuationGate(
-            predecessor_count + (forwarded_connection is not None)
+            scheduler, predecessor_count + (forwarded_connection is not None)
         )
+
+    @property
+    def destroying_action_execution(self) -> object | None:
+        """Return the scheduler identity of the Action Execution reaching Destroy."""
+        return None
 
     def ready(self, continuation: types.MethodType):
         """Start connected work and run ``continuation`` when its dependencies complete."""
@@ -213,6 +218,24 @@ class Scheduler:
         self._condition: threading.Condition = threading.Condition()
         self._unfinished_tasks: int = 0
         self._failure: Exception | None = None
+
+    def create_join(self, arrivals: int) -> Join:
+        """Create a dependency join for generated work."""
+        return Join(arrivals)
+
+    def create_destruction_connection(
+        self,
+        predecessor_count: int,
+        *start_tasks: types.MethodType,
+        forwarded_connection: DestructionConnection | None = None,
+    ) -> DestructionConnection:
+        """Create caller work connected to a callee destruction continuation."""
+        return DestructionConnection(
+            self,
+            predecessor_count,
+            *start_tasks,
+            forwarded_connection=forwarded_connection,
+        )
 
     def submit(self, task: Task):
         """Make a generated parallel branch available for execution."""

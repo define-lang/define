@@ -32,7 +32,7 @@ class HostExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_action_worker__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_trigger_action_worker__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def accept_when_empty_action_worker__position_input(self):
         self.create_action_worker__position_input()

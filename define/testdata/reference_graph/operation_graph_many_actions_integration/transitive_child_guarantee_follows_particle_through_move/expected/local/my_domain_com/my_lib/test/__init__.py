@@ -60,9 +60,9 @@ class TestExecution:
             self.move_position_gateway__action_outer__position_destination__action_middle__position_inner_parent__action_inner__position_result_to_position_result
         )
         self.execution_trigger_position_gateway__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(

@@ -62,9 +62,9 @@ class RunnerExecution:
         )
         self.execution_trigger_position_source__action_implier_one: local.my_domain_com.my_lib.implier_one.ImplierOneExecution
         self.execution_trigger_position_source__action_implier_two: local.my_domain_com.my_lib.implier_two.ImplierTwoExecution
-        self.join_for_move_position_source_to_position_dest = literal.Join(2)
-        self.join_for_trigger_position_source__action_implier_one__when_empty_global_position_implied = literal.Join(2)
-        self.join_for_trigger_position_source__action_implier_two__when_empty_global_position_implied = literal.Join(2)
+        self.join_for_move_position_source_to_position_dest = self.scheduler.create_join(2)
+        self.join_for_trigger_position_source__action_implier_one__when_empty_global_position_implied = self.scheduler.create_join(2)
+        self.join_for_trigger_position_source__action_implier_two__when_empty_global_position_implied = self.scheduler.create_join(2)
 
     def accept_when_empty_position_source(self):
         self.create_position_source()

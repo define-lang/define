@@ -53,9 +53,9 @@ class TestExecution:
         self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_marker: literal.Position
-        self.join_for_destroy_action_destroyer__position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_destroy_action_destroyer__position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
 
     def create_global_position_left(self):
         self.action.on_particle.get_position(
@@ -93,8 +93,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_destroyer__position_target__action_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_destroyer__position_target__global_position_marker,
         )

@@ -50,8 +50,8 @@ class TestExecution:
         )
         self.execution_trigger_position_box__action_marked: local.my_domain_com.my_lib.marked.MarkedExecution
         self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__action_marked__when_empty_action_destructor__position_slot = literal.Join(2)
-        self.join_for_trigger_position_box__action_destructor__for_empty_rule_position_slot = literal.Join(2)
+        self.join_for_trigger_position_box__action_marked__when_empty_action_destructor__position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destructor__for_empty_rule_position_slot = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

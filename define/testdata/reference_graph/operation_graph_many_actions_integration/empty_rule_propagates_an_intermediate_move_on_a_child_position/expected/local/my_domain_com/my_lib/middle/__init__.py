@@ -48,7 +48,7 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_input = literal.Join(3)
+        self.join_for_trigger_action_inner__for_empty_rule_global_position_input = self.scheduler.create_join(3)
 
     def accept_for_empty_rule_global_position_destination(self):
         self.move_global_position_destination_to_global_position_input__global_position_marker()

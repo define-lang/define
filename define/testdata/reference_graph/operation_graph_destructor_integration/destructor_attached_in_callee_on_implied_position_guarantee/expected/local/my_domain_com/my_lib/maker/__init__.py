@@ -49,7 +49,7 @@ class MakerExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_temp_to_global_position_child = literal.Join(2)
+        self.join_for_move_position_temp_to_global_position_child = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.create_position_temp()

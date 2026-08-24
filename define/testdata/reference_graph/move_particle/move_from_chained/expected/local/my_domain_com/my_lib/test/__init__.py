@@ -51,9 +51,9 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a = literal.Join(2)
-        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b = literal.Join(2)
-        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c = literal.Join(3)
+        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a = self.scheduler.create_join(2)
+        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b = self.scheduler.create_join(2)
+        self.join_for_trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c = self.scheduler.create_join(3)
 
     def create_action_act__position_chain_src_a(self):
         self.action.on_particle.get_action(

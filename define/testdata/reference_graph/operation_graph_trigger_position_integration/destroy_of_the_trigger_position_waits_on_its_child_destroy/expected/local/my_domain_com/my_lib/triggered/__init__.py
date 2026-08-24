@@ -44,7 +44,7 @@ class TriggeredExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_run = literal.Join(2)
+        self.join_for_destroy_position_run = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_run__global_position_child(self):
         self.destroy_position_run__global_position_child()

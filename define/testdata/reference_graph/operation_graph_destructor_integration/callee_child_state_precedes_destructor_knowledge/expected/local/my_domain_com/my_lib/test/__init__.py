@@ -52,7 +52,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_position_target = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()

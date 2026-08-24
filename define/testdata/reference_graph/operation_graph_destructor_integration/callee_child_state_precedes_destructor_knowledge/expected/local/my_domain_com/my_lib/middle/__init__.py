@@ -58,10 +58,10 @@ class MiddleExecution:
         self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_occupied = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_empty = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty = literal.Join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_occupied = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_empty = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_target(self):
         self.move_position_target_to_action_destroyer__position_target()
@@ -87,8 +87,7 @@ class MiddleExecution:
             self.scheduler,
             self.guarantees.trigger_action_destroyer__position_target__action_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target) if self.destruction_connections is not None else None,
@@ -96,8 +95,7 @@ class MiddleExecution:
         self.guarantees.trigger_action_destroyer__position_target__action_destructor.guarantee_global_position_empty.append(
             self.destruction_connection_trigger_action_destroyer.complete
         )
-        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
             1,
             self.trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target__global_position_occupied) if self.destruction_connections is not None else None,

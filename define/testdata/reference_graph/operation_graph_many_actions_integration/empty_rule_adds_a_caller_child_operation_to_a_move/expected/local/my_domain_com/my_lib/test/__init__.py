@@ -52,9 +52,9 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_trigger_pos = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__when_occupied_position_source = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_middle__when_empty_position_source__action_child__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__when_occupied_position_source = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(

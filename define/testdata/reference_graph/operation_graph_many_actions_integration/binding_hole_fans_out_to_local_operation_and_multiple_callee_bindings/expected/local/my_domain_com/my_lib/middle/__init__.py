@@ -48,8 +48,8 @@ class MiddleExecution:
         self.guarantees = guarantees
         self.execution_trigger_global_position_shared__action_child_a: local.my_domain_com.my_lib.child_a.ChildAExecution
         self.execution_trigger_global_position_shared__action_child_b: local.my_domain_com.my_lib.child_b.ChildBExecution
-        self.join_for_trigger_global_position_shared__action_child_a__action_parent = literal.Join(2)
-        self.join_for_trigger_global_position_shared__action_child_b__action_parent = literal.Join(2)
+        self.join_for_trigger_global_position_shared__action_child_a__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_global_position_shared__action_child_b__action_parent = self.scheduler.create_join(2)
 
     def accept_when_empty_global_position_shared__global_position_marker(self):
         self.create_global_position_shared__global_position_marker()

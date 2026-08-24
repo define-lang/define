@@ -33,7 +33,7 @@ class ConstructBExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_global_position_inner__action_construct_c: local.my_domain_com.my_lib.construct_c.ConstructCExecution
-        self.join_for_trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf = literal.Join(2)
+        self.join_for_trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf = self.scheduler.create_join(2)
 
     def accept_when_empty_global_position_inner(self):
         self.create_global_position_inner()

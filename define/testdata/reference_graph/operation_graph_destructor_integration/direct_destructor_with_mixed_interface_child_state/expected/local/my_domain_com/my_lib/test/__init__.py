@@ -49,11 +49,11 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.join_for_move_position_source_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__action_destructor__position_empty = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__action_destructor__position_occupied_last = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__action_destructor__position_occupied_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_target = literal.Join(2)
+        self.join_for_move_position_source_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__action_destructor__position_empty = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__action_destructor__position_occupied_last = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__action_destructor__position_occupied_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()

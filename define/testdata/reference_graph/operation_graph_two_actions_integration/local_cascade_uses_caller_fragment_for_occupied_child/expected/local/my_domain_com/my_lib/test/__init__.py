@@ -52,7 +52,7 @@ class TestExecution:
         self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
         self.destruction_connection_trigger_action_triggered: literal.DestructionConnection
         self.destruction_position_action_triggered__position_run__global_position_a: literal.Position
-        self.join_for_trigger_action_triggered__for_empty_rule_position_run = literal.Join(2)
+        self.join_for_trigger_action_triggered__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -66,8 +66,7 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.destruction_connection_trigger_action_triggered = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_triggered = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_triggered__position_run__global_position_a,
         )

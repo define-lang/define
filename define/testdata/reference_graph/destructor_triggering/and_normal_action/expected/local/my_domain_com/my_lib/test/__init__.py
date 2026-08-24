@@ -35,8 +35,8 @@ class TestExecution:
         )
         self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.execution_trigger_position_box__action_beep: local.my_domain_com.my_lib.beep.BeepExecution
-        self.join_for_trigger_position_box__action_destructor__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_beep__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_destructor__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_beep__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

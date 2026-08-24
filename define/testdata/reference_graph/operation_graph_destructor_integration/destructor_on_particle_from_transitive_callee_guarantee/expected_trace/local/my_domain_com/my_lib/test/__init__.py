@@ -69,11 +69,11 @@ class TestExecution:
         )
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.execution_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_destroy_position_gateway__action_middle__position_box = literal.Join(2)
-        self.join_for_destroy_position_gateway = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__when_empty_position_box = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_destroy_position_gateway__action_middle__position_box = self.scheduler.create_join(2)
+        self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__when_empty_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__position_box__action_inner__position_result__action_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()

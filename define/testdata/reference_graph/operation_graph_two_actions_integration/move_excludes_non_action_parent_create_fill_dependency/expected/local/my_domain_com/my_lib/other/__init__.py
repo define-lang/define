@@ -47,7 +47,7 @@ class OtherExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.join_for_move_position_box__global_position_item_to_position_box__global_position_destination = literal.Join(2)
+        self.join_for_move_position_box__global_position_item_to_position_box__global_position_destination = self.scheduler.create_join(2)
 
     def accept_when_empty_position_box__global_position_item(self):
         self.create_position_box__global_position_item()

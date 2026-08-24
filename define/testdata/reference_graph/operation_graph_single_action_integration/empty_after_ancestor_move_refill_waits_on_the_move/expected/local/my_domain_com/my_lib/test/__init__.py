@@ -49,7 +49,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.join_for_move_position_source_to_position_box = literal.Join(2)
+        self.join_for_move_position_source_to_position_box = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

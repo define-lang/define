@@ -52,8 +52,8 @@ class MiddleExecution:
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.destruction_position_action_destroyer__position_target__action_destructor__position_occupied_last: literal.Position
-        self.join_for_move_position_target_to_action_destroyer__position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = literal.Join(2)
+        self.join_for_move_position_target_to_action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__action_destructor__position_occupied_last(self):
         self.create_position_target__action_destructor__position_occupied_last()
@@ -83,8 +83,7 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_destroyer__position_target__action_destructor__position_occupied_last,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target) if self.destruction_connections is not None else None,

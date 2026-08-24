@@ -50,8 +50,19 @@ class _TraceExecutionProvider(typing.Protocol):
 class DestructionConnection(literal.DestructionConnection):
     """A destruction connection associated with one logical Action Execution."""
 
-    # ready() assigns this before any connected work can access it.
-    trace_execution: ActionExecutionIdentity  # pyright: ignore[reportUninitializedInstanceVariable]
+    # ready() captures the identity before starting any connected work.
+    _destroying_action_execution: ActionExecutionIdentity  # pyright: ignore[reportUninitializedInstanceVariable]
+
+    @property
+    @override
+    def destroying_action_execution(self) -> ActionExecutionIdentity:
+        """Return the destroying Action Execution's trace identity."""
+        return self._destroying_action_execution
+
+    @property
+    def trace_execution(self) -> ActionExecutionIdentity:
+        """Provide the trace identity to a forwarded tracing connection."""
+        return self._destroying_action_execution
 
     @typing.override
     def ready(self, continuation: types.MethodType):
@@ -59,7 +70,7 @@ class DestructionConnection(literal.DestructionConnection):
         trace_execution_provider = typing.cast(
             "_TraceExecutionProvider", continuation.__self__
         )
-        self.trace_execution = trace_execution_provider.trace_execution
+        self._destroying_action_execution = trace_execution_provider.trace_execution
         super().ready(continuation)
 
 
@@ -76,6 +87,21 @@ class TracingScheduler(literal.Scheduler):
     def records(self) -> list[OperationTraceRecord]:
         """Return every completed generated Position Operation."""
         return self._records
+
+    @override
+    def create_destruction_connection(
+        self,
+        predecessor_count: int,
+        *start_tasks: types.MethodType,
+        forwarded_connection: literal.DestructionConnection | None = None,
+    ) -> DestructionConnection:
+        """Create a connection that propagates Action Execution identity."""
+        return DestructionConnection(
+            self,
+            predecessor_count,
+            *start_tasks,
+            forwarded_connection=forwarded_connection,
+        )
 
     @override
     def execution_created(

@@ -65,9 +65,9 @@ class MiddleExecution:
             self.move_position_source_to_position_intermediate
         )
         self.execution_trigger_position_source__action_child: local.my_domain_com.my_lib.child.ChildExecution
-        self.join_for_move_position_source_to_position_intermediate = literal.Join(3)
-        self.join_for_move_position_intermediate_to_position_holder = literal.Join(2)
-        self.join_for_trigger_position_source__action_child__when_empty_position_result = literal.Join(2)
+        self.join_for_move_position_source_to_position_intermediate = self.scheduler.create_join(3)
+        self.join_for_move_position_intermediate_to_position_holder = self.scheduler.create_join(2)
+        self.join_for_trigger_position_source__action_child__when_empty_position_result = self.scheduler.create_join(2)
 
     def accept_when_empty_position_source__action_child__position_trigger_pos(self):
         self.create_position_source__action_child__position_trigger_pos()

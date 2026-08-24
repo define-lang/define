@@ -52,8 +52,8 @@ class TestExecution:
         self.destruction_connection_trigger_action_middle_2: literal.DestructionConnection
         self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild: literal.Position
         self.destruction_position_global_position_parent__global_position_sibling: literal.Position
-        self.join_for_trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild = literal.Join(2)
-        self.join_for_trigger_action_middle__for_empty_rule_global_position_parent = literal.Join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_global_position_parent = self.scheduler.create_join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -100,13 +100,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_middle = self.scheduler.create_destruction_connection(
             1,
             self.destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild,
         )
-        self.destruction_connection_trigger_action_middle_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_middle_2 = self.scheduler.create_destruction_connection(
             1,
             self.destroy_global_position_parent__global_position_sibling,
         )

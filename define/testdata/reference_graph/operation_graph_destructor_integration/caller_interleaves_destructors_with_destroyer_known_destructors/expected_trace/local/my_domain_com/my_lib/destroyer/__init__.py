@@ -68,9 +68,9 @@ class DestroyerExecution:
         )
         self.execution_trigger_position_target__action_fourth_destructor: local.my_domain_com.my_lib.fourth_destructor.FourthDestructorExecution
         self.execution_trigger_position_target__action_second_destructor: local.my_domain_com.my_lib.second_destructor.SecondDestructorExecution
-        self.join_for_destroy_position_target = literal.Join(2)
-        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_destroy_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_fourth_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_target__action_second_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__global_position_marker(self):
         self.create_position_target__global_position_marker()

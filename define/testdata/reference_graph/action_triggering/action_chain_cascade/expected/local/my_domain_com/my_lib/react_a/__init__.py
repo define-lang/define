@@ -51,8 +51,8 @@ class ReactAExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
-        self.join_for_trigger_position_result__action_final__action_parent = literal.Join(2)
-        self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger = literal.Join(2)
+        self.join_for_trigger_position_result__action_final__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()

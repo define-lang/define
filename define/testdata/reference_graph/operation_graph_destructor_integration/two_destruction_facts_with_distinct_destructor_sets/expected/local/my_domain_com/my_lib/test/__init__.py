@@ -63,9 +63,9 @@ class TestExecution:
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.destruction_connection_trigger_action_destroyer_2: literal.DestructionConnection
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_second = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_first = literal.Join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_first = self.scheduler.create_join(2)
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
@@ -96,14 +96,12 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_first__action_extra_destructor,
             self.trigger_action_destroyer__position_first__action_shared_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer_2 = self.scheduler.create_destruction_connection(
             0,
             self.trigger_action_destroyer__position_second__action_shared_destructor,
         )

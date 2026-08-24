@@ -60,9 +60,9 @@ class TestExecution:
         )
         self.execution_trigger_position_box__action_make_thing: local.my_domain_com.my_lib.make_thing.MakeThingExecution
         self.execution_trigger_position_box__action_make_thing__position_result__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_make_thing__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_make_thing__position_result__action_destructor__action_parent = literal.Join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_make_thing__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_make_thing__position_result__action_destructor__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

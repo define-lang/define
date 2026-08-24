@@ -32,7 +32,7 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.execution_trigger_global_position_a__action_b: local.a_b.cd.b.BExecution
-        self.join_for_trigger_global_position_a__action_b__action_parent = literal.Join(2)
+        self.join_for_trigger_global_position_a__action_b__action_parent = self.scheduler.create_join(2)
 
     def create_global_position_a(self):
         self.action.on_particle.get_position(

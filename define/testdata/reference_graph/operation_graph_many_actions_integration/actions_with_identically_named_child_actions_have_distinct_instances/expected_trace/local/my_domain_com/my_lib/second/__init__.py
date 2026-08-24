@@ -42,7 +42,7 @@ class SecondExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_box__action_inner__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_inner__action_parent = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.create_position_box()

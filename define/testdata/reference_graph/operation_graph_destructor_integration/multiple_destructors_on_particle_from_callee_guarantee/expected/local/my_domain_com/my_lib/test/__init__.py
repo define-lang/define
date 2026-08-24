@@ -60,10 +60,10 @@ class TestExecution:
         self.execution_trigger_position_box__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
         self.execution_trigger_position_box__action_maker__position_result__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
         self.execution_trigger_position_box__action_maker__position_result__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
-        self.join_for_destroy_position_box = literal.Join(2)
-        self.join_for_trigger_position_box__action_maker__when_empty_position_result = literal.Join(2)
-        self.join_for_trigger_position_box__action_maker__position_result__action_destruct_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_maker__position_result__action_destruct_a__action_parent = literal.Join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_maker__when_empty_position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_maker__position_result__action_destruct_b__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_maker__position_result__action_destruct_a__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

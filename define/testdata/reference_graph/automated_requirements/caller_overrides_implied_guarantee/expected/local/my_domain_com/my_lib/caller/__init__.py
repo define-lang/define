@@ -49,7 +49,7 @@ class CallerExecution:
             self.destroy_global_position_implied
         )
         self.execution_trigger_action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_trigger_action_callee__when_empty_global_position_implied = literal.Join(2)
+        self.join_for_trigger_action_callee__when_empty_global_position_implied = self.scheduler.create_join(2)
 
     def accept_when_empty_action_callee__position_run(self):
         self.create_action_callee__position_run()

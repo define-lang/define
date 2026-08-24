@@ -62,8 +62,8 @@ class RunnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_input_a = literal.Join(2)
-        self.join_for_destroy_position_input_b = literal.Join(2)
+        self.join_for_destroy_position_input_a = self.scheduler.create_join(2)
+        self.join_for_destroy_position_input_b = self.scheduler.create_join(2)
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()

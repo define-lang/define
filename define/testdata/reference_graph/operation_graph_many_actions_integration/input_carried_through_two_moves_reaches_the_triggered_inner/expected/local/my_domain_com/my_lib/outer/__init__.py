@@ -60,9 +60,9 @@ class OuterExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_middle_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_move_position_input_to_position_middle_holder__action_middle__position_input = literal.Join(2)
-        self.join_for_trigger_position_middle_holder__action_middle__when_empty_position_input__action_inner__position_run = literal.Join(2)
-        self.join_for_trigger_position_middle_holder__action_middle__for_empty_rule_position_input__action_inner__position_input = literal.Join(2)
+        self.join_for_move_position_input_to_position_middle_holder__action_middle__position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_position_middle_holder__action_middle__when_empty_position_input__action_inner__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_position_middle_holder__action_middle__for_empty_rule_position_input__action_inner__position_input = self.scheduler.create_join(2)
 
     def accept_when_empty_position_middle_holder(self):
         self.create_position_middle_holder()

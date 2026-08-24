@@ -59,10 +59,10 @@ class TestExecution:
         self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
         self.execution_trigger_position_box__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
         self.execution_trigger_position_box__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
-        self.join_for_trigger_position_box__action_construct_a__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_construct_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_destruct_b__action_parent = literal.Join(2)
-        self.join_for_trigger_position_box__action_destruct_a__action_parent = literal.Join(2)
+        self.join_for_trigger_position_box__action_construct_a__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_construct_b__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destruct_b__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destruct_a__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

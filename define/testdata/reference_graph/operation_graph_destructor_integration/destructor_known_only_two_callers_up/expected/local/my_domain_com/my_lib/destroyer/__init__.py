@@ -54,7 +54,7 @@ class DestroyerExecution:
             "position<holder_b>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_run = literal.Join(3)
+        self.join_for_destroy_position_run = self.scheduler.create_join(3)
 
     def accept_for_empty_rule_position_run__global_position_marker_a(self):
         self.move_position_run__global_position_marker_a_to_position_holder_a()

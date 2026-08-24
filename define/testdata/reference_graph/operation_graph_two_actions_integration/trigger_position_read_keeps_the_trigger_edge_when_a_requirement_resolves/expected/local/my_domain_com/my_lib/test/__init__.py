@@ -51,7 +51,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = literal.Join(3)
+        self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = self.scheduler.create_join(3)
 
     def create_position_gw(self):
         self.action.get_interface_position(

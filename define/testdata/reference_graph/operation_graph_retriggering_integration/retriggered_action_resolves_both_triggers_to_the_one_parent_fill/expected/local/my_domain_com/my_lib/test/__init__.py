@@ -57,8 +57,8 @@ class TestExecution:
         )
         self.execution_trigger_position_gw__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
         self.execution_trigger_position_gw__action_maker_2: local.my_domain_com.my_lib.maker.MakerExecution
-        self.join_for_trigger_position_gw__action_maker__when_empty_position_held__global_position_c = literal.Join(2)
-        self.join_for_trigger_position_gw__action_maker_2__when_empty_position_held__global_position_c = literal.Join(2)
+        self.join_for_trigger_position_gw__action_maker__when_empty_position_held__global_position_c = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_maker_2__when_empty_position_held__global_position_c = self.scheduler.create_join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(

@@ -3,7 +3,6 @@
 from typing import ClassVar, final
 
 from define.runtime import literal
-from define.runtime import tracing
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.fifth
@@ -79,22 +78,22 @@ class MiddleExecution:
             self.destroy_action_destroyer__position_target__global_position_first
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_fifth_destructor: local.my_domain_com.my_lib.fifth_destructor.FifthDestructorExecution
         self.execution_trigger_action_destroyer__position_target__action_first_destructor: local.my_domain_com.my_lib.first_destructor.FirstDestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_fifth: literal.Position
         self.destruction_position_action_destroyer__position_target__global_position_first: literal.Position
-        self.join_for_move_position_target_to_action_destroyer__position_target = literal.Join(4)
-        self.join_for_destroy_action_destroyer__position_target__global_position_fifth = literal.Join(2)
-        self.join_for_destroy_action_destroyer__position_target__global_position_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_second = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fourth = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_fifth_destructor__for_empty_rule_global_position_fifth = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_fifth_destructor__when_empty_global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_first_destructor__for_empty_rule_global_position_first = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_first_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_move_position_target_to_action_destroyer__position_target = self.scheduler.create_join(4)
+        self.join_for_destroy_action_destroyer__position_target__global_position_fifth = self.scheduler.create_join(2)
+        self.join_for_destroy_action_destroyer__position_target__global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target__global_position_second = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_fourth = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_fifth_destructor__for_empty_rule_global_position_fifth = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_fifth_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_first_destructor__for_empty_rule_global_position_first = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_first_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__global_position_first(self):
         self.create_position_target__global_position_first()
@@ -197,8 +196,7 @@ class MiddleExecution:
             "first_destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_first_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             4,
             self.destroy_action_destroyer__position_target__global_position_fifth,
             self.destroy_action_destroyer__position_target__global_position_first,
@@ -259,7 +257,7 @@ class MiddleExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_fifth.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
             "target::/fifth",
             1,
         )
@@ -280,7 +278,7 @@ class MiddleExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_first.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
             "target::/first",
             1,
         )

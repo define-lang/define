@@ -45,7 +45,7 @@ class TestExecution:
             self.move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination
         )
         self.execution_trigger_global_position_box__action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_trigger_global_position_box__action_producer__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_trigger_global_position_box__action_producer__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def create_global_position_box(self):
         self.action.on_particle.get_position(

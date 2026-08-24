@@ -46,7 +46,7 @@ class CallEmptyExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_empty_item: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
-        self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item = literal.Join(2)
+        self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item = self.scheduler.create_join(2)
 
     def accept_when_empty_action_empty_item__position_trigger_pos(self):
         self.create_action_empty_item__position_trigger_pos()

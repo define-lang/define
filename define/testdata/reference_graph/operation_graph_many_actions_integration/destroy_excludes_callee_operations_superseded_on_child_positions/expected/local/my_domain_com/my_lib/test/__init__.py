@@ -44,7 +44,7 @@ class TestExecution:
             self.destroy_position_box__action_worker__position_result
         )
         self.execution_trigger_position_box__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_box__action_worker__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_trigger_position_box__action_worker__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()

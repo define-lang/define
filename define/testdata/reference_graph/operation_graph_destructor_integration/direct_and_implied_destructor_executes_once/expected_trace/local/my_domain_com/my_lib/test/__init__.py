@@ -3,7 +3,6 @@
 from typing import ClassVar, final, override
 
 from define.runtime import literal
-from define.runtime import tracing
 
 import local.my_domain_com.my_lib.bundle
 import local.my_domain_com.my_lib.destroyer
@@ -64,12 +63,12 @@ class TestExecution:
             self.destroy_action_destroyer__position_target__global_position_marker
         )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
+        self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_marker: literal.Position
-        self.join_for_destroy_action_destroyer__position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = literal.Join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker = literal.Join(2)
+        self.join_for_destroy_action_destroyer__position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
 
     def create_global_position_bundle(self):
         self.action.on_particle.get_position(
@@ -128,8 +127,7 @@ class TestExecution:
             "destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_destroyer__position_target__global_position_marker,
         )
@@ -164,7 +162,7 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_marker.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_trigger_action_destroyer.destroying_action_execution,
             "target::/marker",
             1,
         )

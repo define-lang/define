@@ -49,8 +49,8 @@ class OtherExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_parent__global_position_child = literal.Join(2)
-        self.join_for_destroy_position_parent = literal.Join(2)
+        self.join_for_destroy_position_parent__global_position_child = self.scheduler.create_join(2)
+        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         self.destroy_position_parent__global_position_child__global_position_grandchild()

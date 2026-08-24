@@ -52,7 +52,7 @@ class MiddleExecution:
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.destruction_connection_trigger_action_inner: literal.DestructionConnection
         self.destruction_position_global_position_parent__global_position_child: literal.Position
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_parent = literal.Join(3)
+        self.join_for_trigger_action_inner__for_empty_rule_global_position_parent = self.scheduler.create_join(3)
 
     def accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild(self):
         self.destroy_global_position_parent__global_position_child__global_position_grandchild()
@@ -82,8 +82,7 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_inner = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_inner = self.scheduler.create_destruction_connection(
             1,
             self.destroy_global_position_parent__global_position_child,
             forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent) if self.destruction_connections is not None else None,

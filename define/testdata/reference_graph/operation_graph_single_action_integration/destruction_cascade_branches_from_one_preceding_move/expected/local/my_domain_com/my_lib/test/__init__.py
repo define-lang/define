@@ -37,8 +37,8 @@ class TestExecution:
             "position<destination>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_source_to_position_destination = literal.Join(2)
-        self.join_for_destroy_position_destination = literal.Join(2)
+        self.join_for_move_position_source_to_position_destination = self.scheduler.create_join(2)
+        self.join_for_destroy_position_destination = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()

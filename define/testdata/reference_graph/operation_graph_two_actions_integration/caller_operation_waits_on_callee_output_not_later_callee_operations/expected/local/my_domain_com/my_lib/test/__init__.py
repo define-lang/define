@@ -54,8 +54,8 @@ class TestExecution:
             self.destroy_position_gateway__action_other__position_output
         )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_gateway__action_other__when_empty_position_output = literal.Join(2)
-        self.join_for_trigger_position_gateway__action_other__when_empty_position_late = literal.Join(2)
+        self.join_for_trigger_position_gateway__action_other__when_empty_position_output = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_other__when_empty_position_late = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(

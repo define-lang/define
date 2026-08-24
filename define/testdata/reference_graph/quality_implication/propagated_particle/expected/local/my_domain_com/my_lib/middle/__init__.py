@@ -59,8 +59,8 @@ class MiddleExecution:
             self.move_position_box__action_inner__position_output_to_position_final
         )
         self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_box__action_inner__position_output_to_position_final = literal.Join(2)
-        self.join_for_trigger_position_box__action_inner__for_empty_rule_position_input = literal.Join(2)
+        self.join_for_move_position_box__action_inner__position_output_to_position_final = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_inner__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def accept_when_empty_position_box__action_inner__position_run(self):
         self.create_position_box__action_inner__position_run()

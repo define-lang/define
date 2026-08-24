@@ -46,7 +46,7 @@ class RightChildExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_global_position_marker__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_global_position_marker__action_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_global_position_marker__action_destructor__action_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_global_position_marker(self):
         self.destroy_global_position_marker()

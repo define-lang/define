@@ -70,9 +70,9 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_position_carrier__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_move_position_source_to_position_carrier__action_callee__position_src = literal.Join(2)
-        self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src = literal.Join(2)
+        self.join_for_move_position_source_to_position_carrier__action_callee__position_src = self.scheduler.create_join(2)
+        self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src = self.scheduler.create_join(2)
 
     def create_position_carrier(self):
         self.action.get_interface_position(

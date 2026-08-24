@@ -55,9 +55,9 @@ class TestExecution:
         self.destruction_position_action_destroyer__position_parent__global_position_branch__global_position_b: literal.Position
         self.destruction_position_action_destroyer__position_parent__global_position_branch__global_position_a: literal.Position
         self.destruction_position_action_destroyer__position_parent__global_position_branch: literal.Position
-        self.join_for_move_position_source_to_action_destroyer__position_parent = literal.Join(2)
-        self.join_for_destroy_action_destroyer__position_parent__global_position_branch = literal.Join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_parent = literal.Join(2)
+        self.join_for_move_position_source_to_action_destroyer__position_parent = self.scheduler.create_join(2)
+        self.join_for_destroy_action_destroyer__position_parent__global_position_branch = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_parent = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -101,8 +101,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.destroy_action_destroyer__position_parent__global_position_branch__global_position_b,
             self.destroy_action_destroyer__position_parent__global_position_branch__global_position_a,

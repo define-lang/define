@@ -51,8 +51,8 @@ class MoverExecution:
             self.move_global_position_out_to_global_position_destination
         )
         self.execution_trigger_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
-        self.join_for_move_global_position_out_to_global_position_destination = literal.Join(2)
-        self.join_for_trigger_action_helper__for_empty_rule_global_position_slot = literal.Join(2)
+        self.join_for_move_global_position_out_to_global_position_destination = self.scheduler.create_join(2)
+        self.join_for_trigger_action_helper__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
 
     def accept_when_empty_action_helper__position_trigger_pos(self):
         self.create_action_helper__position_trigger_pos()

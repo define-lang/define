@@ -60,7 +60,7 @@ class DestroyerExecution:
             "position<right_holder>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_target = literal.Join(3)
+        self.join_for_destroy_position_target = self.scheduler.create_join(3)
 
     def accept_for_empty_rule_position_target__global_position_left(self):
         self.move_position_target__global_position_left_to_position_left_holder()

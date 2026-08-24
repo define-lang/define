@@ -44,7 +44,7 @@ class TestExecution:
             self.create_action_perform_operation__position_operation_trigger__global_position_inner_position
         )
         self.execution_trigger_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
-        self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position = literal.Join(2)
+        self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position = self.scheduler.create_join(2)
 
     def create_action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_action(

@@ -41,7 +41,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_position_outer__action_outer_destructor: local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution
-        self.join_for_trigger_position_outer__action_outer_destructor__action_parent = literal.Join(2)
+        self.join_for_trigger_position_outer__action_outer_destructor__action_parent = self.scheduler.create_join(2)
 
     def create_position_outer(self):
         self.local_position_outer.create_particle()

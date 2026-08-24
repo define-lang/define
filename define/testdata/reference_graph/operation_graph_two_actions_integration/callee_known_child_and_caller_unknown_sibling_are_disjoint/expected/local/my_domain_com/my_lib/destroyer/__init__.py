@@ -52,7 +52,7 @@ class DestroyerExecution:
             "position<keeper>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_parent = literal.Join(2)
+        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_parent__global_position_child(self):
         self.move_position_parent__global_position_child_to_position_keeper()

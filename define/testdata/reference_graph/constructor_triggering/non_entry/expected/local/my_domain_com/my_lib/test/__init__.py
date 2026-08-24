@@ -51,7 +51,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_box__action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_box__action_other__when_empty_global_position_filled = literal.Join(2)
+        self.join_for_trigger_position_box__action_other__when_empty_global_position_filled = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

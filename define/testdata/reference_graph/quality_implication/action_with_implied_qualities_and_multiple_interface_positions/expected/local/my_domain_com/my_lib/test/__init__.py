@@ -42,8 +42,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_action_runner__when_empty_position_input_a__global_position_quality_a = literal.Join(2)
-        self.join_for_trigger_action_runner__when_empty_position_input_b__global_position_quality_b = literal.Join(2)
+        self.join_for_trigger_action_runner__when_empty_position_input_a__global_position_quality_a = self.scheduler.create_join(2)
+        self.join_for_trigger_action_runner__when_empty_position_input_b__global_position_quality_b = self.scheduler.create_join(2)
 
     def create_action_runner__position_input_a(self):
         self.action.on_particle.get_action(

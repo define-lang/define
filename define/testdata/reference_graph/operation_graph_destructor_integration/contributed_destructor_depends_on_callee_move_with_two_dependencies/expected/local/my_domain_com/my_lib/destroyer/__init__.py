@@ -58,8 +58,8 @@ class DestroyerExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_held_required_to_position_parent__global_position_required = literal.Join(2)
-        self.join_for_destroy_position_parent = literal.Join(2)
+        self.join_for_move_position_held_required_to_position_parent__global_position_required = self.scheduler.create_join(2)
+        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_parent__global_position_required(self):
         self.move_position_parent__global_position_required_to_position_held_required()

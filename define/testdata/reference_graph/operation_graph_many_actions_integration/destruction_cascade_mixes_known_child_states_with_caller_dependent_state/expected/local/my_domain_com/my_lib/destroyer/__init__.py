@@ -64,8 +64,8 @@ class DestroyerExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_local__global_position_known_empty_to_global_position_destination = literal.Join(2)
-        self.join_for_destroy_position_local = literal.Join(2)
+        self.join_for_move_position_local__global_position_known_empty_to_global_position_destination = self.scheduler.create_join(2)
+        self.join_for_destroy_position_local = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_global_position_target()

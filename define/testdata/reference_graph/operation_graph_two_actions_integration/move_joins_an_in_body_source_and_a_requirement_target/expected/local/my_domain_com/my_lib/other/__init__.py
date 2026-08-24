@@ -44,7 +44,7 @@ class OtherExecution:
             "position<src>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_src_to_position_dest = literal.Join(2)
+        self.join_for_move_position_src_to_position_dest = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.create_position_src()

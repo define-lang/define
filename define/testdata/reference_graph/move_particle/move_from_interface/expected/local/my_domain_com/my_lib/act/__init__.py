@@ -68,8 +68,8 @@ class ActExecution:
             "position<local_dest>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_src_b_to_position_iface_dest = literal.Join(2)
-        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest = literal.Join(2)
+        self.join_for_move_position_src_b_to_position_iface_dest = self.scheduler.create_join(2)
+        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest = self.scheduler.create_join(2)
 
     def accept_when_empty_position_src_a(self):
         self.create_position_src_a()

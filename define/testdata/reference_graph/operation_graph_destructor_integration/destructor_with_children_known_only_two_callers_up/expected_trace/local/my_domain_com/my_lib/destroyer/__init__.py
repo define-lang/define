@@ -51,7 +51,7 @@ class DestroyerExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_position_run__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
-        self.join_for_trigger_position_run__action_destruct__action_parent = literal.Join(2)
+        self.join_for_trigger_position_run__action_destruct__action_parent = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_run(self):
         self.destroy_position_run()

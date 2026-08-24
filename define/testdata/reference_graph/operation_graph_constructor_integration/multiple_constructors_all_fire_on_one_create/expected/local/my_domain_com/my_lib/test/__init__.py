@@ -55,8 +55,8 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
         self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
-        self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker_a = literal.Join(2)
-        self.join_for_trigger_position_box__action_construct_b__when_empty_global_position_marker_b = literal.Join(2)
+        self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker_a = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_construct_b__when_empty_global_position_marker_b = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(

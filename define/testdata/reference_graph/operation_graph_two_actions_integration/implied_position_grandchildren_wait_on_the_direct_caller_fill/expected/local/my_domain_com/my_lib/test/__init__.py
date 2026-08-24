@@ -44,8 +44,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1 = literal.Join(2)
-        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2 = literal.Join(2)
+        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1 = self.scheduler.create_join(2)
+        self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2 = self.scheduler.create_join(2)
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(

@@ -60,11 +60,11 @@ class TestExecution:
         self.execution_trigger_position_destroyer_particle__action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_position_destroyer_particle__action_destroyer: literal.DestructionConnection
         self.execution_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor: local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution
-        self.join_for_move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target = literal.Join(2)
-        self.join_for_destroy_position_destroyer_particle = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_empty_position_target__global_position_marker = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target = literal.Join(2)
-        self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__when_empty_global_position_marker = literal.Join(2)
+        self.join_for_move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target = self.scheduler.create_join(2)
+        self.join_for_destroy_position_destroyer_particle = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_empty_position_target__global_position_marker = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def create_position_destroyer_particle(self):
         self.local_position_destroyer_particle.create_particle()
@@ -106,8 +106,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = literal.DestructionConnection(
-            self.scheduler,
+        self.destruction_connection_trigger_position_destroyer_particle__action_destroyer = self.scheduler.create_destruction_connection(
             1,
             self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor__when_empty_global_position_marker,
         )

@@ -43,7 +43,7 @@ class ConsumerExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        self.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination = literal.Join(2)
+        self.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination = self.scheduler.create_join(2)
 
     def accept_when_empty_global_position_box__global_position_item(self):
         self.create_global_position_box__global_position_item()
