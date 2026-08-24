@@ -6,7 +6,6 @@ Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_
 from __future__ import annotations
 
 import contextlib
-import glob
 import shutil
 import sys
 from pathlib import Path
@@ -19,17 +18,13 @@ CODEGEN_TESTDATA_ROOT = REPO_ROOT / "define/testdata/codegen"
 TRACING_TESTDATA_ROOT = REPO_ROOT / "define/testdata/tracing/tracing_integration"
 
 
-def _regenerate_case(
-    case_dir: Path,
-    expected_directory_name: str,
+def _compile_case(
+    expected_dir: Path,
     *,
     trace_operations: bool,
-    display_root: Path,
-    run_program: bool = True,
-    trace_file: Path | None = None,
-    max_threads: int | None = None,
-) -> tuple[bool, str]:
-    expected_dir = case_dir / expected_directory_name
+    testdata_root: Path,
+) -> bool:
+    case_dir = expected_dir.parent
     if expected_dir.exists():
         shutil.rmtree(expected_dir)
     with contextlib.chdir(case_dir):
@@ -39,53 +34,91 @@ def _regenerate_case(
             trace_operations=trace_operations,
         )
         if result.has_errors():
-            print(f"  {case_dir.relative_to(display_root)}: FAILED")
+            print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
             for exc in result.all_exceptions:
                 print(f"    {exc}")
             for diag in result.all_diagnostics:
                 print(f"    {diag}")
-            return False, ""
-    if not run_program:
-        return True, ""
+            return False
+    return True
+
+
+def _run_case(
+    expected_dir: Path,
+    *,
+    testdata_root: Path,
+    trace_file: Path | None = None,
+    max_threads: int | None = None,
+) -> generated_program_runner.GeneratedProgramResult | None:
+    case_dir = expected_dir.parent
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
         trace_file=trace_file,
         max_threads=max_threads,
     )
     if runtime_result.process.returncode != 0:
-        print(f"  {case_dir.relative_to(display_root)}: FAILED")
+        print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
         print(runtime_result.process.stderr)
-        return False, ""
-    return True, runtime_result.occupied_positions
+        return None
+    return runtime_result
 
 
 def _regenerate_codegen_case(case_dir: Path) -> bool:
+    expected_dir = case_dir / "expected"
+    if not _compile_case(
+        expected_dir,
+        trace_operations=False,
+        testdata_root=CODEGEN_TESTDATA_ROOT,
+    ):
+        return False
+
     # Existing occupancy is a behavioral expectation; execution is only needed
     # when a new case does not have that expectation yet.
     occupied_positions = case_dir / "occupied_positions.txt"
-    success, occupied_positions_output = _regenerate_case(
-        case_dir,
-        "expected",
-        trace_operations=False,
-        display_root=CODEGEN_TESTDATA_ROOT,
-        run_program=not occupied_positions.exists(),
+    if occupied_positions.exists():
+        return True
+    runtime_result = _run_case(
+        expected_dir,
+        testdata_root=CODEGEN_TESTDATA_ROOT,
     )
-    if not success:
+    if runtime_result is None:
         return False
-    if not occupied_positions.exists():
-        _ = occupied_positions.write_text(occupied_positions_output)
+    _ = occupied_positions.write_text(runtime_result.occupied_positions)
     return True
+
+
+def _regenerate_tracing_case(case_dir: Path) -> bool:
+    expected_dir = case_dir / "expected_trace"
+    if not _compile_case(
+        expected_dir,
+        trace_operations=True,
+        testdata_root=TRACING_TESTDATA_ROOT,
+    ):
+        return False
+
+    # An existing trace is a behavioral expectation and can intentionally
+    # differ from behavior that remains xfailed in generated code.
+    trace_file = case_dir / "operation_trace.json"
+    if trace_file.exists():
+        return True
+    return (
+        _run_case(
+            expected_dir,
+            testdata_root=TRACING_TESTDATA_ROOT,
+            trace_file=trace_file,
+            max_threads=1,
+        )
+        is not None
+    )
 
 
 def main():
     """Regenerate ordinary and traced expected output files."""
     codegen_case_dirs = sorted(
-        Path(path).parent
-        for path in glob.glob(str(CODEGEN_TESTDATA_ROOT / "*/*/test.dfn"))
+        test_file.parent for test_file in CODEGEN_TESTDATA_ROOT.glob("*/*/test.dfn")
     )
     tracing_case_dirs = sorted(
-        Path(path).parent
-        for path in glob.glob(str(TRACING_TESTDATA_ROOT / "*/test.dfn"))
+        test_file.parent for test_file in TRACING_TESTDATA_ROOT.glob("*/test.dfn")
     )
     print(f"Regenerating {len(codegen_case_dirs)} codegen test cases...")
     success = True
@@ -94,19 +127,7 @@ def main():
             success = False
     print(f"Regenerating {len(tracing_case_dirs)} tracing test cases...")
     for case_dir in tracing_case_dirs:
-        trace_file = case_dir / "operation_trace.json"
-        # An existing trace is a behavioral expectation and can intentionally
-        # differ from behavior that remains xfailed in generated code.
-        case_success, _ = _regenerate_case(
-            case_dir,
-            "expected_trace",
-            trace_operations=True,
-            display_root=TRACING_TESTDATA_ROOT,
-            run_program=not trace_file.exists(),
-            trace_file=trace_file,
-            max_threads=1,
-        )
-        if not case_success:
+        if not _regenerate_tracing_case(case_dir):
             success = False
     if not success:
         sys.exit(1)
