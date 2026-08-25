@@ -121,6 +121,7 @@ _RUNTIME_OPERATION_DEPENDENCY_RELATION_MISMATCH_CASES = {
     "actions_with_identically_named_child_actions_have_distinct_instances",
     "callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy",
     "callee_child_state_precedes_destructor_knowledge",
+    "callee_guarantee_depends_on_interface_position_not_trigger_position",
     "caller_added_destructor_fans_out_from_action_parent",
     "caller_added_destructor_fires_in_callee",
     "caller_added_destructor_with_later_action_execution",

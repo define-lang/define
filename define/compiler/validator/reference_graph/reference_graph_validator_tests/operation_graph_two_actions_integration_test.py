@@ -448,6 +448,21 @@ def test_caller_operation_waits_on_callee_move_output(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_callee_guarantee_depends_on_interface_position_not_trigger_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(gateway)": [],
+        "test.create(gateway::/worker::input)": ["test.create(gateway)"],
+        "test.create(gateway::/worker::trigger)": ["test.create(gateway)"],
+        "worker.move(input, output)": ["test.create(gateway::/worker::input)"],
+        "test.destroy(gateway::/worker::output)": ["worker.move(input, output)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_caller_operation_waits_on_callee_destroy_output(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
