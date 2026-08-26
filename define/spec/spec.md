@@ -1544,6 +1544,9 @@ position and is not needed to satisfy any Move Particle Statement, that
 constraint is dead code. Exception: destructors listed as constraints on a
 position are never dead code.
 
+If an action is implied but is never triggered in the action that implies it,
+that implication is dead code.
+
 ## Deterministic Automatic Concurrency
 
 Proposals:
