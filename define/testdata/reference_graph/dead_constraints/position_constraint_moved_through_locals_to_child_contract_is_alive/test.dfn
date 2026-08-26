@@ -1,0 +1,22 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<run>.
+    define the position<result> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</thing>.
+            }
+        }
+        define the position<middle>.
+        create a particle in position<result>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<middle>.
+        move the particle in position<middle> to position<result>::position</child>.
+    }
+}

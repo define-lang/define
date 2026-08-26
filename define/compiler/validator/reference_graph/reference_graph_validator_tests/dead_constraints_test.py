@@ -2,8 +2,25 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
+
+import pytest
+
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.reference_graph.operation_graph_renderer import (
+    action_graph,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+_RUNNER = "action<my.domain.com:my_lib:/runner>"
+_TEST = "action<my.domain.com:my_lib:/test>"
+_WORKER = "action<my.domain.com:my_lib:/worker>"
+_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED = (
+    "Untriggered implied actions are not detected yet."
+)
+_NON_TRIGGER_ACTION_REFERENCE_CREATES_LIVENESS = (
+    "Referencing an interface position currently makes its action alive."
+)
 
 # --- Dead Child Positions ---
 
@@ -64,6 +81,22 @@ def test_child_position_required_by_move_destination_through_multiple_hops_is_al
     assert_no_errors(result.program_result)
 
 
+def test_position_constraint_moved_through_locals_to_contract_is_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.operation_graphs) == []
+
+
+def test_position_constraint_moved_through_locals_to_child_contract_is_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.operation_graphs) == []
+
+
 def test_redundant_destination_constraint_on_move_filled_position_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -76,6 +109,36 @@ def test_redundant_destination_constraint_on_move_filled_position_is_dead(
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=(
+        "Circular moves currently let each position's child-position constraint"
+        " make the other constraint alive even though neither is referenced."
+    ),
+)
+def test_back_and_forth_moves_do_not_make_position_constraints_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].constraint_name == "position</thing>"
+    assert all_diags[0].position_name == "position<first>"
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[1].constraint_name == "position</thing>"
+    assert all_diags[1].position_name == "position<second>"
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
 
 
 def test_constraint_on_interface_position_filled_by_create_is_alive(
@@ -270,11 +333,172 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     assert all_diags[0].location.column == 28
 
 
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=_NON_TRIGGER_ACTION_REFERENCE_CREATES_LIVENESS,
+)
+def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</worker>"
+    assert all_diags[0].position_name == "position<box>"
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
+)
+def test_implied_action_referenced_but_never_triggered_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</worker>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
+)
+def test_implied_destructor_not_triggered_by_implying_action_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</cleanup>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
+)
+def test_nested_trigger_marks_only_final_implied_action_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</runner>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == [
+        (_RUNNER, _WORKER),
+        (_TEST, _WORKER),
+    ]
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
+)
+def test_nested_non_trigger_marks_no_implied_action_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    runner_diagnostic = all_diags[0]
+    assert isinstance(runner_diagnostic, diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert runner_diagnostic.implied_action_name == "action</runner>"
+    assert runner_diagnostic.location.line == 2
+    assert runner_diagnostic.location.column == 25
+    assert runner_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == [(_RUNNER, _WORKER)]
+
+
 def test_action_required_by_move_destination_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
+
+
+def test_position_constraint_moved_to_untriggered_action_contract_is_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</consumer>"
+    assert all_diags[0].position_name == "position<holder>"
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
+
+
+def test_position_constraint_moved_to_triggered_action_contract_is_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.operation_graphs) == [
+        (_TEST, "action<my.domain.com:my_lib:/consumer>")
+    ]
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason=(
+        "Circular moves currently let each position's action constraint make the"
+        " other constraint alive even though the action is never triggered."
+    ),
+)
+def test_back_and_forth_moves_do_not_make_action_constraints_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</worker>"
+    assert all_diags[0].position_name == "position<first>"
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[1].constraint_name == "action</worker>"
+    assert all_diags[1].position_name == "position<second>"
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.operation_graphs) == []
 
 
 def test_implied_action_of_constructor_is_not_dead(

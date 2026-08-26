@@ -221,6 +221,17 @@ class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
 
 
 @dataclass
+class UntriggeredImpliedActionDiagnostic(Diagnostic):
+    """Diagnostic for an implied action that is never triggered by the implying action."""
+
+    implied_action_name: str
+    message_format: ClassVar[str] = (
+        "'{self.implied_action_name}' is implied here, but it is never triggered "
+        "within this action; either trigger it or remove the implication."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 
