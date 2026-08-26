@@ -113,20 +113,6 @@ Only actual lines of code written inside of an action can be dead code.
 Constraints that are assigned _only_ transitively via Quality Implication
 Statements are never dead code.
 
-#### Move Targets Make Source Constraints Alive
-
-The first thing to know about constraints is that if a _move_ requires the
-constraint it is always alive. That is, if I move a particle from position A to
-position B, and position B requires a particular constraint to exist on the
-particle, that constraint is alive on A.
-
-#### Output Interface Positions Are Alive
-
-If an interface position is part of an action's _output_, then _all_ constraints
-on that position are alive. An interface position is an "output position" if it
-contains a particle that was created or moved by the action, when the action
-ends.
-
 #### Dead Child Positions
 
 Any directly-declared position constraint that is not referenced inside of that
@@ -137,6 +123,55 @@ same action is dead code.
 If an action is directly assigned to a particle and it can be triggered but
 never is, it is a dead constraint. For example, `action</foo>` has a trigger on
 `action</foo>::position<run>` being filled, but that position is never filled.
+
+#### The Move Use Exception
+
+When a child position is directly referenced on a particle, or an action
+assigned to that particle is triggered, the matching constraint is alive both on
+the position currently holding the particle and on the position where the
+particle originated (where it was created or arrived via an Automatic Action
+Requirement).
+
+This handles cases where you move a particle from A to B and then reference
+children on B only.
+
+#### The Contracted Position Exception
+
+Satisfying the contracts of actions is sufficient to mark a constraint as alive.
+
+More specifically, a constraint is "alive" (overriding the rules above) on a
+position if a particle _originating_ in that position (either it arrived as an
+Action Requirement or it was created in that position) either:
+
+1. Is moved into (or originally created in) any contracted position that a
+   callee requires occupied (has an Automatic Action Requirement on), and that
+   contracted position has that constraint.
+2. Has a final position representing an Automatic Action Guarantee of this
+   position, and that final position has that constraint. (That is, it ends up
+   in a contracted position that our callers expect to be occupied.) To be
+   clear, this can happen either by the particle getting moved into that
+   position (and then staying there at the end of the action) or being directly
+   created in that position (and then staying there at the end of the action).
+
+To be clear, this means that if a particle moves to an intermediate local
+position, that does _not_ make all the constraints on that intermediate local
+position automatically "alive." For example, moving A to B to C, where A and B
+are local positions and C is a contracted position does _not_ make the
+constraints on B alive just because they are constraints on C. It would only
+make the constraints on A alive.
+
+In order for the constraints on B to be alive, they would have to be referenced
+with B as the parent name. So if the constraint is `position</thing>` then the
+code would have to explicitly reference `position<b>::position</thing>` in order
+for that constraint on `position<b>` to be considered alive.
+
+#### Untriggered Implied Actions
+
+If an action is implied and that action itself is not triggered inside of the
+implying action (no matter how else it is referenced in the implying action)
+then the _implication_ is a dead dependency.
+
+Note that this inherently denies implying constructors or destructors, entirely.
 
 ### Qualities on Global Positions
 
@@ -238,6 +273,63 @@ I'm not 100% confident that this is the right restriction; there could be some
 legitimate reason to allow that (very weird) pattern. However, at the moment it
 doesn't make sense to me to allow it. If you're going to pass arguments to a
 function, you should actually call that function.
+
+### Denying Implied Destructors
+
+The logical reason to imply a destructor would be something like "if this action
+_exists_ on a particle, then something must always be cleaned up about this
+particle when it is destroyed."
+
+Well, first off, just because you assign an action to a particle, that doesn't
+mean the program will actually trigger that action (there is a way for us to
+detect that, and maybe a future proposal will do it, but I'm concerned about the
+memory requirements for tracking liveness for every action call throughout a
+program). So you could be assigning a destructor (which will always run, because
+every particle is eventually destroyed as long as a Define program exits
+normally) to clean up a situation that never happens.
+
+But let's imagine we could fix that problem, and force all actions to trigger
+(which we might be able to do). In that case, let's examine the logic more
+deeply by taking a specific example.
+
+Let's imagine that we have an action that takes a lock, and you want to release
+the lock when the action's parent particle is destroyed. What would a destructor
+actually do in that case? Well, you must have stored the lock as a particle
+somewhere that the destructor can access. That means an implied
+`position</lock>` that both `action</lock>` and `action</unlock_on_destroy>`
+could reference. Oh, so that means the lock is actually a _child_ particle of
+the parent, which will get destroyed as part of the destruction cascade before
+the parent does. So then why isn't the destructor just on `position</lock>`,
+which `action</lock>` already had to reference? That also unlocks the lock no
+matter what happens or what action set it.
+
+Well, you could say "but I only want to auto-unlock it if it was set by
+`action</lock>`. But implying a destructor doesn't guarantee that
+`position</lock>` was set by `action</lock>`! Theoretically, there's a future
+where we have access controls on which actions can touch which positions, and
+you could make it so that only `action</lock>` and `action</unlock_on_destroy>`
+can touch `position</lock>`. Even then, why wouldn't you just put the destructor
+on `position</lock>`?
+
+Well, you say, maybe I want a lock that doesn't auto-unlock on destroy. Maybe
+it's locking something outside of the program. Well, that sounds like a totally
+different position definition, like you'd want `position</auto_lock>` and
+`position</manual_lock>` or something.
+
+There's actually probably an even better design for that situation too, where
+your lock is a local position and you choose whether you want to add the
+destructor or not, without having to change naming.
+
+I'm open to the idea that there's a design pattern that needs implied
+destructors, but I'm not aware of one yet.
+
+### Denying Implied Constructors
+
+On constructors, the logic for implying a constructor would be something like
+"this action can know that its parent particle was always initialized in a
+particular state." However, that doesn't really help the action, because it
+can't know whether that state _changed_ since the constructor was called. That
+is, no real invariant is actually provided by having a constructor be implied.
 
 ## Forward Compatibility
 
