@@ -1527,25 +1527,47 @@ The following are all dead code:
 
 - An action interface position that is never referenced within that action.
 - A local position never referenced within the block where it is defined.
-- An implied quality that is not referenced within the action or position that
-  implies it.
+- An implied quality that is not referenced within the action that implies it.
+- An implied action that is not triggered within the action that implies it.
 
-### Dead Child Positions
+### Dead Constraints
 
-A position quality assigned to a local or interface position is dead if it is
-neither referenced within the same global definition nor required by any Move
-Particle Statement.
+Directly-written (not implied) constraints on local or interface positions are
+only alive according to the rules below. Otherwise, they are dead code.
 
-### Untriggered Actions
+**Origin Position**: The position in which a particle is created or where it
+first arrived in an action via an Action Requirement that required a position to
+be occupied.
 
-If an action is a directly-written constraint on a local or interface position
-but is never triggered inside of the same global definition that defines that
-position and is not needed to satisfy any Move Particle Statement, that
-constraint is dead code. Exception: destructors listed as constraints on a
-position are never dead code.
+#### Referencing a Child Position
 
-If an action is implied but is never triggered in the action that implies it,
-that implication is dead code.
+Any reference to a particle's direct child positions causes that position
+constraint to be alive in the origin position of the particle and the current
+position of the particle.
+
+#### Triggering a Child Action
+
+If one of a particle's direct child actions is triggered, that action constraint
+becomes alive on the origin position of the particle and the current position of
+the particle.
+
+#### Aliveness Through Callee Contracts
+
+If a particle is in a callee's contracted position (a position with an occupied
+Action Requirement in the callee) at the time that action is triggered, any
+constraints on that contracted position are marked as alive on the origin
+position of the particle.
+
+#### Aliveness Through An Action's Own Contract
+
+At the end of an action, if a particle is in a position on which the current
+action provides an Action Guarantee, all constraints on that position are marked
+as alive on the origin position of the particle.
+
+#### Destructors
+
+Destructors specified as constraints on local or interface positions are always
+alive.
 
 ## Deterministic Automatic Concurrency
 
