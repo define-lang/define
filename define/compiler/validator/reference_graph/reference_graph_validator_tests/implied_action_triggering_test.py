@@ -7,6 +7,7 @@ from define.compiler import conftest, diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
+    action_graph_set,
 )
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -19,6 +20,7 @@ _IMPLIER = "action<my.domain.com:my_lib:/implier>"
 _FORWARDER = "action<my.domain.com:my_lib:/forwarder>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_IMPLIED_OUTER = "action<my.domain.com:my_lib:/implied_outer>"
 
 
 _IMPLIED_ACTION_NOOP = (
@@ -152,9 +154,16 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "file_path": "inner.dfn",
         },
     )
+    assert action_graph_set(result.operation_graphs) == {
+        (_IMPLIED_OUTER, _INNER),
+        (_MIDDLE, _IMPLIED_OUTER),
+        (_MIDDLE, _INNER),
+        (_TEST, _IMPLIED_OUTER),
+        (_TEST, _MIDDLE),
+    }
 
 
-def test_inner_action_through_implied_action_iface_propagates_when_intermediate_only_triggers(
+def test_inner_action_through_implied_action_iface_propagates_when_intermediate_triggers_later(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -199,6 +208,13 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
             "file_path": "inner.dfn",
         },
     )
+    assert action_graph_set(result.operation_graphs) == {
+        (_IMPLIED_OUTER, _INNER),
+        (_MIDDLE, _IMPLIED_OUTER),
+        (_MIDDLE, _INNER),
+        (_TEST, _IMPLIED_OUTER),
+        (_TEST, _MIDDLE),
+    }
 
 
 def test_caller_triggers_action_implied_by_constraint(

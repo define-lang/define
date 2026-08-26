@@ -177,11 +177,8 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
     lines: list[str] = []
     for i in range(num_actions):
         name = _qualified_global_name(prefix, i, is_action=True)
-        # Pool action bodies create and then destroy the particle so the
-        # action runs net-zero. External callers that chain through these
-        # actions (e.g. ``action</a_i>::position<_noop>``) can therefore
-        # pair their own create with a destroy without colliding with a
-        # state left behind by the pool action's own body.
+        # Pool actions consume their trigger particle and leave their other
+        # positions empty so callers can trigger them repeatedly.
         lines.extend(
             [
                 f"define the potential action<{name}> {{",
@@ -190,6 +187,7 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
                 f"{_OUTER_INDENT}it happens when {{",
                 f"{_INNER_INDENT}the position<run> has a particle.",
                 f"{_OUTER_INDENT}}} and it does {{",
+                f"{_INNER_INDENT}destroy the particle in position<run>.",
                 f"{_INNER_INDENT}create a particle in position<_noop>.",
                 f"{_INNER_INDENT}destroy the particle in position<_noop>.",
                 f"{_OUTER_INDENT}}}",
@@ -231,6 +229,7 @@ def _emit_action_with_implications_and_constructor(
         f"{_INNER_INDENT}create a particle in position<{implied_position}>.",
         f"{_INNER_INDENT}destroy the particle in position<{implied_position}>.",
         f"{_INNER_INDENT}# Trailing comment in constructor block",
+        f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<run>.",
         f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<_noop>.",
         f"{_INNER_INDENT}destroy the particle in action<{implied_action}>::position<_noop>.",
         f"{_OUTER_INDENT}}}",
@@ -252,7 +251,6 @@ def _emit_destructor_action(fqun_path: str) -> list[str]:
         f"{_INNER_INDENT}destroy the particle in position<_noop>.",
         f"{_OUTER_INDENT}}}",
         "}",
-        "",
     ]
 
 
@@ -436,6 +434,11 @@ def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
             f"{_OUTER_INDENT}}} and it does {{",
         ]
     )
+    for i in range(num_actions):
+        action_name = _short_global_name(i, is_action=True)
+        lines.append(
+            f"{_INNER_INDENT}create a particle in action<{action_name}>::position<run>."
+        )
     return lines
 
 

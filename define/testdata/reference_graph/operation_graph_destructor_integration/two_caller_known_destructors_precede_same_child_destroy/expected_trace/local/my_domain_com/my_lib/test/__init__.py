@@ -9,6 +9,7 @@ import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.destruct_a
 import local.my_domain_com.my_lib.destruct_b
 import local.my_domain_com.my_lib.maker
+import local.my_domain_com.my_lib.required
 import local.my_domain_com.my_lib.sibling
 
 
@@ -61,6 +62,7 @@ class TestExecution:
                 local.my_domain_com.my_lib.maker.Maker,
                 local.my_domain_com.my_lib.destruct_a.DestructA,
                 local.my_domain_com.my_lib.destruct_b.DestructB,
+                local.my_domain_com.my_lib.required.Required,
                 local.my_domain_com.my_lib.sibling.Sibling,
             ),
             scheduler=self.scheduler,
@@ -73,8 +75,8 @@ class TestExecution:
         self.destruction_position_action_destroyer__position_parent__global_position_sibling: literal.Position
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_global_position_required = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_global_position_required = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -138,8 +140,8 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result)
-        self.scheduler.submit(self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result)
-        self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result()
+        self.scheduler.submit(self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_global_position_required)
+        self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_global_position_required()
 
     def create_action_destroyer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -160,13 +162,13 @@ class TestExecution:
         self.destruction_connection_trigger_action_destroyer_2 = tracing.DestructionConnection(
             self.scheduler,
             2,
-            self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result,
-            self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result,
+            self.trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_global_position_required,
+            self.trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_global_position_required,
         )
-        self.guarantees.trigger_action_destroyer__position_parent__action_destruct_b.guarantee_action_maker__position_result.append(
+        self.guarantees.trigger_action_destroyer__position_parent__action_destruct_b.guarantee_global_position_required.append(
             self.destruction_connection_trigger_action_destroyer_2.complete
         )
-        self.guarantees.trigger_action_destroyer__position_parent__action_destruct_a.guarantee_action_maker__position_result.append(
+        self.guarantees.trigger_action_destroyer__position_parent__action_destruct_a.guarantee_global_position_required.append(
             self.destruction_connection_trigger_action_destroyer_2.complete
         )
         self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
@@ -180,12 +182,13 @@ class TestExecution:
             destruction_connections=literal.DestructionConnections(
             {
                 local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_parent: self.destruction_connection_trigger_action_destroyer,
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_parent__action_maker__position_result: self.destruction_connection_trigger_action_destroyer_2,
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_parent__global_position_required: self.destruction_connection_trigger_action_destroyer_2,
             },
             ),
         )
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result)
+        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__global_position_required)
         self.trigger_action_destroyer__for_empty_rule_position_parent()
 
     def destroy_action_destroyer__position_parent__global_position_sibling(self):
@@ -214,15 +217,18 @@ class TestExecution:
             return
         self.execution_trigger_action_destroyer.accept_when_empty_position_parent__action_maker__position_result()
 
+    def trigger_action_destroyer__when_empty_position_parent__global_position_required(self):
+        self.execution_trigger_action_destroyer.accept_when_empty_position_parent__global_position_required()
+
     def trigger_action_destroyer__for_empty_rule_position_parent(self):
         self.execution_trigger_action_destroyer.accept_for_empty_rule_position_parent()
 
-    def trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result(self):
-        if not self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_action_maker__position_result.arrive():
+    def trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_global_position_required(self):
+        if not self.join_for_trigger_action_destroyer__position_parent__action_destruct_b__for_empty_rule_global_position_required.arrive():
             return
-        self.execution_trigger_action_destroyer__position_parent__action_destruct_b.accept_for_empty_rule_action_maker__position_result()
+        self.execution_trigger_action_destroyer__position_parent__action_destruct_b.accept_for_empty_rule_global_position_required()
 
-    def trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result(self):
-        if not self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_action_maker__position_result.arrive():
+    def trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_global_position_required(self):
+        if not self.join_for_trigger_action_destroyer__position_parent__action_destruct_a__for_empty_rule_global_position_required.arrive():
             return
-        self.execution_trigger_action_destroyer__position_parent__action_destruct_a.accept_for_empty_rule_action_maker__position_result()
+        self.execution_trigger_action_destroyer__position_parent__action_destruct_a.accept_for_empty_rule_global_position_required()

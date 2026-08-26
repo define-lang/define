@@ -18,7 +18,6 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
-_MARKED = "action<my.domain.com:my_lib:/marked>"
 
 
 def test_and_normal_action(
@@ -69,29 +68,12 @@ def test_occupied_interface(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_via_quality_implication(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
-
-
 def test_destroy_fires_destructor_via_constraint(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
-
-
-def test_destroy_fires_destructor_via_quality_implication(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
-        (_TEST, _MARKED),
-        (_TEST, _DESTRUCTOR),
-    ]
 
 
 def test_destroy_does_not_fire_non_destructor_action_quality(

@@ -34,7 +34,7 @@ def _build(
     )
 
 
-def test_depth_first_assignment_order_and_paths():
+def test_depth_first_assignment_order():
     first, second, shared, other = map(_quality, ("first", "second", "shared", "other"))
     assignments = _build(
         (first, other),
@@ -46,15 +46,6 @@ def test_depth_first_assignment_order_and_paths():
     )
 
     assert tuple(assignments) == (shared, second, other, first)
-    shared_assignment = assignments.preferred_assignment_for(shared)
-    assert isinstance(shared_assignment, quality_assignment.ImpliedQualityAssignment)
-    second_assignment = shared_assignment.caused_by
-    assert second_assignment.quality == second
-    assert isinstance(second_assignment, quality_assignment.ImpliedQualityAssignment)
-    assert second_assignment.caused_by.quality == first
-    assert tuple(
-        assignment.quality for assignment in shared_assignment.assignment_path()
-    ) == (first, second, shared)
 
 
 def test_cycles_and_duplicate_reachability_assign_once():
@@ -70,40 +61,10 @@ def test_cycles_and_duplicate_reachability_assign_once():
     assert tuple(assignments) == (second, first)
 
 
-def test_later_direct_assignment_is_preferred_without_rewriting_descendant_path():
-    first, intermediate, descendant = map(
-        _quality, ("first", "intermediate", "descendant")
-    )
-    assignments = _build(
-        (first, intermediate),
-        {
-            first.full_typed_name: (intermediate,),
-            intermediate.full_typed_name: (descendant,),
-        },
-    )
-
-    preferred = assignments.preferred_assignment_for(intermediate)
-    assert type(preferred) is quality_assignment.QualityAssignment
-    descendant_assignment = next(
-        assignment
-        for assignment in assignments.assignments
-        if assignment.quality == descendant
-    )
-    assert isinstance(
-        descendant_assignment, quality_assignment.ImpliedQualityAssignment
-    )
-    assert isinstance(
-        descendant_assignment.caused_by,
-        quality_assignment.ImpliedQualityAssignment,
-    )
-
-
-def test_preferred_assignment_lookup_and_quality_membership():
+def test_quality_membership():
     quality = _quality("quality")
     assignments = _build((quality,), {})
 
-    assert assignments.preferred_assignment_for(quality) is assignments.assignments[0]
-    assert assignments.assignments[0].assignment_path() == (assignments.assignments[0],)
     assert assignments.has_quality(quality) is True
     assert assignments.has_quality(_quality("other")) is False
 

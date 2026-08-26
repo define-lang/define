@@ -81,7 +81,7 @@ _DESTRUCTOR_CONTRIBUTION_CASES = (
         caller_sources=_ADDITIONAL_CALLER_ROOT / "destructor_contribution",
     ),
     _DestructorContributionCase(
-        name="automatic_action_requirements",
+        name="contracted_position_requirements",
         baseline=(
             _TESTDATA_ROOT
             / "operation_graph_destructor_integration"

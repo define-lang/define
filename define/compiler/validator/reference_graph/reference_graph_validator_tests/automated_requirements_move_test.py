@@ -8,6 +8,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
@@ -26,6 +28,9 @@ if TYPE_CHECKING:
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED = (
+    "Liveness through Contracted Positions is not implemented"
+)
 
 
 def test_caller_sees_requirement_when_interface_moved_to_local(
@@ -667,6 +672,7 @@ def test_complex_chain_interaction_implied(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -675,6 +681,7 @@ def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OUTER)}
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

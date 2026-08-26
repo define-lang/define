@@ -18,7 +18,6 @@ from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     particle_tracker,
-    quality_assignment,
 )
 
 
@@ -61,7 +60,7 @@ def trigger_violation(
     )
     if action_assignment is not None:
         steps = [
-            *action_assignment.propagation_chain(),
+            action_assignment.propagation_step(),
             trigger_step,
             *fill,
             *chain,
@@ -110,7 +109,7 @@ def direct_destructor(
         # The destructor is assigned when the particle is created, so its assignment
         # and origin lead; auto-destruction (if any) happens at block end, just before
         # the destruction that fires the destructor.
-        *destructor.action_assignment().propagation_chain(),
+        destructor.action_assignment().propagation_step(),
         action_contract.PropagationStep(
             location=destructor.origin_position.location,
             kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
@@ -153,7 +152,7 @@ def contract_destructor(
     particle_position: ast.PositionReference,
     particle: particle_tracker.ParticleInfo,
     trigger_step: action_contract.PropagationStep,
-    quality_assignment: quality_assignment.QualityAssignment,
+    destructor_quality: ast.GlobalTypedNameReference,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
     enclosing_fqun = definition.typed_name.name_content.fqun
@@ -177,7 +176,7 @@ def contract_destructor(
             + "so its fill site must be known"
         )
     action_assignment = action_contract.ActionAssignment(
-        quality_assignment=quality_assignment,
+        quality=destructor_quality,
         assigned_to_position_name=particle.origin_position.typed_names[-1],
     )
     # The verifying definition's own trigger of the callee is the runner the
@@ -203,7 +202,7 @@ def contract_destructor(
             )
         )
     steps = [
-        *action_assignment.propagation_chain(),
+        action_assignment.propagation_step(),
         action_contract.PropagationStep(
             location=particle.origin_position.location,
             kind=action_contract.PropagationKind.PARTICLE_ORIGIN,

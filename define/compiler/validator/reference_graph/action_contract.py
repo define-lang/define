@@ -43,8 +43,6 @@ class PropagationKind(enum.Enum):
     DESTRUCTOR_CASCADE = enum.auto()
     # A position constraint directly assigned a quality to a position.
     QUALITY_ASSIGNED = enum.auto()
-    # One assigned quality implied another quality.
-    QUALITY_IMPLIED = enum.auto()
     # Creating a particle triggered one of its constructor qualities.
     CONSTRUCTOR_TRIGGER = enum.auto()
     # The current definition's body triggered an action; the action's
@@ -79,33 +77,17 @@ class PropagationStep:
 class ActionAssignment:
     """An action's assignment to a particle at a position."""
 
-    quality_assignment: quality_assignment.QualityAssignment
+    quality: ast.GlobalTypedNameReference
     assigned_to_position_name: ast.TypedName
 
-    def propagation_chain(self) -> list[PropagationStep]:
-        """Return the assignment and implication steps in source order."""
-        assignment_path = self.quality_assignment.assignment_path()
-        direct_assignment = assignment_path[0]
-        steps = [
-            PropagationStep(
-                location=direct_assignment.quality.location,
-                kind=PropagationKind.QUALITY_ASSIGNED,
-                enclosing_quality_name=self.assigned_to_position_name.full_typed_name,
-                triggered_quality_name=direct_assignment.quality.full_typed_name,
-            )
-        ]
-        previous_assignment = direct_assignment
-        for implied_assignment in assignment_path[1:]:
-            steps.append(
-                PropagationStep(
-                    location=implied_assignment.quality.location,
-                    kind=PropagationKind.QUALITY_IMPLIED,
-                    enclosing_quality_name=previous_assignment.quality.full_typed_name,
-                    triggered_quality_name=implied_assignment.quality.full_typed_name,
-                )
-            )
-            previous_assignment = implied_assignment
-        return steps
+    def propagation_step(self) -> PropagationStep:
+        """Return the action's assignment step."""
+        return PropagationStep(
+            location=self.quality.location,
+            kind=PropagationKind.QUALITY_ASSIGNED,
+            enclosing_quality_name=self.assigned_to_position_name.full_typed_name,
+            triggered_quality_name=self.quality.full_typed_name,
+        )
 
 
 @dataclass(frozen=True)
@@ -155,7 +137,7 @@ class PositionRequirement:
         current: PositionRequirement | None = self
         while current is not None:
             if current.action_assignment is not None:
-                chain.extend(current.action_assignment.propagation_chain())
+                chain.append(current.action_assignment.propagation_step())
             chain.append(current.propagation_step())
             current = current.propagated_from
         return chain
@@ -324,17 +306,14 @@ class DestructionContract:
 class CascadeDestructor:
     """One destructor in a destruction cascade, paired with the position it fires on."""
 
-    # Used only to explain the destructor assignment in diagnostics. This is the
-    # preferred assignment, so a direct constraint replaces an earlier implied
-    # assignment here.
-    assignment: quality_assignment.QualityAssignment
+    destructor: ast.GlobalTypedNameReference
     position: ast.PositionReference
     origin_position: ast.PositionReference
 
     def action_assignment(self) -> ActionAssignment:
         """Return the destructor assignment used in diagnostics."""
         return ActionAssignment(
-            quality_assignment=self.assignment,
+            quality=self.destructor,
             assigned_to_position_name=self.origin_position.typed_names[-1],
         )
 

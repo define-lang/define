@@ -309,8 +309,7 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         """Trigger every constructor on the particle just created in position (DLP 32)."""
-        for assignment in qualities.assignments:
-            quality = assignment.quality
+        for quality in qualities.assignments:
             if quality.name_type != ast.NameType.ACTION:
                 continue
             definition_result = self._definition_results.get(quality)
@@ -334,7 +333,7 @@ class ActionPostorderValidator:
                 position,
                 scope,
                 action_assignment=action_contract.ActionAssignment(
-                    quality_assignment=qualities.preferred_assignment_for(quality),
+                    quality=quality,
                     assigned_to_position_name=position.typed_names[-1],
                 ),
             )
@@ -358,8 +357,7 @@ class ActionPostorderValidator:
             has_active_destruction_fact = True
         # A particle keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
-        for assignment in reversed(particle.qualities.assignments):
-            quality = assignment.quality
+        for quality in reversed(particle.qualities.assignments):
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
                 self._execute_cascade_child(
@@ -380,9 +378,7 @@ class ActionPostorderValidator:
                 if definition.is_destructor:
                     self._run_destructor(
                         action_contract.CascadeDestructor(
-                            assignment=particle.qualities.preferred_assignment_for(
-                                quality
-                            ),
+                            destructor=quality,
                             position=position,
                             origin_position=particle.origin_position,
                         ),
@@ -489,7 +485,7 @@ class ActionPostorderValidator:
         # quality of the particle in `position`, so its interface positions
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
-        quality = destructor.assignment.quality
+        quality = destructor.destructor
         contract = self._validation_state.get_contract_or_none(quality)
         if contract is None:
             return
@@ -598,7 +594,7 @@ class ActionPostorderValidator:
             is_destructor=False,
             destruction_contract_contributions=destruction_contract_contributions,
         )
-        self._dead_tracker.mark_alive(action_chain)
+        self._dead_tracker.mark_action_alive(action_chain)
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
@@ -695,9 +691,8 @@ class ActionPostorderValidator:
         """Return destructor assignments in firing order."""
         # TODO: This feels inefficient to do every time, but let's wait for actual
         # profiling data to tell us if that's important.
-        result: list[quality_assignment.QualityAssignment] = []
-        for assignment in reversed(qualities.assignments):
-            quality = assignment.quality
+        result: list[ast.GlobalTypedNameReference] = []
+        for quality in reversed(qualities.assignments):
             if quality.name_type != ast.NameType.ACTION:
                 continue
             definition_result = self._definition_results[quality]
@@ -705,11 +700,7 @@ class ActionPostorderValidator:
                 "ast.ActionDefinition", definition_result.definition
             )
             if definition.is_destructor:
-                # We pick the assignment that the developer wrote most explicitly:
-                # either the one directly written here, or the one transitively
-                # implied.
-                preferred_assignment = qualities.preferred_assignment_for(quality)
-                result.append(preferred_assignment)
+                result.append(quality)
         return quality_assignment.QualityAssignments(tuple(result))
 
     def _check_destruction_contracts(
@@ -802,7 +793,7 @@ class ActionPostorderValidator:
                 caller_particle_position
             )
             merged_child_state.update(destruction_contract.child_state)
-        newly_verified: list[quality_assignment.QualityAssignment] = []
+        newly_verified: list[ast.GlobalTypedNameReference] = []
         destructor_contributions: list[
             operation_graph_model.VerifiedDestructionContractDestructor
         ] = []
@@ -860,7 +851,7 @@ class ActionPostorderValidator:
         destruction_contract: action_contract.DestructionContract,
         caller_particle: particle_tracker.ParticleInfo,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
-        newly_verified: list[quality_assignment.QualityAssignment],
+        newly_verified: list[ast.GlobalTypedNameReference],
         trigger_step: action_contract.PropagationStep,
     ):
         # Carry the merged destruction-time picture and the destructors checked
@@ -896,7 +887,7 @@ class ActionPostorderValidator:
         trigger_step: action_contract.PropagationStep,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        newly_verified: list[quality_assignment.QualityAssignment],
+        newly_verified: list[ast.GlobalTypedNameReference],
         destructor_contributions: list[
             operation_graph_model.VerifiedDestructionContractDestructor
         ],
@@ -947,8 +938,7 @@ class ActionPostorderValidator:
         final_contributed_positions: list[
             operation_graph_model.ContributedDestructionPosition
         ] = []
-        for assignment in reversed(particle.qualities.assignments):
-            quality = assignment.quality
+        for quality in reversed(particle.qualities.assignments):
             if quality.name_type == ast.NameType.POSITION:
                 child = position.with_position_suffix(quality)
                 final_contributed_positions.extend(
@@ -975,9 +965,6 @@ class ActionPostorderValidator:
                 definition = typing.cast(
                     "ast.ActionDefinition", definition_result.definition
                 )
-                preferred_assignment = particle.qualities.preferred_assignment_for(
-                    quality
-                )
                 destructor_contribution = None
                 if definition.is_destructor and not (
                     destruction_contract.verified_destructors.has_quality(quality)
@@ -998,7 +985,6 @@ class ActionPostorderValidator:
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,
                         trigger_step=trigger_step,
-                        quality_assignment=preferred_assignment,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
                         newly_verified=newly_verified,
@@ -1057,10 +1043,9 @@ class ActionPostorderValidator:
         destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
-        quality_assignment: quality_assignment.QualityAssignment,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        newly_verified: list[quality_assignment.QualityAssignment],
+        newly_verified: list[ast.GlobalTypedNameReference],
     ) -> operation_graph_model.VerifiedDestructionContractDestructor | None:
         """Verify one Destructor discovered through a Destruction Contract."""
         destructor_contract = self._validation_state.get_contract_or_none(
@@ -1123,10 +1108,10 @@ class ActionPostorderValidator:
                     particle_position=particle_position,
                     particle=particle,
                     trigger_step=trigger_step,
-                    quality_assignment=quality_assignment,
+                    destructor_quality=destructor_quality,
                 )
             )
-        newly_verified.append(quality_assignment)
+        newly_verified.append(destructor_quality)
         verified_requirements = [
             resolved_requirement.as_verified_destruction_contract_requirement()
             for resolved_requirement in resolved_requirements
@@ -1408,7 +1393,7 @@ class ActionPostorderValidator:
 
         Marks the chain's occupancy state as ERROR in the tracker if validation fails.
         """
-        self._dead_tracker.mark_alive(chain)
+        self._dead_tracker.mark_position_alive(chain)
         if len(chain.typed_names) < 2:
             return
         elements = chain.typed_names
@@ -1564,7 +1549,7 @@ class ActionPostorderValidator:
         target_required: tuple[ast.GlobalTypedNameReference, ...],
     ):
         """Tell the ledger which of the moved particle's origin constraints the destination requires (DLP 42)."""
-        if not self._dead_tracker.has_pending():
+        if not self._dead_tracker.has_move_candidates():
             return
         if self._tracker.has_error_state(from_pos) or not self._tracker.is_occupied(
             from_pos
@@ -1574,18 +1559,28 @@ class ActionPostorderValidator:
         self._dead_tracker.mark_move_required(origin, target_required)
 
     def _check_dead_constraints(self):
-        """Emit a diagnostic for each constraint left dead per DLP 42's child-position and untriggered-action rules."""
-        for candidate in self._dead_tracker.dead_constraints():
-            diagnostic_class = (
-                diagnostics.UntriggeredActionDiagnostic
-                if candidate.constraint.name_type == ast.NameType.ACTION
-                else diagnostics.DeadChildPositionDiagnostic
-            )
+        """Emit diagnostics for dead constraints and untriggered actions."""
+        for candidate in self._dead_tracker.dead_position_constraints():
             self._diagnostics.append(
-                diagnostic_class(
+                diagnostics.DeadChildPositionDiagnostic(
                     location=candidate.constraint.location,
                     constraint_name=candidate.constraint.source_typed_name,
                     position_name=candidate.position.source_typed_name,
+                )
+            )
+        for candidate in self._dead_tracker.dead_action_constraints():
+            self._diagnostics.append(
+                diagnostics.UntriggeredActionDiagnostic(
+                    location=candidate.constraint.location,
+                    constraint_name=candidate.constraint.source_typed_name,
+                    position_name=candidate.position.source_typed_name,
+                )
+            )
+        for implied_action in self._dead_tracker.untriggered_implied_actions():
+            self._diagnostics.append(
+                diagnostics.UntriggeredImpliedActionDiagnostic(
+                    location=implied_action.location,
+                    implied_action_name=implied_action.source_typed_name,
                 )
             )
 
@@ -1665,12 +1660,6 @@ class ActionPostorderValidator:
         def implications_for(
             typed_name: ast.GlobalTypedNameReference,
         ) -> tuple[ast.GlobalTypedNameReference, ...]:
-            # We cannot reuse assignments from another cached QualityAssignments
-            # here. Their caused_by links point to that collection's assignments,
-            # and overlap between direct constraints can select a different first
-            # implication path. Caching a separate transitive list for every
-            # quality would avoid this walk, but could use quadratic memory for a
-            # linear implication chain.
             defn_result = self._definition_results.get(typed_name)
             if defn_result is None:
                 return ()
@@ -1700,7 +1689,7 @@ class ActionPostorderValidator:
         first-level guarantees is correct however the position became occupied,
         with no separate occupancy bookkeeping.
         """
-        if not self._dead_tracker.has_pending():
+        if not self._dead_tracker.has_position_constraint_candidates():
             return
         for key, guarantee in own_guarantees:
             if len(key) != 1 or not isinstance(
@@ -1711,7 +1700,7 @@ class ActionPostorderValidator:
                 continue
             interface_def = self._interface_positions.get(key[0])
             if interface_def is not None:
-                self._dead_tracker.mark_constraints_alive(
+                self._dead_tracker.mark_position_constraints_alive(
                     interface_def.typed_name, interface_def.constraint_typed_names
                 )
 
@@ -1764,6 +1753,11 @@ class ActionPostorderValidator:
         definition: ast.ActionDefinition,
     ) -> action_contract.ActionContract:
         scope = scope_tracker.ScopeTracker()
+        for implication in definition.quality_implications:
+            implied_action = implication.typed_global_name
+            if implied_action.name_type != ast.NameType.ACTION:
+                continue
+            self._dead_tracker.register_implied_action(implied_action)
         for pos in definition.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.

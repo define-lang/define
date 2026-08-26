@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/implied_outer> {
+    define the position<run>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<_noop>.
+        create a particle in position<_noop>.
+        destroy the particle in position<_noop>.
+        create a particle in position<iface>.
+        create a particle in position<iface>::action</inner>::position<extra>.
+        create a particle in position<iface>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<run>.
+    }
+}

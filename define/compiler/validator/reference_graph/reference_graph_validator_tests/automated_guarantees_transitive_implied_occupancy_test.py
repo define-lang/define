@@ -330,9 +330,9 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
         all_diags[0].position_name
         == "position<host>::position</mid>::action</nested>::position<iface>::position</x>"
     )
-    assert all_diags[0].populated_at.line == 8
+    assert all_diags[0].populated_at.line == 9
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 8
+    assert all_diags[0].populated_at.end_line == 9
     assert all_diags[0].populated_at.end_column == 76
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 

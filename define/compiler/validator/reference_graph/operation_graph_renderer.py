@@ -120,6 +120,8 @@ def _has_dependency_path(
     return False
 
 
+# TODO: Return only edges reachable from a starting action, defaulting to /test
+# unless the caller specifies a different action.
 def action_graph(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> list[tuple[str, str]]:

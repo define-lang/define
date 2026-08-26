@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 # diagnostics against the exact source lines supplied to the formatter.
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_HOLDER = "action<my.domain.com:my_lib:/holder>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _OUTER_IMPLIED = "action<my.domain.com:my_lib:/outer_implied>"
 _TRIGGERED_BY_OUTER_IMPLIED = "action<my.domain.com:my_lib:/triggered_by_outer_implied>"
@@ -78,6 +79,8 @@ _FILES = {
         "        move the particle in position<_holder> to position<iface>.\n"
         "        define the position<_noop>.\n"
         "        create a particle in position<_noop>.\n"
+        "        destroy the particle in position<_noop>.\n"
+        "        destroy the particle in position<run>.\n"
         "    }\n"
         "}\n"
     ),
@@ -186,6 +189,8 @@ _FILES = {
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        move the particle in action</holder>::position<iface> to action</outer_implied>::position<incoming>.\n"
+        "        create a particle in action</holder>::position<iface>.\n"
+        "        create a particle in action</holder>::position<run>.\n"
         "        create a particle in action</outer_implied>::position<run>.\n"
         "    }\n"
         "}\n"
@@ -195,9 +200,13 @@ _FILES = {
         "    it also assigns the action</holder>.\n"
         "    it also assigns the action</outer>.\n"
         "    define the position<run>.\n"
+        "    define the position<used_holder_iface>.\n"
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
+        "        create a particle in action</holder>::position<iface>.\n"
+        "        create a particle in action</holder>::position<run>.\n"
+        "        move the particle in action</holder>::position<iface> to position<used_holder_iface>.\n"
         "        create a particle in action</holder>::position<iface>.\n"
         "        create a particle in action</outer>::position<run>.\n"
         "    }\n"
@@ -223,7 +232,9 @@ def test_destruction_contract_traces_every_trigger_hop(
         (_DO_NOTHING, _EMPTY_P2),
         (_TRIGGERED_BY_OUTER_IMPLIED, _DO_NOTHING),
         (_OUTER_IMPLIED, _TRIGGERED_BY_OUTER_IMPLIED),
+        (_OUTER, _HOLDER),
         (_OUTER, _OUTER_IMPLIED),
+        (_TEST, _HOLDER),
         (_TEST, _OUTER),
     ]
     all_diags = result.program_result.all_diagnostics
@@ -272,7 +283,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # holder::iface constraint and the chain running through every trigger hop
     # down to 'do_destruction'.
     assert d2_diag.format(_FILES["outer.dfn"].splitlines()) == textwrap.dedent("""\
-        File "outer.dfn", line 9, column 30
+        File "outer.dfn", line 11, column 30
                 create a particle in action</outer_implied>::position<run>.
                                      ^
         'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs, and it is not occupied.
@@ -283,7 +294,7 @@ def test_destruction_contract_traces_every_trigger_hop(
           the particle in 'action</outer_implied>::position<incoming>' comes from here:
             File "outer.dfn", line 8, column 30
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/outer_implied>':
-            File "outer.dfn", line 9, column 30
+            File "outer.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
             File "outer_implied.dfn", line 14, column 52
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':

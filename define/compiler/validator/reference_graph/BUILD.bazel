@@ -287,7 +287,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
     ],
 )
 
@@ -369,7 +368,6 @@ py_library(
     deps = [
         ":action_contract",
         ":particle_tracker",
-        ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],

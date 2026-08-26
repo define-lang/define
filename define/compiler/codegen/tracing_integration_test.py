@@ -71,6 +71,7 @@ _RUNTIME_CASES_WITH_REPEATED_DIRECT_OPERATION_DEPENDENCIES = {
     "caller_introduces_three_occupied_children",
     "caller_introduces_three_occupied_children_between_empty_children",
     "caller_known_child_destroy_and_destructor_precede_parent_destroy",
+    "caller_known_destructor_precedes_destroyer_known_child_destroy",
     "caller_moves_callee_guaranteed_particle_before_destroying",
     "caller_operation_waits_on_callee_move_output",
     "creator_nonoverlapping_child_order_is_canonical_across_three_actions",
@@ -113,6 +114,7 @@ _RUNTIME_CASES_WITH_REPEATED_DIRECT_OPERATION_DEPENDENCIES = {
     "repeated_executions_each_destroy_two_particles",
     "reused_callee_receives_distinct_destruction_connections_per_execution",
     "separate_child_contract_paths",
+    "two_caller_known_destructors_precede_same_child_destroy",
     "two_destruction_facts_with_distinct_destructor_sets",
 }
 _RUNTIME_OPERATION_DEPENDENCY_RELATION_MISMATCH_CASES = {

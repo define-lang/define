@@ -330,8 +330,8 @@ def test_create_in_implied_action_interface_position_propagates(
     assert all_diags[0].location.end_column == 74
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</foo>::position<iface>"
-    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_line == 8
     assert all_diags[0].populated_at.end_column == 59
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")

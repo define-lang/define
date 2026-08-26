@@ -15,12 +15,6 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _RUNNER = "action<my.domain.com:my_lib:/runner>"
 _TEST = "action<my.domain.com:my_lib:/test>"
 _WORKER = "action<my.domain.com:my_lib:/worker>"
-_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED = (
-    "Untriggered implied actions are not detected yet."
-)
-_NON_TRIGGER_ACTION_REFERENCE_CREATES_LIVENESS = (
-    "Referencing an interface position currently makes its action alive."
-)
 
 # --- Dead Child Positions ---
 
@@ -333,11 +327,6 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     assert all_diags[0].location.column == 28
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=_NON_TRIGGER_ACTION_REFERENCE_CREATES_LIVENESS,
-)
 def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -354,11 +343,6 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     assert action_graph(result.operation_graphs) == []
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
-)
 def test_implied_action_referenced_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -374,12 +358,7 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     assert action_graph(result.operation_graphs) == []
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
-)
-def test_implied_destructor_not_triggered_by_implying_action_is_dead(
+def test_destructor_cannot_be_implied(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -394,11 +373,6 @@ def test_implied_destructor_not_triggered_by_implying_action_is_dead(
     assert action_graph(result.operation_graphs) == []
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
-)
 def test_nested_trigger_marks_only_final_implied_action_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -417,11 +391,6 @@ def test_nested_trigger_marks_only_final_implied_action_alive(
     ]
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=_UNTRIGGERED_IMPLIED_ACTIONS_NOT_DETECTED,
-)
 def test_nested_non_trigger_marks_no_implied_action_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

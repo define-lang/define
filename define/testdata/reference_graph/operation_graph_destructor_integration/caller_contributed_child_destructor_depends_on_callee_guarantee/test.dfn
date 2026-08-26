@@ -1,6 +1,6 @@
-# The caller-contributed sibling follows the callee-known maker quality. The
-# caller-only destructor operates on both particles, so its two operation chains
-# must finish before their respective destruction branches.
+# /destroyer shuttles the /maker guarantee into /required. The caller-only
+# Destructor operates on that particle and the caller-contributed sibling, so
+# both operation chains must finish before destruction.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {
@@ -10,6 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             it may only contain particles where {
                 it has the action</maker>.
                 it has the action</destruct>.
+                it has the position</required>.
                 it has the position</sibling>.
             }
         }

@@ -4,13 +4,13 @@ from typing import ClassVar, final
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.maker
+import local.my_domain_com.my_lib.required
 import local.my_domain_com.my_lib.sibling
 
 
 class Destruct(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.maker.Maker,
+        local.my_domain_com.my_lib.required.Required,
         local.my_domain_com.my_lib.sibling.Sibling,
     )
 
@@ -18,8 +18,8 @@ class Destruct(literal.Action):
 @final
 class DestructGuarantees:
     def __init__(self):
+        self.guarantee_global_position_required: list[literal.Task] = []
         self.guarantee_global_position_sibling: list[literal.Task] = []
-        self.guarantee_action_maker__position_result: list[literal.Task] = []
 
 
 @final
@@ -42,26 +42,22 @@ class DestructExecution:
             scheduler=self.scheduler,
         )
 
-    def accept_for_empty_rule_action_maker__position_result(self):
-        self.move_action_maker__position_result_to_position_held_result()
+    def accept_for_empty_rule_global_position_required(self):
+        self.move_global_position_required_to_position_held_result()
 
     def accept_for_empty_rule_global_position_sibling(self):
         self.move_global_position_sibling_to_position_held_sibling()
 
-    def move_action_maker__position_result_to_position_held_result(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
-        ).get_interface_position(
-            "position<result>"
+    def move_global_position_required_to_position_held_result(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_result)
         self.local_position_held_result.move_particle_to(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.maker.Maker
-            ).get_interface_position(
-                "position<result>"
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_action_maker__position_result)
+        self.scheduler.continue_with(self.guarantees.guarantee_global_position_required)
 
     def move_global_position_sibling_to_position_held_sibling(self):
         self.action.on_particle.get_position(

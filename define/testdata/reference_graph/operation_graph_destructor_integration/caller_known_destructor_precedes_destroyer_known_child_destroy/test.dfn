@@ -1,5 +1,6 @@
-# Only the caller knows about /destruct, while /destroyer knows the /maker child
-# positions. The Destructor must finish before /destroyer destroys /maker::result.
+# Only the caller knows about /destruct. /destroyer shuttles the /maker
+# guarantee into /required, so the Destructor must finish before /destroyer
+# destroys that particle.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {
@@ -9,6 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             it may only contain particles where {
                 it has the action</maker>.
                 it has the action</destruct>.
+                it has the position</required>.
             }
         }
         create a particle in position<source>.

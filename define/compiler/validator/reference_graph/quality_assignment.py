@@ -1,15 +1,12 @@
-"""Assigned particle qualities and their source-order implication paths."""
+"""Assigned particle qualities in semantic assignment order."""
 
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
 from functools import cached_property
 
-from define.compiler.data_structures import typed_name_dict
-
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Sequence
+    from collections.abc import Callable, Iterator
 
     from define.compiler import ast
 
@@ -19,51 +16,15 @@ if typing.TYPE_CHECKING:
     ]
 
 
-@dataclass(frozen=True, slots=True)
-class QualityAssignment:
-    """A quality assigned by a constraint written on the particle's position."""
-
-    quality: ast.GlobalTypedNameReference
-
-    def assignment_path(self) -> Sequence[QualityAssignment]:
-        """Return the assignments from the direct constraint through this assignment."""
-        return (self,)
-
-
-@dataclass(frozen=True, slots=True)
-class ImpliedQualityAssignment(QualityAssignment):
-    """A quality assigned by another assigned quality."""
-
-    caused_by: QualityAssignment
-
-    @typing.override
-    def assignment_path(self) -> Sequence[QualityAssignment]:
-        """Return the assignments from the direct constraint through this assignment."""
-        path: list[QualityAssignment] = []
-        current: QualityAssignment = self
-        while isinstance(current, ImpliedQualityAssignment):
-            path.append(current)
-            current = current.caused_by
-        path.append(current)
-        path.reverse()
-        return path
-
-
 @typing.final
 class QualityAssignments:
     """An immutable, ordered collection of qualities assigned to a particle."""
 
-    assignments: tuple[QualityAssignment, ...]
-    _direct_overrides: tuple[QualityAssignment, ...]
+    assignments: tuple[ast.GlobalTypedNameReference, ...]
 
-    def __init__(
-        self,
-        assignments: tuple[QualityAssignment, ...],
-        direct_overrides: tuple[QualityAssignment, ...] = (),
-    ):
-        """Initialize from ordered assignment records and direct overrides."""
+    def __init__(self, assignments: tuple[ast.GlobalTypedNameReference, ...]):
+        """Initialize from ordered assigned qualities."""
         self.assignments = assignments
-        self._direct_overrides = direct_overrides
 
     @classmethod
     def expand_implications(
@@ -74,76 +35,45 @@ class QualityAssignments:
         """Expand direct assignments depth-first in assignment order."""
         if not direct:
             return EMPTY_QUALITY_ASSIGNMENTS
-        seen: dict[str, QualityAssignment] = {}
-        assignments: list[QualityAssignment] = []
-        direct_overrides: list[QualityAssignment] = []
+        seen: set[str] = set()
+        assignments: list[ast.GlobalTypedNameReference] = []
 
         for direct_quality in direct:
-            direct_assignment = QualityAssignment(direct_quality)
-            existing = seen.get(direct_quality.full_typed_name)
-            if existing is not None:
-                direct_overrides.append(direct_assignment)
+            if direct_quality.full_typed_name in seen:
                 continue
-            seen[direct_quality.full_typed_name] = direct_assignment
-            cls._expand_depth_first(
-                direct_assignment, implications_for, seen, assignments
-            )
-        return cls(tuple(assignments), tuple(direct_overrides))
+            seen.add(direct_quality.full_typed_name)
+            cls._expand_depth_first(direct_quality, implications_for, seen, assignments)
+        return cls(tuple(assignments))
 
     @staticmethod
     def _expand_depth_first(
-        direct_assignment: QualityAssignment,
+        quality: ast.GlobalTypedNameReference,
         implications_for: _ImplicationsFor,
-        seen: dict[str, QualityAssignment],
-        assignments: list[QualityAssignment],
+        seen: set[str],
+        assignments: list[ast.GlobalTypedNameReference],
     ):
-        """Expand one direct assignment in semantic assignment order."""
-        for implied_quality in implications_for(direct_assignment.quality):
+        """Expand one assignment in semantic assignment order."""
+        for implied_quality in implications_for(quality):
             implied_name = implied_quality.full_typed_name
             if implied_name in seen:
                 continue
-            implied_assignment = ImpliedQualityAssignment(
-                implied_quality, direct_assignment
-            )
-            seen[implied_name] = implied_assignment
+            seen.add(implied_name)
             QualityAssignments._expand_depth_first(
-                implied_assignment, implications_for, seen, assignments
+                implied_quality, implications_for, seen, assignments
             )
-        assignments.append(direct_assignment)
+        assignments.append(quality)
 
     @cached_property
-    def _preferred_assignments(
-        self,
-    ) -> typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, QualityAssignment]:
-        assignment_by_quality: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameReference, QualityAssignment
-        ] = typed_name_dict.TypedNameDict()
-        for assignment in self.assignments:
-            assignment_by_quality[assignment.quality] = assignment
-        for assignment in self._direct_overrides:
-            assignment_by_quality[assignment.quality] = assignment
-        return assignment_by_quality
-
-    def preferred_assignment_for(
-        self, quality: ast.GlobalTypedNameReference
-    ) -> QualityAssignment:
-        """Return the assignment preferred for diagnostics.
-
-        A direct assignment is preferred over an earlier implied assignment of
-        the same quality. Otherwise, this returns the record in ``assignments``,
-        which retains the first source-order implication path. Preferring a later
-        direct assignment does not replace that record in ``assignments`` or
-        change the paths of its descendants.
-        """
-        return self._preferred_assignments[quality]
+    def _quality_names(self) -> frozenset[str]:
+        return frozenset(quality.full_typed_name for quality in self.assignments)
 
     def has_quality(self, quality: ast.GlobalTypedNameReference) -> bool:
         """Return whether the quality is assigned."""
-        return quality in self._preferred_assignments
+        return quality.full_typed_name in self._quality_names
 
     def __iter__(self) -> Iterator[ast.GlobalTypedNameReference]:
         """Iterate over assigned qualities in semantic assignment order."""
-        return (assignment.quality for assignment in self.assignments)
+        return iter(self.assignments)
 
 
 EMPTY_QUALITY_ASSIGNMENTS = QualityAssignments(())

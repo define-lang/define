@@ -51,7 +51,7 @@ def test_duplicate_direct_constraint_triggers_action_once(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
-            "line": 6,
+            "line": 5,
             "column": 24,
             "file_path": "test.dfn",
         },

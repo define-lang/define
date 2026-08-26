@@ -8,8 +8,9 @@ define the potential action<my.domain.com:my_lib:/sub> {
     it happens when {
         the position<run> has a particle.
     } and it does {
-        create a particle in position<iface>.
-        define the position<_noop>.
-        create a particle in position<_noop>.
+        define the position<_holder>.
+        move the particle in position<iface>::position</child> to position<_holder>.
+        move the particle in position<_holder> to position<iface>::position</child>.
+        destroy the particle in position<run>.
     }
 }

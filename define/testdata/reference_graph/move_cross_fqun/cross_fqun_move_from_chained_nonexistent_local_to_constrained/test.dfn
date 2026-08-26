@@ -14,6 +14,7 @@ define the potential action<mv:define-lang.org:parent:/test> {
             }
         }
         create a particle in position<src>.
+        create a particle in position<src>::action<mv:define-lang.org:child:/act>::position<trigger>.
         move the particle in position<src>::action<mv:define-lang.org:child:/act>::position<no_such> to position<dest>.
         create a particle in position<dest>.
         create a particle in position<dest>::position<mv:define-lang.org:child:/quality>.

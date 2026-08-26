@@ -110,6 +110,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "@pypi//pytest",
     ],
 )
 
@@ -368,6 +369,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "@pypi//pytest",
     ],
 )
 
@@ -650,7 +652,6 @@ py_test(
     srcs = ["error_messages_destruction_test.py"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
     ],
 )
 
@@ -810,6 +811,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "@pypi//pytest",
     ],
 )
 
@@ -886,6 +888,7 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
+        "@pypi//pytest",
     ],
 )
 

@@ -11,5 +11,6 @@ define the potential action<my.domain.com:my_lib:/nested> {
         create a particle in position<iface>.
         create a particle in position<iface>::position</x>.
         destroy the particle in position<iface>.
+        destroy the particle in position<trigger_pos>.
     }
 }

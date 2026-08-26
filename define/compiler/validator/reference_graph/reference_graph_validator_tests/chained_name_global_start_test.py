@@ -190,7 +190,7 @@ class TestImpliedQualityChainStart:
         )
         assert all_diags[0].element_name == "position<not_iface>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
-        assert all_diags[0].location.line == 7
+        assert all_diags[0].location.line == 8
         assert all_diags[0].location.column == 42
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 

@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/destruct> {
-    it also assigns the action</maker>.
+    it also assigns the position</required>.
     it also assigns the position</sibling>.
     it happens when {
         this particle is being destroyed.
     } and it does {
         define the position<held_result>.
         define the position<held_sibling>.
-        move the particle in action</maker>::position<result> to position<held_result>.
-        move the particle in position<held_result> to action</maker>::position<result>.
+        move the particle in position</required> to position<held_result>.
+        move the particle in position<held_result> to position</required>.
         move the particle in position</sibling> to position<held_sibling>.
         move the particle in position<held_sibling> to position</sibling>.
     }

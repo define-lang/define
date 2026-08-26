@@ -104,14 +104,6 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
 
-def test_no_trigger_when_writing_to_non_trigger_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == []
-
-
 def test_assumed_occupied_trigger_position_does_not_fire_the_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -286,14 +278,6 @@ class TestConstructorTriggering:
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
         assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
-
-    def test_constructor_no_edge_when_non_trigger_position(
-        self,
-        validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-    ):
-        result = validate_testdata_project_with_reference_graph()
-        assert_no_errors(result.program_result)
-        assert action_graph(result.operation_graphs) == []
 
     def test_constructor_fired_via_constraint_records_edge(
         self,

@@ -828,11 +828,6 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
                     f"'{step.triggered_quality_name}' is assigned to"
                     f" '{step.enclosing_quality_name}'"
                 )
-            case action_contract.PropagationKind.QUALITY_IMPLIED:
-                return (
-                    f"'{step.enclosing_quality_name}' also assigns"
-                    f" '{step.triggered_quality_name}'"
-                )
             case action_contract.PropagationKind.CONSTRUCTOR_TRIGGER:
                 return (
                     f"'{step.enclosing_quality_name}' creates a particle, triggering"

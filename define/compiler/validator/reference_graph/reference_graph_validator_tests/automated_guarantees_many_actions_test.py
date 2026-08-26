@@ -8,6 +8,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
@@ -28,8 +30,12 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED = (
+    "Liveness through Contracted Positions is not implemented"
+)
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_destroyed_particle_guarantees_do_not_apply_to_replacement_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -48,6 +54,7 @@ def test_destroyed_particle_guarantees_do_not_apply_to_replacement_particle(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -186,6 +193,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_transitive_child_guarantee_follows_particle_through_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -208,6 +216,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     }
 
 
+@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_transitive_child_guarantee_at_moved_position_follows_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

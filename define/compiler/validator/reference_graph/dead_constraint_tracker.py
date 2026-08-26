@@ -28,6 +28,13 @@ class DeadConstraintCandidate:
         return (self.position.full_typed_name, self.constraint.full_typed_name)
 
 
+# TODO: Move requirements currently create liveness immediately, which lets
+# circular moves make otherwise-dead constraints appear alive. Record backward
+# dependencies from destination constraints to the moved particle's origin
+# constraints instead. References and action contract requirements or exposure
+# should seed liveness; moves should only propagate that liveness so chains
+# through local and child positions work while unseeded cycles stay dead.
+# TODO: Decide whether implied constructors are allowed.
 class DeadConstraintTracker:
     """The DLP 42 dead-constraint ledger.
 
@@ -37,6 +44,9 @@ class DeadConstraintTracker:
     by a move, or written on an interface position the action exposes as output.
     Whatever remains after a definition's body is analyzed is dead code.
 
+    Implied actions must be triggered to be alive (which means destructors can
+    never be implied).
+
     The tracker holds no particle or scope state of its own. The validator feeds
     it the facts it cannot compute (a moved particle's origin, the interface
     positions an action exposes as output, the resolved definitions behind a
@@ -45,14 +55,30 @@ class DeadConstraintTracker:
 
     def __init__(self):
         """Initialize an empty ledger."""
-        self._candidates: dict[tuple[str, str], DeadConstraintCandidate] = {}
+        self._position_constraint_candidates: dict[
+            tuple[str, str], DeadConstraintCandidate
+        ] = {}
+        self._action_constraint_candidates: dict[
+            tuple[str, str], DeadConstraintCandidate
+        ] = {}
+        self._implied_action_candidates: dict[str, ast.GlobalTypedNameReference] = {}
 
     def register_constraint(
         self, position: ast.TypedName, constraint: ast.GlobalTypedNameReference
     ):
         """Register a directly-written constraint as a pending-dead candidate."""
         candidate = DeadConstraintCandidate(position=position, constraint=constraint)
-        self._candidates[candidate.key] = candidate
+        if constraint.name_type == ast.NameType.ACTION:
+            self._action_constraint_candidates[candidate.key] = candidate
+        else:
+            self._position_constraint_candidates[candidate.key] = candidate
+
+    def register_implied_action(
+        self,
+        implied_action: ast.GlobalTypedNameReference,
+    ):
+        """Register an action assigned by a Quality Implication Statement."""
+        self._implied_action_candidates[implied_action.full_typed_name] = implied_action
 
     def register_position_constraints(
         self,
@@ -78,32 +104,56 @@ class DeadConstraintTracker:
                 continue
             self.register_constraint(position_definition.typed_name, constraint)
 
-    def has_pending(self) -> bool:
-        """Whether any candidate is still pending (not yet proven alive)."""
-        return bool(self._candidates)
+    def has_position_constraint_candidates(self) -> bool:
+        """Whether a position reference or guarantee can mark a candidate alive."""
+        return bool(self._position_constraint_candidates)
 
-    def _remove(self, key: tuple[str, str]):
-        """Drop a candidate once it is proven alive."""
-        if key in self._candidates:
-            del self._candidates[key]
+    def _has_action_trigger_candidates(self) -> bool:
+        """Whether an action trigger can mark a candidate alive."""
+        return bool(
+            self._action_constraint_candidates or self._implied_action_candidates
+        )
 
-    def mark_alive(self, chain: ast.ChainedName):
-        """Keep a constraint alive when a chain references it as a child position or triggers it as an action.
+    def has_move_candidates(self) -> bool:
+        """Whether a move requirement can mark a candidate alive."""
+        return bool(
+            self._position_constraint_candidates or self._action_constraint_candidates
+        )
 
-        A child position stays alive when referenced through any chain rooted at
-        its bearer. An action is a direct constraint only when triggered as
-        exactly ``bearer::action``; a deeper chain triggers an action on some
-        child, and merely filling an action's interface position is not a trigger.
-        """
-        if not self._candidates or len(chain.typed_names) < 2:
+    def mark_position_alive(self, chain: ast.PositionReference):
+        """Keep a position constraint alive when a chain references it."""
+        if not self.has_position_constraint_candidates():
             return
-        bearer = chain.typed_names[0]
+        if len(chain.typed_names) < 2:
+            return
+        position = chain.typed_names[0]
         constraint = chain.typed_names[1]
-        if not isinstance(bearer, ast.LocalTypedNameReference):
+        if not isinstance(position, ast.LocalTypedNameReference):
             return
-        if constraint.name_type == ast.NameType.ACTION and len(chain.typed_names) != 2:
+        _ = self._position_constraint_candidates.pop(
+            (position.full_typed_name, constraint.full_typed_name), None
+        )
+
+    def mark_action_alive(self, chain: ast.ActionReference):
+        """Keep an action constraint or implication alive when it is triggered.
+
+        ``chain`` ends with the triggered action and does not include its trigger
+        position. The final action can be an implied-action candidate in a chain of
+        any length. A directly-written action constraint is eligible only when the
+        chain consists of the local or interface position followed by that action.
+        """
+        if not self._has_action_trigger_candidates():
             return
-        self._remove((bearer.full_typed_name, constraint.full_typed_name))
+        action = chain.typed_names[-1]
+        _ = self._implied_action_candidates.pop(action.full_typed_name, None)
+        if len(chain.typed_names) != 2:
+            return
+        position = chain.typed_names[0]
+        if not isinstance(position, ast.LocalTypedNameReference):
+            return
+        _ = self._action_constraint_candidates.pop(
+            (position.full_typed_name, action.full_typed_name), None
+        )
 
     def mark_move_required(
         self,
@@ -118,24 +168,43 @@ class DeadConstraintTracker:
         it implies a required quality is itself dead, and the spec wants the
         implied quality declared directly.
         """
+        if not self.has_move_candidates():
+            return
         origin_name = origin.canonical_chained_name
         for quality in required:
-            self._remove((origin_name, quality.full_typed_name))
+            key = (origin_name, quality.full_typed_name)
+            _ = self._position_constraint_candidates.pop(key, None)
+            _ = self._action_constraint_candidates.pop(key, None)
 
-    def mark_constraints_alive(
+    def mark_position_constraints_alive(
         self,
         position: ast.TypedName,
         constraints: tuple[ast.GlobalTypedNameReference, ...],
     ):
-        """Mark alive every directly-written constraint on a position.
+        """Mark alive every directly-written position constraint on a position.
 
-        Used for an interface position the action's contract guarantees as output
-        (it ends occupied), whose constraints therefore define a particle a caller
-        consumes -- the opposite of the "actions as containers" pattern.
+        When an action guarantees that an interface position is occupied, callers
+        can rely on its particle having every directly-written position quality.
+        Those position constraints are therefore alive even if the action contains
+        no chained name that references them.
         """
+        if not self.has_position_constraint_candidates():
+            return
         for constraint in constraints:
-            self._remove((position.full_typed_name, constraint.full_typed_name))
+            _ = self._position_constraint_candidates.pop(
+                (position.full_typed_name, constraint.full_typed_name), None
+            )
 
-    def dead_constraints(self) -> Iterable[DeadConstraintCandidate]:
-        """Return the candidates still pending: the dead constraints (DLP 42)."""
-        return self._candidates.values()
+    def dead_position_constraints(self) -> Iterable[DeadConstraintCandidate]:
+        """Return the dead directly-written position constraints (DLP 42)."""
+        return self._position_constraint_candidates.values()
+
+    def dead_action_constraints(self) -> Iterable[DeadConstraintCandidate]:
+        """Return the dead directly-written action constraints (DLP 42)."""
+        return self._action_constraint_candidates.values()
+
+    def untriggered_implied_actions(
+        self,
+    ) -> Iterable[ast.GlobalTypedNameReference]:
+        """Return implied actions not triggered by the action that implies them."""
+        return self._implied_action_candidates.values()

@@ -754,9 +754,21 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
             "test.move(source, /destroyer::parent)"
         ],
         "maker.create(result)": ["test.move(source, /destroyer::parent)"],
-        "destruct.move(/maker::result, held_result)": ["maker.create(result)"],
-        "destruct.move(held_result, /maker::result)": [
-            "destruct.move(/maker::result, held_result)"
+        "maker.destroy(trigger_pos)": ["destroyer.create(parent::/maker::trigger_pos)"],
+        "destroyer.move(parent::/maker::result, parent::/required)": [
+            "maker.create(result)"
+        ],
+        "destroyer.move(parent::/required, held_required)": [
+            "destroyer.move(parent::/maker::result, parent::/required)"
+        ],
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destruct.move(/required, held_result)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct.move(held_result, /required)": [
+            "destruct.move(/required, held_result)"
         ],
         "destruct.move(/sibling, held_sibling)": [
             "test.move(source, /destroyer::parent)"
@@ -764,23 +776,20 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
         "destruct.move(held_sibling, /sibling)": [
             "destruct.move(/sibling, held_sibling)"
         ],
-        # The caller-known destructor operates on this callee-guaranteed child
+        # The caller-known Destructor operates on this callee-guaranteed child
         # before the callee destroys it.
-        "destroyer.destroy(parent::/maker::result)": [
-            "destruct.move(held_result, /maker::result)"
+        "destroyer.destroy(parent::/required)": [
+            "destruct.move(held_result, /required)"
         ],
-        "destroyer.destroy(parent::/maker::trigger_pos)": [
-            "destroyer.create(parent::/maker::trigger_pos)"
-        ],
-        # The same destructor also operates on the later caller-contributed child
+        # The same Destructor also operates on the later caller-contributed child
         # before its contributed destruction fragment runs.
         "destroyer.destroy(parent::/sibling)": [
             "destruct.move(held_sibling, /sibling)"
         ],
         "destroyer.destroy(parent)": [
             "destroyer.destroy(parent::/sibling)",
-            "destroyer.destroy(parent::/maker::result)",
-            "destroyer.destroy(parent::/maker::trigger_pos)",
+            "maker.destroy(trigger_pos)",
+            "destroyer.destroy(parent::/required)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -799,21 +808,30 @@ def test_caller_known_destructor_precedes_destroyer_known_child_destroy(
             "test.move(source, /destroyer::parent)"
         ],
         "maker.create(result)": ["test.move(source, /destroyer::parent)"],
-        "destruct.move(/maker::result, held_result)": ["maker.create(result)"],
-        "destruct.move(held_result, /maker::result)": [
-            "destruct.move(/maker::result, held_result)"
+        "maker.destroy(trigger_pos)": ["destroyer.create(parent::/maker::trigger_pos)"],
+        "destroyer.move(parent::/maker::result, parent::/required)": [
+            "maker.create(result)"
         ],
-        # The caller-known Destructor's final Move fills /maker::result before
-        # its Destroy.
-        "destroyer.destroy(parent::/maker::result)": [
-            "destruct.move(held_result, /maker::result)"
+        "destroyer.move(parent::/required, held_required)": [
+            "destroyer.move(parent::/maker::result, parent::/required)"
         ],
-        "destroyer.destroy(parent::/maker::trigger_pos)": [
-            "destroyer.create(parent::/maker::trigger_pos)"
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        "destruct.move(/required, held_result)": [
+            "destroyer.move(held_required, parent::/required)"
+        ],
+        "destruct.move(held_result, /required)": [
+            "destruct.move(/required, held_result)"
+        ],
+        # The caller-known Destructor's final Move fills /required before its
+        # Destroy.
+        "destroyer.destroy(parent::/required)": [
+            "destruct.move(held_result, /required)"
         ],
         "destroyer.destroy(parent)": [
-            "destroyer.destroy(parent::/maker::result)",
-            "destroyer.destroy(parent::/maker::trigger_pos)",
+            "destroyer.destroy(parent::/required)",
+            "maker.destroy(trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -837,33 +855,42 @@ def test_two_caller_known_destructors_precede_same_child_destroy(
             "test.move(source, /destroyer::parent)"
         ],
         "maker.create(result)": ["test.move(source, /destroyer::parent)"],
-        # Both Destructors operate on /maker::result, so the ordinary position
+        "maker.destroy(trigger_pos)": ["destroyer.create(parent::/maker::trigger_pos)"],
+        "destroyer.move(parent::/maker::result, parent::/required)": [
+            "maker.create(result)"
+        ],
+        "destroyer.move(parent::/required, held_required)": [
+            "destroyer.move(parent::/maker::result, parent::/required)"
+        ],
+        "destroyer.move(held_required, parent::/required)": [
+            "destroyer.move(parent::/required, held_required)"
+        ],
+        # Both Destructors operate on /required, so the ordinary position
         # dependency rules serialize them in reverse quality-assignment order.
-        "destruct_a.move(/maker::result, held_result)": [
-            "destruct_b.move(held_result, /maker::result)"
+        "destruct_b.move(/required, held_result)": [
+            "destroyer.move(held_required, parent::/required)"
         ],
-        "destruct_a.move(held_result, /maker::result)": [
-            "destruct_a.move(/maker::result, held_result)"
+        "destruct_b.move(held_result, /required)": [
+            "destruct_b.move(/required, held_result)"
         ],
-        "destruct_b.move(/maker::result, held_result)": ["maker.create(result)"],
-        "destruct_b.move(held_result, /maker::result)": [
-            "destruct_b.move(/maker::result, held_result)"
+        "destruct_a.move(/required, held_result)": [
+            "destruct_b.move(held_result, /required)"
+        ],
+        "destruct_a.move(held_result, /required)": [
+            "destruct_a.move(/required, held_result)"
         ],
         # The final Destructor's last Move fills the child position before the
         # destruction cascade in /destroyer destroys its particle.
-        "destroyer.destroy(parent::/maker::result)": [
-            "destruct_a.move(held_result, /maker::result)",
-        ],
-        "destroyer.destroy(parent::/maker::trigger_pos)": [
-            "destroyer.create(parent::/maker::trigger_pos)"
+        "destroyer.destroy(parent::/required)": [
+            "destruct_a.move(held_result, /required)"
         ],
         "destroyer.destroy(parent::/sibling)": [
             "test.move(source, /destroyer::parent)"
         ],
         "destroyer.destroy(parent)": [
             "destroyer.destroy(parent::/sibling)",
-            "destroyer.destroy(parent::/maker::result)",
-            "destroyer.destroy(parent::/maker::trigger_pos)",
+            "maker.destroy(trigger_pos)",
+            "destroyer.destroy(parent::/required)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
