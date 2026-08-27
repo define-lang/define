@@ -491,6 +491,7 @@ class ActionPostorderValidator:
             return
         action_chain = destructor.position.with_action_suffix(quality)
         requirements_in_caller = contract.requirements_in_caller(action_chain)
+        self._mark_callee_contract_constraints_alive(requirements_in_caller, scope)
         self._propagate_action_requirements(
             action_chain,
             scope,
@@ -546,6 +547,11 @@ class ActionPostorderValidator:
         if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
+        trigger_particle = self._tracker.get_occupant(position)
+        self._mark_contract_position_constraints_alive(
+            position, trigger_particle, scope
+        )
+
         action_chain = position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError(f"no action in chain: {position.source_chained_name}")
@@ -553,7 +559,7 @@ class ActionPostorderValidator:
         self._fire_triggered_action(
             contract,
             action_chain,
-            self._tracker.get_occupant(position).last_position,
+            trigger_particle.last_position,
             scope,
         )
 
@@ -571,6 +577,7 @@ class ActionPostorderValidator:
         # allocation, so compute it once here and hand the same objects to all
         # three rather than rebuilding it three times per requirement per trigger.
         requirements_in_caller = contract.requirements_in_caller(action_chain)
+        self._mark_callee_contract_constraints_alive(requirements_in_caller, scope)
         self._propagate_action_requirements(
             action_chain,
             scope,
@@ -586,6 +593,14 @@ class ActionPostorderValidator:
             contract,
             action_chain,
         )
+        current_position = action_chain.parent_position()
+        origin_position = (
+            self._particle_origin_position(current_position)
+            if current_position is not None
+            else None
+        )
+        action = action_chain.get_last_action()
+        self._dead_tracker.mark_action_alive(action, current_position, origin_position)
         _ = self._tracker.trigger_action(
             action_chain,
             contract.guarantees,
@@ -594,11 +609,10 @@ class ActionPostorderValidator:
             is_destructor=False,
             destruction_contract_contributions=destruction_contract_contributions,
         )
-        self._dead_tracker.mark_action_alive(action_chain)
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
-                target=action_chain.typed_names[-1].full_typed_name,
+                target=action.full_typed_name,
             )
         )
 
@@ -1367,11 +1381,6 @@ class ActionPostorderValidator:
         target_required_qualities, _ = self._get_direct_required_qualities(
             to_pos, scope
         )
-        # DLP 42: a constraint the destination requires is required for the
-        # move, so it is marked alive against the moved particle's origin position.
-        self._mark_move_required_constraints_alive(
-            from_pos, target_required_qualities or ()
-        )
         move_diagnostics = self._executor.execute_move(
             particle_operation.Move(
                 source=from_pos,
@@ -1393,7 +1402,7 @@ class ActionPostorderValidator:
 
         Marks the chain's occupancy state as ERROR in the tracker if validation fails.
         """
-        self._dead_tracker.mark_position_alive(chain)
+        self._mark_referenced_position_constraints_alive(chain)
         if len(chain.typed_names) < 2:
             return
         elements = chain.typed_names
@@ -1543,20 +1552,68 @@ class ActionPostorderValidator:
         )
         self._tracker.mark_error(chain)
 
-    def _mark_move_required_constraints_alive(
+    def _particle_origin_position(
+        self, position: ast.PositionReference
+    ) -> ast.PositionReference | None:
+        occupancy = self._tracker.get_occupancy_info(position)
+        if occupancy.occupant is None:
+            return None
+        return occupancy.occupant.origin_position
+
+    def _mark_referenced_position_constraints_alive(self, chain: ast.PositionReference):
+        if not self._dead_tracker.has_position_constraint_candidates():
+            return
+        parent_position_name_count: int | None = None
+        for name_index, typed_name in enumerate(chain.typed_names):
+            if (
+                parent_position_name_count is not None
+                and isinstance(typed_name, ast.GlobalTypedNameReference)
+                and typed_name.name_type == ast.NameType.POSITION
+            ):
+                current_position = chain.position_prefix(parent_position_name_count)
+                self._dead_tracker.mark_position_alive(
+                    current_position,
+                    self._particle_origin_position(current_position),
+                    typed_name,
+                )
+            if typed_name.name_type == ast.NameType.POSITION:
+                parent_position_name_count = name_index + 1
+
+    def _mark_callee_contract_constraints_alive(
         self,
-        from_pos: ast.PositionReference,
-        target_required: tuple[ast.GlobalTypedNameReference, ...],
+        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Tell the ledger which of the moved particle's origin constraints the destination requires (DLP 42)."""
-        if not self._dead_tracker.has_move_candidates():
+        if not self._dead_tracker.has_constraint_candidates():
             return
-        if self._tracker.has_error_state(from_pos) or not self._tracker.is_occupied(
-            from_pos
-        ):
+        for requirement_in_caller in requirements_in_caller:
+            if (
+                requirement_in_caller.requirement.required_state
+                != action_contract.PositionOccupancyState.OCCUPIED
+            ):
+                continue
+            occupancy = self._tracker.get_occupancy_info(
+                requirement_in_caller.caller_position
+            )
+            if occupancy.occupant is None:
+                continue
+            self._mark_contract_position_constraints_alive(
+                requirement_in_caller.caller_position, occupancy.occupant, scope
+            )
+
+    def _mark_contract_position_constraints_alive(
+        self,
+        position: ast.PositionReference,
+        particle: particle_tracker.ParticleInfo,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        if not self._dead_tracker.has_constraint_candidates():
             return
-        origin = self._tracker.get_occupant(from_pos).origin_position
-        self._dead_tracker.mark_move_required(origin, target_required)
+        constraints, _ = self._get_direct_required_qualities(position, scope)
+        if constraints is not None:
+            self._dead_tracker.mark_contract_constraints_alive(
+                None, particle.origin_position, constraints
+            )
 
     def _check_dead_constraints(self):
         """Emit diagnostics for dead constraints and untriggered actions."""
@@ -1680,28 +1737,23 @@ class ActionPostorderValidator:
     def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
         return self._action_definition.interface_positions_by_name
 
-    def _mark_occupied_interface_constraints_alive(
-        self, own_guarantees: list[action_contract.GuaranteePair]
+    def _mark_own_contract_guarantees_alive(
+        self,
+        own_guarantees: list[action_contract.GuaranteePair],
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Mark alive constraints of interface positions guaranteed occupied at action completion (DLP 42).
-
-        Its constraints define a particle a caller consumes. Reading the actual
-        first-level guarantees is correct however the position became occupied,
-        with no separate occupancy bookkeeping.
-        """
-        if not self._dead_tracker.has_position_constraint_candidates():
+        """Keep origin position constraints alive through this action's final guarantees."""
+        if not self._dead_tracker.has_constraint_candidates():
             return
-        for key, guarantee in own_guarantees:
-            if len(key) != 1 or not isinstance(
-                guarantee,
-                action_contract.OccupiedByNewGuarantee
-                | action_contract.OccupiedByExistingGuarantee,
-            ):
+        for _, guarantee in own_guarantees:
+            final_position = guarantee.caused_by
+            origin_position = self._particle_origin_position(final_position)
+            if origin_position is None:
                 continue
-            interface_def = self._interface_positions.get(key[0])
-            if interface_def is not None:
-                self._dead_tracker.mark_position_constraints_alive(
-                    interface_def.typed_name, interface_def.constraint_typed_names
+            constraints, _ = self._get_direct_required_qualities(final_position, scope)
+            if constraints is not None:
+                self._dead_tracker.mark_contract_constraints_alive(
+                    final_position, origin_position, constraints
                 )
 
     @property
@@ -1790,10 +1842,8 @@ class ActionPostorderValidator:
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
 
-        # The contract's own guarantees identify occupied interface positions,
-        # which keeps their constraints alive (DLP 42).
         contract = self._generate_contract()
-        self._mark_occupied_interface_constraints_alive(contract.guarantees.own)
+        self._mark_own_contract_guarantees_alive(contract.guarantees.own, scope)
         self._check_dead_constraints()
         return contract
 

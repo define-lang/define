@@ -101,6 +101,10 @@ _FILES = {
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
+        "        create a particle in position<incoming>::position</p1>.\n"
+        "        destroy the particle in position<incoming>::position</p1>.\n"
+        "        create a particle in position<incoming>::position</p2>.\n"
+        "        destroy the particle in position<incoming>::position</p2>.\n"
         "        move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
@@ -118,6 +122,8 @@ _FILES = {
         "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
         "        create a particle in position<trigger_pos>::position</p1>.\n"
+        "        create a particle in position<trigger_pos>::position</p2>.\n"
+        "        destroy the particle in position<trigger_pos>::position</p2>.\n"
         "        move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
@@ -133,6 +139,8 @@ _FILES = {
         "    it happens when {\n"
         "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
+        "        create a particle in position<trigger_pos>::position</p2>.\n"
+        "        destroy the particle in position<trigger_pos>::position</p2>.\n"
         "        move the particle in position<trigger_pos> to action</empty_p2>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
@@ -250,7 +258,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # its contract is verified at outer_implied (the first caller that knows d1).
     # The full chain must trace all four trigger hops down to 'do_destruction'.
     assert d1_diag.format(_FILES["outer_implied.dfn"].splitlines()) == textwrap.dedent("""\
-        File "outer_implied.dfn", line 14, column 52
+        File "outer_implied.dfn", line 18, column 52
                 move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                            ^
         'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs, and it is not empty.
@@ -261,13 +269,13 @@ def test_destruction_contract_traces_every_trigger_hop(
           the particle in 'action</triggered_by_outer_implied>::position<trigger_pos>' comes from here:
             File "outer_implied.dfn", line 14, column 30
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
-            File "outer_implied.dfn", line 14, column 52
+            File "outer_implied.dfn", line 18, column 52
           'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' is filled here:
             File "triggered_by_outer_implied.dfn", line 12, column 30
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
-            File "triggered_by_outer_implied.dfn", line 13, column 55
+            File "triggered_by_outer_implied.dfn", line 15, column 55
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
-            File "do_nothing.dfn", line 11, column 55
+            File "do_nothing.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
             File "empty_p2.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':
@@ -296,11 +304,11 @@ def test_destruction_contract_traces_every_trigger_hop(
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/outer_implied>':
             File "outer.dfn", line 11, column 30
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
-            File "outer_implied.dfn", line 14, column 52
+            File "outer_implied.dfn", line 18, column 52
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
-            File "triggered_by_outer_implied.dfn", line 13, column 55
+            File "triggered_by_outer_implied.dfn", line 15, column 55
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
-            File "do_nothing.dfn", line 11, column 55
+            File "do_nothing.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
             File "empty_p2.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':

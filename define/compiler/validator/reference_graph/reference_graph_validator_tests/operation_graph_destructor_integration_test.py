@@ -575,11 +575,28 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
         "test.create(source)": [],
         "test.create(source::/marker_a)": ["test.create(source)"],
         "test.create(source::/marker_b)": ["test.create(source)"],
+        "test.create(source::/maybe_empty)": ["test.create(source)"],
+        "test.destroy(source::/maybe_empty)": ["test.create(source::/maybe_empty)"],
         "test.move(source, /middle::run)": [
             "test.create(source::/marker_a)",
             "test.create(source::/marker_b)",
+            "test.destroy(source::/maybe_empty)",
         ],
-        "middle.move(run, /destroyer::run)": ["test.move(source, /middle::run)"],
+        "middle.move(run::/marker_a, holder_a)": ["test.move(source, /middle::run)"],
+        "middle.move(holder_a, run::/marker_a)": [
+            "middle.move(run::/marker_a, holder_a)"
+        ],
+        "middle.move(run::/marker_b, holder_b)": ["test.move(source, /middle::run)"],
+        "middle.move(holder_b, run::/marker_b)": [
+            "middle.move(run::/marker_b, holder_b)"
+        ],
+        "middle.create(run::/maybe_empty)": ["test.move(source, /middle::run)"],
+        "middle.destroy(run::/maybe_empty)": ["middle.create(run::/maybe_empty)"],
+        "middle.move(run, /destroyer::run)": [
+            "middle.move(holder_a, run::/marker_a)",
+            "middle.move(holder_b, run::/marker_b)",
+            "middle.destroy(run::/maybe_empty)",
+        ],
         "destroyer.move(run::/marker_a, holder_a)": [
             "middle.move(run, /destroyer::run)"
         ],
@@ -592,6 +609,8 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
         "destroyer.move(holder_b, run::/marker_b)": [
             "destroyer.move(run::/marker_b, holder_b)"
         ],
+        # A directly known Destructor executes as an action even when the
+        # particles satisfying its occupied requirements came from the caller.
         "destruct.move(/marker_a, holder_a)": [
             "destroyer.move(holder_a, run::/marker_a)"
         ],
@@ -600,8 +619,12 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
             "destroyer.move(holder_b, run::/marker_b)"
         ],
         "destruct.move(holder_b, /marker_b)": ["destruct.move(/marker_b, holder_b)"],
+        # The destruction cascade waits for the Destructor to finish using each
+        # caller-supplied child before destroying it.
         "destroyer.destroy(run::/marker_a)": ["destruct.move(holder_a, /marker_a)"],
         "destroyer.destroy(run::/marker_b)": ["destruct.move(holder_b, /marker_b)"],
+        # Caller-known empty occupancy remains available when /destroyer creates
+        # a particle in /maybe_empty.
         "destroyer.create(run::/maybe_empty)": ["middle.move(run, /destroyer::run)"],
         "destroyer.destroy(run::/maybe_empty)": ["destroyer.create(run::/maybe_empty)"],
         "destroyer.destroy(run)": [
@@ -1090,7 +1113,18 @@ def test_destructor_known_only_two_callers_up(
             "test.create(source::/marker_a)",
             "test.create(source::/marker_b)",
         ],
-        "middle.move(run, /destroyer::run)": ["test.move(source, /middle::run)"],
+        "middle.move(run::/marker_a, holder_a)": ["test.move(source, /middle::run)"],
+        "middle.move(holder_a, run::/marker_a)": [
+            "middle.move(run::/marker_a, holder_a)"
+        ],
+        "middle.move(run::/marker_b, holder_b)": ["test.move(source, /middle::run)"],
+        "middle.move(holder_b, run::/marker_b)": [
+            "middle.move(run::/marker_b, holder_b)"
+        ],
+        "middle.move(run, /destroyer::run)": [
+            "middle.move(holder_a, run::/marker_a)",
+            "middle.move(holder_b, run::/marker_b)",
+        ],
         "destroyer.move(run::/marker_a, holder_a)": [
             "middle.move(run, /destroyer::run)"
         ],
@@ -1103,6 +1137,8 @@ def test_destructor_known_only_two_callers_up(
         "destroyer.move(holder_b, run::/marker_b)": [
             "destroyer.move(run::/marker_b, holder_b)"
         ],
+        # The Destruction Contract from /test propagates through /middle so its
+        # caller-known Destructor executes when /destroyer destroys the particle.
         "destruct.move(/marker_a, holder_a)": [
             "destroyer.move(holder_a, run::/marker_a)"
         ],
@@ -1111,6 +1147,8 @@ def test_destructor_known_only_two_callers_up(
             "destroyer.move(holder_b, run::/marker_b)"
         ],
         "destruct.move(holder_b, /marker_b)": ["destruct.move(/marker_b, holder_b)"],
+        # /destroyer's destruction cascade waits for the transitively contributed
+        # Destructor before destroying the caller-supplied children.
         "destroyer.destroy(run::/marker_a)": ["destruct.move(holder_a, /marker_a)"],
         "destroyer.destroy(run::/marker_b)": ["destruct.move(holder_b, /marker_b)"],
         "destroyer.destroy(run)": [
@@ -3025,9 +3063,12 @@ def test_callee_child_state_precedes_destructor_knowledge(
     expected = {
         "test.create(source)": [],
         "test.move(source, /middle::target)": ["test.create(source)"],
+        "test.create(/middle::trigger)": [],
         "middle.move(target, /destroyer::target)": [
             "test.move(source, /middle::target)"
         ],
+        "middle.create(/destroyer::trigger)": [],
+        "middle.destroy(trigger)": ["test.create(/middle::trigger)"],
         "destroyer.create(target::/occupied)": [
             "middle.move(target, /destroyer::target)"
         ],
@@ -3044,6 +3085,7 @@ def test_callee_child_state_precedes_destructor_knowledge(
             "destructor.destroy(/empty)",
             "destroyer.destroy(target::/occupied)",
         ],
+        "destroyer.destroy(trigger)": ["middle.create(/destroyer::trigger)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

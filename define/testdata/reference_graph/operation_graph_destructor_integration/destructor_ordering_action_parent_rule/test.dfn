@@ -14,7 +14,6 @@ define the potential action<my.domain.com:my_lib:/test> {
             it may only contain particles where {
                 it has the action</extra_destructor>.
                 it has the action</known_destructor>.
-                it has the position</marker>.
             }
         }
         create a particle in position<destroyer_particle>.

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
@@ -13,9 +11,6 @@ if TYPE_CHECKING:
     from define.compiler import conftest
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED = (
-    "Liveness through Contracted Positions is not implemented"
-)
 
 
 def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
@@ -56,7 +51,6 @@ def test_two_child_actions_trigger_in_parallel(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_action_execution_and_empty_rule_use_the_same_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -76,7 +70,6 @@ def test_action_execution_and_empty_rule_use_the_same_position(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_empty_rule_adds_a_caller_child_operation_to_a_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -102,7 +95,6 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -188,7 +180,6 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -218,7 +209,6 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -921,7 +911,6 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_transitive_child_guarantee_follows_particle_through_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1159,9 +1148,14 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
     expected = {
         "test.create(source)": [],
         "test.create(source::/known_empty)": ["test.create(source)"],
+        "test.create(source::/known_occupied)": ["test.create(source)"],
+        "test.destroy(source::/known_occupied)": [
+            "test.create(source::/known_occupied)"
+        ],
         "test.create(source::/maybe_child)": ["test.create(source)"],
         "test.move(source, /destroyer::run)": [
             "test.create(source::/known_empty)",
+            "test.destroy(source::/known_occupied)",
             "test.create(source::/maybe_child)",
         ],
         "destroyer.move(run, /target)": ["test.move(source, /destroyer::run)"],
@@ -1170,10 +1164,14 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
             "destroyer.move(/target, local)"
         ],
         "destroyer.create(local::/known_occupied)": ["destroyer.move(/target, local)"],
+        # The destruction cascade includes /maybe_child because the caller knows
+        # it is occupied, even though /destroyer does not constrain it on local.
         "destroyer.destroy(local::/maybe_child)": ["destroyer.move(/target, local)"],
         "destroyer.destroy(local::/known_occupied)": [
             "destroyer.create(local::/known_occupied)"
         ],
+        # The parent Destroy waits for the final operations representing both
+        # callee-known child states and the caller-dependent child.
         "destroyer.destroy(local)": [
             "destroyer.destroy(local::/maybe_child)",
             "destroyer.move(local::/known_empty, /destination)",

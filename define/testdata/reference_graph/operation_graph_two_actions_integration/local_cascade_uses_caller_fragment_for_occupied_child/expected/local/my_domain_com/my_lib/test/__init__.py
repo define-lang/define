@@ -5,7 +5,6 @@ from typing import ClassVar, final, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.a
-import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.triggered
 
 
@@ -45,7 +44,6 @@ class TestExecution:
             "position<source>",
             constraints=(
                 local.my_domain_com.my_lib.a.A,
-                local.my_domain_com.my_lib.b.B,
             ),
             scheduler=self.scheduler,
         )

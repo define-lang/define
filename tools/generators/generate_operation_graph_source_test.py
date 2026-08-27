@@ -59,7 +59,7 @@ class TestGenerateSourceLines:
         with pytest.raises(
             ValueError, match="independent_move_chain_length must be at least"
         ):
-            gen.generate_source_lines(independent_move_chain_length=1)
+            gen.generate_source_lines(independent_move_chain_length=2)
 
     def test_output_exercises_operation_graph_syntax(self):
         source = "\n".join(
@@ -71,7 +71,7 @@ class TestGenerateSourceLines:
                 pods=1,
                 retriggers=2,
                 independent_move_branches=2,
-                independent_move_chain_length=3,
+                independent_move_chain_length=5,
             )
         )
         assert "move the particle in position<rung_0> to position<rung_1>." in source
@@ -92,11 +92,19 @@ class TestGenerateSourceLines:
             in source
         )
         assert (
+            "move the particle in position<independent_workspace> to position<independent_source>."
+            in source
+        )
+        assert (
             "move the particle in position<independent_source> to position<independent_stage_0>."
             in source
         )
         assert (
-            "move the particle in position<independent_stage_0> to position<independent_workspace>."
+            "move the particle in position<independent_stage_0> to position<independent_stage_1>."
+            in source
+        )
+        assert (
+            "move the particle in position<independent_stage_1> to position<independent_workspace>."
             in source
         )
         assert (
@@ -118,7 +126,7 @@ class TestGenerateSourceLines:
                 repetitions=1,
                 pods=0,
                 independent_move_branches=2,
-                independent_move_chain_length=2,
+                independent_move_chain_length=3,
             )
         )
         assert "worker" not in source
@@ -147,7 +155,7 @@ class TestWriteToPath:
             tree_depth=2,
             wide_children=3,
             independent_move_branches=2,
-            independent_move_chain_length=2,
+            independent_move_chain_length=3,
         )
         assert out.read_text(encoding="utf-8").count("\n") == written
 
@@ -160,7 +168,7 @@ class TestWriteToPath:
             tree_depth=2,
             wide_children=3,
             independent_move_branches=2,
-            independent_move_chain_length=2,
+            independent_move_chain_length=3,
         )
         _parse_and_transform(out.read_text(encoding="utf-8"))
 
@@ -186,7 +194,7 @@ class TestMain:
                 "--independent-move-branches",
                 "2",
                 "--independent-move-chain-length",
-                "2",
+                "3",
             ],
         )
 
@@ -206,7 +214,7 @@ class TestFullDriver:
                     pods=1,
                     retriggers=1,
                     independent_move_branches=2,
-                    independent_move_chain_length=2,
+                    independent_move_chain_length=3,
                 )
             )
             + "\n"

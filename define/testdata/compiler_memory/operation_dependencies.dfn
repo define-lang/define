@@ -868,106 +868,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
             it has the position</child_27>.
         }
     }
-    define the position<independent_source> {
-        it may only contain particles where {
-            it has the position</independent_box_0>.
-            it has the position</independent_box_1>.
-            it has the position</independent_box_2>.
-            it has the position</independent_box_3>.
-            it has the position</independent_box_4>.
-            it has the position</independent_box_5>.
-            it has the position</independent_box_6>.
-            it has the position</independent_box_7>.
-            it has the position</independent_box_8>.
-            it has the position</independent_box_9>.
-            it has the position</independent_box_10>.
-            it has the position</independent_box_11>.
-            it has the position</independent_box_12>.
-            it has the position</independent_box_13>.
-            it has the position</independent_box_14>.
-            it has the position</independent_box_15>.
-            it has the position</independent_box_16>.
-            it has the position</independent_box_17>.
-            it has the position</independent_box_18>.
-            it has the position</independent_box_19>.
-            it has the position</independent_box_20>.
-            it has the position</independent_box_21>.
-            it has the position</independent_box_22>.
-            it has the position</independent_box_23>.
-            it has the position</independent_box_24>.
-            it has the position</independent_box_25>.
-            it has the position</independent_box_26>.
-            it has the position</independent_box_27>.
-            it has the position</independent_box_28>.
-            it has the position</independent_box_29>.
-            it has the position</independent_box_30>.
-            it has the position</independent_box_31>.
-            it has the position</independent_box_32>.
-            it has the position</independent_box_33>.
-            it has the position</independent_box_34>.
-            it has the position</independent_box_35>.
-            it has the position</independent_box_36>.
-            it has the position</independent_box_37>.
-            it has the position</independent_box_38>.
-            it has the position</independent_box_39>.
-            it has the position</independent_box_40>.
-            it has the position</independent_box_41>.
-            it has the position</independent_box_42>.
-            it has the position</independent_box_43>.
-            it has the position</independent_box_44>.
-            it has the position</independent_box_45>.
-            it has the position</independent_box_46>.
-            it has the position</independent_box_47>.
-            it has the position</independent_box_48>.
-            it has the position</independent_box_49>.
-            it has the position</independent_box_50>.
-            it has the position</independent_box_51>.
-            it has the position</independent_box_52>.
-            it has the position</independent_box_53>.
-            it has the position</independent_box_54>.
-            it has the position</independent_box_55>.
-            it has the position</independent_box_56>.
-            it has the position</independent_box_57>.
-            it has the position</independent_box_58>.
-            it has the position</independent_box_59>.
-            it has the position</independent_box_60>.
-            it has the position</independent_box_61>.
-            it has the position</independent_box_62>.
-            it has the position</independent_box_63>.
-            it has the position</independent_box_64>.
-            it has the position</independent_box_65>.
-            it has the position</independent_box_66>.
-            it has the position</independent_box_67>.
-            it has the position</independent_box_68>.
-            it has the position</independent_box_69>.
-            it has the position</independent_box_70>.
-            it has the position</independent_box_71>.
-            it has the position</independent_box_72>.
-            it has the position</independent_box_73>.
-            it has the position</independent_box_74>.
-            it has the position</independent_box_75>.
-            it has the position</independent_box_76>.
-            it has the position</independent_box_77>.
-            it has the position</independent_box_78>.
-            it has the position</independent_box_79>.
-            it has the position</independent_box_80>.
-            it has the position</independent_box_81>.
-            it has the position</independent_box_82>.
-            it has the position</independent_box_83>.
-            it has the position</independent_box_84>.
-            it has the position</independent_box_85>.
-            it has the position</independent_box_86>.
-            it has the position</independent_box_87>.
-            it has the position</independent_box_88>.
-            it has the position</independent_box_89>.
-            it has the position</independent_box_90>.
-            it has the position</independent_box_91>.
-            it has the position</independent_box_92>.
-            it has the position</independent_box_93>.
-            it has the position</independent_box_94>.
-            it has the position</independent_box_95>.
-        }
-    }
+    define the position<independent_source>.
     define the position<independent_workspace> {
         it may only contain particles where {
             it has the position</independent_box_0>.
@@ -1162,7 +1063,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
     define the position<independent_stage_90>.
     define the position<independent_stage_91>.
     define the position<independent_stage_92>.
-    define the position<independent_stage_93>.
     define the position<independent_left_holder_0>.
     define the position<independent_right_holder_0>.
     define the position<independent_left_holder_1>.
@@ -1451,7 +1351,8 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         the position<run> has a particle.
     } and it does {
         # independent Move branches
-        create a particle in position<independent_source>.
+        create a particle in position<independent_workspace>.
+        move the particle in position<independent_workspace> to position<independent_source>.
         move the particle in position<independent_source> to position<independent_stage_0>.
         move the particle in position<independent_stage_0> to position<independent_stage_1>.
         move the particle in position<independent_stage_1> to position<independent_stage_2>.
@@ -1545,8 +1446,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         move the particle in position<independent_stage_89> to position<independent_stage_90>.
         move the particle in position<independent_stage_90> to position<independent_stage_91>.
         move the particle in position<independent_stage_91> to position<independent_stage_92>.
-        move the particle in position<independent_stage_92> to position<independent_stage_93>.
-        move the particle in position<independent_stage_93> to position<independent_workspace>.
+        move the particle in position<independent_stage_92> to position<independent_workspace>.
         move the particle in position<independent_workspace> to position<independent_moved_marker>.
         create a particle in position<independent_workspace>.
         create a particle in position<independent_workspace>::position</independent_box_0>.

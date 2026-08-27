@@ -22,7 +22,8 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_position_source()
+        execution.scheduler.submit(execution.create_position_source)
+        execution.create_action_middle__position_trigger()
 
 
 @final
@@ -53,6 +54,7 @@ class TestExecution:
         )
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_action_middle__for_empty_rule_position_target = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -63,6 +65,14 @@ class TestExecution:
                 "position<target>"
             )
         )
+        self.trigger_action_middle__for_empty_rule_position_target()
+
+    def create_action_middle__position_trigger(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
         self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.action.on_particle.get_action(
                 local.my_domain_com.my_lib.middle.Middle
@@ -70,10 +80,20 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_middle,
         )
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_target)
-        self.trigger_action_middle__for_empty_rule_position_target()
+        self.scheduler.submit(self.trigger_action_middle__when_empty_action_destroyer__position_trigger)
+        self.trigger_action_middle__for_empty_rule_position_trigger()
 
     def trigger_action_middle__for_empty_rule_position_target(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_position_target.arrive():
             return
         self.execution_trigger_action_middle.accept_for_empty_rule_position_target()
+
+    def trigger_action_middle__when_empty_action_destroyer__position_trigger(self):
+        self.execution_trigger_action_middle.accept_when_empty_action_destroyer__position_trigger()
+
+    def trigger_action_middle__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_middle__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_middle.accept_for_empty_rule_position_trigger()

@@ -29,6 +29,10 @@ class Middle(literal.Action):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<trigger>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -37,6 +41,7 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self):
         self.guarantee_position_target: list[literal.Task] = []
+        self.guarantee_position_trigger: list[literal.Task] = []
         self.trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
         self.trigger_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
 
@@ -67,11 +72,18 @@ class MiddleExecution:
         self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_occupied = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_empty = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_trigger = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_target(self):
         self.move_position_target_to_action_destroyer__position_target()
+
+    def accept_when_empty_action_destroyer__position_trigger(self):
+        self.create_action_destroyer__position_trigger()
+
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
 
     def move_position_target_to_action_destroyer__position_target(self):
         self.action.get_interface_position(
@@ -104,6 +116,23 @@ class MiddleExecution:
             ),
             "destructor",
             self.guarantees.trigger_action_destroyer__position_target__action_destructor,
+        )
+        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_occupied)
+        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_empty)
+        self.scheduler.submit_all(self.guarantees.guarantee_position_target)
+        self.scheduler.submit(self.trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied)
+        self.trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty()
+
+    def create_action_destroyer__position_trigger(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.destroyer.Destroyer
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
+        self.scheduler.create_completed(
+            self.trace_execution,
+            "/destroyer::trigger",
+            1,
         )
         self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
             self.scheduler,
@@ -139,14 +168,25 @@ class MiddleExecution:
             forwarded=self.destruction_connections,
             ),
         )
-        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_occupied)
-        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_empty)
-        self.scheduler.submit_all(self.guarantees.guarantee_position_target)
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_occupied)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_empty)
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_target)
-        self.scheduler.submit(self.trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied)
-        self.trigger_action_destroyer__position_target__action_destructor__when_empty_global_position_empty()
+        self.trigger_action_destroyer__for_empty_rule_position_trigger()
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "trigger",
+            1,
+        )
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
 
     def trigger_action_destroyer__when_empty_position_target__global_position_occupied(self):
         if not self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_occupied.arrive():
@@ -160,6 +200,11 @@ class MiddleExecution:
 
     def trigger_action_destroyer__for_empty_rule_position_target(self):
         self.execution_trigger_action_destroyer.accept_for_empty_rule_position_target()
+
+    def trigger_action_destroyer__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_trigger()
 
     def trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied(self):
         if not self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied.arrive():

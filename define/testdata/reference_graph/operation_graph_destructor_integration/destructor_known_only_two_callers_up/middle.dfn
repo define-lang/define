@@ -9,6 +9,12 @@ define the potential action<my.domain.com:my_lib:/middle> {
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<holder_a>.
+        define the position<holder_b>.
+        move the particle in position<run>::position</marker_a> to position<holder_a>.
+        move the particle in position<holder_a> to position<run>::position</marker_a>.
+        move the particle in position<run>::position</marker_b> to position<holder_b>.
+        move the particle in position<holder_b> to position<run>::position</marker_b>.
         move the particle in position<run> to action</destroyer>::position<run>.
     }
 }

@@ -14,6 +14,8 @@ define the potential action<mv:define-lang.org:parent:/test> {
             }
         }
         create a particle in position<from_pos>.
+        create a particle in position<from_pos>::position<mv:define-lang.org:child:/y>.
+        destroy the particle in position<from_pos>::position<mv:define-lang.org:child:/y>.
         create a particle in position<dest>.
         move the particle in position<from_pos> to position<dest>::position<mv:define-lang.org:child:/x>.
     }

@@ -22,6 +22,10 @@ class Destroyer(literal.Action):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<trigger>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -30,6 +34,7 @@ class Destroyer(literal.Action):
 class DestroyerGuarantees:
     def __init__(self):
         self.guarantee_position_target: list[literal.Task] = []
+        self.guarantee_position_trigger: list[literal.Task] = []
 
 
 @final
@@ -62,6 +67,9 @@ class DestroyerExecution:
 
     def accept_for_empty_rule_position_target(self):
         self.destroy_position_target()
+
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
 
     def create_position_target__global_position_occupied(self):
         self.action.get_interface_position(
@@ -130,3 +138,17 @@ class DestroyerExecution:
             1,
         )
         self.scheduler.continue_with(self.guarantees.guarantee_position_target)
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "trigger",
+            1,
+        )
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)

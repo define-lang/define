@@ -5,7 +5,6 @@ from typing import final
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.known_destructor
-import local.my_domain_com.my_lib.marker
 
 
 class Destroyer(literal.Action):
@@ -22,7 +21,6 @@ class Destroyer(literal.Action):
                     "position<target>",
                     constraints=(
                         local.my_domain_com.my_lib.known_destructor.KnownDestructor,
-                        local.my_domain_com.my_lib.marker.Marker,
                     ),
                     scheduler=on_particle.scheduler,
                 ),

@@ -79,7 +79,7 @@ _MIN_WIDE_CHILDREN = 2
 _MIN_PODS = 0
 _MIN_RETRIGGERS = 1
 _MIN_INDEPENDENT_MOVE_BRANCHES = 2
-_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH = 2
+_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH = 3
 _OUTER_INDENT = "    "
 _INNER_INDENT = "        "
 _DEEP_INDENT = "            "
@@ -313,9 +313,12 @@ def _block_independent_move_branches(
     independent_move_branches: int,
     independent_move_chain_length: int,
 ) -> list[str]:
-    lines = [_create("position<independent_source>")]
+    lines = [
+        _create("position<independent_workspace>"),
+        _move("position<independent_workspace>", "position<independent_source>"),
+    ]
     preceding_position = "position<independent_source>"
-    for move_index in range(independent_move_chain_length - 2):
+    for move_index in range(independent_move_chain_length - 3):
         next_position = f"position<independent_stage_{move_index}>"
         lines.append(_move(preceding_position, next_position))
         preceding_position = next_position
@@ -439,14 +442,12 @@ def _emit_main_action_header(
         independent_boxes = [
             _independent_box_path(branch) for branch in range(independent_move_branches)
         ]
-        lines.extend(
-            _emit_constrained_interface("independent_source", independent_boxes)
-        )
+        lines.append(f"{_OUTER_INDENT}define the position<independent_source>.")
         lines.extend(
             _emit_constrained_interface("independent_workspace", independent_boxes)
         )
         lines.append(f"{_OUTER_INDENT}define the position<independent_moved_marker>.")
-        for move_index in range(independent_move_chain_length - 2):
+        for move_index in range(independent_move_chain_length - 3):
             lines.append(
                 f"{_OUTER_INDENT}define the position<independent_stage_{move_index}>."
             )
@@ -595,7 +596,7 @@ def generate_source_lines(
             lines.extend(_block_sink_pod(pod, retriggers))
     lines.extend(_emit_main_action_close())
     lines.extend(_emit_entry_constructor(fqun_prefix))
-    return lines
+    return lines[:-1]
 
 
 def write_to_path(

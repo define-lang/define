@@ -6,7 +6,6 @@ define the potential action<my.domain.com:my_lib:/additional_caller> {
         define the position<source> {
             it may only contain particles where {
                 it has the position</a>.
-                it has the position</b>.
             }
         }
         create a particle in position<source>.

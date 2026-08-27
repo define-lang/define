@@ -38,18 +38,6 @@ _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
 _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED = (
     "a child Destructor known only through the creator is not generated"
 )
-_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED = (
-    "Liveness through Contracted Positions is not implemented"
-)
-_UNSUPPORTED_GENERATION_TEST_CASE_REASONS = {
-    "operation_graph_many_actions_integration/action_execution_and_empty_rule_use_the_same_position": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "operation_graph_many_actions_integration/caller_consumes_a_child_guarantee_after_an_empty_rule_move": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "operation_graph_many_actions_integration/caller_consumes_a_child_guarantee_after_two_action_parent_moves": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "operation_graph_many_actions_integration/child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "operation_graph_many_actions_integration/empty_rule_adds_a_caller_child_operation_to_a_move": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "operation_graph_many_actions_integration/transitive_child_guarantee_follows_particle_through_move": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-    "quality_implication/propagated_particle": _CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED,
-}
 _UNSUPPORTED_RUNTIME_TEST_CASE_REASONS = {
     "operation_graph_destructor_integration/callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/caller_destructor_between_two_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
@@ -76,17 +64,10 @@ _GENERATION_TEST_CASE_PARAMS: list[object] = []
 _RUNTIME_TEST_CASE_PARAMS: list[object] = []
 for test_case_dir in _TEST_CASES:
     test_case_id = test_case_dir.relative_to(_TESTDATA_ROOT).as_posix()
-    marks = ()
-    if test_case_id in _UNSUPPORTED_GENERATION_TEST_CASE_REASONS:
-        marks = pytest.mark.xfail(
-            strict=True,
-            reason=_UNSUPPORTED_GENERATION_TEST_CASE_REASONS[test_case_id],
-        )
     _GENERATION_TEST_CASE_PARAMS.append(
         pytest.param(
             test_case_dir,
             id=test_case_id,
-            marks=marks,
         )
     )
     marks = ()

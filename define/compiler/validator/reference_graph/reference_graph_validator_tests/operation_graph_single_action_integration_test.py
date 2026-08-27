@@ -765,7 +765,14 @@ def test_independent_child_moves_with_shared_move_chain_remain_dependencies(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(source)": [],
-        "test.move(source, stage_a)": ["test.create(source)"],
+        "test.create(source::/box_a)": ["test.create(source)"],
+        "test.destroy(source::/box_a)": ["test.create(source::/box_a)"],
+        "test.create(source::/box_b)": ["test.create(source)"],
+        "test.destroy(source::/box_b)": ["test.create(source::/box_b)"],
+        "test.move(source, stage_a)": [
+            "test.destroy(source::/box_a)",
+            "test.destroy(source::/box_b)",
+        ],
         "test.move(stage_a, stage_b)": ["test.move(source, stage_a)"],
         "test.move(stage_b, workspace)": ["test.move(stage_a, stage_b)"],
         "test.move(workspace, moved_marker)": ["test.move(stage_b, workspace)"],

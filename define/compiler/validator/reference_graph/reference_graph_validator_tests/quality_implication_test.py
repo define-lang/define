@@ -3,18 +3,12 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
-
-_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED = (
-    "Liveness through Contracted Positions is not implemented"
-)
 
 
 def test_action_implies_action(
@@ -65,7 +59,6 @@ def test_multi_level_action_transitivity(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-@pytest.mark.xfail(strict=True, reason=_CONTRACTED_POSITION_LIVENESS_NOT_IMPLEMENTED)
 def test_propagated_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

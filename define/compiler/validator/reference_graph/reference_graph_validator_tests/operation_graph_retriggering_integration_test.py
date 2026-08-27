@@ -35,7 +35,9 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(first)": [],
-        "test.move(first, /destroyer::run)": ["test.create(first)"],
+        "test.create(first::/child)": ["test.create(first)"],
+        "test.destroy(first::/child)": ["test.create(first::/child)"],
+        "test.move(first, /destroyer::run)": ["test.destroy(first::/child)"],
         "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
         "destroyer.destroy(/target)": ["destroyer.move(run, /target)"],
         "test.create(second)": [],

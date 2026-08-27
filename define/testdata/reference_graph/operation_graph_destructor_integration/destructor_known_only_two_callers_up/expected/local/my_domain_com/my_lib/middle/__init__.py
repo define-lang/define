@@ -51,14 +51,61 @@ class MiddleExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        self.local_position_holder_a = literal.LocalPosition(
+            "position<holder_a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_holder_b = literal.LocalPosition(
+            "position<holder_b>",
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
+        self.join_for_move_position_run_to_action_destroyer__position_run = self.scheduler.create_join(3)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_a = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_b = self.scheduler.create_join(2)
+
+    def accept_for_empty_rule_position_run__global_position_marker_a(self):
+        self.move_position_run__global_position_marker_a_to_position_holder_a()
+
+    def accept_for_empty_rule_position_run__global_position_marker_b(self):
+        self.move_position_run__global_position_marker_b_to_position_holder_b()
 
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_action_destroyer__position_run()
 
+    def move_position_run__global_position_marker_a_to_position_holder_a(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_a.MarkerA
+        ).move_particle_to(self.local_position_holder_a)
+        self.local_position_holder_a.move_particle_to(
+            self.action.get_interface_position(
+                "position<run>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker_a.MarkerA
+            )
+        )
+        self.move_position_run_to_action_destroyer__position_run()
+
+    def move_position_run__global_position_marker_b_to_position_holder_b(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerB
+        ).move_particle_to(self.local_position_holder_b)
+        self.local_position_holder_b.move_particle_to(
+            self.action.get_interface_position(
+                "position<run>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker_b.MarkerB
+            )
+        )
+        self.move_position_run_to_action_destroyer__position_run()
+
     def move_position_run_to_action_destroyer__position_run(self):
+        if not self.join_for_move_position_run_to_action_destroyer__position_run.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(

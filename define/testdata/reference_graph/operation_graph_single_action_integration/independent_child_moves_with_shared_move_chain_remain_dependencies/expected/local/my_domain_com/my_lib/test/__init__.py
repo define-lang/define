@@ -71,12 +71,37 @@ class TestExecution:
             "position<right_b_holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_source_to_position_stage_a = self.scheduler.create_join(2)
         self.join_for_destroy_position_workspace__global_position_box_a = self.scheduler.create_join(2)
         self.join_for_destroy_position_workspace__global_position_box_b = self.scheduler.create_join(2)
         self.join_for_destroy_position_workspace = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
+        self.scheduler.submit(self.create_position_source__global_position_box_a)
+        self.create_position_source__global_position_box_b()
+
+    def create_position_source__global_position_box_a(self):
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.box_a.BoxA
+        ).create_particle()
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.box_a.BoxA
+        ).destroy_particle()
+        self.move_position_source_to_position_stage_a()
+
+    def create_position_source__global_position_box_b(self):
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.box_b.BoxB
+        ).create_particle()
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.box_b.BoxB
+        ).destroy_particle()
+        self.move_position_source_to_position_stage_a()
+
+    def move_position_source_to_position_stage_a(self):
+        if not self.join_for_move_position_source_to_position_stage_a.arrive():
+            return
         self.local_position_source.move_particle_to(self.local_position_stage_a)
         self.local_position_stage_a.move_particle_to(self.local_position_stage_b)
         self.local_position_stage_b.move_particle_to(self.local_position_workspace)

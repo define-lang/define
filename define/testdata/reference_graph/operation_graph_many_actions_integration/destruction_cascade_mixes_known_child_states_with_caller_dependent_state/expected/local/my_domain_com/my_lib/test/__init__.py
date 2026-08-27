@@ -54,18 +54,28 @@ class TestExecution:
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_action_destroyer: literal.DestructionConnection
         self.destruction_position_action_destroyer__position_run__global_position_maybe_child: literal.Position
-        self.join_for_move_position_source_to_action_destroyer__position_run = self.scheduler.create_join(2)
+        self.join_for_move_position_source_to_action_destroyer__position_run = self.scheduler.create_join(3)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
         self.scheduler.submit(self.create_position_source__global_position_known_empty)
+        self.scheduler.submit(self.create_position_source__global_position_known_occupied)
         self.create_position_source__global_position_maybe_child()
 
     def create_position_source__global_position_known_empty(self):
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.known_empty.KnownEmpty
         ).create_particle()
+        self.move_position_source_to_action_destroyer__position_run()
+
+    def create_position_source__global_position_known_occupied(self):
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.known_occupied.KnownOccupied
+        ).create_particle()
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.known_occupied.KnownOccupied
+        ).destroy_particle()
         self.move_position_source_to_action_destroyer__position_run()
 
     def create_position_source__global_position_maybe_child(self):

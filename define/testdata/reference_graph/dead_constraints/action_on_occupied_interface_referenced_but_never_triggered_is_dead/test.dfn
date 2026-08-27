@@ -8,7 +8,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         the position<run> has a particle.
     } and it does {
-        create a particle in position<box>.
-        create a particle in position<box>::action</worker>::position<input>.
+        destroy the particle in position<box>::action</worker>::position<input>.
+        destroy the particle in position<box>.
     }
 }

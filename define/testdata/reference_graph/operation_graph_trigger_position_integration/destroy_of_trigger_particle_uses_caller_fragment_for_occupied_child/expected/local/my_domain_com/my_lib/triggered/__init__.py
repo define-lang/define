@@ -4,8 +4,6 @@ from typing import ClassVar, final
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.a
-import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.target
 
 
@@ -20,10 +18,6 @@ class Triggered(literal.Action):
             interface_positions=[
                 literal.LocalPosition(
                     "position<run>",
-                    constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
-                    ),
                     scheduler=on_particle.scheduler,
                 ),
             ],

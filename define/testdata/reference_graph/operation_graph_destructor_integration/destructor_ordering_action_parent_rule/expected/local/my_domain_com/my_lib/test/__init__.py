@@ -7,7 +7,6 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.extra_destructor
 import local.my_domain_com.my_lib.known_destructor
-import local.my_domain_com.my_lib.marker
 
 
 class Test(literal.EntryPoint):
@@ -50,7 +49,6 @@ class TestExecution:
             constraints=(
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
                 local.my_domain_com.my_lib.known_destructor.KnownDestructor,
-                local.my_domain_com.my_lib.marker.Marker,
             ),
             scheduler=self.scheduler,
         )

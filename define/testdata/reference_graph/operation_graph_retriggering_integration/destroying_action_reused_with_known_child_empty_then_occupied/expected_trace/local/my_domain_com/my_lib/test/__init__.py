@@ -86,6 +86,22 @@ class TestExecution:
             "first",
             1,
         )
+        self.local_position_first.particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).create_particle()
+        self.scheduler.create_completed(
+            self.trace_execution,
+            "first::/child",
+            1,
+        )
+        self.local_position_first.particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "first::/child",
+            1,
+        )
         self.local_position_first.move_particle_to(
             self.action.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.Destroyer

@@ -61,16 +61,113 @@ class MiddleExecution:
         )
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        self.local_position_holder_a = literal.LocalPosition(
+            "position<holder_a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_holder_b = literal.LocalPosition(
+            "position<holder_b>",
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
+        self.join_for_move_position_run_to_action_destroyer__position_run = self.scheduler.create_join(4)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_a = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__for_empty_rule_position_run__global_position_marker_b = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_run__global_position_maybe_empty = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_occupied_position_run = self.scheduler.create_join(2)
 
+    def accept_for_empty_rule_position_run__global_position_marker_a(self):
+        self.move_position_run__global_position_marker_a_to_position_holder_a()
+
+    def accept_for_empty_rule_position_run__global_position_marker_b(self):
+        self.move_position_run__global_position_marker_b_to_position_holder_b()
+
+    def accept_when_empty_position_run__global_position_maybe_empty(self):
+        self.create_position_run__global_position_maybe_empty()
+
     def accept_for_empty_rule_position_run(self):
         self.move_position_run_to_action_destroyer__position_run()
 
+    def move_position_run__global_position_marker_a_to_position_holder_a(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_a.MarkerA
+        ).move_particle_to(self.local_position_holder_a)
+        self.scheduler.move_completed(
+            self.trace_execution,
+            "run::/marker_a",
+            "holder_a",
+            1,
+        )
+        self.local_position_holder_a.move_particle_to(
+            self.action.get_interface_position(
+                "position<run>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker_a.MarkerA
+            )
+        )
+        self.scheduler.move_completed(
+            self.trace_execution,
+            "holder_a",
+            "run::/marker_a",
+            1,
+        )
+        self.move_position_run_to_action_destroyer__position_run()
+
+    def move_position_run__global_position_marker_b_to_position_holder_b(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerB
+        ).move_particle_to(self.local_position_holder_b)
+        self.scheduler.move_completed(
+            self.trace_execution,
+            "run::/marker_b",
+            "holder_b",
+            1,
+        )
+        self.local_position_holder_b.move_particle_to(
+            self.action.get_interface_position(
+                "position<run>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker_b.MarkerB
+            )
+        )
+        self.scheduler.move_completed(
+            self.trace_execution,
+            "holder_b",
+            "run::/marker_b",
+            1,
+        )
+        self.move_position_run_to_action_destroyer__position_run()
+
+    def create_position_run__global_position_maybe_empty(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+        ).create_particle()
+        self.scheduler.create_completed(
+            self.trace_execution,
+            "run::/maybe_empty",
+            1,
+        )
+        self.action.get_interface_position(
+            "position<run>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "run::/maybe_empty",
+            1,
+        )
+        self.move_position_run_to_action_destroyer__position_run()
+
     def move_position_run_to_action_destroyer__position_run(self):
+        if not self.join_for_move_position_run_to_action_destroyer__position_run.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(

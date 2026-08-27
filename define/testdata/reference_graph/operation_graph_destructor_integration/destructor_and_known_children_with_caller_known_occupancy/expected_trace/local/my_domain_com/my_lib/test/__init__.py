@@ -62,8 +62,10 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_move_position_source_to_action_middle__position_run = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.join_for_move_position_source_to_action_middle__position_run = self.scheduler.create_join(3)
+        self.join_for_trigger_action_middle__for_empty_rule_position_run__global_position_marker_a = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__for_empty_rule_position_run__global_position_marker_b = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__when_empty_position_run__global_position_maybe_empty = self.scheduler.create_join(2)
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -73,7 +75,8 @@ class TestExecution:
             1,
         )
         self.scheduler.submit(self.create_position_source__global_position_marker_a)
-        self.create_position_source__global_position_marker_b()
+        self.scheduler.submit(self.create_position_source__global_position_marker_b)
+        self.create_position_source__global_position_maybe_empty()
 
     def create_position_source__global_position_marker_a(self):
         self.local_position_source.particle.get_position(
@@ -93,6 +96,25 @@ class TestExecution:
         self.scheduler.create_completed(
             self.trace_execution,
             "source::/marker_b",
+            1,
+        )
+        self.move_position_source_to_action_middle__position_run()
+
+    def create_position_source__global_position_maybe_empty(self):
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+        ).create_particle()
+        self.scheduler.create_completed(
+            self.trace_execution,
+            "source::/maybe_empty",
+            1,
+        )
+        self.local_position_source.particle.get_position(
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "source::/maybe_empty",
             1,
         )
         self.move_position_source_to_action_middle__position_run()
@@ -122,10 +144,28 @@ class TestExecution:
             "middle",
             self.guarantees.trigger_action_middle,
         )
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run__global_position_marker_a)
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run__global_position_marker_b)
+        self.scheduler.submit(self.trigger_action_middle__when_empty_position_run__global_position_maybe_empty)
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run__global_position_marker_a)
+        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run__global_position_marker_b)
+        self.scheduler.submit(self.trigger_action_middle__when_empty_position_run__global_position_maybe_empty)
         self.trigger_action_middle__for_empty_rule_position_run()
 
-    def trigger_action_middle__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_middle__for_empty_rule_position_run.arrive():
+    def trigger_action_middle__for_empty_rule_position_run__global_position_marker_a(self):
+        if not self.join_for_trigger_action_middle__for_empty_rule_position_run__global_position_marker_a.arrive():
             return
+        self.execution_trigger_action_middle.accept_for_empty_rule_position_run__global_position_marker_a()
+
+    def trigger_action_middle__for_empty_rule_position_run__global_position_marker_b(self):
+        if not self.join_for_trigger_action_middle__for_empty_rule_position_run__global_position_marker_b.arrive():
+            return
+        self.execution_trigger_action_middle.accept_for_empty_rule_position_run__global_position_marker_b()
+
+    def trigger_action_middle__when_empty_position_run__global_position_maybe_empty(self):
+        if not self.join_for_trigger_action_middle__when_empty_position_run__global_position_maybe_empty.arrive():
+            return
+        self.execution_trigger_action_middle.accept_when_empty_position_run__global_position_maybe_empty()
+
+    def trigger_action_middle__for_empty_rule_position_run(self):
         self.execution_trigger_action_middle.accept_for_empty_rule_position_run()

@@ -19,6 +19,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<a>.
         move the particle in position<a> to position<b>.
         move the particle in position<b> to position<a>.
+        create a particle in position<a>::position</b>.
+        create a particle in position<a>::position</c>.
+        create a particle in position<a>::position</d>.
         create a particle in position<b>.
         create a particle in position<b>::position</b>.
         create a particle in position<b>::position</c>.

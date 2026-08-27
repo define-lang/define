@@ -43,10 +43,6 @@ def _position_ref(*elements: ast.TypedNameReference) -> ast.PositionReference:
     return ast.PositionReference(typed_names=elements, location=_LOC)
 
 
-def _action_ref(*elements: ast.TypedNameReference) -> ast.ActionReference:
-    return ast.ActionReference(typed_names=elements, location=_LOC)
-
-
 def _interface_def(
     name: str, constraint_paths: list[str]
 ) -> ast.LocalPositionDefinition:
@@ -109,7 +105,7 @@ def _untriggered_implied_action_names(
 def test_empty_tracker_has_no_candidates():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     assert not tracker.has_position_constraint_candidates()
-    assert not tracker.has_move_candidates()
+    assert not tracker.has_constraint_candidates()
     assert _dead_keys(tracker) == set()
 
 
@@ -119,7 +115,7 @@ def test_registered_constraint_is_dead():
     thing = _global_ref("/thing")
     tracker.register_constraint(box, thing)
     assert tracker.has_position_constraint_candidates()
-    assert tracker.has_move_candidates()
+    assert tracker.has_constraint_candidates()
     assert _dead_keys(tracker) == {("position<box>", thing.full_typed_name)}
 
 
@@ -147,17 +143,16 @@ def test_referenced_child_position_is_alive():
     box = _local_ref("box")
     thing = _global_ref("/thing")
     tracker.register_constraint(box, thing)
-    tracker.mark_position_alive(_position_ref(box, thing))
+    tracker.mark_position_alive(_position_ref(box), None, thing)
     assert _dead_keys(tracker) == set()
 
 
-def test_reference_to_action_child_does_not_mark_it_alive():
+def test_position_use_does_not_mark_an_action_constraint_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     box = _local_ref("box")
     coin = _global_ref("/coin", ast.NameType.ACTION)
     tracker.register_constraint(box, coin)
-    # Filling an action interface position references it but does not trigger it.
-    tracker.mark_position_alive(_position_ref(box, coin, _local_ref("go")))
+    tracker.mark_position_alive(_position_ref(box), None, _global_ref("/other"))
     assert _dead_keys(tracker) == {("position<box>", coin.full_typed_name)}
 
 
@@ -166,15 +161,17 @@ def test_triggered_action_is_alive():
     box = _local_ref("box")
     coin = _global_ref("/coin", ast.NameType.ACTION)
     tracker.register_constraint(box, coin)
-    tracker.mark_action_alive(_action_ref(box, coin))
+    tracker.mark_action_alive(coin, _position_ref(box), _position_ref(box))
     assert _dead_keys(tracker) == set()
 
 
-def test_reference_to_implied_action_child_does_not_mark_it_alive():
+def test_position_use_does_not_mark_an_implied_action_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     action = _global_ref("/work", ast.NameType.ACTION)
     tracker.register_implied_action(action)
-    tracker.mark_position_alive(_position_ref(action, _local_ref("non_trigger")))
+    tracker.mark_position_alive(
+        _position_ref(_local_ref("box")), None, _global_ref("/non_trigger")
+    )
     assert _dead_keys(tracker) == set()
     assert _untriggered_implied_action_names(tracker) == {action.full_typed_name}
 
@@ -183,28 +180,28 @@ def test_triggered_implied_action_is_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     action = _global_ref("/work", ast.NameType.ACTION)
     tracker.register_implied_action(action)
-    tracker.mark_action_alive(_action_ref(action))
+    tracker.mark_action_alive(action, None, None)
     assert _untriggered_implied_action_names(tracker) == set()
 
 
-def test_triggered_action_at_end_of_longer_chain_marks_only_that_action_alive():
+def test_action_trigger_marks_only_the_triggered_implied_action_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     runner = _global_ref("/runner", ast.NameType.ACTION)
     worker = _global_ref("/worker", ast.NameType.ACTION)
     tracker.register_implied_action(runner)
     tracker.register_implied_action(worker)
-    tracker.mark_action_alive(_action_ref(runner, _local_ref("iface"), worker))
+    tracker.mark_action_alive(worker, None, None)
     assert _untriggered_implied_action_names(tracker) == {runner.full_typed_name}
 
 
-def test_non_trigger_position_at_end_of_longer_chain_marks_no_action_alive():
+def test_position_use_marks_no_implied_action_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     runner = _global_ref("/runner", ast.NameType.ACTION)
     worker = _global_ref("/worker", ast.NameType.ACTION)
     tracker.register_implied_action(runner)
     tracker.register_implied_action(worker)
     tracker.mark_position_alive(
-        _position_ref(runner, _local_ref("iface"), worker, _local_ref("non_trigger"))
+        _position_ref(_local_ref("box")), None, _global_ref("/non_trigger")
     )
     assert _untriggered_implied_action_names(tracker) == {
         runner.full_typed_name,
@@ -212,72 +209,93 @@ def test_non_trigger_position_at_end_of_longer_chain_marks_no_action_alive():
     }
 
 
-def test_move_required_constraint_is_alive():
+def test_position_reference_marks_the_matching_origin_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
-    box = _local_ref("box")
+    origin = _local_ref("origin")
+    current = _local_ref("current")
     thing = _global_ref("/thing")
-    tracker.register_constraint(box, thing)
-    tracker.mark_move_required(_position_ref(box), (thing,))
+    tracker.register_constraint(origin, thing)
+    tracker.register_constraint(current, thing)
+    tracker.mark_position_alive(_position_ref(current), _position_ref(origin), thing)
     assert _dead_keys(tracker) == set()
 
 
-def test_move_required_action_constraint_is_alive():
+def test_action_trigger_marks_the_matching_origin_and_current_position_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
-    box = _local_ref("box")
+    origin = _local_ref("origin")
+    current = _local_ref("current")
     action = _global_ref("/work", ast.NameType.ACTION)
-    tracker.register_constraint(box, action)
-    tracker.mark_move_required(_position_ref(box), (action,))
+    tracker.register_constraint(origin, action)
+    tracker.register_constraint(current, action)
+    tracker.mark_action_alive(action, _position_ref(current), _position_ref(origin))
     assert _dead_keys(tracker) == set()
 
 
-def test_move_required_action_does_not_mark_an_implication_alive():
+def test_contract_does_not_mark_an_implication_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     action = _global_ref("/work", ast.NameType.ACTION)
     tracker.register_implied_action(action)
-    tracker.mark_move_required(_position_ref(_local_ref("box")), (action,))
+    tracker.mark_contract_constraints_alive(
+        None, _position_ref(_local_ref("box")), (action,)
+    )
     assert _untriggered_implied_action_names(tracker) == {action.full_typed_name}
 
 
-def test_move_required_marks_only_the_matching_origin():
+def test_contract_marks_only_the_matching_origin():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     thing = _global_ref("/thing")
     tracker.register_constraint(_local_ref("box"), thing)
     tracker.register_constraint(_local_ref("other"), thing)
-    tracker.mark_move_required(_position_ref(_local_ref("box")), (thing,))
+    tracker.mark_contract_constraints_alive(
+        None, _position_ref(_local_ref("box")), (thing,)
+    )
     assert _dead_keys(tracker) == {("position<other>", thing.full_typed_name)}
 
 
-def test_move_required_matches_by_name_without_expanding_implications():
+def test_contract_marks_matching_current_and_origin_positions():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
-    box = _local_ref("box")
-    implying = _global_ref("/implying")
-    tracker.register_constraint(box, implying)
-    # The destination requires the implied quality, not the implying one written
-    # on box, so box's constraint stays dead.
-    tracker.mark_move_required(_position_ref(box), (_global_ref("/implied"),))
-    assert _dead_keys(tracker) == {("position<box>", implying.full_typed_name)}
-
-
-def test_mark_position_constraints_alive_clears_only_position_candidates():
-    tracker = dead_constraint_tracker.DeadConstraintTracker()
-    iface = _interface_def("iface", ["/a", "/b"])
-    for constraint in iface.constraint_typed_names:
-        tracker.register_constraint(iface.typed_name, constraint)
-    tracker.mark_position_constraints_alive(
-        iface.typed_name, iface.constraint_typed_names
+    thing = _global_ref("/thing")
+    origin = _local_ref("origin")
+    current = _local_ref("current")
+    tracker.register_constraint(origin, thing)
+    tracker.register_constraint(current, thing)
+    tracker.mark_contract_constraints_alive(
+        _position_ref(current), _position_ref(origin), (thing,)
     )
     assert _dead_keys(tracker) == set()
 
 
-def test_mark_position_constraints_alive_does_not_clear_an_action_candidate():
+def test_contract_matches_by_name_without_expanding_implications():
+    tracker = dead_constraint_tracker.DeadConstraintTracker()
+    box = _local_ref("box")
+    implying = _global_ref("/implying")
+    tracker.register_constraint(box, implying)
+    tracker.mark_contract_constraints_alive(
+        None, _position_ref(box), (_global_ref("/implied"),)
+    )
+    assert _dead_keys(tracker) == {("position<box>", implying.full_typed_name)}
+
+
+def test_contract_marks_position_candidates_alive():
+    tracker = dead_constraint_tracker.DeadConstraintTracker()
+    iface = _interface_def("iface", ["/a", "/b"])
+    for constraint in iface.constraint_typed_names:
+        tracker.register_constraint(iface.typed_name, constraint)
+    tracker.mark_contract_constraints_alive(
+        None, _position_ref(iface.typed_name), iface.constraint_typed_names
+    )
+    assert _dead_keys(tracker) == set()
+
+
+def test_contract_marks_action_candidates_alive():
     tracker = dead_constraint_tracker.DeadConstraintTracker()
     iface = _interface_def("iface", [])
     action = _global_ref("/work", ast.NameType.ACTION)
     tracker.register_constraint(iface.typed_name, action)
-    tracker.mark_position_constraints_alive(iface.typed_name, (action,))
-    assert _dead_keys(tracker) == {
-        (iface.typed_name.full_typed_name, action.full_typed_name)
-    }
+    tracker.mark_contract_constraints_alive(
+        None, _position_ref(iface.typed_name), (action,)
+    )
+    assert _dead_keys(tracker) == set()
 
 
 def test_one_constraint_alive_while_a_sibling_stays_dead():
@@ -287,5 +305,5 @@ def test_one_constraint_alive_while_a_sibling_stays_dead():
     b = _global_ref("/b")
     tracker.register_constraint(box, a)
     tracker.register_constraint(box, b)
-    tracker.mark_position_alive(_position_ref(box, a))
+    tracker.mark_position_alive(_position_ref(box), None, a)
     assert _dead_keys(tracker) == {("position<box>", b.full_typed_name)}

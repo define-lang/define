@@ -7,7 +7,6 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.known_empty
 import local.my_domain_com.my_lib.known_occupied
-import local.my_domain_com.my_lib.maybe_child
 import local.my_domain_com.my_lib.target
 
 
@@ -26,7 +25,6 @@ class Destroyer(literal.Action):
                     constraints=(
                         local.my_domain_com.my_lib.known_empty.KnownEmpty,
                         local.my_domain_com.my_lib.known_occupied.KnownOccupied,
-                        local.my_domain_com.my_lib.maybe_child.MaybeChild,
                     ),
                     scheduler=on_particle.scheduler,
                 ),

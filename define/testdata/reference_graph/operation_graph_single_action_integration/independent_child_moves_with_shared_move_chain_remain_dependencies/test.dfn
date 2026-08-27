@@ -24,6 +24,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<left_b_holder>.
         define the position<right_b_holder>.
         create a particle in position<source>.
+        create a particle in position<source>::position</box_a>.
+        destroy the particle in position<source>::position</box_a>.
+        create a particle in position<source>::position</box_b>.
+        destroy the particle in position<source>::position</box_b>.
         move the particle in position<source> to position<stage_a>.
         move the particle in position<stage_a> to position<stage_b>.
         move the particle in position<stage_b> to position<workspace>.

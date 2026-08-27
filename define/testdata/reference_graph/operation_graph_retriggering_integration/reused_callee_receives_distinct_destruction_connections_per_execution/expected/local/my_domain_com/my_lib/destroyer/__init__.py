@@ -4,8 +4,6 @@ from typing import ClassVar, final
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.first_child
-import local.my_domain_com.my_lib.second_child
 import local.my_domain_com.my_lib.target
 
 
@@ -20,10 +18,6 @@ class Destroyer(literal.Action):
             interface_positions=[
                 literal.LocalPosition(
                     "position<run>",
-                    constraints=(
-                        local.my_domain_com.my_lib.first_child.FirstChild,
-                        local.my_domain_com.my_lib.second_child.SecondChild,
-                    ),
                     scheduler=on_particle.scheduler,
                 ),
             ],

@@ -33,10 +33,9 @@ class ParticleInfo:
     # The qualities we know that this particle has, in
     # assignment order.
     qualities: quality_assignment.QualityAssignments
-    # The position reference where this particle was first created. The DLP 42
-    # liveness check keys a move's satisfied constraints off this: a constraint is
-    # only kept alive by a move if the particle was created in the position that
-    # wrote it.
+    # The position where this particle was created or first arrived through an
+    # occupied Action Requirement. DLP 42 uses it to attribute constraint uses
+    # after the particle moves.
     origin_position: ast.PositionReference
     # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
     from_caller: bool = False

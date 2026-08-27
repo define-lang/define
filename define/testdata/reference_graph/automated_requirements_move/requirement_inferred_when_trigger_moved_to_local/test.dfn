@@ -26,6 +26,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<spare>.
         create a particle in position<spare>::action</inner>::position<extra>.
+        create a particle in position<spare>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<spare>::action</inner>::position<item>.
+        destroy the particle in position<spare>::action</inner>::position<trigger_pos>.
         move the particle in position<spare> to position<box>::action</outer>::position<trigger_pos>.
     }
 }

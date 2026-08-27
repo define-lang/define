@@ -56,14 +56,12 @@ class TestExecution:
             "position<first>",
             constraints=(
                 local.my_domain_com.my_lib.first_child.FirstChild,
-                local.my_domain_com.my_lib.second_child.SecondChild,
             ),
             scheduler=self.scheduler,
         )
         self.local_position_second = literal.LocalPosition(
             "position<second>",
             constraints=(
-                local.my_domain_com.my_lib.first_child.FirstChild,
                 local.my_domain_com.my_lib.second_child.SecondChild,
             ),
             scheduler=self.scheduler,
