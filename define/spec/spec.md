@@ -1553,16 +1553,16 @@ the particle.
 
 #### Aliveness Through Callee Contracts
 
-If a particle is in a callee's contracted position (a position with an occupied
-Action Requirement in the callee) at the time that action is triggered, any
-constraints on that contracted position are marked as alive on the origin
-position of the particle.
+If a particle is in a callee's contracted position (a position that the callee
+requires to be occupied) at the time that action is triggered, any constraints
+on that contracted position are marked as alive on the origin position of the
+particle.
 
 #### Aliveness Through An Action's Own Contract
 
 At the end of an action, if a particle is in a position on which the current
-action provides an Action Guarantee, all constraints on that position are marked
-as alive on the origin position of the particle.
+action guarantees to be occupied upon its completion, all constraints on that
+final position are marked as alive on the origin position of the particle.
 
 #### Destructors
 
