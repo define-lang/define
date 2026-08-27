@@ -45,6 +45,24 @@ def test_destructor_independent_chains_and_operation_after_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_destructor_uses_callee_unchanged_guarantee_directly(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.destroy(box)": ["test.create(box)"],
+        "destructor.create(/filler::trigger_pos)": ["test.create(box)"],
+        "filler.create(/implied)": ["test.create(box)"],
+        # Returning the contracted position to its required empty state produces
+        # the callee guarantee that the Destructor consumes directly.
+        "filler.destroy(/implied)": ["filler.create(/implied)"],
+        "filler.destroy(trigger_pos)": ["destructor.create(/filler::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

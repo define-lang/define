@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -76,15 +78,19 @@ def test_resolved_actions_retains_resolved_action():
     assert resolved_actions[action] is resolved
 
 
-def test_resolved_actions_reuses_resolved_action():
+def test_resolved_actions_rejects_resolving_an_action_twice():
     action = _action("/test")
     graph = operation_graph.OperationGraphBuilder(action).finish()
     graphs = operation_graph.OperationGraphs()
     graphs[action] = graph
     resolved_actions = operation_graph_action_resolver.ResolvedActions(graphs)
-    resolved = resolved_actions.resolve(action)
+    _ = resolved_actions.resolve(action)
 
-    assert resolved_actions.resolve(action) is resolved
+    with pytest.raises(
+        ValueError,
+        match=r"action<my\.domain\.com:my_lib:/test> is already resolved",
+    ):
+        _ = resolved_actions.resolve(action)
 
 
 def test_resolved_action_keeps_local_operations_and_binding_holes_distinct():

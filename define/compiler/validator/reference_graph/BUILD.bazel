@@ -129,6 +129,7 @@ py_test(
         ":operation_graph_action_resolver",
         ":operation_graph_model",
         "//define/compiler:ast",
+        "@pypi//pytest",
     ],
 )
 

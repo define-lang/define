@@ -1597,11 +1597,7 @@ class _ActionResolver:
 
 @typing.final
 class ResolvedActions:
-    """Resolve and retain actions in direct-callee-first definition order.
-
-    Each action is resolved once after its direct callees, so parallel planning
-    writes distinct cached actions and only reads completed callee entries.
-    """
+    """Resolve and retain each action once in direct-callee-first definition order."""
 
     def __init__(
         self,
@@ -1624,9 +1620,8 @@ class ResolvedActions:
 
     def resolve(self, action: ast.GlobalTypedName) -> ResolvedAction:
         """Resolve an action whose direct callees have already been resolved."""
-        resolved = self._resolved.get(action)
-        if resolved is not None:
-            return resolved
+        if self._resolved.get(action) is not None:
+            raise ValueError(f"{action.full_typed_name} is already resolved")
         resolved = _ActionResolver(
             self._operation_graphs[action],
             self._operation_graphs,

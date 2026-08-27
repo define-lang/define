@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/filler> {
+    it also assigns the position</implied>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position</implied>.
+        destroy the particle in position</implied>.
+        destroy the particle in position<trigger_pos>.
+    }
+}

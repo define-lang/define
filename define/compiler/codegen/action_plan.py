@@ -876,7 +876,7 @@ class _ActionPlanBuilder:
 
 @typing.final
 class ActionPlans:
-    """Build action plans while reusing resolved direct-callee interfaces."""
+    """Build action plans in direct-callee-first definition order."""
 
     def __init__(
         self,
