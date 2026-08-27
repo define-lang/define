@@ -3,6 +3,10 @@
 This directory contains the implementation, specification, documentation, and
 tests of a programming language called "Define."
 
+Before changing Operation Graph resolution, action planning, literal code
+generation, or the literal runtime, read
+[the shared execution design](compiler/operation_graph_execution_design.md).
+
 ## Spec
 
 - The specification for the language is in `spec/spec.md`. Only implement

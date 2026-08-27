@@ -14,7 +14,8 @@ Two adjacent Particle Operations belong to the same fragment when:
 - the second operation has exactly one effective predecessor, the first
   operation;
 - the first operation has exactly one continuation, the second operation; and
-- their boundary neither publishes a guarantee nor triggers another action.
+- their boundary neither publishes a guarantee nor initializes another Action
+  Execution.
 
 Fragmentation happens after symbolic dependencies have been interpreted for the
 action's compilation boundary. Raw counts of `RequirementNode`, `GuaranteeNode`,
@@ -59,7 +60,8 @@ Each non-entry action has one reusable triggered plan containing:
 - Particle Operation fragments;
 - Binding Hole fan-outs;
 - direct Action Executions and their Callee Binding Joins;
-- destructors fired by guarantees;
+- Action Executions initialized by Particle Operations, guarantees, or Binding
+  Holes;
 - guarantee publications and dependencies; and
 - dependency counts for fragments and Callee Binding Joins.
 
@@ -84,16 +86,14 @@ fragmentation, resolution:
 3. Resolves every direct callee Binding Hole through its `ActionExecution` into
    a `CalleeBinding`, recording its Concrete Nodes in the caller and the caller
    Binding Holes that must be propagated.
-4. Associates each resolved Action Execution with its trigger operation,
-   represented in the caller's Operation Graph by a `PositionOperationNode`,
-   `GuaranteeNode`, or `RequirementNode`.
+4. Associates each resolved Action Execution with the availability of its Action
+   Parent, represented in the caller by a `PositionOperationNode`, a resolved
+   guarantee path, or a Binding Hole.
 
 `ResolvedAction` retains all resolved Action Executions, while
 `_ActionExecutionResolution` provides the reverse indexes required by planning.
-An Action Execution whose trigger operation is a `PositionOperationNode` is
-indexed by that operation. A destructor Action Execution whose trigger operation
-is represented by a `GuaranteeNode` retains that node. A destructor on a child
-of a particle from the caller is attached to the corresponding Binding Hole.
+The Action Parent source determines where the generated program initializes the
+execution; it does not become a Particle Operation dependency of the callee.
 
 `ResolvedAction` is independent of whether the action will execute directly or
 be triggered. The planner applies that compilation-context decision after
@@ -105,16 +105,16 @@ compute a transitive reduction, or expand the complete program graph.
 ## Action Executions and Guarantees
 
 An `ActionExecution` describes wiring rather than a synchronous call boundary.
-Its `trigger_operation` records the operation that triggers it:
+The resolver records where its Action Parent becomes available:
 
 - a `PositionOperationNode` for a Particle Operation in the action body;
-- a `GuaranteeNode` standing in for the Particle Operation in a callee's
+- a resolved guarantee path ending at a Particle Operation in a callee's
   Operation Graph; or
-- a `RequirementNode` for a destructor on a child of a particle supplied by the
-  caller.
+- a Binding Hole for an Action Parent supplied by the caller.
 
-These sources affect where codegen connects the Action Execution. They do not
-change the triggered action's plan or the meaning of its Binding Holes.
+These sources determine where codegen initializes the Action Execution. They do
+not add a dependency to its Particle Operations, change the callee's plan, or
+change the meaning of its Binding Holes.
 
 The operation that causes an action's trigger conditions to become true is not
 automatically a dependency of that action's Particle Operations. Each callee
@@ -143,21 +143,26 @@ defines `execute()`.
 
 A caller fragment invokes the appropriate execution method after its final
 Particle Operation, submitting all but one ready continuation and directly
-calling the remaining continuation. Filling a trigger position does not invoke
-the action. Only the generated caller wiring releases callee fragments, so the
-runtime cannot execute the action a second time or impose a false dependency on
-the trigger position.
+calling the remaining continuation. Making an Action Parent available does not
+invoke the action's Particle Operations. Only the generated caller wiring
+releases callee fragments, so initialization cannot impose a false dependency on
+the Action Parent source.
 
-For an Action Execution fired by a Particle Operation, the fragment ending with
-that operation directly calls a generated initialization method before releasing
-any of its other continuations. That method obtains the action object and
-creates the one callee execution for the Action Execution. The fragment then
-supplies one Action Execution arrival to every Callee Binding Join for that
-Action Execution. Other Join arrivals may occur before or after it; a Callee
-Binding Join invokes the stored execution only after all of its arrivals.
-Initialization always remains on the fragment's current thread, so a parallel
-branch cannot first move or destroy the particle through which the action is
-referenced.
+When a Particle Operation makes an Action Parent available, its fragment creates
+the callee execution before releasing any other continuation. Guarantee and
+Binding Hole fan-outs do the same for their Action Executions. Initialization
+always remains on the current thread, so a parallel branch cannot first move or
+destroy the particle through which the action is referenced. Callee Binding
+Joins track Particle Operation dependencies separately from initialization
+prerequisites. Initialization can make a Join ready, but it cannot contribute a
+Particle Operation dependency.
+
+A callee Binding with no Particle Operation dependencies starts only after its
+Action Execution has been initialized. It is submitted as independent work so
+that running it cannot become an accidental dependency of another continuation
+from the same Action Parent source. A Binding Hole callback that initializes
+deeper Action Executions likewise completes all initialization synchronously and
+submits its remaining work before returning to its caller.
 
 This implements DLP 44's rule that actions are not atomic units of execution.
 
@@ -198,54 +203,28 @@ only that guarantee's callee chain and never visits sibling guarantees. Codegen
 does not flatten descendant guarantees or enumerate contextual guarantees merely
 to define an action's execution API.
 
-### Destructor trigger operations represented by guarantees
+### Action Execution initialization from guarantees
 
-When an action creates or moves a particle in one of its positions, the caller
-may know that particle only through the resulting guarantee. If the particle has
-a destructor and the caller destroys it, the validator records an ordinary
-Action Execution whose `trigger_operation` is that `GuaranteeNode`.
+When the particle that supplies an Action Parent is known through a callee
+guarantee, the resolver records the complete guarantee path. Codegen registers a
+fan-out callback at the final publication on that path. The callback initializes
+every associated Action Execution before it releases fragments and Callee
+Binding Joins that depend on the same guarantee.
 
-The resolver first resolves every destructor Binding Hole exactly like the
-Binding Holes of any other triggered action. The planner then resolves the
-trigger operation's `GuaranteeNode` to a `GuaranteePath` and records a
-`TriggerForDestroyedCalleeGuaranteeParticle` containing:
-
-- the destructor's ordinary `ActionExecution`;
-- the guarantee path to the trigger operation; and
-- the destructor's ordinary Callee Binding Joins.
-
-Codegen registers one generated callback on the task list at the end of that
-guarantee path. When the publishing Particle Operation releases the task list,
-the callback initializes the destructor execution and supplies the Action
-Execution arrival to each destructor Callee Binding Join. Other Join arrivals
-are registered separately. For example, the same guarantee can both fire the
-destructor and satisfy its Action Parent Binding Hole, while a child guarantee
-satisfies an occupied requirement.
-
-Every Callee Binding Join counts the Action Execution arrival in addition to its
-Particle Operation, guarantee, and Binding Hole arrivals. Its generated method
-therefore invokes the destructor execution only after the Action Execution has
-created that execution and all required arrivals have occurred. Releasing the
-guarantee does not synchronously execute the destructor.
-
-This routing applies only to directly known destructors already recorded in the
-operation graph. The planner does not discover destructors or interpret
+This routing applies to ordinary actions and destructors already recorded in the
+Operation Graph. The planner does not discover destructors or interpret
 Destruction Contracts.
 
-### Triggered execution lifetime
+### Action Execution lifetime
 
 The execution for an Action Execution must obtain its action object when the
-Action Execution is released. It must not postpone that lookup until a later
+Action Parent becomes available. It must not postpone that lookup until a later
 Callee Binding Join arrival: a parallel Particle Operation may move or destroy
-the particle in the meantime even though the already-triggered action remains
-valid.
+the particle in the meantime even though the Action Execution remains valid.
 
-A firing fragment initializes the execution before invoking any Callee Binding
-Join. A guarantee callback does the same before supplying its Action Execution
-arrivals. A Binding Hole method initializes a destructor on a child of a
-particle from the caller before releasing that destructor's Callee Binding
-Joins. Every Callee Binding Join then uses that same stored execution. This
-preserves the operation graph's parallelism while making the Python object
+The Action Parent source initializes the execution before releasing work that
+can use it. Every Callee Binding Join then uses that same stored execution. This
+preserves the Operation Graph's parallelism while making the Python object
 lifetime independent of later position lookup.
 
 ## Fan-Outs and Joins
@@ -271,8 +250,8 @@ This design does not require a trampoline.
 - Join: the joined operation starts a new fragment.
 - Guarantee publication: in a triggered-action plan, a boundary exists when
   publication creates another continuation.
-- Action triggering: a boundary exists when the callee and a local continuation
-  can proceed concurrently.
+- Action Execution initialization: a boundary exists when callee work and a
+  local continuation can proceed concurrently.
 
 ## Destructors
 
@@ -281,13 +260,11 @@ fragments, Binding Hole fan-outs, Callee Binding Joins, guarantees, and
 direct-callee wiring as every other non-entry action. It has no runtime
 `execute()` method.
 
-The operation graph records the destructor's Action Execution during the
+The Operation Graph records the destructor's Action Execution during the
 Destruction Cascade. The planner merely routes that already-recorded Action
-Execution from its triggering Particle Operation, guarantee, or caller
-requirement. The Action Execution source initializes the destructor execution
-and supplies one arrival to each destructor Callee Binding Join; the
-destructor's fragments become eligible through the normal fan-out and Join
-connections.
+Execution from the source that makes its Action Parent available. The
+destructor's fragments become eligible only through the normal Binding Hole,
+guarantee, and Callee Binding Join connections.
 
 ## Planner API
 
@@ -330,10 +307,10 @@ executed action has no caller. Codegen therefore does not retain action
 contracts merely to find guarantee boundaries.
 
 The completed `ActionPlan` contains Particle Operations rather than requiring a
-renderer to index back into an operation graph. It also contains directly
-executed fragments, direct Action Executions, Binding Hole fan-outs, Callee
-Binding Joins, dependency counts, guarantee publications, guarantee-fired
-destructors, and the resolved Guarantees needed by fragments, Callee Binding
-Joins, and destructor Action Executions. A renderer assigns target-language
-names and expressions to this plan; it does not receive operation graphs,
-resolve dependencies, discover continuations, or calculate joins.
+renderer to index back into an Operation Graph. It also contains directly
+executed fragments, direct Action Executions and their initialization sources,
+Binding Hole fan-outs, Callee Binding Joins, dependency counts, guarantee
+publications, and the resolved Guarantees needed by fragments and Callee Binding
+Joins. A renderer assigns target-language names and expressions to this plan; it
+does not receive Operation Graphs, resolve dependencies, discover continuations,
+or calculate joins.
