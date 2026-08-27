@@ -28,7 +28,6 @@ class DeadConstraintCandidate:
         return (self.position.full_typed_name, self.constraint.full_typed_name)
 
 
-# TODO: Decide whether implied constructors are allowed.
 class DeadConstraintTracker:
     """The DLP 42 dead-constraint ledger.
 
