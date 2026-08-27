@@ -1610,10 +1610,12 @@ class ActionPostorderValidator:
         if not self._dead_tracker.has_constraint_candidates():
             return
         constraints, _ = self._get_direct_required_qualities(position, scope)
-        if constraints is not None:
-            self._dead_tracker.mark_contract_constraints_alive(
-                None, particle.origin_position, constraints
-            )
+        constraints = typing.cast(
+            "tuple[ast.GlobalTypedNameReference, ...]", constraints
+        )
+        self._dead_tracker.mark_contract_constraints_alive(
+            None, particle.origin_position, constraints
+        )
 
     def _check_dead_constraints(self):
         """Emit diagnostics for dead constraints and untriggered actions."""
@@ -1751,10 +1753,12 @@ class ActionPostorderValidator:
             if origin_position is None:
                 continue
             constraints, _ = self._get_direct_required_qualities(final_position, scope)
-            if constraints is not None:
-                self._dead_tracker.mark_contract_constraints_alive(
-                    final_position, origin_position, constraints
-                )
+            constraints = typing.cast(
+                "tuple[ast.GlobalTypedNameReference, ...]", constraints
+            )
+            self._dead_tracker.mark_contract_constraints_alive(
+                final_position, origin_position, constraints
+            )
 
     @property
     def _trigger_position_name(self) -> str | None:
