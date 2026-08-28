@@ -31,7 +31,12 @@ There are certain circumstances in which we can simplify the compiler (and
 improve its performance) if we know that certain types of dead code can't
 exist---that something will be guaranteed to reference them.
 
-<!-- TODO: I had a specific example for Define but I need to remember it again. -->
+For example, if we know that all interface positions are used, it removes all
+checks during code generation as to whether or not interface positions are
+actually required, and allows us to know that various variables and data
+structures can never be empty.
+
+<!-- TODO: There are more good examples, even better ones about correctness. -->
 
 ### 3: Dead Code Adds Compilation Time
 
@@ -165,13 +170,70 @@ with B as the parent name. So if the constraint is `position</thing>` then the
 code would have to explicitly reference `position<b>::position</thing>` in order
 for that constraint on `position<b>` to be considered alive.
 
-#### Untriggered Implied Actions
+### Untriggered Implied Actions
 
 If an action is implied and that action itself is not triggered inside of the
 implying action (no matter how else it is referenced in the implying action)
 then the _implication_ is a dead dependency.
 
 Note that this inherently denies implying constructors or destructors, entirely.
+
+### Untriggered Grandchild Actions
+
+Imagine that we have a line of code like this:
+
+`create a particle in action</foo>::position<iface>::action</bar>::position<input>`
+
+What if `action</bar>` is never triggered? That makes `action</bar>` into dead
+code even though it's not a directly-written constraint on any local position.
+
+Thus we have to expand our rules to say that any action that appears in a
+position reference is dead code if it's not triggered in this action.
+
+### Unnecessary Use of Interface Positions
+
+There's also a particularly tricky case for dead code, like this:
+
+```define
+create a particle in action</foo>::position<iface>.
+move the particle in action</foo>::position<iface> to position<local>.
+create a particle in action</foo>::position<iface>.
+# This triggers action</foo>.
+create a particle in action</foo>::position<run>.
+```
+
+There is no good reason to write those first two lines of code, and it makes
+later analysis more complex in the compiler (especially once we get into code
+generation and we have to determine dependencies between actions, as will come
+up in a later proposal). It is much simpler for the compiler if it can make a
+basic assumption: any particle that arrives in an interface position will be
+there when the action executes. Since there's no good reason to allow that code
+and it makes things simpler for the compiler, we declare any use of an interface
+position as purely a waypoint to be dead code.
+
+This is also dead:
+
+```define
+create a particle in action</foo>::position<iface>.
+# This triggers action</foo>.
+create a particle in action</foo>::position<run>.
+destroy the particle in action</foo>::position<iface>.
+create a particle in action</foo>::position<iface>.
+```
+
+That create is dead, but the destroy before it is alive.
+
+All of that said, this is still perfectly valid:
+
+```define
+create a particle in action</foo>::position<iface>.
+create a particle in action</foo>::position<run>.
+destroy the particle in action</foo>::position<run>.
+create a particle in action</foo>::position<run>.
+```
+
+In other words, you can keep re-using a particle in an interface position, you
+just can't use an interface position as nothing other than a waypoint.
 
 ### Qualities on Global Positions
 
@@ -273,6 +335,14 @@ I'm not 100% confident that this is the right restriction; there could be some
 legitimate reason to allow that (very weird) pattern. However, at the moment it
 doesn't make sense to me to allow it. If you're going to pass arguments to a
 function, you should actually call that function.
+
+This also handles one of the more confusing parts of Define, which is "did I
+actually trigger that action or not?" Now you will know that if an action is
+referenced, you _always_ triggered it or the compiler will complain. That's
+particularly important for a future where your libraries can do automated
+refactorings of your code when they upgrade your code---otherwise a library
+could accidentally perform a change that caused an action to not be triggered,
+and it would be very hard to notice.
 
 ### Denying Implied Destructors
 

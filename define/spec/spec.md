@@ -1569,6 +1569,19 @@ final position are marked as alive on the origin position of the particle.
 Destructors specified as constraints on local or interface positions are always
 alive.
 
+### Dead Interface Positions
+
+If a particle arrives in an interface position of a callee (i.e., it is created
+there, moved there, or inferred to be there by an Action Requirement), that
+callee must be triggered during the same action with that particle in that
+interface position, without that particle moving before that callee is
+triggered.
+
+This rule also applies to child positions of interface positions. However, child
+_actions_ of interface positions are their own callee---putting values into
+their interface positions requires triggering them, but does not require
+triggering their parent action.
+
 ## Deterministic Automatic Concurrency
 
 Proposals:
