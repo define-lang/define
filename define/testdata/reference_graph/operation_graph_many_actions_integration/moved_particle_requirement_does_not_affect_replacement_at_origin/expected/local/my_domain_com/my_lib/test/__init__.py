@@ -4,7 +4,7 @@ from typing import final, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.middle
 
 
@@ -53,13 +53,15 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_middle__action_parent = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).create_particle()
         self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
-        self.create_position_gateway__action_middle__position_trigger_pos()
+        self.scheduler.submit(self.create_position_gateway__action_middle__position_trigger_pos)
+        self.trigger_position_gateway__action_middle__action_parent()
 
     def create_position_gateway__action_middle__position_source(self):
         self.action.get_interface_position(
@@ -75,10 +77,8 @@ class TestExecution:
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<source>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<item>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.item.Item
         ).create_particle()
         self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
 
@@ -99,9 +99,15 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_middle,
         )
-        self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
+        self.scheduler.submit(self.trigger_position_gateway__action_middle__for_empty_rule_position_source)
+        self.trigger_position_gateway__action_middle__action_parent()
 
     def trigger_position_gateway__action_middle__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source.arrive():
             return
         self.execution_trigger_position_gateway__action_middle.accept_for_empty_rule_position_source()
+
+    def trigger_position_gateway__action_middle__action_parent(self):
+        if not self.join_for_trigger_position_gateway__action_middle__action_parent.arrive():
+            return
+        self.execution_trigger_position_gateway__action_middle.accept_action_parent()

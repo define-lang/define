@@ -4,7 +4,7 @@ from typing import final, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.outer
 
 
@@ -17,7 +17,7 @@ class Test(literal.EntryPoint):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.child.Child,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -70,10 +70,8 @@ class TestExecution:
         ).create_particle()
         self.action.get_interface_position(
             "position<box>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.move_position_box_to_position_outer_holder__action_outer__position_input()
 

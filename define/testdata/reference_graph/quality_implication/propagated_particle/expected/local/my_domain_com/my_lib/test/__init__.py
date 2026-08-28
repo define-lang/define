@@ -43,6 +43,7 @@ class TestExecution:
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
         self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box = self.scheduler.create_join(2)
         self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_runner__when_occupied_position_wrapper = self.scheduler.create_join(2)
 
     def create_action_runner__position_wrapper(self):
         self.action.on_particle.get_action(
@@ -51,7 +52,8 @@ class TestExecution:
             "position<wrapper>"
         ).create_particle()
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
-        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run()
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
+        self.trigger_action_runner__when_occupied_position_wrapper()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -68,6 +70,7 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
+        self.scheduler.submit(self.trigger_action_runner__when_occupied_position_wrapper)
         self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final()
 
     def trigger_action_runner__when_empty_position_wrapper__action_middle__position_box(self):
@@ -79,6 +82,11 @@ class TestExecution:
         if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run.arrive():
             return
         self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_run()
+
+    def trigger_action_runner__when_occupied_position_wrapper(self):
+        if not self.join_for_trigger_action_runner__when_occupied_position_wrapper.arrive():
+            return
+        self.execution_trigger_action_runner.accept_when_occupied_position_wrapper()
 
     def trigger_action_runner__when_empty_position_wrapper__action_middle__position_final(self):
         self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_final()

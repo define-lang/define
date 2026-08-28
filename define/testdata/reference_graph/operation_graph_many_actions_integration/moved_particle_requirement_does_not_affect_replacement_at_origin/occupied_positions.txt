@@ -1,4 +1,2 @@
 action<local.my_domain_com.my_lib.test.Test>::position<gateway>
 action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.middle.Middle>::position<holder>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.middle.Middle>::position<holder>::action<local.my_domain_com.my_lib.inner.Inner>::position<trigger_pos>

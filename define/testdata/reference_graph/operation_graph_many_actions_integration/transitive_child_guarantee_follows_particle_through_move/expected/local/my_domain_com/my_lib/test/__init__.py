@@ -4,9 +4,8 @@ from typing import final, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.inner
-import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.outer
+import local.my_domain_com.my_lib.result_value
 
 
 class Test(literal.EntryPoint):
@@ -56,20 +55,20 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_position_gateway__action_outer.guarantee_position_source__move__position_destination.append(
-            self.move_position_gateway__action_outer__position_destination__action_middle__position_inner_parent__action_inner__position_result_to_position_result
+        guarantees.trigger_position_gateway__action_outer.guarantee_position_destination__global_position_result_value.append(
+            self.move_position_gateway__action_outer__position_destination__global_position_result_value_to_position_result
         )
         self.execution_trigger_position_gateway__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_outer__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_outer__for_empty_rule_position_source = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).create_particle()
         self.scheduler.submit(self.create_position_gateway__action_outer__position_source)
-        self.create_position_gateway__action_outer__position_trigger_pos()
+        self.scheduler.submit(self.create_position_gateway__action_outer__position_trigger_pos)
+        self.trigger_position_gateway__action_outer__action_parent()
 
     def create_position_gateway__action_outer__position_source(self):
         self.action.get_interface_position(
@@ -79,23 +78,7 @@ class TestExecution:
         ).get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gateway__action_outer__position_source__action_middle__position_inner_parent)
-        self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos()
-
-    def create_position_gateway__action_outer__position_source__action_middle__position_inner_parent(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
-        ).get_interface_position(
-            "position<source>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        ).get_interface_position(
-            "position<inner_parent>"
-        ).create_particle()
-        self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos)
-        self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result()
+        self.trigger_position_gateway__action_outer__for_empty_rule_position_source()
 
     def create_position_gateway__action_outer__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -114,46 +97,34 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_outer,
         )
-        self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result)
-        self.trigger_position_gateway__action_outer__for_empty_rule_position_source()
+        self.scheduler.submit(self.trigger_position_gateway__action_outer__action_parent)
+        self.scheduler.submit(self.trigger_position_gateway__action_outer__for_empty_rule_position_source)
+        self.trigger_position_gateway__action_outer__when_empty_position_destination()
 
-    def move_position_gateway__action_outer__position_destination__action_middle__position_inner_parent__action_inner__position_result_to_position_result(self):
+    def move_position_gateway__action_outer__position_destination__global_position_result_value_to_position_result(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<destination>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        ).get_interface_position(
-            "position<inner_parent>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<result>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.result_value.ResultValue
         ).move_particle_to(
             self.action.get_interface_position(
                 "position<result>"
             )
         )
 
-    def trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_trigger_pos.arrive():
+    def trigger_position_gateway__action_outer__action_parent(self):
+        if not self.join_for_trigger_position_gateway__action_outer__action_parent.arrive():
             return
-        self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_source__action_middle__position_trigger_pos()
-
-    def trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_source__action_middle__position_inner_parent__action_inner__position_trigger_pos()
-
-    def trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result(self):
-        if not self.join_for_trigger_position_gateway__action_outer__when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result.arrive():
-            return
-        self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_source__action_middle__position_inner_parent__action_inner__position_result()
+        self.execution_trigger_position_gateway__action_outer.accept_action_parent()
 
     def trigger_position_gateway__action_outer__for_empty_rule_position_source(self):
+        if not self.join_for_trigger_position_gateway__action_outer__for_empty_rule_position_source.arrive():
+            return
         self.execution_trigger_position_gateway__action_outer.accept_for_empty_rule_position_source()
+
+    def trigger_position_gateway__action_outer__when_empty_position_destination(self):
+        self.execution_trigger_position_gateway__action_outer.accept_when_empty_position_destination()

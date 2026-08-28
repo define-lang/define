@@ -4,6 +4,8 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child
+
 
 class Inner(literal.Action):
 
@@ -13,6 +15,9 @@ class Inner(literal.Action):
             interface_positions=[
                 literal.LocalPosition(
                     "position<input>",
+                    constraints=(
+                        local.my_domain_com.my_lib.child.Child,
+                    ),
                     scheduler=on_particle.scheduler,
                 ),
                 literal.LocalPosition(
@@ -43,11 +48,28 @@ class InnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_input = self.scheduler.create_join(2)
+
+    def accept_for_empty_rule_position_input__global_position_child(self):
+        self.destroy_position_input__global_position_child()
 
     def accept_for_empty_rule_position_input(self):
         self.destroy_position_input()
 
+    def destroy_position_input__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_position_input__global_position_child)
+
+    def continue_destroy_position_input__global_position_child(self):
+        self.action.get_interface_position(
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.destroy_position_input()
+
     def destroy_position_input(self):
+        if not self.join_for_destroy_position_input.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input)
 
     def continue_destroy_position_input(self):

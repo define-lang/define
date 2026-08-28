@@ -4,6 +4,8 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.item
+
 
 class Inner(literal.Action):
 
@@ -16,7 +18,10 @@ class Inner(literal.Action):
                     scheduler=on_particle.scheduler,
                 ),
                 literal.LocalPosition(
-                    "position<item>",
+                    "position<input>",
+                    constraints=(
+                        local.my_domain_com.my_lib.item.Item,
+                    ),
                     scheduler=on_particle.scheduler,
                 ),
             ],
@@ -26,7 +31,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_item: list[literal.Task] = []
+        self.guarantee_position_input__global_position_item: list[literal.Task] = []
 
 
 @final
@@ -44,14 +49,16 @@ class InnerExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
 
-    def accept_for_empty_rule_position_item(self):
-        self.destroy_position_item()
+    def accept_for_empty_rule_position_input__global_position_item(self):
+        self.destroy_position_input__global_position_item()
 
-    def destroy_position_item(self):
-        literal.continue_destruction(self.continue_destroy_position_item)
+    def destroy_position_input__global_position_item(self):
+        literal.continue_destruction(self.continue_destroy_position_input__global_position_item)
 
-    def continue_destroy_position_item(self):
+    def continue_destroy_position_input__global_position_item(self):
         self.action.get_interface_position(
-            "position<item>"
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_item)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_input__global_position_item)

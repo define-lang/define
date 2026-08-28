@@ -4,6 +4,7 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.holder
 import local.my_domain_com.my_lib.inner
 
 
@@ -21,6 +22,7 @@ class Middle(literal.Action):
                     "position<gw>",
                     constraints=(
                         local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.holder.Holder,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -31,6 +33,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
+        self.guarantee_position_gw__global_position_holder__move__position_gw__action_inner__position_holder: list[literal.Task] = []
         self.guarantee_position_gw__action_inner__position_trigger_pos: list[literal.Task] = []
         self.trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
@@ -49,11 +52,28 @@ class MiddleExecution:
         self.execution_trigger_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_trigger_position_gw__action_inner__when_empty_position_holder__global_position_a = self.scheduler.create_join(2)
 
+    def accept_for_empty_rule_position_gw__global_position_holder(self):
+        self.move_position_gw__global_position_holder_to_position_gw__action_inner__position_holder()
+
     def accept_when_empty_position_gw__action_inner__position_trigger_pos(self):
         self.create_position_gw__action_inner__position_trigger_pos()
 
-    def accept_when_empty_position_gw__action_inner__position_holder__global_position_a(self):
-        self.trigger_position_gw__action_inner__when_empty_position_holder__global_position_a()
+    def move_position_gw__global_position_holder_to_position_gw__action_inner__position_holder(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.holder.Holder
+        ).move_particle_to(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<holder>"
+            )
+        )
+        self.scheduler.submit(self.trigger_position_gw__action_inner__when_empty_position_holder__global_position_a)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_gw__global_position_holder__move__position_gw__action_inner__position_holder)
 
     def create_position_gw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(

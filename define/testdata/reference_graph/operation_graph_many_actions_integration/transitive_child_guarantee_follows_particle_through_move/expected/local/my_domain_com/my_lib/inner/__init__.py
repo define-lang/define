@@ -4,6 +4,8 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.result_value
+
 
 class Inner(literal.Action):
 
@@ -16,7 +18,10 @@ class Inner(literal.Action):
                     scheduler=on_particle.scheduler,
                 ),
                 literal.LocalPosition(
-                    "position<result>",
+                    "position<input>",
+                    constraints=(
+                        local.my_domain_com.my_lib.result_value.ResultValue,
+                    ),
                     scheduler=on_particle.scheduler,
                 ),
             ],
@@ -26,7 +31,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
+        self.guarantee_position_input__global_position_result_value: list[literal.Task] = []
 
 
 @final
@@ -41,11 +46,13 @@ class InnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
 
-    def accept_when_empty_position_result(self):
-        self.create_position_result()
+    def accept_when_empty_position_input__global_position_result_value(self):
+        self.create_position_input__global_position_result_value()
 
-    def create_position_result(self):
+    def create_position_input__global_position_result_value(self):
         self.action.get_interface_position(
-            "position<result>"
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.result_value.ResultValue
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_input__global_position_result_value)

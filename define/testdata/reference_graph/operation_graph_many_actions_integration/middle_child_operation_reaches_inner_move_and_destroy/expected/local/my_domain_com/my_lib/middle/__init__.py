@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.source_particle
 
 
 class Middle(literal.Action):
@@ -22,6 +23,7 @@ class Middle(literal.Action):
                     "position<gateway>",
                     constraints=(
                         local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.source_particle.SourceParticle,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -32,6 +34,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
+        self.guarantee_position_gateway__global_position_source_particle: list[literal.Task] = []
         self.guarantee_position_gateway__action_inner__position_trigger_pos: list[literal.Task] = []
         self.trigger_position_gateway__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
@@ -50,14 +53,31 @@ class MiddleExecution:
         self.execution_trigger_position_gateway__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_trigger_position_gateway__action_inner__for_empty_rule_position_source = self.scheduler.create_join(3)
 
-    def accept_when_empty_position_gateway__action_inner__position_source__global_position_child(self):
-        self.create_position_gateway__action_inner__position_source__global_position_child()
+    def accept_for_empty_rule_position_gateway__global_position_source_particle(self):
+        self.move_position_gateway__global_position_source_particle_to_position_gateway__action_inner__position_source()
 
     def accept_when_empty_position_gateway__action_inner__position_trigger_pos(self):
         self.create_position_gateway__action_inner__position_trigger_pos()
 
-    def accept_for_empty_rule_position_gateway__action_inner__position_source(self):
+    def accept_when_empty_position_gateway__action_inner__position_destination(self):
         self.trigger_position_gateway__action_inner__for_empty_rule_position_source()
+
+    def move_position_gateway__global_position_source_particle_to_position_gateway__action_inner__position_source(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.source_particle.SourceParticle
+        ).move_particle_to(
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<source>"
+            )
+        )
+        self.scheduler.submit(self.create_position_gateway__action_inner__position_source__global_position_child)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_gateway__global_position_source_particle)
 
     def create_position_gateway__action_inner__position_source__global_position_child(self):
         self.action.get_interface_position(

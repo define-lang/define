@@ -5,6 +5,7 @@ from typing import final
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.out_value
 
 
 class Middle(literal.Action):
@@ -21,6 +22,7 @@ class Middle(literal.Action):
                     "position<igw>",
                     constraints=(
                         local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.out_value.OutValue,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -31,6 +33,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
+        self.guarantee_position_igw__action_inner__position_out__move__position_igw__global_position_out_value: list[literal.Task] = []
         self.guarantee_position_igw__action_inner__position_trigger_pos: list[literal.Task] = []
         self.trigger_position_igw__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
@@ -46,7 +49,11 @@ class MiddleExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_igw__action_inner.guarantee_position_out.append(
+            self.move_position_igw__action_inner__position_out_to_position_igw__global_position_out_value
+        )
         self.execution_trigger_position_igw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_igw__action_inner__position_out_to_position_igw__global_position_out_value = self.scheduler.create_join(2)
         self.join_for_trigger_position_igw__action_inner__when_empty_position_out = self.scheduler.create_join(2)
 
     def accept_when_empty_position_igw__action_inner__position_trigger_pos(self):
@@ -54,6 +61,9 @@ class MiddleExecution:
 
     def accept_when_empty_position_igw__action_inner__position_out(self):
         self.trigger_position_igw__action_inner__when_empty_position_out()
+
+    def accept_when_empty_position_igw__global_position_out_value(self):
+        self.move_position_igw__action_inner__position_out_to_position_igw__global_position_out_value()
 
     def create_position_igw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -74,6 +84,24 @@ class MiddleExecution:
         )
         self.scheduler.submit_all(self.guarantees.guarantee_position_igw__action_inner__position_trigger_pos)
         self.trigger_position_igw__action_inner__when_empty_position_out()
+
+    def move_position_igw__action_inner__position_out_to_position_igw__global_position_out_value(self):
+        if not self.join_for_move_position_igw__action_inner__position_out_to_position_igw__global_position_out_value.arrive():
+            return
+        self.action.get_interface_position(
+            "position<igw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<out>"
+        ).move_particle_to(
+            self.action.get_interface_position(
+                "position<igw>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.out_value.OutValue
+            )
+        )
+        self.scheduler.continue_with(self.guarantees.guarantee_position_igw__action_inner__position_out__move__position_igw__global_position_out_value)
 
     def trigger_position_igw__action_inner__when_empty_position_out(self):
         if not self.join_for_trigger_position_igw__action_inner__when_empty_position_out.arrive():
