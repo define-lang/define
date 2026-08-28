@@ -128,18 +128,18 @@ a language designed for verification can do better.
 In particular, in Define, we should always (or nearly always) be able to tell
 which particle is located where, at the end of an action.
 
-### 5: The State of Quality-Required Positions and Actions
+### 5: The State of Implied Positions and Actions
 
 As described in [DLP 22 (Atomic Qualities)](00022-atomic-qualities.md),
-positions and actions can require other positions and actions to exist on the
+positions and actions can imply that other positions and actions to exist on the
 same particle.
 
 This creates a subtle problem for modular analysis. In order to safely interact
-with a required position, or with the interface positions of a required action,
+with a implied position, or with the interface positions of a implied action,
 the compiler also has to know whether those positions are occupied or empty.
 
-The difficulty is that a required action may have already existed on the
-particle before the current action was assigned. Other actions may have already
+The difficulty is that a implied action may have already existed on the particle
+before the current action was assigned. Other actions may have already
 interacted with its interface positions. Thus, the current action cannot simply
 assume that those interface positions are in some initial empty state.
 
