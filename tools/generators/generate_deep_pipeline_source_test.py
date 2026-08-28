@@ -27,7 +27,15 @@ class TestGenerateSourceLines:
 
         assert source.count("define the potential action<") == 2 * (3 + 2) + 1
         assert (
-            "create a particle in position<record_processing>::action</pipeline_0/finalize_record>::position<pending_record>::position</temporary_metadata>."
+            "create a particle in position<pipeline_0>::action</pipeline_0/process_stage_0>::position<record>::position</temporary_metadata>."
+            in source
+        )
+        assert (
+            "move the particle in position<record> to position<next_processing_stage>::action</pipeline_0/process_stage_1>::position<record>."
+            in source
+        )
+        assert (
+            "move the particle in position<record> to position<record_processing>::action</pipeline_0/finalize_record>::position<pending_record>."
             in source
         )
         assert (

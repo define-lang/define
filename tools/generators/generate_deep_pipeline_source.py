@@ -6,12 +6,12 @@ parse volume or graph density.
 
 Each pipeline is one application workflow:
 
-  * The entry-point action prepares the particles every stage uses.
-  * Each processing action triggers the next stage, so a requirement inferred
-    at the deepest stage propagates back through every caller above it.
-  * The last two actions create a particle in a temporary child position of a
-    caller-created work particle, then move the work particle and destroy the
-    child particle.
+  * The entry-point action prepares one work particle for each pipeline.
+  * Each processing action moves that particle into the next action's interface
+    position and triggers it, so a requirement inferred at the deepest stage
+    propagates back through every caller above it.
+  * The final action moves the work particle and destroys its temporary child
+    particle.
 
 Pipelines are independent because a large program contains many workflows of
 similar structure with separately specialized actions.
@@ -37,6 +37,7 @@ _MIN_PROCESSING_STAGES = 1
 _OUTER_INDENT = "    "
 _INNER_INDENT = "        "
 _DEEP_INDENT = "            "
+_DEEPEST_INDENT = "                "
 
 _TEMPORARY_METADATA_POSITION = "/temporary_metadata"
 
@@ -91,15 +92,21 @@ def _emit_record_preparer(prefix: str, pipeline: int) -> list[str]:
     return [
         f"define the potential action<{action_name}> {{",
         f"{_OUTER_INDENT}define the position<start>.",
-        f"{_OUTER_INDENT}define the position<record_processing> {{",
+        f"{_OUTER_INDENT}define the position<record> {{",
         f"{_INNER_INDENT}it may only contain particles where {{",
-        f"{_DEEP_INDENT}it has the action<{finalizer}>.",
+        f"{_DEEP_INDENT}it has the position<{_TEMPORARY_METADATA_POSITION}>.",
         f"{_INNER_INDENT}}}",
         f"{_OUTER_INDENT}}}",
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}the position<start> has a particle.",
         f"{_OUTER_INDENT}}} and it does {{",
-        f"{_INNER_INDENT}create a particle in position<record_processing>::action<{finalizer}>::position<pending_record>::position<{_TEMPORARY_METADATA_POSITION}>.",
+        f"{_INNER_INDENT}define the position<record_processing> {{",
+        f"{_DEEP_INDENT}it may only contain particles where {{",
+        f"{_DEEPEST_INDENT}it has the action<{finalizer}>.",
+        f"{_DEEP_INDENT}}}",
+        f"{_INNER_INDENT}}}",
+        f"{_INNER_INDENT}create a particle in position<record_processing>.",
+        f"{_INNER_INDENT}move the particle in position<record> to position<record_processing>::action<{finalizer}>::position<pending_record>.",
         f"{_INNER_INDENT}create a particle in position<record_processing>::action<{finalizer}>::position<start>.",
         f"{_OUTER_INDENT}}}",
         "}",
@@ -114,14 +121,21 @@ def _emit_processing_stage(
     return [
         f"define the potential action<{action_name}> {{",
         f"{_OUTER_INDENT}define the position<start>.",
-        f"{_OUTER_INDENT}define the position<next_processing_stage> {{",
+        f"{_OUTER_INDENT}define the position<record> {{",
         f"{_INNER_INDENT}it may only contain particles where {{",
-        f"{_DEEP_INDENT}it has the action<{next_action}>.",
+        f"{_DEEP_INDENT}it has the position<{_TEMPORARY_METADATA_POSITION}>.",
         f"{_INNER_INDENT}}}",
         f"{_OUTER_INDENT}}}",
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}the position<start> has a particle.",
         f"{_OUTER_INDENT}}} and it does {{",
+        f"{_INNER_INDENT}define the position<next_processing_stage> {{",
+        f"{_DEEP_INDENT}it may only contain particles where {{",
+        f"{_DEEPEST_INDENT}it has the action<{next_action}>.",
+        f"{_DEEP_INDENT}}}",
+        f"{_INNER_INDENT}}}",
+        f"{_INNER_INDENT}create a particle in position<next_processing_stage>.",
+        f"{_INNER_INDENT}move the particle in position<record> to position<next_processing_stage>::action<{next_action}>::position<record>.",
         f"{_INNER_INDENT}create a particle in position<next_processing_stage>::action<{next_action}>::position<start>.",
         f"{_OUTER_INDENT}}}",
         "}",
@@ -129,7 +143,7 @@ def _emit_processing_stage(
     ]
 
 
-def _emit_entry_point(prefix: str, pipelines: int, processing_stages: int) -> list[str]:
+def _emit_entry_point(prefix: str, pipelines: int) -> list[str]:
     lines = [f"define the potential action<{_qualified(prefix, '/test')}> {{"]
     for pipeline in range(pipelines):
         first_action = _action_path("process_stage", pipeline, 0)
@@ -151,27 +165,14 @@ def _emit_entry_point(prefix: str, pipelines: int, processing_stages: int) -> li
     )
 
     for pipeline in range(pipelines):
-        current_position = f"position<pipeline_{pipeline}>"
-        lines.append(f"{_INNER_INDENT}create a particle in {current_position}.")
-
-        for stage in range(processing_stages):
-            processing_action = _action_path("process_stage", pipeline, stage)
-            current_position += (
-                f"::action<{processing_action}>::position<next_processing_stage>"
-            )
-            lines.append(f"{_INNER_INDENT}create a particle in {current_position}.")
-
-        preparer = _action_path("prepare_record", pipeline)
-        current_position += f"::action<{preparer}>::position<record_processing>"
-        lines.append(f"{_INNER_INDENT}create a particle in {current_position}.")
-
-        finalizer = _action_path("finalize_record", pipeline)
-        current_position += f"::action<{finalizer}>::position<pending_record>"
-        lines.append(f"{_INNER_INDENT}create a particle in {current_position}.")
-
         first_action = _action_path("process_stage", pipeline, 0)
-        first_trigger = (
-            f"position<pipeline_{pipeline}>::action<{first_action}>::position<start>"
+        pipeline_position = f"position<pipeline_{pipeline}>"
+        first_record = f"{pipeline_position}::action<{first_action}>::position<record>"
+        first_trigger = f"{pipeline_position}::action<{first_action}>::position<start>"
+        lines.append(f"{_INNER_INDENT}create a particle in {pipeline_position}.")
+        lines.append(f"{_INNER_INDENT}create a particle in {first_record}.")
+        lines.append(
+            f"{_INNER_INDENT}create a particle in {first_record}::position<{_TEMPORARY_METADATA_POSITION}>."
         )
         lines.append(f"{_INNER_INDENT}create a particle in {first_trigger}.")
 
@@ -212,8 +213,8 @@ def generate_source_lines(
             )
             next_action = _action_path("process_stage", pipeline, stage)
 
-    lines.extend(_emit_entry_point(fqun_prefix, pipelines, processing_stages))
-    return lines
+    lines.extend(_emit_entry_point(fqun_prefix, pipelines))
+    return lines[:-1]
 
 
 def write_to_path(
@@ -259,13 +260,13 @@ def main(output: Path, pipelines: int, processing_stages: int, fqun_prefix: str)
     """Generate a Define source file with deep processing pipelines.
 
     Emits one .dfn holding many independent pipelines, each a chain of specialized
-    processing actions. The entry-point action prepares the particles every stage
-    uses, each processing action triggers the next stage, and the last two actions
-    create a particle in a temporary child position of a caller-created work
-    particle, then move the work particle and destroy the child particle. This is
-    the requirement-propagation profiling shape: it drives Position Requirements up
-    through many callers and exercises the Fill Rule's parent-position dependency
-    substitution, which the other shapes barely reach.
+    processing actions. The entry-point action prepares one particle per pipeline,
+    each processing action moves that particle into the next action's interface
+    position and triggers it, and the final action moves the particle and destroys
+    its temporary child particle. This is the requirement-propagation profiling
+    shape: it drives Position Requirements up through many callers and exercises
+    the Fill Rule's parent-position dependency substitution, which the other shapes
+    barely reach.
 
     Scale it with --processing-stages, by far the more expensive knob: cost grows
     with the pipeline count times the square of the stage count, because every
