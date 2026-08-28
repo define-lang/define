@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:main_lib:/bar_position> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:dep_lib:/x>.
+    }
+}

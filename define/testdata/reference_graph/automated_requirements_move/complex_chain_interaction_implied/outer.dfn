@@ -10,6 +10,13 @@ define the potential action<my.domain.com:my_lib:/outer> {
             }
         }
         move the particle in position</implied>::position</child>::position</grand> to position<local>.
-        create a particle in position<local>::position</great>::position</double>::action</inner>::position<trigger_pos>.
+        define the position<inner_holder> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<inner_holder>.
+        move the particle in position<local>::position</great>::position</double> to position<inner_holder>::action</inner>::position<input>.
+        create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.
     }
 }

@@ -38,22 +38,22 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 24
+    assert diag.location.line == 21
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.required_empty is True
     assert diag.action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
         diag.position_name
-        == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
+        == f"position<box>::action</outer>::position<iface>::position<{_DEP_FQUN}:/x>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>",
+            "enclosing_quality_name": f"position<box>::action</outer>::position<iface>::position<{_DEP_FQUN}:/x>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -61,7 +61,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/outer>",
-            "line": 24,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -69,7 +69,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -107,14 +107,14 @@ def test_cross_fqun_occupied_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
         all_diags[0].position_name
-        == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
+        == f"position<box>::action</outer>::position<iface>::position<{_DEP_FQUN}:/x>"
     )
     assert_propagation_chain(
         all_diags[0],
@@ -122,7 +122,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/outer>",
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -130,7 +130,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -164,13 +164,13 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/foo>"
     assert (
         all_diags[0].position_name
-        == "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>"
+        == "position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position</leaf>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>",
+            "enclosing_quality_name": "position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position</leaf>",
             "triggered_quality_name": None,
             "line": 22,
             "column": 30,
@@ -188,7 +188,7 @@ def test_complex_chain_same_fqun_position_name(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/foo>",
             "triggered_quality_name": _MIDDLE,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "foo.dfn",
         },
@@ -196,7 +196,7 @@ def test_complex_chain_same_fqun_position_name(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": "action<my.domain.com:my_lib:/bar>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -204,7 +204,7 @@ def test_complex_chain_same_fqun_position_name(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/bar>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "bar.dfn",
         },
@@ -225,22 +225,22 @@ def test_complex_chain_cross_fqun_position_name(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 24
+    assert diag.location.line == 23
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.required_empty is True
     assert diag.action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (
         diag.position_name
-        == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
+        == f"position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position<{_DEP_FQUN}:/x>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>",
+            "enclosing_quality_name": f"position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position<{_DEP_FQUN}:/x>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -248,7 +248,7 @@ def test_complex_chain_cross_fqun_position_name(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/foo>",
-            "line": 24,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -256,7 +256,7 @@ def test_complex_chain_cross_fqun_position_name(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "foo.dfn",
         },
@@ -264,7 +264,7 @@ def test_complex_chain_cross_fqun_position_name(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/bar>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },

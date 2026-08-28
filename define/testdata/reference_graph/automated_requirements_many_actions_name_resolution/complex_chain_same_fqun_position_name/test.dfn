@@ -1,10 +1,9 @@
-# A deeply-chained trigger path through nested actions in the same FQUN.
+# A deeply-chained trigger path through actions in the same FQUN.
 #
 # /test triggers /foo through position<local>::position</x>::action</foo>::position<trigger_pos>.
-# /foo triggers /middle through position<iface>::action</middle>::position<trigger_pos>.
-# /middle triggers /bar through position<mid_iface>::action</bar>::position<trigger_pos>.
-# /bar requires position<item> to be empty. The propagated position_name should be:
-# position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>
+# /foo transfers position</middle_position> to /middle, which transfers
+# position</bar_position> to /bar. /bar requires position</leaf> to be empty.
+# The propagated position name should preserve the complete position-child path.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -18,8 +17,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<local>.
         create a particle in position<local>::position</x>.
         create a particle in position<local>::position</x>::action</foo>::position<iface>.
-        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.
-        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>::position</middle_position>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>.
+        create a particle in position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position</leaf>.
         create a particle in position<local>::position</x>::action</foo>::position<trigger_pos>.
     }
 }

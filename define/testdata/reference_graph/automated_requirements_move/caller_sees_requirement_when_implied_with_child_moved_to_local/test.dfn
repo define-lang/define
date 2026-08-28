@@ -12,7 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::position</implied>.
         create a particle in position<box>::position</implied>::position</child>.
-        create a particle in position<box>::position</implied>::position</child>::action</inner>::position<item>.
+        create a particle in position<box>::position</implied>::position</child>::position</item>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

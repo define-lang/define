@@ -3,13 +3,15 @@ define the potential action<my.domain.com:my_lib:/outer> {
     define the position<out_iface> {
         it may only contain particles where {
             it has the action</middle>.
+            it has the position</mid_input>.
         }
     }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<out_iface>::action</middle>::position<mid_iface>.
-        create a particle in position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.
+        create a particle in position<out_iface>::position</mid_input>.
+        create a particle in position<out_iface>::position</mid_input>::position</value>.
+        move the particle in position<out_iface>::position</mid_input> to position<out_iface>::action</middle>::position<mid_iface>.
         create a particle in position<out_iface>::action</middle>::position<trigger_pos>.
     }
 }

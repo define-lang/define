@@ -2,7 +2,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
     it also assigns the action</middle>.
     define the position<input> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</child>.
         }
     }
     define the position<run>.

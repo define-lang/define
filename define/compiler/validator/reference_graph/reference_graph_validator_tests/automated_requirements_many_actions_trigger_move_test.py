@@ -46,7 +46,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</child>"
     )
     assert_propagation_chain(
         all_diags[0],
@@ -62,15 +62,15 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
-            "column": 47,
+            "line": 17,
+            "column": 49,
             "file_path": "outer.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 10,
             "column": 33,
             "file_path": "inner.dfn",
         },
@@ -96,13 +96,13 @@ def test_inner_action_requirement_propagates_after_move(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</child>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>",
             "triggered_quality_name": None,
             "line": 18,
             "column": 30,
@@ -120,7 +120,7 @@ def test_inner_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 17,
+            "line": 20,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -128,7 +128,7 @@ def test_inner_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -148,22 +148,22 @@ def test_three_deep_action_requirement_propagates_after_move(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 21
+    assert diag.location.line == 19
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<out_iface>::position</child>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</child>",
             "triggered_quality_name": None,
-            "line": 20,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -171,7 +171,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 21,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -179,7 +179,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -187,7 +187,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
-            "line": 17,
+            "line": 20,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -195,7 +195,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -433,16 +433,16 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diagnostic.location.line == 16
+    assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
-    assert diagnostic.location.end_line == 16
+    assert diagnostic.location.end_line == 15
     assert diagnostic.location.end_column == 83
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.action_name == _MIDDLE
     assert diagnostic.required_empty is False
     assert (
         diagnostic.position_name
-        == "position<box>::action</middle>::position<gateway>::action</inner>::position<source>::position</child>"
+        == "position<box>::action</middle>::position<gateway>::position</child>"
     )
     assert_propagation_chain(
         diagnostic,
@@ -450,7 +450,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 16,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -458,7 +458,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },

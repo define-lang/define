@@ -1,6 +1,6 @@
 # A MOVE into /inner's trigger position propagates /inner's OCCUPIED requirement.
 #
-# The trigger fires and /inner's OCCUPIED requirement on position<item> must
+# The trigger fires and /inner's OCCUPIED requirement on position</child> must
 # propagate into /outer's contract — the scope passed to _check_trigger must
 # be the live one, not None, so _get_transitive_required_qualities can
 # resolve the propagated requirement's qualities.

@@ -1,6 +1,6 @@
-# /shared requires position<item> empty.
+# /shared requires position<item>::position</value> empty.
 #
-# /test pre-fills position<item> through /act_b's path but not through
+# /test fills position<gateway>::position</value> through /act_b's path but not through
 # /act_c's path. Only one requirement-violation diagnostic appears,
 # for /act_b's instance. This proves B::/shared and C::/shared are
 # independent instances.
@@ -21,7 +21,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box_b>.
         create a particle in position<box_b>::action</act_b>::position<gateway>.
-        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>::position</value>.
         create a particle in position<box_b>::action</act_b>::position<pp>.
         create a particle in position<box_c>.
         create a particle in position<box_c>::action</act_c>::position<gateway>.

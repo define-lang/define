@@ -1,6 +1,6 @@
-# /shared requires position<item> occupied.
+# /shared requires position<item>::position</value> occupied.
 #
-# /test fills position<item> for /act_b's path but not for /act_c's path.
+# /test fills position<gateway>::position</value> for /act_b's path but not for /act_c's path.
 # One requirement-violation diagnostic for the /act_c path at /test.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
@@ -19,7 +19,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box_b>.
         create a particle in position<box_b>::action</act_b>::position<gateway>.
-        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>::position</value>.
         create a particle in position<box_b>::action</act_b>::position<pp>.
         create a particle in position<box_c>.
         create a particle in position<box_c>::action</act_c>::position<gateway>.

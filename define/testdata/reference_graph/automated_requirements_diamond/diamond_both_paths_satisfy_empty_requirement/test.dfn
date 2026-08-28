@@ -1,7 +1,7 @@
-# /shared requires position<item> empty (its first reference is a create).
+# /shared requires position<item>::position</value> empty.
 #
 # /test triggers /act_b and /act_c, both of which trigger /shared.
-# Neither path pre-fills position<item>, so both instances of /shared
+# Neither path supplies position<gateway>::position</value>, so both instances of /shared
 # have their EMPTY requirement satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.

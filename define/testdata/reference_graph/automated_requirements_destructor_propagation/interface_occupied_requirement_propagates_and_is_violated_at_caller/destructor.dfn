@@ -1,10 +1,14 @@
 define the potential action<my.domain.com:my_lib:/destructor> {
-    define the position<item>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
     it happens when {
         this particle is being destroyed.
     } and it does {
         define the position<_holder>.
-        move the particle in position<item> to position<_holder>.
-        move the particle in position<_holder> to position<item>.
+        move the particle in position<item>::position</value> to position<_holder>.
+        move the particle in position<_holder> to position<item>::position</value>.
     }
 }

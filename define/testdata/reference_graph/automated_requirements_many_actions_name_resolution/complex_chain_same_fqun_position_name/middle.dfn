@@ -2,12 +2,19 @@ define the potential action<my.domain.com:my_lib:/middle> {
     define the position<trigger_pos>.
     define the position<mid_iface> {
         it may only contain particles where {
-            it has the action</bar>.
+            it has the position</bar_position>.
         }
     }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<mid_iface>::action</bar>::position<trigger_pos>.
+        define the position<bar_holder> {
+            it may only contain particles where {
+                it has the action</bar>.
+            }
+        }
+        create a particle in position<bar_holder>.
+        move the particle in position<mid_iface>::position</bar_position> to position<bar_holder>::action</bar>::position<item>.
+        create a particle in position<bar_holder>::action</bar>::position<trigger_pos>.
     }
 }

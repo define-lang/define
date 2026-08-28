@@ -6,6 +6,6 @@ define the potential action<my.domain.com:my_lib:/outer> {
         the position<trigger_pos> has a particle.
     } and it does {
         move the particle in position</implied_a> to position</implied_b>.
-        destroy the particle in position</implied_b>::action</inner>::position<input>.
+        destroy the particle in position</implied_b>::position</input>.
     }
 }

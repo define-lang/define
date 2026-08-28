@@ -2,12 +2,19 @@ define the potential action<mv:define-lang.org:main_lib:/outer> {
     define the position<trigger_pos>.
     define the position<iface> {
         it may only contain particles where {
-            it has the action<mv:define-lang.org:dep_lib:/inner>.
+            it has the position<mv:define-lang.org:dep_lib:/x>.
         }
     }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<trigger_pos>.
+        define the position<inner_holder> {
+            it may only contain particles where {
+                it has the action<mv:define-lang.org:dep_lib:/inner>.
+            }
+        }
+        create a particle in position<inner_holder>.
+        move the particle in position<iface> to position<inner_holder>::action<mv:define-lang.org:dep_lib:/inner>::position<item>.
+        create a particle in position<inner_holder>::action<mv:define-lang.org:dep_lib:/inner>::position<trigger_pos>.
     }
 }

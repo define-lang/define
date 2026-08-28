@@ -1,8 +1,8 @@
 # Requirement propagates even when the particle is moved to a local position before triggering.
 #
-# /outer moves the particle from position<iface> to position<local>, then triggers /inner
-# via position<local>::action</inner>::position<trigger_pos>. Since /inner is a
-# constraint on position<iface>, its requirements propagate through position<iface>.
+# /outer moves the particle from position<iface> to position<local>, then into
+# /inner's input before triggering /inner. /inner's requirement on the particle's
+# child follows the particle through both moves.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -15,7 +15,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<iface>::position</child>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

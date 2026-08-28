@@ -1,9 +1,13 @@
 define the potential action<my.domain.com:my_lib:/destructor> {
-    define the position<item>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
     it happens when {
         this particle is being destroyed.
     } and it does {
-        create a particle in position<item>.
-        destroy the particle in position<item>.
+        create a particle in position<item>::position</value>.
+        destroy the particle in position<item>::position</value>.
     }
 }

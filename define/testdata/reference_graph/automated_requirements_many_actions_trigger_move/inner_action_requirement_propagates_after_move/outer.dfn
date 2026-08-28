@@ -2,18 +2,21 @@ define the potential action<my.domain.com:my_lib:/outer> {
     define the position<trigger_pos>.
     define the position<iface> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</child>.
         }
     }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        define the position<local> {
+        define the position<local>.
+        define the position<inner_holder> {
             it may only contain particles where {
                 it has the action</inner>.
             }
         }
         move the particle in position<iface> to position<local>.
-        create a particle in position<local>::action</inner>::position<trigger_pos>.
+        create a particle in position<inner_holder>.
+        move the particle in position<local> to position<inner_holder>::action</inner>::position<input>.
+        create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.
     }
 }

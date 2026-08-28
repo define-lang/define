@@ -1,7 +1,7 @@
-# /shared requires position<item> occupied (first reference is a move-from).
+# /shared requires position<item>::position</value> occupied.
 #
-# Neither /act_b nor /act_c fill position<item>, so the OCCUPIED requirement
-# propagates through both to /test. /test fills position<item> for both paths
+# Neither /act_b nor /act_c fills position<gateway>::position</value>, so the
+# OCCUPIED requirement propagates through both to /test. /test fills it for both paths
 # before triggering, satisfying both propagated requirements.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
@@ -20,11 +20,11 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box_b>.
         create a particle in position<box_b>::action</act_b>::position<gateway>.
-        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_b>::action</act_b>::position<gateway>::position</value>.
         create a particle in position<box_b>::action</act_b>::position<pp>.
         create a particle in position<box_c>.
         create a particle in position<box_c>::action</act_c>::position<gateway>.
-        create a particle in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.
+        create a particle in position<box_c>::action</act_c>::position<gateway>::position</value>.
         create a particle in position<box_c>::action</act_c>::position<pp>.
     }
 }

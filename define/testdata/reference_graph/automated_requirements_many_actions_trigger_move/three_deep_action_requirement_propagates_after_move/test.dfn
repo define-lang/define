@@ -1,9 +1,8 @@
-# Three-level nesting where /middle moves its interface particle before triggering /inner.
+# Three Action Executions where /middle moves its interface particle locally before triggering /inner.
 #
-# /middle moves the particle from position<mid_iface> to position<local>, then triggers
-# /inner through position<local>::action</inner>::position<trigger_pos>. /inner's
-# EMPTY requirement on position<item> should propagate through /middle and /outer
-# to /test.
+# /middle moves the particle from position<mid_iface> to position<local>, then into
+# /inner's input. /inner's empty requirement on the particle's child should
+# propagate through /middle and /outer to /test.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -16,8 +15,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<out_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<out_iface>::position</child>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

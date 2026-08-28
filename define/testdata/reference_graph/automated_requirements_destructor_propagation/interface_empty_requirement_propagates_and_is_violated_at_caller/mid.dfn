@@ -2,12 +2,14 @@ define the potential action<my.domain.com:my_lib:/mid> {
     define the position<incoming> {
         it may only contain particles where {
             it has the action</destructor>.
+            it has the position</destructor_input>.
         }
     }
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        move the particle in position<incoming>::position</destructor_input> to position<incoming>::action</destructor>::position<item>.
         destroy the particle in position<incoming>.
     }
 }

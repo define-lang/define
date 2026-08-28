@@ -68,20 +68,20 @@ def test_doubly_nested_both_outer_and_caller_fill(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
+        == "position<box>::action</outer>::position<out_iface>::position</mid_input>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</mid_input>",
             "triggered_quality_name": None,
             "line": 13,
             "column": 30,
@@ -91,7 +91,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/outer>",
-            "line": 15,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -99,28 +99,28 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "outer.dfn",
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].required_empty is True
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (
         all_diags[1].position_name
-        == "position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
+        == "position<out_iface>::action</middle>::position<mid_iface>::position</value>"
     )
     assert_propagation_chain(
         all_diags[1],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<out_iface>::action</middle>::position<mid_iface>::position</value>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -128,7 +128,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
-            "line": 13,
+            "line": 15,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -136,7 +136,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -144,7 +144,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },

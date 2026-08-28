@@ -10,7 +10,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</mid>::position<incoming>.
-        create a particle in position<box>::action</mid>::position<incoming>::action</destructor>::position<item>.
+        create a particle in position<box>::action</mid>::position<incoming>::position</destructor_input>.
+        create a particle in position<box>::action</mid>::position<incoming>::position</destructor_input>::position</value>.
         create a particle in position<box>::action</mid>::position<run>.
     }
 }

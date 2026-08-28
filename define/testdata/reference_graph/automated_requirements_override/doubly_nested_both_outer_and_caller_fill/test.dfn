@@ -10,8 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<out_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<out_iface>::position</mid_input>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

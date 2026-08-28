@@ -1,8 +1,8 @@
-# A box carried by two moves into a triggered inner should satisfy inner's occupied requirement on its input.
+# A box carried through two callers should satisfy /inner's occupied requirement on the box's child.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<box> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</child>.
         }
     }
     define the position<outer_holder> {
@@ -15,7 +15,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         the position<run> has a particle.
     } and it does {
         create a particle in position<box>.
-        create a particle in position<box>::action</inner>::position<input>.
+        create a particle in position<box>::position</child>.
         create a particle in position<outer_holder>.
         move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.
         create a particle in position<outer_holder>::action</outer>::position<run>.

@@ -212,13 +212,13 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</child>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::position</item>",
             "triggered_quality_name": None,
             "line": 14,
             "column": 30,
@@ -236,7 +236,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 17,
+            "line": 24,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -244,7 +244,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -271,13 +271,13 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::position</item>",
             "triggered_quality_name": None,
             "line": 15,
             "column": 30,
@@ -295,7 +295,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 17,
+            "line": 24,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -303,7 +303,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -330,13 +330,13 @@ def test_complex_chain_interaction_iface(
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::position</item>",
             "triggered_quality_name": None,
             "line": 17,
             "column": 30,
@@ -354,7 +354,7 @@ def test_complex_chain_interaction_iface(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 17,
+            "line": 24,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -362,7 +362,7 @@ def test_complex_chain_interaction_iface(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -507,13 +507,13 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::position</implied>::position</child>::action</inner>::position<item>"
+        == "position<box>::position</implied>::position</child>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</implied>::position</child>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::position</implied>::position</child>::position</item>",
             "triggered_quality_name": None,
             "line": 15,
             "column": 30,
@@ -531,7 +531,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
+            "line": 20,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -539,7 +539,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -566,13 +566,13 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>"
+        == "position<box>::position</implied>::position</intermediate>::position</child>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::position</implied>::position</intermediate>::position</child>::position</item>",
             "triggered_quality_name": None,
             "line": 16,
             "column": 30,
@@ -590,7 +590,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
+            "line": 20,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -598,7 +598,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -625,13 +625,13 @@ def test_complex_chain_interaction_implied(
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
+        == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::position</item>",
             "triggered_quality_name": None,
             "line": 18,
             "column": 30,
@@ -649,7 +649,7 @@ def test_complex_chain_interaction_implied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
+            "line": 20,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -657,7 +657,7 @@ def test_complex_chain_interaction_implied(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -692,7 +692,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     assert diag.required_empty is False
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<source>::action</inner>::position<input>"
+        == "position<box>::action</outer>::position<source>::position</input>"
     )
     assert_propagation_chain(
         diag,
@@ -797,10 +797,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
     assert diag.required_empty is False
-    assert (
-        diag.position_name
-        == "position<box>::position</implied_a>::action</inner>::position<input>"
-    )
+    assert diag.position_name == "position<box>::position</implied_a>::position</input>"
     assert_propagation_chain(
         diag,
         {

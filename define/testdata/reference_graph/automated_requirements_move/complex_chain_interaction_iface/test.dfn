@@ -14,7 +14,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>::action</outer>::position<iface>::position</child>::position</grand>.
         create a particle in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>.
         create a particle in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>.
-        create a particle in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>.
+        create a particle in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::position</item>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

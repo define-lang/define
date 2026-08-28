@@ -2,11 +2,9 @@
 #
 # /inner is in _DEP_FQUN, has position<item> constrained with position</x> (also in
 # _DEP_FQUN), and creates in position<item>::position</x>. The propagated requirement's
-# position_name should use the source form from /outer's code for the action reference
-# (fully-qualified) and the source form from /inner's code for position</x>.
-# /test supplies position<item>, satisfying /inner's occupied parent
-# requirement, and fills position<item>::position</x>, violating /inner's
-# propagated empty requirement.
+# position_name should use the source form from /inner's code for position</x>.
+# /test fills position<iface>::position</x>; /outer transfers that particle into
+# /inner's position<item>, violating /inner's propagated empty requirement.
 define the potential action<mv:define-lang.org:main_lib:/test> {
     define the position<run>.
     it happens when {
@@ -19,8 +17,7 @@ define the potential action<mv:define-lang.org:main_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>.
-        create a particle in position<box>::action</outer>::position<iface>::action<mv:define-lang.org:dep_lib:/inner>::position<item>::position<mv:define-lang.org:dep_lib:/x>.
+        create a particle in position<box>::action</outer>::position<iface>::position<mv:define-lang.org:dep_lib:/x>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

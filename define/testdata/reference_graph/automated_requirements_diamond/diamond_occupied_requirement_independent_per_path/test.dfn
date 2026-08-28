@@ -1,10 +1,10 @@
-# /shared requires position<item> occupied (first reference is a move-from).
+# /shared requires position<item>::position</value> occupied.
 #
-# /act_b fills position<item> before triggering /shared — satisfying the
+# /act_b fills position<gateway>::position</value> before triggering /shared — satisfying the
 # OCCUPIED requirement internally, so it does NOT propagate to /test.
-# /act_c does NOT fill position<item>, so the OCCUPIED requirement
+# /act_c does NOT fill position<gateway>::position</value>, so the OCCUPIED requirement
 # propagates through /act_c to /test. The error is on test.dfn because
-# /test does not fill position<item> for /act_c's path either.
+# /test does not fill position<gateway>::position</value> for /act_c's path either.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     define the position<box_b> {
