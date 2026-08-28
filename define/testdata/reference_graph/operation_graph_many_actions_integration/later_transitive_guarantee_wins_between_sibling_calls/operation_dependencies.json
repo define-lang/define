@@ -1,0 +1,172 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "/run_both::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "run_both"
+          },
+          "action_name": "call_fill"
+        },
+        "action_name": "fill_item"
+      },
+      "operation_name": "create",
+      "target": "/item",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "run_both"
+        },
+        "action_name": "call_fill"
+      },
+      "operation_name": "create",
+      "target": "/fill_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "run_both"
+        },
+        "action_name": "call_empty"
+      },
+      "operation_name": "create",
+      "target": "/empty_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "run_both"
+      },
+      "operation_name": "create",
+      "target": "/call_fill::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "run_both"
+      },
+      "operation_name": "create",
+      "target": "/call_empty::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "run_both"
+          },
+          "action_name": "call_empty"
+        },
+        "action_name": "empty_item"
+      },
+      "operation_name": "destroy",
+      "target": "/item",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": {
+                "caller": null,
+                "action_name": "test"
+              },
+              "action_name": "run_both"
+            },
+            "action_name": "call_fill"
+          },
+          "action_name": "fill_item"
+        },
+        "operation_name": "create",
+        "target": "/item",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "/item",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": {
+                "caller": null,
+                "action_name": "test"
+              },
+              "action_name": "run_both"
+            },
+            "action_name": "call_empty"
+          },
+          "action_name": "empty_item"
+        },
+        "operation_name": "destroy",
+        "target": "/item",
+        "occurrence": 1
+      }
+    ]
+  }
+]

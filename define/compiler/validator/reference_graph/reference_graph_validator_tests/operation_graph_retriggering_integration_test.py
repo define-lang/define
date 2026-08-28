@@ -185,6 +185,30 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_retriggered_action_uses_prior_unchanged_interface_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(gateway)": [],
+        "test.create(gateway::/worker::item)": ["test.create(gateway)"],
+        "test.create(gateway::/worker::trigger_pos)": ["test.create(gateway)"],
+        "worker.move(item, holder)": ["test.create(gateway::/worker::item)"],
+        "worker.move(holder, item)": ["worker.move(item, holder)"],
+        "worker.destroy(trigger_pos)": ["test.create(gateway::/worker::trigger_pos)"],
+        "test.create(gateway::/worker::trigger_pos)#2": ["worker.destroy(trigger_pos)"],
+        # The second Action Execution uses the first execution's Unchanged
+        # Guarantee for item, independently of the recreated trigger_pos.
+        "worker#2.move(item, holder)": ["worker.move(holder, item)"],
+        "worker#2.move(holder, item)": ["worker#2.move(item, holder)"],
+        "worker#2.destroy(trigger_pos)": [
+            "test.create(gateway::/worker::trigger_pos)#2"
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

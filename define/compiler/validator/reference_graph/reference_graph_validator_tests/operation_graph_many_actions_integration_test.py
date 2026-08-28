@@ -13,6 +13,28 @@ if TYPE_CHECKING:
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
+def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_bindings(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(gateway)": [],
+        "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
+        "middle.create(first)": ["test.create(gateway)"],
+        "middle.destroy(first)": ["middle.create(first)"],
+        "middle.create(second)": ["test.create(gateway)"],
+        "middle.destroy(second)": ["middle.create(second)"],
+        "middle.create(/child_a::trigger_pos)": ["test.create(gateway)"],
+        "child_a.create(scratch)": ["test.create(gateway)"],
+        "child_a.destroy(scratch)": ["child_a.create(scratch)"],
+        "middle.create(/child_b::trigger_pos)": ["test.create(gateway)"],
+        "child_b.create(scratch)": ["test.create(gateway)"],
+        "child_b.destroy(scratch)": ["child_b.create(scratch)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -957,6 +979,24 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
         "call_fill.create(/fill_item::trigger_pos)": [],
         "fill_item.create(/item)": [],
         "call_empty.create(/empty_item::trigger_pos)": [],
+        "empty_item.destroy(/item)": ["fill_item.create(/item)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_occupied_guarantee_flows_from_direct_callee_to_transitive_callee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/fill_item::trigger_pos)": [],
+        "test.create(/outer::trigger_pos)": [],
+        "fill_item.create(/item)": [],
+        "outer.create(/middle::trigger_pos)": [],
+        "middle.create(/empty_item::trigger_pos)": [],
+        # The direct callee's occupied Guarantee crosses two later Action
+        # Executions before satisfying the Empty Rule for this Destroy.
         "empty_item.destroy(/item)": ["fill_item.create(/item)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

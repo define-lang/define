@@ -1267,6 +1267,35 @@ def test_destructor_on_particle_from_callee_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_destructor_on_particle_from_callee_guarantee_with_child_requirement(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(box::/maker::run)": ["test.create(box)"],
+        "maker.create(result)": ["test.create(box)"],
+        "maker.create(result::/marker)": ["maker.create(result)"],
+        # The child Guarantee is the most recent operation satisfying the
+        # Destructor's occupied requirement and follows its Action Parent Create.
+        "destructor.move(/marker, holder)": ["maker.create(result::/marker)"],
+        "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
+        "test.destroy(box::/maker::result::/marker)": [
+            "destructor.move(holder, /marker)"
+        ],
+        "test.destroy(box::/maker::result)": [
+            "test.destroy(box::/maker::result::/marker)"
+        ],
+        "test.destroy(box::/maker::run)": ["test.create(box::/maker::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/maker::result)",
+            "test.destroy(box::/maker::run)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
