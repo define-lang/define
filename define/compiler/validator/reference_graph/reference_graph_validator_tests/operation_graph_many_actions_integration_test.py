@@ -153,21 +153,36 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
     expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/middle::source)": ["test.create(gateway)"],
-        "test.create(gateway::/middle::source::/inner::item)": [
+        "test.create(gateway::/middle::source::/item)": [
             "test.create(gateway::/middle::source)"
         ],
         "test.create(gateway::/middle::trigger_pos)": ["test.create(gateway)"],
-        "middle.move(source, holder)": [
-            "test.create(gateway::/middle::source::/inner::item)"
-        ],
+        "middle.move(source, holder)": ["test.create(gateway::/middle::source::/item)"],
         "middle.create(source)": ["middle.move(source, holder)"],
-        "middle.create(holder::/inner::trigger_pos)": ["middle.move(source, holder)"],
-        "inner.destroy(item)": ["middle.move(source, holder)"],
+        "middle.create(inner_holder)": ["test.create(gateway)"],
+        "middle.move(holder, inner_holder::/inner::input)": [
+            "middle.move(source, holder)",
+            "middle.create(inner_holder)",
+        ],
+        "middle.create(inner_holder::/inner::trigger_pos)": [
+            "middle.create(inner_holder)"
+        ],
+        "inner.destroy(input::/item)": [
+            "middle.move(holder, inner_holder::/inner::input)"
+        ],
+        "middle.destroy(inner_holder::/inner::input)": ["inner.destroy(input::/item)"],
+        "middle.destroy(inner_holder::/inner::trigger_pos)": [
+            "middle.create(inner_holder::/inner::trigger_pos)"
+        ],
+        "middle.destroy(inner_holder)": [
+            "middle.destroy(inner_holder::/inner::input)",
+            "middle.destroy(inner_holder::/inner::trigger_pos)",
+        ],
         # This dependency belongs on the replacement particle in position<source>,
         # not the caller particle that Middle moved to position<holder>.
-        "middle.create(source::/inner::item)": ["middle.create(source)"],
-        "middle.destroy(source::/inner::item)": ["middle.create(source::/inner::item)"],
-        "middle.destroy(source)": ["middle.destroy(source::/inner::item)"],
+        "middle.create(source::/item)": ["middle.create(source)"],
+        "middle.destroy(source::/item)": ["middle.create(source::/item)"],
+        "middle.destroy(source)": ["middle.destroy(source::/item)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -180,20 +195,22 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gateway)": ["test.create(box)"],
-        "test.create(box::/middle::gateway::/inner::source)": [
+        "test.create(box::/middle::gateway::/source)": [
             "test.create(box::/middle::gateway)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.move(gateway::/source, gateway::/inner::source)": [
+            "test.create(box::/middle::gateway::/source)"
+        ],
         "middle.create(gateway::/inner::source::/child)": [
-            "test.create(box::/middle::gateway::/inner::source)"
+            "middle.move(gateway::/source, gateway::/inner::source)"
         ],
         "middle.create(gateway::/inner::trigger_pos)": [
             "test.create(box::/middle::gateway)"
         ],
-        # middle.create(gateway::/inner::source::/child) already waits for
-        # test.create(box::/middle::gateway::/inner::source), which waits for
-        # test.create(box::/middle::gateway), so it is the move's only necessary
-        # direct dependency.
+        # middle.create(gateway::/inner::source::/child) already waits for the
+        # shuttle of the caller-created source particle, so it is the move's
+        # only necessary direct dependency.
         "inner.move(source, destination)": [
             "middle.create(gateway::/inner::source::/child)"
         ],
@@ -297,12 +314,15 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/inner::slot)": [
-            "test.create(box::/middle::gw)"
-        ],
+        "test.create(box::/middle::gw::/value)": ["test.create(box::/middle::gw)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
-        "inner.destroy(slot)": ["test.create(box::/middle::gw::/inner::slot)"],
+        "middle.move(gw::/value, gw::/inner::slot)": [
+            "test.create(box::/middle::gw::/value)"
+        ],
+        # The inner Destroy waits for the particle created two Action Executions
+        # earlier to be moved into its interface position.
+        "inner.destroy(slot)": ["middle.move(gw::/value, gw::/inner::slot)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -316,13 +336,18 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
         "test.create(source)": [],
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.move(source, box::/middle::gw::/inner::slot)": [
+        "test.move(source, box::/middle::gw::/value)": [
             "test.create(source)",
             "test.create(box::/middle::gw)",
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
-        "inner.destroy(slot)": ["test.move(source, box::/middle::gw::/inner::slot)"],
+        "middle.move(gw::/value, gw::/inner::slot)": [
+            "test.move(source, box::/middle::gw::/value)"
+        ],
+        # The inner Destroy waits for the particle moved two Action Executions
+        # earlier to be moved into its interface position.
+        "inner.destroy(slot)": ["middle.move(gw::/value, gw::/inner::slot)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -419,14 +444,17 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/inner::slot)": [
-            "test.create(box::/middle::gw)"
-        ],
+        "test.create(box::/middle::gw::/value)": ["test.create(box::/middle::gw)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.move(gw::/value, gw::/inner::slot)": [
+            "test.create(box::/middle::gw::/value)"
+        ],
         "middle.destroy(gw::/inner::slot)": [
-            "test.create(box::/middle::gw::/inner::slot)"
+            "middle.move(gw::/value, gw::/inner::slot)"
         ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        # The inner action cannot fill slot until the intermediate action has
+        # explicitly emptied it.
         "inner.create(slot)": ["middle.destroy(gw::/inner::slot)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -440,17 +468,20 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/inner::holder)": [
-            "test.create(box::/middle::gw)"
-        ],
-        "test.create(box::/middle::gw::/inner::holder::/a)": [
-            "test.create(box::/middle::gw::/inner::holder)"
+        "test.create(box::/middle::gw::/holder)": ["test.create(box::/middle::gw)"],
+        "test.create(box::/middle::gw::/holder::/a)": [
+            "test.create(box::/middle::gw::/holder)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.move(gw::/holder, gw::/inner::holder)": [
+            "test.create(box::/middle::gw::/holder::/a)"
+        ],
         "middle.destroy(gw::/inner::holder::/a)": [
-            "test.create(box::/middle::gw::/inner::holder::/a)"
+            "middle.move(gw::/holder, gw::/inner::holder)"
         ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        # The inner action cannot fill the child until the intermediate action
+        # has explicitly emptied it.
         "inner.create(holder::/a)": ["middle.destroy(gw::/inner::holder::/a)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -464,12 +495,15 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/inner::holder)": [
-            "test.create(box::/middle::gw)"
-        ],
+        "test.create(box::/middle::gw::/holder)": ["test.create(box::/middle::gw)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.move(gw::/holder, gw::/inner::holder)": [
+            "test.create(box::/middle::gw::/holder)"
+        ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
-        "inner.create(holder::/a)": ["test.create(box::/middle::gw::/inner::holder)"],
+        # Filling the initially empty child waits until its parent reaches the
+        # triggered inner action.
+        "inner.create(holder::/a)": ["middle.move(gw::/holder, gw::/inner::holder)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -804,10 +838,10 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(box)": [],
-        "test.create(box::/inner::input)": ["test.create(box)"],
+        "test.create(box::/child)": ["test.create(box)"],
         "test.create(outer_holder)": [],
         "test.move(box, outer_holder::/outer::input)": [
-            "test.create(box::/inner::input)",
+            "test.create(box::/child)",
             "test.create(outer_holder)",
         ],
         "test.create(outer_holder::/outer::run)": ["test.create(outer_holder)"],
@@ -817,10 +851,25 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
             "test.move(box, outer_holder::/outer::input)",
         ],
         "outer.create(middle_holder::/middle::run)": ["outer.create(middle_holder)"],
-        "middle.create(input::/inner::run)": [
-            "outer.move(input, middle_holder::/middle::input)"
+        "middle.create(inner_holder)": ["outer.create(middle_holder)"],
+        "middle.move(input, inner_holder::/inner::input)": [
+            "middle.create(inner_holder)",
+            "outer.move(input, middle_holder::/middle::input)",
         ],
-        "inner.destroy(input)": ["outer.move(input, middle_holder::/middle::input)"],
+        "middle.create(inner_holder::/inner::run)": ["middle.create(inner_holder)"],
+        # The inner action receives the same particle after two caller moves and
+        # the intermediate action's explicit shuttle.
+        "inner.destroy(input::/child)": [
+            "middle.move(input, inner_holder::/inner::input)"
+        ],
+        "inner.destroy(input)": ["inner.destroy(input::/child)"],
+        "middle.destroy(inner_holder::/inner::run)": [
+            "middle.create(inner_holder::/inner::run)"
+        ],
+        "middle.destroy(inner_holder)": [
+            "middle.destroy(inner_holder::/inner::run)",
+            "inner.destroy(input)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -880,16 +929,18 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/inner::source)": [
-            "test.create(box::/middle::gw)"
-        ],
-        "test.create(box::/middle::gw::/inner::source::/a)": [
-            "test.create(box::/middle::gw::/inner::source)"
+        "test.create(box::/middle::gw::/source)": ["test.create(box::/middle::gw)"],
+        "test.create(box::/middle::gw::/source::/a)": [
+            "test.create(box::/middle::gw::/source)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
+        "middle.move(gw::/source, gw::/inner::source)": [
+            "test.create(box::/middle::gw::/source::/a)"
+        ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
+        # The inner action's move waits on the child filled two actions earlier.
         "inner.move(source, holder)": [
-            "test.create(box::/middle::gw::/inner::source::/a)",
+            "middle.move(gw::/source, gw::/inner::source)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -919,15 +970,19 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
     expected = {
         "test.create(box)": [],
         "test.create(box::/outer::gw)": ["test.create(box)"],
-        "test.create(box::/outer::gw::/middle::igw)": ["test.create(box::/outer::gw)"],
         "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
+        "outer.create(gw::/middle::igw)": ["test.create(box::/outer::gw)"],
         "outer.create(gw::/middle::trigger_pos)": ["test.create(box::/outer::gw)"],
-        "middle.create(igw::/inner::trigger_pos)": [
-            "test.create(box::/outer::gw::/middle::igw)"
+        "middle.create(igw::/inner::trigger_pos)": ["outer.create(gw::/middle::igw)"],
+        "inner.create(out)": ["outer.create(gw::/middle::igw)"],
+        "middle.move(igw::/inner::out, igw::/out_value)": ["inner.create(out)"],
+        "outer.move(gw::/middle::igw::/out_value, gw::/out_value)": [
+            "middle.move(igw::/inner::out, igw::/out_value)"
         ],
-        "inner.create(out)": ["test.create(box::/outer::gw::/middle::igw)"],
-        "test.move(box::/outer::gw::/middle::igw::/inner::out, result)": [
-            "inner.create(out)"
+        # The caller consumes the guarantee after each intermediate action has
+        # explicitly shuttled the particle through its own contracted position.
+        "test.move(box::/outer::gw::/out_value, result)": [
+            "outer.move(gw::/middle::igw::/out_value, gw::/out_value)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -941,26 +996,62 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/outer::source)": ["test.create(gateway)"],
-        "test.create(gateway::/outer::source::/middle::inner_parent)": [
-            "test.create(gateway::/outer::source)"
-        ],
         "test.create(gateway::/outer::trigger_pos)": ["test.create(gateway)"],
-        "outer.create(source::/middle::trigger_pos)": [
-            "test.create(gateway::/outer::source)"
+        "outer.create(middle_holder)": ["test.create(gateway)"],
+        "outer.move(source, middle_holder::/middle::inner_parent)": [
+            "outer.create(middle_holder)",
+            "test.create(gateway::/outer::source)",
         ],
-        "middle.create(inner_parent::/inner::trigger_pos)": [
-            "test.create(gateway::/outer::source::/middle::inner_parent)"
+        "outer.create(middle_holder::/middle::trigger_pos)": [
+            "outer.create(middle_holder)"
         ],
-        "inner.create(result)": [
-            "test.create(gateway::/outer::source::/middle::inner_parent)"
+        "middle.create(inner_holder)": ["outer.create(middle_holder)"],
+        "middle.move(inner_parent, inner_holder::/inner::input)": [
+            "middle.create(inner_holder)",
+            "outer.move(source, middle_holder::/middle::inner_parent)",
         ],
-        "outer.move(source, destination)": [
-            "outer.create(source::/middle::trigger_pos)",
-            "middle.create(inner_parent::/inner::trigger_pos)",
-            "inner.create(result)",
+        "middle.create(inner_holder::/inner::trigger_pos)": [
+            "middle.create(inner_holder)"
         ],
-        "test.move(gateway::/outer::destination::/middle::inner_parent::/inner::result, result)": [
-            "outer.move(source, destination)"
+        "inner.create(input::/result_value)": [
+            "middle.move(inner_parent, inner_holder::/inner::input)"
+        ],
+        "middle.move(inner_holder::/inner::input::/result_value, result_holder)": [
+            "inner.create(input::/result_value)"
+        ],
+        "middle.move(inner_holder::/inner::input, inner_parent)": [
+            "middle.move(inner_holder::/inner::input::/result_value, result_holder)"
+        ],
+        "middle.move(result_holder, inner_parent::/result_value)": [
+            "middle.move(inner_holder::/inner::input, inner_parent)"
+        ],
+        "middle.destroy(inner_holder::/inner::trigger_pos)": [
+            "middle.create(inner_holder::/inner::trigger_pos)"
+        ],
+        "middle.destroy(inner_holder)": [
+            "middle.move(inner_holder::/inner::input, inner_parent)",
+            "middle.destroy(inner_holder::/inner::trigger_pos)",
+        ],
+        "outer.move(middle_holder::/middle::inner_parent::/result_value, result_holder)": [
+            "middle.move(result_holder, inner_parent::/result_value)"
+        ],
+        "outer.move(middle_holder::/middle::inner_parent, destination)": [
+            "outer.move(middle_holder::/middle::inner_parent::/result_value, result_holder)"
+        ],
+        "outer.move(result_holder, destination::/result_value)": [
+            "outer.move(middle_holder::/middle::inner_parent, destination)"
+        ],
+        "outer.destroy(middle_holder::/middle::trigger_pos)": [
+            "outer.create(middle_holder::/middle::trigger_pos)"
+        ],
+        "outer.destroy(middle_holder)": [
+            "outer.move(middle_holder::/middle::inner_parent, destination)",
+            "outer.destroy(middle_holder::/middle::trigger_pos)",
+        ],
+        # The final consumer waits for the guaranteed child to follow its parent
+        # through both actions' explicit shuttles and moves.
+        "test.move(gateway::/outer::destination::/result_value, result)": [
+            "outer.move(result_holder, destination::/result_value)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

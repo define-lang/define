@@ -288,11 +288,30 @@ def test_propagated_action_requires_empty_position_format(
         "inner.dfn": (
             "define the potential action<my.domain.com:my_lib:/inner> {\n"
             "    define the position<trigger_pos>.\n"
-            "    define the position<item>.\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the position</item_parent>.\n"
+            "        }\n"
+            "    }\n"
             "    it happens when {\n"
             "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a particle in position<item>.\n"
+            "        create a particle in position<input>::position</item_parent>::position</item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "inner_particle.dfn": (
+            "define the potential position<my.domain.com:my_lib:/inner_particle> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the position</item_parent>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "item.dfn": "define the potential position<my.domain.com:my_lib:/item>.\n",
+        "item_parent.dfn": (
+            "define the potential position<my.domain.com:my_lib:/item_parent> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the position</item>.\n"
             "    }\n"
             "}\n"
         ),
@@ -301,13 +320,27 @@ def test_propagated_action_requires_empty_position_format(
             "    define the position<trigger_pos>.\n"
             "    define the position<mid_iface> {\n"
             "        it may only contain particles where {\n"
-            "            it has the action</inner>.\n"
+            "            it has the position</inner_particle>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
             "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a particle in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+            "        define the position<inner_holder> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</inner>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<inner_holder>.\n"
+            "        move the particle in position<mid_iface>::position</inner_particle> to position<inner_holder>::action</inner>::position<input>.\n"
+            "        create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "middle_particle.dfn": (
+            "define the potential position<my.domain.com:my_lib:/middle_particle> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the position</inner_particle>.\n"
             "    }\n"
             "}\n"
         ),
@@ -316,13 +349,20 @@ def test_propagated_action_requires_empty_position_format(
             "    define the position<trigger_pos>.\n"
             "    define the position<out_iface> {\n"
             "        it may only contain particles where {\n"
-            "            it has the action</middle>.\n"
+            "            it has the position</middle_particle>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
             "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a particle in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+            "        define the position<middle_holder> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</middle>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<middle_holder>.\n"
+            "        move the particle in position<out_iface>::position</middle_particle> to position<middle_holder>::action</middle>::position<mid_iface>.\n"
+            "        create a particle in position<middle_holder>::action</middle>::position<trigger_pos>.\n"
             "    }\n"
             "}\n"
         ),
@@ -339,8 +379,10 @@ def test_propagated_action_requires_empty_position_format(
             "        }\n"
             "        create a particle in position<box>.\n"
             "        create a particle in position<box>::action</outer>::position<out_iface>.\n"
-            "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
-            "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
+            "        create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>.\n"
+            "        create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>.\n"
+            "        create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>.\n"
+            "        create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>.\n"
             "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
             "    }\n"
             "}\n"
@@ -351,22 +393,22 @@ def test_propagated_action_requires_empty_position_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 15, column 30
+        File "test.dfn", line 17, column 30
                 create a particle in position<box>::action</outer>::position<trigger_pos>.
                                      ^
-        'position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>' must be empty before 'action<my.domain.com:my_lib:/outer>' runs, and it is not empty.
+        'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' must be empty before 'action<my.domain.com:my_lib:/outer>' runs, and it is not empty.
 
         This error happens because:
-          'position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>' is filled here:
-            File "test.dfn", line 14, column 30
+          'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' is filled here:
+            File "test.dfn", line 16, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
-            File "test.dfn", line 15, column 30
+            File "test.dfn", line 17, column 30
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
-            File "outer.dfn", line 11, column 30
+            File "outer.dfn", line 18, column 30
           'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
-            File "middle.dfn", line 11, column 30
+            File "middle.dfn", line 18, column 30
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
-            File "inner.dfn", line 7, column 30""")
+            File "inner.dfn", line 11, column 30""")
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),

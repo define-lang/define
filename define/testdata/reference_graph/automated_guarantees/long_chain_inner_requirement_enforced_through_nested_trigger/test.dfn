@@ -1,9 +1,9 @@
 # /inner creates in position<item>, requiring it empty.
 #
-# /outer triggers /inner internally. /test pre-fills the deeply nested
-# position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>,
-# then triggers /outer. The inner requirement that position<item> be empty
-# produces an inferred-requirement-violation diagnostic.
+# /outer transfers its input particle to /inner and triggers it. /test pre-fills
+# the particle's position</item>, then triggers /outer. The inner requirement
+# that position</item> be empty produces an inferred-requirement-violation
+# diagnostic.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -16,7 +16,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<local>.
         create a particle in position<local>::action</outer>::position<outer_iface>.
-        create a particle in position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>.
+        create a particle in position<local>::action</outer>::position<outer_iface>::position</item>.
         create a particle in position<local>::action</outer>::position<trigger_pos>.
     }
 }

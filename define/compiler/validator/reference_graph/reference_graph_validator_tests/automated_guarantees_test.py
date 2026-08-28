@@ -732,13 +732,13 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>"
+        == "position<local>::action</outer>::position<outer_iface>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<local>::action</outer>::position<outer_iface>::position</item>",
             "triggered_quality_name": None,
             "line": 19,
             "column": 30,
@@ -756,7 +756,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -764,7 +764,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },

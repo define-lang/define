@@ -531,11 +531,13 @@ def test_destructor_cascade_through_action_format(
             "    }\n"
             "}\n"
         ),
+        "item.dfn": "define the potential position<my.domain.com:my_lib:/item>.\n",
         "inner.dfn": (
             "define the potential action<my.domain.com:my_lib:/inner> {\n"
             "    define the position<incoming> {\n"
             "        it may only contain particles where {\n"
             "            it has the action</destructor_empty>.\n"
+            "            it has the position</item>.\n"
             "        }\n"
             "    }\n"
             "    define the position<run>.\n"
@@ -547,7 +549,10 @@ def test_destructor_cascade_through_action_format(
             "                it has the action</destructor_empty>.\n"
             "            }\n"
             "        }\n"
+            "        define the position<item_holder>.\n"
+            "        move the particle in position<incoming>::position</item> to position<item_holder>.\n"
             "        move the particle in position<incoming> to position<local>.\n"
+            "        move the particle in position<item_holder> to position<local>::action</destructor_empty>::position<item>.\n"
             "    }\n"
             "}\n"
         ),
@@ -564,7 +569,7 @@ def test_destructor_cascade_through_action_format(
             "        }\n"
             "        create a particle in position<box>.\n"
             "        create a particle in position<box>::action</inner>::position<incoming>.\n"
-            "        create a particle in position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>.\n"
+            "        create a particle in position<box>::action</inner>::position<incoming>::position</item>.\n"
             "        create a particle in position<box>::action</inner>::position<run>.\n"
             "    }\n"
             "}\n"
@@ -573,22 +578,24 @@ def test_destructor_cascade_through_action_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(files["inner.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 14, column 30
-                create a particle in position<box>::action</inner>::position<run>.
-                                     ^
-        'position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/inner>' runs, and it is not empty.
+        File "inner.dfn", line 19, column 52
+                move the particle in position<incoming> to position<local>.
+                                                           ^
+        'position<local>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
 
         This error happens because:
-          'position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>' is filled here:
-            File "test.dfn", line 13, column 30
-          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/inner>':
-            File "test.dfn", line 14, column 30
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<incoming>':
             File "inner.dfn", line 4, column 24
+          the particle in 'position<local>' comes from here:
+            File "inner.dfn", line 18, column 30
+          'position<local>::action</destructor_empty>::position<item>' is filled here:
+            File "inner.dfn", line 20, column 55
+          the particle in 'position<local>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/inner>':
+            File "inner.dfn", line 19, column 52
           'action<my.domain.com:my_lib:/inner>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "inner.dfn", line 11, column 9
+            File "inner.dfn", line 19, column 52
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30""")
 

@@ -10,8 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</outer>::position<source>.
-        create a particle in position<gateway>::action</outer>::position<source>::action</middle>::position<inner_parent>.
         create a particle in position<gateway>::action</outer>::position<trigger_pos>.
-        create a particle in position<gateway>::action</outer>::position<destination>::action</middle>::position<inner_parent>::action</inner>::position<result>.
+        create a particle in position<gateway>::action</outer>::position<destination>::position</result>.
     }
 }

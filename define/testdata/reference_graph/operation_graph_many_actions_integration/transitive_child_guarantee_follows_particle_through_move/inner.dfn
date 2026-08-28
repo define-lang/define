@@ -1,9 +1,13 @@
 define the potential action<my.domain.com:my_lib:/inner> {
     define the position<trigger_pos>.
-    define the position<result>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</result_value>.
+        }
+    }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<result>.
+        create a particle in position<input>::position</result_value>.
     }
 }

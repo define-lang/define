@@ -1,11 +1,6 @@
-# outer never touches inner's <out>, so outer's graph has no guarantee node
-# for it -- only the requirement node at the same key. The guarantee reaches
-# test straight from outer's contract references, and test's move resolves
-# across outer's trigger of middle to inner's final operation on <out>, in
-# the chain of triggers test fired.
-# <out> is empty by default under test's fill of <igw>: its EMPTY
-# requirement propagates to test as pass-through RequirementNodes and
-# resolves to that fill.
+# Each action explicitly shuttles /inner's guaranteed particle into its own
+# contracted position. /test's move therefore depends on the two shuttles and
+# ultimately on /inner's create.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<result>.
     define the position<box> {
@@ -18,8 +13,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<gw>.
-        create a particle in position<box>::action</outer>::position<gw>::action</middle>::position<igw>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
-        move the particle in position<box>::action</outer>::position<gw>::action</middle>::position<igw>::action</inner>::position<out> to position<result>.
+        move the particle in position<box>::action</outer>::position<gw>::position</out_value> to position<result>.
     }
 }

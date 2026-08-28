@@ -3,11 +3,13 @@ define the potential action<my.domain.com:my_lib:/middle> {
     define the position<gateway> {
         it may only contain particles where {
             it has the action</inner>.
+            it has the position</source>.
         }
     }
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
+        move the particle in position<gateway>::position</source> to position<gateway>::action</inner>::position<source>.
         create a particle in position<gateway>::action</inner>::position<source>::position</child>.
         create a particle in position<gateway>::action</inner>::position<trigger_pos>.
     }

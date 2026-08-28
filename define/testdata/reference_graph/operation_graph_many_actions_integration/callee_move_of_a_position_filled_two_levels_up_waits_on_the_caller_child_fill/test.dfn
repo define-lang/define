@@ -1,8 +1,6 @@
-# /inner empties a position that /middle never touches: /middle only passes the
-# requirement on it up to /test, which filled it and filled the </a> inside it.
-# The move's empty of <source> has to reach across both triggers to find that
-# </a> fill, while its fill of <holder> waits on the /test create of <gw>, the
-# particle <holder> lives in, two levels up.
+# /test creates a source particle and its </a> child. /middle shuttles the source
+# to /inner, whose move must wait on the caller's child fill through that
+# intermediate move.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<box> {
         it may only contain particles where {
@@ -14,8 +12,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.
-        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<source>.
-        create a particle in position<box>::action</middle>::position<gw>::action</inner>::position<source>::position</a>.
+        create a particle in position<box>::action</middle>::position<gw>::position</source>.
+        create a particle in position<box>::action</middle>::position<gw>::position</source>::position</a>.
         create a particle in position<box>::action</middle>::position<trigger_pos>.
     }
 }
