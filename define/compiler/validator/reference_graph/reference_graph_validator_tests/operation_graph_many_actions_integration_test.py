@@ -195,15 +195,15 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gateway)": ["test.create(box)"],
-        "test.create(box::/middle::gateway::/source)": [
+        "test.create(box::/middle::gateway::/source_particle)": [
             "test.create(box::/middle::gateway)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.move(gateway::/source, gateway::/inner::source)": [
-            "test.create(box::/middle::gateway::/source)"
+        "middle.move(gateway::/source_particle, gateway::/inner::source)": [
+            "test.create(box::/middle::gateway::/source_particle)"
         ],
         "middle.create(gateway::/inner::source::/child)": [
-            "middle.move(gateway::/source, gateway::/inner::source)"
+            "middle.move(gateway::/source_particle, gateway::/inner::source)"
         ],
         "middle.create(gateway::/inner::trigger_pos)": [
             "test.create(box::/middle::gateway)"
@@ -929,18 +929,20 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/source)": ["test.create(box::/middle::gw)"],
-        "test.create(box::/middle::gw::/source::/a)": [
-            "test.create(box::/middle::gw::/source)"
+        "test.create(box::/middle::gw::/source_particle)": [
+            "test.create(box::/middle::gw)"
+        ],
+        "test.create(box::/middle::gw::/source_particle::/a)": [
+            "test.create(box::/middle::gw::/source_particle)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.move(gw::/source, gw::/inner::source)": [
-            "test.create(box::/middle::gw::/source::/a)"
+        "middle.move(gw::/source_particle, gw::/inner::source)": [
+            "test.create(box::/middle::gw::/source_particle::/a)"
         ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         # The inner action's move waits on the child filled two actions earlier.
         "inner.move(source, holder)": [
-            "middle.move(gw::/source, gw::/inner::source)",
+            "middle.move(gw::/source_particle, gw::/inner::source)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
