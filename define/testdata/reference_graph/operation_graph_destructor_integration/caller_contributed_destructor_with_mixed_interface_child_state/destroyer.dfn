@@ -1,8 +1,0 @@
-define the potential action<my.domain.com:my_lib:/destroyer> {
-    define the position<target>.
-    it happens when {
-        the position<target> has a particle.
-    } and it does {
-        destroy the particle in position<target>.
-    }
-}

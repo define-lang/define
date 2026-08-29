@@ -535,29 +535,32 @@ def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 18
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 18
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.line == 30
+    assert all_diags[0].location.column == 51
+    assert all_diags[0].location.end_line == 30
+    assert all_diags[0].location.end_column == 112
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
+    assert (
+        all_diags[0].position_name
+        == "position<other_holder>::action</other>::position<trigger_pos>::position</src>"
+    )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 18,
-            "column": 30,
+            "line": 30,
+            "column": 51,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
-            "line": 8,
+            "line": 11,
             "column": 30,
             "file_path": "other.dfn",
         },

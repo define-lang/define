@@ -26,29 +26,6 @@ py_library(
     ],
 )
 
-py_library(
-    name = "dead_constraint_tracker",
-    srcs = ["dead_constraint_tracker.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator:validation_result",
-    ],
-)
-
-py_test(
-    name = "dead_constraint_tracker_test",
-    size = "small",
-    srcs = ["dead_constraint_tracker_test.py"],
-    deps = [
-        ":dead_constraint_tracker",
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator:validation_result",
-    ],
-)
-
 py_test(
     name = "definition_postorder_validator_destruction_contract_test",
     size = "small",
@@ -76,7 +53,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
-        ":dead_constraint_tracker",
         ":operation_graph",
         ":operation_graph_model",
         ":particle_operation",
@@ -90,6 +66,8 @@ py_library(
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
+        "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
     ],
 )
 
@@ -403,8 +381,6 @@ pyright_test(
     deps = [
         ":action_contract",
         ":action_contract_test",
-        ":dead_constraint_tracker",
-        ":dead_constraint_tracker_test",
         ":definition_postorder_validator",
         ":definition_postorder_validator_destruction_contract_test",
         ":definition_postorder_validator_test",

@@ -9,5 +9,6 @@ define the potential action<my.domain.com:my_lib:/other> {
         move the particle in position<a> to position<tmp>.
         move the particle in position<b> to position<a>.
         move the particle in position<tmp> to position<b>.
+        destroy the particle in position<trigger_pos>.
     }
 }

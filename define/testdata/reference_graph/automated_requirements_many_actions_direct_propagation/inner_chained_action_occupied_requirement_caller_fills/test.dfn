@@ -1,7 +1,6 @@
-# /outer triggers /inner without filling position<item> in its own code.
+# /outer passes its input particle to /inner without filling its position</item> child.
 #
-# The OCCUPIED requirement propagates through /outer to /test. /test fills
-# position<item> through the chained name, satisfying the propagated requirement.
+# The occupied requirement reaches /test, which fills the child before the transfer.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -9,12 +8,18 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
+                it has the position</item>.
+            }
+        }
+        define the position<outer_holder> {
+            it may only contain particles where {
                 it has the action</outer>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::position</item>.
+        create a particle in position<outer_holder>.
+        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.
+        create a particle in position<outer_holder>::action</outer>::position<trigger_pos>.
     }
 }

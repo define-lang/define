@@ -9,8 +9,14 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the action</other>.
             }
         }
+        define the position<result> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::action</other>::position<trigger_pos>.
-        create a particle in position<box>::action</other>::position<item>.
+        move the particle in position<box>::action</other>::position<item> to position<result>.
+        create a particle in position<result>::position</child>.
     }
 }

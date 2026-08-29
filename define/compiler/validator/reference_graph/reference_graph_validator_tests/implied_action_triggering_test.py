@@ -118,14 +118,14 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 18
+    assert diag.location.line == 21
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _MIDDLE
     assert diag.required_empty is False
     assert (
         diag.position_name
-        == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
+        == "position<box>::action</middle>::position<input>::position</extra>"
     )
     assert_propagation_chain(
         diag,
@@ -133,7 +133,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
-            "line": 18,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -141,7 +141,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
-            "line": 7,
+            "line": 21,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -149,16 +149,14 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 8,
+            "line": 12,
             "column": 30,
             "file_path": "inner.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
-        (_IMPLIED_OUTER, _INNER),
         (_MIDDLE, _IMPLIED_OUTER),
         (_MIDDLE, _INNER),
-        (_TEST, _IMPLIED_OUTER),
         (_TEST, _MIDDLE),
     }
 

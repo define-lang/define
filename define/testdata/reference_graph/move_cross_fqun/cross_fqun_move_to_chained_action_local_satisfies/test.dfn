@@ -18,7 +18,7 @@ define the potential action<mv:define-lang.org:parent:/test> {
         destroy the particle in position<src>::position<mv:define-lang.org:child:/quality>.
         create a particle in position<gateway>.
         move the particle in position<src> to position<gateway>::action<mv:define-lang.org:child:/act>::position<local_dest>.
-        destroy the particle in position<gateway>::action<mv:define-lang.org:child:/act>::position<local_dest>.
         create a particle in position<gateway>::action<mv:define-lang.org:child:/act>::position<trigger>.
+        destroy the particle in position<gateway>::action<mv:define-lang.org:child:/act>::position<local_dest>.
     }
 }

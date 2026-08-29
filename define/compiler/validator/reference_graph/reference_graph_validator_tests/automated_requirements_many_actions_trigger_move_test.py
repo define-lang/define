@@ -213,15 +213,24 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].constraint_name == "action</inner>"
-    assert all_diags[0].position_name == "position<iface>"
-    assert all_diags[0].location.line == 5
-    assert all_diags[0].location.column == 24
-    assert all_diags[0].location.end_line == 5
-    assert all_diags[0].location.end_column == 38
-    assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[0].action_name == "action</inner>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+    )
+    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.column == 78
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[1].constraint_name == "action</inner>"
+    assert all_diags[1].position_name == "position<iface>"
+    assert all_diags[1].location.line == 5
+    assert all_diags[1].location.column == 24
+    assert all_diags[1].location.end_line == 5
+    assert all_diags[1].location.end_column == 38
+    assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _INNER),
@@ -389,7 +398,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     assert diagnostic.required_empty is False
     assert (
         diagnostic.position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</item>"
     )
     assert_propagation_chain(
         diagnostic,
@@ -405,15 +414,15 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 19,
-            "column": 30,
+            "line": 21,
+            "column": 50,
             "file_path": "outer.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 10,
             "column": 33,
             "file_path": "inner.dfn",
         },

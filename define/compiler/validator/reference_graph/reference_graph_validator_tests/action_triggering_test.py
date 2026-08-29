@@ -111,7 +111,7 @@ def test_assumed_occupied_trigger_position_does_not_fire_the_action(
     assert result.program_result.all_exceptions == []
     assert action_graph(result.operation_graphs) == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 3
     untriggered = all_diags[0]
     assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
     assert untriggered.constraint_name == "action</inner>"
@@ -121,7 +121,19 @@ def test_assumed_occupied_trigger_position_does_not_fire_the_action(
     assert untriggered.location.end_line == 8
     assert untriggered.location.end_column == 38
     assert untriggered.location.file_path == PurePosixPath("test.dfn")
-    dead_child = all_diags[1]
+    untriggered_child = all_diags[1]
+    assert isinstance(
+        untriggered_child, diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
+    assert untriggered_child.action_name == "action</inner>"
+    assert (
+        untriggered_child.position_name
+        == "position<box>::action</inner>::position<run>::position</a>"
+    )
+    assert untriggered_child.location.line == 14
+    assert untriggered_child.location.column == 45
+    assert untriggered_child.location.file_path == PurePosixPath("test.dfn")
+    dead_child = all_diags[2]
     assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
     assert dead_child.constraint_name == "position</a>"
     assert dead_child.position_name == "position<run>"
@@ -294,10 +306,21 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 61
-    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[1].location.line == 3
-    assert all_diags[1].location.column == 20
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</test>"
+    assert (
+        all_diags[1].position_name
+        == "position<run>::position</pos>::action</test>::position<run>"
+    )
+    assert all_diags[1].location.line == 11
+    assert all_diags[1].location.column == 61
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[2], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[2].location.line == 3
+    assert all_diags[2].location.column == 20
+    assert all_diags[2].location.file_path == PurePosixPath("pos.dfn")

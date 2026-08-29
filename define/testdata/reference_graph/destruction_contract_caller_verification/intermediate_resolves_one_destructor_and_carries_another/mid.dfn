@@ -3,6 +3,7 @@ define the potential action<my.domain.com:my_lib:/mid> {
         it may only contain particles where {
             it has the action</d1>.
             it has the action</d2>.
+            it has the position</item1>.
         }
     }
     define the position<run>.
@@ -15,7 +16,7 @@ define the potential action<my.domain.com:my_lib:/mid> {
             }
         }
         create a particle in position<box>.
-        create a particle in position<incoming>::action</d1>::position<item1>.
+        create a particle in position<incoming>::position</item1>.
         move the particle in position<incoming> to position<box>::action</close_file>::position<target>.
         create a particle in position<box>::action</close_file>::position<run>.
     }

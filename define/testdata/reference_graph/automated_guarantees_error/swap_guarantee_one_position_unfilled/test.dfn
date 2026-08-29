@@ -21,5 +21,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>::action</other>::position<trigger_pos>.
         create a particle in position<box>::action</other>::position<a>.
         create a particle in position<box>::action</other>::position<b>.
+        create a particle in position<box>::action</other>::position<trigger_pos>.
     }
 }

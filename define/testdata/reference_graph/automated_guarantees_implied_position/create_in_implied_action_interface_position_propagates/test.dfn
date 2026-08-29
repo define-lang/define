@@ -1,4 +1,5 @@
-# /inner creates in an implied action's interface position (action</foo>::position<iface>); /test sees position<box>::action</foo>::position<iface> filled.
+# /inner moves a particle from its implied action's interface to its own guarantee,
+# and /test sees that guarantee occupied.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -7,12 +8,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</inner>.
-                it has the action</foo>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</foo>::position<trigger_pos>.
         create a particle in position<box>::action</inner>::position<trigger_pos>.
-        create a particle in position<box>::action</foo>::position<iface>.
+        create a particle in position<box>::action</inner>::position<result>.
     }
 }

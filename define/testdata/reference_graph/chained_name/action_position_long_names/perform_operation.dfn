@@ -4,12 +4,12 @@ define the potential action<my.domain.com:my_library_collection:/perform_operati
             it has the position</inner_position>.
         }
     }
+    define the position<run>.
     it happens when {
-        the position<operation_trigger> has a particle.
+        the position<run> has a particle.
     } and it does {
         define the position<result>.
         create a particle in position<result>.
-        create a particle in position<operation_trigger>::position</inner_position>.
         destroy the particle in position<operation_trigger>::position</inner_position>.
     }
 }

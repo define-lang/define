@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/preparer> {
+    define the position<run>.
+    define the position<payload> {
+        it may only contain particles where {
+            it has the position</src>.
+            it has the position</dst>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<payload>.
+        create a particle in position<payload>::position</src>.
+        destroy the particle in position<run>.
+    }
+}

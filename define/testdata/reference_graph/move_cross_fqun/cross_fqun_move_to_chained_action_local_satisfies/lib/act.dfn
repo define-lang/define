@@ -8,6 +8,6 @@ define the potential action<mv:define-lang.org:child:/act> {
     it happens when {
         the position<trigger> has a particle.
     } and it does {
-        create a particle in position<local_dest>.
+        create a particle in position<local_dest>::position</quality>.
     }
 }

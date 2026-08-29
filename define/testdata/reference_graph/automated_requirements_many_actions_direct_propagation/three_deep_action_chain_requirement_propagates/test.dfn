@@ -1,10 +1,7 @@
-# Three levels of nesting: /test triggers /outer, /outer triggers /middle, /middle triggers /inner.
+# /test triggers /outer, /outer triggers /middle, and /middle triggers /inner.
 #
-# /inner requires position<item> to be empty. Each intermediate has a non-trigger
-# interface position with the inner action as a constraint. /test supplies
-# position<mid_iface>, satisfying /middle's OCCUPIED requirement. The EMPTY
-# requirement on position<item> propagates through /middle and /outer to /test,
-# which pre-fills it.
+# Each action passes the same particle onward. /inner requires its position</item>
+# child to be empty, and that requirement reaches /test, which pre-fills it.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -12,13 +9,18 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
+                it has the position</item>.
+            }
+        }
+        define the position<outer_holder> {
+            it may only contain particles where {
                 it has the action</outer>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<out_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.
-        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::position</item>.
+        create a particle in position<outer_holder>.
+        move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.
+        create a particle in position<outer_holder>::action</outer>::position<trigger_pos>.
     }
 }

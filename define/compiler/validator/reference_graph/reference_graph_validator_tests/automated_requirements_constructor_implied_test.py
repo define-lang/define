@@ -411,7 +411,7 @@ def test_constructor_occupied_violation_via_destroy_of_iface_of_action_in_implie
     )
 
 
-def test_constructor_occupied_violation_via_destroy_of_child_of_iface_of_action_in_implied_chain(
+def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_implied_chain(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -427,7 +427,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_iface_of_action_
     assert diag.required_empty is False
     assert (
         diag.position_name
-        == "position<box>::position</q>::position</outer>::action</provide_interface>::position<iface>::position</child>"
+        == "position<box>::position</q>::position</outer>::position</child>"
     )
     assert diag.location.line == 14
     assert diag.location.column == 30

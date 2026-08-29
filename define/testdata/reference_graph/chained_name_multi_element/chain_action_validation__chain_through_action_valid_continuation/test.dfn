@@ -9,5 +9,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<x>::action</act>::position<inner>.
         create a particle in position<x>::action</act>::position<inner>::position</deeper>.
+        create a particle in position<x>::action</act>::position<run>.
     }
 }

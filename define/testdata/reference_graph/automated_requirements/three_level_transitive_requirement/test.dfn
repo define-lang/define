@@ -3,8 +3,14 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in action</outer>::position<middle_iface>.
-        create a particle in action</outer>::position<middle_iface>::action</middle>::position<inner_iface>.
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</data>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</data>.
+        move the particle in position<box> to action</outer>::position<input>.
         create a particle in action</outer>::position<run>.
     }
 }

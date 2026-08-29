@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
     )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class ParticleInfo:
     """Information about a tracked particle."""
 

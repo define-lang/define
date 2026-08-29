@@ -1,9 +1,8 @@
-# /outer moves iface to local and creates in an /inner position that /inner doesn't use.
+# /outer moves its input particle to a guarantee and creates its position</extra>
+# child, while also triggering /inner.
 #
-# position<extra> is not referenced by /inner's body, so /inner's contract has
-# no requirement for it and _propagate_inner_requirements doesn't propagate one.
-# Only _maybe_infer_requirement with from_caller tracking creates the EMPTY
-# requirement in /outer's contract, remapped through position<iface>.
+# /inner's own position<extra> remains unreferenced. The empty requirement comes
+# from /outer's create and follows the moved particle back to /outer's input.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -11,12 +10,18 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
+                it has the position</extra>.
+            }
+        }
+        define the position<outer_holder> {
+            it may only contain particles where {
                 it has the action</outer>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<iface>.
-        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<extra>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::position</extra>.
+        create a particle in position<outer_holder>.
+        move the particle in position<box> to position<outer_holder>::action</outer>::position<iface>.
+        create a particle in position<outer_holder>::action</outer>::position<trigger_pos>.
     }
 }

@@ -11,13 +11,16 @@ from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
-    dead_constraint_tracker,
     operation_graph_model,
     particle_operation,
     particle_tracker,
     quality_assignment,
     reference_graph_validation_state,
     requirement_violation,
+)
+from define.compiler.validator.reference_graph.dead_code import (
+    dead_constraint_tracker,
+    dead_interface_tracker,
 )
 
 if typing.TYPE_CHECKING:
@@ -124,7 +127,8 @@ class ActionPostorderValidator:
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContract]
-    _dead_tracker: dead_constraint_tracker.DeadConstraintTracker
+    _dead_constraint_tracker: dead_constraint_tracker.DeadConstraintTracker
+    _dead_interface_tracker: dead_interface_tracker.DeadInterfaceTracker
 
     def __init__(
         self,
@@ -142,7 +146,8 @@ class ActionPostorderValidator:
         self._action_edges = []
         self._inferred_requirements = {}
         self._destruction_contracts = []
-        self._dead_tracker = dead_constraint_tracker.DeadConstraintTracker()
+        self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
+        self._dead_interface_tracker = dead_interface_tracker.DeadInterfaceTracker()
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -332,6 +337,8 @@ class ActionPostorderValidator:
                 action_chain,
                 position,
                 scope,
+                current_position=position,
+                parent_particle=self._tracker.get_occupant(position),
                 action_assignment=action_contract.ActionAssignment(
                     quality=quality,
                     assigned_to_position_name=position.typed_names[-1],
@@ -398,6 +405,7 @@ class ActionPostorderValidator:
                         has_active_destruction_fact=has_active_destruction_fact,
                     )
         if destroy_particle:
+            self._dead_interface_tracker.mark_particle_departed(particle)
             if has_active_destruction_fact:
                 self._tracker.destroy_for_destruction_fact(
                     position,
@@ -485,11 +493,15 @@ class ActionPostorderValidator:
         # quality of the particle in `position`, so its interface positions
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
-        quality = destructor.destructor
-        contract = self._validation_state.get_contract_or_none(quality)
+        destructor_name = destructor.destructor
+        contract = self._validation_state.get_contract_or_none(destructor_name)
         if contract is None:
             return
-        action_chain = destructor.position.with_action_suffix(quality)
+        action_chain = destructor.position.with_action_suffix(destructor_name)
+        self._dead_interface_tracker.mark_action_triggered(
+            destructor_name,
+            self._tracker.get_occupant(destructor.position),
+        )
         requirements_in_caller = contract.requirements_in_caller(action_chain)
         self._mark_callee_contract_constraints_alive(requirements_in_caller, scope)
         self._propagate_action_requirements(
@@ -513,54 +525,53 @@ class ActionPostorderValidator:
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
-                target=quality.full_typed_name,
+                target=destructor_name.full_typed_name,
             )
         )
 
-    def _check_interface_fill_trigger(
+    def _process_action_position_arrival(
         self,
         position: ast.PositionReference,
+        action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Check if filling this interface position triggers the named action.
-
-        Only triggers when the chain ends with action<...>::position<trigger>,
-        i.e., we're directly filling an action's interface position.
-        """
-        interface_position = position.get_last_action_children()
-        interface_position = typing.cast("ast.PositionReference", interface_position)
-        # Only trigger when filling a single interface position directly,
-        # not children of interface positions.
-        if len(interface_position.typed_names) != 1:
-            return
-        # Never None, because interface_position is not None.
-        action_ref = typing.cast(
-            "ast.GlobalTypedNameReference", position.get_last_action()
+        """Record an action-position arrival and trigger its final action if appropriate."""
+        particle = self._tracker.get_occupant(position)
+        action = action_chain.get_last_action()
+        parent_position = action_chain.parent_position()
+        parent_particle = (
+            self._tracker.get_occupant(parent_position)
+            if parent_position is not None
+            else None
         )
-        # The action's file may have failed to load or parse.
-        contract = self._validation_state.get_contract_or_none(action_ref)
+        self._dead_interface_tracker.register_arrival(
+            action,
+            position,
+            parent_particle,
+            particle,
+        )
+        contract = self._validation_state.get_contract_or_none(action)
         if contract is None:
             return
+        # Only trigger when filling a single interface position directly,
+        # not children of interface positions.
+        if len(position.typed_names) != len(action_chain.typed_names) + 1:
+            return
         trigger_element = typing.cast(
-            "ast.LocalTypedNameReference", interface_position.typed_names[0]
+            "ast.LocalTypedNameReference", position.typed_names[-1]
         )
         if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
-        trigger_particle = self._tracker.get_occupant(position)
-        self._mark_contract_position_constraints_alive(
-            position, trigger_particle, scope
-        )
-
-        action_chain = position.get_chain_to_last_action()
-        if action_chain is None:
-            raise ValueError(f"no action in chain: {position.source_chained_name}")
+        self._mark_contract_position_constraints_alive(position, particle, scope)
 
         self._fire_triggered_action(
             contract,
             action_chain,
-            trigger_particle.last_position,
+            particle.last_position,
             scope,
+            current_position=parent_position,
+            parent_particle=parent_particle,
         )
 
     def _fire_triggered_action(
@@ -569,6 +580,9 @@ class ActionPostorderValidator:
         action_chain: ast.ActionReference,
         acting_on_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
+        *,
+        current_position: ast.PositionReference | None,
+        parent_particle: particle_tracker.ParticleInfo | None,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
         # Requirement propagation, requirement checking, and the operation graph
@@ -593,14 +607,14 @@ class ActionPostorderValidator:
             contract,
             action_chain,
         )
-        current_position = action_chain.parent_position()
-        origin_position = (
-            self._particle_origin_position(current_position)
-            if current_position is not None
-            else None
-        )
         action = action_chain.get_last_action()
-        self._dead_tracker.mark_action_alive(action, current_position, origin_position)
+        self._dead_interface_tracker.mark_action_triggered(action, parent_particle)
+        origin_position = (
+            parent_particle.origin_position if parent_particle is not None else None
+        )
+        self._dead_constraint_tracker.mark_action_alive(
+            action, current_position, origin_position
+        )
         _ = self._tracker.trigger_action(
             action_chain,
             contract.guarantees,
@@ -1218,7 +1232,7 @@ class ActionPostorderValidator:
             match stmt:
                 case ast.LocalPositionDefinition():
                     scope.add_definition(stmt)
-                    self._dead_tracker.register_position_constraints(
+                    self._dead_constraint_tracker.register_position_constraints(
                         stmt, self._definition_results
                     )
                 case ast.CreateParticleStatement():
@@ -1304,6 +1318,9 @@ class ActionPostorderValidator:
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
+        departing_particle = self._tracker.get_occupancy_info(
+            stmt.target_position
+        ).occupant
         destruction_fact = operation_graph_model.DestructionFact(
             destroyed_position_in_destroyer=stmt.target_position,
             destroying_action=self._definition.typed_name,
@@ -1324,6 +1341,11 @@ class ActionPostorderValidator:
             destruction_fact=destruction_fact,
         )
         self._diagnostics.extend(diags)
+        if diags:
+            return
+        self._dead_interface_tracker.mark_particle_departed(
+            typing.cast("particle_tracker.ParticleInfo", departing_particle)
+        )
         if pending_contract is None:
             return
         self._record_destruction_contract(
@@ -1391,6 +1413,8 @@ class ActionPostorderValidator:
         if move_diagnostics:
             self._diagnostics.extend(move_diagnostics)
             return
+        departing_particle = self._tracker.get_occupant(to_pos)
+        self._dead_interface_tracker.mark_particle_departed(departing_particle)
         self._check_trigger(to_pos, scope)
 
     def _validate_chained_name(
@@ -1561,7 +1585,7 @@ class ActionPostorderValidator:
         return occupancy.occupant.origin_position
 
     def _mark_referenced_position_constraints_alive(self, chain: ast.PositionReference):
-        if not self._dead_tracker.has_position_constraint_candidates():
+        if not self._dead_constraint_tracker.has_position_constraint_candidates():
             return
         parent_position_name_count: int | None = None
         for name_index, typed_name in enumerate(chain.typed_names):
@@ -1571,7 +1595,7 @@ class ActionPostorderValidator:
                 and typed_name.name_type == ast.NameType.POSITION
             ):
                 current_position = chain.position_prefix(parent_position_name_count)
-                self._dead_tracker.mark_position_alive(
+                self._dead_constraint_tracker.mark_position_alive(
                     current_position,
                     self._particle_origin_position(current_position),
                     typed_name,
@@ -1584,7 +1608,7 @@ class ActionPostorderValidator:
         requirements_in_caller: list[action_contract.PositionRequirementInCaller],
         scope: scope_tracker.ScopeTracker,
     ):
-        if not self._dead_tracker.has_constraint_candidates():
+        if not self._dead_constraint_tracker.has_constraint_candidates():
             return
         for requirement_in_caller in requirements_in_caller:
             if (
@@ -1607,19 +1631,19 @@ class ActionPostorderValidator:
         particle: particle_tracker.ParticleInfo,
         scope: scope_tracker.ScopeTracker,
     ):
-        if not self._dead_tracker.has_constraint_candidates():
+        if not self._dead_constraint_tracker.has_constraint_candidates():
             return
         constraints, _ = self._get_direct_required_qualities(position, scope)
         constraints = typing.cast(
             "tuple[ast.GlobalTypedNameReference, ...]", constraints
         )
-        self._dead_tracker.mark_contract_constraints_alive(
+        self._dead_constraint_tracker.mark_contract_constraints_alive(
             None, particle.origin_position, constraints
         )
 
     def _check_dead_constraints(self):
         """Emit diagnostics for dead constraints and untriggered actions."""
-        for candidate in self._dead_tracker.dead_position_constraints():
+        for candidate in self._dead_constraint_tracker.dead_position_constraints():
             self._diagnostics.append(
                 diagnostics.DeadChildPositionDiagnostic(
                     location=candidate.constraint.location,
@@ -1627,7 +1651,7 @@ class ActionPostorderValidator:
                     position_name=candidate.position.source_typed_name,
                 )
             )
-        for candidate in self._dead_tracker.dead_action_constraints():
+        for candidate in self._dead_constraint_tracker.dead_action_constraints():
             self._diagnostics.append(
                 diagnostics.UntriggeredActionDiagnostic(
                     location=candidate.constraint.location,
@@ -1635,11 +1659,21 @@ class ActionPostorderValidator:
                     position_name=candidate.position.source_typed_name,
                 )
             )
-        for implied_action in self._dead_tracker.untriggered_implied_actions():
+        for (
+            implied_action
+        ) in self._dead_constraint_tracker.untriggered_implied_actions():
             self._diagnostics.append(
                 diagnostics.UntriggeredImpliedActionDiagnostic(
                     location=implied_action.location,
                     implied_action_name=implied_action.source_typed_name,
+                )
+            )
+        for action, position in self._dead_interface_tracker.dead_arrivals():
+            self._diagnostics.append(
+                diagnostics.UntriggeredActionInterfaceDiagnostic(
+                    location=action.location,
+                    action_name=action.source_typed_name,
+                    position_name=position.source_chained_name,
                 )
             )
 
@@ -1745,7 +1779,7 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep origin position constraints alive through this action's final guarantees."""
-        if not self._dead_tracker.has_constraint_candidates():
+        if not self._dead_constraint_tracker.has_constraint_candidates():
             return
         for _, guarantee in own_guarantees:
             final_position = guarantee.caused_by
@@ -1756,7 +1790,7 @@ class ActionPostorderValidator:
             constraints = typing.cast(
                 "tuple[ast.GlobalTypedNameReference, ...]", constraints
             )
-            self._dead_tracker.mark_contract_constraints_alive(
+            self._dead_constraint_tracker.mark_contract_constraints_alive(
                 final_position, origin_position, constraints
             )
 
@@ -1787,8 +1821,9 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         """Check trigger, detecting self-triggering as an error."""
-        if position.get_last_action_children() is not None:
-            self._check_interface_fill_trigger(position, scope)
+        action_chain = position.get_chain_to_last_action()
+        if action_chain is not None:
+            self._process_action_position_arrival(position, action_chain, scope)
             return
         if self._trigger_position_name is None:
             return
@@ -1813,13 +1848,13 @@ class ActionPostorderValidator:
             implied_action = implication.typed_global_name
             if implied_action.name_type != ast.NameType.ACTION:
                 continue
-            self._dead_tracker.register_implied_action(implied_action)
+            self._dead_constraint_tracker.register_implied_action(implied_action)
         for pos in definition.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
                 scope.add_definition(pos)
-                self._dead_tracker.register_position_constraints(
+                self._dead_constraint_tracker.register_position_constraints(
                     pos, self._definition_results
                 )
 

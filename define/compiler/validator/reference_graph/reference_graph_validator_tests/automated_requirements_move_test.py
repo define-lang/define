@@ -95,22 +95,22 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<extra>"
+        == "position<outer_holder>::action</outer>::position<iface>::position</extra>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<extra>",
+            "enclosing_quality_name": "position<outer_holder>::action</outer>::position<iface>::position</extra>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -118,7 +118,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 20,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -126,7 +126,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": None,
-            "line": 17,
+            "line": 22,
             "column": 30,
             "file_path": "outer.dfn",
         },

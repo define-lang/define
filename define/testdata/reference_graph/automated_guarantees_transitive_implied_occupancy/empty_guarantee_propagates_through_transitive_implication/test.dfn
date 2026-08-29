@@ -6,13 +6,13 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</implier>.
-                it has the action</implied_action>.
             }
         }
+        define the position<payload>.
         create a particle in position<box>.
-        create a particle in position<box>::action</implied_action>::position<input>.
-        create a particle in position<box>::action</implied_action>::position<trigger_pos>.
-        create a particle in position<box>::action</implied_action>::position<input>.
+        create a particle in position<payload>.
+        move the particle in position<payload> to position<box>::action</implier>::position<input>.
         create a particle in position<box>::action</implier>::position<run>.
+        create a particle in position<payload>.
     }
 }

@@ -503,10 +503,10 @@ py_test(
 )
 
 py_test(
-    name = "dead_constraints_test",
+    name = "dead_code_test",
     size = "small",
-    srcs = ["dead_constraints_test.py"],
-    data = ["//define/testdata/reference_graph/dead_constraints"],
+    srcs = ["dead_code_test.py"],
+    data = ["//define/testdata/reference_graph/dead_code"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -973,7 +973,7 @@ pyright_test(
         ":constructor_triggering_test",
         ":create_particle_test",
         ":create_without_parent_test",
-        ":dead_constraints_test",
+        ":dead_code_test",
         ":destroy_particle_test",
         ":destruction_contract_caller_verification_test",
         ":destruction_contract_propagation_test",

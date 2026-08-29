@@ -60,7 +60,6 @@ def test_empty_guarantee_propagates_through_transitive_implication(
     assert action_graph(result.operation_graphs) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
-        (_TEST, _IMPLIED),
         (_TEST, _IMPLIER),
     ]
 
@@ -330,11 +329,11 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
         all_diags[0].position_name
         == "position<host>::position</mid>::action</nested>::position<iface>::position</x>"
     )
-    assert all_diags[0].populated_at.line == 9
+    assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 9
-    assert all_diags[0].populated_at.end_column == 76
-    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.end_line == 11
+    assert all_diags[0].populated_at.end_column == 59
+    assert all_diags[0].populated_at.file_path == PurePosixPath("nested.dfn")
 
 
 def test_sibling_action_guarantee_and_requirement_share_implied_position_key(

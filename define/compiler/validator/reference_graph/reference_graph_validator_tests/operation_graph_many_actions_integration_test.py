@@ -512,51 +512,14 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     expected = {
-        "test.create(box)": [],
-        "test.create(box::/outer::mw)": ["test.create(box)"],
-        "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
-        "test.create(box::/outer::mw::/middle::gw::/inner::slot)": [
-            "test.create(box::/outer::mw::/middle::gw)"
-        ],
-        "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
-        "outer.destroy(mw::/middle::gw::/inner::slot)": [
-            "test.create(box::/outer::mw::/middle::gw::/inner::slot)"
-        ],
-        "outer.create(mw::/middle::trigger_pos)": ["test.create(box::/outer::mw)"],
-        "middle.create(gw::/inner::trigger_pos)": [
-            "test.create(box::/outer::mw::/middle::gw)"
-        ],
-        "inner.create(slot)": ["outer.destroy(mw::/middle::gw::/inner::slot)"],
-    }
-    assert_operation_dependencies(result.operation_graphs, expected)
-
-
-def test_empty_requirement_waits_on_an_interface_child_destroy_by_a_caller_that_does_not_trigger_it(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    expected = {
-        "test.create(box)": [],
-        "test.create(box::/outer::mw)": ["test.create(box)"],
-        "test.create(box::/outer::mw::/middle::gw)": ["test.create(box::/outer::mw)"],
-        "test.create(box::/outer::mw::/middle::gw::/inner::holder)": [
-            "test.create(box::/outer::mw::/middle::gw)"
-        ],
-        "test.create(box::/outer::mw::/middle::gw::/inner::holder::/a)": [
-            "test.create(box::/outer::mw::/middle::gw::/inner::holder)"
-        ],
-        "test.create(box::/outer::trigger_pos)": ["test.create(box)"],
-        "outer.destroy(mw::/middle::gw::/inner::holder::/a)": [
-            "test.create(box::/outer::mw::/middle::gw::/inner::holder::/a)"
-        ],
-        "outer.create(mw::/middle::trigger_pos)": ["test.create(box::/outer::mw)"],
-        "middle.create(gw::/inner::trigger_pos)": [
-            "test.create(box::/outer::mw::/middle::gw)"
-        ],
-        "inner.create(holder::/a)": [
-            "outer.destroy(mw::/middle::gw::/inner::holder::/a)"
-        ],
+        "test.create(/slot)": [],
+        "test.create(/outer::trigger_pos)": [],
+        "outer.destroy(/slot)": ["test.create(/slot)"],
+        "outer.create(/middle::trigger_pos)": [],
+        "middle.create(/inner::trigger_pos)": [],
+        # The inner action cannot fill the implied position until the distant
+        # caller has explicitly emptied it.
+        "inner.create(/slot)": ["outer.destroy(/slot)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

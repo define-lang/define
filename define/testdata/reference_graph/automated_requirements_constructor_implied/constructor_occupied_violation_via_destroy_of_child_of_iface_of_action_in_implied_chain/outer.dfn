@@ -1,5 +1,0 @@
-define the potential position<my.domain.com:my_lib:/outer> {
-    it may only contain particles where {
-        it has the action</provide_interface>.
-    }
-}

@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/grandchild> {
+    define the position<input>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<held>.
+        move the particle in position<input> to position<held>.
+        move the particle in position<held> to position<input>.
+        destroy the particle in position<run>.
+    }
+}

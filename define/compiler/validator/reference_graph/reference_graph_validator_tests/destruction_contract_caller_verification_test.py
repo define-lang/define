@@ -75,93 +75,6 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     )
 
 
-def test_intermediate_verifies_destructor_it_can_resolve(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 19
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[0].action_name == _CLOSE_FILE
-    assert all_diags[0].required_empty is True
-    assert (
-        all_diags[0].position_name
-        == "position<box>::action</close_file>::position<target>::action</destructor>::position<item>"
-    )
-    assert_propagation_chain(
-        all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<incoming>",
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 4,
-            "column": 24,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
-            "triggered_quality_name": None,
-            "line": 17,
-            "column": 30,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _MID,
-            "triggered_quality_name": _CLOSE_FILE,
-            "line": 19,
-            "column": 30,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::action</destructor>::position<item>",
-            "triggered_quality_name": None,
-            "line": 17,
-            "column": 30,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": _DESTRUCTOR,
-            "triggered_quality_name": None,
-            "line": 6,
-            "column": 30,
-            "file_path": "destructor.dfn",
-        },
-    )
-    assert result.action_call_graph.edges() == [
-        (_CLOSE_FILE, _DESTRUCTOR),
-        (_MID, _CLOSE_FILE),
-        (_TEST, _MID),
-    ]
-
-
-def test_intermediate_resolves_satisfied_owner_does_not_re_report(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
-        (_CLOSE_FILE, _DESTRUCTOR),
-        (_MID, _CLOSE_FILE),
-        (_TEST, _MID),
-    ]
-
-
 def test_intermediate_resolves_one_destructor_and_carries_another(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -170,14 +83,14 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 24
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<outer_box>::action</mid>::position<incoming>::action</d2>::position<item2>"
+        == "position<outer_box>::action</mid>::position<incoming>::position</item2>"
     )
     assert_propagation_chain(
         all_diags[0],
@@ -193,7 +106,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 21,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -201,15 +114,15 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 24,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>::action</d2>::position<item2>",
+            "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>::position</item2>",
             "triggered_quality_name": None,
-            "line": 22,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -217,7 +130,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "mid.dfn",
         },
@@ -239,14 +152,14 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 20
+    assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("mid.dfn")
     assert all_diags[1].action_name == _CLOSE_FILE
     assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
-        == "position<box>::action</close_file>::position<target>::action</d1>::position<item1>"
+        == "position<box>::action</close_file>::position<target>::position</item1>"
     )
     assert_propagation_chain(
         all_diags[1],
@@ -262,7 +175,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "mid.dfn",
         },
@@ -270,15 +183,15 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 21,
             "column": 30,
             "file_path": "mid.dfn",
         },
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::action</d1>::position<item1>",
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</item1>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 19,
             "column": 30,
             "file_path": "mid.dfn",
         },

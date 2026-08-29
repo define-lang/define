@@ -48,22 +48,22 @@ def test_inner_chained_action_empty_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<outer_holder>::action</outer>::position<input>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<outer_holder>::action</outer>::position<input>::position</item>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -71,7 +71,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 20,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -79,7 +79,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -87,7 +87,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -400,20 +400,20 @@ def test_three_deep_action_chain_requirement_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 22
+    assert diag.location.line == 24
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
+        == "position<outer_holder>::action</outer>::position<input>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<outer_holder>::action</outer>::position<input>::position</item>",
             "triggered_quality_name": None,
             "line": 21,
             "column": 30,
@@ -423,7 +423,7 @@ def test_three_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 22,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -431,7 +431,7 @@ def test_three_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -439,7 +439,7 @@ def test_three_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "middle.dfn",
         },
@@ -447,7 +447,7 @@ def test_three_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -467,20 +467,20 @@ def test_four_deep_action_chain_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/a>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>"
+        == "position<a_holder>::action</a>::position<input>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>",
+            "enclosing_quality_name": "position<a_holder>::action</a>::position<input>::position</item>",
             "triggered_quality_name": None,
             "line": 21,
             "column": 30,
@@ -490,7 +490,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/a>",
-            "line": 22,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -498,7 +498,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/a>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/b>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "a.dfn",
         },
@@ -506,7 +506,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/b>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/c>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "b.dfn",
         },
@@ -514,7 +514,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/c>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d>",
-            "line": 11,
+            "line": 18,
             "column": 30,
             "file_path": "c.dfn",
         },
@@ -522,7 +522,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/d>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 11,
             "column": 30,
             "file_path": "d.dfn",
         },
@@ -543,21 +543,21 @@ def test_both_requirements_propagate_when_inner_has_both(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<dest>"
+        == "position<outer_holder>::action</outer>::position<input>::position</dest>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<dest>",
+            "enclosing_quality_name": "position<outer_holder>::action</outer>::position<input>::position</dest>",
             "triggered_quality_name": None,
-            "line": 20,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -565,7 +565,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 21,
+            "line": 27,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -573,7 +573,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 19,
             "column": 30,
             "file_path": "outer.dfn",
         },
@@ -581,8 +581,8 @@ def test_both_requirements_propagate_when_inner_has_both(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 8,
-            "column": 47,
+            "line": 12,
+            "column": 65,
             "file_path": "inner.dfn",
         },
     )

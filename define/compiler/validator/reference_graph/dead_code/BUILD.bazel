@@ -1,0 +1,38 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "dead_constraint_tracker",
+    srcs = ["dead_constraint_tracker.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "dead_interface_tracker",
+    srcs = ["dead_interface_tracker.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:particle_tracker",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":dead_constraint_tracker",
+        ":dead_interface_tracker",
+    ],
+)

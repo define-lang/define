@@ -232,6 +232,19 @@ class UntriggeredImpliedActionDiagnostic(Diagnostic):
 
 
 @dataclass
+class UntriggeredActionInterfaceDiagnostic(Diagnostic):
+    """Diagnostic for an interface particle not present when its action triggers."""
+
+    action_name: str
+    position_name: str
+    message_format: ClassVar[str] = (
+        "a particle arrives in '{self.position_name}' here, but "
+        "'{self.action_name}' is not triggered with that particle in this position "
+        "before the particle moves or is destroyed, or before this action ends."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

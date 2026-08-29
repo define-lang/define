@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<parent_iface> {
+        it may only contain particles where {
+            it has the action</worker>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<held>.
+        move the particle in position<parent_iface> to position<held>.
+        move the particle in position<held> to position<parent_iface>.
+        destroy the particle in position<run>.
+    }
+}

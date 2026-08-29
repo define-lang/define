@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<run>.
+    define the position<input>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}

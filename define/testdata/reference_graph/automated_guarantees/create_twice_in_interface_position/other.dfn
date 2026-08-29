@@ -4,7 +4,7 @@ define the potential action<my.domain.com:my_lib:/other> {
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<item>.
         destroy the particle in position<item>.
+        destroy the particle in position<trigger_pos>.
     }
 }

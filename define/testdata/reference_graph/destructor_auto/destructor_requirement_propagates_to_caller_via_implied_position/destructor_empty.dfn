@@ -1,0 +1,11 @@
+# Creates and destroys a particle in an implied Position, so it requires that
+# Position to be empty when the Destructor runs.
+define the potential action<my.domain.com:my_lib:/destructor_empty> {
+    it also assigns the position</item>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        create a particle in position</item>.
+        destroy the particle in position</item>.
+    }
+}

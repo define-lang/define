@@ -324,14 +324,16 @@ def test_create_in_implied_action_interface_position_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 16
-    assert all_diags[0].location.end_column == 74
+    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_column == 77
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position<box>::action</foo>::position<iface>"
-    assert all_diags[0].populated_at.line == 8
-    assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.end_line == 8
-    assert all_diags[0].populated_at.end_column == 59
+    assert (
+        all_diags[0].position_name == "position<box>::action</inner>::position<result>"
+    )
+    assert all_diags[0].populated_at.line == 10
+    assert all_diags[0].populated_at.column == 63
+    assert all_diags[0].populated_at.end_line == 10
+    assert all_diags[0].populated_at.end_column == 79
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")

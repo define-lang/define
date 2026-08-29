@@ -1,4 +1,5 @@
-# An inner action reached through an interface position of an implied action still has its requirements propagated up the call chain.
+# A particle routed through a triggered implied action before reaching an inner
+# action still carries the inner action's requirements back to the caller.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -7,14 +8,16 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</middle>.
-                it has the action</implied_outer>.
+            }
+        }
+        define the position<payload> {
+            it may only contain particles where {
+                it has the position</extra>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</implied_outer>::position<run>.
-        destroy the particle in position<box>::action</implied_outer>::position<run>.
-        destroy the particle in position<box>::action</implied_outer>::position<iface>.
-        create a particle in position<box>::action</implied_outer>::position<iface>.
+        create a particle in position<payload>.
+        move the particle in position<payload> to position<box>::action</middle>::position<input>.
         create a particle in position<box>::action</middle>::position<run>.
     }
 }

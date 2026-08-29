@@ -1,20 +1,14 @@
-# /outer empties the slot, but /middle is what triggers /inner, and /middle
-# never touches the slot. /inner's empty requirement propagates through
-# /middle to /outer, so inner.create(slot) waits on the destroy performed by a
-# caller that is not the one that triggered it.
+# /outer empties the implied position, but /middle is what triggers /inner, and
+# /middle never touches the position. /inner's empty requirement propagates
+# through /middle to /outer, so inner.create(/slot) waits on the destroy
+# performed by a caller that is not the one that triggered it.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</outer>.
-        }
-    }
+    it also assigns the position</slot>.
+    it also assigns the action</outer>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<mw>.
-        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>.
-        create a particle in position<box>::action</outer>::position<mw>::action</middle>::position<gw>::action</inner>::position<slot>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position</slot>.
+        create a particle in action</outer>::position<trigger_pos>.
     }
 }

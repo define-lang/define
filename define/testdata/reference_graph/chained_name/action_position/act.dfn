@@ -4,12 +4,12 @@ define the potential action<my.domain.com:my_lib:/act> {
             it has the position</inner>.
         }
     }
+    define the position<run>.
     it happens when {
-        the position<trigger_pos> has a particle.
+        the position<run> has a particle.
     } and it does {
         define the position<result>.
         create a particle in position<result>.
-        create a particle in position<trigger_pos>::position</inner>.
         destroy the particle in position<trigger_pos>::position</inner>.
     }
 }

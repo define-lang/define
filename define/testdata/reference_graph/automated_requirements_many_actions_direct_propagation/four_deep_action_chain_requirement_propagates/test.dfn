@@ -1,9 +1,7 @@
-# Four levels of nesting: /a triggers /b, /b triggers /c, /c triggers /d.
+# /a triggers /b, /b triggers /c, and /c triggers /d.
 #
-# /d requires position<item> to be empty (its first reference is a create). Each
-# intermediate action just triggers the next one. The test action pre-fills the deeply
-# nested position<item> before triggering /a, and this violation is detected because
-# /d's requirement propagates through /c, /b, and /a to the test action.
+# Each action passes the same particle onward. /d requires its position</item>
+# child to be empty, and that requirement reaches /test through all three callers.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -11,14 +9,18 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
+                it has the position</item>.
+            }
+        }
+        define the position<a_holder> {
+            it may only contain particles where {
                 it has the action</a>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</a>::position<a_iface>.
-        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>.
-        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>.
-        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>.
-        create a particle in position<box>::action</a>::position<trigger_pos>.
+        create a particle in position<box>::position</item>.
+        create a particle in position<a_holder>.
+        move the particle in position<box> to position<a_holder>::action</a>::position<input>.
+        create a particle in position<a_holder>::action</a>::position<trigger_pos>.
     }
 }

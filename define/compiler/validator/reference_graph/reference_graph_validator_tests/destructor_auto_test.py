@@ -645,7 +645,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     )
 
 
-def test_destructor_requirement_propagates_to_caller_via_interface(
+def test_destructor_requirement_propagates_to_caller_via_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -654,22 +654,22 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 15
+    assert diag.location.line == 22
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _INNER
     assert diag.required_empty is True
-    assert diag.position_name == (
-        "position<box>::action</inner>::position<incoming>"
-        "::action</destructor_empty>::position<item>"
+    assert (
+        diag.position_name
+        == "position<box>::action</inner>::position<incoming>::position</item>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>",
+            "enclosing_quality_name": "position<box>::action</inner>::position<incoming>::position</item>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -677,7 +677,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _INNER,
-            "line": 15,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },

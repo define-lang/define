@@ -9,11 +9,17 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the action</middle>.
             }
         }
+        define the position<result> {
+            it may only contain particles where {
+                it has the position</marker>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</middle>::position<source>.
         create a particle in position<gateway>::action</middle>::position<source>::position</marker>.
         create a particle in position<gateway>::action</middle>::position<target>.
         create a particle in position<gateway>::action</middle>::position<run>.
-        create a particle in position<gateway>::action</middle>::position<target>::position</marker>.
+        move the particle in position<gateway>::action</middle>::position<target> to position<result>.
+        create a particle in position<result>::position</marker>.
     }
 }
