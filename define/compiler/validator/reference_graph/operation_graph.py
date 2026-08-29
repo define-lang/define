@@ -16,6 +16,12 @@ exist to support validation.
 In general, operation graphs are designed such that they are the only thing
 that codegen should need in order to generate code for all actions.
 
+Operation graphs are also designed _only_ to be used by the codegen stack.
+The validator must never reach back into the operation graph for any
+necessary part of validation. When the compiler is called in its purely
+validation mode (define validate) it should be possible to fully disable building
+the operation graph and still have validation function correctly.
+
 Operation graphs are only expected to be valid for valid Define code. None of
 the code in this module needs to deal with invalid Define code, as such graphs
 will never be passed to codegen. The only "invalid code" situation we might need
