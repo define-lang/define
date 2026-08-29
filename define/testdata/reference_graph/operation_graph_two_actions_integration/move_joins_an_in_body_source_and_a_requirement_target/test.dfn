@@ -1,7 +1,5 @@
-# A move has both a fill and an empty side, so it joins two kinds of
-# predecessor at once: it empties the in-body-created <src> (an ordinary
-# operation) and fills the caller-controlled empty-requirement <dest> (a
-# requirement the caller satisfies by emptying it before the trigger).
+# The second callee Move joins two predecessors: the in-body Create of <src>
+# and the caller Destroy that empties <dest> after the first execution.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gateway> {
         it may only contain particles where {
@@ -12,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position<gateway>.
-        create a particle in position<gateway>::action</other>::position<dest>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
         destroy the particle in position<gateway>::action</other>::position<dest>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
     }

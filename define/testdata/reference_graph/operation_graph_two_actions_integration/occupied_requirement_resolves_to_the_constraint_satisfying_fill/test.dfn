@@ -1,6 +1,6 @@
-# move::input is filled from box2, emptied back to box2, then filled from box1
-# before move triggers. move.move(input, output) must resolve its requirement to
-# the box1 fill -- the most recent fill before the trigger -- not the box2 fill.
+# Move first processes box2, which the caller moves back from Move's output
+# position. Move then processes box1. The second move.move(input, output) must
+# resolve its occupied requirement to the box1 fill, not the earlier box2 fill.
 # The constraint makes this a safety issue, not just ordering: only box1's
 # particle has position</a>, and the move feeds dest, which requires it. Binding
 # to the box2 fill would let the move run with box2's particle and carry it into
@@ -29,9 +29,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box1>.
         create a particle in position<box2>.
         move the particle in position<box2> to position<action_holder>::action</move>::position<input>.
-        move the particle in position<action_holder>::action</move>::position<input> to position<box2>.
+        move the particle in position<action_holder>::action</move>::position<output> to position<box2>.
         move the particle in position<box1> to position<action_holder>::action</move>::position<input>.
-        create a particle in position<action_holder>::action</move>::position<run>.
         move the particle in position<action_holder>::action</move>::position<output> to position<dest>.
         create a particle in position<dest>::position</a>.
     }

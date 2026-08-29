@@ -444,18 +444,16 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     expected = {
         "test.create(box)": [],
         "test.create(box::/middle::gw)": ["test.create(box)"],
-        "test.create(box::/middle::gw::/value)": ["test.create(box::/middle::gw)"],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.move(gw::/value, gw::/inner::slot)": [
-            "test.create(box::/middle::gw::/value)"
-        ],
-        "middle.destroy(gw::/inner::slot)": [
-            "middle.move(gw::/value, gw::/inner::slot)"
-        ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
-        # The inner action cannot fill slot until the intermediate action has
-        # explicitly emptied it.
-        "inner.create(slot)": ["middle.destroy(gw::/inner::slot)"],
+        "inner.create(slot)": ["test.create(box::/middle::gw)"],
+        "inner.destroy(trigger_pos)": ["middle.create(gw::/inner::trigger_pos)"],
+        "middle.destroy(gw::/inner::slot)": ["inner.create(slot)"],
+        "middle.create(gw::/inner::trigger_pos)#2": ["inner.destroy(trigger_pos)"],
+        # The inner action cannot fill slot a second time until the intermediate
+        # action has explicitly emptied it.
+        "inner#2.create(slot)": ["middle.destroy(gw::/inner::slot)"],
+        "inner#2.destroy(trigger_pos)": ["middle.create(gw::/inner::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -625,20 +623,27 @@ def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_op
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gateway)": [],
-        "test.create(gateway::/worker::target)": ["test.create(gateway)"],
-        "test.move(gateway::/worker::target, gateway::/worker::occupied)": [
-            "test.create(gateway::/worker::target)"
+        "test.create(state)": [],
+        "test.create(state::/occupied)": ["test.create(state)"],
+        "test.create(source)": [],
+        "test.move(source, gateway::/worker::source)": [
+            "test.create(gateway)",
+            "test.create(source)",
         ],
-        "test.create(gateway::/worker::source)": ["test.create(gateway)"],
-        "test.create(gateway::/worker::trigger_pos)": ["test.create(gateway)"],
-        "worker.destroy(occupied)": [
-            "test.move(gateway::/worker::target, gateway::/worker::occupied)"
+        "test.move(state, gateway::/worker::state)": [
+            "test.create(gateway)",
+            "test.create(state::/occupied)",
         ],
-        # The independent source Create does not reach the Fill Dependency, so
+        "worker.destroy(state::/occupied)": [
+            "test.move(state, gateway::/worker::state)"
+        ],
+        # The independent source transfer does not reach the state Move, so
         # Worker's Move retains both after its pending relationships are resolved.
-        "worker.move(source, target)": [
-            "test.move(gateway::/worker::target, gateway::/worker::occupied)",
-            "test.create(gateway::/worker::source)",
+        # The state Move also satisfies Worker's Destroy requirement, making both
+        # pending requirements use the same caller operation.
+        "worker.move(source, state::/target)": [
+            "test.move(source, gateway::/worker::source)",
+            "test.move(state, gateway::/worker::state)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -887,20 +892,22 @@ def test_occupied_requirement_resolves_to_the_most_recent_fill_before_the_trigge
             "test.create(source)",
             "test.create(gw_a)",
         ],
-        "test.move(gw_a::/worker::slot, temp)": [
-            "test.move(source, gw_a::/worker::slot)"
-        ],
-        "test.move(temp, gw_b::/helper::slot)": [
+        "worker.destroy(slot)": ["test.move(source, gw_a::/worker::slot)"],
+        "test.create(source)#2": ["test.move(source, gw_a::/worker::slot)"],
+        "test.move(source, gw_b::/helper::slot)": [
             "test.create(gw_b)",
-            "test.move(gw_a::/worker::slot, temp)",
+            "test.create(source)#2",
         ],
-        "test.create(gw_b::/helper::trigger_pos)": ["test.create(gw_b)"],
-        "helper.move(slot, out)": ["test.move(temp, gw_b::/helper::slot)"],
+        "helper.move(slot, out)": ["test.move(source, gw_b::/helper::slot)"],
         "test.move(gw_b::/helper::out, gw_a::/worker::slot)": [
+            "worker.destroy(slot)",
             "helper.move(slot, out)",
         ],
-        "test.create(gw_a::/worker::trigger_pos)": ["test.create(gw_a)"],
-        "worker.destroy(slot)": ["test.move(gw_b::/helper::out, gw_a::/worker::slot)"],
+        # Worker's second Destroy resolves its occupied requirement to the second
+        # fill of slot, not to the fill consumed by its first Destroy.
+        "worker#2.destroy(slot)": [
+            "test.move(gw_b::/helper::out, gw_a::/worker::slot)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

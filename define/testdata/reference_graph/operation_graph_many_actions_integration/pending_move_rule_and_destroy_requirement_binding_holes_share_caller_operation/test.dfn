@@ -1,20 +1,27 @@
-# The Move from target to occupied supplies two requirements of Worker. Worker's
-# Destroy depends on it immediately. Worker's final Move retains it as a Fill
-# Dependency only after Move Rule resolution because the more recent source
-# Create does not depend on it.
+# The Move of state supplies two requirements of Worker. Worker's Destroy
+# depends on it immediately. Worker's final Move retains it as a Fill Dependency
+# because the independent source transfer does not depend on it.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gateway> {
         it may only contain particles where {
             it has the action</worker>.
         }
     }
+    define the position<state> {
+        it may only contain particles where {
+            it has the position</occupied>.
+            it has the position</target>.
+        }
+    }
+    define the position<source>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position<gateway>.
-        create a particle in position<gateway>::action</worker>::position<target>.
-        move the particle in position<gateway>::action</worker>::position<target> to position<gateway>::action</worker>::position<occupied>.
-        create a particle in position<gateway>::action</worker>::position<source>.
-        create a particle in position<gateway>::action</worker>::position<trigger_pos>.
+        create a particle in position<state>.
+        create a particle in position<state>::position</occupied>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<gateway>::action</worker>::position<source>.
+        move the particle in position<state> to position<gateway>::action</worker>::position<state>.
     }
 }

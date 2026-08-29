@@ -1,9 +1,8 @@
 define the potential action<my.domain.com:my_lib:/helper> {
-    define the position<trigger_pos>.
     define the position<slot>.
     define the position<out>.
     it happens when {
-        the position<trigger_pos> has a particle.
+        the position<slot> has a particle.
     } and it does {
         move the particle in position<slot> to position<out>.
     }

@@ -76,14 +76,15 @@ def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
     expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/other::output)": ["test.create(gateway)"],
-        "test.create(gateway::/other::output::/a)": [
-            "test.create(gateway::/other::output)"
-        ],
-        "test.destroy(gateway::/other::output::/a)": [
-            "test.create(gateway::/other::output::/a)"
-        ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(output::/a)": ["test.destroy(gateway::/other::output::/a)"],
+        "other.create(output::/a)": ["test.create(gateway::/other::output)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway::/other::output::/a)": ["other.create(output::/a)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        # A caller-satisfied empty requirement keeps the caller's Destroy instead
+        # of falling back to the parent fill.
+        "other#2.create(output::/a)": ["test.destroy(gateway::/other::output::/a)"],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -473,7 +474,13 @@ def test_caller_operation_waits_on_callee_destroy_output(
         "test.create(gateway::/other::output)": ["test.create(gateway)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(output)": ["test.create(gateway::/other::output)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        # The caller's refill waits on the callee operation that emptied the
+        # position.
         "test.create(gateway::/other::output)#2": ["other.destroy(output)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        "other#2.destroy(output)": ["test.create(gateway::/other::output)#2"],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -485,10 +492,15 @@ def test_empty_requirement_waits_on_the_caller_destroy_that_clears_it(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gateway)": [],
-        "test.create(gateway::/other::slot)": ["test.create(gateway)"],
-        "test.destroy(gateway::/other::slot)": ["test.create(gateway::/other::slot)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(slot)": ["test.destroy(gateway::/other::slot)"],
+        "other.create(slot)": ["test.create(gateway)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway::/other::slot)": ["other.create(slot)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        # The second callee Create waits only on the caller Destroy that satisfies
+        # its empty requirement.
+        "other#2.create(slot)": ["test.destroy(gateway::/other::slot)"],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -514,12 +526,15 @@ def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gateway)": [],
-        "test.create(gateway::/other::slot)": ["test.create(gateway)"],
-        "test.move(gateway::/other::slot, sink)": [
-            "test.create(gateway::/other::slot)"
-        ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(slot)": ["test.move(gateway::/other::slot, sink)"],
+        "other.create(slot)": ["test.create(gateway)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.move(gateway::/other::slot, sink)": ["other.create(slot)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        # The second callee Create waits only on the caller Move that satisfies its
+        # empty requirement.
+        "other#2.create(slot)": ["test.move(gateway::/other::slot, sink)"],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -531,14 +546,20 @@ def test_move_joins_an_in_body_source_and_a_requirement_target(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gateway)": [],
-        "test.create(gateway::/other::dest)": ["test.create(gateway)"],
-        "test.destroy(gateway::/other::dest)": ["test.create(gateway::/other::dest)"],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(src)": ["test.create(gateway)"],
-        "other.move(src, dest)": [
-            "other.create(src)",
+        "other.move(src, dest)": ["other.create(src)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway::/other::dest)": ["other.move(src, dest)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        "other#2.create(src)": ["test.create(gateway)"],
+        # The second callee Move joins its in-body source with the caller Destroy
+        # that satisfies the target's empty requirement.
+        "other#2.move(src, dest)": [
+            "other#2.create(src)",
             "test.destroy(gateway::/other::dest)",
         ],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -567,19 +588,15 @@ def test_move_excludes_non_action_parent_move_fill_dependency(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gateway)": [],
-        "test.create(gateway::/other::box)": ["test.create(gateway)"],
-        "test.move(gateway::/other::box, gateway::/other::destination)": [
-            "test.create(gateway::/other::box)"
+        "test.create(box)": [],
+        "test.move(box, destination)": ["test.create(box)"],
+        "test.move(destination, gateway::/other::box)": [
+            "test.create(gateway)",
+            "test.move(box, destination)",
         ],
-        "test.move(gateway::/other::destination, gateway::/other::box)": [
-            "test.move(gateway::/other::box, gateway::/other::destination)"
-        ],
-        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(box::/item)": [
-            "test.move(gateway::/other::destination, gateway::/other::box)"
-        ],
-        # The caller Move is already reachable through the more recent child Create, so
-        # the Move Rule excludes it through its other operated position, box.
+        "other.create(box::/item)": ["test.move(destination, gateway::/other::box)"],
+        # The caller Move is already reachable through the more recent child Create,
+        # so the Move Rule excludes it through its other operated position, box.
         "other.move(box::/item, destination)": ["other.create(box::/item)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -593,14 +610,15 @@ def test_child_empty_requirement_waits_on_the_caller_empty_of_the_child(
     expected = {
         "test.create(gateway)": [],
         "test.create(gateway::/other::box)": ["test.create(gateway)"],
-        "test.create(gateway::/other::box::/child)": [
-            "test.create(gateway::/other::box)"
-        ],
-        "test.destroy(gateway::/other::box::/child)": [
-            "test.create(gateway::/other::box::/child)"
-        ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        "other.create(box::/child)": ["test.destroy(gateway::/other::box::/child)"],
+        "other.create(box::/child)": ["test.create(gateway::/other::box)"],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway::/other::box::/child)": ["other.create(box::/child)"],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        # The second child Create waits on the caller Destroy of that child, not
+        # merely on the action trigger.
+        "other#2.create(box::/child)": ["test.destroy(gateway::/other::box::/child)"],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -653,16 +671,21 @@ def test_empty_grandchild_requirement_waits_on_the_caller_empty(
         "test.create(gateway::/other::box::/child)": [
             "test.create(gateway::/other::box)"
         ],
-        "test.create(gateway::/other::box::/child::/grandchild)": [
-            "test.create(gateway::/other::box::/child)"
-        ],
-        "test.destroy(gateway::/other::box::/child::/grandchild)": [
-            "test.create(gateway::/other::box::/child::/grandchild)"
-        ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.create(box::/child::/grandchild)": [
+            "test.create(gateway::/other::box::/child)"
+        ],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway::/other::box::/child::/grandchild)": [
+            "other.create(box::/child::/grandchild)"
+        ],
+        "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
+        # The second grandchild Create waits on the caller Destroy at the same
+        # contracted position depth.
+        "other#2.create(box::/child::/grandchild)": [
             "test.destroy(gateway::/other::box::/child::/grandchild)"
         ],
+        "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -739,12 +762,19 @@ def test_empty_requirement_resolves_to_the_most_recent_empty_before_the_trigger(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gw)": [],
-        "test.create(gw::/filler::slot)": ["test.create(gw)"],
-        "test.destroy(gw::/filler::slot)": ["test.create(gw::/filler::slot)"],
-        "test.create(gw::/filler::slot)#2": ["test.destroy(gw::/filler::slot)"],
-        "test.destroy(gw::/filler::slot)#2": ["test.create(gw::/filler::slot)#2"],
         "test.create(gw::/filler::trigger_pos)": ["test.create(gw)"],
-        "filler.create(slot)": ["test.destroy(gw::/filler::slot)#2"],
+        "filler.create(slot)": ["test.create(gw)"],
+        "filler.destroy(trigger_pos)": ["test.create(gw::/filler::trigger_pos)"],
+        "test.destroy(gw::/filler::slot)": ["filler.create(slot)"],
+        "test.create(gw::/filler::trigger_pos)#2": ["filler.destroy(trigger_pos)"],
+        "filler#2.create(slot)": ["test.destroy(gw::/filler::slot)"],
+        "filler#2.destroy(trigger_pos)": ["test.create(gw::/filler::trigger_pos)#2"],
+        "test.destroy(gw::/filler::slot)#2": ["filler#2.create(slot)"],
+        "test.create(gw::/filler::trigger_pos)#3": ["filler#2.destroy(trigger_pos)"],
+        # The third callee Create resolves to the second, most recent caller
+        # Destroy, rather than the stale first Destroy.
+        "filler#3.create(slot)": ["test.destroy(gw::/filler::slot)#2"],
+        "filler#3.destroy(trigger_pos)": ["test.create(gw::/filler::trigger_pos)#3"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -762,16 +792,19 @@ def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
             "test.create(action_holder)",
             "test.create(box2)",
         ],
-        "test.move(action_holder::/move::input, box2)": [
-            "test.move(box2, action_holder::/move::input)"
-        ],
+        "move.move(input, output)": ["test.move(box2, action_holder::/move::input)"],
+        "test.move(action_holder::/move::output, box2)": ["move.move(input, output)"],
         "test.move(box1, action_holder::/move::input)": [
             "test.create(box1)",
-            "test.move(action_holder::/move::input, box2)",
+            "move.move(input, output)",
         ],
-        "test.create(action_holder::/move::run)": ["test.create(action_holder)"],
-        "move.move(input, output)": ["test.move(box1, action_holder::/move::input)"],
-        "test.move(action_holder::/move::output, dest)": ["move.move(input, output)"],
+        # The second action Move waits on the box1 fill—the most recent fill of
+        # input—and on the caller Move that emptied output after the first call.
+        "move#2.move(input, output)": [
+            "test.move(action_holder::/move::output, box2)",
+            "test.move(box1, action_holder::/move::input)",
+        ],
+        "test.move(action_holder::/move::output, dest)": ["move#2.move(input, output)"],
         "test.create(dest::/a)": ["test.move(action_holder::/move::output, dest)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -784,12 +817,16 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
     assert_no_errors(result.program_result)
     expected = {
         "test.create(gw)": [],
-        "test.create(gw::/worker::out)": ["test.create(gw)"],
-        "test.destroy(gw::/worker::out)": ["test.create(gw::/worker::out)"],
         "test.create(gw::/worker::in)": ["test.create(gw)"],
-        "worker.move(in, out)": [
+        "worker.move(in, out)": ["test.create(gw::/worker::in)"],
+        "test.destroy(gw::/worker::out)": ["worker.move(in, out)"],
+        "test.create(gw::/worker::in)#2": ["worker.move(in, out)"],
+        # The second Move reads the trigger position while its empty requirement
+        # resolves to the caller Destroy, so neither dependency may displace the
+        # other.
+        "worker#2.move(in, out)": [
             "test.destroy(gw::/worker::out)",
-            "test.create(gw::/worker::in)",
+            "test.create(gw::/worker::in)#2",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

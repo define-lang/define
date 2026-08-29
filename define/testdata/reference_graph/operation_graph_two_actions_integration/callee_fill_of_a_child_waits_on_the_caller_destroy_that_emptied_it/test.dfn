@@ -1,7 +1,6 @@
-# The caller fills output and then empties output::/a itself, so the callee's
-# fill of output::/a waits on that destroy. The create of the parent only
-# satisfies an empty requirement that nothing else emptied, so it must not be
-# what this one resolves to.
+# The first callee fill of output::/a waits on the caller's parent fill. After
+# the caller destroys that child, the second callee fill waits on the destroy
+# instead of falling back to the parent fill.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gateway> {
         it may only contain particles where {
@@ -13,7 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<output>.
-        create a particle in position<gateway>::action</other>::position<output>::position</a>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
         destroy the particle in position<gateway>::action</other>::position<output>::position</a>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
     }

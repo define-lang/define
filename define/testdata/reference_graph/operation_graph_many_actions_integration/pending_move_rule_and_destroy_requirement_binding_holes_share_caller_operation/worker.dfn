@@ -1,12 +1,15 @@
 define the potential action<my.domain.com:my_lib:/worker> {
-    define the position<trigger_pos>.
     define the position<source>.
-    define the position<target>.
-    define the position<occupied>.
+    define the position<state> {
+        it may only contain particles where {
+            it has the position</occupied>.
+            it has the position</target>.
+        }
+    }
     it happens when {
-        the position<trigger_pos> has a particle.
+        the position<state> has a particle.
     } and it does {
-        destroy the particle in position<occupied>.
-        move the particle in position<source> to position<target>.
+        destroy the particle in position<state>::position</occupied>.
+        move the particle in position<source> to position<state>::position</target>.
     }
 }

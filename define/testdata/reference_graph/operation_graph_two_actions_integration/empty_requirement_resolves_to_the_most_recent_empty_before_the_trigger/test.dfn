@@ -1,7 +1,6 @@
-# slot is filled and emptied twice before filler triggers. filler.create(slot)
-# needs slot empty, so it must resolve to the second (most recent) destroy
-# before the trigger, not the first -- picking the first would leave it racing
-# the refill.
+# Before Filler's third execution, slot has been filled and destroyed twice.
+# The third filler.create(slot) resolves to the second, most recent Destroy,
+# not to the stale first Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gw> {
         it may only contain particles where {
@@ -12,9 +11,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position<gw>.
-        create a particle in position<gw>::action</filler>::position<slot>.
+        create a particle in position<gw>::action</filler>::position<trigger_pos>.
         destroy the particle in position<gw>::action</filler>::position<slot>.
-        create a particle in position<gw>::action</filler>::position<slot>.
+        create a particle in position<gw>::action</filler>::position<trigger_pos>.
         destroy the particle in position<gw>::action</filler>::position<slot>.
         create a particle in position<gw>::action</filler>::position<trigger_pos>.
     }

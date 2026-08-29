@@ -1,5 +1,5 @@
-# The callee fills a grandchild-depth contracted position, so its EMPTY
-# requirement resolves to the caller empty of that same grandchild.
+# After the caller destroys the grandchild filled by the first execution, the
+# second callee fill resolves its empty requirement to that Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gateway> {
         it may only contain particles where {
@@ -12,7 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<box>.
         create a particle in position<gateway>::action</other>::position<box>::position</child>.
-        create a particle in position<gateway>::action</other>::position<box>::position</child>::position</grandchild>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
         destroy the particle in position<gateway>::action</other>::position<box>::position</child>::position</grandchild>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
     }

@@ -1,6 +1,5 @@
-# The callee fills the child box::/child, whose EMPTY requirement the caller
-# satisfies by emptying that same child. other.create(box::/child) waits on
-# the caller destroy of the child, not on the trigger.
+# After the caller destroys the child filled by the first execution, the second
+# other.create(box::/child) waits on that Destroy, not on the second trigger.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<gateway> {
         it may only contain particles where {
@@ -12,7 +11,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<box>.
-        create a particle in position<gateway>::action</other>::position<box>::position</child>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
         destroy the particle in position<gateway>::action</other>::position<box>::position</child>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
     }

@@ -1,8 +1,5 @@
-# /test fills a contracted child position, /middle shuttles it into /inner's
-# slot and destroys it,
-# and /inner needs it empty. The intermediate destroy is the most recent
-# operation on the position before the trigger, so inner.create(slot) waits on
-# that destroy, not on the /test fill it superseded.
+# /middle consumes /inner's first guarantee, then triggers /inner again. The
+# second inner.create(slot) waits on /middle's destroy, not on the later trigger.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<box> {
         it may only contain particles where {
@@ -14,7 +11,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.
-        create a particle in position<box>::action</middle>::position<gw>::position</value>.
         create a particle in position<box>::action</middle>::position<trigger_pos>.
     }
 }

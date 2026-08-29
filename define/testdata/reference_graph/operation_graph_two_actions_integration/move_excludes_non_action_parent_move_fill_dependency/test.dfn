@@ -4,13 +4,18 @@ define the potential action<my.domain.com:my_lib:/test> {
             it has the action</other>.
         }
     }
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</item>.
+        }
+    }
+    define the position<destination>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position<gateway>.
-        create a particle in position<gateway>::action</other>::position<box>.
-        move the particle in position<gateway>::action</other>::position<box> to position<gateway>::action</other>::position<destination>.
-        move the particle in position<gateway>::action</other>::position<destination> to position<gateway>::action</other>::position<box>.
-        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+        create a particle in position<box>.
+        move the particle in position<box> to position<destination>.
+        move the particle in position<destination> to position<gateway>::action</other>::position<box>.
     }
 }
