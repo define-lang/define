@@ -8,6 +8,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
@@ -26,6 +28,9 @@ if TYPE_CHECKING:
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
+_PARENT = "action<my.domain.com:my_lib:/parent>"
+
+_DLP_45_NOT_IMPLEMENTED = "DLP 45 interface inference is not implemented"
 
 
 def test_caller_overrides_implied_guarantee(
@@ -44,6 +49,72 @@ def test_intermediate_position_required(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+
+
+@pytest.mark.xfail(strict=True, reason=_DLP_45_NOT_IMPLEMENTED)
+def test_occupied_requirement_is_not_inferred_after_action_in_chain(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "action</parent>::position<input>"
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+
+
+@pytest.mark.xfail(strict=True, reason=_DLP_45_NOT_IMPLEMENTED)
+def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+
+
+@pytest.mark.xfail(strict=True, reason=_DLP_45_NOT_IMPLEMENTED)
+def test_occupied_requirement_is_not_inferred_after_action_on_interface_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+
+
+@pytest.mark.xfail(strict=True, reason=_DLP_45_NOT_IMPLEMENTED)
+def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert diagnostic.position_name == (
+        "position<box>::action</parent>::position<input>::position</child>::position</grandchild>"
+    )
+    assert (
+        diagnostic.parent_position_name
+        == "position<box>::action</parent>::position<input>"
+    )
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
 
 
 def test_three_level_transitive_requirement(

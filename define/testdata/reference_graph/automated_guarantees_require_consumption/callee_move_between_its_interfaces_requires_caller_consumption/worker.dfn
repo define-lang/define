@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<input>.
+    define the position<result>.
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        move the particle in position<input> to position<result>.
+    }
+}

@@ -1,0 +1,8 @@
+define the potential action<my.domain.com:my_lib:/construct> {
+    define the position<result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<result>.
+    }
+}

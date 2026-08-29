@@ -245,6 +245,19 @@ class UntriggeredActionInterfaceDiagnostic(Diagnostic):
 
 
 @dataclass
+class UnconsumedActionInterfaceDiagnostic(Diagnostic):
+    """Diagnostic for an interface particle that remains after its caller ends."""
+
+    action_name: str
+    position_name: str
+    message_format: ClassVar[str] = (
+        "after triggering '{self.action_name}', this action must move or destroy every "
+        "particle in that action's interface positions, but "
+        "'{self.position_name}' still contains a particle when this action ends."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

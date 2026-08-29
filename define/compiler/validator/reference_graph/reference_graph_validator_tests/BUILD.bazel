@@ -24,6 +24,20 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_require_consumption_test",
+    size = "small",
+    srcs = ["automated_guarantees_require_consumption_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_constructor_implied_test",
     size = "small",
     srcs = ["automated_guarantees_constructor_implied_test.py"],
@@ -413,6 +427,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
+        "@pypi//pytest",
     ],
 )
 
@@ -945,6 +960,7 @@ pyright_test(
         ":automated_guarantees_implied_position_test",
         ":automated_guarantees_implied_to_interface_test",
         ":automated_guarantees_many_actions_test",
+        ":automated_guarantees_require_consumption_test",
         ":automated_guarantees_test",
         ":automated_guarantees_transitive_implied_identity_test",
         ":automated_guarantees_transitive_implied_occupancy_test",

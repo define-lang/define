@@ -1,0 +1,2 @@
+language = "define"
+library = "my.domain.com:my_lib"
