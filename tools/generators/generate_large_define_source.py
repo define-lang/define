@@ -13,8 +13,8 @@ broad slice of the grammar:
   * A pool of top-level potential position and potential action definitions
     in the same FQUN as the main action. Each pool position declares
     ``it has the position</g_(i+1)>`` so long chains through the pool
-    satisfy the chain-element constraint check. Pool actions have
-    net-zero bodies (create-then-destroy in ``_noop``).
+    satisfy the chain-element constraint check. Pool actions consume particles
+    from both their trigger and ``_noop`` positions.
   * Standalone potential position definitions in 2-part and 3-part FQUN
     forms in other universes, to exercise the multi-format FQUN parser
     path. They are not referenced from the main action because the
@@ -177,8 +177,8 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
     lines: list[str] = []
     for i in range(num_actions):
         name = _qualified_global_name(prefix, i, is_action=True)
-        # Pool actions consume their trigger particle and leave their other
-        # positions empty so callers can trigger them repeatedly.
+        # Pool actions consume both interface particles so callers can trigger
+        # them repeatedly without retaining state between executions.
         lines.extend(
             [
                 f"define the potential action<{name}> {{",
@@ -188,7 +188,6 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
                 f"{_INNER_INDENT}the position<run> has a particle.",
                 f"{_OUTER_INDENT}}} and it does {{",
                 f"{_INNER_INDENT}destroy the particle in position<run>.",
-                f"{_INNER_INDENT}create a particle in position<_noop>.",
                 f"{_INNER_INDENT}destroy the particle in position<_noop>.",
                 f"{_OUTER_INDENT}}}",
                 "}",
@@ -229,9 +228,8 @@ def _emit_action_with_implications_and_constructor(
         f"{_INNER_INDENT}create a particle in position<{implied_position}>.",
         f"{_INNER_INDENT}destroy the particle in position<{implied_position}>.",
         f"{_INNER_INDENT}# Trailing comment in constructor block",
-        f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<run>.",
         f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<_noop>.",
-        f"{_INNER_INDENT}destroy the particle in action<{implied_action}>::position<_noop>.",
+        f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<run>.",
         f"{_OUTER_INDENT}}}",
         "}",
         "",
@@ -302,9 +300,11 @@ def _block_inner_local_constrained(step: int) -> list[str]:
 
 def _block_implied_action_chain(step: int, num_actions: int) -> list[str]:
     ai = step % num_actions
-    return _create_destroy(
-        f"action<{_short_global_name(ai, is_action=True)}>::position<_noop>"
-    )
+    action_name = _short_global_name(ai, is_action=True)
+    return [
+        f"{_INNER_INDENT}create a particle in action<{action_name}>::position<_noop>.",
+        f"{_INNER_INDENT}create a particle in action<{action_name}>::position<run>.",
+    ]
 
 
 # Chain blocks below never touch the chain's head position directly --
@@ -436,6 +436,9 @@ def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
     )
     for i in range(num_actions):
         action_name = _short_global_name(i, is_action=True)
+        lines.append(
+            f"{_INNER_INDENT}create a particle in action<{action_name}>::position<_noop>."
+        )
         lines.append(
             f"{_INNER_INDENT}create a particle in action<{action_name}>::position<run>."
         )

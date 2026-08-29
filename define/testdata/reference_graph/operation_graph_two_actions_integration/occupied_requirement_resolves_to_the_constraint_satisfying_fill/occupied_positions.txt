@@ -2,4 +2,3 @@ action<local.my_domain_com.my_lib.test.Test>::position<box2>
 action<local.my_domain_com.my_lib.test.Test>::position<dest>
 action<local.my_domain_com.my_lib.test.Test>::position<dest>::position<local.my_domain_com.my_lib.a.A>
 action<local.my_domain_com.my_lib.test.Test>::position<action_holder>
-action<local.my_domain_com.my_lib.test.Test>::position<action_holder>::action<local.my_domain_com.my_lib.move.Move>::position<run>

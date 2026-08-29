@@ -58,6 +58,7 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self):
         self.trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveGuarantees()
+        self.trigger_position_action_holder__action_move_2 = local.my_domain_com.my_lib.move.MoveGuarantees()
 
 
 @final
@@ -72,19 +73,26 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         guarantees.trigger_position_action_holder__action_move.guarantee_position_input__move__position_output.append(
+            self.move_position_action_holder__action_move__position_output_to_position_box2
+        )
+        guarantees.trigger_position_action_holder__action_move.guarantee_position_input__move__position_output.append(
+            self.move_position_box1_to_position_action_holder__action_move__position_input
+        )
+        guarantees.trigger_position_action_holder__action_move_2.guarantee_position_input__move__position_output.append(
             self.move_position_action_holder__action_move__position_output_to_position_dest
         )
         self.execution_trigger_position_action_holder__action_move: local.my_domain_com.my_lib.move.MoveExecution
+        self.execution_trigger_position_action_holder__action_move_2: local.my_domain_com.my_lib.move.MoveExecution
         self.join_for_move_position_box2_to_position_action_holder__action_move__position_input = self.scheduler.create_join(2)
         self.join_for_move_position_box1_to_position_action_holder__action_move__position_input = self.scheduler.create_join(2)
         self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_position_action_holder__action_move_2__for_empty_rule_position_input = self.scheduler.create_join(3)
 
     def create_position_action_holder(self):
         self.action.get_interface_position(
             "position<action_holder>"
         ).create_particle()
-        self.scheduler.submit(self.move_position_box2_to_position_action_holder__action_move__position_input)
-        self.create_position_action_holder__action_move__position_run()
+        self.move_position_box2_to_position_action_holder__action_move__position_input()
 
     def create_position_box1(self):
         self.action.get_interface_position(
@@ -112,18 +120,31 @@ class TestExecution:
                 "position<input>"
             )
         )
+        self.execution_trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveExecution(
+            self.action.get_interface_position(
+                "position<action_holder>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.move.Move
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_action_holder__action_move,
+        )
+        self.scheduler.submit(self.trigger_position_action_holder__action_move__for_empty_rule_position_input)
+        self.trigger_position_action_holder__action_move__for_empty_rule_position_input()
+
+    def move_position_action_holder__action_move__position_output_to_position_box2(self):
         self.action.get_interface_position(
             "position<action_holder>"
         ).particle.get_action(
             local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
-            "position<input>"
+            "position<output>"
         ).move_particle_to(
             self.action.get_interface_position(
                 "position<box2>"
             )
         )
-        self.move_position_box1_to_position_action_holder__action_move__position_input()
+        self.trigger_position_action_holder__action_move_2__for_empty_rule_position_input()
 
     def move_position_box1_to_position_action_holder__action_move__position_input(self):
         if not self.join_for_move_position_box1_to_position_action_holder__action_move__position_input.arrive():
@@ -139,26 +160,17 @@ class TestExecution:
                 "position<input>"
             )
         )
-        self.trigger_position_action_holder__action_move__for_empty_rule_position_input()
-
-    def create_position_action_holder__action_move__position_run(self):
-        self.action.get_interface_position(
-            "position<action_holder>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.move.Move
-        ).get_interface_position(
-            "position<run>"
-        ).create_particle()
-        self.execution_trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveExecution(
+        self.execution_trigger_position_action_holder__action_move_2 = local.my_domain_com.my_lib.move.MoveExecution(
             self.action.get_interface_position(
                 "position<action_holder>"
             ).particle.get_action(
                 local.my_domain_com.my_lib.move.Move
             ),
             self.scheduler,
-            self.guarantees.trigger_position_action_holder__action_move,
+            self.guarantees.trigger_position_action_holder__action_move_2,
         )
-        self.trigger_position_action_holder__action_move__for_empty_rule_position_input()
+        self.scheduler.submit(self.trigger_position_action_holder__action_move_2__for_empty_rule_position_input)
+        self.trigger_position_action_holder__action_move_2__for_empty_rule_position_input()
 
     def move_position_action_holder__action_move__position_output_to_position_dest(self):
         self.action.get_interface_position(
@@ -182,3 +194,8 @@ class TestExecution:
         if not self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input.arrive():
             return
         self.execution_trigger_position_action_holder__action_move.accept_for_empty_rule_position_input()
+
+    def trigger_position_action_holder__action_move_2__for_empty_rule_position_input(self):
+        if not self.join_for_trigger_position_action_holder__action_move_2__for_empty_rule_position_input.arrive():
+            return
+        self.execution_trigger_position_action_holder__action_move_2.accept_for_empty_rule_position_input()

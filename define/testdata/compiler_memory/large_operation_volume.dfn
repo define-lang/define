@@ -156,7 +156,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_0> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<run>.
-        create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
 }
@@ -168,7 +167,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_1> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<run>.
-        create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
 }
@@ -180,7 +178,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_2> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<run>.
-        create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
 }
@@ -192,7 +189,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_3> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<run>.
-        create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
 }
@@ -204,7 +200,6 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_4> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<run>.
-        create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
 }
@@ -225,9 +220,8 @@ define the potential action<mv:define-lang.org:compiler_memory:/a_26> {
         create a particle in position</g_0>.
         destroy the particle in position</g_0>.
         # Trailing comment in constructor block
-        create a particle in action</a_1>::position<run>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
     }
 }
 
@@ -254,10 +248,15 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
     it happens when {
         the position<run> has a particle.
     } and it does {
+        create a particle in action</a_0>::position<_noop>.
         create a particle in action</a_0>::position<run>.
+        create a particle in action</a_1>::position<_noop>.
         create a particle in action</a_1>::position<run>.
+        create a particle in action</a_2>::position<_noop>.
         create a particle in action</a_2>::position<run>.
+        create a particle in action</a_3>::position<_noop>.
         create a particle in action</a_3>::position<run>.
+        create a particle in action</a_4>::position<_noop>.
         create a particle in action</a_4>::position<run>.
         create a particle in position<interface_simple>.
         destroy the particle in position<interface_simple>.
@@ -274,7 +273,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_2>::position</g_4>.
         destroy the particle in position<inner_c_2>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -357,7 +356,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_13>::position</g_4>.
         destroy the particle in position<inner_c_13>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -440,7 +439,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_24>::position</g_4>.
         destroy the particle in position<inner_c_24>.
         create a particle in action</a_0>::position<_noop>.
-        destroy the particle in action</a_0>::position<_noop>.
+        create a particle in action</a_0>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -523,7 +522,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_35>::position</g_4>.
         destroy the particle in position<inner_c_35>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -606,7 +605,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_46>::position</g_4>.
         destroy the particle in position<inner_c_46>.
         create a particle in action</a_2>::position<_noop>.
-        destroy the particle in action</a_2>::position<_noop>.
+        create a particle in action</a_2>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -689,7 +688,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_57>::position</g_4>.
         destroy the particle in position<inner_c_57>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -772,7 +771,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_68>::position</g_4>.
         destroy the particle in position<inner_c_68>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -855,7 +854,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_79>::position</g_4>.
         destroy the particle in position<inner_c_79>.
         create a particle in action</a_0>::position<_noop>.
-        destroy the particle in action</a_0>::position<_noop>.
+        create a particle in action</a_0>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -938,7 +937,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_90>::position</g_4>.
         destroy the particle in position<inner_c_90>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1021,7 +1020,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_101>::position</g_4>.
         destroy the particle in position<inner_c_101>.
         create a particle in action</a_2>::position<_noop>.
-        destroy the particle in action</a_2>::position<_noop>.
+        create a particle in action</a_2>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1104,7 +1103,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_112>::position</g_4>.
         destroy the particle in position<inner_c_112>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1187,7 +1186,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_123>::position</g_4>.
         destroy the particle in position<inner_c_123>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1270,7 +1269,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_134>::position</g_4>.
         destroy the particle in position<inner_c_134>.
         create a particle in action</a_0>::position<_noop>.
-        destroy the particle in action</a_0>::position<_noop>.
+        create a particle in action</a_0>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1353,7 +1352,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_145>::position</g_4>.
         destroy the particle in position<inner_c_145>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1436,7 +1435,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_156>::position</g_4>.
         destroy the particle in position<inner_c_156>.
         create a particle in action</a_2>::position<_noop>.
-        destroy the particle in action</a_2>::position<_noop>.
+        create a particle in action</a_2>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1519,7 +1518,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_167>::position</g_4>.
         destroy the particle in position<inner_c_167>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1602,7 +1601,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_178>::position</g_4>.
         destroy the particle in position<inner_c_178>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1685,7 +1684,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_189>::position</g_4>.
         destroy the particle in position<inner_c_189>.
         create a particle in action</a_0>::position<_noop>.
-        destroy the particle in action</a_0>::position<_noop>.
+        create a particle in action</a_0>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1768,7 +1767,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_200>::position</g_4>.
         destroy the particle in position<inner_c_200>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1851,7 +1850,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_211>::position</g_4>.
         destroy the particle in position<inner_c_211>.
         create a particle in action</a_2>::position<_noop>.
-        destroy the particle in action</a_2>::position<_noop>.
+        create a particle in action</a_2>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -1934,7 +1933,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_222>::position</g_4>.
         destroy the particle in position<inner_c_222>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2017,7 +2016,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_233>::position</g_4>.
         destroy the particle in position<inner_c_233>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2100,7 +2099,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_244>::position</g_4>.
         destroy the particle in position<inner_c_244>.
         create a particle in action</a_0>::position<_noop>.
-        destroy the particle in action</a_0>::position<_noop>.
+        create a particle in action</a_0>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2183,7 +2182,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_255>::position</g_4>.
         destroy the particle in position<inner_c_255>.
         create a particle in action</a_1>::position<_noop>.
-        destroy the particle in action</a_1>::position<_noop>.
+        create a particle in action</a_1>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2266,7 +2265,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_266>::position</g_4>.
         destroy the particle in position<inner_c_266>.
         create a particle in action</a_2>::position<_noop>.
-        destroy the particle in action</a_2>::position<_noop>.
+        create a particle in action</a_2>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2349,7 +2348,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_277>::position</g_4>.
         destroy the particle in position<inner_c_277>.
         create a particle in action</a_3>::position<_noop>.
-        destroy the particle in action</a_3>::position<_noop>.
+        create a particle in action</a_3>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.
@@ -2432,7 +2431,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/test> {
         destroy the particle in position<inner_c_288>::position</g_4>.
         destroy the particle in position<inner_c_288>.
         create a particle in action</a_4>::position<_noop>.
-        destroy the particle in action</a_4>::position<_noop>.
+        create a particle in action</a_4>::position<run>.
         create a particle in position<interface_to_g2>::position</g_2>.
         destroy the particle in position<interface_to_g2>::position</g_2>.
         create a particle in position</g_0>::position</g_1>.

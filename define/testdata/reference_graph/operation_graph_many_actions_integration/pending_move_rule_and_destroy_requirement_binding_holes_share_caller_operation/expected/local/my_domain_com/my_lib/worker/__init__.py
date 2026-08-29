@@ -4,6 +4,9 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.occupied
+import local.my_domain_com.my_lib.target
+
 
 class Worker(literal.Action):
 
@@ -12,19 +15,15 @@ class Worker(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition(
-                    "position<trigger_pos>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
                     "position<source>",
                     scheduler=on_particle.scheduler,
                 ),
                 literal.LocalPosition(
-                    "position<target>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<occupied>",
+                    "position<state>",
+                    constraints=(
+                        local.my_domain_com.my_lib.occupied.Occupied,
+                        local.my_domain_com.my_lib.target.Target,
+                    ),
                     scheduler=on_particle.scheduler,
                 ),
             ],
@@ -34,8 +33,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_occupied: list[literal.Task] = []
-        self.guarantee_position_source__move__position_target: list[literal.Task] = []
+        self.guarantee_position_source__move__position_state__global_position_target: list[literal.Task] = []
+        self.guarantee_position_state__global_position_occupied: list[literal.Task] = []
 
 
 @final
@@ -53,27 +52,31 @@ class WorkerExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
 
-    def accept_for_empty_rule_position_occupied(self):
-        self.destroy_position_occupied()
+    def accept_for_empty_rule_position_state__global_position_occupied(self):
+        self.destroy_position_state__global_position_occupied()
 
     def accept_for_empty_rule_position_source(self):
-        self.move_position_source_to_position_target()
+        self.move_position_source_to_position_state__global_position_target()
 
-    def destroy_position_occupied(self):
-        literal.continue_destruction(self.continue_destroy_position_occupied)
+    def destroy_position_state__global_position_occupied(self):
+        literal.continue_destruction(self.continue_destroy_position_state__global_position_occupied)
 
-    def continue_destroy_position_occupied(self):
+    def continue_destroy_position_state__global_position_occupied(self):
         self.action.get_interface_position(
-            "position<occupied>"
+            "position<state>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.occupied.Occupied
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_occupied)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_state__global_position_occupied)
 
-    def move_position_source_to_position_target(self):
+    def move_position_source_to_position_state__global_position_target(self):
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(
             self.action.get_interface_position(
-                "position<target>"
+                "position<state>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_target)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_state__global_position_target)

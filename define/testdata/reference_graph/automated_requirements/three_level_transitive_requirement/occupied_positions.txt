@@ -1,5 +1,1 @@
 action<local.my_domain_com.my_lib.outer.Outer>::position<run>
-action<local.my_domain_com.my_lib.outer.Outer>::position<middle_iface>
-action<local.my_domain_com.my_lib.outer.Outer>::position<middle_iface>::action<local.my_domain_com.my_lib.middle.Middle>::position<run>
-action<local.my_domain_com.my_lib.outer.Outer>::position<middle_iface>::action<local.my_domain_com.my_lib.middle.Middle>::position<inner_iface>
-action<local.my_domain_com.my_lib.outer.Outer>::position<middle_iface>::action<local.my_domain_com.my_lib.middle.Middle>::position<inner_iface>::action<local.my_domain_com.my_lib.inner.Inner>::position<run>

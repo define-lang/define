@@ -20,6 +20,10 @@ class PerformOperation(literal.Action):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<run>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -37,10 +41,13 @@ class PerformOperationExecution:
         action: PerformOperation,
         scheduler: literal.Scheduler,
         guarantees: PerformOperationGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
@@ -49,19 +56,17 @@ class PerformOperationExecution:
     def accept_action_parent(self):
         self.create_position_result()
 
-    def accept_when_empty_position_operation_trigger__global_position_inner_position(self):
-        self.create_position_operation_trigger__global_position_inner_position()
+    def accept_for_empty_rule_position_operation_trigger__global_position_inner_position(self):
+        self.destroy_position_operation_trigger__global_position_inner_position()
 
     def create_position_result(self):
         self.local_position_result.create_particle()
         self.local_position_result.destroy_particle()
 
-    def create_position_operation_trigger__global_position_inner_position(self):
-        self.action.get_interface_position(
-            "position<operation_trigger>"
-        ).particle.get_position(
-            local.my_domain_com.my_library_collection.inner_position.InnerPosition
-        ).create_particle()
+    def destroy_position_operation_trigger__global_position_inner_position(self):
+        literal.continue_destruction(self.continue_destroy_position_operation_trigger__global_position_inner_position)
+
+    def continue_destroy_position_operation_trigger__global_position_inner_position(self):
         self.action.get_interface_position(
             "position<operation_trigger>"
         ).particle.get_position(

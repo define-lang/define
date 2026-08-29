@@ -4,6 +4,8 @@ from typing import final, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.occupied
+import local.my_domain_com.my_lib.target
 import local.my_domain_com.my_lib.worker
 
 
@@ -20,6 +22,18 @@ class Test(literal.EntryPoint):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<state>",
+                    constraints=(
+                        local.my_domain_com.my_lib.occupied.Occupied,
+                        local.my_domain_com.my_lib.target.Target,
+                    ),
+                    scheduler=on_particle.scheduler,
+                ),
+                literal.LocalPosition(
+                    "position<source>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -30,7 +44,9 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_position_gateway()
+        execution.scheduler.submit(execution.create_position_gateway)
+        execution.scheduler.submit(execution.create_position_state)
+        execution.create_position_source()
 
 
 @final
@@ -51,61 +67,65 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_occupied = self.scheduler.create_join(2)
+        self.join_for_move_position_source_to_position_gateway__action_worker__position_source = self.scheduler.create_join(2)
+        self.join_for_move_position_state_to_position_gateway__action_worker__position_state = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_source = self.scheduler.create_join(3)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gateway__action_worker__position_target)
-        self.scheduler.submit(self.create_position_gateway__action_worker__position_source)
-        self.create_position_gateway__action_worker__position_trigger_pos()
+        self.scheduler.submit(self.move_position_source_to_position_gateway__action_worker__position_source)
+        self.move_position_state_to_position_gateway__action_worker__position_state()
 
-    def create_position_gateway__action_worker__position_target(self):
+    def create_position_state(self):
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        ).get_interface_position(
-            "position<target>"
+            "position<state>"
         ).create_particle()
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        ).get_interface_position(
-            "position<target>"
+            "position<state>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.occupied.Occupied
+        ).create_particle()
+        self.move_position_state_to_position_gateway__action_worker__position_state()
+
+    def create_position_source(self):
+        self.action.get_interface_position(
+            "position<source>"
+        ).create_particle()
+        self.move_position_source_to_position_gateway__action_worker__position_source()
+
+    def move_position_source_to_position_gateway__action_worker__position_source(self):
+        if not self.join_for_move_position_source_to_position_gateway__action_worker__position_source.arrive():
+            return
+        self.action.get_interface_position(
+            "position<source>"
         ).move_particle_to(
             self.action.get_interface_position(
                 "position<gateway>"
             ).particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
-                "position<occupied>"
+                "position<source>"
             )
         )
-        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_occupied)
         self.trigger_position_gateway__action_worker__for_empty_rule_position_source()
 
-    def create_position_gateway__action_worker__position_source(self):
+    def move_position_state_to_position_gateway__action_worker__position_state(self):
+        if not self.join_for_move_position_state_to_position_gateway__action_worker__position_state.arrive():
+            return
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        ).get_interface_position(
-            "position<source>"
-        ).create_particle()
-        self.trigger_position_gateway__action_worker__for_empty_rule_position_source()
-
-    def create_position_gateway__action_worker__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).create_particle()
+            "position<state>"
+        ).move_particle_to(
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ).get_interface_position(
+                "position<state>"
+            )
+        )
         self.execution_trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.action.get_interface_position(
                 "position<gateway>"
@@ -115,13 +135,15 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_worker,
         )
-        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_occupied)
+        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied)
+        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_source)
+        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied)
         self.trigger_position_gateway__action_worker__for_empty_rule_position_source()
 
-    def trigger_position_gateway__action_worker__for_empty_rule_position_occupied(self):
-        if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_occupied.arrive():
+    def trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied(self):
+        if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied.arrive():
             return
-        self.execution_trigger_position_gateway__action_worker.accept_for_empty_rule_position_occupied()
+        self.execution_trigger_position_gateway__action_worker.accept_for_empty_rule_position_state__global_position_occupied()
 
     def trigger_position_gateway__action_worker__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_source.arrive():

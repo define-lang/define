@@ -12,10 +12,6 @@ class Helper(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition(
-                    "position<trigger_pos>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
                     "position<slot>",
                     scheduler=on_particle.scheduler,
                 ),

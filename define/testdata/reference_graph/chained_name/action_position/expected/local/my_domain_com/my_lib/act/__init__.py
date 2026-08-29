@@ -20,6 +20,10 @@ class Act(literal.Action):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<run>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -37,10 +41,13 @@ class ActExecution:
         action: Act,
         scheduler: literal.Scheduler,
         guarantees: ActGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
@@ -49,19 +56,17 @@ class ActExecution:
     def accept_action_parent(self):
         self.create_position_result()
 
-    def accept_when_empty_position_trigger_pos__global_position_inner(self):
-        self.create_position_trigger_pos__global_position_inner()
+    def accept_for_empty_rule_position_trigger_pos__global_position_inner(self):
+        self.destroy_position_trigger_pos__global_position_inner()
 
     def create_position_result(self):
         self.local_position_result.create_particle()
         self.local_position_result.destroy_particle()
 
-    def create_position_trigger_pos__global_position_inner(self):
-        self.action.get_interface_position(
-            "position<trigger_pos>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
-        ).create_particle()
+    def destroy_position_trigger_pos__global_position_inner(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos__global_position_inner)
+
+    def continue_destroy_position_trigger_pos__global_position_inner(self):
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).particle.get_position(

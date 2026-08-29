@@ -37,6 +37,8 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self):
         self.trigger_position_gw__action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
+        self.trigger_position_gw__action_filler_2 = local.my_domain_com.my_lib.filler.FillerGuarantees()
+        self.trigger_position_gw__action_filler_3 = local.my_domain_com.my_lib.filler.FillerGuarantees()
 
 
 @final
@@ -50,45 +52,33 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gw__action_filler.guarantee_position_slot.append(
+            self.destroy_position_gw__action_filler__position_slot
+        )
+        guarantees.trigger_position_gw__action_filler.guarantee_position_trigger_pos.append(
+            self.create_position_gw__action_filler__position_trigger_pos_2
+        )
+        guarantees.trigger_position_gw__action_filler_2.guarantee_position_slot.append(
+            self.destroy_position_gw__action_filler__position_slot_2
+        )
+        guarantees.trigger_position_gw__action_filler_2.guarantee_position_trigger_pos.append(
+            self.create_position_gw__action_filler__position_trigger_pos_3
+        )
         self.execution_trigger_position_gw__action_filler: local.my_domain_com.my_lib.filler.FillerExecution
+        self.execution_trigger_position_gw__action_filler_2: local.my_domain_com.my_lib.filler.FillerExecution
+        self.execution_trigger_position_gw__action_filler_3: local.my_domain_com.my_lib.filler.FillerExecution
         self.join_for_trigger_position_gw__action_filler__when_empty_position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_filler__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_filler_2__when_empty_position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_filler_2__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_filler_3__when_empty_position_slot = self.scheduler.create_join(2)
+        self.join_for_trigger_position_gw__action_filler_3__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
     def create_position_gw(self):
         self.action.get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gw__action_filler__position_slot)
-        self.create_position_gw__action_filler__position_trigger_pos()
-
-    def create_position_gw__action_filler__position_slot(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
-        ).get_interface_position(
-            "position<slot>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
-        ).get_interface_position(
-            "position<slot>"
-        ).destroy_particle()
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
-        ).get_interface_position(
-            "position<slot>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
-        ).get_interface_position(
-            "position<slot>"
-        ).destroy_particle()
+        self.scheduler.submit(self.create_position_gw__action_filler__position_trigger_pos)
         self.trigger_position_gw__action_filler__when_empty_position_slot()
 
     def create_position_gw__action_filler__position_trigger_pos(self):
@@ -108,9 +98,98 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gw__action_filler,
         )
-        self.trigger_position_gw__action_filler__when_empty_position_slot()
+        self.scheduler.submit(self.trigger_position_gw__action_filler__for_empty_rule_position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_gw__action_filler__when_empty_position_slot)
+        self.trigger_position_gw__action_filler__for_empty_rule_position_trigger_pos()
+
+    def destroy_position_gw__action_filler__position_slot(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.filler.Filler
+        ).get_interface_position(
+            "position<slot>"
+        ).destroy_particle()
+        self.trigger_position_gw__action_filler_2__when_empty_position_slot()
+
+    def create_position_gw__action_filler__position_trigger_pos_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.filler.Filler
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).create_particle()
+        self.execution_trigger_position_gw__action_filler_2 = local.my_domain_com.my_lib.filler.FillerExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.filler.Filler
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_gw__action_filler_2,
+        )
+        self.scheduler.submit(self.trigger_position_gw__action_filler_2__for_empty_rule_position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_gw__action_filler_2__when_empty_position_slot)
+        self.trigger_position_gw__action_filler_2__for_empty_rule_position_trigger_pos()
+
+    def destroy_position_gw__action_filler__position_slot_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.filler.Filler
+        ).get_interface_position(
+            "position<slot>"
+        ).destroy_particle()
+        self.trigger_position_gw__action_filler_3__when_empty_position_slot()
+
+    def create_position_gw__action_filler__position_trigger_pos_3(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.filler.Filler
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).create_particle()
+        self.execution_trigger_position_gw__action_filler_3 = local.my_domain_com.my_lib.filler.FillerExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.filler.Filler
+            ),
+            self.scheduler,
+            self.guarantees.trigger_position_gw__action_filler_3,
+        )
+        self.scheduler.submit(self.trigger_position_gw__action_filler_3__for_empty_rule_position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_gw__action_filler_3__when_empty_position_slot)
+        self.trigger_position_gw__action_filler_3__for_empty_rule_position_trigger_pos()
 
     def trigger_position_gw__action_filler__when_empty_position_slot(self):
         if not self.join_for_trigger_position_gw__action_filler__when_empty_position_slot.arrive():
             return
         self.execution_trigger_position_gw__action_filler.accept_when_empty_position_slot()
+
+    def trigger_position_gw__action_filler__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_position_gw__action_filler__for_empty_rule_position_trigger_pos.arrive():
+            return
+        self.execution_trigger_position_gw__action_filler.accept_for_empty_rule_position_trigger_pos()
+
+    def trigger_position_gw__action_filler_2__when_empty_position_slot(self):
+        if not self.join_for_trigger_position_gw__action_filler_2__when_empty_position_slot.arrive():
+            return
+        self.execution_trigger_position_gw__action_filler_2.accept_when_empty_position_slot()
+
+    def trigger_position_gw__action_filler_2__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_position_gw__action_filler_2__for_empty_rule_position_trigger_pos.arrive():
+            return
+        self.execution_trigger_position_gw__action_filler_2.accept_for_empty_rule_position_trigger_pos()
+
+    def trigger_position_gw__action_filler_3__when_empty_position_slot(self):
+        if not self.join_for_trigger_position_gw__action_filler_3__when_empty_position_slot.arrive():
+            return
+        self.execution_trigger_position_gw__action_filler_3.accept_when_empty_position_slot()
+
+    def trigger_position_gw__action_filler_3__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_position_gw__action_filler_3__for_empty_rule_position_trigger_pos.arrive():
+            return
+        self.execution_trigger_position_gw__action_filler_3.accept_for_empty_rule_position_trigger_pos()

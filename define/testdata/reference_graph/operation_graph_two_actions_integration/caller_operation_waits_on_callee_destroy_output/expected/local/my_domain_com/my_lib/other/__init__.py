@@ -27,6 +27,7 @@ class Other(literal.Action):
 class OtherGuarantees:
     def __init__(self):
         self.guarantee_position_output: list[literal.Task] = []
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
 
 
 @final
@@ -47,6 +48,9 @@ class OtherExecution:
     def accept_for_empty_rule_position_output(self):
         self.destroy_position_output()
 
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
+
     def destroy_position_output(self):
         literal.continue_destruction(self.continue_destroy_position_output)
 
@@ -55,3 +59,12 @@ class OtherExecution:
             "position<output>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_output)
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)

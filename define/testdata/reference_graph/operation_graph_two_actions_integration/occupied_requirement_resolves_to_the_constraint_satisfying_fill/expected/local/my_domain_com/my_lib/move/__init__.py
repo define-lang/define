@@ -12,10 +12,6 @@ class Move(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition(
-                    "position<run>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
                     "position<input>",
                     scheduler=on_particle.scheduler,
                 ),

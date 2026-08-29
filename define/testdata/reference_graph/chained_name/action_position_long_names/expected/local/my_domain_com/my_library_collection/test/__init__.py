@@ -20,7 +20,8 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_action_perform_operation__position_operation_trigger()
+        execution.scheduler.submit(execution.create_action_perform_operation__position_operation_trigger)
+        execution.create_action_perform_operation__position_run()
 
 
 @final
@@ -40,17 +41,29 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_action_perform_operation.guarantee_position_operation_trigger__global_position_inner_position.append(
-            self.create_action_perform_operation__position_operation_trigger__global_position_inner_position
-        )
         self.execution_trigger_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
-        self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position = self.scheduler.create_join(2)
+        self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position = self.scheduler.create_join(2)
 
     def create_action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_library_collection.perform_operation.PerformOperation
         ).get_interface_position(
             "position<operation_trigger>"
+        ).create_particle()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+        ).get_interface_position(
+            "position<operation_trigger>"
+        ).particle.get_position(
+            local.my_domain_com.my_library_collection.inner_position.InnerPosition
+        ).create_particle()
+        self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position()
+
+    def create_action_perform_operation__position_run(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+        ).get_interface_position(
+            "position<run>"
         ).create_particle()
         self.execution_trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
             self.action.on_particle.get_action(
@@ -59,23 +72,13 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_perform_operation,
         )
-        self.scheduler.submit(self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position)
         self.scheduler.submit(self.trigger_action_perform_operation__action_parent)
-        self.trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position()
-
-    def create_action_perform_operation__position_operation_trigger__global_position_inner_position(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
-        ).get_interface_position(
-            "position<operation_trigger>"
-        ).particle.get_position(
-            local.my_domain_com.my_library_collection.inner_position.InnerPosition
-        ).create_particle()
+        self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position()
 
     def trigger_action_perform_operation__action_parent(self):
         self.execution_trigger_action_perform_operation.accept_action_parent()
 
-    def trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position(self):
-        if not self.join_for_trigger_action_perform_operation__when_empty_position_operation_trigger__global_position_inner_position.arrive():
+    def trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position(self):
+        if not self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position.arrive():
             return
-        self.execution_trigger_action_perform_operation.accept_when_empty_position_operation_trigger__global_position_inner_position()
+        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_operation_trigger__global_position_inner_position()

@@ -1,2 +1,2 @@
 action<local.my_domain_com.my_library_collection.perform_operation.PerformOperation>::position<operation_trigger>
-action<local.my_domain_com.my_library_collection.perform_operation.PerformOperation>::position<operation_trigger>::position<local.my_domain_com.my_library_collection.inner_position.InnerPosition>
+action<local.my_domain_com.my_library_collection.perform_operation.PerformOperation>::position<run>

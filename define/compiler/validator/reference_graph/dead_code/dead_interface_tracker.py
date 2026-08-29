@@ -28,13 +28,14 @@ class DeadInterfaceTracker:
                 tuple[ast.GlobalTypedNameReference, ast.PositionReference],
             ],
         ] = collections.defaultdict(dict)
-        # Each arrived particle maps back to the callee keys awaiting it so a
-        # move or destruction can find those arrivals without scanning every
-        # callee.
-        self._callees_by_interface_particle: collections.defaultdict[
+        # Each arrived particle maps back to its callee so a move or destruction
+        # can find the arrival without scanning every callee. A particle can be
+        # at only one position, and only the final action in that position's name
+        # matters, so it can have only one pending callee.
+        self._callee_by_interface_particle: dict[
             particle_tracker.ParticleInfo,
-            set[tuple[particle_tracker.ParticleInfo | None, str]],
-        ] = collections.defaultdict(set)
+            tuple[particle_tracker.ParticleInfo | None, str],
+        ] = {}
         # These action and position references describe arrivals whose particles
         # departed before the corresponding action triggered.
         self._dead_arrivals: list[
@@ -51,20 +52,19 @@ class DeadInterfaceTracker:
         """Track a particle arriving at an action interface position or child."""
         callee_key = (parent_particle, action.full_typed_name)
         self._callee_interfaces[callee_key][particle] = (action, position)
-        self._callees_by_interface_particle[particle].add(callee_key)
+        self._callee_by_interface_particle[particle] = callee_key
 
     def mark_particle_departed(self, particle: particle_tracker.ParticleInfo):
         """Mark every interface arrival of a moved or destroyed particle dead."""
-        if not self._callees_by_interface_particle:
+        if not self._callee_by_interface_particle:
             return
-        callee_keys = self._callees_by_interface_particle.pop(particle, None)
-        if callee_keys is None:
+        callee_key = self._callee_by_interface_particle.pop(particle, None)
+        if callee_key is None:
             return
-        for callee_key in callee_keys:
-            pending_arrivals = self._callee_interfaces[callee_key]
-            self._dead_arrivals.append(pending_arrivals.pop(particle))
-            if not pending_arrivals:
-                del self._callee_interfaces[callee_key]
+        pending_arrivals = self._callee_interfaces[callee_key]
+        self._dead_arrivals.append(pending_arrivals.pop(particle))
+        if not pending_arrivals:
+            del self._callee_interfaces[callee_key]
 
     def mark_action_triggered(
         self,
@@ -77,11 +77,7 @@ class DeadInterfaceTracker:
         if pending_arrivals is None:
             return
         for particle in pending_arrivals:
-            callee_keys = self._callees_by_interface_particle[particle]
-            callee_keys.remove(callee_key)
-            if callee_keys:
-                continue
-            del self._callees_by_interface_particle[particle]
+            del self._callee_by_interface_particle[particle]
 
     def dead_arrivals(
         self,

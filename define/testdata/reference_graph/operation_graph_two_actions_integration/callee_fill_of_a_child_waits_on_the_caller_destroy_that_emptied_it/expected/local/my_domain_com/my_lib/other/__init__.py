@@ -31,6 +31,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
         self.guarantee_position_output__global_position_a: list[literal.Task] = []
 
 
@@ -41,13 +42,19 @@ class OtherExecution:
         action: Other,
         scheduler: literal.Scheduler,
         guarantees: OtherGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_when_empty_position_output__global_position_a(self):
         self.create_position_output__global_position_a()
+
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
 
     def create_position_output__global_position_a(self):
         self.action.get_interface_position(
@@ -56,3 +63,12 @@ class OtherExecution:
             local.my_domain_com.my_lib.a.A
         ).create_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_output__global_position_a)
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)

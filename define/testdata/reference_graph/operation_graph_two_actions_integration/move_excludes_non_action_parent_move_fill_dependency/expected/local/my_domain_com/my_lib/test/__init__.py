@@ -4,6 +4,7 @@ from typing import final, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.other
 
 
@@ -20,6 +21,17 @@ class Test(literal.EntryPoint):
                     ),
                     scheduler=on_particle.scheduler,
                 ),
+                literal.LocalPosition(
+                    "position<box>",
+                    constraints=(
+                        local.my_domain_com.my_lib.item.Item,
+                    ),
+                    scheduler=on_particle.scheduler,
+                ),
+                literal.LocalPosition(
+                    "position<destination>",
+                    scheduler=on_particle.scheduler,
+                ),
             ],
         )
 
@@ -30,7 +42,8 @@ class Test(literal.EntryPoint):
             scheduler,
             TestGuarantees(),
         )
-        execution.create_position_gateway()
+        execution.scheduler.submit(execution.create_position_gateway)
+        execution.create_position_box()
 
 
 @final
@@ -51,43 +64,32 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_for_move_position_destination_to_position_gateway__action_other__position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).create_particle()
-        self.scheduler.submit(self.create_position_gateway__action_other__position_box)
-        self.create_position_gateway__action_other__position_trigger_pos()
+        self.move_position_destination_to_position_gateway__action_other__position_box()
 
-    def create_position_gateway__action_other__position_box(self):
+    def create_position_box(self):
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        ).get_interface_position(
             "position<box>"
         ).create_particle()
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        ).get_interface_position(
             "position<box>"
         ).move_particle_to(
             self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.other.Other
-            ).get_interface_position(
                 "position<destination>"
             )
         )
+        self.move_position_destination_to_position_gateway__action_other__position_box()
+
+    def move_position_destination_to_position_gateway__action_other__position_box(self):
+        if not self.join_for_move_position_destination_to_position_gateway__action_other__position_box.arrive():
+            return
         self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        ).get_interface_position(
             "position<destination>"
         ).move_particle_to(
             self.action.get_interface_position(
@@ -98,16 +100,6 @@ class TestExecution:
                 "position<box>"
             )
         )
-        self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item()
-
-    def create_position_gateway__action_other__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).create_particle()
         self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
             self.action.get_interface_position(
                 "position<gateway>"
@@ -117,6 +109,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
         self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
         self.trigger_position_gateway__action_other__when_empty_position_destination()
 

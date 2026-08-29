@@ -14,10 +14,6 @@ class Other(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition(
-                    "position<trigger_pos>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
                     "position<box>",
                     constraints=(
                         local.my_domain_com.my_lib.item.Item,
