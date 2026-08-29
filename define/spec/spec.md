@@ -1163,6 +1163,10 @@ At the end of any action (after auto-destruction is taken into account) there
 must be no particles remaining in any interface position of any action that was
 triggered in this Action Statements Block.
 
+Before triggering a callee action in an Action Statements Block, no particle may
+occupy a child position of that callee's interface position where the chained
+name of the child (starting at the interface position) contains an action.
+
 ### Depth-First Post-Order Reference Graph Traversal
 
 The Action Requirements and Action Guarantees system implicitly means that

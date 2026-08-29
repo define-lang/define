@@ -55,11 +55,15 @@ in exchange for little to no value.
 
 ## Solution
 
-We set a new rule for code in an Action Statements Block.
+We set some new rules for code in an Action Statements Block.
+
+### Definitions
 
 **Callee**: An action that is triggered within an Action Statements Block.
 
 **Caller**: The action whose Action Statements Block we are analyzing.
+
+### Callee Interface Guarantees Must Be Consumed
 
 **At the end of any Caller's Action Statements Block, there must be no particles
 in the interface positions of any Callee.**
@@ -68,11 +72,51 @@ In other words, if a Callee has a Guarantee that ensures one of its interface
 positions is occupied, that position must be emptied by the time the Caller
 ends.
 
+### Action Interface Positions Must Not Be Passed Into Parent Actions
+
+In addition, we need to make sure that you can't accidentally use actions as a
+container to pass particles down into callees. For example, this code should be
+invalid:
+
+```define
+create a particle in position<box>.
+create a particle in position<box>::action</parent>::position<iface>.
+create a particle in position<box>::action</parent>::position<iface>::action</child>::position<input>.
+# Trigger action</parent>
+create a particle in position<box>::action</parent>::position<run>.
+# Trigger action</child>
+create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
+# Clean up
+destroy the particle in position<box>::action</parent>::position<iface>.
+```
+
+Per our previous rule, that's totally fine, because all particles are consumed
+by the time the caller ends. However, we have sneakily used action</child> as a
+sort of "mule" to carry `action</child>::position<input>` into being available
+during the execution of `action</parent>`. This allows all of the Problems we
+listed to persist.
+
+This can get even more complex. For example, imagine that our create in
+`position<input>` instead looked something like this:
+
+`create a particle in position<box>::action</parent>::position<iface>::position</child>::action</worker>::position<input>.`
+
+That's even trickier, since `action</worker>` is a _transitive_ child of
+`action</parent>`. It's certainly OK for `position<iface>` and
+`position<iface>::position</child>` to be populated when `action</parent>`
+triggers, but it's not OK for `action</worker>::position<input>` to be
+populated.
+
+Thus, we need another rule to cover this:
+
+**Before triggering a Callee, no transitive action reachable from its interface
+positions may have a particle in _its_ interface positions.**
+
 ### Never Infer Occupied on Action Interface Positions
 
 When you combine the rule in
 [DLP 42 (Dead Code is Forbidden)](00042-dead-code-is-forbidden.md) about
-interface particles needing to be used by a callee with our rule here, it has a
+interface particles needing to be used by a callee with our rules here, it has a
 surprising consequence:
 
 **We must never infer an occupied requirement on any action interface position
@@ -143,7 +187,7 @@ But now what if `action</foo>` is a grandchild, like this?
 ```define
 create a particle in position<box>.
 create a particle in position<box>::action</parent>::position<holder>.
-create a particle in position<box>::action</parent>::position<holder>::action</foo>::position</run>
+create a particle in position<box>::action</parent>::position<holder>::action</foo>::position<run>
 ```
 
 That fills `position<box>::action</parent>::position<holder>::position</bar>`.
@@ -180,10 +224,11 @@ positions" is the sort of syntactic sugar that Define abhors.
 ### Conceptual Model
 
 Conceptually, this means that interface positions are now state designed only to
-be used directly by an action. If you want shared or persistent state that lives
-beyond this action, you must use implied positions or put something in this
-action's output interface positions. This also helps give a clearer distinction
-between when you would use implied vs interface positions.
+be used directly by the action that defines them. If you want shared or
+persistent state that lives beyond this action, you must use implied positions
+or put something in this action's output interface positions. This also helps
+give a clearer distinction between when you would use implied vs interface
+positions.
 
 ## A Real Program
 
