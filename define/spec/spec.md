@@ -1095,25 +1095,16 @@ implicitly required to contain a particle, if it is the first time that
 intermediate position is referenced in any chain (either within a chain or as
 the final position) in the Action Statements Block.
 
-#### Transitive Requirements On Interface Positions Are Preserved
+#### Interfaces Stop Inference
 
-Imagine a call chain where Action A calls Action B, then Action B calls Action
-C. Imagine now that all of these calls happen through a chained name that is
-visible as an interface position of Action B, like
-`position<b_interface>::action</c>::position<c_iface>`, and let's also imagine
-that Action C creates a requirement on `position<c_iface>` (either requiring it
-to be empty or occupied).
+Proposals:
 
-If Action B does not fulfill the requirement on `position<c_iface>`, that
-requirement is transitively passed on to Action A, which must fulfill it or pass
-it on as appropriate to _its_ caller.
+- [DLP 45 (Interface Guarantees Must Be Consumed)](00045-interface-guarantees-must-be-consumed.md)
 
-Requirements are only passed on if they can possibly be fulfilled by the caller,
-which means this rule only applies to positions accessible via interface
-positions of actions (any chained name that is a child of an interface
-position).
+When inferring requirements on position references, all inference stops after
+the first action in a chained name.
 
-### Transitive Requirements on Implied Positions
+#### Transitive Requirements on Implied Positions
 
 Implied positions always have their requirements transitively propagated up the
 call chain of actions. The calling action's requirements override the called
@@ -1161,6 +1152,16 @@ up through an action's callers.
 An action can create a different guarantee about an implied position than an
 action it called, in which case the calling action's guarantee overrides the
 called action's guarantee.
+
+#### Interface Guarantees Must Be Consumed
+
+Proposals:
+
+- [DLP 45 (Interface Guarantees Must Be Consumed)](00045-interface-guarantees-must-be-consumed.md)
+
+At the end of any action (after auto-destruction is taken into account) there
+must be no particles remaining in any interface position of any action that was
+triggered in this Action Statements Block.
 
 ### Depth-First Post-Order Reference Graph Traversal
 
@@ -1709,6 +1710,14 @@ occurs from the compiler's viewpoint when starting a program:
    "view point."
 4. This triggers the constructor, and all code in the program executes from
    there.
+
+### Entry Points May Not Have Interface Positions
+
+Proposals:
+
+- [DLP 45 (Interface Guarantees Must Be Consumed)](00045-interface-guarantees-must-be-consumed.md)
+
+The entry point action of a program must not define any interface positions.
 
 ## Ending Define Programs
 
