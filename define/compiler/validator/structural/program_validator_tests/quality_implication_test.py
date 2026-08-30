@@ -31,7 +31,7 @@ def test_non_self_ref_global_in_action_body(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
 
 

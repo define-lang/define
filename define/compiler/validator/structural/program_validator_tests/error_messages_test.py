@@ -142,9 +142,8 @@ def test_non_filesystem_diagnostics_have_no_file_name():
 def test_move_to_same_position_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
         "    it happens when {\n"
-        "        the position<run> has a particle.\n"
+        "        this particle is created.\n"
         "    } and it does {\n"
         "        define the position<pos>.\n"
         "        create a particle in position<pos>.\n"
@@ -163,7 +162,7 @@ def test_move_to_same_position_format():
     assert (
         formatted
         == textwrap.dedent("""\
-        line 8, column 47
+        line 7, column 47
                 move the particle in position<pos> to position<pos>.
                                                       ^
         source and destination cannot be identical when moving particles ('position<pos>' is the name of both the source and destination here)""")

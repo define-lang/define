@@ -21,7 +21,7 @@ def test_move_from_a_position_to_itself(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
-    assert diags[0].location.line == 8
+    assert diags[0].location.line == 7
     assert diags[0].location.column == 45
     assert diags[0].location.file_path is None
     assert diags[0].position_name == "position<a>"
@@ -35,7 +35,7 @@ def test_move_from_a_chained_position_to_itself(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<a>::position</x>"

@@ -41,10 +41,10 @@ def test_non_self_ref_global_in_action_body(
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].source_global_name == "action</other>"
     assert diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert diags[0].location.line == 6
+    assert diags[0].location.line == 5
     assert diags[0].location.column == 33
     assert isinstance(
         diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
-    assert diags[1].location.line == 6
+    assert diags[1].location.line == 5
     assert diags[1].location.column == 40
