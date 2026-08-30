@@ -115,7 +115,7 @@ class TestUnknownGlobalChainStart:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-        assert all_diags[0].location.line == 6
+        assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 30
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -166,7 +166,7 @@ class TestImpliedQualityChainStart:
         )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
-        assert all_diags[0].location.line == 7
+        assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 44
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -190,7 +190,7 @@ class TestImpliedQualityChainStart:
         )
         assert all_diags[0].element_name == "position<not_iface>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
-        assert all_diags[0].location.line == 8
+        assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 42
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -213,6 +213,6 @@ class TestMissingDefinitionInChain:
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
         assert all_diags[0].file_path == "middle.dfn"
-        assert all_diags[0].location.line == 8
+        assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 37
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

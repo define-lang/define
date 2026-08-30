@@ -100,7 +100,7 @@ def test_cascade_skips_error_position_own_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 98
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position<box>::position</child>"
@@ -119,7 +119,7 @@ def test_cascade_does_not_walk_subtree_of_error_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 98
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position<box>::position</child>"
@@ -138,7 +138,7 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</child>"

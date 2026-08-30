@@ -71,7 +71,7 @@ def test_occupied_interface_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -86,7 +86,7 @@ def test_occupied_interface_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -94,7 +94,7 @@ def test_occupied_interface_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -102,7 +102,7 @@ def test_occupied_interface_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 12,
+            "line": 11,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -134,7 +134,7 @@ def test_empty_interface_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -149,7 +149,7 @@ def test_empty_interface_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -157,7 +157,7 @@ def test_empty_interface_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -165,7 +165,7 @@ def test_empty_interface_requirement_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</destructor_empty>::position<item>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -173,7 +173,7 @@ def test_empty_interface_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
-            "line": 13,
+            "line": 12,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -197,7 +197,7 @@ def test_intermediate_position_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -212,7 +212,7 @@ def test_intermediate_position_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _NESTED_DESTRUCTOR,
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -220,7 +220,7 @@ def test_intermediate_position_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -228,7 +228,7 @@ def test_intermediate_position_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _NESTED_DESTRUCTOR,
-            "line": 13,
+            "line": 12,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -252,7 +252,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -275,7 +275,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<iface>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -283,7 +283,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -308,7 +308,7 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag.location.line == 16
+    assert diag.location.line == 15
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.required_empty is False
@@ -322,7 +322,7 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTROY_CARRIER,
-            "line": 16,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -423,7 +423,7 @@ def test_callee_attached_destructor_requirement_verified_at_owning_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -454,7 +454,7 @@ def test_callee_attached_destructor_requirement_verified_at_owning_caller(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
-            "line": 17,
+            "line": 16,
             "column": 33,
             "file_path": "test.dfn",
         },

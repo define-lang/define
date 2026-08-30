@@ -160,7 +160,7 @@ def test_diamond_occupied_requirement_independent_per_path(
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].location.line == 28
+    assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 30
     assert_propagation_chain(
         all_diags[0],
@@ -168,7 +168,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _ACT_C,
-            "line": 28,
+            "line": 27,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -224,7 +224,7 @@ def test_diamond_one_path_violates_occupied_requirement(
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
-    assert all_diags[0].location.line == 26
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -233,7 +233,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _ACT_C,
-            "line": 26,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -276,7 +276,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::position</value>"
     )
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -285,7 +285,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _ACT_B,
-            "line": 22,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -313,7 +313,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
         all_diags[1].position_name
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
-    assert all_diags[1].location.line == 25
+    assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -322,7 +322,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _ACT_C,
-            "line": 25,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },

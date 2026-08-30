@@ -1,9 +1,8 @@
 # Moving a caller-passed particle into a local position inside mid and letting it auto-destroy at block end the Destruction Contract carries the auto-destruction site so /test's diagnostic names mid's local position and mid as the containing definition.
 # /test triggers mid, whose block-end auto-destruction fires the destructor.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

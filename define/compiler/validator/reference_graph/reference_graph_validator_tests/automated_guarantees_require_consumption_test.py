@@ -36,7 +36,7 @@ def test_triggered_action_interface_particle_must_depart_before_caller_ends(
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 12
+    assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
@@ -56,7 +56,7 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
         first_diagnostic.position_name
         == "position<box_a>::action</worker>::position<result>"
     )
-    assert first_diagnostic.location.line == 17
+    assert first_diagnostic.location.line == 16
     assert first_diagnostic.location.column == 47
     assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
     second_diagnostic = all_diags[1]
@@ -68,7 +68,7 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
         second_diagnostic.position_name
         == "position<box_b>::action</worker>::position<result>"
     )
-    assert second_diagnostic.location.line == 19
+    assert second_diagnostic.location.line == 18
     assert second_diagnostic.location.column == 47
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -90,7 +90,7 @@ def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
     assert (
         diagnostic.position_name == "position<box_b>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 19
+    assert diagnostic.location.line == 18
     assert diagnostic.location.column == 47
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -112,7 +112,7 @@ def test_destroyed_action_parent_does_not_duplicate_replacement_diagnostic(
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -143,7 +143,7 @@ def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
     assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
     assert diagnostic.action_name == "action</worker>"
     assert diagnostic.position_name == "position<box>::action</worker>::position<input>"
-    assert diagnostic.location.line == 14
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -165,7 +165,7 @@ def test_caller_move_between_callee_interfaces_does_not_consume_particle(
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -187,7 +187,7 @@ def test_callee_move_between_its_interfaces_requires_caller_consumption(
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 12
+    assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
@@ -207,7 +207,7 @@ def test_constructor_interface_particle_must_depart_before_caller_ends(
         diagnostic.position_name
         == "position<box>::action</construct>::position<result>"
     )
-    assert diagnostic.location.line == 5
+    assert diagnostic.location.line == 4
     assert diagnostic.location.column == 24
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
@@ -249,7 +249,7 @@ def test_child_guarantee_must_be_consumed_before_parent_triggers(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 14
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -276,7 +276,7 @@ def test_particle_with_child_guarantee_must_be_clean_before_moving_to_parent_int
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 20
+    assert diagnostic.location.line == 19
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -303,7 +303,7 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
         first_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result_a>"
     )
-    assert first_diagnostic.location.line == 21
+    assert first_diagnostic.location.line == 20
     assert first_diagnostic.location.column == 50
     assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
     second_diagnostic = all_diagnostics[1]
@@ -316,7 +316,7 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
         second_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result_b>"
     )
-    assert second_diagnostic.location.line == 21
+    assert second_diagnostic.location.line == 20
     assert second_diagnostic.location.column == 50
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -343,7 +343,7 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 20
+    assert diagnostic.location.line == 19
     assert diagnostic.location.column == 98
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     requirement_diagnostic = all_diagnostics[1]
@@ -357,7 +357,7 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
         requirement_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<result>"
     )
-    assert requirement_diagnostic.location.line == 21
+    assert requirement_diagnostic.location.line == 20
     assert requirement_diagnostic.location.column == 30
     assert requirement_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -384,7 +384,7 @@ def test_action_on_position_child_must_be_clean_before_parent_triggers(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 98
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -411,7 +411,7 @@ def test_child_guarantee_on_callers_interface_particle_must_be_consumed_before_p
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 13
+    assert diagnostic.location.line == 12
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -438,7 +438,7 @@ def test_existing_particle_guarantee_must_be_consumed_before_parent_triggers(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 13
+    assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -465,7 +465,7 @@ def test_unchanged_guarantee_preserves_caller_move_as_diagnostic_source(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -487,7 +487,7 @@ def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.occupied_at is not None
@@ -507,11 +507,11 @@ def test_error_on_action_parent_suppresses_unconsumed_diagnostic(
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.position_name == "position<occupied>"
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 47
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.occupied_at is not None
-    assert diagnostic.occupied_at.line == 13
+    assert diagnostic.occupied_at.line == 12
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
@@ -530,7 +530,7 @@ def test_error_on_occupied_child_action_interface_suppresses_parent_trigger_diag
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 16
+    assert diagnostic.location.line == 15
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.occupied_at is not None
@@ -561,7 +561,7 @@ def test_implied_parent_action_must_receive_clean_interface_particle(
         diagnostic.position_name
         == "action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 9
+    assert diagnostic.location.line == 8
     assert diagnostic.location.column == 64
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -588,7 +588,7 @@ def test_action_on_deeper_position_descendant_must_be_clean_before_parent_trigge
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::position</branch>::position</leaf>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 16
+    assert diagnostic.location.line == 15
     assert diagnostic.location.column == 115
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -615,7 +615,7 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
         first_diagnostic.position_name
         == "position<box_a>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert first_diagnostic.location.line == 19
+    assert first_diagnostic.location.line == 18
     assert first_diagnostic.location.column == 81
     assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
     second_diagnostic = all_diagnostics[1]
@@ -628,7 +628,7 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
         second_diagnostic.position_name
         == "position<box_b>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert second_diagnostic.location.line == 24
+    assert second_diagnostic.location.line == 23
     assert second_diagnostic.location.column == 81
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -657,7 +657,7 @@ def test_action_interface_entry_rule_is_checked_at_each_parent_trigger(
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 14
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -684,7 +684,7 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
         first_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert first_diagnostic.location.line == 13
+    assert first_diagnostic.location.line == 12
     assert first_diagnostic.location.column == 79
     assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
     second_diagnostic = all_diagnostics[1]
@@ -697,7 +697,7 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
         second_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert second_diagnostic.location.line == 15
+    assert second_diagnostic.location.line == 14
     assert second_diagnostic.location.column == 79
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -725,7 +725,7 @@ def test_one_child_interface_create_before_two_parent_triggers_is_diagnosed_once
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
     )
-    assert diagnostic.location.line == 13
+    assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
@@ -752,7 +752,7 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
         first_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result_a>"
     )
-    assert first_diagnostic.location.line == 15
+    assert first_diagnostic.location.line == 14
     assert first_diagnostic.location.column == 79
     assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
     second_diagnostic = all_diagnostics[1]
@@ -765,7 +765,7 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
         second_diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result_b>"
     )
-    assert second_diagnostic.location.line == 15
+    assert second_diagnostic.location.line == 14
     assert second_diagnostic.location.column == 79
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [

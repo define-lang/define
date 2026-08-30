@@ -7,9 +7,8 @@ define the potential action<my.domain.com:my_lib:/test> {
             it has the action</initializer>.
         }
     }
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         create a particle in position<box>.
     }

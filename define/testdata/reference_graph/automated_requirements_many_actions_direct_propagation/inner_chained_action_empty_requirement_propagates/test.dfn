@@ -3,9 +3,8 @@
 # The test action pre-fills that child before moving the particle to /outer. /outer
 # passes the particle to /inner, so /inner's empty requirement reaches /test.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

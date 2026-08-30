@@ -29,7 +29,7 @@ def test_short_form_global_reference(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
 
 
@@ -55,7 +55,7 @@ def test_create_in_missing_global_position_reports_reference_errors(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "position</missing>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/missing>"
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -182,11 +182,11 @@ def test_create_twice_in_local_chained_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
-    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 

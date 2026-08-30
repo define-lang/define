@@ -1,9 +1,8 @@
 # A parent particle with a child, each carrying a caller-attached destructor, passes through the blind pass-through mid before close_file destroys it; the owner /test walks the re-recorded cascade and reports the child's destructor before the parent's.
 # Post-order: the child's destructor is reported before the parent's.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<outer_box> {
             it may only contain particles where {

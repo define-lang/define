@@ -3,9 +3,8 @@
 # Neither /act_b nor /act_c fills position<gateway>::position</value>, and /test doesn't fill it
 # for either path. Two requirement-violation diagnostics at /test.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box_b> {
             it may only contain particles where {

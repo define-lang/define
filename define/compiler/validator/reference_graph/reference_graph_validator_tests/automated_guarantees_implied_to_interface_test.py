@@ -26,9 +26,9 @@ def test_move_interface_to_implied(
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 78
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</inner>::position<item>"
@@ -39,9 +39,9 @@ def test_move_interface_to_implied(
     assert all_diags[0].inferred_at.end_column == 44
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 16
+    assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 16
+    assert all_diags[1].location.end_line == 15
     assert all_diags[1].location.end_column == 63
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::position</implied>"
@@ -60,9 +60,9 @@ def test_move_implied_to_interface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 75
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</inner>::position<item>"
@@ -72,9 +72,9 @@ def test_move_implied_to_interface(
     assert all_diags[0].populated_at.end_column == 66
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 33
-    assert all_diags[1].location.end_line == 15
+    assert all_diags[1].location.end_line == 14
     assert all_diags[1].location.end_column == 66
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::position</implied>"
@@ -88,9 +88,9 @@ def test_move_interface_through_implied_back_to_interface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 75
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</inner>::position<dest>"
@@ -102,9 +102,9 @@ def test_move_interface_through_implied_back_to_interface(
     assert isinstance(
         all_diags[1], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[1].location.line == 16
+    assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 33
-    assert all_diags[1].location.end_line == 16
+    assert all_diags[1].location.end_line == 15
     assert all_diags[1].location.end_column == 77
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<src>"
@@ -115,9 +115,9 @@ def test_move_interface_through_implied_back_to_interface(
     assert all_diags[1].inferred_at.end_column == 43
     assert all_diags[1].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[2], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[2].location.line == 17
+    assert all_diags[2].location.line == 16
     assert all_diags[2].location.column == 33
-    assert all_diags[2].location.end_line == 17
+    assert all_diags[2].location.end_line == 16
     assert all_diags[2].location.end_column == 66
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].position_name == "position<box>::position</implied>"
@@ -133,9 +133,9 @@ def test_interface_to_implied_propagates_across_fqun(
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 102
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -149,9 +149,9 @@ def test_interface_to_implied_propagates_across_fqun(
     assert all_diags[0].inferred_at.end_column == 44
     assert all_diags[0].inferred_at.file_path == PurePosixPath("lib/inner.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 16
+    assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 16
+    assert all_diags[1].location.end_line == 15
     assert all_diags[1].location.end_column == 87
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD}:/implied>"
@@ -170,9 +170,9 @@ def test_action_creates_in_both_interface_and_implied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 75
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</inner>::position<item>"
@@ -182,9 +182,9 @@ def test_action_creates_in_both_interface_and_implied(
     assert all_diags[0].populated_at.end_column == 44
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 15
+    assert all_diags[1].location.end_line == 14
     assert all_diags[1].location.end_column == 63
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::position</implied>"
@@ -203,9 +203,9 @@ def test_swap_interface_and_implied_via_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 75
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</inner>::position<item>"
@@ -215,9 +215,9 @@ def test_swap_interface_and_implied_via_local(
     assert all_diags[0].populated_at.end_column == 66
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 16
+    assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 16
+    assert all_diags[1].location.end_line == 15
     assert all_diags[1].location.end_column == 63
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::position</implied>"

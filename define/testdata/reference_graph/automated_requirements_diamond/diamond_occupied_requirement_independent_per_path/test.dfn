@@ -6,9 +6,8 @@
 # propagates through /act_c to /test. The error is on test.dfn because
 # /test does not fill position<gateway>::position</value> for /act_c's path either.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box_b> {
             it may only contain particles where {

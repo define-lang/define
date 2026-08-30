@@ -1,8 +1,7 @@
 # A callee moves item::/child_q to dest::/child_q then destroys and recreates item; the moved child must still read as occupied at dest::/child_q in the caller.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

@@ -1,9 +1,8 @@
 # The constructor fills position<box>::position</color>, so the caller's own
 # create there conflicts with the constructor's guarantee.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

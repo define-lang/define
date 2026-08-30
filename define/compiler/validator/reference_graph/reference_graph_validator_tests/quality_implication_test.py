@@ -104,7 +104,7 @@ def test_diamond_transitivity_create_conflict_detected(
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/implier_two>"
     assert diag.position_name == "position<source>::position</implied>"
-    assert diag.location.line == 21
+    assert diag.location.line == 20
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -113,7 +113,7 @@ def test_diamond_transitivity_create_conflict_detected(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<source>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
-            "line": 18,
+            "line": 17,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -121,7 +121,7 @@ def test_diamond_transitivity_create_conflict_detected(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
-            "line": 21,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -235,9 +235,9 @@ def test_constructor_filled_position_blocks_caller_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 66
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<source>::position</implied>"

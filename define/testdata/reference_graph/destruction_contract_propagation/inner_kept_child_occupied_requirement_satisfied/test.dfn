@@ -1,8 +1,7 @@
 # The caller-attached destructor's required child stays occupied through the destruction, so verification passes.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

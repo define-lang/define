@@ -4,9 +4,8 @@
 # and since the caller cannot know what arrived there, subsequent
 # operations on the destination are silently allowed.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

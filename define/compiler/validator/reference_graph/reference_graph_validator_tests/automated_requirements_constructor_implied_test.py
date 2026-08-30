@@ -42,9 +42,9 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>"
-    assert diag.location.line == 11
+    assert diag.location.line == 10
     assert diag.location.column == 30
-    assert diag.location.end_line == 11
+    assert diag.location.end_line == 10
     assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -53,7 +53,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -61,7 +61,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -91,7 +91,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
     assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>"
-    assert diag.location.line == 11
+    assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -100,7 +100,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -108,7 +108,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -143,7 +143,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert diag_q.action_name == _P
     assert diag_q.required_empty is False
     assert diag_q.position_name == "position<box>::position</q>"
-    assert diag_q.location.line == 11
+    assert diag_q.location.line == 10
     assert diag_q.location.column == 30
     assert diag_q.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -152,7 +152,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -160,7 +160,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -177,7 +177,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert diag_r.action_name == _P
     assert diag_r.required_empty is False
     assert diag_r.position_name == "position<box>::position</r>"
-    assert diag_r.location.line == 11
+    assert diag_r.location.line == 10
     assert diag_r.location.column == 30
     assert diag_r.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -186,7 +186,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _P,
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -194,7 +194,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -224,7 +224,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
     assert diag.action_name == _DESTROY_CHILD
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>::position</child>"
-    assert diag.location.line == 15
+    assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -233,7 +233,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_CHILD,
-            "line": 12,
+            "line": 11,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -241,7 +241,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_CHILD,
-            "line": 15,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -271,7 +271,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
     assert diag.action_name == _MOVE_CHILD
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>::position</child>"
-    assert diag.location.line == 14
+    assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -280,7 +280,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _MOVE_CHILD,
-            "line": 11,
+            "line": 10,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -288,7 +288,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _MOVE_CHILD,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -328,7 +328,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
         diag.position_name
         == "position<box>::position</q>::position</child>::position</grandchild>"
     )
-    assert diag.location.line == 14
+    assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -337,7 +337,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_GRANDCHILD,
-            "line": 11,
+            "line": 10,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -345,7 +345,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_GRANDCHILD,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -378,7 +378,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
         diag.position_name
         == "position<box>::position</q>::position</outer>::position</child>"
     )
-    assert diag.location.line == 14
+    assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -387,7 +387,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_INTERFACE_CHILD,
-            "line": 11,
+            "line": 10,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -395,7 +395,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_INTERFACE_CHILD,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },

@@ -46,11 +46,11 @@ def test_create_twice_in_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].populated_at.line == 13
+    assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
@@ -98,11 +98,11 @@ def test_untouched_interface_position_preserved_after_trigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].populated_at.line == 13
+    assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
@@ -121,7 +121,7 @@ def test_move_from_guarantee_emptied_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -152,7 +152,7 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -170,14 +170,14 @@ def test_post_trigger_trigger_position_stays_occupied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
-    assert all_diags[0].populated_at.line == 13
+    assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
@@ -210,7 +210,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -227,7 +227,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -254,7 +254,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -271,7 +271,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -298,7 +298,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -307,7 +307,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 17,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -324,7 +324,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
     assert all_diags[1].position_name == "position<box>::action</other>::position<dest>"
-    assert all_diags[1].location.line == 17
+    assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -341,7 +341,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
-            "line": 17,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -397,7 +397,7 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 49
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -416,7 +416,7 @@ def test_post_trigger_occupied_by_existing_rejects_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
@@ -434,7 +434,7 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
@@ -510,7 +510,7 @@ def test_trigger_chain_create_guarantee_fills_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -539,7 +539,7 @@ def test_post_trigger_existing_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 24
+    assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -557,7 +557,7 @@ def test_post_trigger_empty_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -577,7 +577,7 @@ def test_post_trigger_new_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -595,7 +595,7 @@ def test_post_trigger_empty_guarantee_deletes_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 29
+    assert all_diags[0].location.line == 28
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -617,7 +617,7 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 44
+    assert all_diags[0].location.line == 43
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -645,7 +645,7 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -663,7 +663,7 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -681,7 +681,7 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 31
+    assert all_diags[0].location.line == 30
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -725,7 +725,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
@@ -740,7 +740,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<local>::action</outer>::position<outer_iface>::position</item>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -748,7 +748,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -791,7 +791,7 @@ def test_destroy_prunes_children_from_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 26
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -815,7 +815,7 @@ def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_chan
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diag.position_name == "position<box>::action</inner>::position<out>"
-    assert diag.location.line == 17
+    assert diag.location.line == 16
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
 
@@ -830,7 +830,7 @@ def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diag.position_name == "position<box>::position</shared>"
-    assert diag.location.line == 18
+    assert diag.location.line == 17
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
 
@@ -843,7 +843,7 @@ def test_existing_guarantee_on_child_survives_destroying_original_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -860,7 +860,7 @@ def test_existing_guarantee_on_child_survives_recreating_original_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -877,7 +877,7 @@ def test_nested_existing_guarantees_survive_destroying_original_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (

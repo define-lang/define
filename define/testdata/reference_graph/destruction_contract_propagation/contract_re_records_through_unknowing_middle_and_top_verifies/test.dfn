@@ -1,8 +1,7 @@
 # Passing a caller-passed particle through mid, which does not know its destructor, re-records the Destruction Contract up to /test, which holds the required child state and verifies it satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<outer_box> {
             it may only contain particles where {

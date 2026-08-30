@@ -1,8 +1,7 @@
 # A destructor's requirement on a caller-passed particle propagates to its caller's caller.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<entry>.
     it happens when {
-        the position<entry> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

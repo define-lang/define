@@ -1,12 +1,11 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<stash> {
         it may only contain particles where {
             it has the position</implied>.
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<input> {
             it may only contain particles where {

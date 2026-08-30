@@ -33,7 +33,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -48,7 +48,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -56,7 +56,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -64,7 +64,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 21,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -110,7 +110,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -125,7 +125,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -133,7 +133,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -141,7 +141,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 21,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -206,7 +206,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 24
+    assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -220,7 +220,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 18,
+            "line": 17,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -228,7 +228,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::position</slot>",
             "triggered_quality_name": None,
-            "line": 22,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -236,7 +236,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 24,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -278,7 +278,7 @@ def test_destruction_contracts_verified_in_execution_order(
         all_diags[0].position_name
         == "position<box>::action</close_two>::position<target1>::position</file>"
     )
-    assert all_diags[0].location.line == 28
+    assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -287,7 +287,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<one>",
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -295,7 +295,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_two>::position<target1>",
             "triggered_quality_name": None,
-            "line": 24,
+            "line": 23,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -303,7 +303,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_TWO,
-            "line": 28,
+            "line": 27,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -330,7 +330,7 @@ def test_destruction_contracts_verified_in_execution_order(
         all_diags[1].position_name
         == "position<box>::action</close_two>::position<target2>::position</file>"
     )
-    assert all_diags[1].location.line == 28
+    assert all_diags[1].location.line == 27
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -339,7 +339,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<two>",
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 20,
+            "line": 19,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -347,7 +347,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_two>::position<target2>",
             "triggered_quality_name": None,
-            "line": 25,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -355,7 +355,7 @@ def test_destruction_contracts_verified_in_execution_order(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_TWO,
-            "line": 28,
+            "line": 27,
             "column": 30,
             "file_path": "test.dfn",
         },

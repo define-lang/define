@@ -81,7 +81,7 @@ def test_missing_caller_attached_destructor_is_reported_and_skipped(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "missing_destructor.dfn"
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 35
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert result.action_call_graph.edges() == [(_TEST, _CLOSE_FILE)]
@@ -106,7 +106,7 @@ def test_caller_known_child_state_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -121,7 +121,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -129,7 +129,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -137,7 +137,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 21,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -183,7 +183,7 @@ def test_caller_known_empty_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -198,7 +198,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_EMPTY_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -206,7 +206,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -214,7 +214,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 22,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -222,7 +222,7 @@ def test_caller_known_empty_requirement_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</file>",
             "triggered_quality_name": None,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -257,7 +257,7 @@ def test_two_caller_attached_destructors_verified_independently(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 26
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -272,7 +272,7 @@ def test_two_caller_attached_destructors_verified_independently(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_B,
-            "line": 18,
+            "line": 17,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -280,7 +280,7 @@ def test_two_caller_attached_destructors_verified_independently(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -288,7 +288,7 @@ def test_two_caller_attached_destructors_verified_independently(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 26,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -348,7 +348,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_C,
-            "line": 18,
+            "line": 17,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -356,7 +356,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -364,7 +364,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 26,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -398,7 +398,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR_B,
-            "line": 17,
+            "line": 16,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -406,7 +406,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -414,7 +414,7 @@ def test_three_destructors_with_two_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 26,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -451,7 +451,7 @@ def test_declared_quality_destructor_verified_once(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -466,7 +466,7 @@ def test_declared_quality_destructor_verified_once(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 17,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -597,7 +597,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -612,7 +612,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 25,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -642,7 +642,7 @@ def test_visible_and_caller_attached_destructors_coexist(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 25
+    assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is False
@@ -657,7 +657,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE2,
-            "line": 19,
+            "line": 18,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -665,7 +665,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -673,7 +673,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 25,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },

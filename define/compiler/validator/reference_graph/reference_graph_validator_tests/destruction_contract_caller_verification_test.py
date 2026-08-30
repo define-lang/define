@@ -60,7 +60,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 33,
             "file_path": "test.dfn",
         },
@@ -83,7 +83,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MID
@@ -98,7 +98,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _D2,
-            "line": 17,
+            "line": 16,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -106,7 +106,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 22,
+            "line": 21,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -114,7 +114,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 25,
+            "line": 24,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -122,7 +122,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>::position</item2>",
             "triggered_quality_name": None,
-            "line": 23,
+            "line": 22,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -562,7 +562,7 @@ def test_owner_with_error_required_position_skips_destructor_check(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 26
+    assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (

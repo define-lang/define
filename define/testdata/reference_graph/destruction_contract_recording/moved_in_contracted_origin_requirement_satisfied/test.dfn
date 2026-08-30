@@ -1,8 +1,7 @@
 # When the required position is filled before the particle is passed in, the destructor mid fires (after moving it to a local position) is satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

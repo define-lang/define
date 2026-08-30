@@ -254,12 +254,12 @@ def test_move_from_chained_to_occupied_local_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 61
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.column == 30
-    assert all_diags[0].occupied_at.line == 14
+    assert all_diags[0].occupied_at.line == 13
 
 
 def test_move_from_empty_local_chained(
@@ -270,7 +270,7 @@ def test_move_from_empty_local_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
@@ -286,12 +286,12 @@ def test_move_to_occupied_local_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<dest>::position</x>"
     assert all_diags[0].occupied_at is not None
-    assert all_diags[0].occupied_at.line == 14
+    assert all_diags[0].occupied_at.line == 13
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
 
@@ -304,7 +304,7 @@ def test_double_move_from_local_chained_fails(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"

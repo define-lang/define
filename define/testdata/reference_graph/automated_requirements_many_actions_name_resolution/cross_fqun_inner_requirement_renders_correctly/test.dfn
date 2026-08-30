@@ -6,9 +6,8 @@
 # /test fills position<iface>::position</x>; /outer transfers that particle into
 # /inner's position<item>, violating /inner's propagated empty requirement.
 define the potential action<mv:define-lang.org:main_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

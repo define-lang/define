@@ -1,9 +1,8 @@
 # Emptying the destructor's required child inside close_file before the destroy overrides the caller's stale occupied knowledge, so the requirement is violated.
 # Observed at the line that triggered close_file (line 21).
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

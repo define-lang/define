@@ -94,7 +94,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 125
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -170,7 +170,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
     assert result.program_result.all_diagnostics[0].definition_type == "action"
     assert result.program_result.all_diagnostics[0].path == "/test"
     assert result.program_result.all_diagnostics[0].first_definition_line == 1
-    assert result.program_result.all_diagnostics[0].location.line == 10
+    assert result.program_result.all_diagnostics[0].location.line == 9
     assert result.program_result.all_diagnostics[0].location.column == 1
     assert action_graph(result.operation_graphs) == []
 
@@ -194,7 +194,7 @@ def test_no_body_effect_when_create_target_has_error_state(
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
-    assert result.program_result.all_diagnostics[0].location.line == 8
+    assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
     assert (
         result.program_result.all_diagnostics[0].is_action_interface_position is False
@@ -213,7 +213,7 @@ def test_no_body_effect_when_move_target_has_error_state(
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
-    assert result.program_result.all_diagnostics[0].location.line == 8
+    assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
     assert (
         result.program_result.all_diagnostics[0].is_action_interface_position is False

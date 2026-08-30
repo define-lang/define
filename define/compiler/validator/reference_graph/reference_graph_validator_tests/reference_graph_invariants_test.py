@@ -74,14 +74,14 @@ def test_visited_reference_does_not_skip_independent_definition(
     assert len(diagnostics_found) == 1
     diagnostic = diagnostics_found[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert diagnostic.location.line == 14
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.end_line == 14
+    assert diagnostic.location.end_line == 13
     assert diagnostic.location.end_column == 44
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.position_name == "position<work>"
-    assert diagnostic.populated_at.line == 13
+    assert diagnostic.populated_at.line == 12
     assert diagnostic.populated_at.column == 30
-    assert diagnostic.populated_at.end_line == 13
+    assert diagnostic.populated_at.end_line == 12
     assert diagnostic.populated_at.end_column == 44
     assert diagnostic.populated_at.file_path == PurePosixPath("test.dfn")

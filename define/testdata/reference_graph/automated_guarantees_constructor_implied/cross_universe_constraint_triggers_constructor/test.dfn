@@ -1,7 +1,6 @@
 define the potential action<mv:define-lang.org:parent:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

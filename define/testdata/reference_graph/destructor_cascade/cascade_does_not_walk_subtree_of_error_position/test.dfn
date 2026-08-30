@@ -1,8 +1,7 @@
 # An error that marks an intermediate position error stops the cascade from firing a descendant's destructor.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

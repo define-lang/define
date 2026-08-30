@@ -1,9 +1,8 @@
 # Destroying target1 then target2 in close_two, the caller verifies the two caller-attached destructors in that execution order, so the first diagnostic concerns target1.
 # target1 is destroyed before target2, so its diagnostic comes first.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

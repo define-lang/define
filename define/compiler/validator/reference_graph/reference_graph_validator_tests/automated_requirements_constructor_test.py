@@ -34,7 +34,7 @@ def test_occupied_interface_requirement_always_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -49,7 +49,7 @@ def test_occupied_interface_requirement_always_violated(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consumer>",
-            "line": 13,
+            "line": 12,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -57,7 +57,7 @@ def test_occupied_interface_requirement_always_violated(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consumer>",
-            "line": 16,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -101,9 +101,9 @@ def test_constructor_empty_violation_via_create_in_implied(
     assert diag.action_name == _P
     assert diag.required_empty is True
     assert diag.position_name == "position<box>::position</q>"
-    assert diag.location.line == 14
+    assert diag.location.line == 13
     assert diag.location.column == 30
-    assert diag.location.end_line == 14
+    assert diag.location.end_line == 13
     assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -112,7 +112,7 @@ def test_constructor_empty_violation_via_create_in_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -120,7 +120,7 @@ def test_constructor_empty_violation_via_create_in_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -155,7 +155,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
     assert diag.action_name == _P
     assert diag.required_empty is True
     assert diag.position_name == "position<box>::position</q>::position</child>"
-    assert diag.location.line == 12
+    assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
@@ -164,7 +164,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 9,
+            "line": 8,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -172,7 +172,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 12,
+            "line": 11,
             "column": 30,
             "file_path": "test.dfn",
         },

@@ -57,9 +57,9 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestroyInEmptyInterfacePositionDiagnostic)
-    assert diag.location.line == 35
+    assert diag.location.line == 34
     assert diag.location.column == 33
-    assert diag.location.end_line == 35
+    assert diag.location.end_line == 34
     assert diag.location.end_column == 104
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -115,7 +115,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
@@ -130,7 +130,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</item>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -138,7 +138,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -177,7 +177,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::position</output>"
     )
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {
@@ -194,7 +194,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -217,9 +217,9 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.end_line == 15
+    assert diagnostic.location.end_line == 14
     assert diagnostic.location.end_column == 106
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (

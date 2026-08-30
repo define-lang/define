@@ -1,8 +1,7 @@
 # close_file leaves the destructor's required position</file> in an error state before destroying, so the Child State records ERROR and the owner's verification short-circuits instead of falsely erroring.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

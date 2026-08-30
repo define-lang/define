@@ -35,9 +35,9 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 11
+    assert all_diags[0].location.end_line == 10
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _P
@@ -52,7 +52,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -60,7 +60,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -91,9 +91,9 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 11
+    assert all_diags[0].location.end_line == 10
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _P
@@ -105,7 +105,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 8,
+            "line": 7,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -113,7 +113,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
             "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 11,
+            "line": 10,
             "column": 30,
             "file_path": "test.dfn",
         },

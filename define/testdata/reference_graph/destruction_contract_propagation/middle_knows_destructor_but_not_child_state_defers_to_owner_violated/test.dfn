@@ -3,9 +3,8 @@
 # rather than verifying: the attacher resolves to /test (the particle's
 # creator), never mid, and mid does not appear as a step.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<outer_box> {
             it may only contain particles where {

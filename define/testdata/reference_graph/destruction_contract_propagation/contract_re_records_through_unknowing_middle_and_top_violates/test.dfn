@@ -1,8 +1,7 @@
 # When /test never fills the required child, the re-recorded contract surfaces the violation at /test; the chain names the true destroyer (close_file) and the attacher (/test), omitting the pass-through mid.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<outer_box> {
             it may only contain particles where {

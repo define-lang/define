@@ -1,9 +1,8 @@
 # The caller cannot determine a child of the particle created by
 # action</create_parent>, so the grandchild requirement must fail locally.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

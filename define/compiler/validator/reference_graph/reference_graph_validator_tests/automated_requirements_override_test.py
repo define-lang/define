@@ -68,7 +68,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -83,7 +83,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</mid_input>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -91,7 +91,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/outer>",
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },

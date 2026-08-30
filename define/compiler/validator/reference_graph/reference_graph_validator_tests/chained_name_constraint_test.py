@@ -130,7 +130,7 @@ class TestCreateParticle:
         assert all_diags[0].definition_type == "action"
         assert all_diags[0].path == "/test"
         assert all_diags[0].first_definition_line == 1
-        assert all_diags[0].location.line == 10
+        assert all_diags[0].location.line == 9
         assert all_diags[0].location.column == 1
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 

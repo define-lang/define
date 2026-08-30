@@ -96,9 +96,9 @@ def test_cross_universe_constraint_triggers_constructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 121
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -111,9 +111,9 @@ def test_cross_universe_constraint_triggers_constructor(
     assert all_diags[0].populated_at.end_column == 42
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/construct_a.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[1].location.line == 14
+    assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.end_line == 14
+    assert all_diags[1].location.end_line == 13
     assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
@@ -132,9 +132,9 @@ def test_constructor_applies_after_non_constructor_action_in_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 19
+    assert all_diags[0].location.end_line == 18
     assert all_diags[0].location.end_column == 78
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -155,9 +155,9 @@ def test_constrained_constructor_assigns_implied_in_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 9
+    assert all_diags[0].location.end_line == 8
     assert all_diags[0].location.end_column == 56
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</p>::position</r>"

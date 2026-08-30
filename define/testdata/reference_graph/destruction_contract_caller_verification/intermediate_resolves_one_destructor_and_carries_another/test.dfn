@@ -2,9 +2,8 @@
 # d2 is carried past mid and resolved by the owner /test, attributed to my_file.
 # d1 is resolved low, by mid itself, attributed to mid's own interface.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<outer_box> {
             it may only contain particles where {

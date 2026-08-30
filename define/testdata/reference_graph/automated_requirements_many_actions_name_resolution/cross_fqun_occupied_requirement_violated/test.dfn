@@ -4,9 +4,8 @@
 # on position<item>::position</x>. /outer transfers its occupied position<iface>
 # into position<item>, but /test does not fill position<iface>::position</x>.
 define the potential action<mv:define-lang.org:main_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

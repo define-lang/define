@@ -84,9 +84,9 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -101,7 +101,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -144,9 +144,9 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
@@ -161,7 +161,7 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>::position</destructor_input>::position</value>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -169,7 +169,7 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 15,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -212,9 +212,9 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -229,7 +229,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 13,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -272,9 +272,9 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -289,7 +289,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -332,9 +332,9 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -349,7 +349,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 14,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },

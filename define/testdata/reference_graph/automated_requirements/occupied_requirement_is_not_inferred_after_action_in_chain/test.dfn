@@ -1,8 +1,7 @@
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</parent>.
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<destination>.
         move the particle in action</parent>::position<input> to position<destination>.

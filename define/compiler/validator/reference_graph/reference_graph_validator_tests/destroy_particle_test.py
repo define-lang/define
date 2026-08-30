@@ -68,7 +68,7 @@ def test_destroy_already_emptied_interface_position(
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -86,7 +86,7 @@ def test_destroy_parent_not_occupied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<parent>::position</child_pos>"
@@ -101,7 +101,7 @@ def test_destroy_prunes_children_within_action(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<parent>::position</child_pos>"
@@ -116,16 +116,16 @@ def test_destroy_clears_error_state_on_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].occupied_at is not None
-    assert all_diags[0].occupied_at.line == 14
+    assert all_diags[0].occupied_at.line == 13
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[1].location.line == 17
+    assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<parent>::position</child_pos>"

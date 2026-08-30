@@ -3,9 +3,8 @@
 # explicit destruction of target's position</c>, not a second time through
 # the parent's cascade (which skips the now-empty position</c>).
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

@@ -1,9 +1,8 @@
 # act_b and act_c both trigger shared; preserving both branches ensures that
 # shared is reached independently through each trigger chain.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<my_pos>.
     it happens when {
-        the position<my_pos> has a particle.
+        this particle is created.
     } and it does {
         define the position<box_b> {
             it may only contain particles where {

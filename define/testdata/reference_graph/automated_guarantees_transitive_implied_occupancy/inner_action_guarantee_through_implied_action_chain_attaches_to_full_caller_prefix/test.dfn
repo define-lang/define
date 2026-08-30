@@ -7,9 +7,8 @@
 # Filling the same fully-qualified position from the caller after the
 # trigger should fail with a CreateInOccupied diagnostic.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<host> {
             it may only contain particles where {

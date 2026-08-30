@@ -1,8 +1,7 @@
 # When the caller has already put a particle in the position a triggered action moves a particle to, and never put one in the position it moves from, that position becomes error, so creating in it afterward is silently allowed.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

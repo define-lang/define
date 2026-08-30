@@ -3,9 +3,8 @@
 # The OCCUPIED requirement propagates from /inner through /outer to /test.
 # /test doesn't fill position<item> either, so the diagnostic appears at /test.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

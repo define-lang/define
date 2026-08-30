@@ -67,9 +67,9 @@ class TestCreateParticle:
             diags[0].full_global_name
             == "position<mv:define-lang.org:test_files:/valid/minimal_position>"
         )
-        assert diags[0].location.line == 6
+        assert diags[0].location.line == 5
         assert diags[0].location.column == 30
-        assert diags[0].location.end_line == 6
+        assert diags[0].location.end_line == 5
         assert diags[0].location.end_column == 63
         assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -252,7 +252,7 @@ class TestCreateParticle:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "position</other>"
         assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-        assert all_diags[0].location.line == 6
+        assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 30
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
         assert isinstance(
@@ -260,7 +260,7 @@ class TestCreateParticle:
         )
         assert all_diags[1].local_name == "position<local>"
         assert all_diags[1].preceding_name == "position<my.domain.com:my_lib:/other>"
-        assert all_diags[1].location.line == 6
+        assert all_diags[1].location.line == 5
         assert all_diags[1].location.column == 48
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
@@ -365,11 +365,11 @@ class TestMoveParticle:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</act_x>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/act_x>"
-        assert all_diags[0].location.line == 7
+        assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 30
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
         assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
-        assert all_diags[1].location.line == 7
+        assert all_diags[1].location.line == 6
         assert all_diags[1].location.column == 30
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
@@ -415,9 +415,9 @@ class TestMoveParticle:
             all_diags[0].parent_name
             == "action<mv:define-lang.org:test_move_bad_action:/act_b>"
         )
-        assert all_diags[0].location.line == 14
+        assert all_diags[0].location.line == 13
         assert all_diags[0].location.column == 63
-        assert all_diags[0].location.end_line == 14
+        assert all_diags[0].location.end_line == 13
         assert all_diags[0].location.end_column == 80
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 

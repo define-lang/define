@@ -84,7 +84,7 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</worker>"
@@ -119,7 +119,7 @@ def test_destroy_empty_position_does_not_fire_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>"
@@ -134,13 +134,13 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[1].location.line == 11
+    assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
@@ -157,7 +157,7 @@ def test_missing_destructor_file_is_reported_and_skipped(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "destructor.dfn"
-    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert result.action_call_graph.edges() == []

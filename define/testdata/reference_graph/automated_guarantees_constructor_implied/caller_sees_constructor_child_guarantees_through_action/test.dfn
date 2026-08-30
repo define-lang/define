@@ -3,9 +3,8 @@
 # which filled position</a>. That guarantee propagates through /inner's
 # contract to /test. The create should fail.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

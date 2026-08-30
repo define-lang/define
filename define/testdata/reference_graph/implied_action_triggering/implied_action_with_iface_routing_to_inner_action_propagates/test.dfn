@@ -1,9 +1,8 @@
 # A particle routed through a triggered implied action before reaching an inner
 # action still carries the inner action's requirements back to the caller.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<box> {
             it may only contain particles where {

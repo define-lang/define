@@ -1,5 +1,4 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<run>.
     define the position<in_iface>.
     define the position<iface> {
         it may only contain particles where {
@@ -8,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
     }
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         move the particle in position<in_iface> to position<iface>::position</a>.
     }
