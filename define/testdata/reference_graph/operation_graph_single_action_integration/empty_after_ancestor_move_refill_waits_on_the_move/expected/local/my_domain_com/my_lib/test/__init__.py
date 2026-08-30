@@ -9,31 +9,9 @@ import local.my_domain_com.my_lib.child
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<source>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.scheduler.submit(execution.create_position_box)
@@ -44,39 +22,39 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
         self.join_for_move_position_source_to_position_box = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.create_particle()
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).destroy_particle()
+        self.local_position_box.destroy_particle()
         self.move_position_source_to_position_box()
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<source>"
-        ).particle.get_position(
+        self.local_position_source.create_particle()
+        self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.move_position_source_to_position_box()
@@ -84,18 +62,8 @@ class TestExecution:
     def move_position_source_to_position_box(self):
         if not self.join_for_move_position_source_to_position_box.arrive():
             return
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<box>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_source.move_particle_to(self.local_position_box)
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).destroy_particle()
+        self.local_position_box.destroy_particle()

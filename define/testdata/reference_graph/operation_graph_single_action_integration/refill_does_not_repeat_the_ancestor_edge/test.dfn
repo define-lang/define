@@ -2,14 +2,14 @@
 # follows is more recent than create(parent) and already reaches it, so the
 # refill inherits the ordering transitively.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<parent> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
         create a particle in position<parent>.
         create a particle in position<parent>::position</child>.
         destroy the particle in position<parent>::position</child>.

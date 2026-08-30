@@ -2,14 +2,14 @@
 # trigger fill. Its empty requirement on <out> resolves to the caller's
 # Destroy, and neither dependency may displace the other.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gw> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
         create a particle in position<gw>.
         create a particle in position<gw>::action</worker>::position<in>.
         destroy the particle in position<gw>::action</worker>::position<out>.

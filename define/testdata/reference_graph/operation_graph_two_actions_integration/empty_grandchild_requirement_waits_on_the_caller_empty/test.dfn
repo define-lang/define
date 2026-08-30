@@ -1,14 +1,14 @@
 # After the caller destroys the grandchild filled by the first execution, the
 # second callee fill resolves its empty requirement to that Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</other>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<box>.
         create a particle in position<gateway>::action</other>::position<box>::position</child>.

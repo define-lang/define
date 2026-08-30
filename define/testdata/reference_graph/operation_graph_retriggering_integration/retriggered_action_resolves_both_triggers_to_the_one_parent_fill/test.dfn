@@ -6,14 +6,14 @@
 # waits on the first invocation's create, so the two invocations' writes
 # to <held>::/c cannot race.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gw> {
-        it may only contain particles where {
-            it has the action</maker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</maker>.
+            }
+        }
         create a particle in position<gw>.
         create a particle in position<gw>::action</maker>::position<held>.
         create a particle in position<gw>::action</maker>::position<trigger_pos>.

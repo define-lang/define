@@ -9,24 +9,9 @@ import local.my_domain_com.my_lib.other
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<gateway>",
-                    constraints=(
-                        local.my_domain_com.my_lib.other.Other,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -44,13 +29,18 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_gateway = literal.LocalPosition(
+            "position<gateway>",
+            constraints=(
+                local.my_domain_com.my_lib.other.Other,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_gateway__action_other.guarantee_position_slot.append(
             self.destroy_position_gateway__action_other__position_slot
         )
@@ -60,32 +50,30 @@ class TestExecution:
         guarantees.trigger_position_gateway__action_other_2.guarantee_position_slot.append(
             self.destroy_position_gateway__action_other__position_slot_2
         )
+        guarantees.trigger_position_gateway__action_other_2.guarantee_position_trigger_pos.append(
+            self.destroy_position_gateway
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.execution_trigger_position_gateway__action_other_2: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other__when_empty_position_slot = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other_2__when_empty_position_slot = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other_2__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).create_particle()
+        self.local_position_gateway.create_particle()
         self.scheduler.submit(self.create_position_gateway__action_other__position_trigger_pos)
         self.trigger_position_gateway__action_other__when_empty_position_slot()
 
     def create_position_gateway__action_other__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.other.Other
             ),
             self.scheduler,
@@ -96,9 +84,7 @@ class TestExecution:
         self.trigger_position_gateway__action_other__for_empty_rule_position_trigger_pos()
 
     def destroy_position_gateway__action_other__position_slot(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<slot>"
@@ -106,17 +92,13 @@ class TestExecution:
         self.trigger_position_gateway__action_other_2__when_empty_position_slot()
 
     def create_position_gateway__action_other__position_trigger_pos_2(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_position_gateway__action_other_2 = local.my_domain_com.my_lib.other.OtherExecution(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.other.Other
             ),
             self.scheduler,
@@ -127,13 +109,17 @@ class TestExecution:
         self.trigger_position_gateway__action_other_2__for_empty_rule_position_trigger_pos()
 
     def destroy_position_gateway__action_other__position_slot_2(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
+        self.destroy_position_gateway()
+
+    def destroy_position_gateway(self):
+        if not self.join_for_destroy_position_gateway.arrive():
+            return
+        self.local_position_gateway.destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_slot(self):
         if not self.join_for_trigger_position_gateway__action_other__when_empty_position_slot.arrive():

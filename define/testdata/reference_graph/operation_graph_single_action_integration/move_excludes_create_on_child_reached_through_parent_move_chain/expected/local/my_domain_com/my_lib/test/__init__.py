@@ -9,39 +9,9 @@ import local.my_domain_com.my_lib.item
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<holder_a>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<holder_b>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<holder_c>",
-                    constraints=(
-                        local.my_domain_com.my_lib.item.Item,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.item.Item,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_box()
@@ -51,47 +21,41 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_holder_a = literal.LocalPosition(
+            "position<holder_a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_holder_b = literal.LocalPosition(
+            "position<holder_b>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_holder_c = literal.LocalPosition(
+            "position<holder_c>",
+            constraints=(
+                local.my_domain_com.my_lib.item.Item,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.item.Item,
+            ),
+            scheduler=self.scheduler,
+        )
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.create_particle()
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_a>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder_a>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_b>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder_b>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_c>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder_c>"
-        ).particle.get_position(
+        self.local_position_box.move_particle_to(self.local_position_holder_a)
+        self.local_position_holder_a.move_particle_to(self.local_position_holder_b)
+        self.local_position_holder_b.move_particle_to(self.local_position_holder_c)
+        self.local_position_holder_c.particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<holder_c>"
-        ).destroy_particle()
+        self.local_position_holder_c.destroy_particle()

@@ -11,36 +11,9 @@ import local.my_domain_com.my_lib.worker
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<gateway>",
-                    constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<state>",
-                    constraints=(
-                        local.my_domain_com.my_lib.occupied.Occupied,
-                        local.my_domain_com.my_lib.target.Target,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<source>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -59,13 +32,30 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_gateway = literal.LocalPosition(
+            "position<gateway>",
+            constraints=(
+                local.my_domain_com.my_lib.worker.Worker,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_state = literal.LocalPosition(
+            "position<state>",
+            constraints=(
+                local.my_domain_com.my_lib.occupied.Occupied,
+                local.my_domain_com.my_lib.target.Target,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_gateway__action_worker.guarantee_position_source__move__position_state__global_position_target.append(
             self.destroy_position_gateway__action_worker__position_state__global_position_target
         )
@@ -80,38 +70,26 @@ class TestExecution:
         self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_source = self.scheduler.create_join(3)
 
     def create_position_gateway(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).create_particle()
+        self.local_position_gateway.create_particle()
         self.scheduler.submit(self.move_position_source_to_position_gateway__action_worker__position_source)
         self.move_position_state_to_position_gateway__action_worker__position_state()
 
     def create_position_state(self):
-        self.action.get_interface_position(
-            "position<state>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<state>"
-        ).particle.get_position(
+        self.local_position_state.create_particle()
+        self.local_position_state.particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         ).create_particle()
         self.move_position_state_to_position_gateway__action_worker__position_state()
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
+        self.local_position_source.create_particle()
         self.move_position_source_to_position_gateway__action_worker__position_source()
 
     def move_position_source_to_position_gateway__action_worker__position_source(self):
         if not self.join_for_move_position_source_to_position_gateway__action_worker__position_source.arrive():
             return
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+        self.local_position_source.move_particle_to(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<source>"
@@ -122,21 +100,15 @@ class TestExecution:
     def move_position_state_to_position_gateway__action_worker__position_state(self):
         if not self.join_for_move_position_state_to_position_gateway__action_worker__position_state.arrive():
             return
-        self.action.get_interface_position(
-            "position<state>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+        self.local_position_state.move_particle_to(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<state>"
             )
         )
         self.execution_trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ),
             self.scheduler,
@@ -148,9 +120,7 @@ class TestExecution:
         self.trigger_position_gateway__action_worker__for_empty_rule_position_source()
 
     def destroy_position_gateway__action_worker__position_state__global_position_target(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<state>"
@@ -162,13 +132,12 @@ class TestExecution:
     def destroy_position_gateway__action_worker__position_state(self):
         if not self.join_for_destroy_position_gateway__action_worker__position_state.arrive():
             return
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<state>"
         ).destroy_particle()
+        self.local_position_gateway.destroy_particle()
 
     def trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied(self):
         if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_state__global_position_occupied.arrive():

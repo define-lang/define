@@ -9,28 +9,9 @@ import local.my_domain_com.my_lib.worker
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<note>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<gw>",
-                    constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.scheduler.submit(execution.create_position_gw)
@@ -41,25 +22,30 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_note = literal.LocalPosition(
+            "position<note>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_gw = literal.LocalPosition(
+            "position<gw>",
+            constraints=(
+                local.my_domain_com.my_lib.worker.Worker,
+            ),
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_trigger_position_gw__action_worker__action_parent = self.scheduler.create_join(2)
 
     def create_position_gw(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).create_particle()
+        self.local_position_gw.create_particle()
         self.scheduler.submit(self.create_position_gw__action_worker__position_trigger_pos)
         self.trigger_position_gw__action_worker__action_parent()
 
     def create_position_gw__action_worker__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<trigger_pos>"
@@ -71,18 +57,16 @@ class TestExecution:
         self.trigger_position_gw__action_worker__action_parent()
 
     def create_position_note(self):
-        self.action.get_interface_position(
-            "position<note>"
-        ).create_particle()
+        self.local_position_note.create_particle()
+        self.local_position_note.destroy_particle()
 
     def destroy_position_gw__action_worker__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        self.local_position_gw.destroy_particle()
 
     def trigger_position_gw__action_worker__action_parent(self):
         if not self.join_for_trigger_position_gw__action_worker__action_parent.arrive():

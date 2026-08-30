@@ -3,19 +3,19 @@
 # worker, so those names only tell the four runs apart once the invocation
 # they were triggered from is on the front of them.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<holder_first> {
-        it may only contain particles where {
-            it has the action</first>.
-        }
-    }
-    define the position<holder_second> {
-        it may only contain particles where {
-            it has the action</second>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<holder_first> {
+            it may only contain particles where {
+                it has the action</first>.
+            }
+        }
+        define the position<holder_second> {
+            it may only contain particles where {
+                it has the action</second>.
+            }
+        }
         create a particle in position<holder_first>.
         create a particle in position<holder_first>::action</first>::position<trigger_pos>.
         destroy the particle in position<holder_first>::action</first>::position<trigger_pos>.

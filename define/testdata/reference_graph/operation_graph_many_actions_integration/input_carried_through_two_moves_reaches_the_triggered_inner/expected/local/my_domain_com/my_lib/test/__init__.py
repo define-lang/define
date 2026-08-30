@@ -10,31 +10,9 @@ import local.my_domain_com.my_lib.outer
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<outer_holder>",
-                    constraints=(
-                        local.my_domain_com.my_lib.outer.Outer,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -52,36 +30,43 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_outer_holder = literal.LocalPosition(
+            "position<outer_holder>",
+            constraints=(
+                local.my_domain_com.my_lib.outer.Outer,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_outer_holder__action_outer.trigger_position_middle_holder__action_middle.guarantee_position_input.append(
             self.destroy_position_outer_holder__action_outer__position_middle_holder
         )
         self.execution_trigger_position_outer_holder__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_position_outer_holder = self.scheduler.create_join(2)
         self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder = self.scheduler.create_join(2)
         self.join_for_trigger_position_outer_holder__action_outer__for_empty_rule_position_input = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.create_particle()
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.move_position_box_to_position_outer_holder__action_outer__position_input()
 
     def create_position_outer_holder(self):
-        self.action.get_interface_position(
-            "position<outer_holder>"
-        ).create_particle()
+        self.local_position_outer_holder.create_particle()
         self.scheduler.submit(self.move_position_box_to_position_outer_holder__action_outer__position_input)
         self.scheduler.submit(self.create_position_outer_holder__action_outer__position_run)
         self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder()
@@ -89,12 +74,8 @@ class TestExecution:
     def move_position_box_to_position_outer_holder__action_outer__position_input(self):
         if not self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input.arrive():
             return
-        self.action.get_interface_position(
-            "position<box>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<outer_holder>"
-            ).particle.get_action(
+        self.local_position_box.move_particle_to(
+            self.local_position_outer_holder.particle.get_action(
                 local.my_domain_com.my_lib.outer.Outer
             ).get_interface_position(
                 "position<input>"
@@ -103,17 +84,13 @@ class TestExecution:
         self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
 
     def create_position_outer_holder__action_outer__position_run(self):
-        self.action.get_interface_position(
-            "position<outer_holder>"
-        ).particle.get_action(
+        self.local_position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.execution_trigger_position_outer_holder__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.get_interface_position(
-                "position<outer_holder>"
-            ).particle.get_action(
+            self.local_position_outer_holder.particle.get_action(
                 local.my_domain_com.my_lib.outer.Outer
             ),
             self.scheduler,
@@ -124,22 +101,25 @@ class TestExecution:
         self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
 
     def destroy_position_outer_holder__action_outer__position_middle_holder(self):
-        self.action.get_interface_position(
-            "position<outer_holder>"
-        ).particle.get_action(
+        self.local_position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<middle_holder>"
         ).destroy_particle()
+        self.destroy_position_outer_holder()
 
     def destroy_position_outer_holder__action_outer__position_run(self):
-        self.action.get_interface_position(
-            "position<outer_holder>"
-        ).particle.get_action(
+        self.local_position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
+        self.destroy_position_outer_holder()
+
+    def destroy_position_outer_holder(self):
+        if not self.join_for_destroy_position_outer_holder.arrive():
+            return
+        self.local_position_outer_holder.destroy_particle()
 
     def trigger_position_outer_holder__action_outer__when_empty_position_middle_holder(self):
         if not self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder.arrive():

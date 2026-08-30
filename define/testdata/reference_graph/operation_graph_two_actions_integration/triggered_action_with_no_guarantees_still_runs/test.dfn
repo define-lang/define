@@ -3,15 +3,15 @@
 # the trigger fill (the scratch destroy is the block-end auto-destruction),
 # and the caller's unrelated create of <note> stays independent of it.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<note>.
-    define the position<gw> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<note>.
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
         create a particle in position<gw>.
         create a particle in position<gw>::action</worker>::position<trigger_pos>.
         create a particle in position<note>.

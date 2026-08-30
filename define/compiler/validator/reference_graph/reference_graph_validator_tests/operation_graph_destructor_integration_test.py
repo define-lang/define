@@ -41,6 +41,11 @@ def test_destructor_independent_chains_and_operation_after_destroy(
         "destructor.create(second)": ["test.create(box)"],
         "destructor.destroy(first)": ["destructor.create(first)"],
         "destructor.destroy(second)": ["destructor.create(second)"],
+        "destructor#2.create(first)": ["test.create(box)#2"],
+        "destructor#2.create(second)": ["test.create(box)#2"],
+        "destructor#2.destroy(first)": ["destructor#2.create(first)"],
+        "destructor#2.destroy(second)": ["destructor#2.create(second)"],
+        "test.destroy(box)#2": ["test.create(box)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1223,6 +1228,10 @@ def test_default_empty_destructor_position_uses_parent_fill(
         "test.destroy(carrier::/callee::trigger_pos)": [
             "test.create(carrier::/callee::trigger_pos)"
         ],
+        "test.destroy(carrier)": [
+            "test.destroy(carrier::/callee::trigger_pos)",
+            "callee.destroy(src)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1249,6 +1258,10 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
         "destructor.destroy(/marker)": ["destructor.create(/marker)"],
         "test.destroy(carrier::/callee::trigger_pos)": [
             "test.create(carrier::/callee::trigger_pos)"
+        ],
+        "test.destroy(carrier)": [
+            "test.destroy(carrier::/callee::trigger_pos)",
+            "callee.destroy(src)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

@@ -1,14 +1,14 @@
 # /worker returns the particle to <item>, so its Unchanged Guarantee supplies
 # the occupied state required by the second Action Execution.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</worker>::position<item>.
         create a particle in position<gateway>::action</worker>::position<trigger_pos>.

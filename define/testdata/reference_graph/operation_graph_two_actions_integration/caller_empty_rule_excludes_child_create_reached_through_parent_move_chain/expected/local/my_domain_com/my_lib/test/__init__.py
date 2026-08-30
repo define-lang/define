@@ -15,24 +15,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.other.Other,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<holder_a>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.item.Item,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -61,28 +43,27 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_holder_a = literal.LocalPosition(
+            "position<holder_a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.item.Item,
+            ),
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_action_other__for_empty_rule_global_position_input = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.create_particle()
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_a>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder_a>"
-        ).move_particle_to(
+        self.local_position_box.move_particle_to(self.local_position_holder_a)
+        self.local_position_holder_a.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.input.Input
             )

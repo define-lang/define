@@ -11,32 +11,9 @@ import local.my_domain_com.my_lib.marker
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<source>",
-                    constraints=(
-                        local.my_domain_com.my_lib.construct_a.ConstructA,
-                        local.my_domain_com.my_lib.construct_b.ConstructB,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<dest>",
-                    constraints=(
-                        local.my_domain_com.my_lib.marker.Marker,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -54,13 +31,26 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            constraints=(
+                local.my_domain_com.my_lib.construct_a.ConstructA,
+                local.my_domain_com.my_lib.construct_b.ConstructB,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_dest = literal.LocalPosition(
+            "position<dest>",
+            constraints=(
+                local.my_domain_com.my_lib.marker.Marker,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_source__action_construct_b.guarantee_global_position_marker.append(
             self.move_position_source_to_position_dest
         )
@@ -73,22 +63,16 @@ class TestExecution:
         self.join_for_trigger_position_source__action_construct_b__when_empty_global_position_marker = self.scheduler.create_join(2)
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
+        self.local_position_source.create_particle()
         self.execution_trigger_position_source__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
-            self.action.get_interface_position(
-                "position<source>"
-            ).particle.get_action(
+            self.local_position_source.particle.get_action(
                 local.my_domain_com.my_lib.construct_a.ConstructA
             ),
             self.scheduler,
             self.guarantees.trigger_position_source__action_construct_a,
         )
         self.execution_trigger_position_source__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            self.action.get_interface_position(
-                "position<source>"
-            ).particle.get_action(
+            self.local_position_source.particle.get_action(
                 local.my_domain_com.my_lib.construct_b.ConstructB
             ),
             self.scheduler,
@@ -99,26 +83,14 @@ class TestExecution:
         self.trigger_position_source__action_construct_b__when_empty_global_position_marker()
 
     def move_position_source_to_position_dest(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<dest>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<dest>"
-        ).particle.get_position(
+        self.local_position_source.move_particle_to(self.local_position_dest)
+        self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.action.get_interface_position(
-            "position<dest>"
-        ).particle.get_position(
+        self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<dest>"
-        ).destroy_particle()
+        self.local_position_dest.destroy_particle()
 
     def trigger_position_source__action_construct_a__when_empty_global_position_marker(self):
         if not self.join_for_trigger_position_source__action_construct_a__when_empty_global_position_marker.arrive():

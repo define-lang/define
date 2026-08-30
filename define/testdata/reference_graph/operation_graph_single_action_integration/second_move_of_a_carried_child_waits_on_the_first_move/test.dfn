@@ -3,16 +3,16 @@
 # direct operation on the carried child. It waits on the first move, the
 # most recent operation on basket's ancestor chain.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
-    define the position<basket>.
-    define the position<crate>.
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<basket>.
+        define the position<crate>.
         create a particle in position<box>.
         create a particle in position<box>::position</child>.
         move the particle in position<box> to position<basket>.

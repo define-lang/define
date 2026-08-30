@@ -13,20 +13,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.triggered.Triggered,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<source>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -54,6 +40,13 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_action_triggered.guarantee_position_run__global_position_child.append(
             self.destroy_action_triggered__position_run
         )
@@ -61,17 +54,11 @@ class TestExecution:
         self.join_for_trigger_action_triggered__for_empty_rule_position_run__global_position_child = self.scheduler.create_join(2)
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<source>"
-        ).particle.get_position(
+        self.local_position_source.create_particle()
+        self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
+        self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
                 local.my_domain_com.my_lib.triggered.Triggered
             ).get_interface_position(

@@ -5,18 +5,17 @@
 # inputs for <source>: one for its occupied state and one for its Empty Rule
 # dependencies.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</middle>::position<source>.
         create a particle in position<gateway>::action</middle>::position<trigger_pos>.
-        destroy the particle in position<gateway>::action</middle>::position<holder>.
         destroy the particle in position<gateway>::action</middle>::position<trigger_pos>.
     }
 }

@@ -9,28 +9,9 @@ import local.my_domain_com.my_lib.outer
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<result>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.outer.Outer,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -47,30 +28,39 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_result = literal.LocalPosition(
+            "position<result>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.outer.Outer,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_box__action_outer.guarantee_position_out.append(
             self.move_position_box__action_outer__position_out_to_position_result
         )
+        guarantees.trigger_position_box__action_outer.guarantee_position_gw.append(
+            self.destroy_position_box
+        )
         self.execution_trigger_position_box__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.join_for_destroy_position_box = self.scheduler.create_join(3)
         self.join_for_trigger_position_box__action_outer__when_occupied_position_gw = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.scheduler.submit(self.create_position_box__action_outer__position_gw)
         self.create_position_box__action_outer__position_trigger_pos()
 
     def create_position_box__action_outer__position_gw(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<gw>"
@@ -78,17 +68,13 @@ class TestExecution:
         self.trigger_position_box__action_outer__when_occupied_position_gw()
 
     def create_position_box__action_outer__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_position_box__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.outer.Outer
             ),
             self.scheduler,
@@ -101,26 +87,29 @@ class TestExecution:
         self.trigger_position_box__action_outer__for_empty_rule_position_gw()
 
     def move_position_box__action_outer__position_out_to_position_result(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<out>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<result>"
-            )
-        )
+        ).move_particle_to(self.local_position_result)
+        self.scheduler.submit(self.destroy_position_box)
+        self.destroy_position_result()
 
     def destroy_position_box__action_outer__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
+        self.local_position_box.destroy_particle()
+
+    def destroy_position_result(self):
+        self.local_position_result.destroy_particle()
 
     def trigger_position_box__action_outer__when_occupied_position_gw(self):
         if not self.join_for_trigger_position_box__action_outer__when_occupied_position_gw.arrive():

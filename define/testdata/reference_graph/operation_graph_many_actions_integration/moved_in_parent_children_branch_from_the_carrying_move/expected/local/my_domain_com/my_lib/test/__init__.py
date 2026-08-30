@@ -10,24 +10,9 @@ import local.my_domain_com.my_lib.parent
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<mw>",
-                    constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -44,36 +29,39 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_mw = literal.LocalPosition(
+            "position<mw>",
+            constraints=(
+                local.my_domain_com.my_lib.middle.Middle,
+            ),
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_mw__action_middle.guarantee_position_iface.append(
+            self.destroy_position_mw
+        )
         self.execution_trigger_position_mw__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_destroy_position_mw = self.scheduler.create_join(2)
         self.join_for_trigger_position_mw__action_middle__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_position_mw__action_middle__for_empty_rule_position_iface = self.scheduler.create_join(2)
 
     def create_position_mw(self):
-        self.action.get_interface_position(
-            "position<mw>"
-        ).create_particle()
+        self.local_position_mw.create_particle()
         self.scheduler.submit(self.create_position_mw__action_middle__position_iface)
         self.scheduler.submit(self.create_position_mw__action_middle__position_run)
         self.trigger_position_mw__action_middle__action_parent()
 
     def create_position_mw__action_middle__position_iface(self):
-        self.action.get_interface_position(
-            "position<mw>"
-        ).particle.get_action(
+        self.local_position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<iface>"
         ).create_particle()
-        self.action.get_interface_position(
-            "position<mw>"
-        ).particle.get_action(
+        self.local_position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<iface>"
@@ -83,17 +71,13 @@ class TestExecution:
         self.trigger_position_mw__action_middle__for_empty_rule_position_iface()
 
     def create_position_mw__action_middle__position_run(self):
-        self.action.get_interface_position(
-            "position<mw>"
-        ).particle.get_action(
+        self.local_position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.execution_trigger_position_mw__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.get_interface_position(
-                "position<mw>"
-            ).particle.get_action(
+            self.local_position_mw.particle.get_action(
                 local.my_domain_com.my_lib.middle.Middle
             ),
             self.scheduler,
@@ -104,13 +88,17 @@ class TestExecution:
         self.trigger_position_mw__action_middle__for_empty_rule_position_iface()
 
     def destroy_position_mw__action_middle__position_run(self):
-        self.action.get_interface_position(
-            "position<mw>"
-        ).particle.get_action(
+        self.local_position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
+        self.destroy_position_mw()
+
+    def destroy_position_mw(self):
+        if not self.join_for_destroy_position_mw.arrive():
+            return
+        self.local_position_mw.destroy_particle()
 
     def trigger_position_mw__action_middle__action_parent(self):
         if not self.join_for_trigger_position_mw__action_middle__action_parent.arrive():

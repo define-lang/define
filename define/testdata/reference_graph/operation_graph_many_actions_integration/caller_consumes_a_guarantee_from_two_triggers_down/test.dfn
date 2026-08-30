@@ -2,15 +2,15 @@
 # contracted position. /test's move therefore depends on the two shuttles and
 # ultimately on /inner's create.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<result>.
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</outer>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<result>.
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<gw>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.

@@ -8,14 +8,14 @@
 # The destroy waits on the callee's fills inside gw, which already reach
 # the carrying move, so it needs no direct move edge.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<mw> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<mw> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<mw>.
         create a particle in position<mw>::action</middle>::position<iface>.
         create a particle in position<mw>::action</middle>::position<iface>::position</parent>.

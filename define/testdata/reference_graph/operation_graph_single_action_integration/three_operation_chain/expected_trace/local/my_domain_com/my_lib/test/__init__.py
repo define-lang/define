@@ -7,25 +7,9 @@ from define.runtime import literal
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<item>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<dest>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             None,
             "test",
@@ -37,43 +21,39 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
         )
+        self.local_position_item = literal.LocalPosition(
+            "position<item>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_dest = literal.LocalPosition(
+            "position<dest>",
+            scheduler=self.scheduler,
+        )
 
     def create_position_item(self):
-        self.action.get_interface_position(
-            "position<item>"
-        ).create_particle()
+        self.local_position_item.create_particle()
         self.scheduler.create_completed(
             self.trace_execution,
             "item",
             1,
         )
-        self.action.get_interface_position(
-            "position<item>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<dest>"
-            )
-        )
+        self.local_position_item.move_particle_to(self.local_position_dest)
         self.scheduler.move_completed(
             self.trace_execution,
             "item",
             "dest",
             1,
         )
-        self.action.get_interface_position(
-            "position<dest>"
-        ).destroy_particle()
+        self.local_position_dest.destroy_particle()
         self.scheduler.destroy_completed(
             self.trace_execution,
             "dest",

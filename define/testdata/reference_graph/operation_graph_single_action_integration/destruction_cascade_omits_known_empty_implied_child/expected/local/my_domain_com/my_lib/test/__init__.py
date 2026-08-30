@@ -13,17 +13,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.parent.Parent,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<destination>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -42,6 +31,10 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.local_position_destination = literal.LocalPosition(
+            "position<destination>",
+            scheduler=self.scheduler,
+        )
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -56,11 +49,14 @@ class TestExecution:
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<destination>"
-            )
-        )
+        ).move_particle_to(self.local_position_destination)
+        self.scheduler.submit(self.destroy_global_position_parent)
+        self.destroy_position_destination()
+
+    def destroy_global_position_parent(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
+
+    def destroy_position_destination(self):
+        self.local_position_destination.destroy_particle()

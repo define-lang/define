@@ -1,13 +1,13 @@
 # The simplest possible cross-action test, since an occupied requirement is simpler than an empty one.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</other>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
     }

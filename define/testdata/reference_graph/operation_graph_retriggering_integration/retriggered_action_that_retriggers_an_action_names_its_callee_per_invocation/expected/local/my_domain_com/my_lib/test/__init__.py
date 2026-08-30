@@ -9,24 +9,9 @@ import local.my_domain_com.my_lib.middle
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<holder>",
-                    constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_holder()
@@ -36,28 +21,29 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_holder = literal.LocalPosition(
+            "position<holder>",
+            constraints=(
+                local.my_domain_com.my_lib.middle.Middle,
+            ),
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_position_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.execution_trigger_position_holder__action_middle_2: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_holder__action_middle__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_position_holder__action_middle_2__action_parent = self.scheduler.create_join(2)
 
     def create_position_holder(self):
-        self.action.get_interface_position(
-            "position<holder>"
-        ).create_particle()
+        self.local_position_holder.create_particle()
         self.scheduler.submit(self.create_position_holder__action_middle__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_holder__action_middle__action_parent)
         self.trigger_position_holder__action_middle_2__action_parent()
 
     def create_position_holder__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<holder>"
-        ).particle.get_action(
+        self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
@@ -69,16 +55,12 @@ class TestExecution:
         self.trigger_position_holder__action_middle__action_parent()
 
     def destroy_position_holder__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<holder>"
-        ).particle.get_action(
+        self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<holder>"
-        ).particle.get_action(
+        self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
@@ -90,13 +72,12 @@ class TestExecution:
         self.trigger_position_holder__action_middle_2__action_parent()
 
     def destroy_position_holder__action_middle__position_trigger_pos_2(self):
-        self.action.get_interface_position(
-            "position<holder>"
-        ).particle.get_action(
+        self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        self.local_position_holder.destroy_particle()
 
     def trigger_position_holder__action_middle__action_parent(self):
         if not self.join_for_trigger_position_holder__action_middle__action_parent.arrive():

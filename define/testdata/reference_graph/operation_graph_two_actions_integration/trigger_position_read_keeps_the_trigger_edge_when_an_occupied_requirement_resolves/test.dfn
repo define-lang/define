@@ -5,14 +5,14 @@
 # displace the trigger edge: with only the <box> edge, the move could run
 # as soon as <box> is filled, while <in> is still empty.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gw> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
         create a particle in position<gw>.
         create a particle in position<gw>::action</worker>::position<box>.
         create a particle in position<gw>::action</worker>::position<in>.

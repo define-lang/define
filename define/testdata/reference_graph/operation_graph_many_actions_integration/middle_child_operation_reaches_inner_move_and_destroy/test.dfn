@@ -3,14 +3,14 @@
 # position</child>. The move must wait for Middle's child operation, and the
 # destroy must wait for the move.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gateway>.
         create a particle in position<box>::action</middle>::position<gateway>::position</source_particle>.

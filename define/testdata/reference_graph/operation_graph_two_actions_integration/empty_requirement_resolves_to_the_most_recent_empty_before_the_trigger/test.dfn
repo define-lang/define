@@ -2,14 +2,14 @@
 # The third filler.create(slot) resolves to the second, most recent Destroy,
 # not to the stale first Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gw> {
-        it may only contain particles where {
-            it has the action</filler>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gw> {
+            it may only contain particles where {
+                it has the action</filler>.
+            }
+        }
         create a particle in position<gw>.
         create a particle in position<gw>::action</filler>::position<trigger_pos>.
         destroy the particle in position<gw>::action</filler>::position<slot>.

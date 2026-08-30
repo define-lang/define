@@ -24,6 +24,7 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
         "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
         "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
+        "test.destroy(gateway)": ["other#2.destroy(trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -165,6 +166,12 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
         "test.destroy(gw::/maker::trigger_pos)#2": [
             "test.create(gw::/maker::trigger_pos)#2"
         ],
+        "test.destroy(first_result)": ["test.move(gw::/maker::out, first_result)"],
+        "test.destroy(gw)": [
+            "test.move(gw::/maker::out, second_result)",
+            "test.destroy(gw::/maker::trigger_pos)#2",
+        ],
+        "test.destroy(second_result)": ["test.move(gw::/maker::out, second_result)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -196,6 +203,10 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
         "test.destroy(gw::/maker::trigger_pos)#2": [
             "test.create(gw::/maker::trigger_pos)#2"
         ],
+        "test.destroy(gw)": [
+            "test.destroy(gw::/maker::held)",
+            "test.destroy(gw::/maker::trigger_pos)#2",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -221,6 +232,10 @@ def test_retriggered_action_uses_prior_unchanged_interface_guarantee(
             "test.create(gateway::/worker::trigger_pos)#2"
         ],
         "test.destroy(gateway::/worker::item)": ["worker#2.move(holder, item)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/worker::item)",
+            "worker#2.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -248,6 +263,7 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
         "test.destroy(gw::/worker::trigger_pos)#2": [
             "test.create(gw::/worker::trigger_pos)#2"
         ],
+        "test.destroy(gw)": ["test.destroy(gw::/worker::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -306,6 +322,12 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         # its second run's operations.
         "second:worker#2.create(scratch)": ["second.create(gw)"],
         "second:worker#2.destroy(scratch)": ["second:worker#2.create(scratch)"],
+        "test.destroy(holder_first)": [
+            "test.destroy(holder_first::/first::trigger_pos)"
+        ],
+        "test.destroy(holder_second)": [
+            "test.destroy(holder_second::/second::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -361,5 +383,6 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
         "test.destroy(holder::/middle::trigger_pos)#2": [
             "test.create(holder::/middle::trigger_pos)#2"
         ],
+        "test.destroy(holder)": ["test.destroy(holder::/middle::trigger_pos)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

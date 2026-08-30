@@ -2,14 +2,14 @@
 # to /inner, whose move must wait on the caller's child fill through that
 # intermediate move.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.
         create a particle in position<box>::action</middle>::position<gw>::position</source_particle>.

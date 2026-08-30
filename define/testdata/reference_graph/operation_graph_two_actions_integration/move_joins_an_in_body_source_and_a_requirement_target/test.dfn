@@ -1,14 +1,14 @@
 # The second callee Move joins two predecessors: the in-body Create of <src>
 # and the caller Destroy that empties <dest> after the first execution.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</other>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
         destroy the particle in position<gateway>::action</other>::position<dest>.

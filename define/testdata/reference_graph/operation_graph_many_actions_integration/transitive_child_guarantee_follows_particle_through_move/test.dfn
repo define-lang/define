@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<result>.
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</outer>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<result>.
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</outer>::position<source>.
         create a particle in position<gateway>::action</outer>::position<trigger_pos>.

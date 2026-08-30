@@ -1,15 +1,15 @@
 # Child's implied-position guarantee follows the particle to which Child is
 # assigned through both moves in Middle.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<result>.
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<result>.
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</middle>::position<source>.
         create a particle in position<gateway>::action</middle>::position<source>::position</marker>.

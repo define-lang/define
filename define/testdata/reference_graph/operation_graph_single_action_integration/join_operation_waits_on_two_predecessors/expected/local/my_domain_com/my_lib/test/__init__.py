@@ -7,25 +7,9 @@ from define.runtime import literal
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<a>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<b>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.scheduler.submit(execution.create_position_a)
@@ -36,35 +20,30 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_a = literal.LocalPosition(
+            "position<a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_b = literal.LocalPosition(
+            "position<b>",
+            scheduler=self.scheduler,
+        )
         self.join_for_move_position_a_to_position_b = self.scheduler.create_join(2)
 
     def create_position_a(self):
-        self.action.get_interface_position(
-            "position<a>"
-        ).create_particle()
+        self.local_position_a.create_particle()
         self.move_position_a_to_position_b()
 
     def create_position_b(self):
-        self.action.get_interface_position(
-            "position<b>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<b>"
-        ).destroy_particle()
+        self.local_position_b.create_particle()
+        self.local_position_b.destroy_particle()
         self.move_position_a_to_position_b()
 
     def move_position_a_to_position_b(self):
         if not self.join_for_move_position_a_to_position_b.arrive():
             return
-        self.action.get_interface_position(
-            "position<a>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<b>"
-            )
-        )
+        self.local_position_a.move_particle_to(self.local_position_b)
+        self.local_position_b.destroy_particle()

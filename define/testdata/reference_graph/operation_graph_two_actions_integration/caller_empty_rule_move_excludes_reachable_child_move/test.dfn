@@ -4,11 +4,11 @@
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</input>.
     it also assigns the action</other>.
-    define the position<holder_a>.
-    define the position<holder_c>.
     it happens when {
         this particle is created.
     } and it does {
+        define the position<holder_a>.
+        define the position<holder_c>.
         create a particle in position</input>.
         create a particle in position</input>::position</origin>.
         move the particle in position</input>::position</origin> to position<holder_a>.

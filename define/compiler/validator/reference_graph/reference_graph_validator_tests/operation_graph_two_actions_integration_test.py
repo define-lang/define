@@ -22,6 +22,7 @@ def test_triggered_action_destroys_its_own_trigger_position(
         "test.create(gateway)": [],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
         "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway)": ["other.destroy(trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -40,6 +41,10 @@ def test_trigger_inlines_callee(
         "test.destroy(gateway::/other::output)": ["other.create(output)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::output)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -81,6 +86,10 @@ def test_callee_fill_of_a_child_waits_only_on_the_caller_fill_of_its_parent(
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::output)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -105,6 +114,10 @@ def test_callee_fill_of_a_child_waits_on_the_caller_destroy_that_emptied_it(
         "test.destroy(gateway::/other::output::/a)#2": ["other#2.create(output::/a)"],
         "test.destroy(gateway::/other::output)": [
             "test.destroy(gateway::/other::output::/a)#2"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::output)",
+            "other#2.destroy(trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -131,6 +144,10 @@ def test_caller_consumes_a_guarantee_the_callee_filled_by_moving_a_parent(
         ],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::holder)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -166,6 +183,10 @@ def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::holder)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -194,6 +215,10 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
         "test.destroy(gateway::/other::input)": ["other.destroy(input::/item)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::input)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -426,6 +451,10 @@ def test_callee_move_of_a_caller_filled_position_waits_on_the_deepest_child_the_
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::holder)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -458,6 +487,10 @@ def test_callee_move_joins_its_own_child_fill_and_the_caller_fill_of_another_chi
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::holder)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -481,6 +514,10 @@ def test_callee_operation_on_a_child_supersedes_the_caller_operation_on_it(
         "test.destroy(gateway::/other::holder)": ["other.move(source, holder)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::holder)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -509,6 +546,11 @@ def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_ch
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "test.destroy(gateway::/other::keeper)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -530,6 +572,10 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::output)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -546,6 +592,7 @@ def test_caller_operation_waits_on_callee_move_output(
             "test.create(gateway::/other::trigger_pos)"
         ],
         "test.destroy(gateway::/other::output)": ["other.move(trigger_pos, output)"],
+        "test.destroy(gateway)": ["test.destroy(gateway::/other::output)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -565,6 +612,10 @@ def test_callee_guarantee_depends_on_interface_position_not_trigger_position(
         "test.destroy(gateway::/worker::output)": ["worker.move(input, output)"],
         "test.destroy(gateway::/worker::trigger)": [
             "test.create(gateway::/worker::trigger)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/worker::output)",
+            "test.destroy(gateway::/worker::trigger)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -587,6 +638,10 @@ def test_caller_operation_waits_on_callee_destroy_output(
         "test.create(gateway::/other::trigger_pos)#2": ["other.destroy(trigger_pos)"],
         "other#2.destroy(output)": ["test.create(gateway::/other::output)#2"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
+        "test.destroy(gateway)": [
+            "other#2.destroy(output)",
+            "other#2.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -608,6 +663,10 @@ def test_empty_requirement_waits_on_the_caller_destroy_that_clears_it(
         "other#2.create(slot)": ["test.destroy(gateway::/other::slot)"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
         "test.destroy(gateway::/other::slot)#2": ["other#2.create(slot)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::slot)#2",
+            "other#2.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -626,6 +685,10 @@ def test_occupied_requirement_waits_on_the_caller_create_that_fills_it(
         "other.destroy(input)": ["test.create(gateway::/other::input)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::trigger_pos)",
+            "other.destroy(input)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -648,6 +711,11 @@ def test_empty_requirement_waits_on_the_caller_move_that_clears_it(
         "other#2.create(slot)": ["test.move(gateway::/other::slot, sink)"],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
         "test.destroy(gateway::/other::slot)": ["other#2.create(slot)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::slot)",
+            "other#2.destroy(trigger_pos)",
+        ],
+        "test.destroy(sink)": ["test.move(gateway::/other::slot, sink)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -674,6 +742,10 @@ def test_move_joins_an_in_body_source_and_a_requirement_target(
         ],
         "other#2.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)#2"],
         "test.destroy(gateway::/other::dest)#2": ["other#2.move(src, dest)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::dest)#2",
+            "other#2.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -700,6 +772,10 @@ def test_move_excludes_non_action_parent_create_fill_dependency(
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "test.destroy(gateway::/other::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -724,6 +800,10 @@ def test_move_excludes_non_action_parent_move_fill_dependency(
         "other.destroy(box)": ["other.move(box::/item, destination)"],
         "test.destroy(gateway::/other::destination)": [
             "other.move(box::/item, destination)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::destination)",
+            "other.destroy(box)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -750,6 +830,10 @@ def test_child_empty_requirement_waits_on_the_caller_empty_of_the_child(
         "test.destroy(gateway::/other::box)": [
             "test.destroy(gateway::/other::box::/child)#2"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "other#2.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -775,6 +859,10 @@ def test_empty_by_default_child_requirements_branch_from_the_caller_parent_fill(
         ],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -808,6 +896,10 @@ def test_occupied_grandchild_requirement_waits_on_the_caller_fill(
         ],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -847,6 +939,10 @@ def test_empty_grandchild_requirement_waits_on_the_caller_empty(
         ],
         "test.destroy(gateway::/other::box)": [
             "test.destroy(gateway::/other::box::/child)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::box)",
+            "other#2.destroy(trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -916,6 +1012,10 @@ def test_intermediate_callee_emptying_reaches_a_deeper_caller_operation(
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
         ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::trigger_pos)",
+            "other.destroy(parent)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -959,6 +1059,10 @@ def test_empty_requirement_resolves_to_the_most_recent_empty_before_the_trigger(
         "filler#3.create(slot)": ["test.destroy(gw::/filler::slot)#2"],
         "filler#3.destroy(trigger_pos)": ["test.create(gw::/filler::trigger_pos)#3"],
         "test.destroy(gw::/filler::slot)#3": ["filler#3.create(slot)"],
+        "test.destroy(gw)": [
+            "test.destroy(gw::/filler::slot)#3",
+            "filler#3.destroy(trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -990,6 +1094,12 @@ def test_occupied_requirement_resolves_to_the_constraint_satisfying_fill(
         ],
         "test.move(action_holder::/move::output, dest)": ["move#2.move(input, output)"],
         "test.create(dest::/a)": ["test.move(action_holder::/move::output, dest)"],
+        "test.destroy(action_holder)": [
+            "test.move(action_holder::/move::output, dest)"
+        ],
+        "test.destroy(box2)": ["test.move(action_holder::/move::output, box2)"],
+        "test.destroy(dest)": ["test.destroy(dest::/a)"],
+        "test.destroy(dest::/a)": ["test.create(dest::/a)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1013,6 +1123,7 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_a_requirement_resolve
             "test.create(gw::/worker::in)#2",
         ],
         "test.destroy(gw::/worker::out)#2": ["worker#2.move(in, out)"],
+        "test.destroy(gw)": ["test.destroy(gw::/worker::out)#2"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1034,6 +1145,7 @@ def test_trigger_position_read_keeps_the_trigger_edge_when_an_occupied_requireme
         ],
         "test.destroy(gw::/worker::box::/y)": ["worker.move(in, box::/y)"],
         "test.destroy(gw::/worker::box)": ["test.destroy(gw::/worker::box::/y)"],
+        "test.destroy(gw)": ["test.destroy(gw::/worker::box)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1054,6 +1166,8 @@ def test_triggered_action_with_no_guarantees_still_runs(
         "test.destroy(gw::/worker::trigger_pos)": [
             "test.create(gw::/worker::trigger_pos)"
         ],
+        "test.destroy(gw)": ["test.destroy(gw::/worker::trigger_pos)"],
+        "test.destroy(note)": ["test.create(note)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1131,6 +1245,7 @@ def test_parallel_callee_local_operation_chains_wait_on_action_parent_operation(
         "test.destroy(gateway::/worker::trigger_pos)": [
             "test.create(gateway::/worker::trigger_pos)"
         ],
+        "test.destroy(gateway)": ["test.destroy(gateway::/worker::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1151,6 +1266,10 @@ def test_trigger_inlines_callee_internal_dependencies(
         "test.destroy(gateway::/other::output)": ["other.create(output)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::output)",
+            "test.destroy(gateway::/other::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1343,6 +1462,10 @@ def test_caller_contributes_one_destroy_before_shared_callee_destroy(
         "other.destroy(parent)": ["other.destroy(parent::/child)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
+        ],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::trigger_pos)",
+            "other.destroy(parent)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

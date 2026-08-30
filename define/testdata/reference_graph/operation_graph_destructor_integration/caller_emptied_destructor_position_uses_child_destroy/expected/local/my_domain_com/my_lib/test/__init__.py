@@ -11,24 +11,9 @@ import local.my_domain_com.my_lib.marker
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<carrier>",
-                    constraints=(
-                        local.my_domain_com.my_lib.callee.Callee,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -46,13 +31,18 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_carrier = literal.LocalPosition(
+            "position<carrier>",
+            constraints=(
+                local.my_domain_com.my_lib.callee.Callee,
+            ),
+            scheduler=self.scheduler,
+        )
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -61,15 +51,17 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
+        guarantees.trigger_position_carrier__action_callee.guarantee_position_src.append(
+            self.destroy_position_carrier
+        )
         self.execution_trigger_position_carrier__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
         self.join_for_move_position_source_to_position_carrier__action_callee__position_src = self.scheduler.create_join(2)
+        self.join_for_destroy_position_carrier = self.scheduler.create_join(2)
         self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker = self.scheduler.create_join(2)
         self.join_for_trigger_position_carrier__action_callee__when_occupied_position_src = self.scheduler.create_join(2)
 
     def create_position_carrier(self):
-        self.action.get_interface_position(
-            "position<carrier>"
-        ).create_particle()
+        self.local_position_carrier.create_particle()
         self.scheduler.submit(self.move_position_source_to_position_carrier__action_callee__position_src)
         self.create_position_carrier__action_callee__position_trigger_pos()
 
@@ -87,9 +79,7 @@ class TestExecution:
         if not self.join_for_move_position_source_to_position_carrier__action_callee__position_src.arrive():
             return
         self.local_position_source.move_particle_to(
-            self.action.get_interface_position(
-                "position<carrier>"
-            ).particle.get_action(
+            self.local_position_carrier.particle.get_action(
                 local.my_domain_com.my_lib.callee.Callee
             ).get_interface_position(
                 "position<src>"
@@ -99,17 +89,13 @@ class TestExecution:
         self.trigger_position_carrier__action_callee__when_occupied_position_src()
 
     def create_position_carrier__action_callee__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<carrier>"
-        ).particle.get_action(
+        self.local_position_carrier.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_position_carrier__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
-            self.action.get_interface_position(
-                "position<carrier>"
-            ).particle.get_action(
+            self.local_position_carrier.particle.get_action(
                 local.my_domain_com.my_lib.callee.Callee
             ),
             self.scheduler,
@@ -121,13 +107,17 @@ class TestExecution:
         self.trigger_position_carrier__action_callee__when_occupied_position_src()
 
     def destroy_position_carrier__action_callee__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<carrier>"
-        ).particle.get_action(
+        self.local_position_carrier.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        self.destroy_position_carrier()
+
+    def destroy_position_carrier(self):
+        if not self.join_for_destroy_position_carrier.arrive():
+            return
+        self.local_position_carrier.destroy_particle()
 
     def trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker(self):
         if not self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker.arrive():

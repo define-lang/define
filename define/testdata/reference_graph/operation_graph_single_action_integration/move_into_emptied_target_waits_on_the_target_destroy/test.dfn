@@ -3,19 +3,19 @@
 # target's former child (the Child Rule). So the move is ordered after that
 # child-destroy transitively -- no redundant direct edge to it.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<src> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
-    define the position<dest> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<src> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<dest> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
         create a particle in position<dest>.
         create a particle in position<dest>::position</child>.
         destroy the particle in position<dest>::position</child>.

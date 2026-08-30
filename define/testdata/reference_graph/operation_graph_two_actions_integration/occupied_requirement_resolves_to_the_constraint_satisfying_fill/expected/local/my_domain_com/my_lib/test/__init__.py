@@ -10,42 +10,9 @@ import local.my_domain_com.my_lib.move
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box1>",
-                    constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<box2>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<dest>",
-                    constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<action_holder>",
-                    constraints=(
-                        local.my_domain_com.my_lib.move.Move,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -65,13 +32,36 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box1 = literal.LocalPosition(
+            "position<box1>",
+            constraints=(
+                local.my_domain_com.my_lib.a.A,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_box2 = literal.LocalPosition(
+            "position<box2>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_dest = literal.LocalPosition(
+            "position<dest>",
+            constraints=(
+                local.my_domain_com.my_lib.a.A,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_action_holder = literal.LocalPosition(
+            "position<action_holder>",
+            constraints=(
+                local.my_domain_com.my_lib.move.Move,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_action_holder__action_move.guarantee_position_input__move__position_output.append(
             self.move_position_action_holder__action_move__position_output_to_position_box2
         )
@@ -89,41 +79,29 @@ class TestExecution:
         self.join_for_trigger_position_action_holder__action_move_2__for_empty_rule_position_input = self.scheduler.create_join(3)
 
     def create_position_action_holder(self):
-        self.action.get_interface_position(
-            "position<action_holder>"
-        ).create_particle()
+        self.local_position_action_holder.create_particle()
         self.move_position_box2_to_position_action_holder__action_move__position_input()
 
     def create_position_box1(self):
-        self.action.get_interface_position(
-            "position<box1>"
-        ).create_particle()
+        self.local_position_box1.create_particle()
         self.move_position_box1_to_position_action_holder__action_move__position_input()
 
     def create_position_box2(self):
-        self.action.get_interface_position(
-            "position<box2>"
-        ).create_particle()
+        self.local_position_box2.create_particle()
         self.move_position_box2_to_position_action_holder__action_move__position_input()
 
     def move_position_box2_to_position_action_holder__action_move__position_input(self):
         if not self.join_for_move_position_box2_to_position_action_holder__action_move__position_input.arrive():
             return
-        self.action.get_interface_position(
-            "position<box2>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<action_holder>"
-            ).particle.get_action(
+        self.local_position_box2.move_particle_to(
+            self.local_position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.Move
             ).get_interface_position(
                 "position<input>"
             )
         )
         self.execution_trigger_position_action_holder__action_move = local.my_domain_com.my_lib.move.MoveExecution(
-            self.action.get_interface_position(
-                "position<action_holder>"
-            ).particle.get_action(
+            self.local_position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.Move
             ),
             self.scheduler,
@@ -133,37 +111,26 @@ class TestExecution:
         self.trigger_position_action_holder__action_move__for_empty_rule_position_input()
 
     def move_position_action_holder__action_move__position_output_to_position_box2(self):
-        self.action.get_interface_position(
-            "position<action_holder>"
-        ).particle.get_action(
+        self.local_position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
             "position<output>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<box2>"
-            )
-        )
+        ).move_particle_to(self.local_position_box2)
+        self.scheduler.submit(self.destroy_position_box2)
         self.trigger_position_action_holder__action_move_2__for_empty_rule_position_input()
 
     def move_position_box1_to_position_action_holder__action_move__position_input(self):
         if not self.join_for_move_position_box1_to_position_action_holder__action_move__position_input.arrive():
             return
-        self.action.get_interface_position(
-            "position<box1>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<action_holder>"
-            ).particle.get_action(
+        self.local_position_box1.move_particle_to(
+            self.local_position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.Move
             ).get_interface_position(
                 "position<input>"
             )
         )
         self.execution_trigger_position_action_holder__action_move_2 = local.my_domain_com.my_lib.move.MoveExecution(
-            self.action.get_interface_position(
-                "position<action_holder>"
-            ).particle.get_action(
+            self.local_position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.Move
             ),
             self.scheduler,
@@ -173,22 +140,28 @@ class TestExecution:
         self.trigger_position_action_holder__action_move_2__for_empty_rule_position_input()
 
     def move_position_action_holder__action_move__position_output_to_position_dest(self):
-        self.action.get_interface_position(
-            "position<action_holder>"
-        ).particle.get_action(
+        self.local_position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.Move
         ).get_interface_position(
             "position<output>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<dest>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<dest>"
-        ).particle.get_position(
+        ).move_particle_to(self.local_position_dest)
+        self.scheduler.submit(self.create_position_dest__global_position_a)
+        self.destroy_position_action_holder()
+
+    def create_position_dest__global_position_a(self):
+        self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
+        self.local_position_dest.particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
+        self.local_position_dest.destroy_particle()
+
+    def destroy_position_action_holder(self):
+        self.local_position_action_holder.destroy_particle()
+
+    def destroy_position_box2(self):
+        self.local_position_box2.destroy_particle()
 
     def trigger_position_action_holder__action_move__for_empty_rule_position_input(self):
         if not self.join_for_trigger_position_action_holder__action_move__for_empty_rule_position_input.arrive():

@@ -17,21 +17,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.other.Other,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<holder_a>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<holder_c>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -60,6 +45,14 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_holder_a = literal.LocalPosition(
+            "position<holder_a>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_holder_c = literal.LocalPosition(
+            "position<holder_c>",
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_action_other__for_empty_rule_global_position_input = self.scheduler.create_join(2)
 
@@ -76,14 +69,8 @@ class TestExecution:
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_a>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder_a>"
-        ).move_particle_to(
+        ).move_particle_to(self.local_position_holder_a)
+        self.local_position_holder_a.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.input.Input
             ).particle.get_position(
@@ -105,18 +92,12 @@ class TestExecution:
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
             local.my_domain_com.my_lib.target.Target
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder_c>"
-            )
-        )
+        ).move_particle_to(self.local_position_holder_c)
         self.scheduler.submit(self.destroy_position_holder_c)
         self.trigger_action_other__for_empty_rule_global_position_input()
 
     def destroy_position_holder_c(self):
-        self.action.get_interface_position(
-            "position<holder_c>"
-        ).destroy_particle()
+        self.local_position_holder_c.destroy_particle()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(

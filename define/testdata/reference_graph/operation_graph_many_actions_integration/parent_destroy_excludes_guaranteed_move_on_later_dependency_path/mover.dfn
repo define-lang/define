@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/mover> {
+    define the position<run>.
+    define the position<source>.
+    define the position<destination>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<intermediate>.
+        move the particle in position<source> to position<intermediate>.
+        move the particle in position<intermediate> to position<destination>.
+        destroy the particle in position<run>.
+    }
+}

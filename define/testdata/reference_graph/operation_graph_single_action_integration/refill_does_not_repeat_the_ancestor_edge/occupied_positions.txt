@@ -1,2 +1,0 @@
-action<local.my_domain_com.my_lib.test.Test>::position<parent>
-action<local.my_domain_com.my_lib.test.Test>::position<parent>::position<local.my_domain_com.my_lib.child.Child>

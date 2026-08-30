@@ -9,31 +9,9 @@ import local.my_domain_com.my_lib.child
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<src>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<dest>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_src()
@@ -43,30 +21,31 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_src = literal.LocalPosition(
+            "position<src>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_dest = literal.LocalPosition(
+            "position<dest>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
 
     def create_position_src(self):
-        self.action.get_interface_position(
-            "position<src>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<src>"
-        ).particle.get_position(
+        self.local_position_src.create_particle()
+        self.local_position_src.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.action.get_interface_position(
-            "position<src>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<dest>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<dest>"
-        ).particle.get_position(
+        self.local_position_src.move_particle_to(self.local_position_dest)
+        self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
+        self.local_position_dest.destroy_particle()

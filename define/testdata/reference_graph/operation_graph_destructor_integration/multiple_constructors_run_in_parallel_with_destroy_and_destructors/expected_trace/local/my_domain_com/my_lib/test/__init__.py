@@ -12,27 +12,9 @@ import local.my_domain_com.my_lib.destruct_b
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.construct_a.ConstructA,
-                        local.my_domain_com.my_lib.construct_b.ConstructB,
-                        local.my_domain_com.my_lib.destruct_a.DestructA,
-                        local.my_domain_com.my_lib.destruct_b.DestructB,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             None,
             "test",
@@ -44,16 +26,24 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
+        )
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.construct_a.ConstructA,
+                local.my_domain_com.my_lib.construct_b.ConstructB,
+                local.my_domain_com.my_lib.destruct_a.DestructA,
+                local.my_domain_com.my_lib.destruct_b.DestructB,
+            ),
+            scheduler=self.scheduler,
         )
         self.execution_trigger_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
         self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
@@ -65,9 +55,7 @@ class TestExecution:
         self.join_for_trigger_position_box__action_destruct_a__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.scheduler.create_completed(
             self.trace_execution,
             "box",
@@ -104,9 +92,7 @@ class TestExecution:
         self.trigger_position_box__action_destruct_a__action_parent()
 
     def destroy_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).destroy_particle()
+        self.local_position_box.destroy_particle()
         self.scheduler.destroy_completed(
             self.trace_execution,
             "box",

@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</triggered>.
-    define the position<source> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
         create a particle in position<source>.
         create a particle in position<source>::position</child>.
         move the particle in position<source> to action</triggered>::position<run>.

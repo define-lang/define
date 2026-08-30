@@ -5,28 +5,15 @@ from typing import final, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.construct_b
+import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.leaf
 
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.construct_b.ConstructB,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -43,24 +30,28 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.construct_b.ConstructB,
+            ),
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_box__action_construct_b.trigger_global_position_inner__action_construct_c.guarantee_global_position_leaf.append(
+            self.destroy_position_box__global_position_inner__global_position_leaf
+        )
         self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
         self.join_for_trigger_position_box__action_construct_b__when_empty_global_position_inner = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.construct_b.ConstructB
             ),
             self.scheduler,
@@ -68,6 +59,17 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_box__action_construct_b__when_empty_global_position_inner)
         self.trigger_position_box__action_construct_b__when_empty_global_position_inner()
+
+    def destroy_position_box__global_position_inner__global_position_leaf(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.inner.Inner
+        ).particle.get_position(
+            local.my_domain_com.my_lib.leaf.Leaf
+        ).destroy_particle()
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.inner.Inner
+        ).destroy_particle()
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_construct_b__when_empty_global_position_inner(self):
         if not self.join_for_trigger_position_box__action_construct_b__when_empty_global_position_inner.arrive():

@@ -3,14 +3,14 @@
 # so the move joins one from each action. Its own fill of </b> does not stand in
 # for the caller's fill of </a>, which nothing else orders it after.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</other>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<source>.
         create a particle in position<gateway>::action</other>::position<source>::position</a>.

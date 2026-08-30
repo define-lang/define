@@ -16,17 +16,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.mover.Mover,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<temp>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -55,6 +44,10 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_temp = literal.LocalPosition(
+            "position<temp>",
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
         self.join_for_trigger_action_mover__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
 
@@ -64,14 +57,8 @@ class TestExecution:
         ).create_particle()
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<temp>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<temp>"
-        ).move_particle_to(
+        ).move_particle_to(self.local_position_temp)
+        self.local_position_temp.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.slot.Slot
             )

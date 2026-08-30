@@ -10,24 +10,9 @@ import local.my_domain_com.my_lib.y
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<gw>",
-                    constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -44,13 +29,18 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_gw = literal.LocalPosition(
+            "position<gw>",
+            constraints=(
+                local.my_domain_com.my_lib.worker.Worker,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_gw__action_worker.guarantee_position_in__move__position_box__global_position_y.append(
             self.destroy_position_gw__action_worker__position_box__global_position_y
         )
@@ -58,16 +48,12 @@ class TestExecution:
         self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = self.scheduler.create_join(3)
 
     def create_position_gw(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).create_particle()
+        self.local_position_gw.create_particle()
         self.scheduler.submit(self.create_position_gw__action_worker__position_box)
         self.create_position_gw__action_worker__position_in()
 
     def create_position_gw__action_worker__position_box(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<box>"
@@ -75,17 +61,13 @@ class TestExecution:
         self.trigger_position_gw__action_worker__for_empty_rule_position_in()
 
     def create_position_gw__action_worker__position_in(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<in>"
         ).create_particle()
         self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.action.get_interface_position(
-                "position<gw>"
-            ).particle.get_action(
+            self.local_position_gw.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ),
             self.scheduler,
@@ -95,22 +77,19 @@ class TestExecution:
         self.trigger_position_gw__action_worker__for_empty_rule_position_in()
 
     def destroy_position_gw__action_worker__position_box__global_position_y(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<box>"
         ).particle.get_position(
             local.my_domain_com.my_lib.y.Y
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
+        self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<box>"
         ).destroy_particle()
+        self.local_position_gw.destroy_particle()
 
     def trigger_position_gw__action_worker__for_empty_rule_position_in(self):
         if not self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in.arrive():

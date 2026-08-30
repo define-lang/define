@@ -9,24 +9,9 @@ import local.my_domain_com.my_lib.middle
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<gateway>",
-                    constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             None,
             "test",
@@ -38,24 +23,27 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
         )
+        self.local_position_gateway = literal.LocalPosition(
+            "position<gateway>",
+            constraints=(
+                local.my_domain_com.my_lib.middle.Middle,
+            ),
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_gateway__action_middle__action_parent = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).create_particle()
+        self.local_position_gateway.create_particle()
         self.scheduler.create_completed(
             self.trace_execution,
             "gateway",
@@ -65,9 +53,7 @@ class TestExecution:
         self.trigger_position_gateway__action_middle__action_parent()
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
@@ -78,9 +64,7 @@ class TestExecution:
             1,
         )
         self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.get_interface_position(
-                "position<gateway>"
-            ).particle.get_action(
+            self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.middle.Middle
             ),
             self.scheduler,
@@ -91,9 +75,7 @@ class TestExecution:
         self.trigger_position_gateway__action_middle__action_parent()
 
     def destroy_position_gateway__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gateway>"
-        ).particle.get_action(
+        self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
@@ -101,6 +83,12 @@ class TestExecution:
         self.scheduler.destroy_completed(
             self.trace_execution,
             "gateway::/middle::trigger_pos",
+            1,
+        )
+        self.local_position_gateway.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "gateway",
             1,
         )
 

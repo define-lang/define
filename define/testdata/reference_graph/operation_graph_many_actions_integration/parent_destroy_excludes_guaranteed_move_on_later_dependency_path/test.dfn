@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the action</mover>.
+            }
+        }
+        create a particle in position<parent>.
+        create a particle in position<parent>::action</mover>::position<source>.
+        create a particle in position<parent>::action</mover>::position<run>.
+        destroy the particle in position<parent>::action</mover>::position<destination>.
+    }
+}

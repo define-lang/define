@@ -2,20 +2,20 @@
 # not to the fill consumed by its first execution. The second particle reaches
 # Worker through Helper, whose Move waits on its own caller fill.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<source>.
-    define the position<gw_a> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
-    define the position<gw_b> {
-        it may only contain particles where {
-            it has the action</helper>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<source>.
+        define the position<gw_a> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        define the position<gw_b> {
+            it may only contain particles where {
+                it has the action</helper>.
+            }
+        }
         create a particle in position<source>.
         create a particle in position<gw_a>.
         create a particle in position<gw_b>.

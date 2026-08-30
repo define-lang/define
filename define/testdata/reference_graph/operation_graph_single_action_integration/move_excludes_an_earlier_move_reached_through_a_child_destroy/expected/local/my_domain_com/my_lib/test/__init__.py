@@ -10,29 +10,9 @@ import local.my_domain_com.my_lib.target
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<holder>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.origin.Origin,
-                        local.my_domain_com.my_lib.target.Target,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_box()
@@ -42,44 +22,36 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_holder = literal.LocalPosition(
+            "position<holder>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.origin.Origin,
+                local.my_domain_com.my_lib.target.Target,
+            ),
+            scheduler=self.scheduler,
+        )
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.create_particle()
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).create_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).move_particle_to(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_position(
+            self.local_position_box.particle.get_position(
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
+        self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.action.get_interface_position(
-            "position<box>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<holder>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<holder>"
-        ).destroy_particle()
+        self.local_position_box.move_particle_to(self.local_position_holder)
+        self.local_position_holder.destroy_particle()

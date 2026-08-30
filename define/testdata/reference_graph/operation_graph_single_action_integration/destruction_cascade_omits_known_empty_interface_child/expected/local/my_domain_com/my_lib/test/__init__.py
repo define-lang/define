@@ -9,28 +9,9 @@ import local.my_domain_com.my_lib.child
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<parent>",
-                    constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<destination>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_parent()
@@ -40,30 +21,34 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_parent = literal.LocalPosition(
+            "position<parent>",
+            constraints=(
+                local.my_domain_com.my_lib.child.Child,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_destination = literal.LocalPosition(
+            "position<destination>",
+            scheduler=self.scheduler,
+        )
 
     def create_position_parent(self):
-        self.action.get_interface_position(
-            "position<parent>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<parent>"
-        ).particle.get_position(
+        self.local_position_parent.create_particle()
+        self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.action.get_interface_position(
-            "position<parent>"
-        ).particle.get_position(
+        self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.Child
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<destination>"
-            )
-        )
-        self.action.get_interface_position(
-            "position<parent>"
-        ).destroy_particle()
+        ).move_particle_to(self.local_position_destination)
+        self.scheduler.submit(self.destroy_position_parent)
+        self.destroy_position_destination()
+
+    def destroy_position_parent(self):
+        self.local_position_parent.destroy_particle()
+
+    def destroy_position_destination(self):
+        self.local_position_destination.destroy_particle()

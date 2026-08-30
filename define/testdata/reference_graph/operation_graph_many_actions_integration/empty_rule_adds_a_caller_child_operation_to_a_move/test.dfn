@@ -3,14 +3,14 @@
 # Middle's child operation is a direct dependency of the move, while the Empty
 # Rule adds the caller's independent </marker> fill.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</middle>::position<source>.
         create a particle in position<gateway>::action</middle>::position<source>::position</marker>.

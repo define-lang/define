@@ -6,29 +6,15 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.construct_a
 import local.my_domain_com.my_lib.construct_b
+import local.my_domain_com.my_lib.marker_a
+import local.my_domain_com.my_lib.marker_b
 
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.construct_a.ConstructA,
-                        local.my_domain_com.my_lib.construct_b.ConstructB,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -46,35 +32,42 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.construct_a.ConstructA,
+                local.my_domain_com.my_lib.construct_b.ConstructB,
+            ),
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_box__action_construct_b.guarantee_global_position_marker_b.append(
+            self.destroy_position_box__global_position_marker_b
+        )
+        guarantees.trigger_position_box__action_construct_a.guarantee_global_position_marker_a.append(
+            self.destroy_position_box__global_position_marker_a
+        )
         self.execution_trigger_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
         self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker_a = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_construct_b__when_empty_global_position_marker_b = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.construct_a.ConstructA
             ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_construct_a,
         )
         self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.construct_b.ConstructB
             ),
             self.scheduler,
@@ -84,6 +77,23 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_box__action_construct_b__when_empty_global_position_marker_b)
         self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker_a)
         self.trigger_position_box__action_construct_b__when_empty_global_position_marker_b()
+
+    def destroy_position_box__global_position_marker_b(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerB
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box__global_position_marker_a(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.marker_a.MarkerA
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_construct_a__when_empty_global_position_marker_a(self):
         if not self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker_a.arrive():

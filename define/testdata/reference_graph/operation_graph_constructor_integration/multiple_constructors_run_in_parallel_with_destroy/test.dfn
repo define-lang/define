@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</construct_a>.
-            it has the action</construct_b>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</construct_a>.
+                it has the action</construct_b>.
+            }
+        }
         create a particle in position<box>.
         destroy the particle in position<box>.
     }

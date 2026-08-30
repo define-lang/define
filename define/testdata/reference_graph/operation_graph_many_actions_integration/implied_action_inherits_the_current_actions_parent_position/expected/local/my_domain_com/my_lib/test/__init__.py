@@ -10,24 +10,9 @@ import local.my_domain_com.my_lib.parent
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<local>",
-                    constraints=(
-                        local.my_domain_com.my_lib.parent.Parent,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_local()
@@ -37,30 +22,29 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_local = literal.LocalPosition(
+            "position<local>",
+            constraints=(
+                local.my_domain_com.my_lib.parent.Parent,
+            ),
+            scheduler=self.scheduler,
+        )
         self.execution_trigger_position_local__global_position_parent__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent = self.scheduler.create_join(2)
 
     def create_position_local(self):
-        self.action.get_interface_position(
-            "position<local>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<local>"
-        ).particle.get_position(
+        self.local_position_local.create_particle()
+        self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
         self.scheduler.submit(self.create_position_local__global_position_parent__action_middle__position_trigger_pos)
         self.trigger_position_local__global_position_parent__action_middle__action_parent()
 
     def create_position_local__global_position_parent__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<local>"
-        ).particle.get_position(
+        self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -68,9 +52,7 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_position_local__global_position_parent__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.get_interface_position(
-                "position<local>"
-            ).particle.get_position(
+            self.local_position_local.particle.get_position(
                 local.my_domain_com.my_lib.parent.Parent
             ).particle.get_action(
                 local.my_domain_com.my_lib.middle.Middle
@@ -81,15 +63,17 @@ class TestExecution:
         self.trigger_position_local__global_position_parent__action_middle__action_parent()
 
     def destroy_position_local__global_position_parent__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<local>"
-        ).particle.get_position(
+        self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        self.local_position_local.particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).destroy_particle()
+        self.local_position_local.destroy_particle()
 
     def trigger_position_local__global_position_parent__action_middle__action_parent(self):
         if not self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent.arrive():

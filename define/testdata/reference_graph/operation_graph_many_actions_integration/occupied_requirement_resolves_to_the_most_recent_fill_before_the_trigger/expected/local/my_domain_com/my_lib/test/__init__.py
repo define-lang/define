@@ -10,35 +10,9 @@ import local.my_domain_com.my_lib.worker
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<source>",
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<gw_a>",
-                    constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-                literal.LocalPosition(
-                    "position<gw_b>",
-                    constraints=(
-                        local.my_domain_com.my_lib.helper.Helper,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -59,18 +33,37 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            scheduler=self.scheduler,
+        )
+        self.local_position_gw_a = literal.LocalPosition(
+            "position<gw_a>",
+            constraints=(
+                local.my_domain_com.my_lib.worker.Worker,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_gw_b = literal.LocalPosition(
+            "position<gw_b>",
+            constraints=(
+                local.my_domain_com.my_lib.helper.Helper,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_gw_a__action_worker.guarantee_position_slot.append(
             self.move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot
         )
         guarantees.trigger_position_gw_b__action_helper.guarantee_position_slot__move__position_out.append(
             self.move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot
+        )
+        guarantees.trigger_position_gw_a__action_worker_2.guarantee_position_slot.append(
+            self.destroy_position_gw_a
         )
         self.execution_trigger_position_gw_a__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.execution_trigger_position_gw_b__action_helper: local.my_domain_com.my_lib.helper.HelperExecution
@@ -83,41 +76,29 @@ class TestExecution:
         self.join_for_trigger_position_gw_a__action_worker_2__for_empty_rule_position_slot = self.scheduler.create_join(2)
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
+        self.local_position_source.create_particle()
         self.move_position_source_to_position_gw_a__action_worker__position_slot()
 
     def create_position_gw_a(self):
-        self.action.get_interface_position(
-            "position<gw_a>"
-        ).create_particle()
+        self.local_position_gw_a.create_particle()
         self.move_position_source_to_position_gw_a__action_worker__position_slot()
 
     def create_position_gw_b(self):
-        self.action.get_interface_position(
-            "position<gw_b>"
-        ).create_particle()
+        self.local_position_gw_b.create_particle()
         self.move_position_source_to_position_gw_b__action_helper__position_slot()
 
     def move_position_source_to_position_gw_a__action_worker__position_slot(self):
         if not self.join_for_move_position_source_to_position_gw_a__action_worker__position_slot.arrive():
             return
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<gw_a>"
-            ).particle.get_action(
+        self.local_position_source.move_particle_to(
+            self.local_position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<slot>"
             )
         )
         self.execution_trigger_position_gw_a__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.action.get_interface_position(
-                "position<gw_a>"
-            ).particle.get_action(
+            self.local_position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ),
             self.scheduler,
@@ -128,29 +109,21 @@ class TestExecution:
         self.trigger_position_gw_a__action_worker__for_empty_rule_position_slot()
 
     def create_position_source_2(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
+        self.local_position_source.create_particle()
         self.move_position_source_to_position_gw_b__action_helper__position_slot()
 
     def move_position_source_to_position_gw_b__action_helper__position_slot(self):
         if not self.join_for_move_position_source_to_position_gw_b__action_helper__position_slot.arrive():
             return
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
-            self.action.get_interface_position(
-                "position<gw_b>"
-            ).particle.get_action(
+        self.local_position_source.move_particle_to(
+            self.local_position_gw_b.particle.get_action(
                 local.my_domain_com.my_lib.helper.Helper
             ).get_interface_position(
                 "position<slot>"
             )
         )
         self.execution_trigger_position_gw_b__action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
-            self.action.get_interface_position(
-                "position<gw_b>"
-            ).particle.get_action(
+            self.local_position_gw_b.particle.get_action(
                 local.my_domain_com.my_lib.helper.Helper
             ),
             self.scheduler,
@@ -162,32 +135,33 @@ class TestExecution:
     def move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot(self):
         if not self.join_for_move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot.arrive():
             return
-        self.action.get_interface_position(
-            "position<gw_b>"
-        ).particle.get_action(
+        self.local_position_gw_b.particle.get_action(
             local.my_domain_com.my_lib.helper.Helper
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
-            self.action.get_interface_position(
-                "position<gw_a>"
-            ).particle.get_action(
+            self.local_position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<slot>"
             )
         )
         self.execution_trigger_position_gw_a__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.action.get_interface_position(
-                "position<gw_a>"
-            ).particle.get_action(
+            self.local_position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ),
             self.scheduler,
             self.guarantees.trigger_position_gw_a__action_worker_2,
         )
+        self.scheduler.submit(self.destroy_position_gw_b)
         self.scheduler.submit(self.trigger_position_gw_a__action_worker_2__for_empty_rule_position_slot)
         self.trigger_position_gw_a__action_worker_2__for_empty_rule_position_slot()
+
+    def destroy_position_gw_b(self):
+        self.local_position_gw_b.destroy_particle()
+
+    def destroy_position_gw_a(self):
+        self.local_position_gw_a.destroy_particle()
 
     def trigger_position_gw_a__action_worker__for_empty_rule_position_slot(self):
         if not self.join_for_trigger_position_gw_a__action_worker__for_empty_rule_position_slot.arrive():

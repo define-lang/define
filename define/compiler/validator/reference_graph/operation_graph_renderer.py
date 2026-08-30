@@ -70,8 +70,8 @@ def assert_transitively_minimal_dependencies(
     dependencies: dict[str, list[str]],
 ):
     """Assert that no direct dependency is reachable through another path."""
-    if dependencies != _transitively_minimal_dependencies(dependencies):
-        raise AssertionError
+    minimal_dependencies = _transitively_minimal_dependencies(dependencies)
+    assert dependencies == minimal_dependencies  # noqa: S101
 
 
 def _transitively_minimal_dependencies(

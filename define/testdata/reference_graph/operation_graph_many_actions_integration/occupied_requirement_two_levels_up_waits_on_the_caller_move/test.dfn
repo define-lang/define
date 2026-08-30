@@ -2,15 +2,15 @@
 # requirement, so inner.destroy(slot) must wait on that move rather than on
 # /middle's trigger of /inner.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<source>.
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</middle>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<source>.
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
         create a particle in position<source>.
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.

@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<item>.
-    define the position<dest>.
     it happens when {
         this particle is created.
     } and it does {
+        define the position<item>.
+        define the position<dest>.
         create a particle in position<item>.
         move the particle in position<item> to position<dest>.
     }

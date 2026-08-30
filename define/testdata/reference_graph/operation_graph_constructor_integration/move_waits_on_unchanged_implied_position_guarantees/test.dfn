@@ -1,18 +1,18 @@
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<source> {
-        it may only contain particles where {
-            it has the action</construct_a>.
-            it has the action</construct_b>.
-        }
-    }
-    define the position<dest> {
-        it may only contain particles where {
-            it has the position</marker>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</construct_a>.
+                it has the action</construct_b>.
+            }
+        }
+        define the position<dest> {
+            it may only contain particles where {
+                it has the position</marker>.
+            }
+        }
         create a particle in position<source>.
         move the particle in position<source> to position<dest>.
         create a particle in position<dest>::position</marker>.

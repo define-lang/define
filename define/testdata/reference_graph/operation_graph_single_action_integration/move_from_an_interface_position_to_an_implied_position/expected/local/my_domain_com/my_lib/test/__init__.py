@@ -12,17 +12,6 @@ class Test(literal.EntryPoint):
         local.my_domain_com.my_lib.implied.Implied,
     )
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<source>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
@@ -41,14 +30,14 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.local_position_source = literal.LocalPosition(
+            "position<source>",
+            scheduler=self.scheduler,
+        )
 
     def create_position_source(self):
-        self.action.get_interface_position(
-            "position<source>"
-        ).create_particle()
-        self.action.get_interface_position(
-            "position<source>"
-        ).move_particle_to(
+        self.local_position_source.create_particle()
+        self.local_position_source.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.implied.Implied
             )
