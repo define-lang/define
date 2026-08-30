@@ -238,14 +238,18 @@ class TestCreateParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert_no_errors(result.program_result)
 
     def test_chained_local_after_short_form_global_position(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
@@ -332,7 +336,9 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
@@ -345,7 +351,9 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
@@ -358,7 +366,9 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
@@ -377,7 +387,9 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
@@ -396,14 +408,18 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert_no_errors(result.program_result)
 
     def test_chain_element_inside_action_not_found(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
@@ -425,7 +441,9 @@ class TestMoveParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1

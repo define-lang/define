@@ -142,7 +142,9 @@ def test_valid_destroy_local_position(
 def test_destroy_chained_name_not_in_constraints(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -157,7 +159,9 @@ def test_destroy_chained_name_not_in_constraints(
 def test_destroy_chained_name_not_in_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

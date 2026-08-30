@@ -21,10 +21,10 @@ _USAGE_ERROR = 2
 _POSITION_SOURCE = "define the potential position<my.domain.com:my_lib:/test>.\n"
 _CONSTRUCTOR_SOURCE = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
-    "    define the position<output>.\n"
     "    it happens when {\n"
     "        this particle is created.\n"
     "    } and it does {\n"
+    "        define the position<output>.\n"
     "        create a particle in position<output>.\n"
     "    }\n"
     "}\n"

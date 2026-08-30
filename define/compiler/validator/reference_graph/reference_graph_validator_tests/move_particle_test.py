@@ -110,7 +110,9 @@ def test_undefined_to_position(
 def test_undefined_move_destination_is_not_treated_as_defined_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    ).program_result
     assert result.all_exceptions == []
     diags = result.all_diagnostics
     assert len(diags) == 1
@@ -171,7 +173,9 @@ def test_same_fqun_must_use_short_form_in_to(
 def test_valid_global_to_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -204,7 +208,9 @@ def test_move_to_same_position_does_not_mark_error(
 def test_move_to_chained_prefix_marks_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

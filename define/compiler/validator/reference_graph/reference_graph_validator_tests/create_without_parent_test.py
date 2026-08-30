@@ -71,7 +71,9 @@ def test_create_parent_then_child_succeeds(
 def test_interface_position_parent_succeeds(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 

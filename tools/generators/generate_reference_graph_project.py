@@ -115,23 +115,31 @@ def generate_project_files(
         )
         files[_file_path(index)] = _definition(universe_name, index, targets)
 
-    # The entry file reaches the first layer, from which the walk reaches the
-    # rest; definitions no layer references are never validated.
+    # The entry file references the first layer so validation follows references
+    # through every layer; definitions no layer references are never validated.
     entry_constraints = "".join(
-        (f"            it has the position<{_definition_path(target)}>.\n")
+        (f"                it has the position<{_definition_path(target)}>.\n")
+        for target in range(min(width, modules))
+    )
+    entry_references = "".join(
+        (
+            "        create a particle in "
+            f"position<references>::position<{_definition_path(target)}>.\n"
+        )
         for target in range(min(width, modules))
     )
     files["test.dfn"] = (
         f"define the potential action<{universe_name}:/test> {{\n"
-        "    define the position<references> {\n"
-        "        it may only contain particles where {\n"
-        f"{entry_constraints}"
-        "        }\n"
-        "    }\n"
         "    it happens when {\n"
         "        this particle is created.\n"
         "    } and it does {\n"
+        "        define the position<references> {\n"
+        "            it may only contain particles where {\n"
+        f"{entry_constraints}"
+        "            }\n"
+        "        }\n"
         "        create a particle in position<references>.\n"
+        f"{entry_references}"
         "    }\n"
         "}\n"
     )

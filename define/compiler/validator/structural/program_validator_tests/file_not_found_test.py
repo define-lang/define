@@ -79,8 +79,8 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[1].file_path == "missing.dfn"
-    assert diags[1].location.line == 9
-    assert diags[1].location.column == 33
+    assert diags[1].location.line == 12
+    assert diags[1].location.column == 37
 
 
 def test_same_missing_file_referenced_as_two_types_in_one_definition(

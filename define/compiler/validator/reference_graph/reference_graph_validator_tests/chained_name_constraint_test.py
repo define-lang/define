@@ -55,7 +55,9 @@ class TestCreateParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
@@ -100,14 +102,18 @@ class TestCreateParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert_no_errors(result.program_result)
 
     def test_duplicate_definition_preserves_first_constraints(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph()
+        result = validate_testdata_project_with_reference_graph(
+            allow_entry_action_interface_positions=True
+        )
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1

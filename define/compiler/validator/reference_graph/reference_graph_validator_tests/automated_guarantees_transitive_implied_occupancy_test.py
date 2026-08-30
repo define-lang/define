@@ -26,7 +26,9 @@ _FILLER = "action<my.domain.com:my_lib:/filler>"
 def test_shared_position_on_callee_does_not_satisfy_same_position_on_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

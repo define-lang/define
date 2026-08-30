@@ -68,7 +68,9 @@ def test_propagated_particle(
 def test_single_level_transitivity_satisfies_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
@@ -88,14 +90,18 @@ def test_single_level_transitivity_does_not_include_unrelated(
 def test_multi_level_transitivity(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
 def test_diamond_transitivity_create_conflict_detected(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -147,14 +153,18 @@ def test_diamond_transitivity_create_conflict_detected(
 def test_diamond_transitivity_with_create_destroy_succeeds(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
 def test_action_interface_position_has_quality_with_implication_move_succeeds(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
@@ -188,21 +198,27 @@ def test_action_creates_particle_in_interface_position_with_implication_constrai
 def test_constructor_quality_with_implication_carried_into_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
 def test_inferred_occupied_interface_position_has_implication_implied(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 
 def test_propagated_requirement_particle_has_implication_implied(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
 
 

@@ -46,10 +46,10 @@ def test_duplicate_operations_receive_numbered_labels(
         {
             "test.dfn": """\
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<item>.
     it happens when {
         this particle is created.
     } and it does {
+        define the position<item>.
         create a particle in position<item>.
         destroy the particle in position<item>.
         create a particle in position<item>.
@@ -63,6 +63,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         "test.create(item)",
         "test.destroy(item)",
         "test.create(item)#2",
+        "test.destroy(item)#2",
     ]
     labels, resolved = _resolved(result)
     assert [
@@ -75,6 +76,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         operation_graph_labeler.OperationLabel("create", None, "item", 1),
         operation_graph_labeler.OperationLabel("destroy", None, "item", 1),
         operation_graph_labeler.OperationLabel("create", None, "item", 2),
+        operation_graph_labeler.OperationLabel("destroy", None, "item", 2),
     ]
 
 
@@ -85,14 +87,14 @@ def test_repeated_action_triggerings_receive_numbered_execution_names(
         {
             "test.dfn": """\
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</other>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
@@ -116,6 +118,7 @@ define the potential action<my.domain.com:my_lib:/other> {
         "test.create(gateway)",
         "test.create(gateway::/other::trigger_pos)",
         "test.create(gateway::/other::trigger_pos)#2",
+        "test.destroy(gateway)",
         "other.destroy(trigger_pos)",
         "other#2.destroy(trigger_pos)",
     ]
@@ -128,19 +131,19 @@ def test_shared_callee_names_include_the_caller_execution_name(
         {
             "test.dfn": """\
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<holder_first> {
-        it may only contain particles where {
-            it has the action</first>.
-        }
-    }
-    define the position<holder_second> {
-        it may only contain particles where {
-            it has the action</second>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<holder_first> {
+            it may only contain particles where {
+                it has the action</first>.
+            }
+        }
+        define the position<holder_second> {
+            it may only contain particles where {
+                it has the action</second>.
+            }
+        }
         create a particle in position<holder_first>.
         create a particle in position<holder_first>::action</first>::position<trigger_pos>.
         create a particle in position<holder_second>.
@@ -201,6 +204,8 @@ define the potential action<my.domain.com:my_lib:/worker> {
         "test.create(holder_first::/first::trigger_pos)",
         "test.create(holder_second)",
         "test.create(holder_second::/second::trigger_pos)",
+        "test.destroy(holder_second)",
+        "test.destroy(holder_first)",
         "first.create(gateway)",
         "first.create(gateway::/worker::trigger_pos)",
         "first.destroy(trigger_pos)",

@@ -172,14 +172,15 @@ def test_move_to_same_position_format():
 def test_move_into_defining_position_format(validate_project: ValidateProject):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<local_pos> {\n"
-        "        it may only contain particles where {\n"
-        "            it has the position</mid_pos>.\n"
-        "        }\n"
-        "    }\n"
         "    it happens when {\n"
-        "        the position<local_pos> has a particle.\n"
+        "        this particle is created.\n"
         "    } and it does {\n"
+        "        define the position<local_pos> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the position</mid_pos>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<local_pos>.\n"
         "        move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
         "    }\n"
         "}\n"
@@ -207,7 +208,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 10, column 74
+        File "test.dfn", line 11, column 74
                 move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.
                                                                                  ^
         cannot move a particle

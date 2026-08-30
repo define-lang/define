@@ -86,7 +86,9 @@ def test_auto_destruction_cascades_into_child_particle_destructors(
 def test_move_from_interface_position_to_local_then_auto_destroy(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
 
@@ -506,7 +508,9 @@ def test_cascade_child_auto_destruction_failing_requirement(
 def test_interface_to_local_auto_destruction_failing_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

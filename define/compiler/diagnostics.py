@@ -798,6 +798,17 @@ class EntryPointNotConstructorDiagnostic(Diagnostic):
 
 
 @dataclass
+class EntryPointInterfacePositionDiagnostic(Diagnostic):
+    """Diagnostic for an interface position on the program entry point."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "the entry point action of a Define program must not define interface"
+        " positions, but it defines '{self.position_name}'"
+    )
+
+
+@dataclass
 class IncorrectIndentationDiagnostic(Diagnostic):
     """Diagnostic for when a line has incorrect indentation."""
 

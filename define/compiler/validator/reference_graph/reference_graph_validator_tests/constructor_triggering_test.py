@@ -52,7 +52,9 @@ def test_create_fires_constructor_via_constraint_on_local_position(
 def test_create_fires_constructor_via_constraint_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
 

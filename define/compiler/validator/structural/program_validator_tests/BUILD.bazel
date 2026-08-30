@@ -83,6 +83,18 @@ py_test(
 )
 
 py_test(
+    name = "entry_action_test",
+    size = "small",
+    srcs = ["entry_action_test.py"],
+    data = ["//define/testdata/structural/entry_action"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "error_messages_test",
     size = "small",
     srcs = ["error_messages_test.py"],
@@ -363,6 +375,7 @@ pyright_test(
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
         ":duplicate_position_constraint_test",
+        ":entry_action_test",
         ":error_messages_test",
         ":file_not_found_test",
         ":file_validation_result_test",

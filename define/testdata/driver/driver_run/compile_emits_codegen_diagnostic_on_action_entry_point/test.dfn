@@ -1,7 +1,6 @@
 define the potential action<mv:define-lang.org:test_action:/test> {
-    define the position<pp>.
     it happens when {
-        the position<pp> has a particle.
+        this particle is being destroyed.
     } and it does {
         define the position<noop>.
         create a particle in position<noop>.

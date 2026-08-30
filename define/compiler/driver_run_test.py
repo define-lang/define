@@ -380,11 +380,11 @@ def test_reference_graph_diagnostic_returns_error(
 
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
-        'File "test.dfn", line 9, column 30\n'
+        'File "test.dfn", line 8, column 30\n'
         "        create a particle in position<target>.\n"
         "                             ^\n"
         "a particle already exists in 'position<target>'; it was put there at:\n"
-        'File "test.dfn", line 8, column 30\n'
+        'File "test.dfn", line 7, column 30\n'
     )
 
 

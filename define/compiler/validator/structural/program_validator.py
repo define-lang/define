@@ -112,13 +112,23 @@ class ProgramStructuralValidator:
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
     _config_loading_time_ns: int
+    _allow_entry_action_interface_positions: bool
 
-    def __init__(self, parser_instance: parser.Parser | None = None):
+    def __init__(
+        self,
+        parser_instance: parser.Parser | None = None,
+        *,
+        allow_entry_action_interface_positions: bool = False,
+    ):
         """Initialize coordinator state for one program validation.
 
         If parser_instance is provided, it will be used instead of
         constructing a new one. This is only a performance optimization
         that avoids reconstructing the Lark grammar on each validation.
+
+        allow_entry_action_interface_positions exists only for validation tests
+        that specifically require an entry action with interface positions. It
+        must remain false when validating a program for code generation.
         """
         # Lark parsers are thread-safe, so sharing one instance is safe.
         self._parser = parser_instance or parser.Parser()
@@ -127,6 +137,9 @@ class ProgramStructuralValidator:
         self._deferred_edges = {}
         self._definition_results = typed_name_dict.TypedNameDict()
         self._config_loading_time_ns = 0
+        self._allow_entry_action_interface_positions = (
+            allow_entry_action_interface_positions
+        )
 
     def validate_program(
         self,
@@ -154,7 +167,10 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        return self._build_program_result(self._path_tracker.completed_results())
+        file_results = self._path_tracker.completed_results()
+        if not self._allow_entry_action_interface_positions:
+            self._validate_entry_action_interface_positions(file_results[0])
+        return self._build_program_result(file_results)
 
     def validate_program_non_filesystem(
         self,
@@ -178,6 +194,9 @@ class ProgramStructuralValidator:
             self._resolve_non_filesystem_references(result, pool)
             self._process_completed_result(result, pool, submit_referenced_files=False)
             self._run_pool_loop(pool)
+        # TODO: Enforce the entry-action interface-position rule here after the
+        # language defines which action is the entry point when non-filesystem
+        # source contains multiple actions.
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -203,6 +222,23 @@ class ProgramStructuralValidator:
             reference_graph=self._reference_graph,
             definition_results=self._definition_results,
         )
+
+    @staticmethod
+    def _validate_entry_action_interface_positions(
+        entry_file_result: validation_result.FileValidationResult,
+    ):
+        for definition_result in entry_file_result.definition_results:
+            definition = definition_result.definition
+            if not isinstance(definition, ast.ActionDefinition):
+                continue
+            for position in definition.interface_positions:
+                definition_result.add_diagnostic(
+                    diagnostics.EntryPointInterfacePositionDiagnostic(
+                        location=position.typed_name.location,
+                        position_name=position.typed_name.source_typed_name,
+                    )
+                )
+            return
 
     def _run_pool_loop(
         self,

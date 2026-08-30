@@ -4,14 +4,15 @@ define the potential position<my.domain.com:my_lib:/test> {
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<local> {
-        it may only contain particles where {
-            it has the position</missing>.
-        }
-    }
     it happens when {
-        the position<local> has a particle.
+        this particle is created.
     } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</missing>.
+            }
+        }
+        create a particle in position<local>.
         define the position<_noop>.
         create a particle in position<_noop>.
     }

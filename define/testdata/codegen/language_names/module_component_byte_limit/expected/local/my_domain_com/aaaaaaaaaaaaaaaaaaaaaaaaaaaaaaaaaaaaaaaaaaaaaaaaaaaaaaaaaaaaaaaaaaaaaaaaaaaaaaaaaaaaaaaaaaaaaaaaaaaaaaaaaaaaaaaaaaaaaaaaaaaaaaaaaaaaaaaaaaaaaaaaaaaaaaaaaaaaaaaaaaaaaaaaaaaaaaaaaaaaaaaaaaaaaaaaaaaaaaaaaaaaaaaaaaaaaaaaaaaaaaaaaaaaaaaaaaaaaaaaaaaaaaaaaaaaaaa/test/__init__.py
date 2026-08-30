@@ -7,21 +7,9 @@ from define.runtime import literal
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<result>",
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
         )
         execution.create_position_result()
@@ -31,13 +19,14 @@ class Test(literal.EntryPoint):
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
     ):
-        self.action = action
         self.scheduler = scheduler
+        self.local_position_result = literal.LocalPosition(
+            "position<result>",
+            scheduler=self.scheduler,
+        )
 
     def create_position_result(self):
-        self.action.get_interface_position(
-            "position<result>"
-        ).create_particle()
+        self.local_position_result.create_particle()
+        self.local_position_result.destroy_particle()

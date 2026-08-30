@@ -51,7 +51,7 @@ def test_move_to_chained_prefix_position(
     diags = test_result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert diags[0].location.line == 10
+    assert diags[0].location.line == 11
     assert diags[0].location.column == 74
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].source_position == "position<local_pos>"

@@ -64,7 +64,9 @@ def test_occupied_requirement_is_not_inferred_after_action_in_chain(
 def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -78,7 +80,9 @@ def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
 def test_occupied_requirement_is_not_inferred_after_action_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -92,7 +96,9 @@ def test_occupied_requirement_is_not_inferred_after_action_on_interface_position
 def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

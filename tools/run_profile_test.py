@@ -20,10 +20,10 @@ if typing.TYPE_CHECKING:
 # PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
-    "    define the position<created>.\n"
     "    it happens when {\n"
     "        this particle is created.\n"
     "    } and it does {\n"
+    "        define the position<created>.\n"
     "        create a particle in position<created>.\n"
     "    }\n"
     "}\n"

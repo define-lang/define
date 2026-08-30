@@ -26,7 +26,9 @@ _WORKER = "action<my.domain.com:my_lib:/worker>"
 def test_triggered_action_interface_particle_must_depart_before_caller_ends(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -45,7 +47,9 @@ def test_triggered_action_interface_particle_must_depart_before_caller_ends(
 def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
@@ -80,7 +84,9 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
 def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -102,7 +108,9 @@ def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
 def test_destroyed_action_parent_does_not_duplicate_replacement_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -135,7 +143,9 @@ def test_retriggered_action_interface_particle_may_depart_before_caller_ends(
 def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -155,7 +165,9 @@ def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
 def test_caller_move_between_callee_interfaces_does_not_consume_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -177,7 +189,9 @@ def test_caller_move_between_callee_interfaces_does_not_consume_particle(
 def test_callee_move_between_its_interfaces_requires_caller_consumption(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -196,7 +210,9 @@ def test_callee_move_between_its_interfaces_requires_caller_consumption(
 def test_constructor_interface_particle_must_depart_before_caller_ends(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
@@ -224,7 +240,9 @@ def test_local_parent_auto_destruction_consumes_action_interface_particle(
 def test_deeper_action_implied_position_can_leave_with_interface_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [
         (_TEST, _PARENT),
@@ -397,7 +415,9 @@ def test_action_on_position_child_must_be_clean_before_parent_triggers(
 def test_child_guarantee_on_callers_interface_particle_must_be_consumed_before_parent_triggers(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1

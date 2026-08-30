@@ -72,15 +72,15 @@ def _action_executions(
         {
             "test.dfn": """\
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<gateway> {
-        it may only contain particles where {
-            it has the action</worker>.
-            it has the action</worker_2>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</worker>.
+                it has the action</worker_2>.
+            }
+        }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</worker_2>::position<trigger_pos>.
         create a particle in position<gateway>::action</worker>::position<trigger_pos>.

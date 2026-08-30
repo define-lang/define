@@ -147,7 +147,9 @@ def test_same_local_position_name_in_unrelated_action_does_not_trigger_it(
 def test_self_trigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
@@ -263,7 +265,9 @@ class TestConstructorTriggering:
 def test_action_interface_reference_with_circular_contract_reports_circular_references(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3

@@ -84,7 +84,9 @@ def test_empty_interface_requirement_satisfied(
 def test_empty_interface_requirement_satisfied_when_created_in_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
     assert_no_errors(result.program_result)
     assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
 

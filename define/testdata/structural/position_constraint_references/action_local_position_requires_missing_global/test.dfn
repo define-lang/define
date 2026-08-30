@@ -1,12 +1,13 @@
 define the potential action<mv:define-lang.org:test_files:/test> {
-    define the position<my_pos> {
-        it may only contain particles where {
-            it has the position</test>.
-        }
-    }
     it happens when {
-        the position<my_pos> has a particle.
+        this particle is created.
     } and it does {
+        define the position<my_pos> {
+            it may only contain particles where {
+                it has the position</test>.
+            }
+        }
+        create a particle in position<my_pos>.
         define the position<_noop>.
         create a particle in position<_noop>.
     }

@@ -57,6 +57,7 @@ class ValidateProject(Protocol):
         local_deps: dict[str, str] | None = ...,
         sub_roots: dict[str, str] | None = ...,
         entry_file: str = ...,
+        allow_entry_action_interface_positions: bool = ...,
     ) -> FullValidationResult:
         """Validate a project with the given files."""
         ...
@@ -79,6 +80,9 @@ def validate_project(
         # such as a test of path mismatches or of a missing entry file. Otherwise
         # do not pass this; leave it as the default.
         entry_file: str = "test.dfn",
+        # Pass True only when a validation test specifically requires an entry
+        # action with interface positions.
+        allow_entry_action_interface_positions: bool = False,
     ) -> FullValidationResult:
         test_helpers.write_project_config(tmp_path, universe_name)
         if local_deps is not None:
@@ -96,7 +100,10 @@ def validate_project(
             file_path.write_text(content, encoding="utf-8")
         monkeypatch.chdir(tmp_path)
         structural_result = program_validator.ProgramStructuralValidator(
-            _PARSER
+            _PARSER,
+            allow_entry_action_interface_positions=(
+                allow_entry_action_interface_positions
+            ),
         ).validate_program(
             PurePosixPath(entry_file),
             max_workers=max_workers,
@@ -112,7 +119,10 @@ class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
     """Validate the convention-derived non-filesystem source."""
 
     def __call__(
-        self, *, max_workers: int | None = ...
+        self,
+        *,
+        max_workers: int | None = ...,
+        allow_entry_action_interface_positions: bool = ...,
     ) -> validation_result.ProgramValidationResult:
         """Run structural and reference graph validation."""
         ...
@@ -125,6 +135,7 @@ class ValidateTestdataStructuralNonFilesystem(Protocol):
         self,
         *,
         max_workers: int | None = ...,
+        allow_entry_action_interface_positions: bool = ...,
     ) -> validation_result.ProgramValidationResult:
         """Run structural validation."""
         ...
@@ -141,6 +152,7 @@ class ValidateTestdataStructural(Protocol):
         # such as a test of path mismatches or of a missing entry file. Every
         # other test lets test.dfn define /test.
         entry_file: str = ...,
+        allow_entry_action_interface_positions: bool = ...,
     ) -> validation_result.ProgramValidationResult:
         """Run structural validation."""
         ...
@@ -177,10 +189,16 @@ def validate_testdata_structural_non_filesystem(
     def _run(
         *,
         max_workers: int | None = None,
+        # Pass True only when a validation test specifically requires an entry
+        # action with interface positions.
+        allow_entry_action_interface_positions: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         return program_validator.ProgramStructuralValidator(
-            _PARSER
+            _PARSER,
+            allow_entry_action_interface_positions=(
+                allow_entry_action_interface_positions
+            ),
         ).validate_program_non_filesystem(source, max_workers=max_workers)
 
     return _run
@@ -198,11 +216,17 @@ def validate_testdata_structural(
         *,
         max_workers: int | None = None,
         entry_file: str = "test.dfn",
+        # Pass True only when a validation test specifically requires an entry
+        # action with interface positions.
+        allow_entry_action_interface_positions: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        return program_validator.ProgramStructuralValidator(_PARSER).validate_program(
-            PurePosixPath(entry_file), max_workers=max_workers
-        )
+        return program_validator.ProgramStructuralValidator(
+            _PARSER,
+            allow_entry_action_interface_positions=(
+                allow_entry_action_interface_positions
+            ),
+        ).validate_program(PurePosixPath(entry_file), max_workers=max_workers)
 
     return _run
 
@@ -217,11 +241,18 @@ def validate_testdata_non_filesystem_with_reference_graph(
     source = (directory / "source.dfn").read_text(encoding="utf-8")
 
     def _run(
-        *, max_workers: int | None = None
+        *,
+        max_workers: int | None = None,
+        # Pass True only when a validation test specifically requires an entry
+        # action with interface positions.
+        allow_entry_action_interface_positions: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         result = program_validator.ProgramStructuralValidator(
-            _PARSER
+            _PARSER,
+            allow_entry_action_interface_positions=(
+                allow_entry_action_interface_positions
+            ),
         ).validate_program_non_filesystem(source, max_workers=max_workers)
         reference_graph_validator.ReferenceGraphValidator(
             result.reference_graph,
@@ -254,6 +285,7 @@ class ValidateTestdataProjectWithReferenceGraph(Protocol):
         self,
         *,
         max_workers: int | None = ...,
+        allow_entry_action_interface_positions: bool = ...,
     ) -> FullValidationResult:
         """Run structural and reference graph validation."""
         ...
@@ -270,10 +302,16 @@ def validate_testdata_project_with_reference_graph(
     def _run(
         *,
         max_workers: int | None = None,
+        # Pass True only when a validation test specifically requires an entry
+        # action with interface positions.
+        allow_entry_action_interface_positions: bool = False,
     ) -> FullValidationResult:
         monkeypatch.chdir(directory)
         structural_result = program_validator.ProgramStructuralValidator(
-            _PARSER
+            _PARSER,
+            allow_entry_action_interface_positions=(
+                allow_entry_action_interface_positions
+            ),
         ).validate_program(PurePosixPath("test.dfn"), max_workers=max_workers)
         return _run_reference_graph_validation(
             structural_result, max_workers=max_workers
