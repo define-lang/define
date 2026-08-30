@@ -79,3 +79,24 @@ def test_multiple_constructors_run_in_parallel_with_destroy(
         "test.destroy(box)": ["test.create(box)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_move_waits_on_unchanged_implied_position_guarantees(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "construct_a.create(/marker)": ["test.create(source)"],
+        "construct_a.destroy(/marker)": ["construct_a.create(/marker)"],
+        "construct_b.create(/marker)": ["construct_a.destroy(/marker)"],
+        "construct_b.destroy(/marker)": ["construct_b.create(/marker)"],
+        # Moving the constructed particle waits until both constructors restore
+        # their shared implied position to its unchanged empty state.
+        "test.move(source, dest)": ["construct_b.destroy(/marker)"],
+        "test.create(dest::/marker)": ["test.move(source, dest)"],
+        "test.destroy(dest::/marker)": ["test.create(dest::/marker)"],
+        "test.destroy(dest)": ["test.destroy(dest::/marker)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)

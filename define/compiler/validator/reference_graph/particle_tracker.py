@@ -69,6 +69,20 @@ def _node_is_occupied(state: _NodeState) -> bool:
     return state.particle_info is not None
 
 
+def _operation_node(
+    state: _NodeState,
+) -> operation_graph_model.ConcreteOperationNode | None:
+    return state.operation_node
+
+
+def _operation_node_for_known_state(
+    state: _NodeState,
+) -> operation_graph_model.ConcreteOperationNode | None:
+    if state.particle_info is None and state.emptied_by is None:
+        return None
+    return state.operation_node
+
+
 @dataclass
 class _ErrorState:
     """Wrapper for error-state trie values.
@@ -1065,13 +1079,10 @@ class ParticleTracker:
     def _preceding_child_operations(
         self, key: tuple[str, ...]
     ) -> Iterator[tuple[tuple[str, ...], operation_graph_model.ConcreteOperationNode]]:
-        # Valid wall profiles of the August 2026 focused operation-graph
-        # full-compiler workload with 10,000 children made allocating this lambda
-        # per snapshot and calling it per descendant look costly. Replacing it with
-        # one module-level operator.attrgetter("operation_node") produced no
-        # measurable full-compiler change across four unprofiled runs.
+        # A Move must also collect operations from guarantees for positions that
+        # remain empty; other snapshots only collect operations with known state.
         return self._store.state.selected_subtree_items(
-            key, lambda state: state.operation_node
+            key, _operation_node_for_known_state
         )
 
     def _preceding_child_operations_for_contributed_destructor_requirement(
@@ -1283,7 +1294,9 @@ class ParticleTracker:
             raise ValueError(f"source position {from_key} is empty")
         self._interface_arrival_tracker.mark_particle_departed(source_info)
         operation_node = self._operation_graph_builder.record_move(
-            source, target, self._preceding_child_operations(from_key)
+            source,
+            target,
+            self._store.state.selected_subtree_items(from_key, _operation_node),
         )
         # Both positions are touched by this one move statement, so they share a
         # body operation number.
@@ -1980,9 +1993,12 @@ class ParticleTracker:
                 case action_contract.UnchangedGuarantee():
                     # The position is unchanged from before the callee triggered,
                     # which the caller's store already reflects (the cleanup above
-                    # kept any occupant). The write record above still supersedes
+                    # kept any occupant). A later Move of its parent must still
+                    # collect the callee's operations on an otherwise-untracked
+                    # empty child position. The write record above still supersedes
                     # a conflicting nested guarantee.
-                    pass
+                    if key not in self._store.state:
+                        self._store.state[key] = _NodeState()
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 

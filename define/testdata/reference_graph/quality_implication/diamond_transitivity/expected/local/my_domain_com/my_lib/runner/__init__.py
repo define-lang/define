@@ -62,6 +62,9 @@ class RunnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        guarantees.trigger_position_source__action_implier_two.guarantee_global_position_implied.append(
+            self.move_position_source_to_position_dest
+        )
         guarantees.trigger_position_source__action_implier_one.guarantee_global_position_implied.append(
             self.trigger_position_source__action_implier_two__when_empty_global_position_implied
         )
@@ -102,7 +105,6 @@ class RunnerExecution:
             self.scheduler,
             self.guarantees.trigger_position_source__action_implier_two,
         )
-        self.scheduler.submit(self.move_position_source_to_position_dest)
         self.scheduler.submit(self.trigger_position_source__action_implier_one__when_empty_global_position_implied)
         self.scheduler.submit(self.trigger_position_source__action_implier_one__when_empty_global_position_implied)
         self.trigger_position_source__action_implier_two__when_empty_global_position_implied()
